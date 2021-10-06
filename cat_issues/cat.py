@@ -39,7 +39,10 @@ def main():
     request_all_issues(api_call, token, issue_dir)
 
     # open all issues and store them in a list
+
     # categorize them
+
+    # anaylitics
 
 if __name__ == "__main__":
     main()
