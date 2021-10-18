@@ -7,6 +7,11 @@ def read_issues_from_file(ifile):
     with open(ifile, 'rb') as filehandle:
         return pickle.load(filehandle)
 
+def seperate_by_status(issues):
+    open_issues, closed_issues = [], []
+
+    return (open_issues, closed_issues)
+
 def main():
     api_call = "https://api.github.com/repos/ansible/ansible"
     issues_file = "./issues.data"
@@ -16,8 +21,8 @@ def main():
     f.close()
 
     issues = read_issues_from_file(issues_file)
-    #open_issues, closed_issues = seperate_by_status(issues)
-
+    print(issues)
+    open_issues, closed_issues = seperate_by_status(issues)
 
 
 if __name__ == "__main__":
