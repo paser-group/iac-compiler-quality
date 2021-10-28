@@ -44,6 +44,7 @@ def request_all_issues(repository, token, issues, tempfile):
     while run:
         data = request_issue(repository, token, number, tempfile)
         if "url" not in data.keys():
+            print(data)
             run = False
         else:
             issues.append(data)
@@ -54,7 +55,7 @@ def main():
     issues_file = "./issues.data"
     temp_issue_file = "./issue"
 
-    token = read_git_token("/home/corbin/.gittoken1")
+    token = read_git_token("/home/corbin/.gittoken")
     issues = read_issues_from_file(issues_file)
 
     try:
