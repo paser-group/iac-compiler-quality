@@ -54,7 +54,7 @@ def main():
     issues_file = "./issues.data"
     temp_issue_file = "./issue"
 
-    token = read_git_token("/home/corbin/.gittoken")
+    token = read_git_token("/home/corbin/.gittoken1")
     issues = read_issues_from_file(issues_file)
 
     try:
