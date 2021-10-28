@@ -3,45 +3,68 @@ import subprocess
 import os
 import pickle
 
-STARTING_NUM = 9424
-
-def request_issue(api_call, token, number, output_file):
-    command = "curl -H 'Authorization: token " + token + "' " + api_call + "/issues/" + str(number) + " > " + output_file
-    print(command)
-    subprocess.check_output(command, shell=True)
-    with open(output_file, "r") as fhandle:
-        y = json.load(fhandle)
-        try:
-            temp = y["url"]
-            return True
-        except KeyError:
-            pass
-    os.remove(output_file)
-    return False
-
-def request_all_issues(api_call, token, directory):
+def read_git_token(file):
+    with open(file, 'r') as filehandle:
+        return filehandle.readlines()[0].split()[0]
+def read_issues_from_file(file):
+    with open(file, 'rb') as filehandle:
+        return pickle.load(filehandle)
+def write_issues_to_file(data, file):
+    with open(file, 'wb') as filehandle:
+        pickle.dump(data, filehandle)
+def check_issues(issues):
+    num = 1
+    for i in issues:
+        if ("url" in i.keys()) and int(i["number"]) == num:
+            num = num + 1
+            continue
+        else:
+            return False
+    return True
+def clean_up_before_exit(issues, temp_file):
     try:
-        os.mkdir(directory)
-    except OSError as error:
+        os.remove(temp_file)
+    except:
         pass
+    if "url" not in issues[-1].keys():
+        issues = issues[:-1]
 
-    global STARTING_NUM
-    output = directory + "/" + str(STARTING_NUM)
+def request_issue(repository, token, issue_number, tempfile):
+    command = "curl -H 'Authorization: token " + token + "' " + repository + "/issues/" + str(issue_number) + " > " + tempfile
+    output = subprocess.check_output(command, shell=True)
+    fhandle = open(tempfile, "r")
+    result = json.load(fhandle)
+    fhandle.close()
+    os.remove(tempfile)
+    return result
+
+def request_all_issues(repository, token, issues, tempfile):
+    number = len(issues) + 1
     run = True
     while run:
-        if not os.path.isfile(output):
-            run = request_issue(api_call, token, STARTING_NUM, output)
-        STARTING_NUM = STARTING_NUM + 1
-        output = directory + "/" + str(STARTING_NUM)
+        data = request_issue(repository, token, number, tempfile)
+        if "url" not in data.keys():
+            run = False
+        else:
+            issues.append(data)
+        number = number + 1
 
 def main():
-    api_call = "https://api.github.com/repos/ansible/ansible"
-    issue_dir = "./issues"
-    f = open('/home/corbin/.gittoken','r')
-    token = f.readlines()[0].split()[0]
-    f.close()
+    repository = "https://api.github.com/repos/ansible/ansible"
+    issues_file = "./issues.data"
+    temp_issue_file = "./issue"
 
-    request_all_issues(api_call, token, issue_dir)
+    token = read_git_token("/home/corbin/.gittoken")
+    issues = read_issues_from_file(issues_file)
+
+    try:
+        request_all_issues(repository, token, issues, temp_issue_file)
+    except:
+        clean_up_before_exit(issues, temp_issue_file)
+    finally:
+        status = check_issues(issues)
+        print(f"\n# Issues: {len(issues)}, Status: {status}")
+        write_issues_to_file(issues, issues_file)
 
 if __name__ == "__main__":
     main()
