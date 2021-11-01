@@ -50,12 +50,12 @@ def label_in_issues(label, issues):
     return (open, closed)
 
 def print_all_stats(cats, labels):
-    print("-"*100)
+    print("-"*95)
     total_issues = len(cats['closed']['all']) + len(cats['open']['all'])
     print(f"total issues: {total_issues}")
     print(f"closed:{len(cats['closed']['all'])} ({((len(cats['closed']['all']) / total_issues) * 100):.2f}%) | ",end='')
     print(f"open:{len(cats['open']['all'])} ({((len(cats['open']['all']) / total_issues) * 100):.2f}%)")
-    print("-"*100)
+    print("-"*95)
     for i in labels:
         print('{0: <22}'.format("["+i+"]"), end='')
         print('{0: <22}'.format(f"total:{len(cats['closed'][i]) + len(cats['open'][i])} ({(((len(cats['closed'][i])+len(cats['open'][i])) / total_issues) * 100):.2f}%)"), end='')
@@ -63,7 +63,7 @@ def print_all_stats(cats, labels):
         print('{0: <22}'.format(f"closed:{len(cats['closed'][i])} ({((len(cats['closed'][i]) / total_issues) * 100):.2f}%)"),end='')
         print(" |     ", end='')
         print(f"open:{len(cats['open'][i])} ({((len(cats['open'][i]) / total_issues) * 100):.2f}%)")
-    print("-"*100)
+    print("-"*95)
 
 def main():
     repository = "https://api.github.com/repos/ansible/ansible"
