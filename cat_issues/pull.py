@@ -54,7 +54,7 @@ def main():
     repository = "https://api.github.com/repos/ansible/ansible"
     issues_file = "./issues.data"
     temp_issue_file = "./issue"
-    token = read_git_token("./Token.txt")
+    token = read_git_token("/home/corbin/.gittoken")
     issues = read_issues_from_file(issues_file)
 
     try:
