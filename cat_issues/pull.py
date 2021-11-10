@@ -54,8 +54,11 @@ def main():
     repository = "https://api.github.com/repos/ansible/ansible"
     issues_file = "./issues.data"
     temp_issue_file = "./issue"
-    token = read_git_token("/home/corbin/.gittoken")
+    token = read_git_token("/home/corbin/.gittoken2")
     issues = read_issues_from_file(issues_file)
+    print(f"# Github Key: {token}")
+    status = check_issues(issues)
+    print(f"# Issues: {len(issues)}, Status: {status}\n")
 
     try:
         request_all_issues(repository, token, issues, temp_issue_file)
