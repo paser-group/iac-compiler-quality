@@ -60,11 +60,13 @@ def main():
     status = check_issues(issues)
     print(f"# Issues: {len(issues)}, Status: {status}\n")
 
+    print(f"Starting to Download More Issues...")
     try:
         request_all_issues(repository, token, issues, temp_issue_file)
     except:
         clean_up_before_exit(issues, temp_issue_file)
     finally:
+        print(f"Done with Downloading.")
         status = check_issues(issues)
         print(f"\n# Issues: {len(issues)}, Status: {status}")
         write_issues_to_file(issues, issues_file)
