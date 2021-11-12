@@ -49,6 +49,7 @@ def request_all_issues(repository, token, issues, tempfile, skipped_issues):
         data = request_issue(repository, token, number, tempfile)
         if "url" not in data.keys():
             print(data)
+            print(f"Tried to Pull Issue Num: {number}")
             run = False
         else:
             issues.append(data)
@@ -58,7 +59,7 @@ def main():
     repository = "https://api.github.com/repos/ansible/ansible"
     issues_file = "./issues.data"
     temp_issue_file = "./issue"
-    skipped_issues = [9891, 12656]
+    skipped_issues = [9891, 12656, 13083]
     token = read_git_token("/home/corbin/.gittoken1")
     issues = read_issues_from_file(issues_file)
     print(f"# Github Key: {token}")
