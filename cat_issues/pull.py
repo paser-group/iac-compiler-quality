@@ -17,7 +17,7 @@ def check_issues(issues, skipped_issues):
     for i in issues:
         while num in skipped_issues:
             num = num + 1
-        if ("url" in i.keys()):
+        if ("url" in i.keys()) and int(i["number"]) == num:
             num = num + 1
             continue
         else:
