@@ -59,7 +59,7 @@ def main():
     repository = "https://api.github.com/repos/ansible/ansible"
     issues_file = "./issues.data"
     temp_issue_file = "./issue"
-    skipped_issues = [9891, 12656, 13083]
+    skipped_issues = [9891, 12656, 13083, 14173]
     token = read_git_token("/home/corbin/.gittoken1")
     issues = read_issues_from_file(issues_file)
     print(f"# Github Key: {token}")
