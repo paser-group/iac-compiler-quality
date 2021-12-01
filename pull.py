@@ -62,7 +62,7 @@ def main():
     skipped_issues = [9891, 12656, 13083, 14173, 15763, 15764, 16350, 25415, 28452, 36011, 37544]
     token = read_git_token("./Token 2.txt")
     issues = read_issues_from_file(issues_file)
-    print(f"# Github Key: {token}")
+    #print(f"# Github Key: {token}")
     status = check_issues(issues, skipped_issues)
     print(f"# Issues: {len(issues)}, Status: {status}\n")
 
