@@ -12,13 +12,15 @@ As the first step towards this goal we aim to conduct a research study as part o
 
 I have listed the following papers that use NLP or ML to conduct compiler fuzzing, which Smith can take motivation from. It shows that compiler fuzzing has appeal to a wide range of top-tier venues. Depending on the story and analysis we can pick one.  
 
-- USENIX Security: [Montage](https://www.usenix.org/system/files/sec20summer_lee-suyoung_prepub_0.pdf) 
-- ESEC/FSE: [Deep learning compilers](https://haoyang9804.github.io/A_Comprehensive_Study_of_Deep_Learning_Compiler_Bugs.pdf)
+
 - AAAI: [DeepFuzz](https://ojs.aaai.org/index.php/AAAI/article/view/3895) 
-- ISSTA: [DeepSmith](https://chriscummins.cc/pub/2018-issta.pdf) 
-- ICSE: [Neuzz](http://lingming.cs.illinois.edu/publications/icse2022e.pdf)
-- ASPLOS: [NNSmith](http://lingming.cs.illinois.edu/publications/asplos2023.pdf) 
 - ASE: [RecBi](https://lingming.cs.illinois.edu/publications/ase2020b.pdf) 
+- ASPLOS: [NNSmith](http://lingming.cs.illinois.edu/publications/asplos2023.pdf) 
+- ESEC/FSE: [Deep learning compilers](https://haoyang9804.github.io/A_Comprehensive_Study_of_Deep_Learning_Compiler_Bugs.pdf)
+- ICSE: [Neuzz](http://lingming.cs.illinois.edu/publications/icse2022e.pdf)
+- ISSTA: [DeepSmith](https://chriscummins.cc/pub/2018-issta.pdf) 
+- USENIX Security: [Montage](https://www.usenix.org/system/files/sec20summer_lee-suyoung_prepub_0.pdf) 
+
 
 While writing the paper, we need to `skilfully distance` ourselves from [Lingming](https://lingming.cs.illinois.edu/) so that the reviewers do not question the novelty work. But, that's for future.  
 
@@ -28,6 +30,7 @@ While writing the paper, we need to `skilfully distance` ourselves from [Lingmin
 - Create a simple Ansible manifest to copy a file from your computer to an [EC2 Instance](https://aws.amazon.com/ec2/). Tutorial: [URL](https://medium.datadriveninvestor.com/devops-using-ansible-to-provision-aws-ec2-instances-3d70a1cb155f). My [manifest](sample.yml). My [hosts file](akond-hosts). Command to run my manifest: 
 ```
 ansible -i hosts all -m ping
+ansible-playbook sample.yml --syntax-check
 ansible-playbook -vvv -i akond-hosts sample.yml 
 ``` 
 
