@@ -35,6 +35,8 @@ ansible-playbook -vvv -i akond-hosts sample.yml
 
 - You can also leverage existing manifests used for test cases. They are available in  [invalid](invalid/). I would recommend that you use your own mutated manifest to try fuzzing first.  
 
-## Lessons Learned 
+- All code must be pushed to the `smith` branch 
+
+## Lessons Learned So Far 
 
 - Sequence to sequence encoding didn’t perform well 
