@@ -1,0 +1,47 @@
+- gather_facts: false
+  hosts: windows11
+  tasks:
+  - become: true
+    name: Install necessary packages
+    win_package:
+      name:
+      - openssl
+      state: present
+  - become: true
+    name: Generate certificate
+    win_openssl_certificate:
+      digest: sha256
+      path: C:\certs
+      privatekey_size: 4096
+      privatekey_type: rsa
+      state: present
+      subject:
+        C: US
+        CN: www.example.com
+        L: San Francisco
+        O: Example Corporation
+        ST: California
+  - become: true
+    name: Configure TLS 1.3
+    win_reg_statements:
+      name: Enabled
+      path: HKLM:\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS
+        1.3
+      type: dword
+      value: 1
+  - become: true
+    name: Configure client certificate authentication
+    win_reg_statements:
+      name: Certificate Authentication
+      path: HKLM:\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS
+        1.3\Client
+      type: dword
+      value: 2
+  - become: true
+    name: Configure client certificate
+    win_reg_statements:
+      name: Certificate
+      path: HKLM:\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS
+        1.3\Client
+      type: binary
+      value: C:\certs\example.com.pfx
