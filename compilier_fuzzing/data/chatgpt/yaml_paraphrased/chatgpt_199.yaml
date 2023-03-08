@@ -1,0 +1,31 @@
+- gather_facts: false
+  hosts: all
+  roles:
+  - ./my_role
+  tasks:
+  - copy:
+      dest: /etc/myapp/
+      src: '{{ item }}'
+    name: Copy files
+    register: result
+    with_fileglob:
+    - '{{ role_path }}/files/*'
+  - debug:
+      var: result
+    name: Show result
+- apt: name={{ item }}
+  name: Install dependencies
+  with_items:
+  - tree
+- gather_facts: false
+  hosts: all
+  tasks:
+  - become: true
+    command: apt-get upgrade -y
+    name: Upgrade all packages
+- hosts: all
+  tasks:
+  - name: Restarting apache
+    systemd:
+      name: httpd
+      state: restarted

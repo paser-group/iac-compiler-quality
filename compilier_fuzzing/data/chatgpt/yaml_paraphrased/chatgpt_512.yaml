@@ -1,0 +1,70 @@
+- become: true
+  hosts: all
+  name: Buggy Playbook
+  tasks:
+  - apt: update_cache=yes upgrade=yes
+    name: Update and Upgrade Package
+  - apt: name={{ item }} state=latest
+    name: Install Nginx and PHP
+    with_items:
+    - nginx
+    - php
+    - php-fpm
+  - name: Start Nginx Service
+    service:
+      name: nginx
+      state: started
+  - name: Start PHP-FPM Service
+    service:
+      name: php-fpm
+      state: restarted
+  - apt:
+      name: mysql-server
+      update_cache: true
+    name: Install MySQL Server
+    register: mysql_install
+  - debug:
+      var: mysql_install
+    name: Output MySQL Installation
+  - mysql_db:
+      name: test_db
+      state: present
+    name: Create Database
+  - mysql_user:
+      host: '%'
+      name: test_user
+      password: test_password
+      priv: '*.*:ALL'
+      state: present
+    name: Create User
+  - mysql_user:
+      host: '%'
+      name: test_user
+      priv: '*.*:ALL'
+      state: present
+    name: Grant Permissions
+  - name: Reload MySQL
+    service:
+      name: mysql
+      state: restarted
+  - name: Create Index.html
+    template:
+      dest: /var/www/html/index.html
+      src: index.html.j2
+  - hostname:
+      name: '{{ inventory_hostname }}'
+    name: Set Hostname
+  - name: Reboot Server
+    reboot:
+      confirm_command: uptime
+      confirm_timeout: 30
+      connect_timeout: 30
+      password: ansible
+      post_reboot_delay: 0
+      pre_reboot_delay: 0
+      reboot_timeout: 300
+      test_command: uptime
+      username: ansible
+  - debug:
+      msg: Buggy Playbook Execution Completed
+    name: Final Task

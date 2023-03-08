@@ -1,0 +1,32 @@
+- become: true
+  hosts: localhost
+  name: Build Ansible-core 2.14.1
+  tasks:
+  - apt:
+      name: '{{ item }}'
+      state: present
+    name: Install dependencies
+    with_items:
+    - build-essential
+    - python-dev
+    - libffi-dev
+    - libssl-dev
+  - get_url:
+      dest: /tmp/ansible.tar.gz
+      url: https://github.com/ansible/ansible/archive/v{{ version }}.tar.gz
+    name: Download Ansible-core source code
+  - name: Unarchive Ansible-core source code
+    unarchive:
+      dest: /tmp
+      remote_src: true
+      src: /tmp/ansible.tar.gz
+  - args:
+      chdir: /tmp/ansible-{{ version }}
+    command: python setup.py install
+    name: Build and install Ansible-core
+    register: result
+  - debug:
+      var: result.stderr
+    name: Show result
+  vars:
+    version: 2.14.1

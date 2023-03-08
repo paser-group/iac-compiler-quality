@@ -1,0 +1,54 @@
+- apt: name=nginx state=installed
+  name: Install Nginx
+- name: Start Nginx service
+  service: name=nginx state=started
+- copy:
+    dest: /var/www/html
+    src: /path/to/application/code
+  name: Deploy application code
+  notify: Restart Nginx
+- apt: name=mysql state=installed
+  name: Install MySQL
+- name: Start MySQL service
+  service: name=mysql state=started
+- become: true
+  mysql_db:
+    name: test_db
+    state: present
+  name: Create MySQL database
+- become: true
+  mysql_user:
+    host: localhost
+    name: test_user
+    password: test_password
+    priv: test_db.*:ALL
+    state: present
+  name: Create MySQL user
+- apt: name=apache2 state=installed
+  name: Install Apache
+- name: Start Apache service
+  service: name=apache2 state=started
+- file:
+    path: /var/www/html/index.html
+    state: absent
+  name: Remove Apache default page
+  notify: Restart Apache
+- apt: name=php state=installed
+  name: Install PHP
+- name: Restart Apache
+  service: name=apache2 state=restarted
+- name: Restart Nginx
+  service: name=nginx state=restarted
+- become: true
+  file:
+    path: /tmp/*
+    state: absent
+  name: Remove temporary files
+- name: Restart Servers
+  service:
+    name: '{{ item }}'
+    state: restarted
+  with_items:
+  - apache2
+  - nginx
+  - mysql

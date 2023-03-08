@@ -1,0 +1,23 @@
+- hosts: server
+  tasks:
+  - git:
+      accept_hostkey: true
+      dest: /home/user/repo
+      repo: git@github.com:username/repo.git
+    name: Clone repo with git
+    register: clone_result
+  - apt:
+      name: sshpass
+      state: present
+    git:
+      accept_hostkey: true
+      dest: /home/user/repo
+      force: true
+      repo: git@github.com:username/repo.git
+    name: Retry if clone failed due to Host key verification
+    register: retry_result
+    shell: sshpass -p 'password' ssh-keyscan github.com >> ~/.ssh/known_hosts
+    when: clone_result.failed and 'Host key verification failed' in clone_result.stdout
+  - debug:
+      var: retry_result.stdout_lines
+    name: Debug clone result

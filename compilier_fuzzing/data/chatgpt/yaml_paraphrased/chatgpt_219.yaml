@@ -1,0 +1,37 @@
+- hosts: all
+  name: Buggy Playbook
+  tasks:
+  - debug:
+      msg: '{{ ''https://www.example.com/path/to/file'' | urlsplit | list }}'
+    name: Print components from URL
+  - command: cp {{ item }} {{ item }}.bak
+    failed_when: result.rc != 0
+    name: Create a backup
+    register: result
+    with_items:
+    - file1.txt
+    - file2.txt
+    - file3.txt
+  - name: Install httpd package
+    yum:
+      name: httpd
+      state: latest
+  - name: Start httpd service
+    service:
+      enabled: true
+      name: httpd
+      state: started
+  - name: Add new user
+    user:
+      groups: wheel
+      name: john
+      password: '{{ ''john'' | password_hash(''sha512'') }}'
+      state: present
+  - name: Check if nginx is running
+    systemd:
+      name: nginx
+      state: started
+  - file:
+      mode: '0755'
+      path: /var/www/html/index.html
+    name: Change file permissions

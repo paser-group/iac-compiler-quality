@@ -1,0 +1,54 @@
+- become: true
+  handlers:
+  - name: Reload apache
+    service: name=httpd state=reloaded
+  hosts: all
+  name: Install and start Apache
+  tasks:
+  - name: Install httpd
+    yum: name=httpd state=installed
+  - name: Start httpd
+    service: name=httpd state=started
+  - copy: content="<html><h1>Welcome to my website!</h1></html>" dest="/var/www/html/index.html"
+    name: Create index.html file
+  - file: path=/var/www/html/index.html owner=root group=root mode=644
+    name: Set file permissions
+  - name: Restart httpd
+    notify: Reload apache
+    service: name=httpd state=restarted
+- become: true
+  hosts: all
+  name: Create user accounts
+  tasks:
+  - name: Create user accounts
+    user: name={{ item.name }} password={{ item.password }} state=present
+    with_items: '{{ users }}'
+  vars:
+    users:
+    - name: alice
+      password: mypassword
+    - name: bob
+      password: mypassword
+- become: true
+  handlers:
+  - name: Restart postgresql
+    service: name=postgresql-server state=restarted
+  hosts: all
+  name: Install and start PostgreSQL
+  tasks:
+  - name: Install postgresql-server
+    yum: name=postgresql-server state=installed
+  - name: Start postgresql-server
+    service: name=postgresql-server state=started
+  - become_user: postgres
+    name: Create database
+    shell: createdb my_db
+  - become_user: postgres
+    name: Create user
+    shell: createuser --createdb --password myuser
+  - lineinfile:
+      line: host all all 0.0.0.0/0 md5
+      path: /var/lib/pgsql/data/pg_hba.conf
+      regexp: ^host all all.*
+    name: Update pg_hba.conf
+    notify: Restart postgresql

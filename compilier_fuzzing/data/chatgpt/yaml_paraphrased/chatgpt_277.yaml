@@ -1,0 +1,66 @@
+- apt:
+    name: apache2
+    state: present
+    update_cache: false
+  name: Install Apache
+- name: Start Apache
+  service:
+    enabled: true
+    name: apache2
+    state: start
+- copy:
+    dest: /var/www/html/index.html
+    group: root
+    mode: '0644'
+    owner: root
+    src: /var/www/html/index.html
+  name: Copy index.html
+- apt:
+    name: php
+    state: present
+  name: Install PHP
+- apt:
+    name: mysql-server
+    state: present
+  name: Install MySQL
+- name: Start MySQL
+  service:
+    enabled: true
+    name: mysql
+    state: start
+- mysql_db:
+    login_password: password
+    login_unix_socket: /var/run/mysql-default/mysqld.sock
+    login_user: root
+    name: testdb
+    state: present
+  name: Create database
+- mysql_user:
+    host: 127.0.0.1
+    name: testuser
+    password: testpassword
+    priv: '*.*:ALL'
+  name: Create user
+- apt:
+    name: docker
+    state: present
+  name: Install Docker
+- name: Start Docker
+  service:
+    name: docker
+    state: start
+- docker_image:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    name: myapp
+  name: Build Docker image
+- docker_container:
+    image: myapp
+    name: myapp_container
+    ports:
+    - 80:80
+    state: started
+    volumes:
+    - /var/log/myapp:/logs
+  name: Run Docker container

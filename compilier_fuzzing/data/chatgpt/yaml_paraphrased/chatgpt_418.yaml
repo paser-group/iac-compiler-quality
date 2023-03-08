@@ -1,0 +1,58 @@
+- apt:
+    name:
+    - nginx
+    - mysql-server
+    - php
+    update_cache: true
+  become: true
+  name: Install packages
+- become: true
+  name: Configure Nginx
+  notify:
+  - Restart Nginx
+  template:
+    dest: /etc/nginx/nginx.conf
+    src: /etc/nginx/nginx.conf.j2
+- become: true
+  name: Start Nginx
+  service:
+    name: nginx
+    state: started
+- become: true
+  mysql_user:
+    name: john
+    password: password
+    priv: '*.*:ALL'
+    state: present
+  name: Create MySQL user
+- become: true
+  mysql_db:
+    name: mydatabase
+    state: present
+  name: Create MySQL Database
+- apt:
+    name:
+    - php-cli
+    - php-mysql
+  become: true
+  name: Install PHP dependencies
+- become: true
+  copy:
+    dest: /etc/php/php.ini.bak
+    src: /etc/php/php.ini
+  name: Copy PHP configuration
+- become: true
+  name: Restart Nginx
+  service:
+    name: nginx
+    state: restarted
+- become: true
+  name: Restart MySQL
+  service:
+    name: mysql
+    state: restarted
+- become: true
+  copy:
+    dest: /var/www/html
+    src: /path/to/php/files
+  name: Deploy PHP Application

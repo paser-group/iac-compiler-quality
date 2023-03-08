@@ -1,0 +1,34 @@
+- become: true
+  handlers:
+  - name: restart httpd
+    service:
+      enabled: true
+      name: httpd
+      state: restarted
+  hosts: all
+  name: Install and configure Apache HTTP server
+  tasks:
+  - name: Install Apache HTTP server
+    yum:
+      name: httpd
+      state: present
+  - lineinfile:
+      line: Listen {{ port }}
+      path: /etc/httpd/conf/httpd.conf
+      regexp: '^Listen '
+    name: Update Apache HTTP server configuration
+    notify: restart httpd
+  - lineinfile:
+      line: DocumentRoot {{ docroot }}/{{ app_name }}
+      path: /etc/httpd/conf/httpd.conf
+      regexp: '^DocumentRoot '
+    name: Configure Apache HTTP server docroot
+    notify: restart httpd
+  - name: Restart Apache HTTP server
+    service:
+      name: httpd
+      state: restarted
+  vars:
+    app_name: myapp
+    docroot: /var/www/html
+    port: 80
