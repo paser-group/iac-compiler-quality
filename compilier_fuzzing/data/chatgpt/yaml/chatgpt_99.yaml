@@ -1,21 +1,19 @@
-- hosts: all
-  tasks:
-  - file:
-      group: root
-      mode: 493
-      owner: root
-      path: /etc/ansible/delegation
-      state: directory
-    name: Set Delegation
-  - ansible.builtin.file:
-      force: true
-      group: root
-      owner: root
-      path: /etc/ansible/delegation
-      src: /usr/local/etc/ansible/delegation
-      state: link
-    name: Apply Delegation
-    register: result
-  - debug:
-      msg: '{{ result.failed }}'
-    name: Check result
+- become: true
+  gather_facts: false
+  hosts: all
+  roles:
+  - name: example-role
+    tasks:
+    - delegate_to: localhost
+      file:
+        path: '{{ file_path }}'
+        state: touch
+      name: Ensure example file exists
+    - file:
+        group: root
+        mode: 420
+        owner: root
+        path: '{{ file_path }}'
+      name: Ensure example file has correct permissions
+    vars:
+      file_path: /etc/example.conf

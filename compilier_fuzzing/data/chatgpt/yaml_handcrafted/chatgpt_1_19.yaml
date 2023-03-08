@@ -1,0 +1,20 @@
+- hosts: operator
+  tasks:
+  - name: Check if Ansible runner service is running
+    register: runner_service
+    service:
+      name: ansible-runner
+      state: started
+  - name: Check if Ansible worker is running
+    register: worker_service
+    service:
+      name: ansible-runner-worker
+      state: started
+  - command: ansible-runner is-worker-dead
+    name: Check if Ansible runner is reporting dead worker
+    register: dead_worker
+  - debug:
+      msg: Ansible runner is reporting dead worker. Please restart the worker service.
+    name: Notify operator if worker is dead
+    when: runner_service.status == 'running' and worker_service.status == 'stopped'
+      and dead_worker.stdout == 'YES'

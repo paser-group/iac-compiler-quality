@@ -1,28 +1,33 @@
-- hosts: localhost
-  tasks:
-  - copy:
-      dest: galaxy.yml.bak
-      src: galaxy.yml
-    name: Ensure galaxy.yml build_ignore properly handles directory names ending in
-      /
-    register: galaxy_yml_copy
-  - command: cp galaxy.yml galaxy.yml.bak
-    name: Backup galaxy.yml
-    when: galaxy_yml_copy.changed
-  - name: Update galaxy.yml build_ignore to properly handle directory names ending
-      in /
-    replace:
-      path: galaxy.yml
-      regexp: ^(build_ignore:)$
-      replace: \1\n  - "{{ item }}/"
-    when: galaxy_yml_copy.changed
+- connection: local
+  gather_facts: false
+  hosts: localhost
+  name: Play to exhibit galaxy.yml build_ignore bug
+  post_tasks:
+  - file:
+      path: '{{ item }}'
+      state: absent
+    name: Remove ignored directories
     with_items:
-    - path/to/dir1
-    - path/to/dir2
-  - command: grep 'build_ignore' galaxy.yml
-    name: Check galaxy.yml build_ignore
-    register: galaxy_yml_check
-    when: galaxy_yml_copy.changed
-  - command: mv galaxy.yml.bak galaxy.yml
-    name: Revert to original galaxy.yml
-    when: galaxy_yml_check.rc != 0
+    - '{{ ignored_dirs }}'
+  tasks:
+  - file:
+      path: '{{ item }}'
+      state: directory
+    name: Create ignored directories
+    with_items:
+    - '{{ ignored_dirs }}'
+  - copy:
+      content: Test content
+      dest: '{{ item }}/test.txt'
+    name: Write to ignored directories
+    with_items:
+    - '{{ ignored_dirs }}'
+  - copy:
+      content: "ignore_errors: yes\nbuild_ignore:\n  - '*'\n  {% for ignored_dir in\
+        \ ignored_dirs %}\n  - \"{{ ignored_dir }}\"\n  {% endfor %}\n"
+      dest: galaxy.yml
+    name: Ignore directories in galaxy.yml
+  vars:
+    ignored_dirs:
+    - foo/
+    - bar/

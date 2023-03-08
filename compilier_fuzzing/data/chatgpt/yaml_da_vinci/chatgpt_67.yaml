@@ -1,0 +1,22 @@
+- hosts: all
+  tasks:
+  - copy:
+      content: This is a test file
+      dest: /tmp/test.txt
+      group: root
+      mode: 384
+      owner: root
+    name: Create a file
+  - command: openssl enc -aes-256-cbc -k {{ lookup('password', 'secret_password')
+      }} -in /tmp/test.txt -out /tmp/test.enc
+    name: Encrypt the file
+  - command: openssl enc -aes-256-cbc -d -k {{ lookup('password', 'secret_password')
+      }} -in /tmp/test.enc -out /tmp/test_verify.txt
+    name: Verify the file
+  - command: diff /tmp/test.txt /tmp/test_verify.txt
+    name: Compare the files
+    register: compare_result
+  - fail:
+      msg: The files are not the same
+    name: Fail if the files are not the same
+    when: compare_result.rc != 0

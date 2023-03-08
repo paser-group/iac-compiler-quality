@@ -1,0 +1,16 @@
+- hosts: ansible-runner
+  name: Report dead worker
+  tasks:
+  - ignore_errors: true
+    name: Check if worker is dead
+    register: runner_process
+    shell: ps aux | grep ansible-runner | grep -v grep
+  - name: Kill worker process
+    shell: kill -9 {{ runner_process.stdout_lines[0].split()[1] }}
+    when: runner_process.stdout_lines|length > 0
+  - mail:
+      body: The Ansible runner worker process was detected in a dead state. Please
+        investigate and restart the process to avoid service disruption.
+      subject: Ansible runner worker in dead state
+      to: operator@example.com
+    name: Send alert to operator

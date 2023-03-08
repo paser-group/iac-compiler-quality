@@ -1,0 +1,28 @@
+- become: true
+  hosts: all
+  name: Conditional Bug Report
+  tasks:
+  - file: path=/tmp/example.txt state=touch
+    name: Create a File
+  - name: Check if file exists in the Server
+    register: file_check
+    stat:
+      path: /tmp/example.txt
+  - debug:
+      msg: File exists
+    name: Show output based on condition
+    when: file_check.stat.exists is defined and file_check.stat.exists==true
+  - file:
+      path: /tmp/example.txt
+      state: absent
+    name: Remove the file
+  - command: '{{ server_name | lower | regex_replace('' '', '''') }} -c ''ps axu''
+      | grep -i ''mysql'''
+    name: Bug Report
+    register: bug_report
+  - debug:
+      var: bug_report.rc
+    failed_when: bug_report.rc == 0
+    name: Show the bug report
+  vars:
+    server_name: web_server

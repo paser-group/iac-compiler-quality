@@ -1,0 +1,36 @@
+- gather_facts: false
+  hosts: all
+  name: Timeouts/hangs using reboot module and proxy
+  tasks:
+  - name: Set up environment
+    set_fact:
+      proxy_host: '{{ proxy_host }}'
+      proxy_password: '{{ proxy_password }}'
+      proxy_port: '{{ proxy_port }}'
+      proxy_username: '{{ proxy_username }}'
+  - environment:
+      HTTPS_PROXY: '{{ proxy_host }}:{{ proxy_port }}'
+      HTTP_PROXY: '{{ proxy_host }}:{{ proxy_port }}'
+      NO_PROXY: localhost,127.0.0.1
+      http_proxy: '{{ proxy_host }}:{{ proxy_port }}'
+      https_proxy: '{{ proxy_host }}:{{ proxy_port }}'
+      no_proxy: localhost,127.0.0.1
+    name: Setup environment variables
+  - name: Authenticate to proxy
+    uri:
+      method: GET
+      password: '{{ proxy_password }}'
+      timeout: 60
+      url: '{{ proxy_host }}:{{ proxy_port }}'
+      user: '{{ proxy_username }}'
+      validate_certs: false
+  - name: Reboot the system
+    reboot:
+      connect_timeout: 60
+      msg: Rebooting system via Ansible
+      post_reboot_delay: 60
+      pre_reboot_delay: 30
+    register: reboot_result
+  - debug:
+      var: reboot_result
+    name: Debug reboot result

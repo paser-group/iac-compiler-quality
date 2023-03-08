@@ -1,0 +1,27 @@
+- gather_facts: false
+  hosts: localhost
+  name: Configure netcommon-httpapi with remote_user not set to logged in user by
+    default
+  tasks:
+  - become: true
+    become_method: sudo
+    delegate_to: localhost
+    name: Configure netcommon-httpapi
+    netcommon_httpapi:
+      force_basic_auth: true
+      host: '{{ inventory_hostname }}'
+      password: password
+      remote_user: '{{ ansible_user }}'
+      state: present
+      username: admin
+  - name: Verify netcommon-httpapi is configured successfully
+    register: response
+    uri:
+      url: https://{{ inventory_hostname }}/api/config/networking/v1/organizations
+      validate_certs: false
+  - debug: var=response.content.split('\n') | to_json | from_json
+    name: Print the response from netcommon-httpapi
+  vars:
+    ansible_connection: httpapi
+    ansible_httpapi_use_ssl: true
+    ansible_httpapi_validate_certs: false
