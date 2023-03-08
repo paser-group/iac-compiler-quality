@@ -32,6 +32,11 @@ print("Number of issues:", len(issues))
 
 
 import pandas as pd
+import os  
+
 df = pd.DataFrame(issues)
-df.to_feather('../data/github_issues/github_issues.feather')
-ndf = pd.read_feather('../data/github_issues/github_issues.feather')
+# df.to_feather('../data/github_issues/github_issues.feather')
+# ndf = pd.read_feather('../data/github_issues/github_issues.feather')
+
+# os.makedirs('../data/github', exist_ok=True)  
+df.to_csv('../data/github/issues.csv') 
