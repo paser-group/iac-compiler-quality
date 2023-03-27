@@ -1,0 +1,39 @@
+- gather_facts: false
+  hosts: localhost
+  tasks:
+  - delegate_to: localhost
+    gcp_compute_instance:
+      disks:
+      - auto_delete: true
+        boot: true
+        initialize_params:
+          image: debian-cloud/debian-10
+      machine_type: n1-standard-1
+      metadata:
+        items:
+        - key: startup-script
+          value: '#!/bin/bash
+
+            echo "Hello, World!"
+
+            '
+      name: '{{ instance_name }}'
+      network_interfaces:
+      - access_configs:
+        - name: External NAT
+          type: ONE_TO_ONE_NAT
+        network: global/networks/default
+      zone: us-central1-a
+    name: Create a Google Compute Engine instance
+    register: instance
+  - gcp_compute_instance_facts:
+      project: my-project
+      zone: us-central1-a
+    name: Get the list of instances as a comma-separated string
+    register: instances
+  - debug:
+      var: instances.instances_names|join(", ")
+    name: Debug the list of instances
+    when: '''{{instance_name}}'' ~ instances.instances_names|join('','')'
+  vars:
+    instance_name: instance2

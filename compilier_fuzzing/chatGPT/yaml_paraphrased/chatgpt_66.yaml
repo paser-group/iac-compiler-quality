@@ -1,0 +1,391 @@
+- gather_facts: false
+  hosts: all
+  name: Playbook with bugs
+  tasks:
+  - name: Task 1
+    register: output
+    shell: '{{ item }}'
+    with_items: '{{ command }}'
+  - lineinfile:
+      line: '{{ inventory_hostname }} {{ ansible_host }}'
+      path: /etc/hosts
+    name: Task 2
+  - command: /bin/false
+    ignore_errors: true
+    name: Task 3
+  - copy:
+      dest: /tmp/hosts
+      src: /etc/hosts
+    delegate_to: localhost
+    name: Task 4
+  - name: Task 5
+    register: result
+    retries: 3
+    until: result is not failed
+    uri:
+      method: GET
+      return_content: true
+      url: '{{ item }}'
+    with_items: '{{ urls }}'
+  - apt:
+      name: '{{ package }}'
+    name: Task 6
+    when: ansible_distribution == 'Ubuntu'
+  - debug:
+      var: non_existent_variable
+    name: Task 7
+  - name: Task 8
+    set_fact:
+      my_fact: '{{ my_variable }}'
+    when: my_variable is defined
+  - name: Task 9
+    service:
+      name: nginx
+      state: stopped
+  - name: Task 10
+    wait_for:
+      port: 22
+      timeout: 10
+  - args:
+      arg1: '{{ var }}'
+      arg2: '{{ var2 }}'
+    name: Task 11
+    script: script.py
+  - ec2:
+      image: ami-0c55b159cbfafe1f0
+      instance_type: t2.micro
+      key_name: my_key
+      region: us-east-1
+      wait: '{{ wait_for_instance }}'
+    name: Task 12
+  - ios_command:
+      commands: show running-config | section hostname
+    name: Task 13
+  - name: Task 14
+    win_command: ipconfig /all
+  - name: Task 15
+    vsphere_guest:
+      guest: '{{ guest_name }}'
+      hostname: '{{ vcenter_server }}'
+      password: '{{ vcenter_password }}'
+      state: '{{ vm_state }}'
+      username: '{{ vcenter_username }}'
+      validate_certs: false
+      vm_extra_config:
+        cmware.tools.enableUTC: true
+        cmware.tools.setinfo.sizeLimit: 524288000
+      vmware_tools_wait: true
+  - assert:
+      that:
+      - server_status.state == STABLE
+      - response_time_seconds < 1
+    fail_msg: One or more assertions failed
+    name: Task 16
+    success_msg: All assertions pass
+  - name: Task 17
+    win_ping: null
+  - delegate_to: '{{ inventory_hostname }}_backup_server'
+    name: Task 18
+    synchronize:
+      dest: '{{ dest }}'
+      src: '{{ src }}'
+  - async: 10
+    command: reboot
+    name: Task 19
+  - always:
+    - debug:
+        msg: This task always runs
+      name: Always Task
+    block:
+    - name: Subtask 1
+      template:
+        dest: '{{ dest }}'
+        src: '{{ template }}'
+    - name: Subtask 2
+      notify: restart_service
+    name: Task 20
+    rescue:
+    - debug:
+        msg: Something went wrong
+      name: Rescue Task
+    tags:
+    - tag1
+    - tag2
+  - docker_container:
+      image: '{{ docker_image }}'
+      name: my_container
+      ports:
+      - '{{ container_port }}:{{ app_port }}'
+      pull: true
+      state: '{{ container_state }}'
+      volumes:
+      - '{{ host_path }}:{{ container_path }}'
+    name: Task 21
+  - k8s:
+      definition:
+        api_version: v1
+        kind: Pod
+        metadata:
+          name: my_pod
+        spec:
+          containers:
+          - image: '{{ docker_image }}'
+            name: my_container
+            ports:
+            - containerPort: '{{ container_port }}'
+    kubeconfig: /path/to/kubeconfig
+    name: Task 22
+    state: '{{ k8s_state }}'
+  - name: Task 23
+    panos_op:
+      cmd:
+      - show system info
+    provider:
+      ip_address: '{{ firewall_ip }}'
+      password: '{{ firewall_password }}'
+      username: '{{ firewall_username }}'
+  - name: Task 24
+    nxos_command:
+      commands: show interface
+    provider:
+      host: '{{ switch_ip }}'
+      password: '{{ switch_password }}'
+      username: '{{ switch_username }}'
+  - name: Task 25
+    ovirt_disk:
+      auth: '{{ ovirt_auth }}'
+      disk_aliases:
+      - '{{ disk_alias }}'
+      state: present
+  - emc_vnx_lun:
+      hostname: '{{ vnx_hostname }}'
+      password: '{{ vnx_password }}'
+      serial_no: '{{ lun_serial }}'
+      state: '{{ lun_state }}'
+      username: '{{ vnx_username }}'
+    name: Task 26
+  - na_ontap_user:
+      hostname: '{{ netapp_ip }}'
+      https: '{{ use_https }}'
+      password: '{{ admin_password }}'
+      state: absent
+      username: '{{ admin_username }}'
+    name: Task 27
+  - name: Task 28
+    openstack_server:
+      flavor: '{{ flavor_name }}'
+      image: '{{ image_name }}'
+      key_name: '{{ key_name }}'
+      name: '{{ server_name }}'
+      security_groups: '{{ security_group }}'
+      state: '{{ server_state }}'
+      volume_boot: true
+  - ansible.windows.winrm:
+      become: true
+      command: hostname
+      host: '{{ target_host }}'
+      password: '{{ win_password }}'
+      transport: credssp
+      username: '{{ win_username }}'
+    name: Task 29
+  - mysql_db:
+      login_host: '{{ db_host }}'
+      login_password: '{{ db_password }}'
+      login_user: '{{ db_user }}'
+      name: '{{ db_name }}'
+      state: '{{ db_state }}'
+    name: Task 30
+  - name: Task 31
+    rabbitmq_user:
+      configure_priv: .*
+      password: '{{ user_password }}'
+      read_priv: .*
+      state: '{{ user_state }}'
+      tags: guest
+      user: '{{ user_name }}'
+      write_priv: .*
+  - name: Task 32
+    vsphere_guest_tools_wait:
+      hostname: '{{ vcenter_hostname }}'
+      password: '{{ vcenter_password }}'
+      username: '{{ vcenter_username }}'
+      validate_certs: false
+      vm_id: '{{ vm_id }}'
+      wait_for_ip_address: false
+  - cobbler_system:
+      comment: '{{ system_comment }}'
+      gateway: '{{ system_gateway }}'
+      interfaces:
+        eth0:
+          dns_name: '{{ system_dns }}'
+          ip_address: '{{ system_ip }}'
+          subnet: '{{ system_subnet }}'
+      name: '{{ system_name }}'
+      profile: '{{ profile_name }}'
+    login_password: '{{ cobbler_password }}'
+    name: Task 33
+    state: '{{ system_state }}'
+  - junos_install_os:
+      host: '{{ junos_device }}'
+      package: '{{ os_package }}'
+      passwd: '{{ junos_password }}'
+      reboot: '{{ os_reboot }}'
+      validate: '{{ os_validate }}'
+      version: '{{ os_version }}'
+    name: Task 34
+  - name: Task 35
+    proxmox:
+      api_password: '{{ proxmox_api_password }}'
+      api_user: '{{ proxmox_api_user }}'
+      cores: '{{ proxmox_cores }}'
+      description: '{{ proxmox_description }}'
+      force: '{{ proxmox_force }}'
+      memory: '{{ proxmox_memory }}'
+      name: '{{ proxmox_name }}'
+      netif:
+      - '{{ proxmox_netif }}'
+      node: '{{ proxmox_node }}'
+      onboot: '{{ proxmox_onboot }}'
+      ostype: '{{ proxmox_ostype }}'
+      password: '{{ proxmox_password }}'
+      scsihw: '{{ proxmox_scsihw }} '
+      ssh_forward_ip: '{{ proxmox_ssh_forward_ip }}'
+      ssh_forward_port: '{{ proxmox_ssh_forward_port }}'
+      state: '{{ proxmox_state }}'
+      storage: '{{ proxmox_storage }}'
+      vmid: '{{ proxmox_vmid }}'
+  - na_ontap_volume_igroup_acls:
+      hostname: '{{ ontap_hostname }}'
+      password: '{{ ontap_password }}'
+      query: '{{ ontap_query }}'
+      state: '{{ ontap_state }}'
+      username: '{{ ontap_username }}'
+    name: Task 36
+  - fortios_system_interface:
+      ip: '{{ fortinet_ip }}'
+      name: '{{ fortinet_interface }}'
+      password: '{{ fortinet_password }}'
+      state: '{{ fortinet_state }}'
+      username: '{{ fortinet_username }}'
+      vdom: '{{ fortinet_vdom }}'
+    name: Task 37
+  - infoblox_record:
+      grid_host: '{{ infoblox_host }}'
+      ipv4addr: '{{ infoblox_ipv4 }}'
+      name: '{{ infoblox_name }}'
+      password: '{{ infoblox_password }}'
+      state: '{{ infoblox_state }}'
+      username: '{{ infoblox_username }}'
+    name: Task 38
+  - aws_ssm:
+      document_name: '{{ aws_document }}'
+      instance_id: '{{ aws_instance_id }}'
+      parameters:
+        key: '{{ aws_param }}'
+      profile: '{{ aws_profile }}'
+      region: '{{ aws_region }}'
+      timeout_seconds: 30
+      validate_certs: true
+    name: Task 39
+  - name: Task 40
+    netapp_e_volume:
+      aggregate_name: '{{ netapp_aggregate_name }}'
+      ip: '{{ netapp_ip }}'
+      junction_path: '{{ netapp_junction_path }}'
+      login: '{{ netapp_user }}'
+      password: '{{ netapp_password }}'
+      size: '{{ netapp_size }}'
+      state: '{{ netapp_e_volume_state }}'
+      svm: '{{ netapp_svm }}'
+      volume: '{{ netapp_volume }}'
+  - aws_dynamodb_item:
+      hash_key: '{{ aws_dynamodb_hash }}'
+      item: '{{ aws_dynamodb_item }}'
+      read_capacity_units: '{{ aws_dynamodb_read }}'
+      state: '{{ aws_dynamodb_state }}'
+      table_name: '{{ aws_dynamodb_table }}'
+      write_capacity_units: '{{ aws_dynamodb_write }}'
+    name: Task 41
+  - name: Task 42
+    route53:
+      aws_access_key: '{{ aws_access_key }}'
+      aws_secret_key: '{{ aws_secret_key }}'
+      command: create
+      record: '{{ route53_record }}'
+      ttl: '{{ route53_ttl }}'
+      type: A
+      value: '{{ route53_value }}'
+      zone: '{{ route53_zone }}'
+  - name: Task 43
+    vmware_vcenter_network:
+      cluster_name: '{{ cluster_name }}'
+      datacenter_name: '{{ datacenter_name }}'
+      hostname: '{{ vcenter_hostname }}'
+      network_name: '{{ network_name }}'
+      password: '{{ vcenter_password }}'
+      state: '{{ network_state }}'
+      username: '{{ vcenter_username }}'
+      vlan_id: '{{ vlan_id }}'
+  - cis_hardening:
+      ansible_python_interpreter: '{{ ansible_python }}'
+      level_1: '{{ cis_level_1 }}'
+      level_2: '{{ cis_level_2 }}'
+      password: '{{ cis_password }}'
+      username: '{{ cis_username }}'
+    name: Task 44
+  - name: Task 45
+    rancher2_project:
+      access_key: '{{ rancher_access_key }}'
+      name: '{{ project_name }}'
+      secret_key: '{{ rancher_secret_key }}'
+      state: '{{ project_state }}'
+      url: '{{ rancher_url }}'
+  - name: Task 46
+    zabbix_action:
+      actioncondition:
+        conditions:
+        - conditiontype: '{{ zabbix_condition_type }}'
+          operator: '{{ zabbix_operator }}'
+          value: '{{ zabbix_condition_value }}'
+      eventsource: '{{ zabbix_event_source }}'
+      filter:
+        conditions:
+        - field: '{{ zabbix_field }}'
+          value: '{{ zabbix_value }}'
+      name: '{{ zabbix_action_name }}'
+      operationtype: '{{ zabbix_operation_type }}'
+      state: '{{ zabbix_state }}'
+      zabbix_password: '{{ zabbix_password }}'
+      zabbix_url: '{{ zabbix_server_url }}'
+      zabbix_username: '{{ zabbix_username }}'
+  - datadog_event:
+      alert_type: '{{ datadog_alert_type }}'
+      api_key: '{{ datadog_api_key }}'
+      priority: '{{ datadog_priority }}'
+      source_type_name: '{{ datadog_source_type }}'
+      tags: '{{ datadog_tags }}'
+      text: '{{ datadog_text }}'
+      title: '{{ datadog_title }}'
+    name: Task 47
+  - aws_secretsmanager:
+      description: '{{ aws_description }}'
+      kms_key_id: '{{ aws_kms_key_id }}'
+      name: '{{ aws_secret_name }}'
+      recovery_window_in_days: '{{ aws_recovery_window }}'
+      secret: '{{ aws_secret }}'
+      state: '{{ aws_secret_state }}'
+      tags: '{{ aws_tag }}'
+    name: Task 48
+  - azure_rm_keyvaultsecret:
+      client_id: '{{ client_id }}'
+      secret: '{{ client_secret }}'
+      secret_name: '{{ keyvault_secret_name }}'
+      secret_value: '{{ keyvault_secret_value }}'
+      secret_version: '{{ keyvault_secret_version }}'
+      state: '{{ keyvault_state }}'
+      tenant: '{{ tenant_id }}'
+      vault_uri: '{{ keyvault_uri }}'
+    name: Task 49
+  - name: Task 50
+  - meta: end_play
+    name: End the playbook

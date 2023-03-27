@@ -1,0 +1,33 @@
+- connection: local
+  gather_facts: false
+  hosts: localhost
+  name: Play to exhibit galaxy.yml build_ignore bug
+  post_tasks:
+  - file:
+      path: '{{ item }}'
+      state: absent
+    name: Remove ignored directories
+    with_items:
+    - '{{ ignored_dirs }}'
+  tasks:
+  - file:
+      path: '{{ item }}'
+      state: directory
+    name: Create ignored directories
+    with_items:
+    - '{{ ignored_dirs }}'
+  - copy:
+      content: Test content
+      dest: '{{ item }}/test.txt'
+    name: Write to ignored directories
+    with_items:
+    - '{{ ignored_dirs }}'
+  - copy:
+      content: "ignore_errors: yes\nbuild_ignore:\n  - '*'\n  {% for ignored_dir in\
+        \ ignored_dirs %}\n  - \"{{ ignored_dir }}\"\n  {% endfor %}\n"
+      dest: galaxy.yml
+    name: Ignore directories in galaxy.yml
+  vars:
+    ignored_dirs:
+    - foo/
+    - bar/

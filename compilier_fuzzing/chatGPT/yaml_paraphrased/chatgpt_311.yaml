@@ -1,0 +1,130 @@
+- become: true
+  hosts: all
+  tasks:
+  - name: Install Apache
+    pkg:
+      name: httpd
+      state: installed
+  - name: Configure Apache
+    notify: Restart Apache
+    template:
+      dest: /etc/httpd/conf/httpd.conf
+      src: /etc/httpd/conf/httpd.conf
+  - name: Start Apache
+    service:
+      name: httpd
+      state: started
+  - copy:
+      dest: /var/www/html/
+      src: index.html
+    name: Copy index file
+  - name: Restart Apache
+    service:
+      name: httpd
+      state: restarted
+  - firewalld:
+      permanent: true
+      service: http
+      state: enabled
+    name: Set firewall rule for HTTP
+- become: true
+  hosts: db
+  tasks:
+  - mysql_db:
+      name: exampledb
+      state: present
+    name: Configure MySQL database
+  - mysql_user:
+      host: '%'
+      name: exampleuser
+      password: secretpassword
+      priv: '*.*:ALL'
+      state: present
+    name: Create MySQL user
+  - mysql_db:
+      name: exampledb
+      state: import
+      target: /tmp/data.sql
+    name: Load data into MySQL
+  - mysql_user:
+      name: exampleuser
+      priv: exampledb.*:ALL,GRANT
+      state: present
+    name: Restrict access to database
+  - apt:
+      name: mysql-server
+      state: present
+    name: Install MySQL
+  - name: Start MySQL
+    service:
+      name: mysql
+      state: started
+  - firewalld:
+      permanent: true
+      service: mysql
+      state: enabled
+    name: Set firewall rule for MySQL
+- become: true
+  hosts: web
+  tasks:
+  - apt:
+      name: php
+      state: present
+    name: Install PHP
+  - apt:
+      name: '{{ item }}'
+      state: present
+    name: Install PHP Modules
+    with_items:
+    - php-mysql
+    - php-gd
+    - php-curl
+  - name: Restart Apache
+    service:
+      name: httpd
+      state: restarted
+  - firewalld:
+      permanent: true
+      service: http
+      state: enabled
+    name: Set firewall rule for PHP
+- become: true
+  hosts: load_balancer
+  tasks:
+  - apt:
+      name: nginx
+      state: present
+    name: Install Nginx
+  - copy:
+      dest: /etc/nginx/nginx.conf
+      src: nginx.conf
+    name: Copy configuration file
+  - name: Start Nginx
+    service:
+      name: nginx
+      state: started
+  - firewalld:
+      permanent: true
+      service: http
+      state: enabled
+    name: Set firewall rule for HTTP
+- become: true
+  hosts: app_servers
+  tasks:
+  - name: Install Tomcat
+    yum:
+      name: tomcat
+      state: present
+  - name: Configure Tomcat
+    template:
+      dest: /etc/tomcat/tomcat.conf
+      src: tomcat.conf
+  - name: Start Tomcat
+    service:
+      name: tomcat
+      state: started
+  - firewalld:
+      permanent: true
+      service: http
+      state: enabled
+    name: Set firewall rule for HTTP

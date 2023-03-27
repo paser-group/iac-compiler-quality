@@ -1,0 +1,44 @@
+- hosts: all
+  tasks:
+  - changed_when: false
+    command: cat {{ item }}
+    failed_when: out.rc != 0
+    ignore_errors: true
+    name: Get distribution name
+    register: dist_output
+    when: ansible_distribution is not defined
+    with_items: '{{ distribution_release_files }}'
+  - set_fact:
+      ansible_distribution: '{{ dist_output.results[0].stdout }}'
+  - debug:
+      var: ansible_distribution
+  - apt:
+      name: apache2
+      state: present
+    become: true
+    name: Install Apache
+    when: ansible_distribution == "Ubuntu"
+  - become: true
+    name: Install Apache
+    when: ansible_distribution == "CentOS" or ansible_distribution == "Red Hat Enterprise
+      Linux" or ansible_distribution == "OracleLinux" or ansible_distribution == "Amazon
+      Linux"
+    yum:
+      name: httpd
+      state: present
+  - name: Start Apache
+    service:
+      name: apache2
+      state: started
+    when: ansible_distribution == "Ubuntu"
+  - name: Start Apache
+    service:
+      name: httpd
+      state: started
+    when: ansible_distribution == "CentOS" or ansible_distribution == "Red Hat Enterprise
+      Linux" or ansible_distribution == "OracleLinux" or ansible_distribution == "Amazon
+      Linux"
+  vars:
+    distribution_release_files:
+    - /etc/redhat-release
+    - /etc/os-release

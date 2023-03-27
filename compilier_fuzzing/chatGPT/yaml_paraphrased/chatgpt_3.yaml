@@ -1,0 +1,31 @@
+- become: true
+  gather_facts: false
+  hosts: windows_servers
+  name: Install Windows Updates
+  tasks:
+  - failed_when: stop_win_updates.state == 'started'
+    name: Stop Windows Update Service
+    register: stop_win_updates
+    win_service:
+      name: wuauserv
+      start_mode: disabled
+      state: stopped
+  - name: Install Updates
+    register: update_result
+    win_updates:
+      category_names: SecurityUpdates, CriticalUpdates
+      reboot: true
+      state: installed
+  - ignore_errors: true
+    name: Start Windows Update Service
+    win_service:
+      name: wuauserv
+      state: started
+  - name: Reboot the Machine
+    win_reboot:
+      wait_for: reboot_completed
+  - failed_when: verify_result.updates|length != update_result.updates|length
+    name: Verify Update Status
+    register: verify_result
+    win_updates:
+      category_names: SecurityUpdates, CriticalUpdates

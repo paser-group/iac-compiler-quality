@@ -1,0 +1,64 @@
+- apt:
+    name: apache2
+    state: present
+  become: true
+  name: Install and start Apache2
+  service:
+    name: apache2
+    state: started
+- apt:
+    name:
+    - php
+    - php-fpm
+    - php-mysql
+    - php-gd
+    - php-xml
+    - php-curl
+    state: present
+  become: true
+  name: Install PHP and its dependencies
+- become: true
+  copy:
+    dest: /var/www/html/info.php
+    src: info.php
+  mode: '0644'
+  name: Copy PHP info file
+- become: true
+  name: Restart Apache2
+  service:
+    name: apache2
+    state: restarted
+- apt:
+    name: mysql-server
+    state: present
+  become: true
+  name: Install MySQL and start the service
+  service:
+    name: mysql
+    state: started
+- become: true
+  mysql_db:
+    name: mydatabase
+    state: present
+  mysql_user:
+    host: localhost
+    name: dbuser
+    password: secretpassword
+    priv: '*.*:ALL'
+    state: present
+  name: Create MySQL user and database
+- become: true
+  name: Copy index file
+  template:
+    dest: /var/www/html/index.php
+    mode: '0644'
+    src: index.php.j2
+  vars:
+    mysql_database: mydatabase
+    mysql_password: secretpassword
+    mysql_user: dbuser
+- become: true
+  name: Restart Apache2
+  service:
+    name: apache2
+    state: restarted

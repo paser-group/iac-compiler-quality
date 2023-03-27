@@ -1,0 +1,23 @@
+- hosts: all
+  tasks:
+  - name: Check if file exists
+    register: file_exists
+    stat:
+      path: '{{ filename }}'
+  - fail:
+      msg: A vault password must be specified to decrypt data in {{ filename }}
+    name: Print error message
+    when: not file_exists.stat.exists
+  vars:
+    filename: '{{ vaulted_file }}'
+  vars_files:
+  - '{{ vault_password_file }}'
+- connection: local
+  gather_facts: false
+  hosts: localhost
+  tasks:
+  - copy:
+      content: sensitive_data
+      dest: '{{ vaulted_file }}'
+      encrypt: '{{ vault_password }}'
+    name: Create vaulted file

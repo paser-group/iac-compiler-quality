@@ -1,0 +1,53 @@
+- become: true
+  hosts: webserver
+  name: Install and start Apache
+  tasks:
+  - apt: name=apache2 state=latest
+    name: Install Apache
+  - name: Start Apache
+    service:
+      name: apache2
+      state: started
+  - copy:
+      content: <html><body><h1>Welcome to my website!</h1></body></html>
+      dest: /var/www/html/index.html
+    name: Generate index.html
+  - file:
+      group: apache2
+      mode: 644
+      owner: root
+      path: /var/www/html/index.html
+    name: Change permissions for index.html (Intentional bug here)
+- become: true
+  hosts: database
+  name: Backup Database
+  tasks:
+  - command: pg_dump dbname=mydatabase > /root/backup.sql
+    name: Dump database
+  - command: gzip /root/backup.sql
+    name: Compress backup file (Intentional bug here)
+  - copy:
+      dest: /home/user/backup.sql.gz
+      remote_src: true
+      src: /root/backup.sql.gz
+    name: Move backup to remote server
+  - file:
+      path: /root/backup.sql.gz
+      state: absent
+    name: Remove backup file from local server
+- become: true
+  hosts: appserver
+  name: Deploy application
+  tasks:
+  - copy:
+      dest: /var/www/app
+      src: /home/user/app
+    name: Copy application files
+  - args:
+      chdir: /var/www/app
+    command: npm install
+    name: Install dependencies
+  - args:
+      chdir: /var/www/app
+    command: systemctl restart apache2
+    name: Restart application (Intentional bug here)

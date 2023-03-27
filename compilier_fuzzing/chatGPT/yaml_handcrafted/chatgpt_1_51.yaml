@@ -1,0 +1,29 @@
+- gather_facts: false
+  hosts: localhost
+  tasks:
+  - docker_container:
+      command: sleep infinity
+      image: fedora:36
+      interactive: true
+      name: '{{ container_name }}'
+      state: started
+      tty: true
+    name: Create Fedora 36 container
+  - command: docker cp /path/to/integration_test {{ container_name }}:/root/
+    name: Copy integration test image/process inside container
+  - command: docker exec -it {{ container_name }} {{ command_to_run }}
+    ignore_errors: true
+    name: Run integration test inside container
+    register: test_result
+  - fail:
+      msg: Integration Test Failed
+    name: Fail if test did not exit with success
+    when: test_result.rc != 0
+  - docker_container:
+      name: '{{ container_name }}'
+      remove: true
+      state: stopped
+    name: Stop and remove the container
+  vars:
+    command_to_run: /usr/bin/integration_test
+    container_name: fedora36

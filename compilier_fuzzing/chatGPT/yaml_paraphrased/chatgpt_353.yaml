@@ -1,0 +1,41 @@
+- gather_facts: false
+  hosts: all
+  name: buggy playbook
+  tasks:
+  - command: apt-get update
+    name: update packages
+  - apt:
+      name: nginx
+      state: latest
+    name: install nginx
+  - name: copy nginx config
+    notify: restart nginx
+    template:
+      dest: /etc/nginx/nginx.conf
+      src: /etc/nginx/conf.d/nginx.conf.j2
+  - name: start nginx
+    systemd:
+      name: nginx
+      state: started
+  - become: true
+    copy:
+      dest: /var/www/html/
+      force: true
+      src: /path/to/app
+    name: deploy app
+  - args:
+      chdir: /var/www/html
+    command: pip3 install -r requirements.txt
+    name: install dependencies
+  - name: restart nginx
+    systemd:
+      name: nginx
+      state: restarted
+  - args:
+      chdir: /var/www/html
+    command: python3 app.py
+    name: start app
+    register: app_output
+  - debug:
+      var: app_output.stdout
+    name: display app output

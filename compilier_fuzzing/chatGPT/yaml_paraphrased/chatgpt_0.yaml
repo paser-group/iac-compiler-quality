@@ -1,0 +1,26 @@
+- gather_facts: false
+  hosts: windows_servers
+  name: Update Windows Server
+  tasks:
+  - name: Install Windows Update Standalone Installer
+    register: install_wusa_result
+    win_package:
+      arguments: /quiet /norestart
+      path: C:\Temp\WindowsServerUpdateAgent-7.6-x64.exe
+      product_id: KB2141007
+  - become: true
+    name: Reboot Server
+    register: reboot_result
+    win_reboot:
+      msg: Rebooting server to complete Windows updates
+      post_reboot_delay: 0
+      pre_reboot_delay: 0
+      reboot_timeout: 1200
+  - name: Check Pending Reboot
+    register: check_reboot_result
+    win_shell: if (Get-PendingReboot -IsPending) {Write-Output "Restart is pending"}
+      else {Write-Output "Restart is not pending"}
+  - fail:
+      msg: Windows update failed because a reboot is pending on the server.
+    name: Fail if Restart is Pending
+    when: check_reboot_result.stdout == "Restart is pending"

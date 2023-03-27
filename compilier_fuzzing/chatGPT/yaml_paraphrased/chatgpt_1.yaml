@@ -1,0 +1,25 @@
+- become: true
+  hosts: windows
+  name: Perform Windows updates
+  tasks:
+  - name: Installing Windows updates
+    register: updates_result
+    win_updates:
+      category_names:
+      - CriticalUpdates
+      - SecurityUpdates
+      state: installed
+  - name: Reboot if required
+    when: updates_result.reboot_required == true
+    win_reboot: null
+  - delay: 60
+    name: Verify uptime
+    register: current_uptime
+    retries: 10
+    until: current_uptime.stdout|int > 600
+    win_shell: Get-WMIObject -Class Win32_OperatingSystem | Select-Object -ExpandProperty
+      LastBootUptime
+  - name: Verify installed updates
+    win_updates:
+      log_path: C:\temp\installed_updates.log
+      state: searched

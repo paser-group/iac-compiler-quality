@@ -1,0 +1,36 @@
+- apt:
+    name: apache2
+    state: install
+  name: Install Apache service
+- name: Configure Apache service
+  notify: restart apache2
+  template:
+    dest: /etc/apache2/apache2.conf
+    src: /etc/apache2/apache2.conf.j2
+- file:
+    path: /etc/apache2/sites-enabled/000-default.conf
+    state: absent
+  name: Remove default Apache site
+  notify: restart apache2
+- copy:
+    dest: /etc/apache2/sites-enabled/
+    src: /etc/apache2/sites-available/new-site.conf
+  name: Add new Apache site
+  notify: restart apache2
+- file:
+    group: www-data
+    mode: '0755'
+    owner: root
+    path: /var/www/html/webapp
+  name: Set directory permissions for webapp
+- file:
+    group: www-data
+    mode: '0644'
+    owner: root
+    path: /var/www/html/webapp/index.php
+  name: Set file permissions for webapp
+- name: Start Apache service
+  service:
+    enabled: true
+    name: apache2
+    state: started

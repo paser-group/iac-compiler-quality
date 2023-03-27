@@ -1,0 +1,28 @@
+- hosts: localhost
+  tasks:
+  - copy:
+      dest: galaxy.yml.bak
+      src: galaxy.yml
+    name: Ensure galaxy.yml build_ignore properly handles directory names ending in
+      /
+    register: galaxy_yml_copy
+  - command: cp galaxy.yml galaxy.yml.bak
+    name: Backup galaxy.yml
+    when: galaxy_yml_copy.changed
+  - name: Update galaxy.yml build_ignore to properly handle directory names ending
+      in /
+    replace:
+      path: galaxy.yml
+      regexp: ^(build_ignore:)$
+      replace: \1\n  - "{{ item }}/"
+    when: galaxy_yml_copy.changed
+    with_items:
+    - path/to/dir1
+    - path/to/dir2
+  - command: grep 'build_ignore' galaxy.yml
+    name: Check galaxy.yml build_ignore
+    register: galaxy_yml_check
+    when: galaxy_yml_copy.changed
+  - command: mv galaxy.yml.bak galaxy.yml
+    name: Revert to original galaxy.yml
+    when: galaxy_yml_check.rc != 0

@@ -1,0 +1,45 @@
+- gather_facts: true
+  handlers:
+  - name: restart nginx
+    service:
+      name: nginx
+      state: restarted
+  - name: restart firewall service
+    service:
+      name: firewalld
+      state: restarted
+  hosts: all
+  tasks:
+  - name: Install wget
+    package:
+      name: wget
+      state: present
+  - become: true
+    name: Setup nginx service
+    service:
+      name: nginx
+      state: restarted
+  - copy:
+      dest: /etc/nginx/conf.d/default.conf
+      group: root
+      mode: '0644'
+      owner: root
+      src: /etc/nginx/conf.d/default.conf
+    name: Copy nginx config
+    notify: restart nginx
+  - name: Synchronize folder
+    synchronize:
+      dest: /srv/folder/
+      mode: push
+      src: /home/user/folder/
+  - name: Create users
+    user:
+      name: '{{ item }}'
+      state: present
+    with_items: '{{ users }}'
+  - name: Enable firewall rules
+    notify: restart firewall service
+    service:
+      enabled: true
+      name: firewalld
+      state: started

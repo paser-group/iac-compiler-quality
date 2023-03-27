@@ -1,0 +1,47 @@
+- connection: local
+  hosts: localhost
+  name: Test async_status issue
+  tasks:
+  - async: 900
+    name: Deploy a new virtual machine
+    poll: 0
+    register: vm_deploy_result
+    vmware_guest:
+      datacenter: DC1
+      disk:
+      - datastore: datastore1
+        size_gb: 20
+        type: thin
+      folder: /vm
+      guest_id: debian8_64Guest
+      hardware:
+        memory_mb: 2048
+        num_cpus: 2
+      hostname: vcenter.example.com
+      name: test-vm
+      network:
+      - gateway: 192.168.1.1
+        ip: 192.168.1.100
+        name: VM Network
+        netmask: 255.255.255.0
+        type: static
+      password: password
+      state: poweredoff
+      username: administrator@vsphere.local
+  - async_status:
+      jid: '{{ vm_deploy_result.ansible_job_id }}'
+    name: Wait for virtual machine to be deployed
+    register: vm_deploy_status
+  - async: 900
+    delay: 10
+    name: Get virtual machine IP address
+    poll: 0
+    retries: 60
+    until: '''192.168.1.100'' in hostvars[''localhost''][''ansible_facts''][''vmware_guests''][0][''ip_addresses'']'
+    vmware_guest_facts:
+      datacenter: DC1
+      hostname: vcenter.example.com
+      name: test-vm
+      password: password
+      username: administrator@vsphere.local
+      validate_certs: false
