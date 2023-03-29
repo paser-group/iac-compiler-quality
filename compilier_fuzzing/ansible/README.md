@@ -16,5 +16,5 @@ This Python script downloads closed issues from a GitHub repository with a given
 
 2. Run the script with the following command: python **`github_issues_downloader.py`**
 3. The script will start downloading closed issues with the given label from the GitHub repository. Progress will be displayed with a progress bar.
-4. When the script is finished, it will save the downloaded issues as a feather file in the data/github_issues/ directory with the name github_issues.feather.
+4. When the script is finished, it will save the downloaded issues as a feather file with the name **`github_issues.feather`** or use  **`to_csv`** instead.
 5. You can load the downloaded issues from the feather file with pd.read_feather.
