@@ -1,16 +1,20 @@
-# Google BigQuery Query and CSV Export with Python
-
-This Python code demonstrates how to query a Google BigQuery table and export the results to a CSV file using the **`pandas`** library.
+# GitHub Issues Downloader
+This Python script downloads closed issues from a GitHub repository with a given label, and saves them as a feather or csv file.
 
 ## Prerequisites
-- A Google Cloud Platform account with a project set up
-- A BigQuery table to query
-- **`pandas`** library (**`pip install pandas`**)
-- **`google-cloud-bigquery`** library (**`pip install google-cloud-bigquery`**)
-- A service account key with access to the BigQuery table
+- **`requests`** module (install with pip install requests)
+- **`tqdm`** module (install with pip install tqdm)
+- A GitHub Personal Access Token with repo permissions
+
 ## Usage
-1. Set the path to the service account key file in the **`key_path variable`**.
-2. Set the query to run in the **`query_string variable`**.
-3. Set the output file path and name in the **`to_csv method`**.
-4. Run the script.
-5. The script will use the service account key to authenticate and authorize the query, retrieve the query results using **`pandas.read_gbq`**, and then export the results to a CSV file.
+1. Open the script in a text editor and fill in the following variables at the top of the script:
+
+- **`repo_owner`**: The owner of the GitHub repository (e.g., ansible)
+- **`repo_name`**: The name of the GitHub repository (e.g., ansible)
+- **`token`**: Your GitHub Personal Access Token with repo permissions
+- **`label`**: The label to filter issues by (e.g., bug)
+
+2. Run the script with the following command: python **`github_issues_downloader.py`**
+3. The script will start downloading closed issues with the given label from the GitHub repository. Progress will be displayed with a progress bar.
+4. When the script is finished, it will save the downloaded issues as a feather file in the data/github_issues/ directory with the name github_issues.feather.
+5. You can load the downloaded issues from the feather file with pd.read_feather.
