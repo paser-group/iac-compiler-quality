@@ -1,4 +1,4 @@
-# GitHub Issues Downloader
+# Ansible GitHub Issues Downloader
 This Python script downloads closed issues from a GitHub repository with a given label, and saves them as a feather or csv file.
 
 ## Prerequisites
