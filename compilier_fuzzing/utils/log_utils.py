@@ -1,32 +1,28 @@
 import json
 import logging
 import os
-import yaml
 
-def get_config(name='config.yaml'):
-    config = yaml.load(open(name, "r"), Loader=yaml.FullLoader)
-    return config
+def get_log_files(config):
+    if not os.path.exists("logs"):
+        os.mkdir("logs")
+    handler = logging.StreamHandler()
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.DEBUG)
 
-config = get_config(name="compilier_fuzzing/confs/config.yaml")
+    handler = logging.StreamHandler()
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    handler.setFormatter(formatter)
 
-if not os.path.exists("logs"):
-    os.mkdir("logs")
-handler = logging.StreamHandler()
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+    logger.addHandler(handler)
 
-handler = logging.StreamHandler()
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-handler.setFormatter(formatter)
-
-logger.addHandler(handler)
-
-log_file = config["log_file"]
-if log_file:
-    filehandler = logging.FileHandler(log_file)
-    filehandler.setLevel(logging.DEBUG)
-    filehandler.setFormatter(formatter)
-    logger.addHandler(filehandler)
+    log_file = config["log_file"]
+    if log_file:
+        filehandler = logging.FileHandler(log_file)
+        filehandler.setLevel(logging.DEBUG)
+        filehandler.setFormatter(formatter)
+        logger.addHandler(filehandler)
+        
+    return logger, handler
 
 def record_case(success, **args):
     if success:

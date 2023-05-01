@@ -4,24 +4,14 @@ from tqdm import tqdm
 import pandas as pd
 import argparse
 
-parser = argparse.ArgumentParser()
-parser.add_argument("--config", type=str, default="compilier_fuzzing/confs/config.yaml")
-args = parser.parse_args()
-
-config = get_config(name=args.config)
-
-dummy_prompt = config["dummy_prompt"]
-github_data_path = config["github_issue_path"]
-github_issue_file_name = config['github_issue_file_name']
-
-def get_prompts(df):
-    df['prompt'] = dummy_prompt + df['TITLE']
-    
+def get_prompts(df, prompt):
+    df['prompt'] = prompt + df['TITLE']
     return df
-def get_dataframe(path, generation_limit=10):
+
+def get_dataframe(path, generation_limit=10, logger=None, prompt="", config=None):
     df = pd.read_excel(path)
     
-    df = get_prompts(df)
+    df = get_prompts(df, prompt=prompt)
     df['response'] = ''
     df = df[:generation_limit]
 
@@ -52,15 +42,28 @@ def get_valid_annotation(df):
     print(df['valid_yaml'].sum(), df['valid_syntax'].sum())
     return df
 
-excel_path = f"{github_data_path}/{github_issue_file_name}"
-df = get_dataframe(excel_path, generation_limit=5)
 
-df = get_valid_annotation(df)
+def main():
+    
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--config", type=str, default="compilier_fuzzing/confs/config.yaml")
+    args = parser.parse_args()
 
-df.to_feather(f'{github_data_path}/chatgpt_github_yaml.feather', index=False)
+    config = get_config(name=args.config)
 
-df.to_csv(f'{github_data_path}/chatgpt_github_yaml.csv', index=False)
+    dummy_prompt = config["dummy_prompt"]
+    github_data_path = config["github_issue_path"]
+    github_issue_file_name = config['github_issue_file_name']
+    
+    logger, handler = get_log_files(config=config)
+    excel_path = f"{github_data_path}/{github_issue_file_name}"
+    df = get_dataframe(excel_path, generation_limit=5, logger=logger, prompt=dummy_prompt, config=config)
 
+    df = get_valid_annotation(df)
+
+    df.to_feather(f'{github_data_path}/chatgpt_github_yaml.feather', index=False)
+
+    df.to_csv(f'{github_data_path}/chatgpt_github_yaml.csv', index=False)
 
 
 
