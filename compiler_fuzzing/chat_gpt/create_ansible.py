@@ -2,6 +2,7 @@ from compiler_fuzzing.utils.yaml import get_config, get_yaml_data, check_ansible
 from compiler_fuzzing.utils.strings import remove_tilda
 from compiler_fuzzing.utils.openai import get_response
 from compiler_fuzzing.utils.logs import *
+from compiler_fuzzing import arguments
 from tqdm import tqdm
 import pandas as pd
 import argparse
@@ -48,10 +49,8 @@ def get_valid_annotation(df):
 
 def main():
     
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--config", type=str, default="compilier_fuzzing/confs/config.yaml")
-    args = parser.parse_args()
 
+    args = arguments.parse()
     config = get_config(name=args.config)
 
     dummy_prompt = config["dummy_prompt"]
