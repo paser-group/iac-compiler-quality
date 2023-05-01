@@ -26,9 +26,9 @@ def get_log_files(config):
 
 def record_case(success, **args):
     if success:
-        f = open("compilier_fuzzing/data/logs/log_success.jsonl", "a")
+        f = open("logs/log_success.jsonl", "a")
     else:
-        f = open("compilier_fuzzing/data/logs/log_fail.jsonl", "a")
+        f = open("logs/log_fail.jsonl", "a")
     log = args
     f.write(json.dumps(log) + "\n")
     f.close()

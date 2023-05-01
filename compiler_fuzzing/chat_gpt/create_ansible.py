@@ -6,13 +6,14 @@ from compiler_fuzzing import arguments
 from tqdm import tqdm
 import pandas as pd
 import argparse
+from datasets import Dataset
 
 
 def get_prompts(df, prompt):
     df['prompt'] = prompt + df['TITLE']
     return df
 
-def get_dataframe(path, generation_limit=10, logger=None, prompt="", config=None):
+def get_dataset(path, generation_limit=10, logger=None, prompt="", config=None):
     df = pd.read_excel(path)
     
     df = get_prompts(df, prompt=prompt)
@@ -41,8 +42,9 @@ def get_dataframe(path, generation_limit=10, logger=None, prompt="", config=None
 
 def get_valid_annotation(df):
     df['code'] =df['response'].apply(remove_tilda)
+    # df['code'].apply(save_to_file)
     df['valid_yaml'] = df['code'].apply(get_yaml_data)
-    # df['valid_syntax'] = df['code'].apply(check_ansible_syntax)
+    df['valid_syntax'] = df['code'].apply(check_ansible_syntax)
     print(df['valid_yaml'].sum(), df['valid_syntax'].sum())
     return df
 
@@ -59,7 +61,7 @@ def main():
     
     logger, handler = get_log_files(config=config)
     excel_path = f"{github_data_path}/{github_issue_file_name}"
-    df = get_dataframe(excel_path, generation_limit=5, logger=logger, prompt=dummy_prompt, config=config)
+    df = get_dataset(excel_path, generation_limit=1, logger=logger, prompt=dummy_prompt, config=config)
 
     df = get_valid_annotation(df)
 
