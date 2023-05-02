@@ -5,7 +5,7 @@ this file contains functions for printing things in a certain format
 from colorama import Fore, Style
 import os
 
-def title(title_str, fill_char='='):
+def title(title_str: str, fill_char: str='='):
 	"""
 	prints the given title centered in the terminal and surrounded by fill_char 
 
@@ -22,13 +22,13 @@ def title(title_str, fill_char='='):
 	# print the title
 	print('\n' + title_str.center(col, fill_char) + '\n')
 
-def prompt_yes_no(message):
+def binary_prompt(message: str) -> bool:
 	"""
 	used to prompt the user for any yes or no options
 
 	:param message: the message to be displayed before prompting
 
-	:rtype int:
+	:rtype bool: yes or no converted to true or false
 	"""
 
 	choice = input(f'{message} (y/n): ').lower()

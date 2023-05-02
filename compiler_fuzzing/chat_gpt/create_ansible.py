@@ -7,13 +7,19 @@ import pandas as pd
 from datasets import Dataset
 
 # internal imports
-from compiler_fuzzing.utils import ChatSession, yaml, logs
-from compiler_fuzzing import utils, arguments
 from .prompt_engg import PromptEngg
+from compiler_fuzzing.utils import (
+    ChatSession,
+    yaml,
+    logs,
+    files,
+    display,
+    strings,
+)
 
 
 def get_valid_annotation(df):
-    df['code'] =df['response'].apply(utils.strings.remove_tilde)
+    df['code'] =df['response'].apply(strings.remove_tilde)
     # df['code'].apply(save_to_file)
     df['valid_yaml'] = df['code'].apply(yaml.get_yaml_data)
     df['valid_syntax'] = df['code'].apply(yaml.check_ansible_syntax)
@@ -21,30 +27,25 @@ def get_valid_annotation(df):
     return df
 
 
-def create_ansible(args):
+def create_ansible(args, config):
     """
     this function is used to create ansible files by 
     """
 
-    utils.display.title('Generating Ansible Playbooks With ChatGPT')
-    # read in config data
-    config = utils.files.load_yaml(args.config)
+    display.title('Generating Ansible Playbooks With ChatGPT')
 
     # initialize logging
     #logger, handler = logs.get_log_files(config=config)
 
-    dummy_prompt, github_data_path, github_issue_file_name = (
+    dummy_prompt, data_path = (
         config["dummy_prompt"],
-        config["github_issue_path"],
-        config["github_issue_file_name"],
+        config["data_path"],
     )
 
 
     # read in excel data as huggingface dataset
-    excel_path = f"{github_data_path}/{github_issue_file_name}"
     ds = Dataset.from_pandas(
-        (df := pd.read_excel(excel_path)),
-        preserve_index=True
+        pd.read_excel(data_path)
     )
 
     # load dataset
@@ -59,12 +60,10 @@ def create_ansible(args):
 
     # TODO populate configs so that this doesn't error out
     # generators = [PromptEngg(config, lvl, ds) for lvl in range(6)]
-    breakpoint()
-    generators = [PromptEngg(config, lvl, ds) for lvl in range(1, 6)]
+    generators = PromptEngg(config, 1, ds, config['taxonomy_filepath'])
     # ds = generator(ds)
 
     ##################################
-    breakpoint()
 
     # TODO delete this
     sys_msg = "You are a helpful assistant who will generate syntactically correct Ansible YAML Playbook for testing purposes. Do not include any explanation or context or introduction statement. Make sure to include ``` before and after Ansible code to denote the YAML section"
@@ -92,13 +91,22 @@ def create_ansible(args):
 
     # append columns to dataset
     output_ds = output_ds.add_column('RESPONSE', response)
-    output_dir = f'{github_data_path}/chatgpt_github_yaml-{utils.strings.now()}.csv'
-    utils.display.green(f'saving data to {output_dir}...')
-    output_ds.to_csv(output_dir)
-
     
-    utils.display.green(f'\n\nGenerated {len(output_ds)} Ansible Playbook(s)', end='\n\n')
-    utils.display.title('Finished Playbook Generation')
+    # get output path and save dataset
+    source_dir, source_name = files.split_dir_fname(data_path)
+    if args.debug : files.create_path(source_dir + '/debug')
+    output_path = files.get_full_path(
+        f'{source_dir}{"/debug/" if args.debug else ""}' + 
+        f'{source_name}-{strings.now()}.csv'
+    )
+    display.green(f'\nsaving data to {output_path}...')
+    output_ds.to_csv(output_path)
+    
+    # display status messages
+    display.green(f'\n\nGenerated {len(output_ds)} Ansible Playbook(s)', end='\n\n')
+    display.title('Finished Playbook Generation')
+
+    # cleanup cache
+    ds.cleanup_cache_files()
     breakpoint()
-    #ds.to_csv(f'results{utils.now()}.csv')
 

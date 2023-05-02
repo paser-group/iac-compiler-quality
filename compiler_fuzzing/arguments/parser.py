@@ -23,7 +23,14 @@ def parse():
         '--config',
         help='config path',
         type=str,
-        default="{{project_root}}/confs/config.yaml",
+        default="{{PROJECT_ROOT}}/confs/config.yaml",
+    )
+
+    parser_gen.add_argument(
+        '--debug',
+        help='used for testing the create_ansible function',
+        action='store_true',
+        default=False,
     )
 
     args = parser.parse_args()
@@ -31,7 +38,7 @@ def parse():
     # perform substitutions
     args.config = strings.replace_slot(
         args.config, 
-        { 'project_root' : files.get_project_root() }
+        { 'PROJECT_ROOT' : files.get_project_root() }
     )
 
     return args

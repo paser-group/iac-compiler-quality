@@ -8,7 +8,7 @@ def path_exists(path, extra_info=None):
 	# build message string
 	message = f'The path \'{path}\' does not exist.'
 	if message:
-		message += f'\n{extra_info}'
+		message += f'\n{extra_info if extra_info is not None else ""}'
 
 	if not os.path.exists(path):
 		raise FileNotFoundError(Fore.RED + message + Style.RESET_ALL)

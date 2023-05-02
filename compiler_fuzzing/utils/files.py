@@ -6,74 +6,140 @@ from pathlib import Path
 import os
 import yaml
 import pickle
+from typing import Dict, List, Tuple
 
 # local imports
 from compiler_fuzzing.utils import validate
 
-def get_project_root():
-	"""
-	use this to get the root directory of the project
-	"""
-	return str(Path(__file__).parent.parent.parent)
+def get_project_root() -> str:
+    """
+    use this to get the root directory of the project
 
-def count_lines(path):
-	"""
-	counts the number of lines in a file
+    :rtype str: the root directory of the project
+    """
+    return str(Path(__file__).parent.parent.parent)
 
-	:param path: the full path of the file
-	:raises: FileNotFound
-	"""
+def get_full_path(path_str, check_exist=False) -> str:
+    """
+    converts the input into an absolute path if recognized as a relative path
 
-	# check if path exists. raise error otherwise
-	validate.path_exists(path)
+    :param path_str: the path of the given file
 
-	# count the number of lines in the file
-	with open(path, 'r') as f:
-		return len(f.readlines())
+    :param validate: if True validates if the path exists
 
-def parent_dir(path_str):
-	"""
-	clips the last bit of the path string
+    :rtype str: the full path of the input
+    """
 
-	:param path_str: the directory string
-	:type path_str: str
-	"""
+    # convert to absolute path
+    path = os.path.abspath(path_str)
 
-	return str(Path(path_str).parent)
+    # check if path exists. raise error otherwise
+    if check_exist : validate.path_exists(path)
 
-def save_pkl(src_obj, path_str):
-	"""
-	pickles an object and saves it to the given directory
-	"""
+    return path
 
-	with open(path_str, 'wb') as f:
-		pickle.dump(src_obj, f)
+def dirname(path_str: str) -> str:
+    """
+    clips the last bit of the path string
 
-def load_pkl(path_str):
-	"""
-	loads a pickled object 
-	"""
+    :param path_str: the directory string
+    :type path_str: str
 
-	with open(path_str, 'rb') as f:
-		src_obj = pickle.load(f)
-	
-	return src_obj
+    :rtype str: the directory of the input
+    """
 
-def valid_path(path_str):
-	"""
-	checks if a given path string exists
-	"""
-	return os.path.exists(path_str)
+    return os.path.dirname(path_str)
 
-def load_yaml(path_str):
-	"""
-	loads a yaml file
-	"""
+def get_fname(path_str: str) -> str:
+    """
+    extracts the file name from a given path string
 
-	# check if path exists. raise error otherwise
-	validate.path_exists(path_str)
+    :param path_str: the path string
+    :type path_str: str
 
-	# read config
-	with open(path_str, 'r') as f:
-		cfg = yaml.safe_load(f)
-	return cfg
+    :rtype str: the desired file name
+    """
+    
+    return os.path.basename(path_str)
+
+def split_dir_fname(path_str: str) -> Tuple[str, str]:
+    return (
+        dirname(path_str),
+        get_fname(path_str)
+    )
+
+
+def homedir() -> str:
+    """
+    returns the home directory
+
+    :rtype str: the home directory
+    """
+    return str(Path.home())
+
+def create_path(path_str):
+	if not valid_path(path_str):
+		os.mkdir(path_str)
+
+def count_lines(path: str) -> int:
+    """
+    counts the number of lines in a file
+
+    :param path: the full path of the file
+
+    :rtype int: the number of lines in the file
+
+    :raises: FileNotFound
+    """
+
+    # check if path exists. raise error otherwise
+    validate.path_exists(path)
+
+    # count the number of lines in the file
+    with open(path, 'r') as f:
+        return len(f.readlines())
+
+def save_pkl(src_obj: object, path_str: str):
+    """
+    pickles an object and saves it to the given directory
+    """
+
+    with open(path_str, 'wb') as f:
+        pickle.dump(src_obj, f)
+
+def load_pkl(path_str: str) -> object:
+    """
+    loads a pickled object 
+    """
+
+    with open(path_str, 'rb') as f:
+        src_obj = pickle.load(f)
+    
+    return src_obj
+
+def valid_path(path_str: str) -> bool:
+    """
+    checks if a given path string exists
+
+    :param path_str: input path
+    :type path_str: str
+
+    :rtype bool: True if path exists else false
+    """
+    return os.path.exists(path_str)
+
+def load_yaml(path_str: str):
+    """
+    loads a yaml file
+
+    :param path_str: 
+    :type path: str
+    """
+
+    # check if path exists. raise error otherwise
+    validate.path_exists(path_str)
+
+    # read config
+    with open(path_str, 'r') as f:
+        cfg = yaml.safe_load(f)
+    return cfg

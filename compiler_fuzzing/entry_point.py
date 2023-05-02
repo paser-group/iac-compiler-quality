@@ -1,11 +1,15 @@
 from compiler_fuzzing.chat_gpt import create_ansible
-from compiler_fuzzing import arguments, utils
+from compiler_fuzzing import arguments, utils, cfg_reader
 
 def main():
     args = arguments.parse()
 
     if args.procedure == 'generate':
-        create_ansible(args)
+        # read in config data
+        cfg = cfg_reader.primary.load(args.config)
+
+        # run the generator
+        create_ansible(args, cfg)
     else:
         raise NotImplementedError(utils.strings.clean_multiline(
             """
