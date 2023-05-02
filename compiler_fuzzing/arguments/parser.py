@@ -33,6 +33,13 @@ def parse():
         default=False,
     )
 
+    parser_gen.add_argument(
+        '--limit',
+        help='used to limit the amount of samples generated',
+        type=int,
+        default=-1,
+    )
+
     # TODO add subparser for validation
 
     args = parser.parse_args()
