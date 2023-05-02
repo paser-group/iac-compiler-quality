@@ -26,5 +26,5 @@ def replace_slot(text, entries):
         text = text.replace("{{" + key +"}}", value.replace('"', "'").replace('\n', ""))
     return text
 
-def remove_tilda(text):
+def remove_tilde(text):
     return text.split('```')[1] 
