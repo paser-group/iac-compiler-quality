@@ -5,6 +5,7 @@ this code is used to prompt chatgpt to create ansible playbooks
 from tqdm import tqdm
 import pandas as pd
 from datasets import Dataset
+import datasets
 
 # internal imports
 from .prompt_engg import PromptEngg
@@ -48,40 +49,30 @@ def create_ansible(args, config):
         pd.read_excel(data_path)
     )
 
-    # load dataset
 
-    ##################################
-    # TODO
-    #
-    # 1) insantiate prompt generator
-    #                               
-    # 2) generate prompts from data
-    ##################################
+    # build generators and get updated dataset
+    num_levels = 6
+    generators = [PromptEngg(config, lvl, ds) for lvl in range(num_levels)]
+    ds = datasets.interleave_datasets(
+        [gen.get_updated_dataset() for gen in generators]
+    )
 
-    # TODO populate configs so that this doesn't error out
-    # generators = [PromptEngg(config, lvl, ds) for lvl in range(6)]
-    generators = PromptEngg(config, 1, ds, config['taxonomy_filepath'])
-    # ds = generator(ds)
-
-    ##################################
-
-    # TODO delete this
-    sys_msg = "You are a helpful assistant who will generate syntactically correct Ansible YAML Playbook for testing purposes. Do not include any explanation or context or introduction statement. Make sure to include ``` before and after Ansible code to denote the YAML section"
-    limit = 1
+    #limit = 1
+    limit = num_levels
     response = []
-    for i, sample in enumerate(tqdm( ds, desc='generating playbooks', total=len(ds))):
+    for i, sample in enumerate(tqdm(ds, desc='generating playbooks', total=len(ds))):
         if i == limit : break
-        # TODO replace with response  generation code
-        prompt = dummy_prompt + sample['TITLE']
 
         session = ChatSession(
             config['openai']['key'],
             config["openai"]["organization"],
-            system_msg=sys_msg
+            system_msg=sample['sys_role']
         )
-        response.append(session(prompt))
+        response.append(
+            session.get_response(sample['prompt'])
+        )
         #logger.info(f"response: {response[-1]}")
-        
+
     # truncate dataset to accomodate amount of responses generated
     output_ds = ds.select(range(len(response)))
 
@@ -90,13 +81,24 @@ def create_ansible(args, config):
     # output_ds.add_column('VALIDITY', validations)
 
     # append columns to dataset
-    output_ds = output_ds.add_column('RESPONSE', response)
+    output_ds = output_ds.add_column('response', response)
+
+    def mapper_fn(sample):
+        sample.update({
+            'code' : \
+                strings.remove_tilde(sample['response']) \
+                if '```' in sample['response'] \
+                else '',
+        })
+            
+        return sample
+    output_ds = output_ds.map(mapper_fn)
     
     # get output path and save dataset
     source_dir, source_name = files.split_dir_fname(data_path)
     if args.debug : files.create_path(source_dir + '/debug')
     output_path = files.get_full_path(
-        f'{source_dir}{"/debug/" if args.debug else ""}' + 
+        f'{source_dir}/' + 
         f'{source_name}-{strings.now()}.csv'
     )
     display.green(f'\nsaving data to {output_path}...')
