@@ -4,12 +4,12 @@ this code is used to prompt chatgpt to create ansible playbooks
 # external imports
 from tqdm import tqdm
 import pandas as pd
-import argparse
 from datasets import Dataset
 
 # internal imports
 from compiler_fuzzing.utils import ChatSession, yaml, logs
 from compiler_fuzzing import utils, arguments
+from .prompt_engg import PromptEngg
 
 
 def get_valid_annotation(df):
@@ -57,10 +57,14 @@ def create_ansible(args):
     # 2) generate prompts from data
     ##################################
 
-    generator = None
+    # TODO populate configs so that this doesn't error out
+    # generators = [PromptEngg(config, lvl, ds) for lvl in range(6)]
+    breakpoint()
+    generators = [PromptEngg(config, lvl, ds) for lvl in range(1, 6)]
     # ds = generator(ds)
 
     ##################################
+    breakpoint()
 
     # TODO delete this
     sys_msg = "You are a helpful assistant who will generate syntactically correct Ansible YAML Playbook for testing purposes. Do not include any explanation or context or introduction statement. Make sure to include ``` before and after Ansible code to denote the YAML section"
