@@ -8,10 +8,22 @@ def parse():
 
     # define arguments and parse
     parser = argparse.ArgumentParser() 
-    parser.add_argument(
-        "--config",
+
+    # create subparser for procedures
+    subparser = parser.add_subparsers(
+        description='decides on which procedure to run',
+        required=True,
+        dest='procedure',
+    )
+
+    # add subparser for playbook generation
+    parser_gen = subparser.add_parser('generate')
+    parser_gen.add_argument(
+        '-c',
+        '--config',
+        help='config path',
         type=str,
-        default="{{project_root}}/confs/config.yaml"
+        default="{{project_root}}/confs/config.yaml",
     )
 
     args = parser.parse_args()

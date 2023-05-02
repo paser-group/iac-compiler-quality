@@ -1,7 +1,6 @@
 """
 this code is used to prompt chatgpt to create ansible playbooks
 """
-
 # external imports
 from tqdm import tqdm
 import pandas as pd
@@ -9,74 +8,43 @@ import argparse
 from datasets import Dataset
 
 # internal imports
-from compiler_fuzzing.utils.yaml import get_yaml_data, check_ansible_syntax
-from compiler_fuzzing.utils import ChatHandler
+from compiler_fuzzing.utils import ChatSession, yaml, logs
 from compiler_fuzzing import utils, arguments
 
-
-def get_prompts(df, prompt):
-    df['prompt'] = prompt + df['TITLE']
-    return df
-
-def collect_responses(path, generation_limit=10, logger=None, prompt="", config=None):
-    df = pd.read_excel(path)
-    #ds = Dataset.from_pandas(df)
-    
-    df = get_prompts(df, prompt=prompt)
-    df['response'] = ''
-    df = df[:generation_limit]
-
-    count = 0
-    list_of_responses = []
-    
-    with tqdm(total=None, desc="Generating playbooks") as pbar:
-        for ind in df.index:
-            if count >= generation_limit:
-                break
-            if df.iloc[ind]['response'] == '':
-                handler = ChatHandler(
-                    config['openai']['key'],
-                    config["openai"]["organization"],
-                    system_msg="You are a helpful assistant who will generate syntactically correct Ansible YAML Playbook for testing purposes. Do not include any explanation or context or introduction statement. Make sure to include ``` before and after Ansible code to denote the YAML section"
-                )
-                response = handler.get_response(df.iloc[ind]['prompt'])
-                logger.info(f"response: {response}")
-                column_index = df.columns.get_loc('response')
-                df.iloc[ind, column_index] = response
-                pbar.update(1)
-                count += 1
-    
-    print("Number of playbooks created:", (df.response != '').sum())           
-    return df
-    
 
 def get_valid_annotation(df):
     df['code'] =df['response'].apply(utils.strings.remove_tilde)
     # df['code'].apply(save_to_file)
-    df['valid_yaml'] = df['code'].apply(get_yaml_data)
-    df['valid_syntax'] = df['code'].apply(check_ansible_syntax)
+    df['valid_yaml'] = df['code'].apply(yaml.get_yaml_data)
+    df['valid_syntax'] = df['code'].apply(yaml.check_ansible_syntax)
     print(df['valid_yaml'].sum(), df['valid_syntax'].sum())
     return df
 
 
-def main():
+def create_ansible(args):
     """
     this function is used to create ansible files by 
     """
 
+    utils.display.title('Generating Ansible Playbooks With ChatGPT')
     # read in config data
-    args = arguments.parse()
     config = utils.files.load_yaml(args.config)
+
+    # initialize logging
+    #logger, handler = logs.get_log_files(config=config)
+
     dummy_prompt, github_data_path, github_issue_file_name = (
         config["dummy_prompt"],
         config["github_issue_path"],
         config["github_issue_file_name"],
     )
 
+
     # read in excel data as huggingface dataset
     excel_path = f"{github_data_path}/{github_issue_file_name}"
     ds = Dataset.from_pandas(
-        pd.read_excel(excel_path)
+        (df := pd.read_excel(excel_path)),
+        preserve_index=True
     )
 
     # load dataset
@@ -93,33 +61,40 @@ def main():
     # ds = generator(ds)
 
     ##################################
+
+    # TODO delete this
+    sys_msg = "You are a helpful assistant who will generate syntactically correct Ansible YAML Playbook for testing purposes. Do not include any explanation or context or introduction statement. Make sure to include ``` before and after Ansible code to denote the YAML section"
+    limit = 1
+    response = []
+    for i, sample in enumerate(tqdm( ds, desc='generating playbooks', total=len(ds))):
+        if i == limit : break
+        # TODO replace with response  generation code
+        prompt = dummy_prompt + sample['TITLE']
+
+        session = ChatSession(
+            config['openai']['key'],
+            config["openai"]["organization"],
+            system_msg=sys_msg
+        )
+        response.append(session(prompt))
+        #logger.info(f"response: {response[-1]}")
+        
+    # truncate dataset to accomodate amount of responses generated
+    output_ds = ds.select(range(len(response)))
+
+    # TODO implement validation code
+    # validations = get_valid_annotation(response)
+    # output_ds.add_column('VALIDITY', validations)
+
+    # append columns to dataset
+    output_ds = output_ds.add_column('RESPONSE', response)
+    output_dir = f'{github_data_path}/chatgpt_github_yaml-{utils.strings.now()}.csv'
+    utils.display.green(f'saving data to {output_dir}...')
+    output_ds.to_csv(output_dir)
+
     
-    """
-    prog_bar = tqdm(
-        range(len(ds)),
-        desc = 'collecting responses'
-    )
-    results = []
-    for sample in tqdm(ds, desc='generating playbooks'):
-        pass
-
-    output_ds = Dataset.from_list(results)
-    output_ds.to_csv(f'results{utils.now()}.csv')
-    """
-
-    # generate YAML files from ChatGPT
-    logger, handler = utils.logs.get_log_files(config)
-    df = collect_responses(
-        excel_path,
-        generation_limit=1,
-        logger=logger,
-        prompt=dummy_prompt,
-        config=config
-    )
-
-    df = get_valid_annotation(df)
-
-    # save to file
-    df.to_feather(f'{github_data_path}/chatgpt_github_yaml.feather', index=False)
-    df.to_csv(f'{github_data_path}/chatgpt_github_yaml.csv', index=False)
+    utils.display.green(f'\n\nGenerated {len(output_ds)} Ansible Playbook(s)', end='\n\n')
+    utils.display.title('Finished Playbook Generation')
+    breakpoint()
+    #ds.to_csv(f'results{utils.now()}.csv')
 

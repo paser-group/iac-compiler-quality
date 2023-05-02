@@ -1,1 +1,1 @@
-from .create_ansible import main
+from .create_ansible import create_ansible

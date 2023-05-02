@@ -6,4 +6,4 @@ from . import (
 	yaml,
 	logs,
 )
-from .chat_session import ChatHandler
+from .chat_session import ChatSession

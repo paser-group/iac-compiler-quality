@@ -1,8 +1,11 @@
 """
 this file contains functions for printing things in a certain format
 """
+# external imports
+from colorama import Fore, Style
+import os
 
-def print_title(title_str, fill_char='='):
+def title(title_str, fill_char='='):
 	"""
 	prints the given title centered in the terminal and surrounded by fill_char 
 
@@ -30,6 +33,18 @@ def prompt_yes_no(message):
 
 	choice = input(f'{message} (y/n): ').lower()
 	if choice == 'y' or choice == 'yes':
-		return 1
+		return True
 	else:
-		return 0
+		return False
+
+def green(msg: str, end='\n'):
+    """
+    prints a string in green text
+    """
+    print(Fore.GREEN + msg + Style.RESET_ALL)
+
+def red(msg: str, end='\n'):
+    """
+    prints a string in red text
+    """
+    print(Fore.RED + msg + Style.RESET_ALL)

@@ -7,7 +7,7 @@ import openai
 from typing import Dict, List, Tuple
 import json
 
-class ChatHandler:
+class ChatSession:
     """
     This class is used to automatically keep track of ChatGPT sessions.
     Handles single-shot and multi-shot prompts
