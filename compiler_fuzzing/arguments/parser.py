@@ -33,6 +33,8 @@ def parse():
         default=False,
     )
 
+    # TODO add subparser for validation
+
     args = parser.parse_args()
 
     # perform substitutions

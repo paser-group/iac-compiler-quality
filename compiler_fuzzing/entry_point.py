@@ -10,6 +10,9 @@ def main():
 
         # run the generator
         create_ansible(args, cfg)
+    # TODO add procedure for validation
+    if args.procdure == 'validate'
+        pass
     else:
         raise NotImplementedError(utils.strings.clean_multiline(
             """
