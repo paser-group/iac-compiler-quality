@@ -14,7 +14,6 @@ class PromptEngg:
         file_path = self.config['taxonomy_filepath']
         file_name = f"lv{self.level}.yaml"
         prompt_config = get_config(name=f"{file_path}/{file_name}")
-        breakpoint()
         ds["sys_role"] = prompt_config["sys_role"]["current"]
         title = ds["TITLE"]
         ds["prompt"] = replace_slot(prompt_config["sys_role"]["current"], {
