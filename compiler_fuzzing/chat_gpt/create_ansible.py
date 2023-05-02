@@ -3,20 +3,22 @@ from compiler_fuzzing.utils.strings import remove_tilda
 from compiler_fuzzing.utils.openai import get_response
 from compiler_fuzzing.utils.logs import *
 from compiler_fuzzing import arguments
+from compiler_fuzzing.chat_gpt.prompt_engg import PromptEngg
 from tqdm import tqdm
 import pandas as pd
-import argparse
 from datasets import Dataset
 
 
-def get_prompts(df, prompt):
-    df['prompt'] = prompt + df['TITLE']
-    return df
+def get_prompts(df, config=None):
+    dataset = Dataset.from_pandas(df)
+    prompt_engg = PromptEngg(config=config, level=1, dataset=dataset)
+    dataset = prompt_engg.get_updated_dataset()
+    return dataset
 
 def get_dataset(path, generation_limit=10, logger=None, prompt="", config=None):
     df = pd.read_excel(path)
     
-    df = get_prompts(df, prompt=prompt)
+    dataset = get_prompts(df, config=config)
     df['response'] = ''
     df = df[:generation_limit]
 
