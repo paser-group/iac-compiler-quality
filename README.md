@@ -13,4 +13,5 @@
 Now you can run the program by calling `compiler_fuzzing` in your terminal
 
 ### Usage
-* output YAML files by default are to be saved to `{{ PROJECT_ROOT }}/data/generated_yaml/lv{{ LEVEL }}/`
+* output YAML files by default are to be saved to `{{ PROJECT_ROOT }}/data/generated_yaml/<timestamp>/lv{{ LEVEL }}`
+  * corresponding dataset is saved to `{{ PROJECT_ROOT }}/data/generated_yaml/<timestamp>`
