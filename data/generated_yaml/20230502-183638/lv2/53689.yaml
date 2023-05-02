@@ -1,0 +1,26 @@
+yaml
+- name: Generate Slack notification
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    slack_webhook_url: "https://hooks.slack.com/services/T0123456789/B0123456789/ABCDEFGHIJKL0123456789"
+
+  tasks:
+    - name: Set Slack message text
+      set_fact:
+        slack_message_text: "{{ 'This is a Slack test message.' | upper if ansible_os_family == 'RedHat' else 'This is a Slack test message.' }}"
+    
+    - name: Post notification to Slack
+      slack:
+        token: "{{ slack_webhook_url }}"
+        msg: "{{ slack_message_text }}"
+        channel: "{{ playbook_dir if playbook_dir else '/tmp' }}/slack_notify.txt"
+        username: "ansible-bot"
+        icon_emoji: "{{ ['smiling_imp', 'japanese_ogre'] | random }}"
+        color: random
+        validate_certs: no
+        timeout: "{{ '120' if ansible_distribution == 'CentOS' else '30' }}"
+        headers:
+          Accept-Language: "{{ ['en-US', 'fr-CA', 'de-DE'] | random }}"
+          Authorization: "{{ 'Bearer ' + slack_webhook_url }}"
