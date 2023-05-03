@@ -1,36 +1,26 @@
-import yaml
-from ansible.playbook import Playbook
-# from ansible.playbook.playbook import Playbook
-from ansible.inventory.manager import InventoryManager
-from ansible.parsing.dataloader import DataLoader
-from ansible.vars.manager import VariableManager
+import subprocess
 import yaml
 from compiler_fuzzing.utils.logs import record_case
+from compiler_fuzzing.utils.files import valid_path
+from compiler_fuzzing.utils import display 
 
 
-def check_ansible_syntax(playbook_code):
-    # Load the YAML code as a dictionary
-    playbook_dict = yaml.safe_load(playbook_code)
-    # TODO: implement loggerusing these informations: issue_id, issue_prompt, issue_title, logger
-    # Load the inventory data
-    loader = DataLoader()
-    inventory = InventoryManager(loader=loader)
-
-    # Load variables for the playbook
-    variable_manager = VariableManager(loader=loader, inventory=inventory)
-
-    # Create a new playbook object
-    playbook = Playbook.load(playbook_dict, variable_manager=variable_manager, loader=loader)
+def check_ansible_syntax(sample_data, yaml_base_path):
+    level = sample_data["level"]
+    issue_id = sample_data["ID"]
+    playbook_path = f"{yaml_base_path}/lv{level}/{issue_id}.yaml"
+    if not valid_path(playbook_path):
+        return 0
 
     try:
         # Check the syntax of the playbook
-        playbook.check()
-        print("The syntax of the Ansible playbook is valid.")
+        subprocess.check_output(['ansible-playbook', playbook_path, '--syntax-check'], stderr=subprocess.STDOUT)
+        
+        display.green("Ansible syntax check passed for playbook: ", playbook_path)
         return 1
     except Exception as e:
-        record_case(f"reason: Invalid syntax., response: {playbook_code}")
         # logger.error(f"issue id: {issue_id}, issue title: {issue_title}, reason: Invalid syntax., issue prompt: {issue_prompt}")
-        # record_case(success=False, **{"issue id": issue_id, "issue title": issue_title, "reason": f"Invalid syntax.", "issue prompt": issue_prompt})
+        record_case(success=False, **{"issue id": sample_data["ID"], "issue title": sample_data["TITLE"], "reason": f"{e}", "issue prompt": sample_data["prompt"]})
         return 0
 
 

@@ -40,8 +40,30 @@ def parse():
         default=-1,
     )
 
-    # TODO add subparser for validation
+    # subparser for validation
+    parser_gen = subparser.add_parser('validate')
+    parser_gen.add_argument(
+        '-c',
+        '--config',
+        help='config path',
+        type=str,
+        default="{{PROJECT_ROOT}}/confs/config.yaml",
+    )
 
+    parser_gen.add_argument(
+        '--debug',
+        help='used for testing the create_ansible function',
+        action='store_true',
+        default=False,
+    )
+
+    parser_gen.add_argument(
+        '--timestamp',
+        help='used to read from a specific timestamp generated data',
+        type=str,
+        default='20230502-183638',
+    )
+    
     args = parser.parse_args()
 
     # perform substitutions

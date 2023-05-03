@@ -1,4 +1,4 @@
-from compiler_fuzzing.chat_gpt import create_ansible
+from compiler_fuzzing.chat_gpt import create_ansible, validate_ansible
 from compiler_fuzzing import arguments, utils, cfg_reader
 
 def main():
@@ -12,7 +12,11 @@ def main():
         create_ansible(args, cfg)
     # TODO add procedure for validation
     elif args.procedure == 'validate':
-        pass
+        # read in config data
+        cfg = cfg_reader.primary.load(args.config)
+        
+        # run validator
+        validate_ansible(args, cfg)
     else:
         raise NotImplementedError(utils.strings.clean_multiline(
             """
