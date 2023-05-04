@@ -81,9 +81,13 @@ def homedir() -> str:
     """
     return str(Path.home())
 
-def create_path(path_str):
-	if not valid_path(path_str):
-		os.mkdir(path_str)
+def create_path(path_str, parents=True, exist_ok=True):
+    if not valid_path(path_str):
+        Path(path_str).mkdir(
+            parents=parents,
+            exist_ok=exist_ok
+        )
+
 
 def count_lines(path: str) -> int:
     """
@@ -173,6 +177,12 @@ def count_files_in(path_str: str, match_str: str=None) -> int:
     files = [f for f in files if match_str in f]
 
     return len(files)
+
+def list(path_str: str) -> List:
+    
+    validate.path_exists(path_str)
+
+    return os.listdir(path_str)
 
 def write_file(path_str: str, content: str):
     """

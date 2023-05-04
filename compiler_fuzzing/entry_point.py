@@ -10,7 +10,6 @@ def main():
 
         # run the generator
         create_ansible(args, cfg)
-    # TODO add procedure for validation
     elif args.procedure == 'validate':
         # read in config data
         cfg = cfg_reader.primary.load(args.config)

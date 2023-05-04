@@ -45,9 +45,12 @@ def generate_manifest_ds(args, config, ds, num_levels):
             config["openai"]["organization"],
             system_msg=sample['sys_role']
         )
-        response.append(
-            session.get_response(sample['prompt'])
-        )
+        try:
+            response.append(
+                session.get_response(sample['prompt'])
+            )
+        except:
+            response.append('TIMEOUT ERROR')
 
     # truncate dataset to accomodate amount of responses generated
     output_ds = ds.select(range(len(response)))

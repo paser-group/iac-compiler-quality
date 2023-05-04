@@ -1,10 +1,10 @@
 import json
 import logging
 import os
+from . import files
 
 def get_log_files(config):
-    if not os.path.exists("logs"):
-        os.mkdir("logs")
+    files.create_path(files.get_project_root() + "/logs")
     handler = logging.StreamHandler()
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.DEBUG)
@@ -26,9 +26,9 @@ def get_log_files(config):
 
 def record_case(success, **args):
     if success:
-        f = open("logs/log_success.jsonl", "a")
+        f = open(files.get_project_root() + "/logs/log_success.jsonl", "a")
     else:
-        f = open("logs/log_fail.jsonl", "a")
+        f = open(files.get_project_root() + "/logs/log_fail.jsonl", "a")
     log = args
     f.write(json.dumps(log) + "\n")
     f.close()

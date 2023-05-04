@@ -1,6 +1,6 @@
 from datasets import Dataset
 from compiler_fuzzing.utils.strings import replace_slot
-from compiler_fuzzing.utils.yaml import get_config
+from compiler_fuzzing.utils.files import load_yaml
 
 class PromptEngg:
     def __init__(self, config, level, dataset):
@@ -9,7 +9,7 @@ class PromptEngg:
 
         file_path = self.config['taxonomy_filepath']
         file_name = f"lv{self.level}.yaml"
-        self.prompt_config = get_config(name=f"{file_path}/{file_name}")
+        self.prompt_config = load_yaml(f"{file_path}/{file_name}")
         self.system_msg = self.prompt_config['sys_role']['current']
 
         self.dataset = dataset.map(self.update_columns)

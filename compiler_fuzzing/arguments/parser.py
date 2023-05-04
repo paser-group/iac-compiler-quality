@@ -1,4 +1,5 @@
 import argparse
+import argcomplete
 from compiler_fuzzing.utils import files, strings
 
 def parse():
@@ -17,7 +18,10 @@ def parse():
     )
 
     # add subparser for playbook generation
-    parser_gen = subparser.add_parser('generate')
+    parser_gen = subparser.add_parser(
+        'generate',
+        description='generates ansible playbooks'
+    )
     parser_gen.add_argument(
         '-c',
         '--config',
@@ -59,11 +63,12 @@ def parse():
 
     parser_gen.add_argument(
         '--timestamp',
-        help='used to read from a specific timestamp generated data',
+        help='used to read from a specific timestamp generated data. (Default: most recent)',
         type=str,
-        default='20230502-183638',
+        default=None,
     )
     
+    argcomplete.autocomplete(parser)
     args = parser.parse_args()
 
     # perform substitutions

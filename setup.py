@@ -14,7 +14,7 @@ setup(
 	install_requires=requirements,
 	entry_points={
 		'console_scripts' : [
-			'compiler_fuzzing = compiler_fuzzing:main',
+			'cftools = compiler_fuzzing:main',
 		],
 	}
 )
