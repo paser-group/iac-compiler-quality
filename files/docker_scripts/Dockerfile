@@ -25,6 +25,8 @@ COPY ssh/config /home/ubuntu/.ssh/
 WORKDIR /home/ubuntu/.ssh/
 RUN cat cf-key.pub >> authorized_keys
 RUN chmod 600 authorized_keys
+RUN chown -R ubuntu *
+RUN chgrp -R ubuntu *
 
 # copy ssh keys to root
 RUN mkdir /root/.ssh
@@ -36,6 +38,7 @@ RUN cat cf-key.pub >> authorized_keys
 RUN chmod 600 authorized_keys
 
 # set up ssh server
+COPY ssh/sshd_config /etc/ssh/sshd_config
 EXPOSE 22
 CMD ["/usr/sbin/sshd","-D"]
 RUN service ssh start
