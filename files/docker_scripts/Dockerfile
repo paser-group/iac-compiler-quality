@@ -12,10 +12,16 @@ RUN apt update && apt upgrade -y
 RUN apt install -y openssh-client openssh-server
 RUN apt install -y iputils-ping
 RUN apt install -y vim
+RUN apt install -y sudo
+RUN apt install -y dnsutils
 
-# create normal user
+# create normal user and add to sudo
 RUN useradd -m ubuntu -s /bin/bash
 RUN echo "ubuntu:bdi_lab!" | chpasswd
+
+# add sudoers
+RUN usermod -aG sudo ubuntu
+RUN usermod -aG sudo root
 
 # copy ssh keys to ubuntu user
 RUN mkdir /home/ubuntu/.ssh
