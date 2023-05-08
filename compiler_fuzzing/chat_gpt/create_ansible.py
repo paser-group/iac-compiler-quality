@@ -50,6 +50,7 @@ def generate_manifest_ds(args, config, ds, num_levels):
                 session.get_response(sample['prompt'])
             )
         except:
+            display.red(f'timeout error on sample {i}')
             response.append('TIMEOUT ERROR')
 
     # truncate dataset to accomodate amount of responses generated

@@ -1,4 +1,5 @@
 import re
+from typing import Dict, List, Tuple
 
 """
 this file contains functions for generating strings
@@ -28,3 +29,27 @@ def replace_slot(text: str, entries: str) -> str:
 
 def remove_tilde(text: str) -> str:
     return text.split('```')[1] 
+
+def green(msg: str):
+    """
+    returns a string in green text
+    """
+    return Fore.GREEN + msg + Style.RESET_ALL
+
+def red(msg: str):
+    """
+    returns a string in red text
+    """
+    return Fore.RED + msg + Style.RESET_ALL
+
+def white_space_trail(msg: str) -> List[str]:
+    """
+    split but keep trailing whitespace at the end of each word
+
+    :param msg:
+    :type str:
+
+    :return: list of split tokens
+    :rtype: str
+    """
+    return  re.findall(r'\S+\s*', msg)
