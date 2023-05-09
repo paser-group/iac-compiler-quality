@@ -2,10 +2,10 @@
 this code is used to prompt chatgpt to create ansible playbooks
 """
 # external imports
-from tqdm import tqdm
 import pandas as pd
-from datasets import Dataset
 import datasets
+from tqdm import tqdm
+from datasets import Dataset
 
 # internal imports
 from .prompt_engg import PromptEngg
@@ -37,6 +37,12 @@ def generate_manifest_ds(args, config, ds, num_levels):
     )
 
     response = []
+
+    # truncate dataset if limit argument is specified
+    if args.limit > 0:
+        ds = ds.select(range(args.limit))
+
+    # 
     for i, sample in enumerate(tqdm(ds, desc='collecting chatgpt responses', total=len(ds))):
         if i == args.limit : break
 
