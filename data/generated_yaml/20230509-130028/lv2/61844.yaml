@@ -1,0 +1,76 @@
+
+- name: IOSXR L3 idempotent test
+  hosts: iosxr
+  gather_facts: no
+  connection: local
+  
+  tasks:
+    - name: Configure interface
+      iosxr_config:
+        lines: ["interface Ethernet1/0", "ip address 192.168.1.1 255.255.255.0"]
+        before: ["interface Ethernet1/0"]
+        after: ["interface Ethernet1/0", "no shutdown"]
+        parents: ["interface Ethernet1/0"]
+        match: exact
+        replace: line
+        save_when: changed
+        provider:
+          username: admin
+          password: "{{ vault_password }}"
+      register: interface_config
+
+    - name: Wait for configuration to become idempotent
+      wait_for:
+        timeout: 30
+        delay: 5
+        host: "{{ inventory_hostname }}"
+        port: 22
+        active_connection_states: ['ESTABLISHED']
+        msg: "Configuration is not idempotent"
+        search_regex: ".*Configuration.*{{ interface_config.stdout_lines }}"
+        state: started
+
+    - name: Delete interface configuration
+      iosxr_config:
+        lines: ["no interface Ethernet1/0"]
+        save_when: always
+        provider:
+          username: admin
+          password: "{{ vault_password }}"
+      register: interface_delete
+
+    - name: Wait for configuration deletion to become idempotent
+      wait_for:
+        timeout: 30
+        delay: 5
+        host: "{{ inventory_hostname }}"
+        port: 22
+        active_connection_states: ['ESTABLISHED']
+        msg: "Configuration deletion is not idempotent"
+        search_regex: ".*Delete.*{{ interface_delete.stdout_lines }}"
+        state: started
+
+    - name: Test failed configuration
+      iosxr_config:
+        lines: ["interface Ethernet1/0", "ip address 999.999.999.999 255.255.255.0"]
+        before: ["interface Ethernet1/0"]
+        after: ["interface Ethernet1/0", "no shutdown"]
+        parents: ["interface Ethernet1/0"]
+        match: exact
+        replace: line
+        save_when: changed
+        provider:
+          username: admin
+          password: "{{ vault_password }}"
+      register: failed_config
+
+    - name: Wait for failed configuration to become idempotent
+      wait_for:
+        timeout: 30
+        delay: 5
+        host: "{{ inventory_hostname }}"
+        port: 22
+        active_connection_states: ['ESTABLISHED']
+        msg: "Failed configuration is not idempotent"
+        search_regex: ".*Configuration.*{{ failed_config.stdout_lines }}"
+        state: started

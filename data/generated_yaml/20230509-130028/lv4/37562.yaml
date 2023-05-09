@@ -1,0 +1,31 @@
+
+- hosts: localhost
+  vars:
+    username: foo
+    password: bar
+    auth_method: ssh
+
+  tasks:
+    - name: Create a user
+      user:
+        name: "{{ username }}"
+        password: "{{ password }}"
+        state: present
+
+    - name: Manage the user's password
+      shell: |
+        passwd --expire {{ username }}
+        passwd --mindays 7 --maxdays 30 {{ username }}
+      register: passwd_output
+
+    - name: Test the authentication method
+      shell: |
+        ssh {{ username }}@localhost
+      register: auth_output
+
+    - name: Print the output
+      debug:
+        var: item.stdout
+      with_items:
+        - passwd_output
+        - auth_output

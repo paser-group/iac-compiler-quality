@@ -1,0 +1,25 @@
+
+- name: Test ios_config module idempotency
+  hosts: network_devices
+  gather_facts: false
+  connection: network_cli
+
+  tasks:
+    - name: Apply configuration
+      ios_config:
+        lines:
+          - ip ssh version 2
+          - ip ssh rsa keypair-name ansible
+      register: initial_config
+
+    - name: Reapply configuration
+      ios_config:
+        lines:
+          - ip ssh version 2
+          - ip ssh rsa keypair-name ansible
+      register: updated_config
+
+    - name: Check configuration changed after second run
+      debug:
+        msg: "Configuration changed on {{ ansible_host }}"
+      when: initial_config != updated_config

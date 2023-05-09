@@ -1,0 +1,49 @@
+
+---
+- name: Create a VMware port group and modify it
+  hosts: <target_hosts>
+  remote_user: <remote_user>
+  vars:
+    vsphere_host: <vsphere_host>
+    vsphere_user: <vsphere_user>
+    vsphere_password: <vsphere_password>
+    vsphere_datacenter: <vsphere_datacenter>
+    vsphere_cluster: <vsphere_cluster>
+    vmware_portgroup: <vmware_portgroup>
+  tasks:
+  - name: Create a VMware port group if it does not exist
+    vmware_portgroup:
+      hostname: "{{ vsphere_host }}"
+      username: "{{ vsphere_user }}"
+      password: "{{ vsphere_password }}"
+      datacenter: "{{ vsphere_datacenter }}"
+      cluster: "{{ vsphere_cluster }}"
+      name: "{{ vmware_portgroup }}"
+      state: present
+    register: result
+
+  - name: Modify a VMware port group and test idempotence
+    vmware_portgroup:
+      hostname: "{{ vsphere_host }}"
+      username: "{{ vsphere_user }}"
+      password: "{{ vsphere_password }}"
+      datacenter: "{{ vsphere_datacenter }}"
+      cluster: "{{ vsphere_cluster }}"
+      name: "{{ vmware_portgroup }}"
+      vlan_id: 10
+      state: present
+    register: result_modified
+    failed_when: "'Failed to update' not in result_modified.stderr"
+
+  - name: Perform the same task again for idempotence testing
+    vmware_portgroup:
+      hostname: "{{ vsphere_host }}"
+      username: "{{ vsphere_user }}"
+      password: "{{ vsphere_password }}"
+      datacenter: "{{ vsphere_datacenter }}"
+      cluster: "{{ vsphere_cluster }}"
+      name: "{{ vmware_portgroup }}"
+      vlan_id: 10
+      state: present
+    register: idempotence_test
+    failed_when: "'Changed' in idempotence_test.msg"

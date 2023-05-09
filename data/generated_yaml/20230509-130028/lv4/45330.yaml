@@ -1,0 +1,33 @@
+
+- name: Azure RM Container Registry idempotence bug test
+  hosts: localhost
+
+  tasks:
+    - name: Create Azure RM Container Registry
+      azure_rm_containerregistry:
+        resource_group: myResourceGroup
+        name: myContainerRegistry
+        sku: Basic
+        admin_enabled: true
+      delegate_to: localhost
+      register: registry_output
+
+    - name: Re-attempt creating the same Azure RM Container Registry
+      azure_rm_containerregistry:
+        resource_group: myResourceGroup
+        name: myContainerRegistry
+        sku: Basic
+        admin_enabled: true
+      delegate_to: localhost
+      register: registry_output_recreated
+
+    - name: Print output
+      debug:
+        msg: "Registry Created: {{ registry_output | json }}"
+      when: registry_output is defined
+
+      # This task should not print anything if the registry already exists
+    - name: Print output if recreated registry
+      debug:
+        msg: "Registry Recreated: {{ registry_output_recreated | json }}"
+      when: registry_output_recreated is defined and not registry_output_recreated.failed

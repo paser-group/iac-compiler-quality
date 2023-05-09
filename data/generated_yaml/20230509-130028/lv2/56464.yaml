@@ -1,0 +1,35 @@
+
+---
+- name: Test selective callback
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    loops:
+      - item_1
+      - item_2
+      - item_3
+
+  tasks:
+    - name: print message before loop
+      debug:
+        msg: "Starting looped tasks"
+
+    - name: looped task
+      command: echo "Task for {{ item }}"
+      loop: "{{ loops }}"
+      register: result_loop
+
+    - name: print message after loop
+      debug:
+        msg: "All looped tasks have been completed"
+
+    - name: selective callback
+      assert:
+        that:
+          - "'FAILED' not in item.rc"
+        fail_msg: "One of the looped tasks has failed"
+        success_msg: "All looped tasks have passed"
+      loop: "{{ result_loop.results }}"
+      loop_control:
+        label: "{{ item.item }}"

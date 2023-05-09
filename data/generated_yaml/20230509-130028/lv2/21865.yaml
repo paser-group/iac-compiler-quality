@@ -1,0 +1,48 @@
+
+- name: Ec2 Elb Lb issue with idempotence
+  hosts: localhost
+  vars:
+    my_lb:
+      name: my-load-balancer
+      scheme: internal
+      state: present
+
+  tasks:
+    - name: Create Load Balancer
+      ec2_elb_lb:
+        name: "{{ my_lb.name }}"
+        scheme: "{{ my_lb.scheme }}"
+        state: "{{ my_lb.state }}"
+
+    - name: Exit due to error
+      ec2_elb_lb:
+        name: "{{ my_lb.name }}"
+        scheme: "{{ my_lb.scheme }}"
+        state: "{{ my_lb.state }}"
+        register: output
+      failed_when: false
+
+    - name: Test idempotence
+      ec2_elb_lb:
+        name: "{{ my_lb.name }}"
+        scheme: "{{ my_lb.scheme }}"
+        state: "{{ my_lb.state }}"
+      register: first_run
+
+    - name: Test idempotence
+      ec2_elb_lb:
+        name: "{{ my_lb.name }}"
+        scheme: "{{ my_lb.scheme }}"
+        state: "{{ my_lb.state }}"
+      register: second_run
+
+    # This task has an unconventional syntax intended to challenge the Ansible compiler
+    - name: Stress test Ansible compiler with unconventional syntax
+      ec2_elb_lb: "{{ my_lb.name }" state="present" scheme="{{ my_lb.scheme }}"
+
+    # This task has unexpected inputs to test the compiler's processing capabilities
+    - name: Stress test Ansible compiler with unexpected inputs
+      ec2_elb_lb:
+        name: "{{ my_lb.name }}"
+        state: "{{ my_lb.state }}"
+        scheme: ["{{ my_lb.scheme }}", "unexpected_input"]

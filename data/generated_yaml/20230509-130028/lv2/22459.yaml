@@ -1,0 +1,25 @@
+
+---
+- name: Test playbook for eos_banner idempotent with unicode
+  hosts: localhost
+  gather_facts: false
+  
+  vars: 
+    banner_text: "Hello\n\uFFFD\uFFFD\uFFFDWorld!\uFFFD\uFFFD"
+    
+  tasks:
+  - name: Create banner file with Unicode characters
+    eos_banner:
+      name: "test banner"
+      text: '{{ banner_text }}'
+      dead_interval: 1000
+      state: present
+      
+  - name: Verify banner file for Unicode characters
+    assert:
+      that: "'Hello\\n????World!????\\n' in lookup('file', '/etc/motd')"
+      
+  - name: Remove the banner file
+    file:
+      path: /etc/motd
+      state: absent

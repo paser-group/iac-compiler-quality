@@ -1,0 +1,29 @@
+yaml
+- name: Check if the portgroup exists
+  vmware_portgroup_facts:
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_username }}"
+    password: "{{ vcenter_password }}"
+    datacenter_name: "{{ datacenter_name }}"
+  register: portgroup_facts
+
+- name: Create the portgroup
+  vmware_portgroup:
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_username }}"
+    password: "{{ vcenter_password }}"
+    datacenter_name: "{{ datacenter_name }}"
+    name: "{{ portgroup_name }}"
+    vlan_id: "{{ vlan_id }}"
+    state: present
+  when: not portgroup_facts.portgroup | selectattr('name', '==', portgroup_name) | list
+
+- name: Delete the portgroup
+  vmware_portgroup:
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_username }}"
+    password: "{{ vcenter_password }}"
+    datacenter_name: "{{ datacenter_name }}"
+    name: "{{ portgroup_name }}"
+    state: absent
+  when: portgroup_facts.portgroup | selectattr('name', '==', portgroup_name) | list

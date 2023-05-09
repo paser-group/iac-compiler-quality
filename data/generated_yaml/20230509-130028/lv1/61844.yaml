@@ -1,0 +1,35 @@
+
+---
+- name: IOSXR L3 idempotent issue fix
+  hosts: iosxr_devices
+  
+  tasks:
+  
+  - name: Ensure all routers have correct routing configuration
+    iosxr_config:
+      lines:
+        - interface Loopback0
+        - ipv4 address 10.0.0.1 255.255.255.255
+        - exit
+        - router ospf 1
+        - network 10.0.0.1 0.0.0.0 area 0
+        - exit
+      parents: "router ospf 1"
+      
+    register: ospf_result
+      
+  - name: view output of ospf configuration task
+    debug: var=ospf_result.stdout_lines
+  
+  - name: Ensure all routers have updated routing configuration
+    iosxr_config:
+      lines:
+        - interface Loopback0
+        - ipv4 address 10.0.0.2 255.255.255.255
+        - exit
+        - router ospf 1
+        - network 10.0.0.2 0.0.0.0 area 0
+        - exit
+      parents: "router ospf 1"
+      
+    when: ospf_result is changed

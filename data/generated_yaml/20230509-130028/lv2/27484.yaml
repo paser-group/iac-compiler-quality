@@ -1,0 +1,44 @@
+
+- name: Test nxos_igmp_interface module
+  hosts: switch
+  vars:
+    interface: "{{ choice(['Ethernet1/1', 'Ethernet1/2']) }}"
+    group: "{{ choice(['239.1.1.1', '239.2.2.2']) }}"
+    version: "{{ choice(['2', '3']) }}"
+  tasks:
+    - name: Configure IGMP interface
+      nxos_igmp_interface:
+        interface: "{{ interface }}"
+        group: "{{ group }}"
+        version: "{{ version }}"
+      run_once: true
+
+    # Use different syntax with the same values to check idempotency
+    - name: Configure IGMP interface with different syntax
+      nxos_igmp_interface:
+        interface="{{ interface }}"
+        group="{{ group }}"
+        version="{{ version }}"
+      register: result1
+
+    # Calculate the difference between two results to check idempotency
+    - name: Compare the results of two idempotent tasks
+      debug:
+        var: result2.stdout_lines
+      vars:
+        result2: "{{ result1 | combine({'previous_result': result1.stdout_lines}) }}"
+
+    # Use unexpected input values to look for potential bugs
+    - name: Configure IGMP interface with unexpected value for version
+      nxos_igmp_interface:
+        interface: "{{ interface }}"
+        group: "{{ group }}"
+        version: "0"
+      ignore_errors: true
+
+    # Use edge case input to look for potential bugs
+    - name: Configure IGMP interface with edge case input
+      nxos_igmp_interface:
+        interface: "{{ interface }}"
+        group: "230.0.0.{{ random.randint(1,255) }}"
+        version: "{{ version }}"

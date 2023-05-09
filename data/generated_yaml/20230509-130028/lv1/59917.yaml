@@ -1,0 +1,51 @@
+
+- name: Configure VMware Portgroup Idempotency
+  hosts: all
+  gather_facts: false
+
+  vars:
+
+    portgroup_name: "my_portgroup"              # Update with your desired portgroup name
+    vcenter_hostname: "your.vcenter.com"        # Update with your vCenter FQDN
+    vcenter_username: "user@domain.com"         # Update with your vCenter username
+    vcenter_password: "your_password_here"      # Update with your vCenter password
+
+    # The below YAML defines the portgroup settings that needs to be idempotent
+    portgroup_settings:
+      vlan_id: 123
+      vlan_trunk: false
+      security_enabled: true
+      teaming_policy: "loadbalance_ip"
+
+  tasks:
+
+    - name: Gather the portgroup details
+      vmware_portgroup_facts:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: false
+        datacenter_name: "datacenter"
+        portgroup_names: "{{ portgroup_name }}"
+      register: portgroup_details
+
+    - name: Update portgroup if it needs to be idempotent
+      vmware_portgroup:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: false
+        datacenter_name: "datacenter"
+        portgroup_name: "{{ portgroup_name }}"
+        vlan_id: "{{ portgroup_settings.vlan_id }}"
+        vlan_trunk: "{{ portgroup_settings.vlan_trunk }}"
+        security_enabled: "{{ portgroup_settings.security_enabled }}"
+        teaming_policy: "{{ portgroup_settings.teaming_policy }}"
+      when: "'vlan_id' in portgroup_details.portgroups[0] and
+             portgroup_details.portgroups[0]['vlan_id'] != portgroup_settings.vlan_id or
+             'vlan_trunk' in portgroup_details.portgroups[0] and
+             portgroup_details.portgroups[0]['vlan_trunk'] != portgroup_settings.vlan_trunk or
+             'security_enabled' in portgroup_details.portgroups[0] and
+             portgroup_details.portgroups[0]['security_enabled'] != portgroup_settings.security_enabled or
+             'teaming_policy' in portgroup_details.portgroups[0] and
+             portgroup_details.portgroups[0]['teaming_policy'] != portgroup_settings.teaming_policy"

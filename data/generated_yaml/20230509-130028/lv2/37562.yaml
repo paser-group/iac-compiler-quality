@@ -1,0 +1,54 @@
+yaml
+- name: Test foreman callback plugin authentication errors
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Ensure invalid credentials raise `AuthenticationError`
+      command: /usr/bin/foreman --username admin --password invalid --url https://foreman.example.com/api/v2 --list
+      register: cmd_output
+      failed_when: cmd_output.failed == False
+
+    - name: Ensure authentication errors raise `ForemanInvalidCredentials`
+      command: /usr/bin/foreman --username admin --password secret --url https://foreman.example.com/api/v2 --list
+      register: cmd_output
+      failed_when: cmd_output.stderr.find("ForemanInvalidCredentials") == -1
+
+    - name: Ensure connection errors raise `ForemanApiConnectionError`
+      command: /usr/bin/foreman --username admin --password secret --url https://unreachable.example.com/api/v2 --list
+      register: cmd_output
+      failed_when: cmd_output.stderr.find("ForemanApiConnectionError") == -1
+
+    - name: Ensure unsupported HTTP method raises `ForemanApiError`
+      command: /usr/bin/foreman --username admin --password secret --url https://foreman.example.com/api/v2 --method TRACE --list
+      register: cmd_output
+      failed_when: cmd_output.stderr.find("ForemanApiError") == -1
+
+    - name: Ensure invalid API endpoint raises `ForemanApiError`
+      command: /usr/bin/foreman --username admin --password secret --url https://foreman.example.com/api/v3 --list
+      register: cmd_output
+      failed_when: cmd_output.stderr.find("ForemanApiError") == -1
+
+    - name: Ensure invalid request raises `ForemanApiError`
+      command: /usr/bin/foreman --username admin --password secret --url https://foreman.example.com/api/v2 --data-binary @/etc/hosts --list
+      register: cmd_output
+      failed_when: cmd_output.stderr.find("ForemanApiError") == -1
+
+    - name: Ensure unexpected stdout format raises `AnsibleUndefinedVariable`
+      command: /usr/bin/foreman --username admin --password secret --url https://foreman.example.com/api/v2 --list
+      register: cmd_output
+      failed_when: cmd_output.stdout.find("invalid_output") == -1
+
+    - name: Ensure unexpected stderr format raises `AnsibleUndefinedVariable`
+      command: /usr/bin/foreman --username admin --password secret --url https://foreman.example.com/api/v2 --list
+      register: cmd_output
+      failed_when: cmd_output.stderr.find("invalid_output") == -1
+
+    - name: Ensure unexpected exit code raises `AnsibleUndefinedVariable`
+      command: /usr/bin/foreman --username admin --password secret --url https://foreman.example.com/api/v2 --unknown-option
+      register: cmd_output
+      failed_when: cmd_output.rc == 0
+
+    - name: Ensure unsupported plugin raises `AnsibleUndefinedVariable`
+      callback: unsupported_callback_plugin
+      register: cmd_output
+      failed_when: cmd_output.rc == 0

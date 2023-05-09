@@ -1,0 +1,46 @@
+
+- name: Test idempotency behavior of ios_system module with domain commands
+  hosts: all
+  gather_facts: false
+  tasks:
+
+    - name: Execute multiple domain commands
+      ios_system:
+        commands:
+          - ip name-server vrf TEST 1.1.1.1
+          - ip domain-name testdomain.local
+          - ip domain-lookup source-interface Loopback0
+          - ip name-server vrf TEST 2.2.2.2
+          - no ip domain-lookup
+        wait_for: result.stdout_lines[-1] == 'no ip domain-lookup'
+      register: result
+
+    - name: Verify the output of the executed commands
+      debug:
+        var: result.stdout_lines
+
+    - name: Test the idempotency behavior with an edge case command
+      ios_system:
+        commands: 
+          - no ip domain-list testdomain.local
+        wait_for: result.stdout_lines[-1] == 'no ip domain-list testdomain.local'
+      register: result
+
+    # Test with unconventional syntax and inputs
+    - name: Test unconventional syntax
+      ios_system:
+        commands:
+          - "ip name-server {{ 1.1.1.1 }}"
+          - "ip domain-name { testdomain.local } "
+          - "ip domain-lookup  {{ lookup('env', 'HOME') }}"
+        wait_for: result.stdout_lines[-1] == 'ip domain-lookup'
+      register: result
+
+    - name: Test unexpected input
+      ios_system:
+        commands:
+          - ip name-server vrf TEST {{ '1.1.1.1' | to_uuid }}
+          - ip domain-name {{ testdomain|default('no') }}
+          - ip domain-lookup source-interface {{ lookup('env', 'UNKNOWN_INTERFACE') }}
+        wait_for: result.stdout_lines[-1] == 'ip domain-lookup'
+      register: result

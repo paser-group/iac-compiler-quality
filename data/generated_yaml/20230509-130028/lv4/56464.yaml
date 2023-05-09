@@ -1,0 +1,40 @@
+
+- name: Test selective callback behavior
+  hosts: localhost
+  vars:
+    test_list:
+      - item1
+      - item2
+      - item3
+  tasks:
+    - name: Loop over items
+      loop: "{{ test_list }}"
+      register: loop_output
+
+    - name: Generate callback
+      ansible.builtin.debug:
+        msg: "{{ item }}"
+      loop: "{{ loop_output.results }}"
+      register: callback_output
+
+    - name: Modify callback for certain items
+      set_fact:
+        callback_output: "{{ callback_output.results | map(merge({'failed_item':false})) | list }}"
+
+    - name: Report a "FAILED" status for certain items
+      set_fact:
+        callback_output: "{{ callback_output | map(merge({'failed_item':true})) | list }}"
+      when: item == 'item2'
+
+    - name: Execute callback
+      callback: | 
+        class CallbackModule(ansible.plugins.callback.CallbackBase):
+            CALLBACK_VERSION = 2.0
+            CALLBACK_TYPE = 'stdout'
+            CALLBACK_NAME = 'test_callback'
+
+            def v2_runner_on_failed(self, result, ignore_errors=False):
+                if 'failed_item' in result._result and result._result['failed_item']:
+                    self._display.display('FAILED | ' + result._host.get_name(), color='red')
+                else:
+                    self._display.display('OK | ' + result._host.get_name(), color='green')

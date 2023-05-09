@@ -1,0 +1,42 @@
+
+- name: Test ios_config idempotency
+  hosts: my_ios_device
+  gather_facts: no
+
+  tasks:
+  - name: Configure interface description
+    ios_config:
+      lines:
+        - 'interface GigabitEthernet1/0'
+        - 'description {{ item }}'
+      parents: interface GigabitEthernet1/0
+      save_when: modified
+    with_items:
+      - 'Management'
+      - 'Data'
+
+  - name: Verify idempotency (should do nothing)
+    ios_command:
+      commands:
+        - 'show running-config | include description Management'
+        - 'show running-config | include description Data'
+    register: output1
+
+  - name: Change interface description manually
+    ios_command:
+      commands:
+        - 'configure terminal'
+        - 'interface GigabitEthernet1/0'
+        - 'description New Description'
+        - 'end'
+
+  - name: Verify idempotency after manual change (should revert to original)
+    ios_command:
+      commands:
+        - 'show running-config | include description Management'
+        - 'show running-config | include description Data'
+    register: output2
+
+  - name: Assert successful idempotency
+    assert:
+      that: output1.stdout_lines == output2.stdout_lines

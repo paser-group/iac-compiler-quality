@@ -1,0 +1,41 @@
+
+- hosts: localhost
+  gather_facts: no
+
+  vars:
+    resource_group_name: "{{ ansible_user }}-azure-containerreg"
+    location: eastus
+    admin_user: "{{ ansible_user }}"
+
+  tasks:
+  - name: Create Azure Container Registry
+    azure_rm_containerregistry:
+      resource_group: "{{ resource_group_name }}"
+      name: "{{ registry_name }}"
+      location: "{{ location }}"
+      admin_user_enabled: true
+      admin_user: "{{ admin_user }}"
+      sku: Premium
+      state: present
+    register: first_result
+    tags: [create_container_registry]
+
+  - name: Check Idempotence by Re-Running Container Registry Creation with same config
+    azure_rm_containerregistry:
+      resource_group: "{{ resource_group_name }}"
+      name: "{{ registry_name }}"
+      location: "{{ location }}"
+      admin_user_enabled: true
+      admin_user: "{{ admin_user }}"
+      sku: Premium
+      state: present
+    register: second_result
+    tags: [create_container_registry_again]
+
+  - name: Validate Idempotence
+    assert:
+      that:
+        - first_result is changed
+        - second_result is success
+        - second_result is noop
+    tags: [assert_idempotence]

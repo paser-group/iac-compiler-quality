@@ -1,0 +1,40 @@
+
+---
+- name: Ansible Playbook to expose potential bugs in nxos_igmp_interface
+  hosts: nxos_switches
+
+  vars:
+    interface_list:
+      - Ethernet1/1
+      - Ethernet1/2
+    default_igmp:
+      version: 2
+      immediate_leave: no
+
+  tasks:
+  - name: Set the default nxos_igmp_interface values
+    nxos_igmp_interface:
+      name: "{{ item }}"
+      version: "{{ default_igmp.version }}"
+      immediate_leave: "{{ default_igmp.immediate_leave }}"
+    loop: "{{ interface_list }}"
+
+  - name: Debug the nxos_igmp_interface values
+    debug:
+      var: nxos_igmp_interface
+    loop: "{{ interface_list }}"
+
+  - name: Repeat the tasks and assert for idempotency
+    block:
+      - nxos_igmp_interface:
+          name: "{{ item }}"
+          version: "{{ default_igmp.version }}"
+          immediate_leave: "{{ default_igmp.immediate_leave }}"
+        loop: "{{ interface_list }}"
+      - debug:
+          var: nxos_igmp_interface
+        loop: "{{ interface_list }}"
+      - name: Assert the result from multiple runs
+        assert:
+          that: nxos_igmp_interface[0] == nxos_igmp_interface[1] == default_igmp
+        loop: "{{ interface_list }}"

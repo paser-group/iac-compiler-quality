@@ -1,0 +1,45 @@
+
+- name: Test nxos_vxlan_vtep_vni module
+  hosts: switches
+  gather_facts: no
+  tasks:
+  
+    # Adding valid configuration
+    - name: Add VXLAN VNI
+      nxos_vxlan_vtep_vni:
+        vni: "{{ range(10) | list }}"
+        vrf: management
+        vtep: "{{ range(10, 20) | list }}"
+        state: present
+
+    # Removing invalid configuration, should fail but show idempotence
+    - name: Remove VXLAN VNI
+      nxos_vxlan_vtep_vni:
+        vni: invalid_input
+        vrf: "{{ lookup('env', 'USER') }}"
+        vtep: 127.0.0.1
+        state: absent
+
+    # Test with non-existent vrf, should fail
+    - name: Test with non-existent VRF name
+      nxos_vxlan_vtep_vni:
+        vni: 10
+        vrf: invalid_vrf_name
+        vtep: "{{ inventory_hostname }}"
+        state: present
+
+    # Test with unassigned VNI, should fail
+    - name: Test with unassigned VNI
+      nxos_vxlan_vtep_vni:
+        vni: 2000
+        vrf: management
+        vtep: "{{ groups['switches'][0] }}"
+        state: present
+        
+    # Test with not allowed vtep IP version, should fail
+    - name: Test with invalid vtep IP version
+      nxos_vxlan_vtep_vni:
+        vni: 100
+        vrf: "{{ inventory_hostname }}"
+        vtep: 2001::1234:5678:9abc:def0
+        state: present

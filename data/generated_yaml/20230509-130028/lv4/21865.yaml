@@ -1,0 +1,36 @@
+
+- hosts: elb-instance # ELB instance hosts
+  tasks:
+  - ec2_elb_lb:
+      name: my_lb # name of the load balancer
+      state: present # ensuring that the load balancer exists
+      region: us-west-2 # ensuring that the LB is created in the us-west-2 region
+      zones: ["us-west-2a", "us-west-2b", "us-west-2c"] # availability zones to enable for the load balancer
+      listeners:
+        - protocol: http # protocol the connection speaks during the session
+          load_balancer_port: 80 # port number on which the listener listens for client traffic
+          instance_port: 80 # port number on the backend-instance that the Load balancer routes traffic to
+      subnets:
+        - subnet-123 # EC2 subnet IDs in which to create the load balancer subnets.
+  register: elb_lb_reg # instance registration for elb-lb instance
+
+- hosts: elb-instance # ELB instance hosts
+  tasks:
+  - ec2_instance:
+      name: my_instance # name of the instance
+      state: present # ensuring that the instance exists
+      region: us-west-2 # ensuring that the instance is created in the us-west-2 region
+      key_name: my-key # specified key pair name
+      image: ami-0c55b159cbfafe1f0 # AMI image ID 
+      instance_type: t2.micro # instance type
+      monitoring: yes # CloudWatch monitoring enabled 
+  register: my_instance_reg # instance registration for the newly created instance
+
+  - local_action: 
+      module: wait_for # wait for the instance to be reachable
+      host: "{{ inventory_hostname }}"
+      port: 22
+      search_regex: "OpenSSH_7.[0-9]" # matching regular expression
+      delay: 10
+      timeout: 320
+  loop: "{{ range(2) | list }}" # the loop that runs for the desired number of times.

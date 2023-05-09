@@ -1,0 +1,43 @@
+yaml
+---
+- hosts: localhost
+  gather_facts: false
+  vars:
+    message: "{{ lookup('env', 'SLACK_MESSAGE') |replace(',','') | default('Ansible notification', true) }}"
+    emoticon: "{{ lookup('env', 'SLACK_EMOTICON') | default(':ghost:', true) }}"
+    attachment_color: "{{ lookup('env', 'SLACK_ATTACHMENT_COLOR') | default(None, true) }}"
+    username: "{{ lookup('env', 'SLACK_USERNAME') | default('Ansible Bot', true) }}"
+    channel: "{{ lookup('env', 'SLACK_CHANNEL') | default('#ansible_notifications', true) }}"
+  
+  tasks:
+  - name: Trigger a 404 error when sending a message to Slack via callback plugin
+    raw: |
+      echo "{{ message }}" > /tmp/slack_message
+      ansible-playbook -c local -i localhost, -e slack_token="{{ lookup('env', 'SLACK_TOKEN_SECRET') }}" -e slack_channel="{{ channel }}" -e slack_username="{{ username }}" -e 'slack_text=@/tmp/slack_message' -e 'slack_color={{ attachment_color }}' -e 'slack_emoji={{ emoticon }}' /dev/null || true
+
+  - name: Send custom HTTP headers to Slack via callback plugin
+    uri:
+      url: https://slack.com/api/chat.postMessage
+      method: POST
+      body_format: 'raw'
+      body: '{{ message }}'
+      headers:
+        Authorization: 'Bearer {{ lookup(''env'', ''SLACK_TOKEN_SECRET'') }}'
+        Content-Type: 'application/json; charset=utf-8'
+      body:
+        channel: '{{ channel }}'
+        username: '{{ username }}'
+        attachments:
+          - fallback: 'Ansible playbook failed to notify via Slack'
+            color: '{{ attachment_color }}'
+            pretext: 'Hello from Ansible!'
+            text: '{{ message | regex_replace(''world'', ''Universe'') }}'
+            footer: 'Sent for {{ ansible_user_id }}'
+            footer_icon: 'https://placeimg.com/16/16/people'
+        emoji: '{{ emoticon }}'
+    register: slack_response
+
+  - name: Fail if the Slack API returns an error
+    fail:
+      msg: 'Error posting message to Slack: {{ slack_response.json.errors[0] }}'
+    when: slack_response.status != 200 or slack_response.json.ok != true

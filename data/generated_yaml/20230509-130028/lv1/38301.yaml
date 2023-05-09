@@ -1,0 +1,35 @@
+
+---
+
+- hosts: ios_devices
+  gather_facts: false
+  become: yes
+
+  vars:
+    domain_cmds:
+      - domain-lookup
+      - ip-domain-lookup
+      - ip-name-server
+
+  tasks:
+    - name: ensure domain commands are configured
+      ios_system:
+        commands:
+          - "{{ item }}"
+      loop: "{{ domain_cmds }}"
+      check_all:
+        - "{{ item }} is enabled"
+      when: item not in ansible_existing_cfg.ios_system_command_output
+      register: output
+
+    - name: show configured domain commands
+      ios_command:
+        commands: show running-config | include domain-
+      register: domain_cfg
+
+    - name: fail if any domain command failed to configure
+      assert:
+        that:
+          - item is success
+        fail_msg: "Failed to configure {{ domain_cmds[output.results|indent(2)|selectattr('failed', 'defined')|list|first].item }} command"
+      loop: "{{ output.results }}"

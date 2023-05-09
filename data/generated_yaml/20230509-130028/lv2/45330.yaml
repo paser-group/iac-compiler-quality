@@ -1,0 +1,37 @@
+
+- name: Test Ansible compiler for idempotence bug in Azure container registry
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+  - name: Ensure Azure container registry exists
+    azure_rm_containerregistry:
+      resource_group: test-group
+      name: test-registry
+      state: present
+
+  - name: Run task for registry creation
+    azure_rm_containerregistry:
+      resource_group: test-group
+      name: test-registry
+      tags:
+        - key: tag1
+          value: value1
+      state: present
+
+  - name: Check if registry changes on second run
+    azure_rm_containerregistry:
+      resource_group: test-group
+      name: test-registry
+      tags:
+        - key: tag2
+          value: value2
+      state: present
+    register: registry_changes
+
+  - name: Confirm idempotence of registry creation
+    assert:
+      that:
+        - registry_changes is changed
+      success_msg: Azure container registry creation successful
+      fail_msg: Azure container registry creation failed

@@ -1,0 +1,69 @@
+
+- name: P2 nxos_vtp_password idempotence testing playbook
+  hosts: localhost
+  tasks:
+    - name: set vtp password with state present
+      nxos_vtp_password:
+        password: 'test'
+        state: present
+    - name: check if vtp password is set
+      command: show vtp password
+      register: password_result
+    - name: remove vtp password with state absent
+      nxos_vtp_password:
+        password: 'test'
+        state: absent
+    - name: check if vtp password is removed
+      command: show vtp password
+      register: removed_result
+    - name: set empty vtp password with state present
+      nxos_vtp_password:
+        password: ''
+        state: present
+    - name: check if empty vtp password is set
+      command: show vtp password
+      register: empty_password_result
+    - name: remove empty vtp password with state absent
+      nxos_vtp_password:
+        password: ''
+        state: absent
+    - name: check if empty vtp password is removed
+      command: show vtp password
+      register: empty_removed_result
+    - name: set a password longer than the maximum allowed length
+      nxos_vtp_password:
+        password: 'abcdefghijklmnopqrstuvwxyz1234567890qwertyuiopasdfghjklzxcvbnm'
+        state: present
+      ignore_errors: yes
+    - name: try to remove a password that is not set
+      nxos_vtp_password:
+        password: 'notset'
+        state: absent
+      ignore_errors: yes
+    - name: check if unknown command throws an error
+      command: shw vtp password
+      register: unknown_command_result
+      ignore_errors: yes
+    - name: check for idempotence with random password generation
+      block:
+        - name: set vtp password with state present
+          nxos_vtp_password:
+            password: '{{ lookup("password", "/dev/null length=32") }}'
+            state: present
+          tags: idempotence
+        - name: check if vtp password is set
+          command: show vtp password
+          register: password_result
+          tags: idempotence
+        - name: remove vtp password with state absent
+          nxos_vtp_password:
+            password: '{{ lookup("password", "/dev/null length=32") }}'
+            state: absent
+          tags: idempotence
+        - name: check if vtp password is removed
+          command: show vtp password
+          register: removed_result
+          tags: idempotence
+      become: yes
+      register: idempotence_result
+  
