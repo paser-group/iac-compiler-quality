@@ -24,9 +24,12 @@ def get_log_files(config):
         
     return logger, handler
 
-def record_case(success, **args):
+def record_case(success, tag="run", **args):
     if success:
-        f = open(files.get_project_root() + "/logs/log_success.jsonl", "a")
+        if tag == "run":
+            f = open(files.get_project_root() + "/logs/ansible_run.jsonl", "a")
+        else:
+            f = open(files.get_project_root() + "/logs/log_success.jsonl", "a")
     else:
         f = open(files.get_project_root() + "/logs/log_fail.jsonl", "a")
     log = args
