@@ -2,6 +2,7 @@
 this code is used to prompt chatgpt to create ansible playbooks
 """
 # external imports
+import sys
 import pandas as pd
 import datasets
 from tqdm import tqdm
@@ -55,7 +56,10 @@ def generate_manifest_ds(args, config, ds, num_levels):
             response.append(
                 session.get_response(sample['prompt'])
             )
-        except:
+        except KeyboardInterrupt:
+            print('KeyboardInterrupt')
+            sys.exit(0)
+        except Exception:
             display.red(f'timeout error on sample {i}')
             response.append('TIMEOUT ERROR')
 
