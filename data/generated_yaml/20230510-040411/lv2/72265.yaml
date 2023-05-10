@@ -1,0 +1,39 @@
+yaml
+---
+- name: SSH Connection Test
+  hosts: all
+  become: true
+
+  tasks:
+    - name: SSH Connection Test
+      wait_for:
+        port: "{{ range(2200, 2300) | random }}"
+        host: "{{ item }}"
+        timeout: 5
+      with_items:
+        - 127.0.0.1
+        - localhost
+        - "{{ inventory_hostname }}"
+        - "{{ ansible_hostname }}"
+
+    - name: Install Netcat
+      apt:
+        name: netcat
+        state: present
+
+    - name: Start SSH Server
+      become_user: root
+      command: >
+          sshd -p {{ range(2200, 2300) | random }} -D -e
+          -f /dev/null -r /dev/null -E /dev/null -h /dev/null -o PermitRootLogin=yes
+        no_log: true
+
+    - name: SSH Connection Test with Netcat
+      shell: nc -zv "{{ range(2200, 2300) | random }}:localhost"
+      ignore_errors: true
+
+    - name: Stop SSH Server
+      become_user: root
+      command: >
+          ps auxww | grep sshd | grep -v grep | awk '{print $2}' | xargs kill -9
+        no_log: true

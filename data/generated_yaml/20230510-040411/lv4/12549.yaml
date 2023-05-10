@@ -1,0 +1,24 @@
+
+- name: Test Ansible Compiler SSL/TLS certificate verification
+  hosts: localhost
+  vars:
+    url: "https://example.com/file.zip"
+    proxy: "proxy.example.com"
+    port: 8080
+    
+  tasks:
+  - name: Fetch the file via proxy
+    get_url:
+      url: "{{ url }}"
+      dest: "/tmp/file.zip"
+      use_proxy: yes
+      timeout: 10
+      http_proxy: "{{ proxy }}:{{ port }}"
+      https_proxy: "{{ proxy }}:{{ port }}"
+      validate_certs: yes
+    register: download_result
+
+  - name: Check SSL/TLS certificate validity
+    fail:
+      msg: "Invalid SSL/TLS certificate found"
+    when: download_result.failed == False and download_result.changed == True and download_result.cert_validation_results.server_cert.is_verified == False

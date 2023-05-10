@@ -1,0 +1,36 @@
+
+- name: Generate Encrypted Data
+  hosts: localhost
+  vars:
+    secret_value: "{{ hostvars['localhost']['ansible_ssh_pass'] }}"
+  tasks:
+    - name: Encrypt data with Vault
+      block:
+        - name: Set up Vault Encryption
+          vault_identity: "{{ ansible_connection }}"
+          vault_password_file: ~/.vault_pass.txt
+
+        - name: Encrypt
+          set_fact:
+            encrypted: "{{ secret_value | vault_encrypt }}"
+      rescue:
+        - name: Handle Vault Error
+          debug:
+            msg: "Unable to encrypt data!"
+          when: "'input is not vault encrypted data' in ansible_failed_result.msg"
+
+    - name: Decrypt the Encrypted Data
+      block:
+        - name: Set up Vault Decryption
+          vault_identity: "{{ ansible_connection }}"
+          vault_password_file: ~/.vault_pass.txt
+
+        - name: Decrypt
+          set_fact:
+            decrypted: "{{ encrypted | vault }}"
+      rescue:
+        - name: Handle Vault Error
+          debug:
+            msg: "Unable to decrypt data!"
+          when: "'input is not vault encrypted data' in ansible_failed_result.msg"
+

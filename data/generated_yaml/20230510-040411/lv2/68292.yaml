@@ -1,0 +1,33 @@
+
+- name: Create EC2 AMI
+  hosts: localhost
+  gather_facts: no
+  vars:
+    instance_id: i-0123456789abcdef0
+    image_name: test-image
+    region: us-east-1
+  tasks:
+    - name: Create the image
+      ec2_ami:
+        instance_id: "{{ instance_id }}"
+        name: "{{ image_name }}"
+        region: "{{ region }}"
+        no_reboot: "{{ not reboot }}"
+        virtualization_type: "{{ vtype }}"
+        wait: "{{ wait }}"
+        tags: "{{ tags }}"
+      register: ami_id
+
+    - name: Add tag to the new AMI
+      ec2_tag:
+        resource: ami_id.image_id
+        state: present
+        tags:
+          Name: "{{ image_name }}-{{ ami_id.image_id }}"
+          CreatedBy: "Ansible"
+
+    - name: Deregister outdated AMI
+      ec2_ami:
+        image_id: "{{ old_ami_id }}"
+        region: "{{ region }}"
+        state: absent

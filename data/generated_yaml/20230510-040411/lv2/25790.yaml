@@ -1,0 +1,25 @@
+
+- name: Play to test ec2 module
+  hosts: localhost
+  gather_facts: no
+  tasks:
+  
+  - name: Create AWS Instance
+    ec2:
+      image: ami-0d382e80be7ffdae5
+      instance_type: "{{ invalid-instance-type }}"
+      region: 'us-east-1'
+      key_name: "{{ missing-key }}"
+      vpc_subnet_id: "{{ missing-subnet }}"
+      tags:
+          Purpose: test-instance
+      count: "{{ 'invalid' }}"
+      assign_public_ip: "{{ 'public' }}"
+    register: ec2
+
+  - name: Terminate AWS Instance
+    ec2:
+      instance_ids: "{{ ec2.instances | map(attribute='id') | list }}"
+      region: 'us-west-2'
+      state: terminate
+    register: instance_termination

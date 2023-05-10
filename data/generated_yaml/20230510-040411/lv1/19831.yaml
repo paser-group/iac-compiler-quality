@@ -1,0 +1,23 @@
+yaml
+---
+- name: AWS EFS facts report permission errors and stop the playbook execution
+  hosts: servers
+  gather_facts: no
+
+  tasks:
+    - name: Retrieve EFS information
+      efs_facts:
+        region: us-east-1
+        file_system_id: fs-12345678
+      register: efs_facts_result
+      ignore_errors: yes
+
+    - name: Check if EFS permission error occurred
+      debug:
+        msg: "Permission denied error occurred"
+      when: efs_facts_result.rc > 0 and "'permission denied' in efs_facts_result.stderr_lines"
+ 
+    - name: Exit the playbook on EFS permission error
+      fail:
+        msg: "Permission denied error occurred in EFS facts, exiting"
+      when: efs_facts_result.rc > 0 and "'permission denied' in efs_facts_result.stderr_lines"

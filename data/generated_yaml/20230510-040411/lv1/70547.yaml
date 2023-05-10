@@ -1,0 +1,24 @@
+yaml
+---
+- name: Update CD ISO in oVirt VM
+  hosts: ovirt_host
+  vars:
+    vm_name: {{ vm_name }}
+    iso_name: {{ iso_name }}
+  tasks:
+    - name: Get CD-ROM attachment ID
+      ovirt_vm_info:
+        auth: "{{ ovirt_auth }}"
+        vm_name: "{{ vm_name }}"
+      register: vm_info
+    - name: Update CD ISO by name
+      ovirt_vm_cdrom:
+        auth: "{{ ovirt_auth }}"
+        vm_name: "{{ vm_name }}"
+        id: "{{ vm_info.ansible_facts.ovirt_vm_info.cdrom_attachments[0].id }}"
+        iso_name: "{{ iso_name }}"
+      register: cdrom
+    - name: Fail task if CD ISO update failed
+      fail:
+        msg: "Failed to update CD ISO. Error message: {{ cdrom.ansible_facts.ovirt_vm_cdrom.msg }}"
+      when: not cdrom.ansible_facts.ovirt_vm_cdrom.success

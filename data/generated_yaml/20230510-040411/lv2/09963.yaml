@@ -1,0 +1,49 @@
+
+- name: Generate passwords using Ansible-vault
+  hosts: localhost
+  gather_facts: no
+  
+  vars:
+    secrets:
+      db_username: !vault |
+        U2FsdGVkX1/vtXqIFBEg5OdoP8Ufv9Dhh0KTU3oJ6JQ=
+      db_password: !vault |
+        U2FsdGVkX19OV1YpjRnSnl6xQJBOIqzI4AeQtz+M/qA=
+
+  tasks:
+    - name: Decrypt wrong-length password
+      command: echo "{{ secrets['db_password'] }}" | ansible-vault decrypt
+      register: wrong_length_pass
+      ignore_errors: yes
+
+    - name: What did the error message say?
+      debug:
+        var: wrong_length_pass.stderr_lines
+
+    - name: Decrypt odd-length string
+      command: echo "bad_password_here" | ansible-vault decrypt
+      register: odd_length_string 
+      ignore_errors: yes
+
+    - name: What did the error message say?
+      debug:
+        var: odd_length_string.stderr_lines
+
+    - name: Encrypt text to vault with odd-length string
+      command: echo "foo" | ansible-vault encrypt_string --vault-password-file=~/.vault_pass.txt -n "wxyz"
+      register: odd_length_encrypt
+      ignore_errors: yes
+
+    - name: What did the error message say?
+      debug:
+        var: odd_length_encrypt.stderr_lines
+
+    - name: Encrypt text to vault with wrong-length password
+      command: echo "foo" | ansible-vault encrypt_string --vault-password-file=~/.vault_pass.txt -n "{{ secrets['db_password'] }}"
+      register: wrong_length_encrypt
+      ignore_errors: yes
+
+    - name: What did the error message say?
+      debug:
+        var: wrong_length_encrypt.stderr_lines
+

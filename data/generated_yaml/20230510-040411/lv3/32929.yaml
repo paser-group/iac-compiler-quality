@@ -1,0 +1,49 @@
+
+---
+- name: Ansible playbook to reproduce Lets Encrypt default value issue
+  hosts: example.com
+  tasks:
+  - name: Install the Lets Encrypt module
+    yum:
+      name: letsencrypt
+      state: present
+
+  - name: Creating sub domain
+    community.general.certbot_dns:
+      domain: "{{ subdomain }}.{{ domain }}"
+      subdomains:
+      - "{{ subdomain }}"
+      provider: dns
+      validation: dns-01
+      credentials:
+      - dns_credential
+
+  - name: Obtain SSL certificate for sub-domain
+    letsencrypt:
+      email: "{{ email }}"
+      webroot_path: "/var/www/html"
+      domains:
+        - "{{ subdomain }}.{{ domain }}"
+      agrees_tos: yes
+
+  - name: Using SSL certificate for the sub domain
+    apache2_module:
+      name: ssl
+      state: present
+
+  - name: Restarting Apache
+    service:
+      name: apache2
+      state: restarted
+
+  - name: Verify the certificate is working
+    async_test:
+      host: "{{ subdomain }}.{{ domain }}"
+      port: "443"
+      timeout: 10
+      delay: 1
+
+  - name: Cleaning up
+    community.general.certbot_certonly:
+      command: delete
+      domains: "{{ subdomain }}.{{ domain }}"

@@ -1,0 +1,50 @@
+
+---
+- name: Test junos_facts module
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    interface: "{{ lookup('env', 'INTERFACE') | default('ge-0/0/0', True) }}"
+
+  tasks:
+    - name: Gather junos facts
+      junos_facts:
+        host: "{{ lookup('env', 'JUNOS_HOST') }}"
+        user: "{{ lookup('env', 'JUNOS_USER') }}"
+        passwd: "{{ lookup('env', 'JUNOS_PASS') }}"
+        gather_subset: l3_interfaces
+      register: junos_facts_out
+
+    - name: Display gathered data
+      debug:
+        var: junos_facts_out.ansible_facts.net_l3_interfaces
+
+    - name: Check if error occurred
+      debug:
+        msg: "{{ junos_facts_out.stderr }}"
+      when: junos_facts_out.stderr is defined
+
+    - name: Test with unconventional syntax
+      junos_facts:
+        host: "{{ lookup('env', 'JUNOS_HOST') }}"
+        user: "{{ lookup('env', 'JUNOS_USER') }}"
+        passwd: "{{ lookup('env', 'JUNOS_PASS') }}"
+        gather_subset: "{{ ['l3_interfaces', 'l2_interfaces', 'l1_interfaces'] | random }}"
+      register: junos_facts_out2
+
+    - name: Display gathered data
+      debug:
+        var: junos_facts_out2.ansible_facts.net_l3_interfaces
+
+    - name: Test unexpected inputs
+      junos_facts:
+        host: "{{ lookup('env', 'JUNOS_HOST') }}"
+        user: "{{ lookup('env', 'JUNOS_USER') }}"
+        passwd: "{{ lookup('env', 'JUNOS_PASS') }}"
+        gather_subset: "{{ lookup('env', 'UNEXPECTED_INPUTS') | default('doesnt_exist', True) }}"
+      register: junos_facts_out3
+
+    - name: Display gathered data
+      debug:
+        var: junos_facts_out3.ansible_facts.net_l3_interfaces

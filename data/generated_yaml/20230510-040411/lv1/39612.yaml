@@ -1,0 +1,37 @@
+
+- name: Configure MS SQL Server
+  hosts: <your_target_host>
+  become: yes
+
+  vars:
+    mssql_db_name: <your_database_name>
+    mssql_username: <your_username>
+    mssql_password: <your_password>
+
+  tasks:
+    - name: Install MS SQL Server python package
+      pip:
+        name: "pymssql"
+        state: present
+
+    - name: Create database {{ mssql_db_name }}
+      mssql_db:
+        name: "{{ mssql_db_name }}"
+        collation: SQL_Latin1_General_CP1_CI_AS
+        login_user: "{{ mssql_username }}"
+        login_password: "{{ mssql_password }}"
+        state: present
+
+    - name: Create table in {{ mssql_db_name }} database
+      mssql_query:
+        login_user: "{{ mssql_username }}"
+        login_password: "{{ mssql_password }}"
+        db: "{{ mssql_db_name }}"
+        sql: "CREATE TABLE <your_table_name> ( <column1> <datatype1> PRIMARY KEY, <column2> <datatype2>, <column3> <datatype3>)"
+
+    - name: Drop database
+      mssql_db:
+        name: "{{ mssql_db_name }}"
+        login_user: "{{ mssql_username }}"
+        login_password: "{{ mssql_password }}"
+        state: absent

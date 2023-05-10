@@ -1,0 +1,47 @@
+
+- name: Test ansible compiler for 'scm_archive_role is not defined' error
+  hosts: localhost
+  gather_facts: false
+  
+  vars:
+    role_name: "{{ 'my_role' + lookup('pipe', 'date +%s%N') }}"
+
+  tasks:
+    - name: Create role without scm_archive
+      command: ansible-galaxy init {{ role_name }}
+      register: create_role
+      
+    - name: Find role with invalid name
+      find:
+        paths: "/path/to/invalid-{{ lookup('pipe', 'date +%s%N') }}"
+        recurse: no
+      register: invalid_name
+      
+    - name: Archive invalid role
+      command: ansible-galaxy scm --role-name invalid-role archive invalid-archive.tar.gz
+      register: invalid_archive
+      
+    - name: Install invalid role from archive
+      command: ansible-galaxy install invalid-archive.tar.gz
+      register: install_invalid
+      
+    - name: Delete invalid role
+      command: ansible-galaxy delete invalid-role
+      register: delete_invalid
+      
+    - name: Create role with scm_archive
+      command: ansible-galaxy init {{ role_name }} --scm-archive
+      register: create_role_with_archive
+      
+    - name: Install role with scm_archive
+      command: ansible-galaxy install {{ role_name }} --force
+      register: install_role
+      
+    - name: Delete role with scm_archive
+      command: ansible-galaxy delete {{ role_name }}
+      register: delete_role
+      
+    - name: Check if scm_archive_role is not defined
+      assert:
+        that:
+          - "'scm_archive_role' not in vars"

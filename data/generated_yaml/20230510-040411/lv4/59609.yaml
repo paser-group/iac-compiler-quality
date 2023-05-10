@@ -1,0 +1,26 @@
+
+- hosts: localhost
+  tasks:
+    - name: Try different botocore versions
+      shell: pip install botocore=={{ item }}
+      with_items:
+        - 2.8.2
+        - 2.8.4
+        - 2.8.5
+        - 2.9.0
+        - 2.10.0
+      register: botocore
+      ignore_errors: yes
+
+    - name: debug botocore versions
+      debug:
+        var: botocore.results
+
+    - name: Try aws_secret with different botocore versions
+      vars:
+        botocore_version: "{{ item.stdout }}"
+      shell: |
+        ansible localhost -m setup > /dev/null &&
+        ansible localhost -e "aws_secret_key='{{ aws_secret_key }}' aws_access_key='{{ aws_access_key }}' botocore_version='{{ botocore_version }}'" -m debug -a 'var=lookup("aws_secret", "my_secret_key", "file=/tmp/secret-file ignore_missing=true")'
+      with_items: "{{ botocore.results }}"
+      ignore_errors: yes

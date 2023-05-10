@@ -1,0 +1,87 @@
+
+---
+- hosts: all
+  gather_facts: no
+
+  tasks: 
+    - name: Test sudo password on CentOS with --ask-sudo-pass option not provided
+      command: whoami
+      become: yes
+      become_method: sudo
+      register: result
+      ignore_errors: yes
+
+    - name: Check if sudo password is required on CentOS
+      assert:
+        that: "'Sorry, try again' in result.stderr"
+        fail_msg: "Sudo password not prompted"
+        success_msg: "Sudo password prompt successful"
+        ignore_errors: yes
+
+    - name: Test sudo password prompt with unconventional syntax
+      command: whoami
+      become: yes
+      become_method: sudo
+      become_flags: "-S -H"
+      environment:
+        SUDO_ASKPASS: /bin/false
+      register: result
+      ignore_errors: yes
+      
+    - name: Check if incorrect sudo password prompt syntax raised an error
+      assert:
+        that: "'invoke-rc.d: not a symlink' in result.stderr"
+        fail_msg: "Incorrect sudo password prompt syntax did not raise an error"
+        success_msg: "Unexpected error occurred for incorrect sudo password prompt syntax"
+        ignore_errors: yes
+
+    - name: Test incorrect sudo password input with unexpected characters
+      command: whoami
+      become: yes
+      become_method: sudo
+      become_flags: "-S -H"
+      environment:
+        SUDO_ASKPASS: echo 'invalidpass@#$%' | tr -d '\n'
+      register: result
+      ignore_errors: yes
+      
+    - name: Check if incorrect sudo password input with unexpected characters raised an error
+      assert:
+        that: "'try again' in result.stderr"
+        fail_msg: "Incorrect sudo password input with unexpected characters did not raise an error"
+        success_msg: "Unexpected error occurred for incorrect sudo password input with unexpected characters"
+        ignore_errors: yes
+
+    - name: Test correct sudo password input with unexpected whitespace characters
+      command: whoami
+      become: yes
+      become_method: sudo
+      become_flags: "-S -H"
+      environment:
+        SUDO_ASKPASS: echo " correctpass   "
+      register: result
+      ignore_errors: yes
+      
+    - name: Check if correct sudo password input with unexpected whitespace characters was successful
+      assert:
+        that: "result.rc == 0"
+        fail_msg: "Correct sudo password input with unexpected whitespace characters failed"
+        success_msg: "Correct sudo password input with unexpected whitespace characters successful"
+        ignore_errors: yes
+
+    - name: Test incorrect sudo password input with unexpected whitespace characters
+      command: whoami
+      become: yes
+      become_method: sudo
+      become_flags: "-S -H"
+      environment:
+        SUDO_ASKPASS: echo " incorrectpass   "
+      register: result
+      ignore_errors: yes
+      
+    - name: Check if incorrect sudo password input with unexpected whitespace characters raised an error
+      assert:
+        that: "'try again' in result.stderr"
+        fail_msg: "Incorrect sudo password input with unexpected whitespace characters did not raise an error"
+        success_msg: "Unexpected error occurred for incorrect sudo password input with unexpected whitespace characters"
+        ignore_errors: yes

@@ -1,0 +1,31 @@
+
+---
+- name: Fix SSLHandshakeError in Ansible
+  hosts: all
+  
+  tasks:
+    - name: Install required packages
+      apt:
+        name:
+          - python-openssl
+          - libffi-dev
+          - libssl-dev
+        state: present
+
+    - name: Update openssl configuration
+      openssl_conf:
+        file: /etc/ssl/openssl.cnf
+        regexp: '^CipherString.*$'
+        line: 'CipherString = DEFAULT@SECLEVEL=1'
+        state: present
+
+    - name: Test SSL connection
+      uri:
+        url: https://example.com
+        validate_certs: true
+      register: ssl_status
+    
+    - name: Display SSLHandshakeError message
+      debug:
+        msg: "{{ ssl_status }}"
+

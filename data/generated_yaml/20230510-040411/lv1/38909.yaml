@@ -1,0 +1,35 @@
+yaml
+---
+- hosts: all
+  become: yes
+
+  tasks:
+    - name: Install Docker
+      apt:
+        name: docker.io
+        state: present
+      when: ansible_distribution == "Ubuntu" or ansible_distribution == "Debian"
+    
+    - name: Check Docker installation
+      command: docker --version
+      register: docker_version
+      changed_when: False
+    
+    - name: Print Docker version
+      debug:
+        var: docker_version.stdout_lines
+    
+    - name: Pull Docker image
+      docker_image:
+        name: "imageName:latest"
+        source: pull
+    
+    - name: Create Docker container
+      docker_container:
+        name: "containerName"
+        image: "imageName:latest"
+        ports:
+          - "80:80"
+          - "443:443"
+          - "[::]:80:80"
+          - "[::]:443:443"

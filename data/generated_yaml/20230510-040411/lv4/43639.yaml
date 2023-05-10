@@ -1,0 +1,38 @@
+
+---
+- name: Check Docker version
+  hosts: all
+  
+  tasks:
+    - name: Retrieve Docker Info
+      docker_info:
+      register: docker_info_result
+
+    - name: Show Docker info
+      debug:
+        var: docker_info_result
+
+    - name: Check Docker version using docker version command
+      command: docker version --format '{{.Server.Version}}'
+      register: docker_version_command_result
+
+    - name: Show Docker version using command
+      debug:
+        var: docker_version_command_result.stdout_lines
+
+    - name: Check Docker version using the docker_version module
+      docker_version:
+      register: docker_version_module_result
+
+    - name: Show Docker version using module
+      debug:
+        var: docker_version_module_result
+
+    - name: Compare expected Docker version with retrieved versions
+      vars:
+        expected_version: '20.10.7'
+      assert:
+        that:
+          - docker_info_result.DockerServerVersion == expected_version
+          - docker_version_command_result.stdout_lines == expected_version
+          - docker_version_module_result.docker_version == expected_version

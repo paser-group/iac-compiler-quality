@@ -1,0 +1,22 @@
+
+---
+- name: Parse multiple inventories
+  hosts: localhost
+  gather_facts: false
+  vars:
+    inventory_files:
+      - inventory1.ini
+      - inventory2.yml
+  tasks:
+  - name: Gather inventory
+    pluging:
+      name: inventory_hostname
+      sources:
+        - script: "{{item}}"
+      ignore_errors: yes
+    loop: "{{ inventory_files }}"
+    register: inventory_results
+  - name: Check inventory results
+    fail:
+      msg: "Error parsing inventory"
+    when: inventory_results.results | selectattr('failed', 'equalto', True) | list | length > 0

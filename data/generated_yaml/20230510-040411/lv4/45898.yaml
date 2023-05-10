@@ -1,0 +1,18 @@
+
+- name: Check SSH keys on remote server
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Check if SSH key exists
+      stat:
+        path: ~/.ssh/id_rsa.pub
+      register: ssh_key
+    - block:
+        - name: Add SSH key to authorized_keys
+          lineinfile:
+            path: ~/.ssh/authorized_keys
+            line: "{{ lookup('file', '~/.ssh/id_rsa.pub') }}"
+          when: ssh_key.stat.exists == true
+        - name: Generate new SSH key
+          command: ssh-keygen -t rsa -N '' -f ~/.ssh/id_rsa
+          when: ssh_key.stat.exists == false

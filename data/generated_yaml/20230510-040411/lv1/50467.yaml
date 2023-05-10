@@ -1,0 +1,29 @@
+yaml
+---
+- name: update Docker Swarm configuration
+  hosts: all
+
+  tasks:
+  - name: update Docker Swarm service
+    docker_swarm_service:
+      name: <service_name>
+      state: present
+      replicas: <number_of_replicas>
+      update_config:
+        parallelism: <max_parallelism>
+        delay: <delay>
+      rollback_config:
+        parallelism: <max_rollback_parallelism>
+        failure_action: <failure_action>
+    register: service_update
+
+  - name: check if service is up
+    uri:
+      url: https://localhost:<service_port>
+      method: GET
+    register: response
+
+  - name: handle response
+    debug:
+      msg: "Service up and running."
+    when: response.status == 200

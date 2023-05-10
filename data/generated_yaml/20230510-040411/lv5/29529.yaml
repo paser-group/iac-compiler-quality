@@ -1,0 +1,40 @@
+
+- name: Test dellos9_command hang after reload command
+  hosts: target_device
+  gather_facts: no
+
+  tasks:
+  - name: Configure reload command on the remote device
+    dellos9_command:
+      commands:
+      - reload
+      waitfor: prompt
+    register: reload_output
+
+  - name: Verify that reload command executed successfully
+    assert:
+      that: "'reload' in reload_output.stdout[0]"
+      fail_msg: "Reload command failed"
+  
+  - name: Loop and test dellos9_command operation
+    block:
+      - name: Issue dellos9_command operation
+        dellos9_command:
+          commands:
+          - show hostname
+        register: command_output
+        failed_when: false
+
+      - name: Ensure dellos9_command operation succeeded
+        assert:
+          that: command_output.rc == 0
+          fail_msg: "dellos9_command operation failed"
+
+      - name: Pause briefly before next iteration
+        pause:
+          seconds: 5
+    
+    when: inventory_hostname in groups['target_device']
+    loop: "{{ range(10) | list }}"
+    loop_control:
+      loop_var: dummy

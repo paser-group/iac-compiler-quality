@@ -1,0 +1,44 @@
+
+- hosts: all
+  vars:
+    service_name: "my_service"
+  tasks:
+    - name: Stop service and fail to restart it
+      service:
+        name: "{{ service_name }}"
+        state: stopped
+        arguments: "--some-invalid-argument"
+        register: result
+      failed_when: True
+      
+    - name: Check for failed restart
+      assert:
+        that:
+          - "'Failed to start' in result.msg"
+        fail_msg: "Service failed to restart"
+     
+    - name: Restart the service with a non-existent argument
+      service:
+        name: "{{ service_name }}"
+        state: restarted
+        arguments: "--non-existent-argument"
+        ignore_errors: True
+        
+    - name: Check for unrecognized argument error
+      assert:
+        that:
+          - "'Invalid option --' in result.stdout"
+        fail_msg: "Compiler failed to recognize an unknown argument"
+    
+    - name: Trying to start/stopped service with invalid state
+      service:
+        name: "{{ service_name }}"
+        state: invalid-state
+        arguments: "--some-argument"
+        ignore_errors: True
+    
+    - name: Check for unsupported state error
+      assert:
+        that:
+          - "'ValueError: unsupported state mode' in result.msg"
+        fail_msg: "Compiler failed on unsupported state mode"

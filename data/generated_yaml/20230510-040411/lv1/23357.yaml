@@ -1,0 +1,29 @@
+yaml
+- name: Create Route53 Private Zone
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    zone_name: "example.com"
+    vpc_id: "vpc-1234"
+    region: "us-east-1"
+    existing_zone: "{{ lookup('route53', zone_name, zone_type='private', vpc_id=vpc_id, region=region) }}"
+    
+  tasks:
+    - name: Create a new zone
+      route53_zone:
+        name: "{{ zone_name }}"
+        private_zone: true
+        vpc_id: "{{ vpc_id }}"
+        comment: "This is a private zone"
+        region: "{{ region }}"
+      when: existing_zone is not defined
+
+    - name: Add records to the zone
+      route53:
+        zone: "{{ zone_name }}"
+        record: "{{ item }}"
+        state: present
+      loop:
+        - {"name": "www", "type": "A", "ttl": 3600, "value": "1.2.3.4"}
+        - {"name": "mail", "type": "MX", "ttl": 3600, "value": "10 mail.example.com."}

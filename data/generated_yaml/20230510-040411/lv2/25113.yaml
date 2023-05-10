@@ -1,0 +1,60 @@
+
+- name: Proxmox LXC - test error handling
+  hosts: localhost
+  vars:
+    vm_id: "{{ 100 / 2 }}"
+    vm_name: "{{ item }}/{{ 'a' * 200 }}"
+    cores: "{{ [1, 2, 3, 'four', None] }}"
+    memory: "{{ [128, 256, '512', '1gb', None] }}"
+    arch: "{{ 'x86_64' if 1+1 == 2 else 'arm64' }}"
+    nonexistent: "{{ nonexistent_var }}"
+    too_many_args: "{{ 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 }}"
+    invalid_vm_name: "{{ 'a' * 101 }}"
+  gather_facts: no
+  tasks:
+    - name: Create LXC container with numeric ID
+      proxmox:
+        api_user: 'root@pam'
+        api_password: 'pass'
+        api_host: 'proxmox-host'
+        vmid: "{{ vm_id }}"
+        ostemplate: 'local:vztmpl/ubuntu-20.04-default_20210226_amd64.tar.gz'
+        netif: 'model=virtio,bridge=vmbr0,tag=3000'
+        password: 'root123'
+        state: present
+      ignore_errors: true
+
+    - name: Create LXC container with invalid name
+      proxmox:
+        api_user: 'root@pam'
+        api_password: 'pass'
+        api_host: 'proxmox-host'
+        vmid: "{{ item }}"
+        hostname: "{{ invalid_vm_name }}"
+        ostemplate: 'local:vztmpl/ubuntu-20.04-default_20210226_amd64.tar.gz'
+        netif: 'model=virtio,bridge=vmbr0,tag=3000'
+        password: 'root123'
+        cores: 2
+        memory: 512
+        state: present
+      with_items: "{{ range(1, 5)|list }}"
+      ignore_errors: true
+
+    - name: Create LXC container with too many arguments
+      proxmox:
+        api_user: 'root@pam'
+        api_password: 'pass'
+        api_host: 'proxmox-host'
+        vmid: "{{ item }}"
+        hostname: "{{ vm_name }}"
+        ostemplate: 'local:vztmpl/ubuntu-20.04-default_20210226_amd64.tar.gz'
+        netif: 'model=virtio,bridge=vmbr0,tag=3000'
+        password: 'root123'
+        cores: "{{ cores }}"
+        memory: "{{ memory }}"
+        arch: "{{ arch }}"
+        nonexistent: "{{ nonexistent }}"
+        too_many_args: "{{ too_many_args }}"
+        state: present
+      with_items: "{{ range(1, 5)|list }}"
+      ignore_errors: true

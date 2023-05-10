@@ -1,0 +1,43 @@
+
+- name: Stress Test Ansible Compiler for dellos9_command Hangs Issue
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: Run command after reboot
+      dellos_command:
+        commands:
+          - reload
+          - wait 2
+          - show interfaces
+          - conf t
+          - vlan 10
+          - exit
+          - show vlan id 10
+      register: dellos_result
+
+    - name: Check command output for hangs
+      debug:
+        msg: "{{ item }}"
+      with_items:
+        - "{{ dellos_result.stdout_lines }}"
+        - "{{ dellos_result.stderr_lines }}"
+        - "{{ dellos_result.commands }}"
+      failed_when: item is search('hangs')
+      ignore_errors: true
+
+    - name: Timeout check for long-running command
+      dellos_command:
+        commands:
+          - sleep 60
+      register: dellos_result_timeout
+      async: 60
+      poll: 0
+
+    - name: Check for timeout error
+      debug:
+        msg: "{{ item }}"
+      with_items:
+        - "{{ dellos_result_timeout }}"
+      failed_when: item is search('timeout')
+      ignore_errors: true

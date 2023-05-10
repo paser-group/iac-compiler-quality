@@ -1,0 +1,41 @@
+
+- name: Test !!binary YAML data causing JSON decoding error in ansible-inventory
+  hosts: localhost
+  vars:
+    binary_data: !!binary |
+      YWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXoi
+  tasks:
+    - name: Test binary data in variable
+      debug:
+        var: binary_data
+
+    - name: Test binary data in JSON
+      debug:
+        msg: "{{ binary_data | to_json }}"
+
+    - name: Test binary data in YAML
+      debug:
+        msg: |
+          {{ binary_data | b64decode | from_yaml }}
+
+    - name: Test binary data in YAML inside dictionary
+      debug:
+        msg:
+          binary_data: !!binary |
+            YWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXoi
+
+    - name: Test binary data in YAML inside list
+      debug:
+        msg:
+          - !!binary |
+            YWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXoi
+
+    - name: Test binary data as a file
+      copy:
+        content: "{{ binary_data | b64decode }}"
+        dest: /tmp/binary.txt
+
+    - name: Test binary data as template
+      template:
+        src: binary.j2
+        dest: /tmp/binary.txt

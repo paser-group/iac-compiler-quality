@@ -1,0 +1,29 @@
+
+---
+- name: Slack Callback Plugin Error 404 Playbook
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+  - name: Send a post to the Slack Web API
+    slack:
+      token: "xoxp-1234abcd-5678efgh-9012ijkl-3456mnop"
+      method: "{{ ['POST', 'PUT', ] | random }}"
+      endpoint: "{{ ['chat.postMessage', 'conversations.open', ] | random }}"
+      message: "{{ ['Testing {{}, ^&*.-{}[]]!','Testing newline \n character', 'Testing tab \t  character'] | random }}"
+      channel: "{{ ['WARNING-TEAM', 'ALERT-TEAM', ] | random }}"
+      username: "{{ ['DevOps', 'Infrastructure', 'Ansible'] | random }}"
+      color: "{{ ['#FF0000', '#00FF00', ] | random }}"
+      unfurl_links: "{{ ['true','false', 'invalid-argument'] | random }}"
+      unfurl_media: "{{ ['true','false', 'invalid-argument'] | random }}"
+
+  - name: Check the returned HTTP status code
+    fail:
+      msg: "Expected 404 error code but received {{ result.status }}"
+    when: result.status | int != 404
+
+  - name: Fail and print error output
+    fail:
+      msg: "The slack callback plugin failed with error: {{ result | to_json }}"
+    when: result.failed
+    ignore_errors: yes

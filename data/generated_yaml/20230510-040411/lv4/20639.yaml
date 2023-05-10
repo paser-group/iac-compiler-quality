@@ -1,0 +1,25 @@
+
+- name: Create VM
+  async: "{{ async_timeout }}"
+  poll: 0
+  vsphere_guest:
+    vcenter_hostname: "{{ vcenter_hostname }}"
+    username: "{{ username }}"
+    password: "{{ password }}"
+    guest: "{{ guest_name }}"
+    state: present
+    vm_extra_config:
+      wait_for_guest_net_timeout: "{{ vsphere_wait_for_guest_net_timeout }}"
+  register: result
+
+- name: Wait for VM creation to complete
+  async_status:
+    jid: "{{ result.ansible_job_id }}"
+    mode: status
+    timeout: "{{ async_timeout }}"
+  register: job_status
+  until: job_status.finished
+
+- name: Display result
+  debug:
+    var: result

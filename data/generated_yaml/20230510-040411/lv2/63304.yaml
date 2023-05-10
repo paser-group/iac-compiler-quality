@@ -1,0 +1,60 @@
+
+---
+- name: test playbook for server parameter issue
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    api_prefix: "/api/v1"
+
+  tasks:
+  - shell: echo "testing server parameter"
+    register: test_output
+
+  - debug:
+      msg: "{{ test_output.stdout }}"
+
+  - name: test default server parameter
+    uri:
+      url: "{{ api_prefix }}/test"
+      method: GET
+      return_content: true
+    register: default_server_output
+    failed_when: "default_server_output.status != 200"
+
+  - debug:
+      msg: "default server parameter: {{ default_server_output.json }}"
+
+  - name: test custom server parameter
+    uri:
+      url: "{{ api_prefix }}/test"
+      method: GET
+      return_content: true
+      server: "https://example.org"
+      validate_certs: false
+    register: custom_server_output
+    failed_when: "custom_server_output.status != 200"
+
+  - debug:
+      msg: "custom server parameter: {{ custom_server_output.json }}"
+
+  - name: test deprecated server parameter
+    uri:
+      url: "{{ api_prefix }}/test"
+      method: GET
+      return_content: true
+      deprecated_server: "https://legacy.example.org"
+      validate_certs: false
+    register: deprecated_server_output
+    failed_when: "deprecated_server_output.status != 200"
+
+  - debug:
+      msg: "deprecated server parameter: {{ deprecated_server_output.json }}"
+
+  - name: test unsupported protocol server parameter
+    uri:
+      url: "{{ api_prefix }}/test"
+      method: GET
+      return_content: true
+      server: "ftp://example.org"
+    failed_when: "true"

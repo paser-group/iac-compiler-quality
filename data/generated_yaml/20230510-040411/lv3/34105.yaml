@@ -1,0 +1,40 @@
+
+# playbook.yml 
+
+- hosts: target_hosts
+  tasks:
+    - name: Create a vmware guest
+      vmware_guest:
+        hostname: "{{ vcenter_host }}"
+        username: "{{ vcenter_user }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: no
+        name: "{{ guest_name }}"
+        state: poweredon
+        hardware:
+          memory_mb: "{{ guest_memory_mb }}"
+          num_cpus: "{{ guest_num_vcpus }}"
+          scsi: "{{ guest_scsi }}"
+        networks:
+          - label: "{{ guest_network_label }}"
+            dvs_name: "{{ dvs_name }}"
+            type: "{{ guest_network_type }}"
+      register: guest_spec
+      
+    - name: Shutdown the VM 
+      vmware_guest:
+        hostname: "{{ vcenter_host }}"
+        username: "{{ vcenter_user }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: no
+        name: "{{ guest_name }}"
+        state: poweredoff
+        hardware:
+          memory_mb: "{{ guest_memory_mb }}"
+          num_cpus: "{{ guest_num_vcpus }}"
+          scsi: "{{ guest_scsi }}"
+        networks:
+          - label: "{{ guest_network_label }}"
+            dvs_name: "{{ dvs_name }}"
+            type: "{{ guest_network_type }}"
+      when: guest_spec.changed

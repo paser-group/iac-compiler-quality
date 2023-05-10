@@ -1,0 +1,47 @@
+
+- hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Test Ansible provisioner
+      ansible:
+        playbook: test.yml
+        provisioner: ansible
+        hosts: localhost
+
+    - name: Generate SSH key
+      command: ssh-keygen -t rsa -N "" -f /tmp/sshkey
+
+    - name: Add localhost to known_hosts
+      lineinfile:
+        dest: /tmp/known_hosts
+        line: 'localhost {{ lookup("file", "/tmp/sshkey.pub") }}'
+
+    - name: Create Vagrantfile
+      copy:
+        content: |
+          Vagrant.configure("2") do |config|
+            config.vm.box = "ubuntu/bionic64"
+            config.vm.provider "virtualbox" do |v|
+              v.memory = 2048
+              v.cpus = 2
+            end
+
+            config.vm.provision :ansible do |ansible|
+                ansible.playbook = "test.yml"
+                ansible.verbose = "vvvv"
+                ansible.hosts = "localhost"
+            end
+          end
+        dest: /tmp/Vagrantfile
+
+    - name: Test Vagrant provisioner
+      command: vagrant up
+      environment:
+        VAGRANT_LOG: debug
+        VAGRANT_DEFAULT_PROVIDER: virtualbox
+      register: result
+
+    - name: Print result
+      debug:
+        var: result
+

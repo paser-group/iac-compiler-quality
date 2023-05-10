@@ -1,0 +1,66 @@
+
+- name: "Copy files with sudo permissions and unconventional syntax"
+  hosts: all
+  become: yes
+  gather_facts: false
+  tasks:
+    - name: "Copy file as a different user"
+      copy:
+        src: "/home/user/file.txt"
+        dest: "/tmp/"
+        owner: "{{ item }}"
+        group: "{{ item }}"
+        become: yes
+        become_user: "{{ item }}"
+      with_items:
+        - root
+        - admin
+        - daemon
+        - bin
+        - games
+      vars:
+        ansible_become_method: sudo
+      ignore_errors: yes
+
+    - name: "Copy file with unconventional file permissions"
+      copy:
+        src: "/home/user/file.txt"
+        dest: "/tmp/"
+        mode: "0000"
+        become: yes
+        become_method: sudo
+      ignore_errors: yes
+
+    - name: "Copy a file from an encrypted directory"
+      copy:
+        src: "/home/ansible/ansible-vault/secrets.txt"
+        dest: "/tmp/"
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: "0600"
+        decrypt: yes
+      vars:
+        ansible_become_method: sudo
+      ignore_errors: yes
+
+    - name: "Copy file with unexpected input"
+      copy:
+        src: "/home/user/file.txt{{"
+        dest: "/tmp/"
+        become: yes
+        become_method: sudo
+      ignore_errors: yes
+
+- name: "Generate an error after copying"
+  hosts: all
+  become: yes
+  tasks:
+    - copy:
+        src: "/home/user/file.txt"
+        dest: "/etc/motd"
+        owner: root
+        group: root
+      delegate_to: localhost
+      become: yes
+      become_user: "{{ ansible_user }}"
+      become_method: sudo

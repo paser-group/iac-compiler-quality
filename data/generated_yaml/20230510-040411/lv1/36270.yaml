@@ -1,0 +1,77 @@
+
+- name: Deploy Azure VM
+  hosts: localhost
+  connection: local
+  gather_facts: no
+
+  vars:
+    resource_group: <resource group name>
+    vm_name: <virtual machine name>
+    location: <location>
+    admin_username: <admin username>
+    admin_password: <admin password>
+    vm_size: <virtual machine size>
+    image_publisher: <image publisher>
+    image_offer: <image offer>
+    image_sku: <image SKU>
+
+  tasks:
+    - name: Create resource group
+      azure_rm_resourcegroup:
+        name: "{{ resource_group }}"
+        location: "{{ location }}"
+      register: rg
+
+    - name: Create virtual network
+      azure_rm_virtualnetwork:
+        resource_group: "{{ resource_group }}"
+        name: "{{ vm_name }}-vnet"
+        address_prefixes: "10.0.0.0/16"
+        subnets:
+          - name: "{{ vm_name }}-subnet"
+            address_prefix: "10.0.1.0/24"
+        tags:
+          environment: production
+      register: vnet
+
+    - name: Create public IP address
+      azure_rm_publicipaddress:
+        resource_group: "{{ resource_group }}"
+        allocation_method: Static
+        name: "{{ vm_name }}-publicip"
+        tags:
+          environment: production
+      register: public_ip
+
+    - name: Create network interface
+      azure_rm_networkinterface:
+        resource_group: "{{ resource_group }}"
+        name: "{{ vm_name }}-nic"
+        virtual_network_name: "{{ vm_name }}-vnet"
+        subnet_name: "{{ vm_name }}-subnet"
+        public_ip_name: "{{ vm_name }}-publicip"
+        tags:
+          environment: production
+      register: nic
+
+    - name: Create virtual machine
+      azure_rm_virtualmachine:
+        resource_group: "{{ resource_group }}"
+        name: "{{ vm_name }}"
+        vm_size: "{{ vm_size }}"
+        storage_account_type: Standard_LRS
+        admin_username: "{{ admin_username }}"
+        admin_password: "{{ admin_password }}"
+        network_interface_names: "{{ vm_name }}-nic"
+        os_type: linux
+        image:
+          offer: "{{ image_offer }}"
+          publisher: "{{ image_publisher }}"
+          sku: "{{ image_sku }}"
+          version: latest
+        tags:
+          environment: production
+      register: vm
+
+    - debug:
+        var: vm.public_fqdn

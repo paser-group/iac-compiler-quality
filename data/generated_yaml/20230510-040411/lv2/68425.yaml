@@ -1,0 +1,51 @@
+
+- name: Test playbook for 'jsonfile' cache plugin
+  hosts: all
+  
+  vars:
+    cache_dir: "{{ playbook_dir }}/cache_dir"
+    cache_file: "{{ playbook_dir }}/cache_dir/cache.json"
+    invalid_json: "{{ playbook_dir }}/cache_dir/invalid.json"
+    non_existent_dir: "{{ playbook_dir }}/non-existent-dir"
+    non_existent_file: "{{ playbook_dir }}/cache_dir/non-existent-file.json"
+    empty_lst: []
+
+  tasks:
+  - name: Create cache dir with invalid write permission
+    file:
+      path: "{{ cache_dir }}"
+      state: directory
+      mode: '444'
+
+  - name: Create an empty cache file
+    copy:
+      dest: "{{ cache_file }}"
+      content: ''
+
+  - name: Create an invalid JSON file
+    copy:
+      dest: "{{ invalid_json }}"
+      content: '{'
+
+  - name: Create a non-existent dir entry in the cache file
+    lineinfile:
+      path: "{{ cache_file }}"
+      line: '"{{ non_existent_dir }}": {}'
+
+  - name: Create a non-existent file entry in the cache file
+    lineinfile:
+      path: "{{ cache_file }}"
+      line: '"{{ non_existent_file }}": {}'
+
+  - name: Create an empty list entry in the cache file
+    lineinfile:
+      path: "{{ cache_file }}"
+      line: '"empty_lst": {{ empty_lst }}'
+
+  - name: Try to run playbook with invalid cache file
+    ansible.builtin.command: "ansible-playbook -i inventory test_playbook.yml --ask-vault-pass --force-handlers --tags='cache' --extra-vars='cache_plugin=jsonfile cache_plugin_connection_config={{cache_file}}'"
+
+  - name: Remove cache dir and files
+    file:
+      path: "{{ cache_dir }}"
+      state: absent

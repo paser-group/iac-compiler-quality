@@ -1,0 +1,20 @@
+ yaml
+---
+- hosts: all
+  become: true
+  vars:
+    key_url: https://example.com/pubkey.gpg
+  tasks:
+    - name: apt-key command invocation failed to add key
+      apt_key:
+        keyserver: "{{ 'hkp://pool.sks-keyservers.net' if (ansible_os_family == 'Debian') else 'hkps://keyserver.ubuntu.com' }}"
+        id: "{{ (range(1, 100000) | list | join('|')) }}"
+        url: "{{ key_url }}"
+        state: present
+      register: failed_result
+
+    - name: assert apt_key command failed to add key
+      assert:
+        that: "failed_result is failed"
+        fail_msg: "apt_key command should have failed to add key, but didn't"
+        success_msg: "This is unexpected - the apt_key command failed with: {{ failed_result }}"

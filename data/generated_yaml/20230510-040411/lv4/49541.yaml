@@ -1,0 +1,39 @@
+yaml
+- name: Create accounts and isolated networks
+  hosts: localhost
+  gather_facts: no
+  vars:
+    num_of_accounts: 5
+    num_of_networks: 3
+  tasks:
+    - name: Create accounts
+      os_auth:
+        cloud: "{{ cloud }}"
+        auth: "{{ auth }}"
+        state: present
+        name: "test_account_{{ item }}"
+      with_sequence: count={{ num_of_accounts }}
+
+    - name: Create isolated networks
+      os_network:
+        cloud: "{{ cloud }}"
+        auth: "{{ auth }}"
+        state: present
+        name: "test_network_{{ item.1 }}_{{ item.0 }}"
+        external_network: public
+        is_router_external: no
+        tenant: "test_account_{{ item.0 }}"
+        shared: "{{ item.1 != num_of_accounts }}"
+        is_default: "{{ item.2 == 0 }}"
+      with_nested:
+        - "{{ range(1, num_of_accounts + 1) | list }}"
+        - "{{ range(0, num_of_networks) | list }}"
+        - "{{ range(0, num_of_networks) | list }}"
+      register: isolated_networks
+
+    - name: Verify default isolated networks per account
+      assert:
+        that:
+          - isolated_networks.results |
+            json_query("*.ansible_facts | [?@.os_network_network.is_default].os_network_network.id | length(@) == 1") |
+            length_check(5) == True

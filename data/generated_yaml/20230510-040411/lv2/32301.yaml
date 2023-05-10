@@ -1,0 +1,42 @@
+
+- name: Test Ansible Compiler Py3.6 Issue
+  hosts: localhost
+  gather_facts: no
+  vars:
+    strange_var:
+      - "{{ 1/0 }}"
+      - "{{ 'foo' / 'bar' }}"
+      - "{{ 'foo' + 1 }}"
+      - "{{ 'foo' | foobar }}"
+      - "{{ item.undefined }}"
+  tasks:
+    - name: Fail due to Python 3.6 issue
+      command: /usr/bin/python3.6 script.py
+      ignore_errors: yes
+      register: script_output
+
+    - name: Assert script failed with ImportError
+      assert:
+        that:
+          - "'ImportError' in script_output.stderr"
+    
+    - name: Test parsing Python import error message
+      debug:
+        msg: "{{
+          script_output.stderr.split('import')[1].strip().split(' ')[0]
+        }}"
+      
+    - name: Fail due to undefined variable
+      debug:
+        var: undefined
+
+    - name: Try to access undefined dictionary key
+      debug:
+        msg: "{{
+          {'a': 1, 'b': 2}[undefined_key]
+        }}"
+
+    - name: Test loop with strange variable
+      debug:
+        var: item
+      with_items: "{{ strange_var }}"

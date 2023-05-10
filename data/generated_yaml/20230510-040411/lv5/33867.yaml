@@ -1,0 +1,24 @@
+
+- name: Setup test environment
+  hosts: test
+
+  vars:
+    netmasks:
+      - 255.255.255.0
+      - 255.255.0.0
+      - 255.0.0.0
+
+  tasks:
+    - name: Assigning netmasks to hosts
+      set_fact:
+        host_netmask: "{{ netmasks[hostvars[inventory_hostname]['ansible_host_index']] }}"
+      run_once: true
+      loop: "{{ groups['test'] }}"
+      loop_control:
+        index_var: ansible_host_index
+
+    - name: Verify netmask conversion
+      assert:
+        that:
+          - "{{ host_netmask | ipaddr('netmask') | ipaddr('prefix') | int > 0 }}"
+          - "{{ host_netmask | ipaddr('netmask') | ipaddr('prefix') | int <= 32 }}"

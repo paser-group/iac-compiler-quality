@@ -1,0 +1,42 @@
+yaml
+- name: Test Ansible VMware Module for 'DuplicateName' Issue
+  hosts: localhost
+  gather_facts: no
+  tasks:
+  - name: Connect to vCenter
+    vmware_login:
+      hostname: "{{ vcenter_hostname }}"
+      username: "{{ vcenter_username }}"
+      password: "{{ vcenter_password }}"
+
+  - name: Create a virtual machine with duplicate name
+    vmware_guest:
+      hostname: "{{ vcenter_hostname }}"
+      username: "{{ vcenter_username }}"
+      password: "{{ vcenter_password }}"
+      validate_certs: no
+      name: "{{ duplicate_vm_name }}"
+      state: poweredon
+      template: "{{ template_name }}"
+    ignore_errors: yes
+    register: vm_result
+
+  - name: Check error message for 'DuplicateName'
+    fail:
+      msg: "Error: {{ vm_result.msg }}"
+    when: "'DuplicateName' in vm_result.msg"
+
+  - name: Get thumbprint of virtual machine
+    vmware_guest_find:
+      hostname: "{{ vcenter_hostname }}"
+      username: "{{ vcenter_username }}"
+      password: "{{ vcenter_password }}"
+      validate_certs: no
+      name: "{{ duplicate_vm_name }}"
+    register: vm_find_result
+
+  - name: Check error message for 'thumbprint' attribute
+    fail:
+      msg: "Error: {{ vm_find_result.msg }}"
+    when: "'thumbprint' not in vm_find_result.instance"
+

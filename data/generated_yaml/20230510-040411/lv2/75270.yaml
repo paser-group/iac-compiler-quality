@@ -1,0 +1,37 @@
+
+---
+- name: test playbook
+  hosts: all
+  gather_facts: yes
+  
+  tasks:
+    - name: Check if systemd-modules-load.service exists
+      stat:
+        path: "/usr/lib/systemd/system/systemd-modules-load.service"
+      register: systemd_exists
+    - debug: 
+        msg: "systemd-modules-load.service file exists"
+      when: systemd_exists.stat.exists | bool
+    - name: Get facts for systemd-modules-load.service
+      service_facts:
+        name: "systemd-modules-load.service"
+    - name: Debug service facts
+      debug: 
+        var: ansible_facts.services['systemd-modules-load.service']
+    - name: Copy modules-load.conf
+      copy:
+        src: "/etc/modules-load.d/modules.conf"
+        dest: "/etc/modules-load.d/modules.conf.new"
+        mode: "0644"
+        backup: true
+    - name: Reload systemd-modules-load.service
+      systemd:
+        name: "systemd-modules-load.service"
+        state: "reloaded"
+        daemon_reload: true
+    - name: Stop and Disable systemd-modules-load.service
+      systemd:
+        name: "systemd-modules-load.service"
+        state: "stopped"
+        enabled: false
+        daemon_reload: true

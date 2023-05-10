@@ -1,0 +1,48 @@
+
+---
+- name: Test Playbook for "included nested block with conditions" bug
+  hosts: all
+  
+  tasks:
+    - name: Ensure the path exists using nested "when" condition
+      file:
+        path: /tmp/mytestpath
+        state: directory
+        mode: 0755
+      when: 
+        - "nested_value in mydict.nestedlist"
+        - "mydict.json.obj != {}"
+        - "your_var is not defined"
+    
+    - name: Perform command only if the file exists and is owned by user "me"
+      command: echo "my command"
+      become: yes
+      when: 
+        - "ansible_file_transfer_enabled"
+        - "my_file.stat.exists"
+        - "my_file.stat.uid == ansible_user_id"
+    
+    - name: Generate an error by using unconventional syntax
+      command: "{{ unknown_var.unknown_func | upper }}"
+      register: output
+      ignore_errors: true
+      
+    - name: Debug output
+      debug:
+        msg: "{{ output }}"
+      
+    - name: Run task with post-task and loop
+      debug:
+        msg: "This is task number {{ item }}"
+      loop: 
+        - "1"
+        - "2"
+        - "3"
+      post_tasks:
+        - debug:
+            var: ansible_play_host
+      
+    - name: Test unexpected input by using a non-existent module
+      non_existent_module:
+        arg1: "my arg"
+      ignore_errors: yes

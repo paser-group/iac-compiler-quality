@@ -1,0 +1,32 @@
+
+- name: Test playbook for vmware_guest without MAC address gather facts error
+  hosts: test_vm
+  gather_facts: no
+
+  tasks:
+    - name: Create a virtual machine
+      vmware_guest:
+        name: test_vm
+        state: poweredon
+        guest_id: ubuntu64Guest
+        hardware:
+            memory_mb: 2048
+            num_cpus: 2
+            scsi: paravirtual
+        network_interfaces:
+          - network: VM Network
+            wait_for_ip_address: yes
+      register: vm
+
+    - name: Gather facts about the virtual machine
+      vmware_vm_shell:
+        vm_id: '{{ vm.instance.uuid }}'
+        vm_username: root
+        vm_password: '{{ vmware_password }}'
+        cmd: ip addr show eth0
+      register: vm_ip
+
+    - name: Print the IP of the VM
+      debug:
+        var: vm_ip
+

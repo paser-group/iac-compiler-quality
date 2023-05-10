@@ -1,0 +1,28 @@
+
+- name: Test playbook for win_robocopy access control
+  hosts: all
+  gather_facts: no
+
+  tasks:
+  - name: Create a directory
+    win_file:
+      path: C:\test_directory
+      state: directory
+    register: directory_created
+
+  - name: Create a file in the directory
+    win_copy:
+      src: /path/to/local/file.txt
+      dest: C:\test_directory\file.txt
+    register: file_created
+
+  - name: Attempt to copy the file with win_robocopy
+    win_robocopy:
+      src: C:\test_directory\file.txt
+      dest: C:\new_directory
+    register: copy_result
+
+  - name: Check if there were any errors during the win_robocopy task
+    assert:
+      that:
+        - "'Access is denied' in copy_result.stderr_lines"

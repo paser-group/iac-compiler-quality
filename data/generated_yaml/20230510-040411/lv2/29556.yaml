@@ -1,0 +1,39 @@
+
+---
+
+- hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Launch GCE instances with custom service accounts
+      gce:
+        project_id: "{{ default('my-project') }}"
+        zone: "{{ default('us-central1-a') }}"
+        machine_type: "{{ default('n1-standard-1') }}"
+        image_family: "{{ default('debian-9') }}"
+        service_account_email: "{{ default('custom-service-account@my-project.iam.gserviceaccount.com') }}"
+        network: "{{ default('default') }}"
+        auto_delete: yes
+        count: "{{ default(1) }}"
+        name: "{{ default('test-instance') }}-{{ item }}"
+      loop: "{{ range(1, 10)|list }}"
+
+    - name: Check if GCE instances are running
+      gce_instance:
+        project_id: "{{ default('my-project') }}"
+        zone: "{{ default('us-central1-a') }}"
+        instance_names: "{{ default('test-instance') }}-*"
+      register: gce_result
+
+    - name: Print instance IPs
+      debug:
+        var: item.private_ip
+      with_items: "{{ gce_result.instance_data }}"
+      
+    - name: Shutdown GCE instances
+      gce:
+        project_id: "{{ default('my-project') }}"
+        zone: "{{ default('us-central1-a') }}"
+        instance_names: "{{ default('test-instance') }}-*"
+        state: absent
+      

@@ -1,0 +1,56 @@
+
+---
+
+- hosts: <hostname>
+  gather_facts: no
+
+  vars:
+    pool_name: my_pool_name
+    lb_method: round-robin
+    health_monitors:
+      - http
+    members:
+      - name: 192.168.1.101
+        port: 80
+      - name: 192.168.1.102
+        port: 80
+    
+  tasks:
+    - name: Create a pool on the F5 BIG-IP platform
+      bigip_pool:
+        provider:
+          server: f5.example.com
+          user: username
+          password: password
+          server_port: 443
+          validate_certs: no
+        name: "{{ pool_name }}"
+        monitor: "{{ health_monitors }}"
+        lb_method: "{{ lb_method }}"
+        members: "{{ members }}"
+
+    - name: Wait for the pool to become available
+      local_action:
+        module: wait_for
+        host: "{{ inventory_hostname }}"
+        port: 80
+        delay: 5
+        timeout: 300
+
+    - name: Search for the created pool
+      bigip_pool_info:
+        provider:
+          server: f5.example.com
+          user: username
+          password: password
+          server_port: 443
+          validate_certs: no
+        name: "{{ pool_name }}"
+
+    - name: Check whether the created pool has the expected criteria
+      assert:
+        that:
+          - result.name == "{{ pool_name }}"
+          - result.monitor == "{{ health_monitors }}"
+          - result.lb_method == "{{ lb_method }}"
+          - result.members == "{{ members }}"

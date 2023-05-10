@@ -1,0 +1,35 @@
+
+- name: Configure IOS interfaces
+  hosts: routers
+  gather_facts: no
+  
+  vars:
+    interface_list:
+      - { name: Gi0/1, description: 'Main interface', state: present }
+      - { name: Gi0/2, description: 'Secondary interface', state: present }
+      - { name: Gi0/3, description: 'Backup interface', state: absent }
+      - { name: Gi0/4, description: 'Failover interface', state: present }
+  
+  tasks:
+    - name: Show interface pre-configuration
+      ios_command:
+        commands:
+          - show interfaces
+      
+    - name: Configure interfaces with overridden state
+      ios_interface:
+        name: "{{ item.name }}"
+        description: "{{ item.description }}"
+        state: "{{ item.state }}"
+      with_items: "{{ interface_list }}"
+      
+    - name: Show interface post-configuration
+      ios_command:
+        commands:
+          - show interfaces
+  
+  handlers:
+    - name: restart networking services
+      service:
+        name: networking
+        state: restarted

@@ -1,0 +1,39 @@
+yaml
+---
+- name: Example playbook for ec2_group issues
+  hosts: localhost
+  gather_facts: no
+  tasks:
+    - name: Configure AWS CLI
+      become: yes
+      command: "/usr/bin/aws configure set default.region {{ aws_region }}"
+
+    - name: Create an EC2 security group
+      become: yes
+      ec2_group:
+        name: "{{ security_group_name }}"
+        description: "{{ security_group_description }}"
+        vpc_id: "{{ vpc_id }}"
+        region: "{{ aws_region }}"
+        rules:
+          - proto: tcp
+            from_port: "{{ tcp_port }}"
+            to_port: "{{ tcp_port }}"
+            cidr_ip: "{{ allowed_ip_cidr }}"
+          - proto: udp
+            from_port: "{{ udp_port }}"
+            to_port: "{{ udp_port }}"
+            cidr_ip: "{{ allowed_ip_cidr }}"
+
+    - name: Add ingress rule for the EC2 security group from other VPCs
+      become: yes
+      ec2_group:
+        name: "{{ security_group_name }}"
+        description: "Allow traffic from other VPCs"
+        region: "{{ aws_region }}"
+        vpc_id: "{{ vpc_id }}"
+        rules:
+          - proto: all
+            from_port: 0
+            to_port: 65535
+            group_id: "{{ other_security_group_id }}"

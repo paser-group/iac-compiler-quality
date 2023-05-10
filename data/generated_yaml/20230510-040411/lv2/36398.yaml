@@ -1,0 +1,60 @@
+
+- name: Generate a new user
+  user:
+    name: "{{ 'testuser' }}"
+    state: present
+    password: "{{ 'password1234' }}"
+    shell: "{{ '/bin/bash' }}"
+    groups: "{{ ['root', 'users'] }}"
+    home: "{{ '/home/testuser' }}"
+    generate_ssh_key: "{{ 'yes' }}"
+    ssh_key_bits: "{{ 2048 }}"
+    ssh_key_comment: "{{ 'testuser@ansible-fuzzing-agent' }}"
+    ssh_key_file: "{{ '/home/testuser/.ssh/id_rsa.pub' }}"
+  become: "{{ True }}"
+
+- name: Running a simple script with an unprivileged user
+  script:
+    src: "{{ '/home/testuser/myscript.sh' }}"
+  become: "{{ False }}"
+
+- name: Running a script with an elevated user
+  script:
+    src: "{{ '/home/testuser/myscript.sh' }}"
+  become: "{{ True }}"
+  become_user: "{{ 'root' }}"
+
+- name: Running a script with a customized file permission
+  script:
+    src: "{{ '/home/testuser/myscript.sh' }}"
+  become: "{{ True }}"
+  become_user: "{{ 'root' }}"
+  args:
+    chmod: "{{ 'u+x' }}"
+
+- name: Checking for file existence before executing a script
+  stat:
+    path: "{{ '/home/testuser/myscript.sh' }}"
+  register: script_file
+  become: "{{ True }}"
+
+- name: Running a script with arguments and environment variables
+  script:
+    src: "{{ '/home/testuser/myscript.sh' }}"
+  become: "{{ True }}"
+  become_user: "{{ 'root' }}"
+  args:
+    argv:
+      - "{{ 'arg1' }}"
+      - "{{ 'arg2' }}"
+    executable: "{{ '/bin/sh' }}"
+  environment:
+    VAR1: "{{ 'value1' }}"
+    VAR2: "{{ 'value2' }}"
+
+- name: Using the script module to run a Python script
+  script:
+    "{{ '/home/testuser/myscript.py' }}"
+  interpreter: "{{ '/usr/bin/python' }}"
+  become: "{{ True }}"
+  become_user: "{{ 'root' }}"

@@ -1,0 +1,27 @@
+
+- name: Update Zabbix template
+  hosts: zabbix_server
+  tasks:
+
+  - name: Ensure required packages are installed
+    yum:
+      name:
+        - zabbix-server-mysql
+        - zabbix-web-mysql
+        - zabbix-agent
+      state: present
+
+  - name: Export Zabbix template
+    shell: zabbix_export -t my-template > /tmp/my-template.xml
+    args:
+      chdir: /home/user
+
+  - name: Fix non-ASCII strings in template
+    shell: sed -i 's/[^[:print:]\t]//g' /tmp/my-template.xml
+    args:
+      chdir: /home/user
+
+  - name: Import Zabbix template
+    shell: zabbix_import -t my-template -f /tmp/my-template.xml
+    args:
+      chdir: /home/user

@@ -1,0 +1,70 @@
+
+- name: Debugging gcp_compute_instance_group_manager error
+  hosts: localhost
+  gather_facts: no
+  vars:
+    instance_group: "my-instance-group"
+    zone: "us-west1"
+  tasks:
+  
+  - name: Ensure GCP credentials exist
+    fail:
+      msg: "GCP credentials file not found!"
+    when: not lookup('env','GOOGLE_APPLICATION_CREDENTIALS')
+
+  - name: Retrieve instance group manager info
+    gcp_compute_instance_group_manager_info:
+      project: my-project-id
+      auth_kind: serviceaccount
+      service_account_file: "{{ lookup('env', 'GOOGLE_APPLICATION_CREDENTIALS') }}"
+      zone: "{{ zone }}"
+      instance_group_manager: "{{ instance_group }}"
+    register: manager_info
+
+  - name: Debugging information
+    debug:
+      msg: "{{ manager_info.stdout }}"
+
+  - name: Create a new instance template
+    gcp_compute_instance_template:
+      project: my-project-id
+      auth_kind: serviceaccount
+      service_account_file: "{{ lookup('env', 'GOOGLE_APPLICATION_CREDENTIALS') }}"
+      name: "my-instance-template"
+      properties:
+        disks:
+          - auto_delete: true
+            boot: true
+            initialize_params:
+              source_image: projects/debian-cloud/global/images/family/debian-11
+        machine_type: n1-standard-1
+        network_interfaces:
+          - access_configs:
+              - name: External NAT
+                network_tier: STANDARD
+                type: ONE_TO_ONE_NAT
+            network: global/networks/default
+        scheduling:
+          on_host_maintenance: MIGRATE
+          automatic_restart: true
+          preemptible: false
+      register: instance_template
+
+  - name: Debugging information
+    debug:
+      msg: "{{ instance_template.stdout }}"
+
+  - name: Delete the newly created instance template
+    gcp_compute_instance_template:
+      project: my-project-id
+      auth_kind: serviceaccount
+      service_account_file: "{{ lookup('env', 'GOOGLE_APPLICATION_CREDENTIALS') }}"
+      name: "my-instance-template"
+      state: "absent"
+      async: true
+      poll: 5
+    register: delete_template
+
+  - name: Debugging information
+    debug:
+      msg: "{{ delete_template.stdout }}"

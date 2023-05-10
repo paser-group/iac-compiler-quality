@@ -1,0 +1,58 @@
+
+- name: Test uri module type error
+  hosts: localhost
+  gather_facts: false
+  vars:
+    url: "http://example.com/{{ item|lower|replace(' ', '_') }}"
+  tasks:
+    - name: Test URI module with invalid inputs
+      uri:
+        url: "{{ item }}"
+        method: "{{ invalid_method }}"
+        validate_certs: "{{ invalid_cert }}"
+        timeout: "{{ invalid_timeout }}"
+        return_content: "{{ invalid_content }}"
+        headers: "{{ invalid_header }}"
+        status_code: "{{ invalid_status_code }}"
+      loop:
+        - "{{ url }}"
+        - "http://example.com/{{ item|lower|replace(' ', '_') }}"  # Invalid URL
+        - "htp://example.com"  # Malformed URL
+        - "{{ url }}?{{ invalid_query_param }}=test"  # Invalid query param
+        - "{{ url }}/{{ invalid_path }}"  # Invalid path
+        - "{{ url|regex_replace('.*?//.*?(?=/.*)', '') }}"  # No scheme
+
+    - name: Test URI module with unconventional syntax
+      uri:
+        url: "{{ url }}#{{ invalid_fragment }}"  # Invalid fragment
+
+    - name: Test URI module with edge cases
+      uri:
+        url: "{{ url }}"
+        method: "{{ methods|random }}"
+        validate_certs: "{{ bools|random }}"
+        timeout: "{{ timeouts|random }}"
+        return_content: "{{ bools|random }}"
+        headers: "{{ headers }}"
+      vars:
+        methods:
+          - GET
+          - POST
+          - PUT
+          - DELETE
+        bools:
+          - true
+          - false
+        timeouts:
+          - 0
+          - 1
+          - 5
+        headers:
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+          "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9" 
+          "Connection": "keep-alive"
+          "{{ invalid_header }}": "test"
+
+    - name: Test URI module with expected inputs
+      uri:
+        url: "{{ url }}"

@@ -1,0 +1,48 @@
+
+- name: Test playbook for ec2_elb_lb module
+  hosts: localhost
+  tasks:
+    - name: Set up test EC2 instance
+      ec2:
+        key_name: my-key
+        group: webserver
+        instance_type: t2.micro
+        image: ami-0c55b159cbfafe1f0
+        wait: true
+        count: 1
+        exact_count: true
+        register: ec2
+
+    - name: Set up test ELB
+      ec2_elb_lb:
+        name: my-elb
+        state: present
+        region: us-west-2
+        listeners:
+          - protocol: http
+            lb_port: 80
+            instance_port: 80
+        availability_zones:
+          - us-west-2a
+          - us-west-2b
+          - us-west-2c
+
+    - name: Ensure idempotent behavior of ec2_elb_lb module
+      ec2_elb_lb:
+        name: my-elb
+        state: present
+        region: us-west-2
+        listeners:
+          - protocol: http
+            lb_port: 80
+            instance_port: 80
+        availability_zones:
+          - us-west-2a
+          - us-west-2b
+          - us-west-2c
+      register: elb1
+
+    - name: Verify idempotent behavior of ec2_elb_lb module
+      assert:
+        that:
+          - elb1 == ec2_elb_lb

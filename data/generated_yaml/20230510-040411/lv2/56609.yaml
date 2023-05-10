@@ -1,0 +1,23 @@
+
+---
+- name: Test ANSIBLE_ROLES_PATH
+  hosts: localhost
+  gather_facts: no
+  vars:
+    my_roles_path: '/usr/local/my-roles'
+    invalid_roles_path: 'invalid-path'
+  tasks:
+    - name: Execute task outside of default role location
+      command: ls /usr/local/my-tasks
+      become: yes
+      become_method: sudo
+      when: my_roles_path in ANSIBLE_ROLES_PATH
+    - name: Execute task inside default role location
+      command: ls roles/default/my-tasks
+      when: my_roles_path not in ANSIBLE_ROLES_PATH
+    - name: Execute task with non-existent roles path
+      command: ls {{ invalid_roles_path }}/my-tasks
+      ignore_errors: yes
+    - name: Execute task without predefined roles path
+      command: ls my-tasks
+      ignore_errors: yes

@@ -1,0 +1,37 @@
+
+- hosts: all
+  gather_facts: no
+  become: true
+  become_method: sudo
+
+  vars:
+    my_password: "{{ lookup('env', 'PASSWORD') }}"
+    shell_command: "/bin/sh"
+
+  tasks:
+    - name: Test Case 1 - No password supplied, expect playbook to hang
+      debug: var=ansible_user_password
+
+    - name: Test Case 2 - Empty password variable, expect playbook to hang
+      debug:
+        msg: "Empty password: {{ my_password }}"
+
+    - name: Test Case 3 - Wrong password supplied, expect playbook to hang
+      debug:
+        msg: "Wrong password: {{ my_password }}"
+      failed_when: true
+
+    - name: Test Case 4 - Run a shell command
+      command: "{{ shell_command }} -c 'echo Hello, Ansible!'"
+
+    - name: Test Case 5 - Run a non-existing shell command, expect playbook to raise an error
+      command: "{{ shell_command }} -c 'non-existent-command'"
+
+    - name: Test Case 6 - Define a variable with an unconventional syntax
+      set_fact:
+        my_var: "{{ some.undefined.variable }}"
+
+    - name: Test Case 7 - Define a variable with an unexpected input
+      set_fact:
+        my_other_var: "{{ 1/0 }}"
+

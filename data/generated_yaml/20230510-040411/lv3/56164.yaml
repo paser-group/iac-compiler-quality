@@ -1,0 +1,30 @@
+
+- name: Update RabbitMQ user password
+  hosts: all
+  vars:
+    rabbitmq_user: "testuser"
+    rabbitmq_password: "oldpassword"
+    new_password: "newpassword"
+  tasks:
+    - name: Get user info
+      rabbitmq_user:
+        user: "{{ rabbitmq_user }}"
+        password: "{{ rabbitmq_password }}"
+        state: present
+      register: user_info
+
+    - name: Update user password
+      rabbitmq_user:
+        user: "{{ rabbitmq_user }}"
+        password: "{{ rabbitmq_password }}"
+        update_password: yes
+        password_hash: "{{ new_password|password_hash('sha256', 'mysecretsalt') }}"
+      ignore_errors: true
+
+    - name: Update failed - roll back changes
+      rabbitmq_user:
+        user: "{{ rabbitmq_user }}"
+        password: "{{ new_password }}"
+        update_password: yes
+        password_hash: "{{ rabbitmq_password|password_hash('sha256', 'mysecretsalt') }}"
+      when: "'FAILED: failed to update user password' in ansible_failed_result.msg"

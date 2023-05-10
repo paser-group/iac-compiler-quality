@@ -1,0 +1,45 @@
+
+- hosts: all
+  gather_facts: no
+  vars:
+    - inv_file: './inventory.yml'
+
+  tasks:
+    - name: Create an unconventional inventory file
+      file:
+        path: "{{ inv_file }}"
+        state: touch
+      register: file_created
+
+    - name: Add a new inventory item with unconventional syntax
+      lineinfile:
+        path: "{{ inv_file }}"
+        line: '- localhost ansible_host=127.0.0.1 ansible_port={{ 22 }} ansible_user=root'
+        insertafter: EOF
+      when: file_created.changed
+
+    - name: Parse the unconventional inventory file
+      debug:
+        var: groups
+
+    - name: Add an unexpected input to the inventory
+      add_host:
+        name: 'dummy_server{{ item }}'
+        groups: ['web', 'database']
+      loop:
+        - '!@#$%^&*()_+-=[]{}\|;:,.<>?/`~'
+        - ' '
+        - '{{ inv_file }}'
+      when: file_created.changed
+
+    - name: Generate an error by trying to access a non-existent group
+      debug:
+        var: groups.non_existent_group
+
+    - name: Execute a command with unexpected input
+      shell: 'echo "Hello world" > {{ item }}'
+      loop:
+        - '/root/!@#$%^&*()_+-=[]{}\|;:,.<>?/`~'
+        - '/var/www/{{ inv_file'
+        
+      when: file_created.changed

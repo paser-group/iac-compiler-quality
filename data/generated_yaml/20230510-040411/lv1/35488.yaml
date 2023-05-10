@@ -1,0 +1,39 @@
+yaml
+- name: SSH into NX-OSv
+  hosts: nx-osv
+  gather_facts: no
+
+  vars:
+    ansible_user: your_username
+    ansible_password: your_password
+
+  tasks:
+    - name: Configure SSH
+      nxos_command:
+        commands:
+          - feature ssh
+          - crypto key generate rsa
+
+    - name: SSH into NX-OSv
+      nxos_command:
+        command_string: show version
+      register: show_version
+
+    - name: Check SSH connectivity
+      wait_for:
+        host: "{{ inventory_hostname }}"
+        port: 22
+        delay: 5
+        timeout: 60
+      register: ssh
+
+    - name: Debug output
+      debug:
+        var: ssh
+
+  handlers:
+    - name: Reload NX-OSv
+      nxos_command:
+        commands:
+          - reload
+      become: yes

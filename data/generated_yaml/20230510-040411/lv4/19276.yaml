@@ -1,0 +1,33 @@
+
+---
+- name: ec2.py inventory playbook
+  hosts: localhost
+  gather_facts: False
+  
+  tasks:
+  - name: Create new host group with EC2 instance metadata
+    add_host:
+      hostname: "{{ item.meta.hostname }}"
+      instance_id: "{{ item.meta.instance_id }}"
+      ip_address: "{{ item.meta.public_ip }}"
+      groups: ec2_instances
+    with_inventory_hostnames:
+      - "tag_Name_*"
+    when: item.meta.aws.ec2_instance_id is defined
+         
+  - name: Test new host group with SSH connection
+    hosts: ec2_instances
+    gather_facts: False
+    become: yes
+    become_method: sudo
+    tasks:
+    - name: Ping hosts in new group
+      ping:
+
+  - name: Collect log messages
+    hosts: localhost
+    gather_facts: False
+    tasks:
+      - name: Display log messages
+        debug:
+          var: ansible_log_path

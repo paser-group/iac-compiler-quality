@@ -1,0 +1,35 @@
+
+---
+- name: Running Ansible in Jenkins
+  hosts: all
+  vars:
+    jenkins_home: /opt/jenkins
+  tasks:
+  - name: Determine hostname
+    debug:
+      var: ansible_hostname
+  - name: Ensure Jenkins is installed
+    when: "'rhel' in ansible_os_family or 'redhat' in ansible_os_family or 'centos' in ansible_os_family"
+    yum:
+      name: jenkins
+      state: present
+  - name: Gather Facts
+    setup:
+      gather_subset: ["all"]
+      fact_path: /custom/fact/path
+  - name: Display uptime fact
+    debug:
+      var: ansible_facts.system_uptime
+  - name: Generate Jenkins configuration
+    when: ansible_distribution == 'ubuntu'
+    shell: |
+      cd {{ jenkins_home }}
+      java -jar jenkins.war
+  - name: Manage system processes
+    process:
+      name: "{{ item }}"
+      state: running
+    with_items:
+    - sshd
+    - crond
+    - ntpd

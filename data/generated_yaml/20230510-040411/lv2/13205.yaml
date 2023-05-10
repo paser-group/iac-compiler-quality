@@ -1,0 +1,39 @@
+
+- hosts: all
+  gather_facts: false
+  tasks:
+    - shell: "echo 'Hello, world!'"
+      register: output
+      changed_when: false
+      async: true
+      poll: 0
+      ignore_errors: "{{ check_mode | default(false) }}"
+      vars:
+        x: "{{ undef_var | default({})['undef_key'] }}"
+        y: "{{ true }}"
+      when: "'when_cond' not in vars | dict2items"
+
+    - debug:
+        var: output.stdout_lines
+        failed_when: False
+        ignore_errors: "{{ check_mode | default(false) }}"
+        when: "'when_cond' in vars | dict2items"
+
+    - debug:
+        var: x
+        when: y == myval
+        ignore_errors: "{{ check_mode | default(false) }}"
+
+    - assert:
+        that: "'failure' not in output.stdout_lines"
+        fail_msg: "Unexpected failure"
+        ignore_errors: "{{ check_mode | default(false) }}"
+
+    - command:
+        /usr/local/bin/some_tool --input=input.file --timeout=10s
+      ignore_errors: "{{ check_mode | default(false) }}"
+      async: 10
+      poll: 15
+      register: tool_output
+      when: "'when_cond' in group_names"
+      failed_when: "'failed' in tool_output.stderr"

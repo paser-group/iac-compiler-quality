@@ -1,0 +1,36 @@
+
+---
+- name: Test playbook for nxos_nxapi issues
+  hosts: nxos_devices
+
+  vars:
+    - command: "show ip interface brief"
+    - interface_value: "eth1/1"
+
+  tasks:
+    - name: Test command syntax
+      nxos_nxapi:
+        command_string: "{{ command }}"
+        use_ssl: yes
+      register: output
+      ignore_errors: true
+
+    - name: Test for command failure
+      assert:
+        that:
+            - "'invalid command' not in output.stdout"
+        fail_msg: 'Command "{{ command }}" triggered invalid output'
+
+    - name: Test functionality for all interfaces
+      nxos_nxapi:
+        command_string: "show vlan interface"
+        use_ssl: yes
+        interface: "{{ interface_value }}"
+      register: output
+      ignore_errors: true
+
+    - name: Test for syntax issue with VLAN command
+      assert:
+        that:
+            - "'Invalid VLAN ID' not in output.stdout"
+        fail_msg: 'Command "{{ command }}" resulted in Invalid VLAN command syntax'

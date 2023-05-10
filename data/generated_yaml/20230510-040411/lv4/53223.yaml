@@ -1,0 +1,46 @@
+
+---
+- name: Test docker swarm service default values
+  hosts: localhost
+  gather_facts: no
+  tasks:
+    - name: Define Docker Swarm service with default port
+      docker_swarm_service:
+        name: web
+        image: nginx
+        ports:
+          - "{{ item }}"
+        replicas: 1
+        state: present
+      with_items:
+        - "80:80"
+  
+    - name: Verify service is deployed with default port
+      uri:
+        url: http://localhost
+        return_content: true
+      register: response
+      until: response.status == 200
+      retries: 10
+      delay: 5
+  
+    - name: Modify default port configuration
+      docker_swarm_service:
+        name: web
+        image: nginx
+        ports:
+          - "{{ item }}"
+        replicas: 1
+        state: present
+      with_items:
+        - "8080:80"
+  
+    - name: Verify service is deployed with modified port
+      uri:
+        url: http://localhost
+        return_content: true
+      register: response
+      until: response.status == 200
+      retries: 10
+      delay: 5
+  

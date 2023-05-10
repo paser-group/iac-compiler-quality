@@ -1,0 +1,37 @@
+
+---
+- name: Ansible Compiler Bug Discovery
+  hosts: localhost
+  vars:
+    default_value: "default"
+    overridden_value: "overridden"
+
+  tasks:
+    - name: Debugging uninitialized variables
+      debug:
+        msg: "{{ uninitialized_variable }}"
+      ignore_errors: true
+
+    - name: Setting up uninitialized variable
+      set_fact:
+        uninitialized_variable: "initialized_value"
+
+    - name: Failing with invalid argument
+      fail:
+        msg: "Invalid argument passed. Allowed values are overridden, default"
+      when: "'overridden' not in allowed_values and 'default' not in allowed_values"
+      vars:
+        allowed_values:
+          - default
+          - overridden
+
+    - name: Executing shell command
+      shell: "{{ invalid_command }}"
+      register: command_output
+      changed_when: false
+      ignore_errors: true
+
+    - name: Debugging shell command output
+      debug:
+        var: command_output
+      when: command_output.failed

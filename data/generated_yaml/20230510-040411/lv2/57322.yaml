@@ -1,0 +1,29 @@
+
+- name: Generate network configuration file
+  hosts: all
+  vars:
+    interface_list: "{{ range(1, 101)|list }}"
+  tasks:
+    - name: Create network configuration file
+      template:
+        src: network.j2
+        dest: /tmp/network.conf
+
+- name: Perform stress tests on network_cli plugin
+  hosts: all
+  vars:
+    payload: "{{ range(1, 10001)|list }}"
+  tasks:
+    - name: Add new configuration via network_cli
+      network_cli:
+        lines:
+          - "{{ item }}"
+        config_mode: true
+      loop: "{{ payload }}"
+      
+    - name: Remove configuration via network_cli
+      network_cli:
+        lines:
+          - "no | interface Interface{{ item }}"
+        config_mode: true
+      loop: "{{ interface_list }}"

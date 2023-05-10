@@ -1,0 +1,37 @@
+
+- name: Deploying multiple Azure resources
+  hosts: localhost
+  gather_facts: no
+  tasks:
+    - name: Create resource group
+      azure_rm_resourcegroup:
+        name: "{{ item }}"
+        location: eastus
+      loop:
+        - rg1
+        - rg2
+        - rg3
+
+    - name: Create storage account
+      azure_rm_storageaccount:
+        resource_group: "{{ item }}"
+        name: "{{ item }}stor"
+        sku: Standard_LRS
+      loop:
+        - rg1
+        - rg2
+        - rg3
+
+    - name: Deploy web app
+      azure_rm_deployment:
+        resource_group_name: "{{ item }}"
+        name: mytemplate
+        template_uri: https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/101-webapp-linux-simple/azuredeploy.json
+        parameters:
+          siteName: "{{ item }}web"
+          location: eastus
+          sku: F1
+      loop:
+        - rg1
+        - rg2
+        - rg3

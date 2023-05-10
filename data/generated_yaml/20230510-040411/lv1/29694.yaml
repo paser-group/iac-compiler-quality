@@ -1,0 +1,51 @@
+yaml
+---
+- hosts: localhost
+  connection: local
+  gather_facts: no
+  tasks:
+
+    # install boto3 module
+    - name: Install boto3 module
+      pip: name=boto3
+
+    # create temporary directory
+    - name: Create temporary directory
+      tempfile:
+        state: directory
+      register: temp_dir
+
+    # create python script to fix period of CloudWatch alarm
+    - name: Create python script
+      copy:
+        content: |
+          import boto3
+          def convert_period_to_seconds(period):
+              length = len(period)
+              if period[length-1] != 's':
+                  period += 's'
+              if length > 1 and period[length-2].isdigit():
+                  return int(period[0:length-1])
+              return int(period[0:length-1]) * {'s': 1, 'm': 60, 'h': 3600, 'd': 86400}[period[length-1]]
+          client = boto3.client('cloudwatch')
+          paginator = client.get_paginator('describe_alarms')
+          alarms = []
+          for response in paginator.paginate():
+              alarms += response['MetricAlarms']
+          for alarm in alarms:
+              if alarm['Period'][-1] != 's':
+                  client.put_metric_alarm(
+                      AlarmName=alarm['AlarmName'],
+                      ComparisonOperator=alarm['ComparisonOperator'],
+                      EvaluationPeriods=alarm['EvaluationPeriods'],
+                      MetricName=alarm['MetricName'],
+                      Namespace=alarm['Namespace'],
+                      Period=convert_period_to_seconds(alarm['Period']),
+                      Statistic=alarm['Statistic'],
+                      Threshold=alarm['Threshold'])
+        dest: "{{ temp_dir.path }}/fix_period.py"
+        mode: '0755'
+
+    # execute python script to fix period of CloudWatch alarm
+    - name: Execute python script
+      command: "{{ temp_dir.path }}/fix_period.py"

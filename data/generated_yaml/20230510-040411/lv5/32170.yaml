@@ -1,0 +1,28 @@
+
+- name: Test ec2_asg module with target_group_arns parameter
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+    - name: Create Auto Scaling group with target_group_arns parameter
+      ec2_asg:
+        name: test-asg
+        target_group_arns: "{{ item }}"
+        launch_config_name: test-launch-config
+        state: present
+      with_items:
+        - arn:aws:elasticloadbalancing:us-west-2:123456789012:targetgroup/testtargetgroup1/115bc9357c75c4a2
+        - arn:aws:elasticloadbalancing:us-west-2:123456789012:targetgroup/testtargetgroup2/54bc1f3c1ae6b6d2
+        - "invalid-arn"
+        - "arn:aws:elasticloadbalancing:us-west-2:123456789012:targetgroup/testtargetgroup3"
+        - "arn:aws:elasticloadbalancing:us-west-2:123456789012:targetgroup/testtargetgroup4/invalidresource"
+
+    - name: Retrieve Auto Scaling group facts
+      ec2_asg_facts:
+        name: test-asg
+
+    - name: Assert that facts match expected parameters
+      assert:
+        that:
+          - asg.target_group_arns[0] == "arn:aws:elasticloadbalancing:us-west-2:123456789012:targetgroup/testtargetgroup1/115bc9357c75c4a2"
+          - asg.target_group_arns[1] == "arn:aws:elasticloadbalancing:us-west-2:123456789012:targetgroup/testtargetgroup2/54bc1f3c1ae6b6d2"

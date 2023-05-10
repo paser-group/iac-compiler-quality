@@ -1,0 +1,56 @@
+
+---
+- name: Test ios_command module
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    # Basic test case with valid command
+    - ios_command:
+        commands: "show run"
+      register: output1
+
+    # Test with invalid command and expect failure
+    - ios_command:
+        commands: "asdf"
+      register: output2
+      failed_when: false
+
+    # Test with invalid command and expect failure using nonexistent command
+    - ios_command:
+        commands: "show something"
+      register: output3
+      failed_when: false
+
+    # Test with valid command but with nonexistent search_string
+    - ios_command:
+        commands: "show interfaces"
+        search_string: "asdf123"
+      register: output4
+
+    # Test with multiple commands and expect failure
+    - ios_command:
+        commands:
+          - "show version"
+          - "asdf"
+      register: output5
+      failed_when: false
+
+    # Test with valid command but expect output string to exceed STDOUT buffer size
+    - ios_command:
+        commands: "show running-config interface Ethernet1/1"
+      register: output6
+
+    # Test with valid command but with presence of unescaped single quotes in the command
+    - ios_command:
+        commands: "show ip interface brief | include 'connected|disconnected'"
+      register: output7
+
+    # Test with valid command but with variable substitution
+    - ios_command:
+        commands: "{{ item }}"
+      register: output8
+      with_items:
+        - "show version"
+        - "show interfaces"
+        - "sh {{ output7.stdout_lines[0].split()[0] }} | incl '{{ output7.stdout_lines[0].split()[1] }}'"

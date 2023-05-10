@@ -1,0 +1,33 @@
+
+- name: Unarchive module bug testing
+  hosts: localhost
+  become: yes
+  
+  tasks:
+    - name: Create temporary directory
+      tempfile:
+        state: directory
+      register: temp_dir
+
+    - name: Download file to be unarchived
+      get_url:
+        url: "https://example.com/my_archive_file.tar.gz"
+        dest: "{{ temp_dir.path }}/my_archive_file.tar.gz"
+
+    - name: Attempt to unarchive the downloaded file using the unarchive module
+      unarchive:
+        src: "{{ temp_dir.path }}/my_archive_file.tar.gz"
+        dest: "{{ temp_dir.path }}"
+        creates: "{{ temp_dir.path }}/my_archive_file"
+        remote_src: yes
+        extra_opts: ["--nonexistent-option", "--unexpected-flag", "{{ temp_dir.path }}/nonexistent-file"]
+      ignore_errors: yes
+
+    - name: Verify whether the unarchived file is present in its expected path
+      stat:
+        path: "{{ temp_dir.path }}/my_archive_file"
+      register: unarchived_file
+
+    - name: Display debug output
+      debug:
+        var: unarchived_file.stat.existence

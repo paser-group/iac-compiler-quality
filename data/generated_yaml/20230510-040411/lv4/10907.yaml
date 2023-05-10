@@ -1,0 +1,38 @@
+
+- name: Create role with nested tasks and templates
+  hosts: localhost
+  roles:
+    - role: nested_role
+      nested_tasks:
+        - name: Task 1
+          template: task1_template.j2
+          nested_templates:
+            - name: Nested Template 1
+              template: nested_template1.j2
+        - name: Task 2
+          template: task2_template.j2
+          nested_templates:
+            - name: Nested Template 2
+              template: nested_template2.j2
+
+- name: Render a nested template file
+  hosts: localhost
+  tasks:
+    - name: Render nested template
+      template:
+        src: "{{ item.src }}"
+        dest: "/tmp/{{ item.name }}.txt"
+      loop: "{{ nested_role.tasks|map(attribute='nested_templates')|flatten }}"
+        
+    - name: Display rendered contents
+      debug:
+        var: item.content
+      with_fileglob: "/tmp/*.txt"
+
+- name: Attempt to render a nonexistent template file
+  hosts: localhost
+  tasks:
+    - name: Attempt to render nonexistent template
+      template:
+        src: nonexistent_template.j2
+        dest: "/tmp/nonexistent.txt"

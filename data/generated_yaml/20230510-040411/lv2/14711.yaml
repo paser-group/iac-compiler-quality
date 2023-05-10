@@ -1,0 +1,42 @@
+
+- name: Test ec2.py dynamic inventory issue with ElastiCache instances
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+  - name: Include ec2.py dynamic inventory plugin
+    include_vars:
+      file: ../ec2.py
+
+  - name: Define inventory with ElastiCache instances
+    set_fact:
+      ec2_instances: '{{ groups["elastiache"] | default([]) }}'
+    when: 'groups["elastiache"]'
+
+  - name: Create a Redis ElastiCache instance
+    ec2:
+      instance_type: t2.micro
+      image: ami-03234d6fbfbc392b8
+      key_name: ansible_key
+      group: ec2
+      count: 1
+      wait: true
+      vpc_subnet_id: subnet-12345
+      assign_public_ip: true
+      instance_tags:
+        Name: redis_cache
+      monitoring: yes
+      placement_group: pg1
+    register: result
+    when: ec2_instances | length == 0 or ec2_instances is not defined
+
+  - name: Add ElastiCache instance to inventory
+    add_host:
+      name: '{{ result.instances[0].public_dns_name }}'
+      groups: ['elastiache']
+      ansible_host: '{{ result.instances[0].public_dns_name }}'
+      ansible_user: ec2-user
+      ansible_ssh_private_key_file: ansible_key.pem
+
+  - name: Test connection to ElastiCache instance
+    ping:

@@ -1,0 +1,24 @@
+
+- name: Supplying incorrect sudo password causes long timeout
+  hosts: all
+  gather_facts: false
+  become: true
+  become_method: sudo
+  become_user: root
+
+  tasks:
+  - name: Run command with incorrect sudo password
+    command: whoami
+    register: cmd_output
+    no_log: true
+    ignore_errors: true
+    vars:
+      sudo_password: "{{ 'incorrect_password' }}"
+    environment:
+      SUDO_ASKPASS: /path/to/fake_askpass.sh
+
+  - name: Check if command failed due to incorrectly supplied sudo password
+    assert:
+      that:
+        - "cmd_output.rc != 0"
+        - "'Sorry, try again.' in cmd_output.stderr"

@@ -1,0 +1,51 @@
+
+- hosts: localhost
+  gather_facts: no
+
+  vars:
+    url: "http://localhost:8080/api/test"
+    user: "user"
+    password: "password"
+
+  tasks:
+    - name: Test open_url with basic authentication
+      uri:
+        url: "{{ url }}"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        return_content: yes
+      register: response
+
+    - name: Print response headers
+      debug:
+        var: response.headers
+
+    - name: Assert response status code
+      assert:
+        that: response.status == 200
+
+    - name: Assert response content
+      assert:
+        that: "'Success' in response.content"
+
+    - name: Test open_url with invalid credentials
+      uri:
+        url: "{{ url }}"
+        user: "wronguser"
+        password: "wrongpassword"
+        return_content: yes
+      register: invalid_response
+
+    - name: Assert invalid response status code
+      assert:
+        that: invalid_response.status == 401
+
+    - name: Test open_url without authentication
+      uri:
+        url: "{{ url }}"
+        return_content: yes
+      register: no_auth_response
+
+    - name: Assert no auth response status code
+      assert:
+        that: no_auth_response.status == 401

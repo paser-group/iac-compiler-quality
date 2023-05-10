@@ -1,0 +1,23 @@
+yaml
+- name: os_keypair force update stress test
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: generate ssh keys
+      shell: ssh-keygen -f ./testkey -N "" -q
+      args:
+        chdir: "{{ playbook_dir }}"
+      
+    - name: force update a keypair
+      os_keypair:
+        name: "{{ item.name }}"
+        public_key_file: "{{ item.public_key_file }}"
+        private_key_file: "{{ item.private_key_file }}"
+        state: "{{ item.state }}"
+        force: "{{ item.force }}"
+      loop:
+        - { name: "my_key", public_key_file: "./testkey.pub", private_key_file: "./testkey", state: "present", force: true }
+        - { name: "another_key", public_key_file: "./testkey.pub", private_key_file: "./testkey", state: "absent", force: false }
+        - { name: "invalid_key", public_key_file: "./invalid_key.pub", private_key_file: "./invalid_key", state: "present", force: true }
+        - { name: "unconventional_key", public_key: "./testkey.pub", private_key_file: "./testkey", state: "present", force: true }
+        - { name: "unexpected_key", public_key_file: "./testkey.pub", private_key_file: "./unexpected_key_test", state: "present", force: true }

@@ -1,0 +1,32 @@
+
+- name: Netscaler module auth and json decode errors.
+
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+    - name: Try to auth with empty password
+      netscaler_login:
+        nsip: "{{ inventory_hostname }}"
+        username: "myuser"
+        password: ""
+      register: result
+      ignore_errors: yes
+
+    - name: JSON decode error
+      netscaler_save_config:
+        comment: "{{ 'a' * 2**25 }}"
+
+    - name: Auth with wrong credentials
+      wait_for_connection:
+        timeout: 1
+        sleep: 0.5
+      vars:
+        ansible_user: "myuser"
+        ansible_ssh_pass: "mypassword"
+
+    - name: Combine both
+      register: result_auth
+      netscaler_save_config:
+        comment: "{{ 'a' * 2**25 }}"
+      failed_when: result_auth is failed and result is not failed

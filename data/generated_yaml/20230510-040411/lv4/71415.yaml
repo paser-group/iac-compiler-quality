@@ -1,0 +1,16 @@
+yaml
+- name: Check for hostname mismatch error
+  hosts: remote_host
+  gather_facts: no
+  vars:
+    ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
+  tasks:
+    - name: Attempt SSH connection with mismatched hostname
+      shell: "ssh -T -o UserKnownHostsFile=/dev/null {{ inventory_hostname }}"
+      ignore_errors: true
+      register: ssh_output
+      
+    - name: Check for 'timeout' or 'hostname mismatch' error
+      fail:
+        msg: "Hostname mismatch error detected"
+      when: "'timeout' in ssh_output.stderr or 'hostname' in ssh_output.stderr"

@@ -1,0 +1,63 @@
+yaml
+---
+- name: Fuzz Ansible Compiler
+  hosts: localhost
+  gather_facts: false
+  tasks:
+  - name: Simple shell command
+    shell: echo "Hello world!"
+    register: result1
+
+  - name: Shell command with pipe symbol
+    shell: ls | wc -l
+    register: result2
+
+  - name: Shell command with command substitution
+    shell: ls $(echo 123)
+    register: result3
+
+  - name: Command module with fail on error
+    command: cat inexistent-file
+    register: result4
+    ignore_errors: yes
+    failed_when: false
+
+  - name: Command module with fail on error as true
+    command: cat inexistent-file
+    register: result5
+    failed_when: true
+
+  - name: Command module with collects
+    command: cat inexistent-file
+    register: result6
+    ignore_errors: yes
+    collections:
+      - my_collection
+
+  - name: Shell command with different execution environments
+    shell: |
+      python -c "import os; print(os.environ.get('ENV_VAR', ''))"
+    environment:
+        ENV_VAR: "MY_VALUE"
+
+  - name: Shell command using different shell
+    shell: |
+      echo "This should work on Bash, but fail on other shells" >&2
+    args:
+      executable: /bin/bash
+
+  - name: Shell command with quotes and escapes
+    shell: |
+      echo \"Hello \'World\'\"
+      echo 'Hello \'World\''
+    args:
+      executable: /bin/bash
+
+  - name: Command module with chdir option
+    command: pwd
+    args:
+      chdir: /nonexistent/directory
+
+  - name: Command module using hostname as dynamic input
+    command: "ping -c 2 {{ inventory_hostname }}"
+    register: ping_output

@@ -1,0 +1,40 @@
+
+---
+- name: Ec2_facts edge case and syntax stress test
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+    - name: Set EC2 fact
+      ec2_facts:
+        aws_access_key: "{{ lookup('env', 'AWS_ACCESS_KEY_ID') }}"
+        aws_secret_key: "{{ lookup('env', 'AWS_SECRET_ACCESS_KEY') }}"
+        filters:
+          instance-state-name: running
+        region: "{{ ec2_region }}"
+        wait: true
+
+    - name: Display the result of ec2_instance_facts
+      debug:
+        var: ec2_instance_facts
+
+    - name: Run ec2_facts with missing required variables
+      ec2_facts:
+        filters:
+          instance-state-name: running
+        region: "{{ ec2_region }}"
+      ignore_errors: yes
+
+    - name: Run ec2_instance_facts task with a boolean instead of a string
+      ec2_facts: "{{ true }}"
+      ignore_errors: yes
+
+    - name: Set invalid argument for ec2_facts
+      ec2_facts:
+        invalid_argument: "invalid_argument"
+      ignore_errors: yes
+
+    - name: Set non-existent region for ec2_facts
+      ec2_facts:
+        region: "non-existent-region"
+      ignore_errors: yes

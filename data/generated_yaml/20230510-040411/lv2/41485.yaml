@@ -1,0 +1,62 @@
+
+- name: Test apt module edge cases
+  hosts: all
+
+  tasks:
+    # Installing packages with incorrect apt-mark usage
+    - name: Install packages with no apt-mark
+      apt:
+        name: apache2
+        state: latest
+    - name: Install packages with invalid apt-mark
+      apt:
+        name: nginx
+        state: latest
+        marks: {'state': 'absent', 'auto-installed': 'foobar'}
+
+    # Updating packages with incorrect apt-mark usage
+    - name: Update packages with invalid apt-mark
+      apt:
+        upgrade: yes
+        marks: {'auto-installed': 'true'}
+        force: yes
+        name: '*'
+        state: present
+
+    # Removing packages with incorrect apt-mark usage
+    - name: Remove packages with incorrect apt-mark
+      apt:
+        name: nginx
+        state: absent
+        marks: {'auto-installed': 'true', 'manual': 'false'}
+    - name: Remove packages with unconventional package name
+      apt:
+        name: ' package `-nasty*name{{}}"
+        state: absent
+        markauto: true
+      register: remove_output
+
+    # Listing packages with incorrect apt-mark usage
+    - name: List package marks
+      apt:
+        cache_valid_time: 600
+        list: '{{ item }}'
+      loop:
+        - 'apache2'
+        - 'nginx'
+        - 'php'
+
+    # Cleaning the package cache
+    - name: Clean package cache
+      apt:
+        autoclean: true
+        force: yes
+        name: '*'
+        state: absent
+
+    # Purging packages with incorrect apt-mark usage
+    - name: Purge package with incorrect apt-mark
+      apt:
+        name: nginx
+        state: purged
+        marks: {'auto-installed': 'true'}

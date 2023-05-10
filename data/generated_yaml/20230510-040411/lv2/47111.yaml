@@ -1,0 +1,79 @@
+yaml
+---
+- name: Ansible Fuzzing Playbook for azure_rm_deployment
+  hosts: localhost
+  connection: local
+  vars:
+    resource_group: "{{ lookup('env', 'RESOURCE_GROUP' ) }}"
+    location: "{{ lookup('env', 'LOCATION' ) }}"
+  tasks:
+
+  - name: Create resource group
+    azure_rm_resourcegroup:
+      name: "{{ resource_group }}"
+      location: "{{ location }}"
+
+  - name: Create deployment with unconventional syntax
+    azure_rm_deployment:
+      name: "test-deployment"
+      resource_group: "{{ resource_group }}"
+      deployment_mode: "baseline"
+      state: |
+        {{- 'creating' if fails else 'succeeded' -}}
+
+  - name: Create deployment with unexpected input
+    azure_rm_deployment:
+      name: "test-deployment"
+      resource_group: "{{ resource_group }}"
+      deployment_mode: "baseline"
+      state: "{{ 1/0 }}"
+
+  - name: Delete resource group
+    azure_rm_resourcegroup:
+      name: "{{ resource_group }}"
+      state: absent
+
+  - name: Create deployment with edge case inputs
+    azure_rm_deployment:
+      name: "test-deployment"
+      resource_group: "{{ resource_group }}"
+      deployment_mode: "baseline"
+      deployment_parameters: { "vmSize": "Standard_B1ms", "adminPassword": "{{ 'p' * (254|quote) }}" }
+
+  - name: Create deployment with unexpected key
+    azure_rm_deployment:
+      name: "test-deployment"
+      resource_group: "{{ resource_group }}"
+      deployment_mode: "baseline"
+      extra_params: { "key1": "value1", "key2": "{{ 'value2' }}" }
+
+  - name: Create deployment with unusual module attributes
+    azure_rm_deployment:
+      provision: yes
+      registry_login_mode: auto
+      resource_group: "{{ resource_group }}"
+      deployment_mode: "baseline"
+      template: "{{ 'test-template-01.j2' }}"
+      parameters: "{{ 'test-parameters-01.yml' }}"
+      vars: "{{ 'test-variables-01.yml' }}"
+      
+  - name: Create a variable with unconventional syntax
+    set_fact: 
+      server_port: "{{ 5555~~ 6666 }}"
+    
+  - name: Create deployment with unexpected nested list input
+    azure_rm_deployment:
+      name: "test-deployment"
+      resource_group: "{{ resource_group }}"
+      deployment_mode: "baseline"
+      deployment_parameters: { 
+        "bool": [ [ false, true ] ],
+        "array": [ 
+                   { 
+                      "value" : 0 
+                   }, 
+                   { 
+                      "value" : 1 
+                   } 
+                 ] 
+      } 

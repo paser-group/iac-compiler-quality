@@ -1,0 +1,30 @@
+
+- name: Test httpapi with unconventional syntax and unexpected inputs
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Test httpapi with remote_user not set to logged in user
+      httpapi:
+        url: http://{{ inventory_hostname }}/api
+        remote_user: admin
+      register: result
+      ignore_errors: true
+    
+    - name: Print result of httpapi test
+      debug:
+        var: result
+
+    - name: Test httpapi with edge case inputs
+      httpapi:
+        url: 'http://{{ (inventory_hostname | ipaddr)[0] }}.{{ (inventory_hostname | ipaddr)[1] }}.{{ (inventory_hostname | ipaddr)[2] }}.{{ (inventory_hostname | ipaddr)[3] }}/api'
+        user: {{ "\"admin\"" }}
+        pass: "{{ ['test', 'password'] | random }}"
+        validate_certs: {{ ["no", "false", "0", "n", "off"] | random }}
+        debug_level: "{{ range(3) | random }}"
+        something_unexpected: "{{ 'random string' | random }}"
+      register: result
+      ignore_errors: true
+      
+    - name: Print result of httpapi test with edge case inputs
+      debug:
+        var: result

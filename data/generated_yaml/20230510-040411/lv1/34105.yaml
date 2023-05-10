@@ -1,0 +1,40 @@
+yaml
+---
+- name: Fix vmware_guest dvs idempotency issue
+  hosts: all
+  vars:
+    vcenter_hostname: your_vcenter_hostname
+    vcenter_username: your_vcenter_username
+    vcenter_password: your_vcenter_password
+    vm_name: your_vm_name
+    dvs_name: name_of_your_dvs
+  tasks:
+    # Check if the VM is already connected to the DVS
+    - name: Check if VM is already connected to DVS
+      vmware_guest_network:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: false
+        name: "{{ vm_name }}"
+        state: present
+        network_name: "{{ dvs_name }}"
+      register: vm_network_status
+      delegate_to: localhost
+    
+    # If the VM is already connected to the DVS, do nothing
+    - name: Skip if VM is already connected to DVS
+      when: vm_network_status.network_name == "{{ dvs_name }}"
+    
+    # If the VM is not yet connected to the DVS, connect it
+    - name: Connect VM to DVS
+      when: vm_network_status.network_name != "{{ dvs_name }}"
+      vmware_guest_network:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: false
+        name: "{{ vm_name }}"
+        state: present
+        network_name: "{{ dvs_name }}"
+      delegate_to: localhost

@@ -1,0 +1,31 @@
+
+- name: Test Ansible sudo error handling  
+  hosts: localhost   
+  gather_facts: no   
+  become: false  
+
+  tasks:   
+  - name: Run shell command as non-privileged user   
+    shell: echo "Hello, world"   
+    register: output   
+
+  - name: Ensure sudo prompt is hidden   
+    set_fact:   
+      ansible_become_pass: '' 
+
+  - name: Attempt to escalate permissions using sudo   
+    command: /bin/bash -c 'sudo echo "Hello, world"'   
+    register: sudo_output   
+    become: true   
+    become_user: root   
+    become_method: sudo   
+
+  - name: Debug the output   
+    debug:    
+      var: sudo_output   
+
+  - name: Trigger fatal error due to incorrect sudo password   
+    command: /bin/bash -c 'sudo -k echo hello world | sudo -S echo "Hello, world"'  
+    become: true   
+    become_user: root   
+    become_method: sudo   

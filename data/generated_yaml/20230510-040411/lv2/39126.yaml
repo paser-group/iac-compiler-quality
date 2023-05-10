@@ -1,0 +1,45 @@
+
+- hosts: localhost
+  gather_facts: false
+  vars:
+    slack_webhook_url: "https://hooks.slack.com"
+    slack_channel: "#general"
+  tasks:
+    - name: Generate SSL Untrusted Certificates
+      openssl_certificate:
+        path: "/etc/ssl/untrusted.crt"
+        privatekey_path: "/etc/ssl/untrusted.key"
+        provider: selfsigned
+      register: ssl_cert
+
+    - name: Add Slack webhook to hosts file (unconventional syntax)
+      lineinfile:
+        path: "/etc/hosts"
+        line: "{{slack_webhook_url}} slack-webhook"
+        state: present
+        create: true
+      delegate_to: localhost
+
+    - name: Register Slack with Untrusted Certificates
+      uri:
+        url: "{{ slack_webhook_url }}/services/hooks/incoming-webhook?token=TOKEN"
+        method: POST
+        status_code: 200
+        body_format: json
+        body:
+          text: "New incoming webhook with SSL validation error"
+        validate_certs: False
+        client_cert: "/etc/ssl/untrusted.crt"
+        client_key: "/etc/ssl/untrusted.key"
+        return_content: yes
+        headers:
+          Content-Type: "application/json"
+          Accept: "application/json"
+          Slack-Channel: "{{ slack_channel }}"
+      when: ssl_cert|changed
+
+    - name: Revoke SSL Untrusted Certificates (unexpected input)
+      openssl_certificate:
+        path: "/etc/ssl/untrusted.crt"
+        provider: selfsigned
+        state: absent

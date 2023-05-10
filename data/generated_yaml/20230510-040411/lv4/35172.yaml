@@ -1,0 +1,25 @@
+yaml
+- hosts: servers
+  vars:
+    letsencrypt_user: user@example.com
+    letsencrypt_dir: "/etc/letsencrypt"
+    letsencrypt_webroot_path: "/var/www/html"
+    letsencrypt_agree_tos: true
+  
+  tasks:
+    - name: Generate SSL Certificates
+      letsencrypt:
+        email: "{{ letsencrypt_user }}"
+        webroot_path: "{{ letsencrypt_webroot_path }}"
+        agree_tos: "{{ letsencrypt_agree_tos }}"
+        register: cert_gen_output
+  
+    - name: Check generated certificates
+      assert:
+        that:
+          - cert_gen_output is not failed
+          - letsencrypt_dir is directory
+          - letsencrypt_dir|list|length == 2
+          - letsencrypt_dir+'/live'|list|length == 1
+        success_msg: "Certificates generated successfully."
+        fail_msg: "Unexpected behavior when generating certificates."

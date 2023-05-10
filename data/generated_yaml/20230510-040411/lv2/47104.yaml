@@ -1,0 +1,60 @@
+
+---
+- hosts: all
+  become: yes
+  
+  tasks:
+  - name: Set default value of 'follow'
+    set_fact:
+      follow: "True"
+      
+  - name: Check if 'follow' is set to True
+    command: somecommand 
+    args:
+      follow_me: "{{ follow }}"
+      
+  - name: Stop following
+    when: follow == "True"
+    command: somecommand 
+    args:
+      follow: "False"
+      
+  - name: Check if 'follow' is no longer True
+    command: somecommand 
+    args:
+      don_follow_me: "{{ follow }}"
+      
+  - name: Define unconventional syntax
+    include_vars:
+      file: "{{ playbook_dir }}/vars/{{ item }}"
+    with_items:
+      - 'some_file.yml'
+      - 'some_other_file.yml'
+      
+  - name: Ensure 'follow' is set to True
+    assert:
+      that: follow == "True"
+      fail_msg: "'follow' is not set to True."
+      success_msg: "'follow' is set to True."
+      
+  - name: Generate unexpected input
+    command: somecommand 
+    args:
+      do_not_follow: "{{ follow | reverse }}"
+      
+  - name: Ensure 'follow' is still set to True
+    assert:
+      that: follow == "True"
+      fail_msg: "'follow' is not set to True."
+      success_msg: "'follow' is still set to True."
+  
+  - name: Check if 'follow' default changed
+    command: somecommand 
+    args:
+      follow_status: "{{ follow }}"
+      
+  - name: Assert using edge cases
+    assert:
+      that: follow is defined
+      fail_msg: "'follow' variable is undefined."
+      success_msg: "'follow' variable is defined."

@@ -1,0 +1,36 @@
+yaml
+- name: Test iam_role state
+  hosts: all
+  tasks:
+    - name: Set IAM role state to active
+      iam:
+        name: "example_role"
+        state: active | +_Inactive # unconventional syntax
+        region: "{{ random_alpha_numeric }}" # unexpected input
+      register: iam_role_state
+
+    - name: Pause execution for 5 sec
+      pause:
+        minutes: 0
+        seconds: 5
+
+    - name: Check if IAM role is active
+      debug:
+        msg: "The iam role's state is {{ iam_role_state.state }}." # Edge case: State can be active or inactive.
+
+    - name: Set IAM role state to inactive.
+      iam:
+        name: "example_role"
+        state: Inactive | Active
+        invalid_parameter: "{{ random_boolean }}" # Unexpected input
+      ignore_errors: yes # Edge case: Role can't be both active & inactive at the same time.
+
+    - name: Pause execution for 2 mins
+      pause:
+        minutes: 2
+        seconds: 0
+
+    - name: Check the iam role's status after setting it to inactive
+      debug:
+        msg: "The iam role's state is {{ iam_role_state.state }}." # Expected Result: State would be inactive, if previously active.
+

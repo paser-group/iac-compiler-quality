@@ -1,0 +1,53 @@
+
+- name: Test playbook for vmware_guest NFS mount
+  hosts: all
+  gather_facts: no
+
+  tasks:
+  - name: Set up NFS mount
+    mount:
+      fstype: nfs
+      src: "{{ nfs_server }}:/export/test"
+      path: "/mnt/test"
+      state: mounted
+      opts: "rw,soft,noexec"
+
+  - name: Create directory with unusual naming convention
+    file:
+      path: '{{ inventory_hostname }}-{{ get_date() }}-{{ build_number }}'
+      state: directory
+    delegate_to: localhost
+
+  - name: Grant permission to a non-existent user
+    file:
+      path: "/mnt/test/{{ non_existent_user }}"
+      state: directory
+      mode: 0777
+
+  - name: Create file with unexpected input
+    file:
+      path: "{{ ansible_env.HOME }}/{{ item.ip }}/test_{{ item.os }}.py"
+      state: touch
+    loop:
+      - { ip: '0.0.0.0', os: 'Linux' }
+      - { ip: '127.0.0.1', os: 'Windows' }
+
+  - name: Start vmware_guest provision
+    vmware_guest:
+      hostname: vcenter.domain.com
+      username: '{{ lookup("env", "VMWARE_USER") }}'
+      password: '{{ lookup("env", "VMWARE_PASSWORD") }}'
+      datacenter: dc1
+      name: my_vm
+      guest_id: ubuntu64Guest
+      disk:
+       - size_gb: 20
+         type: thin
+         datastore: datastore1
+      hardware:
+        memory_mb: 1024
+        num_cpus: 1
+      network:
+        name: VM Network
+      folder: /{{ unquoted_path }}
+      state: poweredon

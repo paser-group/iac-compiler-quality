@@ -1,0 +1,39 @@
+
+---
+- hosts: tower_server
+  gather_facts: false
+  vars:
+    usernames:
+      - alice
+      - bob
+      - charlie
+    passwords:
+      - secret
+      - password
+      - passw0rd
+  tasks:
+    - name: Attempt invalid logins
+      block:
+        - name: Loop over usernames and passwords
+          with_cartesian:
+            - "{{ usernames }}"
+            - "{{ passwords }}"
+          block:
+            - name: Attempt authentication with username and password
+              uri:
+                url: https://{{ inventory_hostname }}/api/v2/user/
+                method: GET
+                headers:
+                  Authorization: "Basic {{ item.0 }}:{{ item.1 }}"
+                return_content: yes
+              register: response
+              failed_when: response.status != 401
+            - name: Log error message if authentication failed or timed out
+              debug:
+                msg: "Authentication failed with username '{{ item.0 }}' and password '{{ item.1 }}'"
+              when: response.status != 401
+      rescue:
+        - name: Authentication timed out
+          debug:
+            msg: "Authentication timed out with username '{{ item.0 }}' and password '{{ item.1 }}'"
+          when: "response is failed and 'timed out' in response.msg"

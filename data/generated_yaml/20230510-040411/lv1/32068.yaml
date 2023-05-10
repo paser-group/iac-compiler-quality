@@ -1,0 +1,22 @@
+
+---
+- name: Fix ansible_service_mgr fact for sysvinit in Ansible
+  hosts: all
+  gather_facts: true
+  
+  tasks:
+    - name: Check if ansible_service_mgr fact is correct
+      command: echo "{{ ansible_service_mgr }}"
+      register: output
+      
+    - name: Set correct ansible_service_mgr fact in sysvinit
+      when: output.stdout == "/sbin/service"
+      lineinfile:
+        path: /etc/ansible/facts.d/ansible.fact
+        line: "ansible_service_mgr=sysvinit"
+
+    - name: Set correct ansible_service_mgr fact in systemd
+      when: output.stdout == "/bin/systemctl"
+      lineinfile:
+        path: /etc/ansible/facts.d/ansible.fact
+        line: "ansible_service_mgr=systemd"

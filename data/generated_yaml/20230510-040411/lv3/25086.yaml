@@ -1,0 +1,30 @@
+
+- name: Ansible playbook to recreate vmware_inventory host_filter issue
+  hosts: localhost
+  vars:
+    vmware_user: 'vmware_user'
+    vmware_password: 'vmware_password'
+    vmware_hostname: 'vmware_hostname'
+
+  tasks:
+  - name: Set VMware Inventory Configuration
+    set_vmware_inventory_config:
+      hostname: "{{vmware_hostname}}"
+      username: "{{vmware_user}}"
+      password: "{{vmware_password}}"
+      validate_certs: False
+
+  - name: Use incorrect syntax in host_filter
+    vmware_guest:
+      hostname: "{{vmware_hostname}}"
+      username: "{{vmware_user}}"
+      password: "{{vmware_password}}"
+      validate_certs: False
+      folder: "/{{ hostvars['localhost']['inventory_hostname'] }}"
+      name: "{{ hostvars['localhost']['inventory_hostname'] }}"
+      state: poweredoff
+      host_filter: "'cluster_name' in 'datastore'"
+
+  - name: Print inventory data
+    debug:
+      var: groups['all']

@@ -1,0 +1,29 @@
+yaml
+---
+- name: IPTables module incorrectly quotes -I parameter
+  hosts: all
+  become: true
+  vars:
+    - service_name: iptables
+  tasks:
+    - name: flush existing rules
+      service:
+        name: "{{ service_name }}"
+        state: stopped
+        enabled: false
+      changed_when: false
+
+    - name: Update IPTables rule with correctly quoted -I parameter
+      lineinfile:
+        path: /etc/sysconfig/iptables
+        regexp: "^-I"
+        line: "-A"
+        backup: yes
+      notify:
+        - restart iptables
+
+  handlers:
+    - name: restart iptables
+      service:
+        name: "{{ service_name }}"
+        state: restarted

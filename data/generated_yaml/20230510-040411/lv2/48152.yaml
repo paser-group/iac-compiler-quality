@@ -1,0 +1,36 @@
+yaml
+- name: Stress Test the Ansible Compiler
+  hosts: all
+
+  tasks:
+  - name: Check Available Disk Space
+    stat:
+      path: /
+    register: disk_space
+
+  - name: Create a Large File
+    shell: "dd if=/dev/zero of={{ item }} bs=1G count=1"
+    with_items:
+      - "/tmp/testfile"
+      - "/mnt/testfile"
+
+  - name: Remove All Files Older Than 30 Days
+    find:
+      paths: /
+      age: 30d
+      delete: true
+
+  - name: Install All Available Updates
+    apt:
+      update_cache: yes
+      upgrade: safe
+
+  - name: Add a Large Number of Users
+    user:
+      name: "user{{ item }}"
+      groups: "users"
+      shell: "/bin/bash"
+    with_sequence: start=0 end=1000
+
+  - name: Exhaust All System Resources
+    command: /usr/bin/yes </dev/null >/dev/null &

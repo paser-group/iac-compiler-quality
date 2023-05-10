@@ -1,0 +1,34 @@
+
+- name: Handle out of memory error during yum update
+  hosts: all
+  become: true
+
+  tasks:
+
+  # Install dependencies
+  - name: Update packages
+    yum:
+      name: '*'
+      state: latest
+      disable_gpg_check: yes
+
+  # Simulate out of memory
+  - name: Allocate too much memory
+    command: "python -c 'print(\"A\" * 1024 ** 3)' > /dev/null"
+
+  # Run yum update
+  - name: Update packages
+    yum:
+      name: '*'
+      state: latest
+      timeout: 10
+
+  # Check for errors
+  - name: Check for errors in yum output
+    shell: dmesg | tail -n 1
+    register: result
+
+  - name: Fail task if out of memory error reported
+    fail:
+      msg: "Out of memory error reported: {{ result.stdout }}"
+    when: result.stdout.find('Out of memory') != -1

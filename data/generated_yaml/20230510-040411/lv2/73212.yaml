@@ -1,0 +1,35 @@
+
+- name: Test Parent-Child Role Params Issue
+  hosts: localhost
+  roles:
+    - parent_role
+    - child_role
+
+- name: parent_role
+  vars:
+    param1: "parent_role_param1_value"
+    param2: "parent_role_param2_value"
+  tasks:
+    - name: Debug parent role params
+      debug:
+        msg: "Parent role param1 value: {{ param1 }}"
+      register: parent_role_params
+
+- name: child_role
+  vars:
+    param1: "child_role_param1_value"
+  tasks:
+    - name: Include parent role
+      include_role:
+        name: parent_role
+        tasks_from: debug
+        params:
+          param1: "{{ param1 }}"
+          param2: "{{ undefined_param }}"
+          "{{ task_name }}_var": "{{ task_name }}_value"
+      register: child_included_task_output
+
+    - name: Debug child role params
+      debug:
+        msg: "Child role param1 value: {{ param1 }}"
+      register: child_role_params

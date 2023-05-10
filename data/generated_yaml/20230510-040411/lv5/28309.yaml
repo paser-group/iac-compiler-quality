@@ -1,0 +1,21 @@
+
+- name: Configure Context on Arista switches
+  hosts: arista
+  tasks:
+    - name: Set correct context
+      eos_system:
+        hostname: "{{ inventory_hostname }}"
+        context_name: "production"
+    - name: Verify context configuration
+      eos_command:
+        commands: "show running-config context"
+      register: config_output
+    - name: Parse output for verifying context
+      set_fact:
+        config_output_parsed: "{{ config_output.stdout_lines | join('\n') }}"
+    - name: Check if context is set correctly
+      assert:
+        that:
+          - "'production' in config_output_parsed"
+        success_msg: "Context correctly set on Arista switches"
+        fail_msg: "Context not set correctly on Arista switches"

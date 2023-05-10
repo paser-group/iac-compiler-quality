@@ -1,0 +1,53 @@
+
+---
+- hosts: all
+  gather_facts: no
+
+  tasks:
+  - name: Create SSL CA certificate
+    openssl_certificate:
+      path: /etc/mysql/ssl/ca.crt
+      common_name: "My CA"
+      key_size: 1024
+
+  - name: Create SSL server certificate
+    openssl_certificate:
+      path: /etc/mysql/ssl/server.crt
+      privatekey_path: /etc/mysql/ssl/server.key
+      common_name: "server.example.com"
+      key_size: 1024
+      ca_path: /etc/mysql/ssl/ca.crt
+      ca_privatekey_path: /etc/mysql/ssl/ca.key
+
+  - name: Install SSL CA certificate
+    copy:
+      src: /etc/mysql/ssl/ca.crt
+      dest: /etc/mysql/ssl/
+
+  - name: Install SSL server certificate
+    copy:
+      src: /etc/mysql/ssl/server.crt
+      dest: /etc/mysql/ssl/
+    notify:
+      - Restart MySQL
+
+  - name: Install SSL server private key
+    copy:
+      src: /etc/mysql/ssl/server.key
+      dest: /etc/mysql/ssl/
+    notify:
+      - Restart MySQL
+
+  - name: Enable SSL
+    lineinfile:
+      path: /etc/mysql/my.cnf
+      line: |
+        ssl-ca=/etc/mysql/ssl/ca.crt
+        ssl-cert=/etc/mysql/ssl/server.crt
+        ssl-key=/etc/mysql/ssl/server.key
+
+  handlers:
+    - name: Restart MySQL
+      service:
+        name: mysql
+        state: restarted

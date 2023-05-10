@@ -1,0 +1,36 @@
+yaml
+- name: Internal error 500 when accessing SHELL from web UI stress-test playbook
+  hosts: all
+  gather_facts: False
+
+  tasks:
+    - name: Insert an unexpected input into a variable
+      set_fact: 
+        var1: {{ random() * undefined_variable }}
+      ignore_errors: True
+
+    - name: Try to access SHELL from web UI 
+      shell: "/usr/bin/some-command"
+      args:
+        chdir: "{{ random() * undefined_variable }}"
+      ignore_errors: True
+
+    - name: Try an unconventional syntax
+      shell: '/usr/bin/some-command "{{ var1" }}'
+      ignore_errors: True
+
+    - name: Use an unexpected input format
+      shell: '/usr/bin/some-command {{ var1 }}'
+      args:
+        executable: "python -c 'import os; os.system(\"touch /tmp/pwned\")'"
+      ignore_errors: True
+
+    - name: Generate an edge-case condition
+      set_fact:
+        ctr: 1
+        try: "{{ ctr|d(0) + 1 }}{#"
+
+    - name: Test error handling with edge-case condition
+      debug:
+        msg: "{% if try|replace(\"'\",\"\")|int %}Error found{% endif %}"
+      ignore_errors: True

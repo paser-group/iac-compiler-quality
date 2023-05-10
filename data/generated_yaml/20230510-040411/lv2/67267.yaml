@@ -1,0 +1,30 @@
+
+- name: Stress Test Ansible Compiler for open_iscsi issue
+  hosts: all
+  tasks:
+    - name: Generate a random number and concatenate to the default port argument
+      set_fact:
+        port: "{{ ('-p' ~ (10000 + (range(100)|random))) }}"
+      no_log: True
+      
+    - name: Install open-iscsi package with unconventional syntax
+      become: true
+      apt:
+        update_cache: true
+        name: open-iscsi
+        state: absent
+      when: "'open-iscsi' not in ansible_facts.packages"
+      
+    - name: Configure open-iscsi multiple times for edge cases
+      become: true
+      shell:
+        cmd: |
+          /sbin/iscsiadm --mode discoverydb --type sendtargets --portal 10.0.0.1:3260 --discover
+          /sbin/iscsiadm --mode node --targetname target_name --portal 10.0.0.1:3260 --login
+      loop: "{{range(10)|list}}"
+      delay: 1
+      register: iscsi
+      
+    - name: Check for string field conversion warning
+      assert:
+        that: "'string field conversion warning' in iscsi.stdout"

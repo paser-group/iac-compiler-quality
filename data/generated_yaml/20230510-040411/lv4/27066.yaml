@@ -1,0 +1,29 @@
+yaml
+- name: Create ACL on nxos devices
+  hosts: nxos-switch
+  vars:
+    acl_name: "my-acl"
+    acl_type: "standard"
+  tasks:
+  - name: Generate ACL entry
+    nxos_acl:
+      name: "{{acl_name}}"
+      type: "{{acl_type}}"
+      rule:
+        - action: permit
+          protocol: tcp
+          dst_port: 22
+    loop: "{{ acl_list | default([]) }}"
+    when: acl_list|length > 1
+  - name: Detect ACL configuration
+    nxos_command:
+      commands: show access-list {{ acl_name }}
+    register: show_acl
+  - name: Verify access-list configuration
+    debug:
+      msg: "Access-list is successfully generated."
+    when: (show_acl.stdout_lines | length > 0) and (show_acl.stdout_lines[0] | search("access list") is not none)
+  - name: Exit with error message if there are less than two ACL configuration
+    fail:
+      msg: "At least two ACL configurations are required."
+    when: acl_list|length < 2

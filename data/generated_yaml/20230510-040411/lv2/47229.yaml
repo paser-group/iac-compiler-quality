@@ -1,0 +1,54 @@
+
+- name: Execute win_reboot module with edge cases
+  hosts: windows_servers
+  vars:
+    reboot_timeout: 99999
+    unexpected_input: ['unexpected', 123, true, ['nested', 'list']]
+    unconventional_syntax: >
+                            {% if check_updates -%}
+                                False
+                            {%- endif %}
+  tasks:
+    - name: Reboot the Windows Server immediately
+      win_reboot:
+        post_reboot_delay_seconds: 10
+        force: true
+        wait_for_reboot: true
+        reboot_timeout: "{{ reboot_timeout }}" # Edge case with reboot_timeout exceeded default value
+      register: win_reboot_immediately_with_edge_cases
+
+    - name: Reboot the Windows Server after a delay
+      win_reboot:
+        delay: 30
+        force: true
+        wait_for_reboot: true
+      register: win_reboot_with_delay
+
+    - name: Reboot the Windows Server with unexpected input
+      win_reboot:
+        post_reboot_delay_seconds: "{{ unexpected_input }}" # Unexpected input for post_reboot_delay_seconds
+        force: true
+        wait_for_reboot: true
+      register: win_reboot_with_unexpected_input
+
+    - name: Reboot the Windows Server without waiting for reboot
+      win_reboot:
+        force: true
+        wait_for_reboot: False # Edge case with wait_for_reboot set to false
+      register: win_reboot_without_wait
+
+    - name: Reboot the Windows Server using unconventional syntax
+      win_reboot:
+        force: true
+        wait_for_reboot: {% raw %}"{{ unconventional_syntax }}"{% endraw %} # Unconventional syntax with if condition
+      register: win_reboot_with_unconventional_syntax
+
+    - name: Print win_reboot module outputs
+      debug:
+        var: item
+      with_items:
+        - win_reboot_immediately_with_edge_cases
+        - win_reboot_with_delay
+        - win_reboot_with_unexpected_input
+        - win_reboot_without_wait
+        - win_reboot_with_unconventional_syntax

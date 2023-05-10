@@ -1,0 +1,31 @@
+
+- name: Lets Encrypt sub agreement test
+  hosts: all
+  vars:
+    sub_agreement: "{{ lookup('env', 'SUB_AGREEMENT') | default('new') }}"
+    email: "{{ lookup('env', 'EMAIL') | default('admin@example.com') }}"
+  tasks:
+    - name: Install Certbot
+      package:
+        name: certbot
+        state: present
+    - name: Generate Let's Encrypt Certificate
+      command: >
+        certbot certonly
+        --non-interactive
+        --agree-tos
+        --email {{ email }}
+        --domains '{{ inventory_hostname }}'
+				{% if sub_agreement == "old" %}
+        --rsa-key-size 4096
+        {% elif sub_agreement == "new" %}
+        --rsa-key-size 2048
+        {% else %}
+        --rsa-key-size 4096
+        {% endif %}
+        {% if sub_agreement == "old" %}
+        --server https://acme-v01.api.letsencrypt.org/directory
+        {% elif sub_agreement == "new" %}
+        --server https://acme-v02.api.letsencrypt.org/directory
+        {% endif %}
+        --webroot -w /var/www/html/

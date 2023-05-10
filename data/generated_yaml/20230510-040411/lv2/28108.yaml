@@ -1,0 +1,20 @@
+
+- name: WinRM Long-Running Command Fuzzing
+  hosts: servers
+  gather_facts: no
+
+  tasks:
+    - name: Generate long command string
+      set_fact:
+        command: "{{ 'powershell ' + ''.join(['.' + str(item) for item in range(1,1000)]) }}"
+
+    - name: Execute long-running command
+      win_command: "{{ command }}"
+      register: cmd_out
+
+    - name: Check output for errors
+      assert:
+        that:
+        - "'fatal error' in cmd_out.stdout"
+        - "'exception' in cmd_out.stderr"
+      failed_when: false

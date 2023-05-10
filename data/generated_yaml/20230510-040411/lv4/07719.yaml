@@ -1,0 +1,43 @@
+
+- name: Attach volume from snapshot
+  hosts: localhost
+  gather_facts: false
+  vars:
+    instance_id: [insert instance-id here]
+    volume_size: [insert desired size here]
+    snapshot_id: [insert snapshot-id here]
+    device_name: [insert desired device name here]
+  tasks:
+  - name: create instance
+    ec2:
+      key_name: [insert key name]
+      group: [insert security group]
+      instance_type: [insert instance type here]
+      image: ami-0c94855ba95c71c99
+      region: us-west-2
+      count: 1
+      wait: true
+    register: ec2_instance
+  - name: attach volume
+    ec2_vol:
+      instance: "{{ ec2_instance.instances[0].id }}"
+      region: us-west-2
+      device_name: "{{ device_name }}"
+      volume_size: "{{ volume_size }}"
+      snapshot: "{{ snapshot_id }}"
+      wait: true
+      state: attached
+    register: ec2_vol
+  - name: debug volume status
+    ec2_vol_info:
+      instance: "{{ ec2_instance.instances[0].id }}"
+      name: "{{ ec2_vol.volume_id }}"
+      region: us-west-2
+    register: volume_info
+  - name: validate that volume is attached
+    wait_for:
+      host: "{{ item | regex_replace('vol', '') }}"
+      state: present
+      timeout: 300
+      delay: 5
+    with_items: "{{ ec2_instance.instances[0].block_device_mappings | map(attribute='device_name') | list }}"

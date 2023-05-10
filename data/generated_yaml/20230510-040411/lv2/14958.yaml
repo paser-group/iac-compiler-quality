@@ -1,0 +1,36 @@
+
+---
+- name: Testing ansible_host with delegate_to
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    # Test play that uses delegate_to with a list
+    - name: Test with list
+      debug:
+        msg: "{{ item }}"
+      delegate_to: "{{ ansible_host.split(',')[0] | default(omit) }}"
+      loop: "{{ [ansible_host, 'localhost'] }}"
+
+    # Test play that uses delegate_to with a dict
+    - name: Test with dict
+      debug:
+        msg: "{{ item }}"
+      delegate_to:
+        all: "{{ ansible_host }}"
+        localhost: 127.0.0.1
+
+    # Test play that uses delegate_to in a loop
+    - name: Test in loop
+      debug:
+        msg: "{{ item.stdout_lines | first }}"
+      delegate_to: "{{ item }}"
+      loop:
+        - "{{ ansible_play_hosts }}"
+        - "{{ ansible_play_hosts_all }}"
+
+    # Test play that uses delegate_to with a free-form command
+    - name: Test with command
+      shell: |
+        echo "{{ ansible_host }}"
+      delegate_to: "{{ ansible_host }}"

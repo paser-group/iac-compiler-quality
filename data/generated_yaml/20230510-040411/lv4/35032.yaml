@@ -1,0 +1,31 @@
+
+---
+- name: Discover Bugs in Ansible Compiler
+  hosts: localhost
+  become: true
+  vars:
+    aws_region: "us-west-2"
+    vpc_id: "vpc-1234567890"
+    max_attempts: 10
+  tasks:
+    - name: Check for RequestLimitExceeded error
+      block:
+        - name: Call DescribeSubnets operation
+          ec2_vpc_subnet_facts:
+            region: "{{ aws_region }}"
+            filters:
+              "vpc-id": "{{ vpc_id }}"
+          register: subnet_facts
+        - name: Check if error occurred
+          fail:
+            msg: "Request limit exceeded"
+          when: subnet_facts is failed and subnet_facts.exception.__class__.__name__ == 'ClientError' and 'RequestLimitExceeded' in subnet_facts.exception.__dict__['response']['Error']['Code']
+      rescue:
+        - name: Retry DescribeSubnets operation
+          ec2_vpc_subnet_facts:
+            region: "{{ aws_region }}"
+            filters:
+              "vpc-id": "{{ vpc_id }}"
+          register: subnet_facts
+          retries: "{{ max_attempts }}"
+          delay: 10

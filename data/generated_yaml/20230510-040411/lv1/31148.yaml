@@ -1,0 +1,20 @@
+
+---
+- name: Redis facts cache error with --flush-cache fix
+  hosts: all
+  become: true
+  tasks:
+
+  - name: Flush Redis facts cache
+    command: "ansible all -m setup --tree /tmp/facts"
+
+  - name: Copy Redis fact cache file to Managed node
+    copy:
+      src: "/tmp/facts/{{ ansible_hostname }}"
+      dest: "/etc/ansible/facts.d/{{ ansible_hostname }}.fact"
+
+  - name: Restart fact-caching service
+    systemd:
+      name: ansible-fact-caching.service
+      state: restarted
+      enabled: yes

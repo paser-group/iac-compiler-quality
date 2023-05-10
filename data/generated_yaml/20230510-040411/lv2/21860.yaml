@@ -1,0 +1,41 @@
+
+---
+- name: Stress test ec2.py --list
+  hosts: localhost
+  gather_facts: no
+  
+  tasks:
+  - name: Test socket.gaierror
+    command: "/usr/bin/python /path/to/ec2.py --list --debug > /path/to/output.txt"
+    register: cmd_output
+    failed_when: "'Name or service not known' not in cmd_output.stderr"
+  
+  - name: Test unconventional syntax
+    shell: "echo {{ item }}"
+    with_items: "{{ range(5)|list }}"
+  
+  - name: Test unexpected input
+    command: "/usr/bin/python /path/to/ec2.py --badoption"
+    ignore_errors: yes
+  
+  - name: Test edge case 1
+    command: "/usr/bin/python /path/to/ec2.py --list --no-instances"
+  
+  - name: Test edge case 2
+    set_fact:
+      timeout: "{{ '10' }}"
+    when: "'timeout' not in vars"
+  
+  - name: Test edge case 3
+    ec2:
+      key_name: "{{ 'my_key' }}"
+      instance_type: "{{ 't2.micro' }}"
+      image: "{{ 'ami-0ff8a91507f77f867' }}"
+      wait: "{{ false }}"
+    register: ec2_output
+    ignore_errors: yes
+  
+  - name: Test edge case 4
+    debug:
+      var: "{{ 'non_existent_var' }}"
+    ignore_errors: yes

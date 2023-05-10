@@ -1,0 +1,22 @@
+
+- name: Test lookup with process substitution
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+    - name: Read file via process substitution
+      shell: cat <(echo "Hello, World!")
+      register: file_contents
+
+    - name: Write file
+      file:
+        path: /tmp/test_process_substitution.txt
+        state: touch
+        mode: 777
+      when: file_contents is defined
+
+    - name: Write file content
+      block:
+        - name: Write file via process substitution
+          shell: echo <(echo "Hello, World!") > /tmp/test_process_substitution.txt
+      when: file_contents is not defined

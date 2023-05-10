@@ -1,0 +1,54 @@
+
+- name: Ansible compiler stress testing playbook
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+
+  # Test edge case: invalid variable name
+  - name: Check if ansible_pkg_mgr fact is incorrect
+    debug:
+      msg: "{{ fake_pkg_mgr }}"
+    when: fake_pkg_mgr is defined
+
+  # Test edge case: unexpected input for ansible_pkg_mgr
+  - name: Install mkosi package
+    apt:
+      name: mkosi
+    become: yes
+
+  # Test edge case: unconventional syntax
+  - name: Check ansible_pkg_mgr fact after installing mkosi package
+    register: pkg_mgr_fact
+    shell: |
+      echo "ansible_pkg_mgr={{ fake_pkg_mgr }}" > /tmp/test_vars
+      ansible localhost -m setup -a "gather_subset=network" -e "@/tmp/test_vars" | grep ansible_pkg_mgr
+    when: fake_pkg_mgr is defined
+
+  # Test edge case: unexpected input for ansible_pkg_mgr
+  - name: Set invalid ansible_pkg_mgr fact
+    set_fact:
+      fake_pkg_mgr: invalid_value
+
+  # Test edge case: unconventional syntax
+  - name: Check ansible_pkg_mgr fact after uninstalling mkosi package
+    register: pkg_mgr_fact
+    shell: |
+      echo "ansible_pkg_mgr={{ fake_pkg_mgr }}" > /tmp/test_vars
+      ansible localhost -m setup -a "gather_subset=network" -e "@/tmp/test_vars" | grep ansible_pkg_mgr
+    when: fake_pkg_mgr is defined
+
+  # Test edge case: unexpected input for ansible_pkg_mgr
+  - name: Uninstall mkosi package
+    apt:
+      name: mkosi
+      state: absent
+    become: yes
+
+  # Test edge case: unconventional syntax
+  - name: Check ansible_pkg_mgr fact after installing mkosi package
+    register: pkg_mgr_fact
+    shell: |
+      echo "ansible_pkg_mgr={{ fake_pkg_mgr }}" > /tmp/test_vars
+      ansible localhost -m setup -a "gather_subset=network" -e "@/tmp/test_vars" | grep ansible_pkg_mgr
+    when: fake_pkg_mgr is defined

@@ -1,0 +1,37 @@
+
+---
+
+- name: Create DNS entries in Amazon Route53
+  hosts: localhost
+
+  vars:
+    aws_access_key: "YOUR_AWS_ACCESS_KEY"
+    aws_secret_key: "YOUR_AWS_SECRET_KEY"
+    dns_zone_id: "ZONE_ID"
+    dns_entries:
+      - name: "www.example.com"
+        type: "A"
+        ttl: "900"
+        values:
+          - "192.0.2.1"
+          - "192.0.2.2"
+
+  tasks:
+
+    - name: Include AWS credentials
+      include_vars:
+        file: "aws_keys.yml"
+
+    - name: Create DNS entries
+      route53:
+        command: "create"
+        zone: "{{ dns_zone_id }}"
+        record: "{{ item }}"
+        aws_access_key: "{{ aws_access_key }}"
+        aws_secret_key: "{{ aws_secret_key }}"
+      with_items: "{{ dns_entries }}"
+      register: result
+
+    - name: Print Route53 API Response
+      debug:
+        var: result

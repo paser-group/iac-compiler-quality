@@ -1,0 +1,64 @@
+
+- name: Test Ansible galaxy ignore role path issue
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    default_role_path: /etc/ansible/roles
+    non_existing_role_path: /not/a/real/path
+
+  tasks:
+  - name: Ensure role is not installed in default location
+    file:
+      path: "{{ default_role_path }}/my_role"
+      state: absent
+    when: not skip_role_removal
+
+  - name: Install role using -p/--roles-path parameter
+    command: ansible-galaxy install my_role -p "{{ non_existing_role_path }}" >/dev/null
+    ignore_errors: true
+
+  - name: Ensure role is installed using -p/--roles-path parameter
+    file:
+      path: "{{ non_existing_role_path }}/my_role"
+      state: directory
+
+  - name: Create symlink for default role path
+    file:
+      src: "{{ non_existing_role_path }}/my_role"
+      dest: "{{ default_role_path }}/my_role"
+      state: link
+
+  - name: import role from default path
+    include_role:
+      name: my_role
+
+  - name: import role with full relative path
+    include_role:
+      name: "{{ non_existing_role_path }}/my_role"
+
+  - name: import role with relative path
+    include_role:
+      name: my_role
+      tasks_from: "{{ non_existing_role_path }}/my_role/tasks/main.yml"
+
+  - name: import role with non-existing tasks file
+    include_role:
+      name: my_role
+      tasks_from: "{{ non_existing_role_path }}/my_role/tasks/non_existing.yml"
+
+  - name: import role with non-existing meta file
+    include_role:
+      name: my_role
+      meta_main: "{{ non_existing_role_path }}/my_role/meta/non_existing.yml"
+
+  - name: import role with non-json meta file
+    include_role:
+      name: my_role
+      meta_main: "{{ non_existing_role_path }}/my_role/meta/non_json.yml"
+
+  - name: Attempt to import non-existing role
+    include_role:
+      name: non_existing_role
+    ignore_errors: true
+

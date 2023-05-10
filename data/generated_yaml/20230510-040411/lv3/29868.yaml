@@ -1,0 +1,39 @@
+
+- name: Expose a Bug in ec2_asg module
+  hosts: localhost
+  gather_facts: false
+  tasks: 
+    - name: Creating an EC2 instance
+      ec2:
+        key_name: my_key
+        instance_type: t2.micro
+        image: ami-0c94855ba95c71c99
+        region: us-east-1
+        subnet_id: subnet-123456
+        assign_public_ip: true
+        wait: true
+        count: 1
+      register: ec2_instance
+      
+    - name: Setting up Autoscaling Group
+      ec2_asg:
+        name: my_autoscaling_group
+        launch_configuration_name: my_launch_configuration
+        min_size: 1
+        max_size: 3
+        state: present
+        replace_all_instances: true
+    
+    - name: Stopping all Instances
+      ec2_instance:
+        instance_ids: "{{ ec2_instance.instance_ids }}"
+        state: stopped
+        
+    - name: Updating Autoscaling Group
+      ec2_asg:
+         name: my_autoscaling_group
+         launch_configuration_name: my_new_launch_configuration
+         min_size: 1
+         max_size: 3
+         state: present
+         replace_all_instances: true

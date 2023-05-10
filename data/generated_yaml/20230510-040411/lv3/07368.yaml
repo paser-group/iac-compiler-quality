@@ -1,0 +1,41 @@
+
+---
+- name: Test ec2_vpc module for instance id in route tables
+  hosts: localhost
+  vars:
+    vpc_cidr_block: "10.0.0.0/16"
+    public_subnet_cidr_block: "10.0.1.0/24"
+    private_subnet_cidr_block: "10.0.2.0/24"
+    instance_id: "i-1234567890abcdef"
+
+  tasks:
+    - name: Create VPC
+      ec2_vpc:
+        state: present
+        cidr_block: "{{ vpc_cidr_block }}"
+        resource_tags:
+          Name: "Test VPC"
+
+    - name: Create subnets
+      ec2_vpc_subnet:
+        state: present
+        vpc_id: "{{ item.vpc_id }}"
+        availability_zone: "{{ item.availability_zone }}"
+        cidr_block: "{{ item.cidr_block }}"
+        tags:
+          Name: "{{ item.name }}"
+        resource_tags:
+          Name: "{{ item.resource_name }}"
+      loop:
+      - { vpc_id: "{{ ec2_vpc_vpc.vpc_id }}", availability_zone: "us-east-1a", cidr_block: "{{ public_subnet_cidr_block }}", name: "Public Subnet", resource_name: "Test Public Subnet" }
+      - { vpc_id: "{{ ec2_vpc_vpc.vpc_id }}", availability_zone: "us-east-1b", cidr_block: "{{ private_subnet_cidr_block }}", name: "Private Subnet", resource_name: "Test Private Subnet"}
+
+    - name: Add instance ID to default route table
+      ec2_vpc_route_table:
+        vpc_id: "{{ ec2_vpc_vpc.vpc_id }}"
+        subnets: "{{ ec2_vpc_subnet.0.subnet_id }},{{ ec2_vpc_subnet.1.subnet_id }}"
+        routes:
+          - dest: "0.0.0.0/0"
+            state: present
+            instance_id: "{{ instance_id }}"
+            no_gateway: true

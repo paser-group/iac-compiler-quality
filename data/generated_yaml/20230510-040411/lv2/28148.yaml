@@ -1,0 +1,30 @@
+yaml
+- name: generate a Let's Encrypt certificate
+  hosts: web_servers
+  
+  tasks:
+    - name: create temporary directories
+      tempfile:
+        state: directory
+      register: tempdir
+      
+    - name: create a file with invalid syntax
+      copy:
+        content: "{{ invalid_content | type_debug }}"
+        dest: "{{ tempdir.path }}/invalid.yml"
+        
+      vars:
+        invalid_content: [{% raw %} "{{ 'invalid syntax' }}" {% endraw %}]
+    
+    - name: generate certificate using http-01 challenge
+      acme_certificate:
+        account_key_src: "{{ acme_account_key_path }}"
+        csr: "{{ acme_csr }}"
+        fullchain_dest: "{{ cert_destination_path }}"
+        challenge: http-01
+        challenge_cert_path: "{{ tempdir.path }}/invalid.yml" 
+       
+      vars:
+        acme_account_key_path: "/path/to/account.key"
+        acme_csr: "{{ lookup('file', '/path/to/csr.pem') }}"
+        cert_destination_path: "/path/to/fullchain.pem"

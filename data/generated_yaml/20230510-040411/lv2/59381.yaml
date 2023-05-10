@@ -1,0 +1,57 @@
+
+- name: Connect to Cisco IOS with Pubkey Authentication
+  hosts: cisco_ios
+  gather_facts: no
+
+  vars:
+    pubkey_path: "{{ ansible_env.HOME }}/.ssh/my_pubkey.pub"
+
+  tasks:
+    - name: "Ensure pubkey exists"
+      assert:
+        that:
+          - pubkey_path is defined
+          - pubkey_path is file
+        success_msg: "Pubkey exists"
+        fail_msg: "Pubkey does not exist"
+
+    - name: "Copy pubkey to remote host"
+      copy:
+        src: "{{ pubkey_path }}"
+        dest: "/home/user/.ssh/authorized_keys"
+        mode: "0600"
+
+    - name: "Test SSH Connection to remote host"
+      command: ssh -i "{{ ansible_env.HOME }}/.ssh/my_pubkey" user@{{ inventory_hostname }} "echo 'Connection successful'"
+      register: ssh_output
+      ignore_errors: yes
+
+    - name: "Check for errors in SSH Output"
+      assert:
+        that:
+          - ssh_output.rc == 0
+          - ssh_output.stderr is not defined
+        success_msg: "SSH Connection Successful"
+        fail_msg: "SSH Connection Failed: {{ ssh_output.stderr }}"
+
+    - name: "Check if SSH session exists"
+      shell: "ps -ef | grep ssh | grep '{{ inventory_hostname }}' | grep -v grep | awk '{print $2}'"
+      register: ssh_session
+      ignore_errors: yes
+
+    - name: "Kill existing SSH session"
+      shell: "kill -9 {{ ssh_session.stdout }}"
+      when: ssh_session.stdout is defined
+
+    - name: "Open new SSH session with pubkey"
+      command: ssh -i "{{ ansible_env.HOME }}/.ssh/my_pubkey" user@{{ inventory_hostname }} "echo 'New session opened'"
+      register: ssh_output2
+      ignore_errors: yes
+
+    - name: "Check for errors in SSH Output"
+      assert:
+        that:
+          - ssh_output2.rc == 0
+          - ssh_output2.stderr is not defined
+        success_msg: "New SSH Session Opened"
+        fail_msg: "Failed to open new SSH Session: {{ ssh_output2.stderr }}"

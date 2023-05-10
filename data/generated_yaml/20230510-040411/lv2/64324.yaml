@@ -1,0 +1,55 @@
+
+- name: Juniper.junos role troubleshooting 
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+    - name: Install required packages
+      apt:
+        name:
+          - python
+          - python-pip
+          - junos-eznc
+        state: present
+    
+    - name: Install junos-eznc module with workaround
+      pip:
+        name: junos-eznc==2.5.2
+        extra_args: "--pre --process-dependency-links"
+    
+    - name: Check junos-eznc module version
+      command: junos-eznc --version
+      register: junos_eznc_version
+      
+    - name: junos-eznc module version check
+      fail:
+        msg: "junos-eznc version is {{ junos_eznc_version.stdout }}, required version is 2.5.2"
+      when: not (junos_eznc_version.stdout.find("2.5.2") != -1)
+      
+    - name: Configure Junos device using only shell commands
+      command: cli {{ item }}
+      with_items:
+        - "configure"
+        - "set system login user ansible-user authentication plaintext-password"
+        - "commit"
+        - "exit"
+    
+    - name: Check Junos device status
+      command: show system uptime
+      register: device_response
+      
+    - name: Device response check
+      fail:
+        msg: "Device is not reachable. Error: {{ device_response.stdout }}"
+      when: device_response.stdout.find("Uptime") == -1
+        
+    - name: Execute debugging commands
+      juniper_junos_command:
+        commands:
+          - show version
+          - show chassis hardware
+      register: debug_output
+      
+    - name: Print debug information
+      debug:
+        var: debug_output

@@ -1,0 +1,47 @@
+
+---
+- name: Test connectivity and authentication to OpenStack
+  hosts: localhost
+  gather_facts: false
+  vars:
+    project_name: "my_project"
+    auth_url: "https://openstack.example.com:5000/v3"
+    username: "my_user"
+    password: "my_password"
+    instance_name: "test_instance"
+    image_name: "my_image"
+    flavor: "my_flavor"
+    network_name: "my_network"
+    key_name: "my_key"
+
+  tasks:
+    - name: Check connectivity to OpenStack endpoints
+      openstack.cloud.common.list_services:
+
+    - name: Authenticate to OpenStack
+      openstack.cloud.auth:
+        auth_url: "{{ auth_url }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        project_name: "{{ project_name }}"
+        validate_certs: False
+
+    - name: Create a new instance
+      openstack.cloud.server:
+        name: "{{ instance_name }}"
+        image: "{{ image_name }}"
+        flavor: "{{ flavor }}"
+        key_name: "{{ key_name }}"
+        network: "{{ network_name }}"
+
+    - name: Wait for instance to be active
+      register: result
+      retries: 10
+      delay: 30
+      until: result is succeeded
+      openstack.cloud.server_status:
+        name: "{{ instance_name }}"
+
+    - name: Ping OpenStack instance
+      ping:
+        dest: "{{ result.ansible_facts.openstack_servers[0].addresses.my_network[0].addr }}"

@@ -1,0 +1,52 @@
+yaml
+---
+- name: Backup using Cron Module 
+  hosts: all
+  become: yes
+  tasks:
+    - name: Create backup directory
+      file:
+        path: /backup
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: Backup Database
+      cron:
+        name: "Backup {{ ansible_hostname }} Database"
+        minute: 0
+        hour: 3
+        user: root
+        job: "pg_dump dbname > /backup/dbname-`date +\%Y\%m\%d`.sql"
+        backup: true
+    
+    - name: Validate the backup has been performed
+      stat:
+        path: "/backup/dbname-`date +\%Y\%m\%d`.sql"
+      register: backup_file
+
+    - name: Display a message when backup is done
+      debug:
+        var: backup_file
+
+    - name: Delete backups older than 7 days
+      find:
+        paths: /backup/
+        patterns: '*.sql'
+        age: 7d
+        type: f
+        recurse: yes
+      register: backups
+
+    - name: Display a message when backup files are deleted
+      debug:
+        var: backups.files
+
+    - name: Email backup file
+      mail:
+        to: 'admin@example.com'
+        subject: 'Backup on {{ ansible_hostname }}'
+        body: 'Please check attachment for backup file'
+        attach:
+          - "/backup/dbname-`date +\%Y\%m\%d`.sql"

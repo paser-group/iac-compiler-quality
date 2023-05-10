@@ -1,0 +1,65 @@
+
+- hosts: localhost
+  gather_facts: no
+  vars:
+    ec2_region: us-west-1
+    ec2_vpc_id: vpc-1234567890abcdefg
+    ec2_subnet_id: subnet-1234567890abcdefg
+    ec2_instance_type: t2.micro
+    ec2_image: ami-1234567890abcdefg
+    ec2_private_ip: 10.0.0.10
+    ec2_public_ip: "{{ lookup('aws_eip', 'id=eipalloc-1234567890abcdefg', wantlist=True)[0] }}"
+    ec2_security_group: "{{ lookup('aws_security_group', 'name=my-security-group', wantlist=True)[0] }}"
+
+  tasks:
+  - name: "Create EC2 Instance"
+    ec2:
+      region: "{{ ec2_region }}"
+      vpc_id: "{{ ec2_vpc_id }}"
+      subnet_id: "{{ ec2_subnet_id }}"
+      group_id: "{{ ec2_security_group }}"
+      instance_type: "{{ ec2_instance_type }}"
+      image: "{{ ec2_image }}"
+      private_ip: "{{ ec2_private_ip }}"
+      assign_public_ip: yes
+    register: ec2_instance
+
+  - name: "Get Public IP"
+    set_fact:
+      ec2_public_ip: "{{ ec2_instance.instances[0].public_ip }}"
+    when: ec2_instance.instances[0].public_ip is defined
+
+  - name: "Stop EC2 Instance"
+    ec2:
+      region: "{{ ec2_region }}"
+      instance_ids: "{{ ec2_instance.instance_ids }}"
+      state: stopped
+
+  - name: "Start EC2 Instance"
+    ec2:
+      region: "{{ ec2_region }}"
+      instance_ids: "{{ ec2_instance.instance_ids }}"
+      state: running
+
+  - name: "Terminate EC2 Instance"
+    ec2:
+      region: "{{ ec2_region }}"
+      instance_ids: "{{ ec2_instance.instance_ids }}"
+      state: terminated
+
+  - name: "Get Subnet"
+    set_fact:
+      ec2_subnet: "{{ lookup('aws_subnet', ec2_subnet_id) }}"
+    
+  - name: "Debugging Info"
+    debug:
+      msg:
+        - "EC2 Region: {{ ec2_region }}"
+        - "EC2 VPC ID: {{ ec2_vpc_id }}"
+        - "EC2 Subnet ID: {{ ec2_subnet_id }}"
+        - "EC2 Subnet: {{ ec2_subnet }}"
+        - "EC2 Instance Type: {{ ec2_instance_type }}"
+        - "EC2 Image: {{ ec2_image }}"
+        - "EC2 Private IP: {{ ec2_private_ip }}"
+        - "EC2 Public IP: {{ ec2_public_ip }}"
+        - "EC2 Security Group: {{ ec2_security_group }}"

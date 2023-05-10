@@ -1,0 +1,35 @@
+
+- name: GCP Inventory Playbook
+  hosts: localhost
+  gather_facts: no
+  
+  vars:
+    project_id: "your_project_id"
+    credentials_file: "/path/to/your/credentials.json"
+    zone: "us-central1-a"
+  
+  tasks:
+  - name: Authenticate to GCP with the service account
+    gcp_auth:
+      credentials_file: "{{ credentials_file }}"
+  
+  - name: Create GCP instance 
+    gcp_compute_instance:
+      name: instance-1
+      zone: "{{ zone }}"
+      machine_type: "f1-micro"
+      image_family: "debian-10"
+      tags:
+        items:
+          - kind_auth: machineaccount
+      project: "{{ project_id }}"
+      service_account_email: "machine-12345@{{ project_id }}.iam.gserviceaccount.com"
+      service_account_file: "{{ credentials_file }}"
+      wait_for_external_ip: true
+      
+  - name: Generate GCP inventory
+    command: ansible-inventory -i gcp.yml --list
+  
+  - name: Test connectivity with the instance
+    ping:
+

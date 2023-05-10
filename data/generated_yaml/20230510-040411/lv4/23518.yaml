@@ -1,0 +1,30 @@
+
+- name: Call Azure API via proxy
+  hosts: localhost
+  gather_facts: false
+  vars:
+    azure_api_url: "https://api.azure.com/v1/"
+    proxy_url: "http://proxy.example.com:8080/"
+    num_iterations: 10
+  tasks:
+    - name: Make API call
+      uri:
+        url: "{{ azure_api_url }}"
+        method: GET
+        timeout: 5
+        return_content: true
+        status_code: 200
+        headers:
+          Accept: "application/json"
+        validate_certs: yes
+        force_basic_auth: yes
+        url_username: "{{ api_username }}"
+        url_password: "{{ api_password }}"
+        env:
+          http_proxy: "{{ proxy_url }}"
+      with_sequence: count="{{ num_iterations }}"
+      register: api_calls
+  
+    - name: Record responses
+      set_fact:
+        api_responses: "{{ api_calls.results | map(attribute='json') | list }}"

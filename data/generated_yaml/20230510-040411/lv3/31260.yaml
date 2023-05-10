@@ -1,0 +1,31 @@
+
+---
+- hosts: all
+  gather_facts: true
+
+  tasks:
+    - name: configure fact cache
+      set_fact:
+        ansible_cache_plugin: jsonfile
+        ansible_cache_plugin_connection: /tmp
+      register: cache_config
+
+    - name: install the fact dependency
+      package:
+        name: python-pyasn1
+        state: present
+
+    - name: Copy a script to /tmp
+      copy:
+        src: script.py
+        dest: /tmp
+        mode: 0777
+
+    - name: execute the script
+      command: python /tmp/script.py
+      when: cache_config.changed
+
+    - name: use cached facts
+      debug:
+        var: ansible_facts
+      when: not cache_config.changed

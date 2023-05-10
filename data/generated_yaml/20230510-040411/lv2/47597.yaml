@@ -1,0 +1,38 @@
+
+- name: Test ec2_vol module with unconventional syntax and unexpected inputs
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+  - name: Create an instance with incorrect failure
+    ec2:
+      instance_type: t2.micro
+      image: ami-0a887e401f7654935
+      key_name: test-key
+      count_tag:
+        Name: test-instance-{{ ansible_date_time.epoch }}
+      instance_tags:
+        Name: test-instance-{{ ansible_date_time.epoch }}
+      region: us-east-1
+      vpc_subnet_id: subnet-12345678
+      assign_public_ip: yes
+      wait: true
+      terminate_on_shutdown: true
+      volume_tags:
+        Name: "{{ 'a'*100 }}"
+        Device: /dev/xvdf
+        Size: "" # wrong input
+
+  - name: Test ec2_vol module with edge cases
+    ec2_vol:
+      instance: "{{ ansible_ec2_instance_id }}"
+      device_name: /dev/xvdf
+      volume_size: 0 # unexpected input
+      region: us-east-1
+      volume_tags:
+        Name: "{{ 'a' * 256 }}" # edge case
+
+  - name: Terminate the instance
+    ec2:
+      instance_ids: "{{ ansible_ec2_instance_id }}"
+      state: "absent"

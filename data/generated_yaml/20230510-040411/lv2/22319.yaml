@@ -1,0 +1,53 @@
+
+- hosts: eos_switch
+  gather_facts: no
+  tasks:
+    - name: Attempt to connect to the switch using an incorrect IP address
+      eos_command:
+        provider:
+          host: 256.256.256.256
+        commands: show clock
+
+    - name: Test if SSH connection to the switch can be established
+      eos_ping:
+        provider:
+          host: {{ ansible_host }}
+          username: {{ ansible_username }}
+          password: "{{ ansible_password }}"
+        host: "{{ eos_switch_ip }}"
+        timeout: 2
+
+    - name: Attempt to connect to the switch using an unsupported protocol
+      eos_command:
+        provider:
+          host: "{{ eos_switch_ip }}"
+          protocol: telnet
+        commands: show clock
+
+    - name: Attempt to execute an invalid command on the switch
+      eos_command:
+        provider:
+          host: "{{ eos_switch_ip }}"
+        command: show nonexistent
+
+    - name: Test if the switch accepts a wrong SSH key
+      eos_ping:
+        provider:
+          host: "{{ eos_switch_ip }}"
+          ssh_keyfile: "{{ random_file_path }}"
+        timeout: 2
+
+    - name: Test if the EOS switch is chosen from a list of multiple devices
+      eos_facts:
+        provider:
+          host: "{{ host_list }}"
+        gather_subset:
+          - '!min'
+          - '!config'
+
+    - name: Install an invalid version of the EOS firmware
+      eos_firmware:
+        provider:
+          host: "{{ eos_switch_ip }}"
+        source: "{{ invalid_firmware_url }}"
+        state: present

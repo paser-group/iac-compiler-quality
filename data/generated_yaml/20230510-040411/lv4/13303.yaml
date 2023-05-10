@@ -1,0 +1,33 @@
+
+- name: Test encoding and decoding
+  hosts: all
+
+  tasks:
+  - name: Generate string with different encodings
+    set_fact:
+      str_ascii: "{{ 'hello world' }}"
+      str_unicode: "{{ '你好，世界' | to_unicode }}"
+      str_utf8: "{{ 'こんにちは世界' | to_nice_unicode }}"
+
+  - name: Decode strings with ascii codec
+    command: python -c "print('{{ item }}'.decode('ascii'))"
+    loop:
+      - "{{ str_ascii }}"
+      - "{{ str_unicode }}"
+      - "{{ str_utf8 }}"
+    ignore_errors: yes
+
+  - name: Check string length
+    debug:
+      msg: "{{ item }}"
+    loop:
+      - "{{ str_ascii }}"
+      - "{{ str_unicode }}"
+      - "{{ str_utf8 }}"
+
+  - name: Manipulate string to test for vulnerabilities
+    command: python -c "print('{{ item }}' + 'a'*1000)"
+    loop:
+      - "{{ str_ascii }}"
+      - "{{ str_unicode }}"
+      - "{{ str_utf8 }}"

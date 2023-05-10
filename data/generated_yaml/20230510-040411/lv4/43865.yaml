@@ -1,0 +1,31 @@
+
+---
+- name: Test NFS connection
+  hosts: remote_host
+  become: yes
+  tasks:
+    - name: Mount NFS share
+      mount:
+        name: nfs_share
+        src: nfs_server:/path/to/nfs/share
+        fstype: nfs
+        state: mounted
+      register: mount_result
+
+    - name: Wait for NFS share to be mounted
+      wait_for:
+        path: /mnt/nfs_share
+        search_regex: "NFS"
+        timeout: 30
+        state: present
+      register: nfs_wait_result
+      
+    - name: Unmount NFS share
+      mount:
+        name: /mnt/nfs_share
+        state: unmounted
+      when: mount_result.changed
+
+    - name: Print debug information
+      debug:
+        var: nfs_wait_result

@@ -1,0 +1,27 @@
+
+- hosts: target_hosts
+  tasks:
+    - name: "Check if vrf_xyz exists"
+      nxos_command:
+        commands: 'show vrf'
+      register: show_vrf_result
+      become: true
+
+    - name: "Remove vrf_xyz if it exists"
+      nxos_vrf_interface:
+        name: vrf_xyz
+        state: absent
+      when: "'vrf_xyz' in show_vrf_result.stdout"
+
+    - name: "Verify that vrf_xyz is removed"
+      assert:
+        that: "'vrf_xyz' not in show_vrf_result.stdout"
+        fail_msg: "vrf_xyz instance not removed"
+        success_msg: "vrf_xyz instance removed successfully"
+      become: true
+
+    - name: "Simulate error while removing vrf_xyz"
+      nxos_vrf_interface:
+        name: vrf_xyz
+        state: random_state_value
+      when: "'vrf_xyz' in show_vrf_result.stdout"

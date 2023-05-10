@@ -1,0 +1,59 @@
+yaml
+- hosts: all
+  vars:
+    servers:
+      - name: server1
+        ip: 192.168.1.100
+      - name: server2
+        ip: 192.168.1.101
+
+  tasks:
+    # Case 1: Using template in the inventory file
+    - name: Test Paramiko connection module with inventory template
+      paramiko_connection:
+        hostname: "{{ item.ip }}"
+        username: "root"
+        password: "password"
+      with_items: "{{ servers }}"
+
+    # Case 2: Using a template in a variable
+    - name: Test Paramiko connection module with variable template
+      paramiko_connection:
+        hostname: "{{ hostvars[item].ansible_host }}"
+        username: "root"
+        password: "password"
+      with_items: "{{ groups['all'] }}"
+      vars:
+        inventory_hostname: "{{ item }}"
+
+    # Case 3: Using a YAML multiline string as password
+    - name: Test Paramiko connection module with multiline password
+      paramiko_connection:
+        hostname: "{{ servers[0].ip }}"
+        username: "root"
+        password: >
+          This is a
+          multiline
+          password
+          with special chars $&/=
+  
+    # Case 4: Using an undefined variable
+    - name: Test Paramiko connection module with undefined variable
+      paramiko_connection:
+        hostname: "{{ hostname }}"
+        username: "root"
+        password: "password"
+
+    # Case 5: Using a null variable
+    - name: Test Paramiko connection module with null variable
+      paramiko_connection:
+        hostname: "{{ hostvars[''] }}"
+        username: "root"
+        password: "password"
+
+    # Case 6: Using an invalid IP address
+    - name: Test Paramiko connection module with invalid IP address
+      paramiko_connection:
+        hostname: "256.256.256.256"
+        username: "root"
+        password: "password"

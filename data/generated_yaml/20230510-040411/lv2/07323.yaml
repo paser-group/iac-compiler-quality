@@ -1,0 +1,82 @@
+yaml
+---
+- name: RabbitMQ policy error testing playbook
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    # Create a policy with an invalid priority value
+    - name: Create a RabbitMQ policy with an invalid priority value
+      rabbitmq_policy:
+        vhost: /
+        name: test-policy
+        pattern: "^amq\\."
+        priority: "invalid-priority"
+        tags: "test-policy"
+      register: policy_result
+
+    # Verify the creation of a policy with an invalid priority value failed
+    - name: Verify that the policy with invalid priority is not created
+      assert:
+        that:
+          - '("error" in policy_result and policy_result["error"]["reason"] == "invalid_priority_value") or ("msg" in policy_result and "priority value must be an integer" in policy_result["msg"])'
+
+    # Set a policy with a negative priority value
+    - name: Create a RabbitMQ policy with a negative priority value
+      rabbitmq_policy:
+        vhost: /test
+        name: policy-neg
+        pattern: "^amq\\."
+        priority: "-1"
+      register: policy_neg_result
+
+    # Verify the creation of a policy with a negative priority value
+    - name: Verify that the policy with negative priority is created
+      assert:
+        that:
+          - policy_neg_result is succeeded
+
+    # Set a policy with an excessively high priority value
+    - name: Create a RabbitMQ policy with an excessively high priority value
+      rabbitmq_policy:
+        vhost: /test
+        name: policy-high
+        pattern: "^amq\\."
+        priority: "1000000000"
+      register: policy_high_result
+
+    # Verify the creation of a policy with an excessively high priority value failed
+    - name: Verify that the policy with high priority is not created
+      assert:
+        that:
+          - '("error" in policy_high_result and "invalid_priority" in policy_high_result["error"]["reason"]) or ("msg" in policy_high_result and "priority value out of range" in policy_high_result["msg"])'
+
+    # Try to set policy priority with a non-integer value
+    - name: Create a RabbitMQ policy with a non-integer priority value
+      rabbitmq_policy:
+        vhost: /test
+        name: policy-nonint
+        pattern: "^amq\\."
+        priority: "1.23"
+      register: policy_nonint_result
+
+    # Verify the creation of a policy with a non-integer priority value failed
+    - name: Verify that the policy with non-integer priority is not created
+      assert:
+        that:
+          - '("error" in policy_nonint_result and "invalid_priority" in policy_nonint_result["error"]["reason"]) or ("msg" in policy_nonint_result and "priority value must be an integer" in policy_nonint_result["msg"])'
+
+    # Set a policy with an empty priority value
+    - name: Create a RabbitMQ policy with an empty priority value
+      rabbitmq_policy:
+        vhost: /test
+        name: policy-empty
+        pattern: "^amq\\."
+        priority: ""
+      register: policy_empty_result
+
+    # Verify the creation of a policy with an empty priority value failed
+    - name: Verify that the policy with empty priority is not created
+      assert:
+        that:
+          - '("error" in policy_empty_result and "invalid_priority" in policy_empty_result["error"]["reason"]) or ("msg" in policy_empty_result and "priority value must be an integer" in policy_empty_result["msg"])'

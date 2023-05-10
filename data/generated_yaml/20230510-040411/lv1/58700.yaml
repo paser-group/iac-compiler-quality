@@ -1,0 +1,28 @@
+
+---
+- name: Set DNS record on Windows host
+  hosts: windows_servers
+  gather_facts: no
+  vars:
+    dns_host: "dns_server.example.com"
+    dns_zone: "example.com"
+    dns_record_name: "webserver01"
+    dns_record_value: "10.0.0.1"
+  tasks:
+  - name: Check if DNS zone exists
+    win_shell: "Get-DnsServerZone {{dns_zone}}"
+    register: dns_zone_check
+  - name: Create DNS zone if it doesn't exist
+    win_shell: "Add-DnsServerPrimaryZone -Name {{dns_zone}} -ReplicationScope Forest"
+    when: dns_zone_check.rc != 0
+  - name: Check if DNS record already exists
+    win_shell: "Get-DnsServerResourceRecord -ZoneName {{dns_zone}} -Name {{dns_record_name}} -RRType A -ErrorAction SilentlyContinue"
+    register: dns_record_check
+  - name: Create DNS record if it doesn't exist
+    win_dns_record:
+      name: "{{dns_record_name}}"
+      value: "{{dns_record_value}}"
+      zone: "{{dns_zone}}"
+      type: A
+      server: "{{dns_host}}"
+    when: dns_record_check.rc != 0

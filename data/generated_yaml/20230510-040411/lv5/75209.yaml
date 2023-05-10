@@ -1,0 +1,20 @@
+
+- name: Testing connection handling
+  hosts: all
+  tasks:
+  - name: Waiting for output
+    expect:
+      command: echo "hello world"
+      responses:
+        "hello world": continue
+  - name: Force a broken pipe
+    expect:
+      command: |
+        python -c "import sys; sys.stdout.write('hello\n'); sys.stdout.flush(); sys.stdin.readline()"
+        "asfsdfsdfdf": send "q\n"
+    connection: local
+  - name: Check for broken pipe output
+    debug:
+      msg: "Broken pipe output found."
+      verbosity: 1
+    ignore_errors: true

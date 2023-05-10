@@ -1,0 +1,35 @@
+
+---
+- name: EC2 Inventory Connection Play
+  hosts: localhost
+  gather_facts: no
+    
+  vars:
+    region: "us-west-2"
+  
+  tasks:
+    - name: Configure AWS credentials
+      ec2_instance_facts:
+      register: ec2_facts
+      update_cache:yes
+      cache_dir: "{{ inventories_dir }}/ec2-instance.cache"
+   
+    - name: Create EC2 dynamic inventory
+      add_host:
+        hostname: "{{ item.private_ip_address }}"
+        ansible_host: "{{ item.private_ip_address }}"
+        ansible_user: "ec2-user"
+        ansible_ssh_private_key_file: "/root/.ssh/id_rsa"
+      with_items: "{{ ec2_facts.instances }}"
+      when: item.state.name == 'running'
+
+    - name: Use EC2 dynamic inventory with a play
+      hosts: tag_Name_EC2-Inventory
+      become: yes
+      become_user: ec2-user
+      
+      tasks:
+        - name: Update the system
+          yum: 
+            name: "*"
+            state: latest

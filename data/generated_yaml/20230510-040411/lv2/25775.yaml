@@ -1,0 +1,26 @@
+
+- name: Test os_image upload timeout bug
+  hosts: localhost
+  gather_facts: no
+  
+  tasks:
+  - name: Install required packages
+    apt:
+      name: ['s3cmd']
+      state: present
+
+  - name: Upload os_image with timeout
+    shell: |
+      s3cmd -c /root/.s3cfg put --timeout=1 /var/lib/kolla/config_files/nova_conf PLAYBOOK-TEST
+    ignore_errors: true
+
+  - name: Confirm upload completion
+    uri:
+      url: https://PLAYBOOK-TEST.s3.amazonaws.com/nova_conf
+      method: HEAD
+      return_content: no
+      status_code: 200
+    register: result
+    until: result.status == 200
+    retries: 3
+    delay: 5

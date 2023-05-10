@@ -1,0 +1,41 @@
+
+---
+- name: Install Ansible collections
+  hosts: all
+  become: true
+  vars:
+    ansible_collections_path: "/usr/share/ansible/collections"
+  tasks:
+    - name: Create collections directory if missing
+      file:
+        path: "{{ ansible_collections_path }}"
+        state: directory
+      register: collections_dir
+
+    - name: Print collections directory status
+      debug:
+        msg: "Collections directory {{ ansible_collections_path }} exists."
+
+    - name: Set collections install directory permissions
+      file:
+        path: "{{ ansible_collections_path }}"
+        owner: root
+        group: root
+        mode: 0755
+      when: collections_dir.changed
+
+    - name: Install default package collection
+      ansible-galaxy:
+        name: ansible.posix
+        state: present
+        collections_path: "{{ ansible_collections_path }}"
+      register: default_package
+
+    - name: Print default package installation status
+      debug:
+        msg: "Default package ansible.posix installed from {{ default_package.dependencies[0].source }}."
+
+    - name: Verify default package dependencies
+      assert:
+        that: default_package.dependencies is defined
+        msg: "Default package dependencies not found."

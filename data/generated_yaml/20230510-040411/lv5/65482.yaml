@@ -1,0 +1,31 @@
+
+---
+- name: Test playbook to uncover bugs in Ansible Compiler
+  hosts: ios_device
+  gather_facts: no
+  tasks:
+    - name: Configuration of IOS device
+      ios_config:
+        lines:
+          - interface GigabitEthernet2
+          - ip address 172.16.1.1 255.255.255.0
+          - shutdown
+        parents: interface GigabitEthernet2
+        before:
+          - show version
+
+    - name: Run show version command
+      ios_command:
+        commands:
+          - show version
+      register: show_version_output
+
+    - name: Check if output contains 'Cisco IOS XE Software'
+      debug:
+        msg: "show version output is correct"
+      when: "'Cisco IOS XE Software' in show_version_output.stdout_lines[0]"
+
+    - name: Check if there is any error message in output
+      debug:
+        msg: "The 'show version' command failed"
+      when: "'invalid input' in show_version_output.stderr"

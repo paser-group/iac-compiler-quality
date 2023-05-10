@@ -1,0 +1,36 @@
+
+- name: Test replace_all_instances function in EC2 module
+  hosts: localhost
+  connection: local
+  vars:
+    aws_region: "{{ lookup('env', 'AWS_REGION') }}"
+    launch_config_name: "test-launch-config"
+    auto_scaling_group_name: "test-auto-scaling-group"
+    ami_id: "ami-0c94855ba95c71c99" # Sample AMI ID
+  tasks:
+    - name: Create launch configuration with zero instances
+      ec2_lc:
+        name: "{{ launch_config_name }}"
+        image_id: "{{ ami_id }}"
+        instance_type: t2.micro
+        region: "{{ aws_region }}"
+        key_name: "my-key-pair"
+      register: lc_data
+
+    - name: Create auto scaling group 
+      ec2_asg:
+        name: "{{ auto_scaling_group_name }}"
+        launch_config_name: "{{ launch_config_name }}"
+        min_size: 0
+        max_size: 0
+        vpc_zone_identifier: "subnet-123456"
+        region: "{{ aws_region }}"
+      register: asg_data
+
+    - name: Replace all instances with new ones
+      ec2_asg:
+        name: "{{ auto_scaling_group_name }}"
+        launch_config_name: "{{ launch_config_name }}"
+        region: "{{ aws_region }}"
+        replace_all_instances: yes
+      register: replace_instances_data

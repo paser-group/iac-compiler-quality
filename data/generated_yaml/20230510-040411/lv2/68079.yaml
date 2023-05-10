@@ -1,0 +1,56 @@
+
+---
+- name: Test Playbook - 'operation requires privilege escalation' error
+  hosts: all
+  gather_facts: no
+  
+  tasks:
+    - name: Attempt to escalate privilege with root user
+      become: yes
+      shell: echo "I have escalated privileges!"
+      register: root_privileges
+      ignore_errors: yes
+      
+    - name: Attempt to escalate privilege with non-root user
+      become: yes
+      become_user: test
+      shell: echo "I have escalated privileges!"
+      register: non_root_privileges
+      ignore_errors: yes
+      
+    - name: Attempt to escalate privilege without specifying become_user
+      become: yes
+      shell: echo "I have escalated privileges!"
+      register: undefined_user_privileges
+      ignore_errors: yes
+      
+    - name: Check if root privilege escalation failed with useful error message
+      assert:
+        that:
+          - "'The task includes an option with an undefined variable' in root_privileges.rc"
+        quiet: yes
+      
+    - name: Check if non-root privilege escalation failed with useful error message
+      assert:
+        that:
+          - "'Sorry, user test is not allowed to execute' in non_root_privileges.stderr_lines"
+        quiet: yes
+      
+    - name: Check if undefined user privilege escalation failed with useful error message
+      assert:
+        that:
+          - "'The task includes an option with an undefined variable' in undefined_user_privileges.rc"
+        quiet: yes
+      
+    - name: Attempt to escalate privilege with invalid become method
+      become: true
+      become_method: su
+      shell: echo "I have escalated privileges!"
+      register: invalid_become_method_privileges
+      ignore_errors: yes
+      
+    - name: Check if invalid become method privilege escalation failed with useful error message
+      assert:
+        that:
+          - "'Failed to set permissions' in invalid_become_method_privileges.stderr_lines"
+        quiet: yes

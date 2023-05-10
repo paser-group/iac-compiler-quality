@@ -1,0 +1,45 @@
+yaml
+- hosts: localhost
+  vars:
+    server_name: myazure.database.windows.net
+    db_name: mydatabase
+    uri_base: https://{{ server_name }}/api/{{ db_name }}
+    max_retries: 10
+    retry_interval: 5
+  tasks:
+    - name: Get SQL Server API status
+      uri:
+        url: "{{ uri_base }}/status"
+        method: GET
+        return_content: yes
+        status_code: 200
+        retries: "{{ max_retries }}"
+        retry_interval: "{{ retry_interval }}"
+      ignore_errors: yes
+      register: status
+
+    - name: Create new database user
+      uri:
+        url: "{{ uri_base }}/user"
+        method: POST
+        body_format: json
+        body:
+          name: 'newuser'
+          password: 'newpass'
+        return_content: yes
+        status_code: 201
+        retries: "{{ max_retries }}"
+        retry_interval: "{{ retry_interval }}"
+      ignore_errors: yes
+      register: user_created
+
+    - name: Delete database user
+      uri:
+        url: "{{ uri_base }}/user/{{ user_name }}"
+        method: DELETE
+        return_content: yes
+        status_code: 204
+        retries: "{{ max_retries }}"
+        retry_interval: "{{ retry_interval }}"
+      ignore_errors: yes
+      when: user_created is defined and user_created.status == 201

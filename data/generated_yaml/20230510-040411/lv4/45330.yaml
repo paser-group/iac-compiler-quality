@@ -1,0 +1,25 @@
+
+- name: Test Azure Container Registry idempotence bug
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+    - name: Create Azure Container Registry resource
+      azure_rm_containerregistry:
+        resource_group: myResourceGroup
+        name: myContainerRegistry
+        sku: Basic
+        admin_user_enabled: true
+      register: registry
+
+    - name: Check if registry resource exists
+      azure_rm_containerregistry_info:
+        resource_group: myResourceGroup
+        name: myContainerRegistry
+      register: registry_info
+
+    - name: Verify idempotence
+      assert:
+        that:
+          - registry_info == registry
+        msg: "Registry resource was not created/update correctly"

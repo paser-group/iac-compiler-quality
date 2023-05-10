@@ -1,0 +1,55 @@
+
+---
+
+- name: Test Ansible's module search path
+  hosts: all
+  become: true
+  gather_facts: false
+
+  tasks:
+
+  - name: Install pip package globally
+    package:
+      name: "{{ item }}"
+      state: present
+    with_items:
+      - pip
+    register: result
+    until: result is succeeded
+    retries: 5
+    delay: 5
+
+  - name: Configure the search path
+    command: export PATH=/usr/local/bin:$PATH
+
+  - name: Update pip globally
+    command: pip install -U pip
+
+  - name: Install a Python package via pip
+    pip:
+      name: ansible
+      executable: "{{ item }}"
+    with_items:
+      - /usr/bin/env python
+
+  - name: Run Ansible with an unconventional syntax
+    shell: ansible-playbook playbook.yml -vvvv
+
+  - name: Attempt to load a nonexistent module
+    include_tasks: nonexistent.yml
+    ignore_errors: yes
+
+  - name: Load a module with unconventional syntax
+    command: ansible ping
+
+  - name: Load a module with unexpected input
+    command: ansible -i "{{ item }}" all -m ping
+    with_items:
+      - nonexistent-file.txt
+
+  - name: Pass an unconventional variable
+    debug:
+      msg: "{{ 1.0 }}"
+
+
+- name: End of test playbook

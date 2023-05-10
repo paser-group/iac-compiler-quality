@@ -1,0 +1,23 @@
+yaml
+- name: Install SSL Certificate for Java
+  hosts: all
+  become: true
+  
+  tasks:
+    - name: Copy SSL Certificate to Remote Server
+      copy:
+        src: "/path/to/java_cert.crt"
+        dest: "/etc/pki/ca-trust/source/anchors/"
+      notify: update trust store
+
+    - name: Update Trust Store
+      command: update-ca-trust
+      async: 60
+      poll: 0
+      ignore_errors: yes
+      register: result
+      changed_when: result.stdout != ""
+
+  handlers:
+    - name: update trust store
+      command: update-ca-trust

@@ -1,0 +1,29 @@
+powershell
+function Set-DnsClientServerAddress {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory=$true)]
+        [string[]]$ServerAddresses,
+
+        [string]$InterfaceAlias = (Get-NetAdapter).InterfaceAlias,
+        
+        [string]$Suffix = ""
+    )
+
+    $dnsServers = @($ServerAddresses)
+
+    # Add Suffix to DNS Servers
+    if($Suffix -ne ""){
+        $dnsServers += "$($dnsServers[0]).$Suffix"
+    }
+
+    # Configure DNS Servers
+    $dnsServerIPs = @()
+    foreach($dnsServer in $dnsServers){
+        $dnsServerIP = Resolve-DnsName -Name $dnsServer -Type A | Select-Object -ExpandProperty IPAddress
+        $dnsServerIPs += $dnsServerIP
+    }
+    $dnsServerIPs = $dnsServerIPs | Select-Object -Unique
+
+    Set-DnsClientServerAddress -InterfaceAlias $InterfaceAlias -ServerAddresses $dnsServerIPs
+}

@@ -1,0 +1,32 @@
+
+- hosts: network_devices
+  gather_facts: no
+  vars:
+    config_commands:
+      - show spanning-tree interface Eth1/1
+      - show spanning-tree interface Eth1/1 status
+      - conf t
+      - interface Eth1/1
+      - spanning-tree port type edge trunk
+      - end
+      - show spanning-tree interface Eth1/1
+      - show spanning-tree interface Eth1/1 status
+  tasks:
+    - name: Gather Data Before Applying Configuration
+      nxos_command:
+        commands: "{{ config_commands }}"
+      register: pre_config
+
+    - name: Apply Spanning Tree Port Type Configuration
+      nxos_config:
+        config: "{{ config_commands }}"
+
+    - name: Gather Data After Applying Configuration
+      nxos_command:
+        commands: "{{ config_commands }}"
+      register: post_config
+
+    - name: Compare Configuration
+      debug:
+        msg: "Configuration applied successfully"
+      when: post_config.stdout != pre_config.stdout

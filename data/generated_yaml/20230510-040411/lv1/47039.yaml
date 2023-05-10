@@ -1,0 +1,40 @@
+yaml
+---
+- name: Ensure InfluxDB User Authentication
+  hosts: <YOUR_HOSTNAME>
+  become: true
+  
+  vars:
+    username: "admin"
+    password: "<YOUR_PASSWORD>"
+  
+  tasks:
+    - name: Clone git repository
+      git:
+        repo: "https://github.com/influxdata/influxdb"
+        dest: "/tmp"
+      become: yes
+
+    - name: Install InfluxDB
+      shell: >
+        cd /tmp/influxdb && 
+        sudo make install
+      become: yes
+
+    - name: Modify InfluxDB configuration file
+      become: yes
+      lineinfile:
+        path: /etc/influxdb/influxdb.conf
+        regexp: '^# auth-enabled.*$'
+        line: 'auth-enabled = true'
+        
+    - name: Create InfluxDB User
+      influxdb_user:
+        username: "{{ username }}"
+        password: "{{ password }}"
+        state: present
+      
+    - name: Restart InfluxDB Service
+      service:
+        name: "influxdb"
+        state: restarted

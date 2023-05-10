@@ -1,0 +1,73 @@
+yaml
+---
+- hosts: localhost
+  tasks:
+
+    - name: Download file using get_url
+      get_url:
+        url: "http://example.com/file.txt"
+        dest: "/tmp/file.txt"
+        timeout: "{{ curl_timeout | default(60) }}"
+        force: "{{ curl_force | default(true) }}"
+        validate_certs: "{{ curl_verify_cert | default(true) }}"
+        method: "{{ http_method | default('GET') }}"
+      register: response
+      ignore_errors: true
+
+    - name: Debug response status code
+      debug:
+        var: response.status
+
+    - name: Test invalid URL
+      get_url:
+        url: "{{ invalid_url }}"
+        dest: "/tmp/file.txt"
+      register: invalid_response
+      ignore_errors: true
+
+    - name: Debug invalid response status code
+      debug:
+        var: invalid_response.status
+
+    - name: Test incorrect destination path
+      get_url:
+        url: "http://example.com/file.txt"
+        dest: "{{ incorrect_path }}/file.txt"
+      register: incorrect_dest_response
+      ignore_errors: true
+
+    - name: Debug incorrect destination response status code
+      debug:
+        var: incorrect_dest_response.status
+
+    - name: Test empty URL
+      get_url:
+        url: ""
+        dest: "/tmp/file.txt"
+      register: empty_url_response
+      ignore_errors: true
+
+    - name: Debug empty URL response status code
+      debug:
+        var: empty_url_response.status
+
+    - name: Test malformed YAML
+      get_url: "{{ invalid_syntax }}"
+      register: malformed_syntax_response
+      ignore_errors: true
+
+    - name: Debug malformed YAML response status code
+      debug:
+        var: malformed_syntax_response.status
+
+    - name: Test unsupported HTTP method
+      get_url:
+        url: "http://example.com/file.txt"
+        dest: "/tmp/file.txt"
+        method: "DELETE"
+      register: unsupported_method_response
+      ignore_errors: true
+
+    - name: Debug unsupported method response status code
+      debug:
+        var: unsupported_method_response.status

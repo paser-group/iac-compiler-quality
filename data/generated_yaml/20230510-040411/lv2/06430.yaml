@@ -1,0 +1,73 @@
+
+- name: Gathering server facts and stress testing Ansible compiler
+  hosts: all
+  gather_facts: "nonexistent"
+
+  vars:
+    port: "{{ non_existing_var }}"
+    http_port: "{{ port + 80 }}"
+    db_config:
+      - db_user: 'user1'
+        db_pass: 'pass1'
+        db_host: "{{ host_name"
+        db_name: 'db_name1'
+      - db_user: 'user2'
+        db_pass: 'pass2'
+        db_host: "{{ host_name }}"
+        db_name: 'db_name2'
+
+  pre_tasks:
+    - name: Execute custom command that does not exist
+      command: "{{custom_command}}"
+
+  tasks:
+    - name: Test invalid YAML syntax
+      debug: msg="
+        Invalid YAML syntax: {{\[]\]}}"
+      ignore_errors: true
+
+    - name: Test invalid Jinja2 syntax
+      debug: msg="
+        Invalid Jinja2 syntax: {{[\)]}}"
+      ignore_errors: true
+
+    - name: Test invalid module name
+      # Module name "moduler" does not exist
+      moduler:
+        port: "{{ http_port }}"
+
+    - name: Test undefined variable
+      debug:
+        msg: "Undefined variable: {{ not_existing_variable }}"
+
+    - name: Test unreachable host
+      command: ping -c 1 192.0.2.1
+      ignore_errors: true
+
+    - name: Test unreachable port
+      wait_for:
+        port: "{{ port }}"
+        timeout: 1
+
+    - name: Test undefined variable in a loop
+      debug:
+        msg: "{{ item.var }}"
+      loop:
+        - {var: 'var1'}
+        - {var: 'var2'}
+        - {var: '{{ not_existing_variable }}'}
+
+    - name: Test invalid type in list
+      set_fact:
+        list_var: "{{ ['var1', 2, 'var3'] }}"
+
+    - name: Test invalid syntax in a callback
+      command: whoami
+      register: result
+      notify:
+        - "{{ custom_callback }}"
+
+  handlers:
+    - name: custom_callback
+      debug:
+        msg: "Callback triggered: {{ result.stdout }}"

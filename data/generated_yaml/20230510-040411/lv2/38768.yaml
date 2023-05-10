@@ -1,0 +1,28 @@
+
+- name: Stress test for ios_command module bug
+  hosts: ios_devices
+  gather_facts: false
+
+  tasks:
+  - name: Install software using ios_command module
+    ios_command:
+      commands:
+        - "software install flash:/image.bin prompt-level none"
+        - "software install prompt-level all prompt-level none"
+        - "software install flash:/image.bin prompt-level all prompt-level all"
+        - "software install flash:/image.bin ; echo 'hacked!'"
+        - "software install flash:/image.bin \\"
+          "|| echo 'failed' \\"
+          "&& echo 'success'"
+        - "software install flash:/image.bin {1..10}"
+        - "software install flash:/image.bin $(echo '0; :; echo hacked!' | sed -e 's/:*/\n/')"
+      authorize: yes
+      authorize_password: "{{ ansible_ssh_pass }}"
+      wait_for: result
+      wait_for_timeout: 10
+      register: result
+
+  - name: Debug ios_command module failure
+    debug:
+      var: result
+    when: result.failed == true

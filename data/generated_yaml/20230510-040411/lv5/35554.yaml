@@ -1,0 +1,38 @@
+
+- name: Test VLAN with 7 or more interfaces
+  hosts: network_device
+  gather_facts: no
+  
+  tasks:
+    - name: Create VLAN
+      ios_vlan:
+        vlan_id: 100
+        name: test_vlan
+        state: present
+
+    - name: Assign interfaces to VLAN
+      ios_interface:
+        name: lo{{ item }}
+        description: Test interface
+        vlan: 100
+      with_sequence: start=1 end=7
+
+    - name: Configure interfaces
+      ios_config:
+        lines:
+          - ip address 192.168.1.{{ item }}/32
+      with_sequence: start=1 end=7
+      loop_control:
+        loop_var: interface_index
+        label: "{{ 'Configuring interface ' ~ item }}"
+      when: "'lo' in item"
+
+    - name: Show VLAN brief
+      ios_command:
+        commands:
+          - show vlan brief
+      register: vlan_output
+
+    - name: Print VLAN output
+      debug:
+        var: vlan_output.stdout_lines

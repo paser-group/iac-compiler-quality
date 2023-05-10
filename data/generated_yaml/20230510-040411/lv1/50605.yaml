@@ -1,0 +1,79 @@
+yaml
+---
+- name: Provision VM on NSX-T in VMC
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    vm_folder: "/{{ nsx_t_datacenter_name }}/vm/{{ vm_folder_name }}"
+    vm_name: "{{ vm_name }}"
+    vm_template: "{{ vm_template }}"
+    datastore_name: "{{ datastore_name }}"
+    vm_network: "{{ vm_network }}"
+    vm_cpus: "{{ vm_cpus }}"
+    vm_memory_mb: "{{ vm_memory_mb }}"
+    vm_disk_size_gb: "{{ vm_disk_size_gb }}"
+    nsx_tls_verification: "{{ nsx_tls_verification }}"
+
+  tasks:
+  - name: Deploy a Virtual Machine from a Template
+    vmware_guest:
+      hostname: "{{ vcenter_hostname }}"
+      username: "{{ vcenter_username }}"
+      password: "{{ vcenter_password }}"
+      validate_certs: "{{ nsx_tls_verification }}"
+      folder: "{{ vm_folder }}"
+      name: "{{ vm_name }}"
+      template: "{{ vm_template }}"
+      datacenter: "{{ nsx_t_datacenter_name }}"
+      cluster: "{{ nsx_t_cluster_name }}"
+      datastore: "{{ datastore_name }}"
+      hardware:
+        memory_mb: "{{ vm_memory_mb }}"
+        num_cpus: "{{ vm_cpus }}"
+        scsi: paravirtual
+      networks:
+        - name: "{{ vm_network }}"
+      disk:
+        - size_gb: "{{ vm_disk_size_gb }}"
+          type: thin
+          datastore: "{{ datastore_name }}"
+      customization:
+        hostname: "{{ vm_name }}"
+      wait_for_ip_address: yes
+    delegate_to: localhost
+    register: vmware
+
+  - name: Reconfigure Virtual Machine
+    vmware_guest:
+      hostname: "{{ vcenter_hostname }}"
+      username: "{{ vcenter_username }}"
+      password: "{{ vcenter_password }}"
+      validate_certs: "{{ nsx_tls_verification }}"
+      folder: "{{ vm_folder }}"
+      name: "{{ vm_name }}"
+      datacenter: "{{ nsx_t_datacenter_name }}"
+      cluster: "{{ nsx_t_cluster_name }}"
+      hardware:
+        memory_mb: "{{ vm_memory_mb }}"
+        num_cpus: "{{ vm_cpus }}"
+        scsi: paravirtual
+      network:
+        name: "{{ vm_network }}"
+      disk:
+        - size_gb: "{{ vm_disk_size_gb }}"
+          type: thin
+          datastore: "{{ datastore_name }}"
+      customization:
+        hostname: "{{ vm_name }}"
+      state: reconfigured
+    delegate_to: localhost
+    when: vmware.changed is defined and vmware.changed
+
+  - name: Add DNS Entry for the Virtual Machine
+    local_action:
+      module: lineinfile
+      path: /etc/hosts
+      regexp: "^{{ vm_ip }}.*{{ vm_name }}.*$"
+      line: "{{ vm_ip }} {{ vm_name }}"
+    run_once: true

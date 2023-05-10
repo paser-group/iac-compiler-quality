@@ -1,0 +1,35 @@
+
+- name: Test Ansible SSH error reporting
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+    - name: Run an invalid command
+      shell: BadCommand
+      ignore_errors: yes
+
+    - name: Try connecting to a non-existent host
+      command: ssh fake_hostname -o StrictHostKeyChecking=no
+      ignore_errors: yes
+
+    - name: Attempt SSH connection with an invalid key
+      command: ssh -i {{ playbook_dir }}/fixtures/bad_key.pem -o StrictHostKeyChecking=no localhost
+      ignore_errors: yes
+
+    - name: Attempt SSH connection with an invalid user
+      command: ssh -i {{ playbook_dir }}/fixtures/good_key.pem -o StrictHostKeyChecking=no bad_user@localhost
+      ignore_errors: yes
+
+    - name: Run a command with invalid syntax
+      command: "{{ lookup('env', 'SHELL') }} -c '&&&&&&&&'"
+      ignore_errors: yes
+
+    - name: Try running a command that requires privilege escalation without sudo
+      shell: echo "Hello World" >> /etc/hosts
+      become: yes
+      become_user: wrong_user
+      ignore_errors: yes
+
+    - name: Send a large file over SCP in dry-run mode
+      command: scp -r -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null {{ playbook_dir }}/fixtures/big_file.txt fake_hostname:/tmp/dest/ > /dev/null
+      ignore_errors: yes

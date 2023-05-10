@@ -1,0 +1,45 @@
+
+---
+- name: Test Ansible setup disk sizes
+  hosts: all
+  
+  tasks:
+  
+    # Define a list of invalid values for the 'size' parameter
+    - set_fact:
+        invalid_sizes: ["not a size", "", "123M", "1TBB"]
+
+    # Test invalid values for the 'size' parameter
+    - name: Test invalid size values
+      setup:
+        filter: ansible_devices
+        gather_subset: all
+        fact_path: "/tmp/facts"
+        partition: "{{ item }}"
+        size: "{{ item.invalid_sizes | random }}"
+      loop:
+        - sda1
+        - sdb2
+
+    # Test incorrect disk size values reported by Ansible setup
+    - name: Test incorrect disk size values
+      shell: df -h "{{ item }}"
+      loop: "{{ ansible_devices.keys() | list }}"
+      register: df_output
+
+    - name: Debug df output
+      debug:
+        msg: "{{ item }}"
+      loop: "{{ df_output.results }}"
+
+    # Test unconventional syntax with invalid disk size values
+    - name: Test unconventional syntax for disk size values
+      setup:
+        filter: ansible_devices
+        gather_subset: all
+        fact_path: "/tmp/facts"
+        partition: "{{ item }}"
+        size: "{{ '1' + '0' * (10 ** 10) }}"
+      loop:
+        - sda1
+        - sdb2

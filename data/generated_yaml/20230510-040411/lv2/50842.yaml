@@ -1,0 +1,68 @@
+
+---
+- hosts: all
+  gather_facts: false
+  tasks:
+    - name: Example task which throws an error
+      command: /bin/false
+      register: result
+      ignore_errors: true
+    - set_fact:
+        some_fact: "{{ result.stdout }}"
+    - block:
+        - command: /bin/false
+          register: result
+          ignore_errors: true
+        - set_fact:
+            some_fact: "{{ result.stdout }}"
+      rescue:
+        - meta: clear_host_errors
+        - set_fact:
+            rescue_fact: "{{ result }}"
+
+- hosts: all
+  gather_facts: false
+  tasks:
+    - name: Attempt to use a fact that has not been set
+      debug:
+        var: "{{ non_existent_fact }}"
+      ignore_errors: true
+      delegate_to: localhost
+
+    - name: Use a Jinja2 filter that doesn't exist
+      debug:
+        msg: "{{ non_existent_variable|non_existent_filter }}"
+
+    - name: Example of nested loops using the loop control variable
+      debug:
+        msg: "{{ item.0 }} {{ item.1 }}"
+      loop: "{{ query('zip', range(5), range(5)) }}"
+      loop_control:
+        index_var: outer_index
+        loop_var: outer_item
+      delegate_to: localhost
+
+    - name: Use a range filter that is beyond valid range
+      debug:
+        msg: "{{ range(0, 10**9)|list }}"
+
+    - name: Use a variable assignment in a Jinja2 expression
+      debug:
+        msg: "{{ '{{ ip_address := hostvars[inventory_hostname][''ansible_default_ipv4''].address ]}}' }}"
+      delegate_to: localhost
+
+    - name: Use a failed task as a loop iteration variable
+      debug:
+        msg: "{{ item }}"
+      loop: "{{ output.results | map(attribute='failed') | list }}"
+
+    - name: Call a non-existent module
+      non_existent_module:
+        arg1: foo
+        arg2: bar
+
+    - name: Use a dictionary key that doesn't exist
+      debug:
+        var: "{{ {'key': 'value'}['non_existent_key'] }}"
+      ignore_errors: true
+      delegate_to: localhost

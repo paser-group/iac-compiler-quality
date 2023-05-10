@@ -1,0 +1,29 @@
+yaml
+---
+- name: Merge multiple inventory files
+  hosts: localhost
+  gather_facts: False
+
+  vars:
+    inventory_files:
+      - production.inv
+      - staging.inv
+      - development.inv
+
+  tasks:
+
+  - name: Merge inventory files
+    include_vars:
+      file: "{{ item }}"
+    with_items: "{{ inventory_files }}"
+
+  - name: Resolve variables
+    set_fact:
+      "{{ item.split('.')[0] }}": "{{ item_content }}"
+    with_items: "{{ inventory_files }}"
+    vars:
+      item_content: "{% for host in groups[item.split('.')[0]] %}{{ hostvars[host] }}{% endfor %}"
+
+  - name: Print inventory
+    debug:
+      var: groups

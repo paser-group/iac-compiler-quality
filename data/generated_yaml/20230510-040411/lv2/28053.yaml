@@ -1,0 +1,36 @@
+
+- name: LXC Container Watchdog
+  hosts: all
+  become: yes
+
+  tasks:
+    - name: Create LXC container
+      lxc_container:
+        name: "test-container"
+        state: present
+        template: "{{ item }}"
+      loop:
+        - ubuntu
+        - debian-buster
+
+    - name: Start LXC container
+      lxc_container:
+        name: "test-container"
+        state: started
+        timeout: 10
+
+    - name: Check if container is running
+      shell: lxc-info --name test-container | grep -oP 'State: +\K(\S+)'
+      register: result
+      ignore_errors: true
+
+    - name: Stop LXC container
+      lxc_container:
+        name: "test-container"
+        state: stopped
+
+    - name: Assert container state
+      assert:
+        that: "'RUNNING' in result.stdout"
+      fail_msg: "LXC container is not running"
+      success_msg: "LXC container is running"

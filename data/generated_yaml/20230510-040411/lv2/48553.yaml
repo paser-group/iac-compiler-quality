@@ -1,0 +1,40 @@
+
+---
+- name: Test 'win_service' error
+  hosts: windows_server
+  gather_facts: false
+
+  tasks:
+    - name: Install service
+      win_service:
+        name: "{{ service_name }}"
+        binary_path: C:\Program Files\Service\service.exe
+        state: running
+        enabled: yes
+        startup_mode: "{{ startup_mode }}"
+      register: service_result
+      ignore_errors: true
+
+    - name: Check if service is running
+      assert:
+        that:
+          - service_result.status == 'running'
+        fail_msg: "Service should be running but its status is {{ service_result.status }}"
+      ignore_errors: true
+
+    - name: Update service
+      win_service:
+        name: "{{ service_name }}"
+        state: stopped
+        startup_mode: "{{ startup_mode }}"
+        automatic_start: "{{ automatic_start }}"
+        delayed_start: "{{ delayed_start }}"
+        dependencies: ["service1", "service2"]
+      ignore_errors: true
+
+    - name: Uninstall service
+      win_service:
+        name: "{{ service_name }}"
+        state: absent
+        delete_on_reboot: "{{ delete_on_reboot }}"
+      ignore_errors: true

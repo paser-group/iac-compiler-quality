@@ -1,0 +1,29 @@
+
+---
+- name: Deploy Docker container with IPv6 port bindings
+  hosts: all
+  gather_facts: false
+  become: true
+
+  vars:
+    container_name: "docker-ipv6-container"
+    ipv6_address: "2001:db8::1"
+    ipv6_port: "80"
+
+  tasks:
+    - name: Start Docker container with IPv6 port bindings
+      docker_container:
+        name: "{{ container_name }}"
+        image: "{{ ipv6_address }}"
+        ports:
+          - "{{ ipv6_address }}:{{ ipv6_port }}:{{ ipv6_port }}"
+
+    - name: Test connectivity to Docker container with IPv6 address and port
+      uri:
+        url: "http://[{{ ipv6_address }}]:{{ ipv6_port }}"
+        return_content: true
+      register: response
+
+    - name: Display response content
+      debug:
+        var: response.content | truncate(300)

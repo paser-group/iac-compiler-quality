@@ -1,0 +1,62 @@
+
+- name: Stress test nxos_facts module
+  hosts: switch
+  gather_facts: no
+  
+  tasks:
+    - name: Execute nxos_facts module with unsupported transport protocol
+      nxos_facts: 
+        transport: ssh
+      register: unsupported_transport
+      ignore_errors: yes
+
+    - name: Fail the task if unsupported_transport failed without error
+      fail:
+        msg: "Task failed unexpectedly."
+      when: unsupported_transport is failed and "to access nxos with transport 'ssh' is not supported, please use nxapi or cli transport" not in unsupported_transport.stderr
+
+    - name: Execute nxos_facts module with an empty host parameter
+      nxos_facts:
+        host: ''
+      register: empty_host
+      ignore_errors: yes
+
+    - name: Fail the task if empty_host failed without error
+      fail:
+        msg: "Task failed unexpectedly."
+      when: empty_host is failed and "'host' parameter is required" not in empty_host.stderr
+
+    - name: Execute nxos_facts module with a non-existent parameter
+      nxos_facts:
+        foo: bar
+      register: non_existent_parameter
+      ignore_errors: yes
+
+    - name: Fail the task if non_existent_parameter failed without error
+      fail:
+        msg: "Task failed unexpectedly."
+      when: non_existent_parameter is failed and "parameter 'foo' is not supported" not in non_existent_parameter.stderr
+
+    - name: Execute nxos_facts module with an unexpected value for port parameter
+      nxos_facts:
+        transport: cli
+        port: abc
+      register: unexpected_port
+      ignore_errors: yes
+
+    - name: Fail the task if unexpected_port failed without error
+      fail:
+        msg: "Task failed unexpectedly."
+      when: unexpected_port is failed and "'port' should be an integer" not in unexpected_port.stderr
+
+    - name: Execute nxos_facts module with an unexpected value for nxapi_port parameter
+      nxos_facts:
+        transport: nxapi
+        nxapi_port: xyz
+      register: unexpected_nxapi_port
+      ignore_errors: yes
+
+    - name: Fail the task if unexpected_nxapi_port failed without error
+      fail:
+        msg: "Task failed unexpectedly."
+      when: unexpected_nxapi_port is failed and "'nxapi_port' should be an integer" not in unexpected_nxapi_port.stderr

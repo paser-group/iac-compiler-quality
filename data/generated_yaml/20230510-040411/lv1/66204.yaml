@@ -1,0 +1,36 @@
+
+---
+- name: Add a new netbox prefix
+  hosts: localhost
+  gather_facts: no
+  become: yes
+
+  vars:
+    netbox_url: http://my-netbox-url.com/api
+
+  tasks:
+    - name: Add new prefix to netbox
+      uri:
+        url: "{{ netbox_url }}/ipam/prefixes/"
+        method: POST
+        user: my_netbox_user
+        password: my_netbox_password
+        body_format: json
+        body:
+          prefix: "{{ item }}"
+          status: 1
+          site: 1
+      register: response
+      loop: "{{ netbox_prefixes }}"
+
+    - name: Check if adding prefix was successful
+      debug:
+        msg: "Failed to add prefix {{ item.item }} to netbox."
+      when: item.status != 201
+      loop: "{{ response.results }}"
+
+    - name: report success
+      debug:
+        var: response
+      when: response.changed == true
+

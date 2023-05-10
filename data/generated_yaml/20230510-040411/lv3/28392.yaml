@@ -1,0 +1,30 @@
+
+- name: Create Azure virtual machine and simulate error
+  hosts: localhost
+  vars:
+    azure_rg: "myResourceGroup"
+    azure_location: "eastus"
+    azure_vm_name: "myVM"
+    azure_vm_size: "Standard_D2s_v3"
+    azure_admin_username: "myadminuser"
+    azure_admin_password: "mypassword"
+  tasks:
+  - name: Create Azure virtual machine
+    azure_rm_virtualmachine:
+      resource_group: "{{ azure_rg }}"
+      name: "{{ azure_vm_name }}"
+      location: "{{ azure_location }}"
+      admin_username: "{{ azure_admin_username }}"
+      admin_password: "{{ azure_admin_password }}"
+      size: "{{ azure_vm_size }}"
+    register: result
+  - name: Simulate error during provisioning
+    shell: "az vm extension set --resource-group {{azure_rg}} --vm-name {{azure_vm_name}} --name customScript --publisher Microsoft.Azure.Extensions --settings ' { \"commandToExecute\": \"echo 'Hello world' && false\" }'"
+    register: error_result
+    when: result.changed
+  - name: Ensure virtual machine is cleaned up after error
+    azure_rm_virtualmachine:
+      resource_group: "{{ azure_rg }}"
+      name: "{{ azure_vm_name }}"
+      state: absent
+    when: error_result is defined

@@ -1,0 +1,39 @@
+
+- name: Deploy Azure resources with error details
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    resource_group: myresourcegroup
+    location: eastus
+
+  tasks:
+    - name: Create Azure resource group
+      azure_rm_resourcegroup:
+        name: "{{ resource_group }}"
+        location: "{{ location }}"
+
+    - name: Deploy Azure resources with failure
+      azure_rm_deployment:
+        resource_group_name: "{{ resource_group }}"
+        name: test-deployment
+        template:
+          $schema: "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#"
+          contentVersion: "1.0.0.0"
+          parameters:
+            appName:
+              type: "string"
+            allowedValues:
+              type: "array"
+              default: [ "app1", "app2", "app3" ]
+        parameters_link:
+          uri: "{{ playbook_dir }}/params.json"
+        state: present
+        tags:
+          environment: dev
+      register: result
+      failed_when: "'error' in result"
+
+    - name: Print error message
+      debug:
+        msg: "{{ result | json }}"

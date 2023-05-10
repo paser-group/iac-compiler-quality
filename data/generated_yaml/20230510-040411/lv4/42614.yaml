@@ -1,0 +1,37 @@
+
+# Define the basic parameters for the VM
+- name: Instantiate a VM with IPv6 on {{ inventory_hostname }}
+  vmware_guest:
+    name: My-VM
+    state: poweredon
+    hostname: "{{ vcenter_host }}"
+    
+# Configure the network settings for the VM
+- name: Configure network settings for VM
+  vmware_guest_network_interface:
+    vm_id: My-VM
+    network_label: "{{ network_label }}"
+    ipv6_address: "{{ ipv6_address }}"
+    network_type: vmxnet3
+
+# Optional settings for the Virtual Machine
+- name: Configure optional settings
+  vmware_guest:
+    vm_id: My-VM
+    datastore: "{{ datastore_name }}"
+    memory_mb: 1024
+    num_cpus: 2
+
+# Execute the vmware_guest module and verify network configuration
+- name: Execute vmware_guest and verify network configuration
+  vmware_guest:
+    name: My-VM
+    state: poweredon
+    hostname: "{{ vcenter_host }}"
+    validate_certs: False
+  register: result
+
+- name: Verify network configuration
+  assert:
+    that:
+      - "'{{ ipv6_address }}' in result.instance.hostname"

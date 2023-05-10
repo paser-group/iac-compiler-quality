@@ -1,0 +1,31 @@
+
+- name: Check AWS credentials
+  assert:
+    that:
+      - ('AWS_ACCESS_KEY_ID' in lookup('env', 'AWS_ACCESS_KEY_ID')) and ('AWS_SECRET_ACCESS_KEY' in lookup('env', 'AWS_SECRET_ACCESS_KEY'))
+      - ('AWS_ACCESS_KEY_ID' in lookup('aws', 'access_key')) and ('AWS_SECRET_ACCESS_KEY' in lookup('aws', 'secret_key'))
+
+- name: Create a new DNS zone
+  route53_zone:
+    name: "{{ domain_name }}"
+    private_zone: no
+    comment: "Created by Ansible"
+    wait: yes
+
+- name: Add a new record to the DNS zone
+  route53_record:
+    zone: "{{ domain_name }}"
+    name: "{{ record_name }}"
+    type: "{{ record_type }}"
+    ttl: "{{ record_ttl }}"
+    records: ["{{ record_value }}"]
+    comment: "Created by Ansible"
+
+- name: Check if the zone and record are created
+  assert:
+    that:
+      - zone_info.status == "create"
+      - record_info.status == "change"
+  vars:
+    zone_info: "{{ query('route53', 'action=get zone zone={{ domain_name }}') }}"
+    record_info: "{{ query('route53', 'action=get record zone={{ domain_name }} name={{ record_name }} type={{ record_type }}') }}"

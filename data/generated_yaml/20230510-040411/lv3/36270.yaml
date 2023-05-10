@@ -1,0 +1,83 @@
+
+- name: Create a virtual machine in Azure
+  hosts: localhost
+  gather_facts: false
+  vars:
+    subscription_id: "<replace-with-actual-subscription-id>"
+    tenant: "<replace-with-tenant-id>"
+    client_id: "<replace-with-app-id>"
+    secret: "<replace-with-secret>"
+    vm_name: "vmtest"
+  tasks:
+   - name: Create Virtual Network
+      azure_rm_virtualnetwork:
+        resource_group: "rgtest"
+        name: "vn"
+        address_prefixes: ['10.0.0.0/16']
+        tags:
+          environment: dev
+          resource: network
+   - name: Create Public IP Address
+      azure_rm_publicipaddress:
+        resource_group: "rgtest"
+        name: "publicip"
+        allocation_method: Static
+        domain_name_label: "publicip"
+        tags:
+          environment: dev
+          resource: publicip
+   - name: Create Network Security Group
+      azure_rm_securitygroup:
+        resource_group: "rgtest"
+        name: "nsg"
+        tags:
+          environment: dev
+          resource: securitygroup
+   - name: Create Virtual Machine
+      azure_rm_virtualmachine:
+        resource_group: "rgtest"
+        name: "{{ vm_name }}"
+        vm_size: "Standard_B2s"
+        admin_username: "adminUser"
+        ssh_password_enabled: true
+        network_interfaces:
+          - name: "interface1"
+            primary: true
+        os_profile:
+          admin_username: "adminUser"
+          computer_name: "vmtester"
+          admin_password: "password12345"
+        storage_os_disk:
+          name: "disk1"
+          vhd_uri: "https://<storage-account-name>.blob.core.windows.net/vhds/vmtester_disk.vhd"
+          caching: "ReadWrite"
+          create_option: "FromImage"
+        storage_image_reference:
+          id: "/subscriptions/{{ subscription_id }}/resourceGroups/rgtest/providers/Microsoft.Compute/images/cirros"
+        provision_vm_agent: true
+        vm_credential:
+          username: "adminUser"
+          password: "password"
+          ssh_key_value: "ssh-rsa AAAAB3NzaC1yc2EAAAA..."
+        tags:
+          environment: dev
+   - name: Delete Virtual Machine
+      azure_rm_virtualmachine:
+        resource_group: "rgtest"
+        name: "{{ vm_name }}"
+        state: absent
+   - name: Delete Network Security Group
+      azure_rm_securitygroup:
+        resource_group: "rgtest"
+        name: "nsg"
+        state: absent
+   - name: Delete Public IP Address
+      azure_rm_publicipaddress:
+        resource_group: "rgtest"
+        name: "publicip"
+        state: absent
+   - name: Delete Virtual Network
+      azure_rm_virtualnetwork:
+        resource_group: "rgtest"
+        name: "vn"
+        state: absent

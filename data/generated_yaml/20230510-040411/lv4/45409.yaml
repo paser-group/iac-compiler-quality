@@ -1,0 +1,61 @@
+
+- name: Test vmware_guest module with multiple SCSI controllers
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+      datastore: datastore1
+      server: vcenter.example.com
+      username: username
+      password: password
+      vm_name: testvm
+      disk_size_gb: 10
+
+  tasks:
+  - name: Create VM with multiple SCSI controllers
+    vmware_guest:
+      hostname: "{{ server }}"
+      username: "{{ username }}"
+      password: "{{ password }}"
+      name: "{{ vm_name }}"
+      folder: "/"
+      state: present
+      guest_id: "rhel7_64Guest"
+      disk:
+        - size_gb: "{{ disk_size_gb }}"
+          type: "thin"
+          datastore: "{{ datastore }}"
+        - size_gb: "{{ disk_size_gb }}"
+          type: "thin"
+          datastore: "{{ datastore }}"
+    register: vm
+
+  - name: Attempt to resize disk beyond maximum capacity
+    vmware_guest_disk:
+      hostname: "{{ server }}"
+      username: "{{ username }}"
+      password: "{{ password }}"
+      vm_id: "{{ vm.instance }}"
+      disk: "{{ vm.disks[1].unit_number }}"
+      size_gb: "{{ disk_size_gb + 1  }}"
+    register: resize_disk
+
+  - name: Attempt to restore VM to snapshot with insufficient disk space
+    vmware_guest_snapshot:
+      hostname: "{{ server }}"
+      username: "{{ username }}"
+      password: "{{ password }}"
+      vm_id: "{{ vm.instance }}"
+      name: "snapshot_with_insufficient_space"
+      memory: no
+      quiesce: no
+    register: restore_snapshot
+
+  - name: Capture and log errors
+    debug:
+      msg: "{{ item }}"
+    loop:
+      - "{{ vm }}"
+      - "{{ resize_disk }}"
+      - "{{ restore_snapshot }}"
+    when: item.failed == true

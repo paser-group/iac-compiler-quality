@@ -1,0 +1,26 @@
+
+---
+- name: Dynamic Inventory with implicit localhost
+  hosts: localhost
+  gather_facts: false
+  vars:
+    ansible_python_interpreter: "{{ '/usr/bin/python3' if ansible_python_version.major == 3 else '/usr/bin/python' }}"
+  tasks:
+    - name: Ensure dynamic inventory file exists
+      file:
+        path: "{{ inventory_dir }}/inventory.py"
+        state: touch
+      vars:
+        inventory_dir: "{{ playbook_dir }}/inventory"
+  
+- name: Empty Inventory File should not be an error
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Test Empty Inventory
+      command: ansible-inventory -i inventory.yml --graph
+      args:
+        warn: no
+      register: output
+      changed_when: false
+      failed_when: output.stdout == ''

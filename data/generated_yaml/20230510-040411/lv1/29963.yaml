@@ -1,0 +1,27 @@
+
+---
+- name: Create user account with user module
+  hosts: all
+  become: true
+  
+  tasks:
+    - name: Ensure user module is present
+      copy:
+        src: /path/to/usermodule # Replace with actual path to the user module file
+        dest: /etc/ansible/modules/system/user.py
+        mode: '0755'
+      ignore_errors: yes
+      register: copy_result
+    
+    - name: Check if user module was copied successfully
+      assert:
+        that:
+          - copy_result is success
+          - "interpreter = '/usr/bin/python' in ansible.module_utils.basic.DEFAULT_INTERPRETER_PYTHON"
+      ignore_errors: yes
+    
+    - name: Create user account with user module
+      user:
+        name: john_doe
+        state: present
+        password: "{{ 'super_secret' | password_hash('sha512') }}"

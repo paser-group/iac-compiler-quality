@@ -1,0 +1,39 @@
+
+- hosts: all
+  become: yes
+  vars:
+    items:
+      - item1
+      - item2
+      - item3
+  tasks:
+    - name: Run async task
+      async_status:
+        jid: "test_async"
+        register: async_result
+        until: async_result.finished
+        retries: 3
+        delay: "{{ item }}"
+        with_items: "{{ items }}"
+      ignore_errors: true
+
+    - name: Print failed items
+      debug:
+        var: async_result.failures
+      when: async_result.failed
+
+    - block:
+        - name: Generate error
+          assert:
+            that: False
+          ignore_errors: true
+
+        - name: Print success message
+          debug:
+            msg: This task will never be executed
+      always:
+        - name: Clean up the async task
+          async_status:
+            jid: "test_async"
+            state: "stopped"
+          ignore_errors: true

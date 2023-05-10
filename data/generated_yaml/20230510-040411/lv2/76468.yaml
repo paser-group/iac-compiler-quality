@@ -1,0 +1,49 @@
+
+- name: Test playbook for WinRM connection error
+  hosts: windows
+  vars:
+    invalid_port: "65536"
+    invalid_username: "Admin"
+    invalid_password: "pa$$word123"
+  tasks:
+  - name: Connect to Windows using valid WinRM credentials
+    win_ping:
+      username: "Administrator"
+      password: "admin123!"
+      transport: "ntlm"
+      validate_certs: False
+  - name: Connect to Windows using invalid port
+    win_ping:
+      username: "Administrator"
+      password: "admin123!"
+      transport: "ntlm"
+      validate_certs: False
+      port: "{{ invalid_port }}"
+    ignore_errors: yes
+  - name: Connect to Windows using invalid username and password
+    win_ping:
+      username: "{{ invalid_username }}"
+      password: "{{ invalid_password }}"
+      transport: "kerberos"
+      validate_certs: False
+    ignore_errors: yes
+  - name: Run PowerShell script remotely
+    win_shell: |
+      $user = "Administrator"
+      $password = "admin123!"
+      $securePassword = ConvertTo-SecureString $password -AsPlainText -Force
+      $cred = New-Object System.Management.Automation.PSCredential($user, $securePassword)
+      $sessionOption = New-PSSessionOption -SkipCACheck -SkipCNCheck -SkipRevocationCheck
+      $session = New-PSSession -HostName "{{ inventory_hostname }}" -Credential $cred -SessionOption $sessionOption -ApplicationName "wsman"
+      Invoke-Command -Session $session -ScriptBlock {Get-Service | Where-Object {$_.Status -eq "Stopped"}} | Select-Object Name
+    args:
+      executable: C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe
+      stdin_add_newline: true
+  - name: Run invalid PowerShell script remotely
+    win_shell: |
+      $value = $null
+      $value.Split()
+    args:
+      executable: C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe
+      stdin_add_newline: true
+    ignore_errors: yes

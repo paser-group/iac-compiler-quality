@@ -1,0 +1,46 @@
+
+- name: Playbook to stress test Ansible Compiler
+  hosts: all
+  tasks:
+  - name: Execute command with an invalid syntax
+    shell: |
+      echo "This command contains a syntax error" 
+      && sleep 10
+    args:
+      executable: /bin/bash
+    ignore_errors: true
+
+  - name: Create files with an unconventional syntax
+    copy:
+      dest: "/tmp/{{ item }}"
+      content: "{{ item }}"
+    with_items:
+       - '[1;31mERROR![0m'
+       - 'Some Text\n\n\n'
+       - 'EndComment'
+    ignore_errors: true
+
+  - name: Query a non-existent variable
+    debug:
+      var: "{{ non_existent_variable }}"
+    ignore_errors: true
+
+  - name: Execute a command with unexpected input
+    shell: |
+      echo "This command expects input. Please provide." 
+      && read input
+      && sleep 10
+    args:
+      executable: /bin/bash
+    ignore_errors: true
+
+  - name: Attempt to install an invalid package
+    apt:
+      name: some_invalid_package 
+    ignore_errors: true
+
+  - name: Apply update to a non-existent file
+    lineinfile:
+      path: "/non_existent_file"
+      line: "new text to add"
+    ignore_errors: true

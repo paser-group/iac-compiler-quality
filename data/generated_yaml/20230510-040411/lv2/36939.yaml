@@ -1,0 +1,56 @@
+
+- name: Create RoleBindings in Openshift
+  hosts: localhost
+  tasks:
+    - name: Create a RoleBinding with a non-existant user
+      oc_rolebinding:
+        namespace: "{{ item }}"
+        name: "test-rolebinding"
+        state: present
+        role_ref:
+          name: "test-role"
+        subjects:
+          - name: non-existent-user # This user does not exist
+            kind: User
+        ignore_errors: yes
+      with_items:
+        - "project1"
+        - "project2"
+
+    - name: Create a RoleBinding with an invalid role
+      oc_rolebinding:
+        namespace: "{{ item }}"
+        name: "test-rolebinding-2"
+        state: present
+        role_ref:
+          name: "invalid-role-name123" # This role does not exist
+        subjects:
+          - name: developer-user
+            kind: User
+        ignore_errors: yes
+      with_items:
+        - "project3"
+        - "project4"
+
+    - name: Create a RoleBinding with invalid subjects
+      oc_rolebinding:
+        namespace: "{{ item }}"
+        name: "test-rolebinding-3"
+        state: present
+        role_ref:
+          name: "test-role"
+        subjects:
+          - name: developer-user
+            kind: InvalidKind # This kind is invalid
+        ignore_errors: yes
+      with_items:
+        - "project5"
+
+    - name: Delete a non-existant RoleBinding
+      oc_rolebinding:
+        namespace: "{{ item }}"
+        name: "non-existent-rolebinding"
+        state: absent
+        ignore_errors: yes
+      with_items:
+        - "project6"

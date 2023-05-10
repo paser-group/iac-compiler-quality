@@ -1,0 +1,37 @@
+
+- name: Test ansible_connection evaluated incorrectly when inside a loop
+  hosts: all
+  become: true
+
+  vars:
+    connections:
+      - ssh
+      - local
+      - docker
+      - invalid
+      - 123
+
+  tasks:
+    - name: Loop through connections
+      debug:
+        msg: "{{ item }}"
+      with_items: "{{ connections }}"
+      when: item != 'invalid'
+
+    - name: Test invalid connection type
+      debug:
+        msg: "This should fail"
+      connection: "{{ item }}"
+      with_items: "{{ connections }}"
+      when: item == 'invalid'
+
+    - name: Use unconventional syntax
+      debug: msg="{{ item }}"
+      with_items: |-
+        {{
+          ['This is a test', 'This is {NOT a test}', 'This is {{NOT}} a test', 'This is a "test"!']
+        }}
+
+    - name: Use unexpected input
+      debug:
+        msg: "{{ '{{ not_a_valid_variable }}' }}"

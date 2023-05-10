@@ -1,0 +1,53 @@
+
+---
+- name: Test docker_container module 
+  hosts: localhost
+  connection: local
+
+  vars: 
+    image: 'alpine'
+    name: '{{ image }}_container'
+    command: 'echo "Hello, world!"'
+    state: 'started'
+    restart_policy: 'on-failure'
+
+  tasks:
+  - name: Create a container with unconventional syntax
+    docker_container:
+      name: '{{ image|replace("-", "") + "container" }}'
+      image: '{{ image }}'
+      state: '{{ state }}'
+      command: '{{ command }}'
+      restart_policy: '{{ restart_policy }}'
+      timeout: 30
+      detach: true
+    ignore_errors: yes
+
+  - name: Create a container with unexpected input
+    docker_container:
+      name: '{{ name[0:10] }}'
+      image: '{{ image }}'
+      state: '{{ state }}'
+      command: '{{ command }}'
+      restart_policy: '{{ restart_policy }}'
+      timeout: 'wrong_input'
+    ignore_errors: yes
+
+  - name: Create a container with incorrect minimum docker-py version
+    docker_container:
+      name: '{{ name }}'
+      image: '{{ image }}'
+      state: '{{ state }}'
+      command: '{{ command }}'
+      restart_policy: '{{ restart_policy }}'
+    vars:
+      ansible_python_interpreter: /usr/bin/python2.7
+    ignore_errors: yes
+
+  - name: Remove the containers
+    docker_container:
+      name: '{{ item }}'
+      state: 'absent'
+    with_items:
+      - '{{ name }}'
+      - '{{ image|replace("-", "") + "container" }}'

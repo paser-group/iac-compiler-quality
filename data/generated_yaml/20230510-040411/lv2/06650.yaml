@@ -1,0 +1,74 @@
+
+- name: Test CloudFormation Module
+  hosts: localhost
+  gather_facts: no
+  tasks:
+
+  - name: Create stack with invalid template
+    cloudformation:
+      stack_name: invalid-stack
+      state: present
+      disable_rollback: true
+      template_body: "{{ not_a_template }}"
+    register: invalid_stack_result
+    ignore_errors: true
+
+  - name: Update non-existing stack
+    cloudformation:
+      stack_name: non-existing-stack
+      state: present
+      disable_rollback: true
+      template_body: "{{ lookup('file', '/path/to/non-existing-template.yml') }}"
+    register: non_existing_stack_result
+    ignore_errors: true
+
+  - name: Create stack with invalid parameter value
+    cloudformation:
+      stack_name: invalid-parameter-stack
+      state: present
+      disable_rollback: true
+      template: "{{ lookup('file', '/path/to/template.yml') }}"
+      parameters:
+        - ParameterKey: myParam
+          ParameterValue: 123
+    register: invalid_param_result
+    ignore_errors: true
+
+  - name: Delete non-existing stack
+    cloudformation:
+      stack_name: non-existing-stack
+      state: absent
+    register: delete_non_existing_stack_result
+    ignore_errors: true
+
+  - name: Test stack policy
+    cloudformation:
+      stack_name: test-stack-policy
+      state: present
+      disable_rollback: true
+      template: "{{ lookup('file', '/path/to/template.yml') }}"
+      stack_policy: |
+        {
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": "*",
+              "Action": "Update:*",
+              "Resource": "*"
+            },
+            {
+              "Effect": "Deny",
+              "Principal": "*",
+              "Action": "Update:*",
+              "Resource": "LogicalResourceId/ResourceName"
+            }
+          ]
+        }
+    register: stack_policy_result
+    ignore_errors: true
+
+  - name: Rollback to invalid stack
+    cloudformation:
+      stack_name: invalid-stack
+      state: absent
+      disable_rollback: false

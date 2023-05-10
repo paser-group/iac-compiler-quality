@@ -1,0 +1,73 @@
+
+- name: gcp auth error stress test
+  hosts: localhost
+  vars:
+    project_id: your-project-id
+    auth_file: /path/to/auth/file.json
+    invalid_auth_file: /path/to/invalid/file.json
+    invalid_key_file: /path/to/invalid/key/file.json
+    invalid_email: invalid-email@domain.com
+    invalid_scopes: "invalid_scope_1, invalid_scope_2"
+    invalid_service_account_path: /invalid/service/account/path
+  tasks:
+  - name: test with valid auth_file and project_id
+    gcp_compute_instances_facts:
+      project: "{{ project_id }}"
+      auth_kind: serviceaccount
+      service_account_file: "{{ auth_file }}"
+  - name: test with missing auth_file
+    gcp_compute_instances_facts:
+      project: "{{ project_id }}"
+      auth_kind: serviceaccount
+    register: missing_auth_file_result
+    ignore_errors: yes
+  - name: test with invalid auth_file path
+    gcp_compute_instances_facts:
+      project: "{{ project_id }}"
+      auth_kind: serviceaccount
+      service_account_file: "{{ invalid_auth_file }}"
+    register: invalid_auth_file_result
+    ignore_errors: yes
+  - name: test with invalid auth_file key
+    gcp_compute_instances_facts:
+      project: "{{ project_id }}"
+      auth_kind: serviceaccount
+      service_account_file: "{{ invalid_key_file }}"
+    register: invalid_key_file_result
+    ignore_errors: yes
+  - name: test with invalid auth_file email
+    gcp_compute_instances_facts:
+      project: "{{ project_id }}"
+      auth_kind: serviceaccount
+      service_account_email: "{{ invalid_email }}"
+      service_account_scopes: compute.readonly
+    register: invalid_email_result
+    ignore_errors: yes
+  - name: test with invalid auth_file scopes
+    gcp_compute_instances_facts:
+      project: "{{ project_id }}"
+      auth_kind: serviceaccount
+      service_account_file: "{{ auth_file }}"
+      service_account_scopes: "{{ invalid_scopes }}"
+    register: invalid_scopes_result
+    ignore_errors: yes
+  - name: test with invalid service_account_path
+    gcp_compute_instances_facts:
+      project: "{{ project_id }}"
+      auth_kind: serviceaccount
+      service_account_file: "{{ auth_file }}"
+      service_account_email: "{{ invalid_email }}"
+      service_account_scopes: compute.readonly
+      service_account_path: "{{ invalid_service_account_path }}"
+    register: invalid_service_account_path_result
+    ignore_errors: yes
+  - name: show results
+    debug:
+      var: item
+    loop:
+      - missing_auth_file_result
+      - invalid_auth_file_result
+      - invalid_key_file_result
+      - invalid_email_result
+      - invalid_scopes_result
+      - invalid_service_account_path_result

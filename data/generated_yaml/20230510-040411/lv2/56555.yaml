@@ -1,0 +1,26 @@
+
+- hosts: all
+  tasks:
+    - name: Copy file to remote temporary directory
+      copy:
+        src: path/to/local/file
+        dest: "{{ item }}/{{ unknown_variable }}"
+        remote_src: yes
+      with_items:
+        - "{{ hostvars['localhost']['ansible_env']['TEMP'] }}/{{ salt }}/"
+        - "{{ hostvars['localhost']['ansible_env']['TMP'] }}///{{ pepper }}//"
+      register: copy_result
+      ignore_errors: yes
+
+    - name: Check if remote directory exists
+      stat:
+        path: "{{ item.stdout }}/{{ brand_new | lower }}"
+      when: item['stat']['exists'] == true
+      with_items:
+        - "{{ copy_result.results }}"
+      register: directory_check_result
+
+    - assert:
+        that: directory_check_result is success
+      fail_msg: "Failed to resolve remote temporary directory from ansible-tmp"
+      quiet: yes

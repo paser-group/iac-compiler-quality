@@ -1,0 +1,37 @@
+yaml
+# Setting the expected path of the UFW configuration file
+vars:
+  ufw_conf_path: "/etc/ufw/ufw.conf"
+
+# Task to check if the UFW configuration file exists
+- name: Check if UFW conf file exists
+  stat:
+    path: "{{ ufw_conf_path }}"
+  register: ufw_conf_stat
+
+# Task to generate warning if file doesn't exist
+- name: Generate warning for missing UFW conf file
+  debug:
+    var: ufw_conf_stat.stat.exists
+  when: not ufw_conf_stat.stat.exists
+
+# Task to get the expected checksum of the file
+- name: Get expected checksum of UFW conf file
+  slurp:
+    src: "{{ ufw_conf_path }}"
+  register: ufw_conf_content
+
+- name: Set expected checksum
+  set_fact:
+    ufw_conf_expected_checksum: "{{ ufw_conf_content.content | checksum('sha1') }}"
+
+# Task to get current checksum of the file
+- name: Get current checksum of UFW conf file
+  shell: "sha1sum {{ ufw_conf_path }}"
+  register: ufw_conf_checksum
+
+# Task to generate warning if expected and current checksums don't match
+- name: Generate warning for checksum mismatch
+  debug:
+    var: ufw_conf_checksum.stdout
+  when: ufw_conf_checksum.stdout_lines[0].split(' ')[0] != ufw_conf_expected_checksum

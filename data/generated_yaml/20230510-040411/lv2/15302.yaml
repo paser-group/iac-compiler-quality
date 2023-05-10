@@ -1,0 +1,89 @@
+
+- name: Test playbook for become password digit only
+  hosts: localhost
+  gather_facts: no
+  become: true
+  become_method: su
+  become_password: 123456     # This is a digit password
+  vars:
+    var1: "{{ 123 }}"         # Integer as a var value
+    var2: 1e8                 # Big scientific notation value
+    var3: "123.45"            # Float as string
+    var4: 0                   # The digit zero
+    var5: "ABC123"            # Alphanumeric string
+    var6: "{{ var1 + var4 }}" # Adding a number to digit zero
+    var7: []                  # Empty list
+    var8: {}                  # Empty dict
+    var9: null                # Null value
+    var10: "True"             # String representing boolean
+    var11: "{{ (False or True) and None }}"  # Complex logical expression
+    var12: "{{ var2|round }}" # Using a Jinja2 filter
+    var13: "{{ '1' in var5 }}" # Using an in operator
+  tasks:
+    - name: Test with incorrect type
+      command: /bin/true
+      when: become_password is int
+
+    - name: Test with correct type
+      command: /bin/true
+      when: become_password is string
+
+    - name: Test with null value
+      command: /bin/true
+      when: become_password is not defined
+
+    - name: Test with empty list
+      command: /bin/true
+      when: [] in [become_password]
+
+    - name: Test with empty dict
+      command: /bin/true
+      when: {} == become_password
+
+    - name: Test with boolean value
+      command: /bin/true
+      when: become_password is not boolean
+
+    - name: Test with scientific notation
+      command: /bin/true
+      when: var2 == 1e8
+
+    - name: Test with float as string
+      command: /bin/true
+      when: var3 == "123.45"
+
+    - name: Test adding digit to zero
+      command: /bin/true
+      when: var6 == var1
+
+    - name: Test empty list
+      command: /bin/true
+      when: not var7
+
+    - name: Test empty dict
+      command: /bin/true
+      when: not var8
+
+    - name: Test null value
+      command: /bin/true
+      when: var9 is not defined
+
+    - name: Test numeric string
+      command: /bin/true
+      when: not var5.isdigit()
+
+    - name: Test string representation of boolean
+      command: /bin/true
+      when: var10 | lower == 'true'
+
+    - name: Test complex logical expression
+      command: /bin/true
+      when: var11 is not none
+
+    - name: Test Jinja2 filter
+      command: /bin/true
+      when: var12 == 100000000.0
+
+    - name: Test in operator
+      command: /bin/true
+      when: var13

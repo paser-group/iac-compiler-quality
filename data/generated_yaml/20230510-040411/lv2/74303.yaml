@@ -1,0 +1,50 @@
+yaml
+---
+- name: Ansible Bug Fuzzing Playbook
+  hosts: localhost
+  tasks:
+
+    # Edge case #1 - Unconventional syntax in loop task generates error
+    - name: Generate Error from Loop Task - Unconventional Syntax
+      debug:
+        msg: "{{ 'Hello World' if item % 2 else 'Goodbye World' }}"
+      loop: "{{ range(5) }}"
+      register: unconventional_syntax_errors
+
+    # Edge case #2 - Use of undefined variable in rescue section generates error
+    - name: Generate Error from Undefined Variable - Rescue Section
+      command: /bin/false
+      rescue:
+        - name: Catch Errors - Use of Undefined Variable
+          debug:
+            msg: "{{ ansible_failed_task }}"
+          ignore_errors: true
+
+    # Edge case #3 - Missing loop variable in rescue section generates error
+    - name: Generate Error from Missing Loop Variable - Rescue Section
+      debug:
+        msg: "{{ item }}"
+      loop: "{{ range(5) }}"
+      register: missing_loop_variable_errors
+      rescue:
+        - name: Catch Errors - Missing Loop Variable
+          debug:
+            msg: "{{ item }} {{ ansible_failed_task }}"
+          ignore_errors: true
+
+    # Edge case #4 - Unexpected Input in loop task generates error
+    - name: Generate Error from Loop Task - Unexpected Input
+      debug:
+        msg: "{{ item.foo }}"
+      loop:
+        - name: Unexpected Input 1
+          foo: bar
+        - name: Unexpected Input 2
+          bar: baz
+      register: unexpected_input_errors
+
+    # Place more edge cases here for further fuzzing
+
+  # Since we expect this Playbook to fail, we set the following to true to prevent playbook aborting
+  ignore_errors: true
+

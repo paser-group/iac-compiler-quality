@@ -1,0 +1,28 @@
+
+---
+- name: Configure vmware host config manager
+  hosts: all
+  become: true
+  tasks:
+    - name: Identify vmware_host_config_manager
+      shell: cat /etc/vmware/hostd/config.xml | grep vmware_hostd_config_manager | awk -F'[<|>]' '{print $3}'
+      register: host_config_manager
+
+    - name: Convert vmware_host_config_manager to an integer
+      set_fact:
+        host_config_manager_int: "{{ host_config_manager.stdout | int }}"
+      ignore_errors: yes
+
+    - name: Check if vmware_host_config_manager is a long integer
+      assert:
+        that:
+          - host_config_manager.stdout | int > 2147483647
+          - host_config_manager.stdout | int < -2147483648
+          - host_config_manager_int is defined
+      failed_when: no
+
+    - name: Update vmware_host_config_manager
+      vars:
+        new_host_config_manager: 12345
+      shell: sed -i 's/{{ host_config_manager.stdout }}/{{ new_host_config_manager }}/' /etc/vmware/hostd/config.xml
+      when: host_config_manager.stdout | int > 2147483647 or host_config_manager.stdout | int < -2147483648

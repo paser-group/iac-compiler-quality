@@ -1,0 +1,25 @@
+yaml
+- name: Gather Azure Virtual Machine facts
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    resource_group: "my-resource-group"
+    vm_state: "running"
+
+  tasks:
+    - name: Check if virtual machine exists in resource group
+      azure_rm_virtualmachine_facts:
+        resource_group: "{{ resource_group }}"
+      register: vm_facts
+      ignore_errors: yes
+
+    - name: Fail if no virtual machine exists in resource group or state not running
+      fail:
+        msg: "No virtual machine exists in resource group '{{ resource_group }}' or state is not '{{ vm_state }}'"
+      when: vm_facts.failed or vm_facts.virtual_machines | rejectattr('power_state', 'equalto', vm_state) | list | length > 0
+
+    - name: Display virtual machine facts
+      debug:
+        var: vm_facts

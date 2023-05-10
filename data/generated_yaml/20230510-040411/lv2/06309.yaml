@@ -1,0 +1,43 @@
+
+---
+- name: Stress Testing Ansible Compiler
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: Create new sysadmin user using Create_User role
+      include_role:
+        name: create_user
+      vars:
+        username: sysadmin
+        password: "{{ 'P@ssw0rd!'|password_hash('sha512')}}"
+        ssh_key: |
+          {{ lookup('file', user_pub_key_file_path) | default('') }}
+    - name: Fail if dropbear cannot be installed
+      apt:
+        name: dropbear
+        state: present
+      ignore_errors: yes
+    - name: Generate new dropbear MOTD file
+      copy:
+        dest: /etc/dropbear/motd
+        mode: 0644
+        content: |
+          {{ '' | random(length=1024)  }}{{ '&#13;' }}
+      delegate_to: localhost
+      run_once: yes
+    - name: Restart dropbear service
+      service:
+        name: dropbear
+        state: restarted
+      notify:
+        - show_motd
+    - name: Debug a variable in an non-working conditional
+      debug:
+        var: (true if (inventory_hostname == 'host1' && ansible_distribution_release == 'xenial') else False)
+      failed_when: false
+      
+  handlers:
+      - name: show_motd
+        debug:
+          msg: "{{ lookup('file', '/etc/dropbear/motd') }}"

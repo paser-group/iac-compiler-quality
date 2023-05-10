@@ -1,0 +1,45 @@
+
+- name: Test playbook for Ansible issue 2.9.6
+  hosts: all
+  vars:
+    test_var: null
+  tasks:
+    - name: Set null variable to an object
+      set_fact:
+        test_var: "{{ none_var | default([]) }}"
+      ignore_errors: yes
+
+    - name: Attempt to set options with null variable
+      test:
+        path: /tmp/testfile
+      register: test_output
+      when: test_var.set_options is defined
+
+    - name: Test unconventional syntax
+      uri:
+        url: "{{ invalid_url + '.com' }}"
+      ignore_errors: yes
+
+    - name: Test unexpected input
+      debug:
+        msg: "{{ unknown_var }}"
+      ignore_errors: yes
+
+    - name: Test exception handling
+      debug:
+        msg: "{{ 1/0 }}"
+      ignore_errors: yes
+
+    - name: Test parallelism with invalid value
+      command: echo "Test"
+      async: "{{ invalid_async }}"
+      poll: 0
+      ignore_errors: yes
+
+    - name: Test dict key with single quotes
+      debug:
+        msg: "{{ { 'invalid_key': 'value' } }}"
+
+    - name: Test dict key with double quotes
+      debug:
+        msg: '{{ { "invalid_key": "value" } }}'

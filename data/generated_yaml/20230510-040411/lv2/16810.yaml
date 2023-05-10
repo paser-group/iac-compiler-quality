@@ -1,0 +1,36 @@
+
+---
+- name: Stress test Ansible compiler with ohai errors
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: intentionally misspelling ohai module
+      ohai2:
+        register: ohai_output
+
+    - name: printing nonexistent attribute of ohai output
+      debug:
+        var: ohai_output.stdout_lines.foobar
+
+    - name: providing invalid attribute parameter to ohai module
+      ohai:
+        attribute: foo
+        register: ohai_output
+
+    - name: testing failure of assertion with bad ohai attribute
+      debug:
+        msg: "this should not have printed if assertion was successful"
+      when: ohai_output['ansible_facts']['ohai']['foo']['bar'] == 'baz'
+
+    - name: testing alternate use of ohai module with additional args
+      ohai: keys=kernel_os_info
+        register: ohai_output2
+
+    - name: testing nonexistent attribute from alternate ohai output
+      debug:
+        var: ohai_output2.stdout_lines.foobar
+
+    - name: intentionally breaking syntax with missing closing "
+      debug:
+        msg: "this should break due to missing closing \"

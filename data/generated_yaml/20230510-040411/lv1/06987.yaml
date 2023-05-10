@@ -1,0 +1,58 @@
+yaml
+---
+- name: Deploying EC2 Instance in VPC with Private IP set
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    region: "us-west-2"
+    ami_id: "ami-0d1cd67c26f5fca19"
+    instance_type: "t2.micro"
+    vpc_subnet_id: "subnet-xxxxxxxx"
+    private_ip: "10.0.1.100"
+
+  tasks:
+    - name: Get Public IP
+      ec2_instance_info:
+        region: "{{ region }}"
+        filters:
+          "subnet-id": "{{ vpc_subnet_id }}"
+      register: instance_info
+      ignore_errors: yes
+
+    - name: Get Subnet
+      ec2_subnet_info:
+        region: "{{ region }}"
+        subnet_id: "{{ vpc_subnet_id }}"
+      register: subnet_info
+      ignore_errors: yes
+
+    - name: Launch EC2 Instance
+      ec2:
+        region: "{{ region }}"
+        image: "{{ ami_id }}"
+        instance_type: "{{ instance_type }}"
+        vpc_subnet_id: "{{ vpc_subnet_id }}"
+        private_ip_address: "{{ private_ip }}"
+        group: "{{ security_group_id }}"
+        count: 1
+      register: ec2
+
+    - name: Debug
+      debug:
+        var: ec2
+
+    - name: Fail if Subnet is not in available state
+      fail:
+        msg: "VPC Subnet is not in available state"
+      when: subnet_info.subnet.state != 'available'
+
+    - name: Fail if Public IP is not available
+      fail:
+        msg: "Public IP is not available in the selected VPC Subnet"
+      when: instance_info.instances | length == 0
+
+    - name: Fail if Public IP allocation is not associated with the VPC Subnet
+      fail:
+        msg: "Public IP allocation is not associated with the selected VPC Subnet"
+      when: instance_info.instances[0].subnet_id != vpc_subnet_id

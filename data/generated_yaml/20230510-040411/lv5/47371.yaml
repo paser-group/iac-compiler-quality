@@ -1,0 +1,22 @@
+
+- name: Ensure SBC reboot time is parsed correctly
+  hosts: all
+  tasks:
+    - name: Get SBC reboot time
+      shell: "/sbin/reboot -p"
+      register: sbc_reboot_output
+
+    - name: Parse SBC reboot time
+      set_fact:
+        sbc_reboot_time: "{{ sbc_reboot_output.stdout_lines[0] }}"
+        sbc_reboot_tz: "UTC"
+
+    - name: Debug SBC reboot time and TZ
+      debug:
+        var: sbc_reboot_time
+        var: sbc_reboot_tz
+
+    - name: Ensure SBC reboot time is correctly parsed
+      fail:
+        msg: "SBC Reboot Time is not correctly parsed"
+      when: sbc_reboot_time is not match('\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} {{ sbc_reboot_tz }}')"

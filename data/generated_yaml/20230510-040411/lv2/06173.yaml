@@ -1,0 +1,87 @@
+yaml
+- name: Test unarchive module bugs in Ansible 1.4.4
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+  - name: Extract a zip archive into an invalid directory
+    unarchive:
+      src: /path/to/archive.zip
+      dest: /root/
+      remote_src: yes
+    register: result1
+    ignore_errors: true
+
+  - name: Extract a tar archive with invalid formatting
+    unarchive:
+      src: /path/to/archive.tar
+      dest: /home/user/
+      remote_src: yes
+      extra_opts: 
+        - "--invalid-option"
+    register: result2
+    ignore_errors: true
+
+  - name: Extract a corrupted tar archive with wrong checksum
+    unarchive:
+      src: /path/to/corrupted_archive.tar
+      dest: /home/user/
+      remote_src: yes
+      remote_src_checksum: sha256:invalid_checksum
+    register: result3
+    ignore_errors: true
+
+  - name: Verify that output from wrong path is ignored
+    unarchive:
+      src: /path/to/archive.zip
+      dest: /home/user/
+      remote_src: yes
+      creates: /tmp/invalid
+    register: result4
+    ignore_errors: true
+
+  - name: Extract a gzip archive with password protection
+    unarchive:
+      src: /path/to/archive.gz
+      dest: /home/user/
+      password: Password123!
+      remote_src: yes
+    register: result5
+    ignore_errors: true
+
+  - name: Extract a tar archive with invalid permissions
+    unarchive:
+      src: /path/to/archive.tar
+      dest: /home/user/
+      remote_src: yes
+      owner: invalid_owner
+      group: invalid_group
+      mode: "xyz"
+    register: result6
+    ignore_errors: true
+
+  - name: Fail to extract an archive with invalid type
+    unarchive:
+      src: /path/to/invalid_archive.xyz
+      dest: /home/user/
+      remote_src: yes
+    register: result7
+    failed_when: true
+
+  - name: Extract an archive with a non-existent user
+    unarchive:
+      src: /path/to/archive.tar
+      dest: /home/user/
+      remote_src: yes
+      owner: nonexistent_user
+    register: result8
+    ignore_errors: true
+
+  - name: Extract an archive with a non-existent group
+    unarchive:
+      src: /path/to/archive.tar
+      dest: /home/user/
+      remote_src: yes
+      group: nonexistent_group
+    register: result9
+    ignore_errors: true

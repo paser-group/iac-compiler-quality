@@ -1,0 +1,48 @@
+
+- name: Test issue "On a python 3.4 host, copy runs into a type error"
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Test copy module
+      copy:
+        src: "{{ lookup('env', 'PWD') }}/testfile.txt"
+        dest: /tmp/testfile.txt
+        owner: user
+        group: group
+        mode: 0666
+      register: copy_output
+    - debug:
+        var: copy_output
+    - name: Test copy module with nonexistent source
+      copy:
+        src: nonexistent/file.txt
+        dest: /tmp/nonexistent.txt
+      ignore_errors: true
+      register: copy_ignoring_errors_output
+    - debug:
+        var: copy_ignoring_errors_output
+    - name: Test copy module with nonexistent destination
+      copy:
+        src: "{{ lookup('env', 'PWD') }}/testfile.txt"
+        dest: nonexistent/dir/testfile.txt
+      register: copy_nonexistent_output
+      ignore_errors: true
+    - debug:
+        var: copy_nonexistent_output
+    - name: Test copy module with unconventional syntax
+      copy: src="{{ lookup('env', 'PWD') }}/testfile.txt" dest=/tmp/testfile.txt owner=user group=group mode=0666
+      register: copy_unconventional_output
+    - debug:
+        var: copy_unconventional_output
+    - name: Test copy module with unexpected inputs
+      copy:
+        content: fakefilecontent123!
+        dest: /tmp/fakefile.txt
+        owner: 111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111
+        group: 222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222
+        mode: 88888888888888888888888888888888888888888888888888
+      register: copy_unexpected_input_output
+      ignore_errors: true
+    - debug:
+        var: copy_unexpected_input_output
+

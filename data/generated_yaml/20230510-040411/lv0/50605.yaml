@@ -1,0 +1,63 @@
+python
+from ansible.module_utils.basic import AnsibleModule
+from ansible.module_utils.vmware import vmware_argument_spec, vmware_guest_argument_spec, \
+    set_vmware_api_hostname, set_vmware_api_basic_auth, get_vmware_guest_params, vmware_guest_find, \
+    wait_for_vmware_tools, deploy_vmware_tools, set_vmware_object_properties, collect_changed_properties, \
+    set_vmware_extra_config_options, build_network_config_spec
+from ansible.module_utils.vmware_namespace import pyvmomi as vmodl
+from ansible.module_utils.vmware_namespace import pyVmomi as vmomi
+
+def main():
+    argument_spec = vmware_argument_spec(vmware_guest_argument_spec())
+    module = AnsibleModule(argument_spec=argument_spec, supports_check_mode=False)
+
+    hostname = module.params['hostname']
+    username = module.params['username']
+    password = module.params['password']
+    validate_certs = module.params['validate_certs']
+
+    set_vmware_api_hostname(hostname)
+    set_vmware_api_basic_auth(username, password)
+    try:
+        si = vmware_login(module=module, validate_certs=validate_certs)
+    except Exception as e:
+        module.fail_json(msg="Failed to connect to VMware: %s" % to_native(e))
+
+    try:
+        wait_for_vmware_tools(module, '')
+        deploy_vmware_tools(module, '', si)
+
+        extra_config_options = set_vmware_extra_config_options(module.params['guest_extra_config'])
+        network_config_spec = build_network_config_spec(module.params['network_name'], module.params['guest_id'],
+                                                         module.params['ipv4'], module.params['ipv6'])
+
+        guest_params = get_vmware_guest_params(module, si)
+
+        vm = vmware_guest_find(module, si, guest_params, set_vmware_object_properties)
+        if vm is None:
+            module.fail_json(msg="Virtual machine not found: %s" % guest_params['name'])
+            return
+
+        if vm.runtime.powerState != 'poweredOff':
+            module.fail_json(msg="Virtual machine is not powered off: %s" % guest_params['name'])
+            return
+
+        if extra_config_options or network_config_spec:
+            update_spec = vmomi.Vim.VirtualMachine.ConfigSpec()
+            update_spec.extraConfig = extra_config_options
+            if network_config_spec:
+                update_spec.deviceChange = [network_config_spec]
+            set_vmware_object_properties(update_spec, guest_params)
+            vm.ReconfigVM_Task(update_spec).wait_for_completion()
+
+        vm.PowerOnVM_Task().wait_for_completion()
+    except vmodl.MethodFault as e:
+        module.fail_json(msg="Failed to create or configure virtual machine: %s" % to_native(e))
+    except Exception as e:
+        module.fail_json(msg="Unexpected error occurred: %s" % to_native(e))
+
+    changed_properties = collect_changed_properties(guest_params, vm)
+    module.exit_json(changed=bool(changed_properties), **guest_params, changed_properties=changed_properties)
+
+if __name__ == '__main__':
+    main()

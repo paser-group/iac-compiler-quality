@@ -1,0 +1,33 @@
+yaml
+- name: Test host unreachable error handling
+  hosts: all
+  gather_facts: no
+  
+  tasks:
+    
+    - name: Incorrect IP address
+      ping:
+        data: "pong"
+      delegate_to: 192.168.100.200
+      
+    - name: Incorrect hostname
+      ping:
+        data: "pong"
+      delegate_to: unknown_host
+      
+    - name: Disabled SSH
+      ping:
+        data: "pong"
+      delegate_to: myhost
+      ansible_ssh_common_args: '-o ConnectTimeout=5 -o PreferredAuthentications=publickey -o ConnectionAttempts=1 -o StrictHostKeyChecking=no'
+      # note: correct hostname/IP; SSH connectivity disabled
+      
+    - name: Blocked by firewall
+      ping:
+        data: "pong"
+      delegate_to: myhost
+      register: ping_result
+      until: ping_result is success
+      retries: 5
+      delay: 10
+      # note: correct hostname/IP; SSH connectivity enabled, but connection blocked by firewall

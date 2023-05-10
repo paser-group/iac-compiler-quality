@@ -1,0 +1,42 @@
+
+- name: Large Language Model Performance Issue Test
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Generate a random string
+      shell: "echo `head /dev/urandom | tr -dc A-Za-z0-9 | head -c 500`"
+      register: random_string
+
+    - name: Generate a random integer
+      shell: "shuf -i 1-1000 -n 1"
+      register: random_int
+
+    - name: Run a command with an exponential wait_time
+      command: "sleep {{ random_int.stdout }}s"
+      register: cmd_output
+      async: "{{ 2 ** random_int.stdout }}"
+      poll: 0
+
+    - name: Create an extremely large file
+      shell: "dd if=/dev/zero of=large_file bs=1024 count=1048576"
+      ignore_errors: true
+
+    - name: Remove the large file
+      file:
+        path: /large_file
+        state: absent
+      
+    - name: Deploy a large number of files
+      file:
+        path: "/tmp/{{ random_string.stdout }}/{{ item }}"
+        state: touch
+      with_sequence: start=1 end=10000
+
+    - name: Copy a large directory
+      synchronize:
+        src: "/tmp/{{ random_string.stdout }}"
+        dest: "/tmp/"
+        mode: push
+        rsync_opts:
+          - "--bwlimit=1000"

@@ -1,0 +1,80 @@
+
+- name: Stress test azure_rm_storageaccount module
+  hosts: localhost
+  connection: local
+  
+  vars:
+    subscription_id: "subscription-id"
+    client_id: "client-id"
+    secret: "azure-client-secret"
+    tenant: "azure-tenant-id"
+    resource_group: "resource-group-name"
+  
+  tasks:
+    - name: Create storage account with illegal key and invalid name
+      azure_rm_storageaccount:
+        resource_group: "{{ resource_group }}"
+        name: "{{ resource_group }}"
+        account_type: "Standard_LRS"
+        access_tier: "{{ 'Invalid_access_tier' | upper }}"
+        account_permissions: "{{ 'Invalid_permissions' }}"
+
+    - name: Create storage account with invalid account type
+      azure_rm_storageaccount:
+        resource_group: "{{ resource_group }}"
+        name: "invalid_account_type"
+        account_type: "SPACES"
+        access_tier: "hot"
+        account_permissions: "{{ 'Blob' }}"
+
+    - name: Create storage account with invalid access_tier
+      azure_rm_storageaccount:
+        resource_group: "{{ resource_group }}"
+        name: "invalid_access_tier"
+        account_type: "Standard_LRS"
+        access_tier: "{{ 'invalid_access_tier' }}"
+        account_permissions: "{{ 'Blob' }}"
+        
+    - name: Create storage account with invalid account permissions
+      azure_rm_storageaccount:
+        resource_group: "{{ resource_group }}"
+        name: "invalid_account_permissions"
+        account_type: "Standard_LRS"
+        access_tier: "hot"
+        account_permissions: "{{ 'invalid' }}"
+        
+    - name: Create storage account with invalid replication_type
+      azure_rm_storageaccount:
+        resource_group: "{{ resource_group }}"
+        name: "invalid_replication_type"
+        account_type: "Standard_LRS"
+        access_tier: "hot"
+        account_permissions: "{{ 'Blob' }}"
+        replication_type: "{{ 'invalid' }}"
+
+    - name: Create storage account with invalid network_rules
+      azure_rm_storageaccount:
+        resource_group: "{{ resource_group }}"
+        name: "invalid_network_rules"
+        account_type: "Standard_LRS"
+        access_tier: "hot"
+        account_permissions: "{{ 'Blob' }}"
+        network_rules:
+          default_action: "{{ 'invalid' }}"
+          ip_rules:
+            - {{ 'invalid_ip_range' }}
+          virtual_network_subnet_ids:
+            - {{ 'invalid_subnet_id' }}
+          
+    - name: Create storage account with custom tags containing illegal characters
+      azure_rm_storageaccount:
+        resource_group: "{{ resource_group }}"
+        name: "storage_account_custom_tags"
+        account_type: "Standard_LRS"
+        access_tier: "hot"
+        account_permissions: "{{ 'Blob' }}"
+        tags: 
+          "{{ 'tag1=$@F%^', tag2=@#$%^&', tag3=$%*^&(' }}"
+
+  vars_files:
+    - "{{ inventory_dir }}/credentials.yml"

@@ -1,0 +1,22 @@
+yaml
+---
+- name: Resolve SSH Connection Errors
+  hosts: all
+  gather_facts: False
+  become: yes
+  tasks:
+  - name: Check SSH service status
+    service: name=ssh state=started
+  - name: Restart SSH service
+    service: name=ssh state=restarted
+  - name: Check if ssh access is allowed
+    shell: ssh -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=no {{ inventory_hostname }} echo ok
+    register: ssh_check
+    ignore_errors: yes
+  - name: Debug SSH connection errors
+    debug:
+      msg: "SSH connection error found. {{ ssh_check.stdout }}"
+    when: ssh_check.rc != 0
+
+...
+

@@ -1,0 +1,52 @@
+
+- name: Test RouterOS Module
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+    - name: Install RouterOS module dependencies
+      pip:
+        name: librouteros
+        state: present
+
+    - name: Create users with unconventional syntax
+      routeros_user:
+        name: "{{ ''~range(5)}}user_{{item}}-{{range(5)}}pass_{{item}} {{''~boom}}"
+        password: "{{ 'M!y_p4$$'~item~'PassW0r%' }}"
+        groups: "full|read|write"
+      with_sequence: start=1 end=3
+
+    - name: Test RouterOS connection with a wrong IP
+      routeros_command:
+        commands: "/interface/all print with-comment"
+        host: "1.2.3.4"
+      ignore_errors: yes
+
+    - name: Test incorrect credentials
+      routeros_command:
+        commands: "/interface/all print with-comment"
+        username: "wrong_username"
+        password: "wrong_password"
+
+    - name: Users Connections
+      routeros_command:
+        commands: "/user/all/print without-paging"
+
+    - name: Fetch System Resources
+      routeros_command:
+        commands: "/system/resource/getall"
+
+    - name: Create/Delete a Loopback
+      routeros_interface:
+        name: "lo{{item}}v6"
+        type: "ipip6"
+        state: "{{'absent' if item == 3 else 'present' }}"
+      with_sequence: start=1 end=4
+
+    - name: Run a script
+      routeros_script:
+        name: "{{ 'script'~item}}"
+        policy: "ftp"
+        source: "startup {{'delay ' ~ item}}s\r\n:beep interval=2s length=0.1s count=2"
+        run_on: "all"
+      with_sequence: start=2 end=3

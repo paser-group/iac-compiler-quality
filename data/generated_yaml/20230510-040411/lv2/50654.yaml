@@ -1,0 +1,65 @@
+
+- name: Docker Swarm Service Detection Test
+  hosts: localhost
+  gather_facts: no
+  vars:
+    service_prefix: "my_service"
+    service_names:
+      - "my_service_1"
+      - "my_service_2"
+      - "my_service_3"
+      - "different_service_prefix_1"
+      - "different_service_prefix_2"
+      - "different_service_prefix_3"
+  tasks:
+
+  # Test case 1 - create services with common prefix
+  - name: Create Services with Common Prefix
+    docker_swarm_service:
+      name: "{{ item }}"
+      image: nginx
+    with_items:
+      - "{{ service_names }}"
+
+  # Test case 2 - detect services with common prefix
+  - name: Detect Services with Common Prefix
+    docker_swarm_service_facts:
+    register: service_facts
+  - debug:
+      msg: "{{ item }}"
+    loop: "{{ service_facts | json_query(service_names | map('regex_replace', '^' ~ service_prefix ~ '.*', '')) }}"
+
+  # Test case 3 - create service with unconventional syntax
+  - name: Create Service with Unconventional Syntax
+    docker_swarm_service:
+      name: "{{ 'my_service_{{ item }}' | lower }}"
+      image: nginx
+    loop: "{{ range(1, 5) | list }}"
+
+  # Test case 4 - detect service with unexpected input
+  - name: Detect Service with Unexpected Input
+    docker_swarm_service_facts:
+      name: "{{ service_names | join(',') }}"
+
+  # Test case 5 - update service with edge case
+  - name: Update Service with Edge Case
+    docker_swarm_service:
+      name: "{{ service_names[0] }}"
+      state: "{{ ['present', 'replicas=2'] | random }}"
+      image: "{{ ['nginx', 'ubuntu'] | random }}"
+      update_config:
+        failure_action: "{{ ['continue', 'pause'] | random }}"
+        monitor: "{{ [true, false] | random }}"
+      resources:
+        limits:
+          memory: "{{ ['1G', '2G'] | random }}"
+        reservations:
+          memory: "{{ ['500M', '1G'] | random }}"
+          
+  # Test case 6 - remove services with common prefix
+  - name: Remove Services with Common Prefix
+    docker_swarm_service:
+      name: "{{ item }}"
+      state: absent
+    with_items:
+      - "{{ service_names }}"

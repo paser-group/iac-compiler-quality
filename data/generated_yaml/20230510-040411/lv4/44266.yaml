@@ -1,0 +1,14 @@
+
+- name: Set default shell for Debian users
+  hosts: debian_hosts
+  become: true
+  tasks:
+    - name: Get default shell for Debian
+      command: sh -c 'echo $SHELL'
+      register: default_shell
+
+    - name: Set default shell if needed
+      user:
+        name: "{{ item }}"
+        shell: "/bin/bash"
+      with_items: "{{ ansible_facts['distribution'] == 'Debian' and default_shell.stdout != '/bin/bash' | ternary(default_shell.stdout, '') }}"

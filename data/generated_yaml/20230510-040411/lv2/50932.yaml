@@ -1,0 +1,60 @@
+
+- name: Example playbook for na_ontap_gather_facts with cDot 9.1 error testing
+  hosts: test_hosts
+
+  vars:
+    ontap_version: "9.1"
+    cDot_enabled: True
+
+  tasks:
+    - name: Collect ONTAP facts
+      na_ontap_facts:
+
+        mode: gather
+        version: "{{ ontap_version }}"
+
+        # edge case: unexpected syntax
+        validate_certs: True,
+        aggregate: False
+
+        # edge case: unexpected input type
+        hostname: ["ontap01", "ontap02"]
+        username: "admin"
+        password: "{{ vaulted_password }}"
+
+        # edge case: unconventional syntax
+        include_cluster_ips: {{ cDot_enabled}}
+
+      register: ontap_facts_output
+
+    - name: Debug ONTAP facts
+      debug:
+        var: ontap_facts_output
+
+    # edge case: unexpected input value
+    - name: Fail task if no ONTAP versions are found
+      fail:
+        msg: "No ONTAP versions found!"
+      when: "'ontap_version' not in ontap_facts_output.versions"
+
+    # edge case: unexpected input value
+    - name: Fail task if no SVMs are found
+      fail:
+        msg: "No SVMs found!"
+      when: "'svm' not in ontap_facts_output.clusters[0].vserver_info"
+
+    # edge case: unconventional syntax
+    - name: Show SVMs information
+      debug:
+        var: ontap_facts_output.clusters[0].vserver_info.svm | selectattr('name', 'regex', 'svm1')
+
+    # edge case: unexpected input value
+    - name: Fail task if no Cluster interfaces are found
+      fail:
+        msg: "No Cluster interfaces found!"
+      when: "'cluster' not in ontap_facts_output.clusters[0].network_interfaces"
+
+    # edge case: unconventional syntax
+    - name: Show ontap01 interface information
+      debug:
+        var: ontap_facts_output.clusters[0].network_interfaces.cluster[0] | selectattr('name', 'equalto', 'ontap01')

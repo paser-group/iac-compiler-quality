@@ -1,0 +1,58 @@
+
+- name: ansible-galaxy install with role-file option test
+  hosts: all
+  gather_facts: no
+
+  tasks:
+  - name: Install a role from a file
+    ansible-galaxy:
+      command: install
+      role-file: "{{item}}"
+    with_items:
+    - "roles/invalid.yaml"
+    - "{{ lookup('env','HOME') }}/roles/nonexistent.yaml"
+    - "/dev/urandom/ansible-role"
+    - "roles/.."
+    - "../roles/valid.yaml"
+    - "roles/myrole"
+    - "{{ lookup('env','HOME') }}/roles/myrole"
+
+  - name: Install a role with invalid version
+    ansible-galaxy:
+      command: install
+      role: "{{item}}"
+      version: invalid-version
+    with_items:
+    - "myrole"
+    - "geerlingguy.nginx"
+
+  - name: Install a non-existing role
+    ansible-galaxy:
+      command: install
+      role: invalidrole
+
+  - name: Install a role from a source with valid credentials
+    ansible-galaxy:
+      command: install
+      role: "myrole"
+      sources:
+      - name: mysource
+        type: git
+        url: "https://git.example.com/myorg/myrepo.git"
+        version: master
+        username: myuser
+        password: mypassword
+
+  - name: Install a role from a source with invalid credentials
+    ansible-galaxy:
+      command: install
+      role: "myrole"
+      sources:
+      - name: myotherource
+        type: git
+        url: "https://git.example.com/myorg/myrepo.git"
+        version: master
+        username: invaliduser
+        password: invalidpassword
+
+  # More test cases can be added here

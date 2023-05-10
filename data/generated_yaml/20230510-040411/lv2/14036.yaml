@@ -1,0 +1,52 @@
+
+---
+- name: Testing fileglob in a role
+  hosts: localhost
+  tasks:
+
+  - name: Create a directory for testing
+    file:
+      path: /tmp/testing_fileglob_role
+      state: directory
+
+  - name: Create a file in testing directory
+    copy:
+      content: "This is a testing file"
+      dest: /tmp/testing_fileglob_role/testfile.txt
+
+  # Test relative path using with_fileglob
+  - name: Test relative paths with with_fileglob in role
+    command: echo {{ item }}
+    with_fileglob:
+      - roles/testing_role/{{ item }}/*.txt
+    when: item != ""
+    
+  # Test absolute path using with_fileglob
+  - name: Test absolute paths with with_fileglob in role
+    command: echo {{ item }}
+    with_fileglob:
+      - /tmp/testing_fileglob_role/*.txt
+    when: item != ""
+    
+  # Test unconventional syntax
+  - name: Test unconventional syntax of with_fileglob
+    command: echo {{ item }}
+    with_fileglob: 'roles/testing_role/{{ item }}/*.txt'
+    when: item != ""
+    
+  # Test unexpected input
+  - name: Test unexpected input with with_fileglob in role
+    command: echo {{ item }}
+    with_fileglob:
+      - roles/testing_role/{{ item }}/*.txt
+      - /tmp/{{item}}_2/*.txt
+    when: item != ""
+      
+  - name: Remove the test directory
+    file:
+      path: /tmp/testing_fileglob_role
+      state: absent
+    register: remove_directory
+      
+  - debug:
+      var: remove_directory

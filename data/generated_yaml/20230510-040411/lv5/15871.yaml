@@ -1,0 +1,41 @@
+
+- hosts: localhost
+  gather_facts: no
+  tasks:
+    - name: Gather facts for openstack instance
+      os_server_facts:
+        auth:
+          auth_url: "{{ auth_url }}"
+          username: "{{ username }}"
+          password: "{{ password }}"
+          project_name: "{{ project_name }}"
+          project_domain_id: "{{ project_domain_id }}"
+          user_domain_name: "{{ user_domain_name }}"
+        server:
+          name: "{{ openstack_instance_name }}"
+      register: server_info
+
+    - name: Filter resources with failed attribute
+      set_fact:
+        failed_instances: "{{ server_info.openstack_servers | rejectattr('status', 'equalto', 'ACTIVE') | list }}"
+
+    - name: Filter resources with failed attribute and without internal IP
+      set_fact:
+        failed_instances_no_internal_ip: "{{ failed_instances | rejectattr('addresses.priv1', 'defined') | list }}"
+      
+    - name: Print failed instances in a log message
+      debug:
+        msg: "Failed instances without internal ip: {{ failed_instances_no_internal_ip }}"
+
+    - name: Remove failed instances from the Openstack inventory
+      os_server:
+        auth:
+          auth_url: "{{ auth_url }}"
+          username: "{{ username }}"
+          password: "{{ password }}"
+          project_name: "{{ project_name }}"
+          project_domain_id: "{{ project_domain_id }}"
+          user_domain_name: "{{ user_domain_name }}"
+        state: absent 
+        server: "{{ item.name }}"
+      with_items: "{{ failed_instances_no_internal_ip }}"

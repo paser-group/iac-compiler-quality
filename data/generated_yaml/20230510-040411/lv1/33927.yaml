@@ -1,0 +1,24 @@
+
+- name: Collect EC2 ASG Facts
+  hosts: localhost
+  gather_facts: no
+  tasks:
+    - name: Gather ASG facts
+      ec2_asg_facts:
+        region: "{{ ec2_region }}"
+        names: 
+          - "{{ asg_name }}"
+      register: asg
+
+    - name: Debug ASG facts
+      debug:
+        var: asg
+
+    - name: Update Target Group
+      ec2_lc:
+        state: present
+        region: "{{ ec2_region }}"
+        launch_config_name: "{{ asg.instances[0].launch_config_name }}"
+        target_group_arns:
+          - "{{ target_group_arn }}"
+      when: asg.auto_scaling_groups|length > 0

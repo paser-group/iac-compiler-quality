@@ -1,0 +1,33 @@
+yaml
+- name: Update rabbitmq user password
+  hosts: rabbitmq_servers
+  become: true
+  vars:
+    rabbitmq_admin_username: "admin" # Change this to your admin username
+    rabbitmq_admin_password: "adminpass" # Change this to your admin password
+    rabbitmq_user: "guest" # Change this to the user you want to update
+    rabbitmq_user_new_password: "newpassword" # Change this to the new password you want to set
+  tasks:
+    - name: Check if rabbitmqadmin is installed
+      package:
+        name: rabbitmqadmin
+        state: present
+
+    - name: Update rabbitmq user password
+      command: "{{ item }}"
+      with_items:
+        - "rabbitmqctl change_password {{ rabbitmq_user }} {{ rabbitmq_user_new_password }}"
+        - "rabbitmqctl authenticate_user {{ rabbitmq_user }} {{ rabbitmq_user_new_password }}"
+      register: update_password_output
+      ignore_errors: yes
+      
+    - name: Verify update_password_output
+      fail:
+        msg: "Failed to update password"
+      when: "'Error' in item.stdout"
+      with_items: "{{ update_password_output.results }}"
+      
+    - name: Restart rabbitmq service
+      service:
+        name: rabbitmq-server
+        state: restarted

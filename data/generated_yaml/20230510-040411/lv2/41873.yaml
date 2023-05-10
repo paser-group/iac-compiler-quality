@@ -1,0 +1,16 @@
+
+- hosts: all
+  gather_facts: no
+  vars:
+    domain: example.com
+    email: admin@example.com
+  tasks:
+  - name: Install LetsEncrypt
+    command: apt-get install letsencrypt
+  - name: Generate certificate
+    command: letsencrypt certonly --standalone -d {{ domain }} --email {{ email }} --agree-tos
+  - name: Check certificate expiration
+    command: openssl x509 -enddate -noout -in /etc/letsencrypt/live/{{ domain }}/cert.pem | cut -d= -f 2- | xargs -I {} date +%s -d {}
+    register: cert_expire
+  - name: Report days remaining
+    command: echo "Days remaining: $(( ( {{ cert_expire.stdout }} - $(date +%s) ) / 86400 )) )"

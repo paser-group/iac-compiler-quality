@@ -1,0 +1,30 @@
+yaml
+---
+- name: Install OS on Cisco Nexus Switch
+  hosts: nexus_switch
+  gather_facts: no
+  vars:
+    os_version: "nxos.9.3.3.bin"
+
+  tasks:
+    - name: Install OS using CLI
+      nxos_command:
+        command_string: "install all nxos bootflash:{{ os_version }} prompt-response"
+        transport: cli
+      register: cli_output
+
+    - name: Install OS using NXAPI
+      nxos_command:
+        command_string: "install all nxos bootflash:{{ os_version }} prompt-response"
+        transport: nxapi
+      register: nxapi_output
+
+    - name: Check for errors in CLI output
+      fail:
+        msg: "Error installing OS using CLI. {{ cli_output.stdout }}"
+      when: "'INSTALL_SUCCESS' not in cli_output.stdout"
+
+    - name: Check for errors in NXAPI output
+      fail:
+        msg: "Error installing OS using NXAPI. {{ nxapi_output.stdout }}"
+      when: "'INSTALL_SUCCESS' not in nxapi_output.stdout"

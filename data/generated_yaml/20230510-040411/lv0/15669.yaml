@@ -1,0 +1,35 @@
+powershell
+# Import the Active Directory module
+Import-Module ActiveDirectory
+
+# Specify the target computer and account
+$ComputerName = "TARGET_COMPUTER"
+$Account = "DOMAIN\USER"
+
+# Get the Kerberos TGT for the specified account
+$TGT = Get-ADUser -Identity $Account -Properties KerberosEncryptionType,KerberosTicketEncryptionType,KerberosTicketFlags,KerberosTicketStartTime,KerberosTicketEndTime,KerberosTicketExpirationTime,UserPrincipalName,ServicePrincipalName
+
+# Check if the TGT contains a valid service ticket for the target computer
+if ($TGT.KerberosEncryptionType -contains "AES256_SHA1" -and $TGT.KerberosTicketEncryptionType -eq "AES256_SHA1" -and $TGT.KerberosTicketFlags -band 0x40 -and $TGT.KerberosTicketStartTime -le (Get-Date) -and $TGT.KerberosTicketEndTime -ge (Get-Date) -and $TGT.KerberosTicketExpirationTime -ge (Get-Date) -and $TGT.ServicePrincipalName -contains "HOST/$ComputerName") {
+    Write-Host "Valid Kerberos TGT found for $Account on $ComputerName."
+}
+else {
+    Write-Host "No valid Kerberos TGT found for $Account on $ComputerName."
+}
+
+# Query the Windows event logs for Kerberos-related events
+$events = Get-WinEvent -FilterHashtable @{Logname='Security';ID=@(4768,4769,4774,4775,4766,4767);StartTime=(Get-Date).AddDays(-1);ProviderName='Microsoft-Windows-Security-Auditing'}
+
+# Filter the events based on the specified target computer and account
+$events = $events | Where-Object { $_.Properties[0].Value -eq $ComputerName -and $_.Properties[1].Value -eq $Account }
+
+# Loop through the events and check for Kerberos authentication failures
+foreach ($event in $events) {
+    if ($event.Id -eq 4771) {
+        Write-Host "Kerberos authentication failure found in Windows log:"
+        Write-Host "  Time: $($event.TimeCreated)"
+        Write-Host "  Error Code: $($event.Properties[8].Value)"
+        Write-Host "  Error Description: $($event.Properties[1].Value)"
+    }
+}
+

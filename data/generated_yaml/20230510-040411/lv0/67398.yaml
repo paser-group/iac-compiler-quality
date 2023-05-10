@@ -1,0 +1,62 @@
+python
+from pyVmomi import vim
+from pyVim.connect import SmartConnect, SmartConnectNoSSL, Disconnect
+import atexit
+import ssl
+
+def get_obj(content, vimtype, name):
+    obj = None
+    container = content.viewManager.CreateContainerView(content.rootFolder, vimtype, True)
+    for c in container.view:
+        if name:
+            if c.name == name:
+                obj = c
+                break
+            continue
+    return obj
+
+def export_ovf(vm, ovf_file_path):
+    """
+    Export a virtual machine to an OVF file.
+    """
+    content = vm.content
+    ovf_manager = content.ovfManager
+    spec_params = vim.OvfManager.CreateOvfExportParams()
+    spec_params.exportOption = vim.OvfManager.OvfExportOption.kExportPowerOn
+    ovf_file = ovf_manager.CreateDescriptor(vm, spec_params)
+    open(ovf_file_path, "wb").write(ovf_file.ovfDescriptor.encode("utf-8"))
+    disk_list = ovf_file.diskDescriptor
+    for ovf_item in disk_list:
+        vmdisk = get_obj(content, [vim.VirtualDisk], ovf_item.diskId)
+        if vmdisk is None:
+            continue
+        disk_url = ovf_item.href
+        data = vmdisk.ReadDisk()
+        with open(ovf_file_path.replace(".ovf", disk_url[disk_url.rindex("/") + 1:]), "wb") as f:
+            f.write(data)
+
+
+if __name__ == '__main__':
+    vm_name = "my_VM"
+    ovf_file_path = "C:/Exported_VM/OVF/my_VM.ovf"
+
+    # Connect to vCenter server and get the VM object
+    si = SmartConnectNoSSL(host='<vcenter_ip>', user='<username>', pwd='<password>')
+
+    # Disconnect from vCenter server at the end of the script
+    atexit.register(Disconnect, si)
+
+    context = ssl._create_unverified_context()
+    if hasattr(ssl, '_create_unverified_context'):
+        service_instance = SmartConnect(host='<vcenter_ip>',
+                                        user='<username>',
+                                        pwd='<password>',
+                                        sslContext=context)
+    else:
+        service_instance = SmartConnectNoSSL(host='<vcenter_ip>',
+                                             user='<username>',
+                                             pwd='<password>')
+    vm = get_obj(service_instance.RetrieveContent(), [vim.VirtualMachine], vm_name)
+
+    # Export the VM to an OVF file
+    export_ovf(vm, ovf_file_path)

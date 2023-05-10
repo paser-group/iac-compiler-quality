@@ -1,0 +1,37 @@
+yaml
+- name: Test ovirtsdk4 import 
+  hosts: localhost
+  gather_facts: false
+  vars:
+    pycurl_ssl_support: false    # set pycurl to not use SSL
+  tasks:
+
+  - name: Check if ovirtsdk4 is installed
+    command: pip list | grep ovirtsdk4 
+    register: ovirtsdk4_installed
+    ignore_errors: true
+
+  - name: Install ovirtsdk4 if not already present
+    pip:
+      name: ovirtsdk4
+      extra_args: |
+        {% if pycurl_ssl_support %}
+        --global-option="--with-openssl"
+        {% else %}
+        --global-option="--without-ssl"
+        {% endif %}
+    when: ovirtsdk4_installed.rc != 0
+
+  - name: Ensure ovirtsdk4 is imported correctly
+    action:
+      module: ovirt_templates
+      ovirt_url: https://myovirt.com
+      ovirt_username: admin
+      ovirt_password: secretpassword
+      state: present
+    register: ovirtsdk4_imported
+
+  - name: Fail if import was not successful
+    fail:
+      msg: "ovirtsdk4 module import failed"
+    when: ovirtsdk4_imported.failed

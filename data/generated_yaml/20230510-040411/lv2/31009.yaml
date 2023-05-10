@@ -1,0 +1,62 @@
+
+- name: Test ec2_lc module with edge cases
+  hosts: localhost
+  vars:
+    instance_profile_name: my_instance_profile
+    image_id: ami-12345678
+    security_group_id: sg-12345678
+    subnet_id: subnet-12345678
+  tasks:
+    - name: Launch EC2 instance with invalid parameter
+      ec2_lc:
+        name: my_lc
+        launch_config_name: my_launch_config
+        image_id: "{{ image_id }}"
+        instance_type: t2.micro
+        key_name: mykeypair
+        security_groups: "{{ security_group_id }}"
+        unknown_parameter: myvalue
+      register: result
+      ignore_errors: true
+
+    - name: Display debug info
+      debug:
+        var: result
+
+    - name: Launch EC2 instance with unconventional syntax
+      ec2_lc:
+        name: "{{"
+        launch_config_name: "{{ my_lc }}"
+        image_id: "{{ image_id }}"
+        instance_type: "{{ t2.micro }}"
+        key_name: "{{ mykeypair }}"
+        security_groups: "{{ security_group_id }}"
+        user_data: |-
+          {% for i in range(20) %}
+          This is a test user data that is {{ i }} characters long.
+          {% endfor %}
+        associate_public_ip_address: "{{ True }}"
+        tags: {{"Name": "my_instance", "Environment": "dev"}}
+      register: result
+      ignore_errors: true
+
+    - name: Display debug info
+      debug:
+        var: result
+
+    - name: Launch EC2 instance with unexpected input
+      ec2_lc:
+        name: my_lc
+        launch_config_name: my_launch_config
+        image_id: "{{ image_id }}"
+        instance_type: t2.micro
+        key_name: mykeypair
+        security_groups: "{{ security_group_id }}"
+        instance_profile_name: "{{ instance_profile_name }}"
+        vpc_id: "{{ subnet_id }}"
+      register: result
+      ignore_errors: true
+
+    - name: Display debug info
+      debug:
+        var: result

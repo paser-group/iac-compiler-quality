@@ -1,0 +1,39 @@
+
+---
+- name: Test udm_dns_record module
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+    # Test incorrect module info
+    - name: Test incorrect module info
+      udm_dns_record:
+        state: present
+        name: test.example.com
+        ipv4addr: 192.168.1.1
+        zone: example.com
+        ttl: "{{ 'invalid' }}"
+      register: result
+      ignore_errors: yes
+
+    # Test unconventional syntax
+    - name: Test unconventional syntax
+      udm_dns_record:
+        state: "{{ 'pr\u0065s\u0113nt'|upper }}"
+        name: test.example.com
+        ipv6addr: 2001:0db8:85a3:0000:0000:8a2e:0370:7334
+        zone: "{{ 'example.com'|replace('e', 'E', 1) }}"
+        ttl: "{{ ''|center(2**31, 'A') }}"
+      register: result
+      ignore_errors: yes
+
+    # Test unexpected inputs
+    - name: Test unexpected inputs
+      udm_dns_record:
+        state: present
+        name: "{{ lookup('file', '/dev/urandom')|regex_replace('[^a-z]', '') }}.{{ lookup('file', '/dev/urandom')|regex_replace('[^a-z]', '') }}.{{ lookup('file', '/dev/urandom')|regex_replace('[^a-z]', '') }}"
+        address: "{{ lookup('file', '/dev/urandom')|regex_replace('[^a-z]', '')|lower }}.{{ lookup('file', '/dev/urandom')|regex_replace('[^a-z]', '')|lower }}.{{ lookup('file', '/dev/urandom')|regex_replace('[^a-z]', '')|lower }}"
+        zone: "{{ lookup('file', '/dev/urandom')|regex_replace('[^a-z]', '')|lower }}.{{ lookup('file', '/dev/urandom')|regex_replace('[^a-z]', '')|lower }}.{{ lookup('file', '/dev/urandom')|regex_replace('[^a-z]', '')|lower }}"
+        ttl: "{{ lookup('file', '/dev/urandom')|int }}"
+      register: result
+      ignore_errors: yes

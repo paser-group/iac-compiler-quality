@@ -1,0 +1,40 @@
+
+---
+- name: Create an Azure virtual machine with a specific subnet
+  hosts: localhost
+  connection: local
+  become: yes
+  vars:
+    az_resource_group_name: "<your_resource_group_name>"
+    az_location: "eastus"
+    az_subnet_name: "<your_subnet_name>"
+  tasks:
+  - name: Create an Azure virtual network interface
+    azure_rm_networkinterface:
+      resource_group: "{{ az_resource_group_name }}"
+      name: "my-nic"
+      virtual_network_name: "my-virtual-network"
+      subnet_name: "{{ az_subnet_name }}"
+      public_ip_name: "my-pip"
+      location: "{{ az_location }}"
+      state: "present"
+    register: nic_result
+
+  - name: Create an Azure virtual machine
+    azure_rm_virtualmachine:
+      resource_group: "{{ az_resource_group_name }}"
+      name: "my-vm"
+      admin_username: "<your_admin_username>"
+      admin_password: "<your_admin_password>"
+      location: "{{ az_location }}"
+      vm_size: "Standard_DS1_v2"
+      storage_account_name: "my-storage-account"
+      network_interface_names: ["my-nic"]
+      os_disk_name: "my-os-disk"
+      os_type: "Windows"
+      image:
+        offer: "WindowsServer"
+        publisher: "MicrosoftWindowsServer"
+        sku: "2016-Datacenter"
+        version: "latest"
+      state: "present"

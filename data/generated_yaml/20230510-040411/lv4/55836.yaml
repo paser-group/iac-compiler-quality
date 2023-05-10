@@ -1,0 +1,34 @@
+
+- name: create web app
+  hosts: localhost
+  vars:
+    resource_group: "myResourceGroup"
+    name: "mywebapp"
+    plan: "LinuxB1"
+    runtime_stack: "NODE|14-lts"
+    location: "eastus"
+  tasks:
+    - name: create resource group
+      azure_rm_resourcegroup:
+        name: "{{ resource_group }}"
+        location: "{{ location }}"
+        register: rg
+    - name: create app service plan
+      azure_rm_appserviceplan:
+        name: "{{ plan }}"
+        resource_group: "{{ resource_group }}"
+        location: "{{ location }}"
+        sku:
+          tier: "Basic"
+          size: "B1"
+      register: asp
+    - name: create web app
+      azure_rm_webapp:
+        name: "{{ name }}"
+        resource_group: "{{ resource_group }}"
+        location: "{{ location }}"
+        app_service_plan_id: "{{ asp.id }}"
+        runtime_stack: "{{ runtime_stack }}"
+        scm_type: "None"
+        always_on: "true"
+      register: webapp

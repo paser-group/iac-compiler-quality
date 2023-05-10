@@ -1,0 +1,30 @@
+yaml
+- hosts: localhost
+  tasks:
+    - name: Include Role with any_errors_fatal flag
+      include_role:
+        name: myrole
+      any_errors_fatal: true
+      ignore_errors: yes
+      block:
+        - name: "Block Section"
+          command: "mycommand"
+          register: block_output
+        always:
+          - debug:
+              msg: "The task {{ item.task }} completed"
+            with_items: "{{ ansible_play_batch }}"
+          - meta: clear_host_errors
+      rescue:
+        - name: Failed Task
+          command: "failed_command"
+          ignore_errors: yes
+          tags: failed
+          notify: Handler
+
+  handlers:
+    - name: Handler
+      debug:
+        msg: "Handler for Rescue Block!!!"
+      listen:
+        - failed

@@ -1,0 +1,29 @@
+
+- name: Test the copy module with with_items
+  hosts: localhost
+  vars:
+    dir_list:
+      - '/tmp/dir1'
+      - '/tmp/dir1/dir2'
+      - '/tmp/dir1/dir2/dir3'
+  tasks:
+    - name: Copy files to multiple directories with with_items
+      copy:
+        src: 'src/{{ item }}.txt'
+        dest: '{{ item }}/'
+      with_items:
+        - "{{ dir_list }}"
+      loop_control:
+        loop_var: dir_path
+        rescue:
+          - name: Failure handler for with_items loop
+            copy:
+              content: 'Failed while copying file to {{ dir_path }}'
+              dest: '{{ dir_path }}/.error'
+    - name: Verify that the files were copied correctly
+      stat:
+        path: '{{ item }}/{{ item }}.txt'
+      with_items:
+        - "{{ dir_list }}"
+      loop_control:
+        loop_var: dir_path

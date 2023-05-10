@@ -1,0 +1,65 @@
+
+---
+- name: Ansible Playbook to stress test ec2_group module
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    access_key: "{{ lookup('env', 'AWS_ACCESS_KEY_ID') }}"
+    secret_key: "{{ lookup('env', 'AWS_SECRET_ACCESS_KEY') }}"
+    region: "{{ lookup('env', 'AWS_REGION') | default('us-west-2') }}"
+    security_group: "test-security-group"
+
+  tasks:
+    - name: Create a security group with invalid AWS access credentials
+      ec2_group:
+        name: "{{ security_group }}"
+        description: "Invalid security group"
+        aws_access_key: "invalid_access_key"
+        aws_secret_key: "invalid_secret_key"
+        region: "{{ region }}"
+        rules:
+          - proto: tcp
+            from_port: 22
+            to_port: 22
+            cidr_ip: 0.0.0.0/0
+
+    - name: Create a security group with unconventional Ansible syntax
+      ec2_group:
+        name= "{{ security_group }}"
+        description= "Unconventional syntax security group"
+        aws_access_key= "{{ access_key }}"
+        aws_secret_key= "{{ secret_key }}"
+        region= "{{ region }}"
+        rules= [
+          { proto= "tcp", from_port= 22, to_port= 22, cidr_ip= "0.0.0.0/0" },
+          { proto= "udp", from_port= 2000, to_port= 3000, cidr_ip= "192.168.0.0/24" }
+        ]
+
+    - name: Create a security group with unexpected input
+      ec2_group:
+        name: "{{ security_group }}"
+        state: present
+        rules: True
+        aws_access_key: "{{ access_key }}"
+        aws_secret_key: "{{ secret_key }}"
+        region: "{{ region }}"
+        
+    - name: Create a security group with empty input
+      ec2_group:
+
+    - name: Remove a non-existing security group
+      ec2_group:
+        name: "non-existing-security-group"
+        aws_access_key: "{{ access_key }}"
+        aws_secret_key: "{{ secret_key }}"
+        region: "{{ region }}"
+        state: absent
+
+    - name: Remove the default VPC
+      ec2_group:
+        aws_access_key: "{{ access_key }}"
+        aws_secret_key: "{{ secret_key }}"
+        region: "{{ region }}"
+        state: absent
+        vpc_id: "default"

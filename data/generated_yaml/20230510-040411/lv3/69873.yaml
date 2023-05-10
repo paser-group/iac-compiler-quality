@@ -1,0 +1,41 @@
+
+- name: Create or Update Transit Gateway
+  hosts: localhost
+  connection: local
+  gather_facts: False
+
+  vars:
+    region: us-west-1
+    tgw_name: test-tgw
+
+  tasks:
+    - name: Create Transit Gateway
+      ec2_transit_gateway:
+        state: present
+        region: "{{ region }}"
+        name: "{{ tgw_name }}"
+      register: create_tgw
+
+    - name: Update Transit Gateway
+      ec2_transit_gateway:
+        state: present
+        region: "{{ region }}"
+        name: "{{ tgw_name }}"
+        description: "Updated TGW description"
+      register: update_tgw
+      when: create_tgw.changed | bool
+
+    - name: Remove Transit Gateway
+      ec2_transit_gateway:
+        state: absent
+        region: "{{ region }}"
+        name: "{{ tgw_name }}"
+      register: remove_tgw
+      when: update_tgw.changed | bool
+
+    - name: Verify Success
+      assert:
+        that:
+          - create_tgw.changed | bool
+          - update_tgw.changed | bool
+          - remove_tgw.changed | bool

@@ -1,0 +1,31 @@
+
+---
+- name: Test Playbook for Access Errors not Reporting by win_robocopy
+  hosts: localhost
+  gather_facts: no
+  tasks:
+    - name: Copy Files from Source to Destination
+      win_robocopy:
+        src: "C:\\Temp"
+        dest: "C:\\Temp\\Backup"
+        files:
+          - test.txt
+          - "*.docx"
+          - "*.pdf"
+        copy_links: True
+        backup: True
+        mirrors: True
+        sec_copy: True
+        retry: 3
+        log_file: "C:\\Temp\\log.txt"
+        disable_acls: True
+        disable_owner: True
+        disable_dacls: True
+        follow_junctions: True
+      register: result
+
+    - name: Check for Access Errors
+      debug:
+        var: result.stderr_lines
+      failed_when: "'Access is denied' not in result.stderr_lines"
+      when: result.failed == true

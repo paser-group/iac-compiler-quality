@@ -1,0 +1,43 @@
+
+---
+- hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Create a new user with custom home directory ownership
+      user:
+        name: "{{ username | default('newuser') }}"
+        home: "/home/{{ username | default('newuser') }}"
+        state: present
+        system: no
+        append: yes
+        group: "{{ groupname | default('newgroup') }}"
+        password: "{{ password | default('defaultpass') }}"
+        shell: "{{ usershell | default('/bin/bash') }}"
+        ssl_keyfile: "{{ ssl_keyfile | default('~/test.key') }}"
+        ssl_certfile: "{{ ssl_certfile | default('~/test.crt') }}"
+      become: yes
+      become_user: root
+      
+    - name: Verify user home directory ownership
+      stat:
+        path: "/home/{{ username | default('newuser') }}"
+      register: home_owner
+          
+    - name: Change home directory ownership
+      file:
+        path: "/home/{{ username | default('newuser') }}"
+        owner: "{{ custom_user | default('root') }}"
+        group: "{{ custom_group | default('root') }}"
+      when: home_owner.stat.uid == 1000
+      
+    - name: Capture custom values from command-line
+      ansible.builtin.set_fact:
+        custom_user: "{{ user_uid | int | default(0) }}"
+        custom_group: "{{ user_gid | int | default(0) }}"
+      when: user_uid is defined or user_gid is defined
+      
+    - name: Remove the new user
+      user:
+        name: "{{ username | default('newuser') }}"
+        state: absent
+  

@@ -1,0 +1,38 @@
+
+---
+- name: AnsibleVaultFormatError Playbook
+  hosts: localhost
+  vars:
+    secret_data: "This is a secret that needs to be encrypted"
+    vault_password: "correct_password"
+    wrong_password: "incorrect_password"
+  tasks:
+    - name: Encrypt the secret_data variable using Ansible Vault
+      ansible.builtin.vars_prompt:
+        prompt: "Enter the Ansible Vault Password"
+        private: true
+      register: vault_pass
+    - name: Encrypt the variable secret_data using Ansible Vault
+      ansible.builtin.command: >
+        echo "{{ secret_data }}"
+      register: unencrypted_secret_data
+    - name: Store the encrypted variable into a file
+      ansible.builtin.copy:
+        content: "{{ unencrypted_secret_data.stdout }} | ansible-vault encrypt_string --vault-password-file {{ vault_pass['stdin'] }}"
+        dest: "/tmp/encrypted_variable.yml"
+    - name: Try to decrypt the variable using the incorrect password
+      block:
+        - name: Reading encrypted variable from the file
+          ansible.builtin.include_vars:
+            file: "/tmp/encrypted_variable.yml"
+          register: encrypted_variable
+        - name: Decrypting the variable with incorrect password
+          ansible.builtin.set_fact:
+            decrypted_variable: "{{ encrypted_variable['password'] | ansible.builtin.ansible_vault('decrypt', vault_password=wrong_password) }}"
+      rescue:
+        - name: Catch any exception and write to log file
+          ansible.builtin.debug:
+            msg: "AnsibleVaultFormatError: Incorrect Ansible Vault Password provided"
+          ansible.builtin.copy:
+            content: "AnsibleVaultFormatError: Incorrect Ansible Vault Password provided"
+            dest: "/tmp/error.log"

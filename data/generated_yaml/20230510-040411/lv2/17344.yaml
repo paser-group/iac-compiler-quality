@@ -1,0 +1,56 @@
+
+- hosts: localhost
+  tasks:
+    - name: Get Openstack server list
+      os_server_facts:
+        auth:
+          auth_url: "{{ lookup('env', 'OS_AUTH_URL') }}"
+          username: "{{ lookup('env', 'OS_USERNAME') }}"
+          password: "{{ lookup('env', 'OS_PASSWORD') }}"
+          project_name: "{{ lookup('env', 'OS_PROJECT_NAME') }}"
+          project_domain_name: "{{ lookup('env', 'OS_PROJECT_DOMAIN_NAME') }}"
+          user_domain_name: "{{ lookup('env', 'OS_USER_DOMAIN_NAME') }}"
+        validate_certs: false
+        timeout: 30
+
+    - name: Filter Openstack server list
+      set_fact:
+        server_list: "{{ os_servers | default([]) }}"
+      vars:
+        os_servers: "{{ os_servers | default([]) | selectattr('metadata.hostname', 'defined') | selectattr('metadata.name', 'defined') | list }}"
+
+    # Edge case 1: A task with a syntax error
+    - name: Task with syntax error
+      debug message="This task has a syntax error"
+
+    # Edge case 2: A task with unconventional syntax
+    - name: Task with unconventional syntax
+      shell:"echo 'Hello, World!'"
+
+    # Edge case 3: Unexpected input for a task
+    - name: Task with unexpected input
+      debug message="Unexpected input: {{ 1 / 0 }}"
+
+    # Edge case 4: A task that is in an invalid state
+    - name: Task in invalid state
+      fail msg="This task is in an invalid state" when="{{ os_servers | length == 0 }}"
+
+    # Edge case 5: A task with unusual loop syntax
+    - name: Task with unusual loop syntax
+      debug:
+        msg: "{{ item.metadata.hostname }}"
+      loop: "{{ os_servers if os_servers | length > 0 else ['no servers found'] }}"
+
+    # Edge case 6: A task that executes an invalid command
+    - name: Task executing an invalid command
+      command: sh -c "this_command_does_not_exist"
+
+    # Edge case 7: A task with a variable undefined in the playbook
+    - name: Task with undefined variable
+      debug:
+        msg: "{{ variable_that_does_not_exist }}"
+
+    # Edge case 8: A task that uses an undefined variable in a Conditional statement
+    - name: Task using undefined variable in conditional statements
+      debug:
+        msg: "This task uses an undefined variable in a conditional {{ 'statement' if undefined_variable else 'expression' }}"

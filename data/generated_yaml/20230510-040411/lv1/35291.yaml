@@ -1,0 +1,27 @@
+yaml
+---
+- name: Check if user exists, with idempotency
+  hosts: all
+  become: yes
+  vars:
+    username: test_user
+
+  tasks:
+    - name: Check if user exists
+      user:
+        name: "{{ username }}"
+        state: present
+        check_mode: yes
+      register: user_exists
+      
+    - name: Create user if it doesn't exist
+      user:
+        name: "{{ username }}"
+        state: present
+      when: not user_exists.changed
+      
+    - name: Remove user if it exists
+      user:
+        name: "{{ username }}"
+        state: absent
+      when: user_exists.changed

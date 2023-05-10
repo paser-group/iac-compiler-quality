@@ -1,0 +1,29 @@
+
+---
+- hosts: your_host
+  gather_facts: no
+  vars:
+    region: us-west-2
+    instance_type: t2.micro
+    ami_id: ami-0c94855ba95c71c99
+    instance_name: example-instance
+    security_group: security-group-id
+  tasks:
+    - name: Install the AWS CLI
+      become: yes
+      apt:
+        name: awscli
+        state: present
+
+    - name: Create an EC2 instance with a template
+      become: yes
+      command: >
+        aws ec2 run-instances
+        --region {{ region }}
+        --instance-type {{ instance_type }}
+        --image-id {{ ami_id }}
+        --count 1
+        --user-data "{{ lookup('template', 'path/to/template.json.j2') }}"
+        --security-group-ids {{ security_group }}
+        --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value={{ instance_name }}}]'
+

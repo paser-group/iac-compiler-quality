@@ -1,0 +1,41 @@
+
+- name: Test docker_container module error handling
+  hosts: localhost
+  tasks:
+    - name: Create a container
+      docker_container:
+        name: my_container
+        image: ubuntu
+        command: /bin/sleep infinity
+        state: started
+      register: result
+
+    - name: Verify non-zero exit code handling
+      fail:
+        msg: "Container exit code was non-zero"
+      when: result.rc != 0
+
+    - name: Stop the container
+      docker_container:
+        name: my_container
+        state: stopped
+
+    - name: Try to stop non-existent container
+      docker_container:
+        name: "{{ random('abcdefghijklmnopqrstuvwxyz1234567890', length=10) }}"
+        state: absent
+      ignore_errors: true
+
+    - name: Remove non-existent container
+      docker_container:
+        name: "{{ random('abcdefghijklmnopqrstuvwxyz1234567890', length=10) }}"
+        state: absent
+      ignore_errors: true
+
+    - name: Remove the container (using 'force' option to ignore errors)
+      docker_container:
+        name: my_container
+        state: absent
+        force_kill: true
+        remove_volumes: true
+        remove_tmpfs: true

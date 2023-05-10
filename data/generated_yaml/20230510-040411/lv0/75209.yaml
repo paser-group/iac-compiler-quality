@@ -1,0 +1,37 @@
+python
+import sys
+import signal
+import socket
+
+def handle_broken_pipe(signum, frame):
+    print("Broken pipe error occurred - closing connection")
+    sys.exit(1)
+
+# Set signal handler for SIGPIPE
+signal.signal(signal.SIGPIPE, handle_broken_pipe)
+
+# Create socket and connect to server
+sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+sock.connect(("localhost", 8000))
+
+# Send data to server
+message = "Hello, server!"
+try:
+    sock.sendall(message.encode())
+except (BrokenPipeError, ConnectionResetError):
+    handle_broken_pipe(None, None)
+
+# Receive data from server
+response = b""
+while True:
+    try:
+        data = sock.recv(4096)
+        if not data:
+            break
+        response += data
+    except (BrokenPipeError, ConnectionResetError):
+        handle_broken_pipe(None, None)
+    
+print(response.decode())
+# Close socket
+sock.close()

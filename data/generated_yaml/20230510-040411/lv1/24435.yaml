@@ -1,0 +1,50 @@
+yaml
+---
+- name: Create VM from template and attach additional disk
+  hosts: vmware
+  gather_facts: no
+
+  vars:
+    vc_hostname: vcenter.example.com
+    vc_username: myuser@example.com
+    vc_password: mypassword
+    datacenter: dc1
+    cluster: cluster1
+    datastore: datastore1
+    template: rhel7-template
+    vm_name: mynewvm
+    disk_size_gb: 10
+
+  tasks:
+    - name: Ensure we are connected to vCenter
+      vmware_connection:
+        hostname: "{{ vc_hostname }}"
+        username: "{{ vc_username }}"
+        password: "{{ vc_password }}"
+        validate_certs: no
+
+    - name: Create VM from template
+      vmware_guest:
+        vmware_guest_facts: yes
+        validate_certs: no
+        hostname: "{{ vc_hostname }}"
+        username: "{{ vc_username }}"
+        password: "{{ vc_password }}"
+        datacenter: "{{ datacenter }}"
+        cluster: "{{ cluster }}"
+        datastore: "{{ datastore }}"
+        template: "{{ template }}"
+        name: "{{ vm_name }}"
+        wait_for_ip_address: yes
+        power_on_after_clone: yes
+        disk:
+          - size_gb: "{{ disk_size_gb }}"
+            type: thin
+            datastore: "{{ datastore }}"
+            scsi_controller: 0
+            scsi_type: paravirtual
+      register: vm_info
+
+    - name: Show VM IP address
+      debug:
+        var: vm_info.guest.net[0].ip_address

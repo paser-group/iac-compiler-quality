@@ -1,0 +1,28 @@
+
+- hosts: <host_name>
+  become: true
+  tasks:
+  - name: Install Python if Not Installed
+    raw: python3 --version || sudo apt-get update && sudo apt-get install -y python3-minimal
+
+  - name: Install Needed Libraries
+    apt: name=python3-paramiko state=present
+
+  - name: Test SSH Connection
+    shell: ssh <user>@<host_name> -i <path-to-key> <test_command>
+    register: ssh_conn
+    ignore_errors: true
+
+  - name: Update Hosts with SSH Key
+    lineinfile:
+      path: ~/.ssh/authorized_keys
+      line: "{{ lookup('file', '<path-to-public-key>') }}"
+
+  - name: Run Test Command with Ansible
+    shell: ansible <host_name> -m ping
+    register: test_output
+    ignore_errors: true
+
+  - name: Verify Success
+    debug:
+      msg: "All tasks completed successfully"

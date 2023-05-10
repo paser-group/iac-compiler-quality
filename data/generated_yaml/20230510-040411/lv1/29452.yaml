@@ -1,0 +1,28 @@
+
+- name: Ansible playbook to fix group_by intermittent bug
+  hosts: all
+  tasks:
+    - name: Install the latest version of Ansible
+      yum:
+        name: ansible
+        state: latest
+
+    - name: Set up ansible.cfg file
+      copy:
+        src: ansible.cfg
+        dest: /etc/ansible/ansible.cfg
+  
+    - name: Debugging output of group_by module
+      group_by:
+        key: "{{ item }}"
+      with_items:
+        - "{{ groups }}"
+      register: group_by_output
+
+    - name: Restart all services
+      service:
+        name: "{{ item }}"
+        state: restarted
+      with_items:
+        - "{{ group_by_output.results }}"
+        when: item.changed == true

@@ -1,0 +1,31 @@
+yaml
+- hosts: delegated_host
+  tasks:
+  - name: Check if lock file exists
+    stat:
+      path: "/tmp/lock_file"
+    register: lock_file
+
+  - name: Create lock file if it does not exist
+    file:
+      path: "/tmp/lock_file"
+      state: touch
+    when: not lock_file.stat.exists
+
+  - name: Wait for lock
+    wait_for:
+      path: "/tmp/lock_file"
+      state: lock
+    retries: 10
+    delay: 1
+
+  - name: Modify file using lineinfile
+    lineinfile:
+      path: /path/to/file
+      line: "text to add or modify"
+      state: present
+
+  - name: Release lock
+    file:
+      path: "/tmp/lock_file"
+      state: absent

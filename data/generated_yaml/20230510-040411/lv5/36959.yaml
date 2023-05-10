@@ -1,0 +1,39 @@
+yaml
+- name: Create new CloudFront distribution
+  cloudfront_distribution:
+    state: present
+    ...
+    # specify required parameters for creating a distribution, such as origin settings and behaviors
+    ...
+
+- name: Update geographic restriction to one location
+  cloudfront_distribution:
+    state: present
+    id: "{{ distribution_id }}"
+    restriction: "whitelist"
+    location: "US"
+  register: result
+
+- name: Fail if location update was not successful
+  fail:
+    msg: "Location update failed with the following error: {{ result.msg }}"
+  when: "'DistributionConfig' not in result or 'Aliases' not in result.DistributionConfig"
+
+- name: Loop through a list of geographic locations and update the distribution with each
+  ansible.builtin.set_fact:
+    location: "{{ item }}"
+  loop:
+    - "US"
+    - "CA"
+    - "GB"
+    ...
+  register: result
+
+- name: Verify that all updates were successful
+  assert:
+    that:
+      - "'Distribution' in result and result.Distribution.status == 'Deployed'"
+      - "'DistributionConfig' in result and 'Restrictions' in result.DistributionConfig"
+      - "(result.DistributionConfig.Restrictions.GeoRestriction.Items | map(attribute='Location')) | list == [locations | list]"
+    fail_msg: "Not all updates were successful, check the following output: {{ result }}"
+

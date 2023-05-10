@@ -1,0 +1,43 @@
+yaml
+---
+- name: Azure deployment playbook
+  hosts: localhost
+  gather_facts: false
+  
+  vars:
+    azure_subscription_id: "PUT_YOUR_SUBSCRIPTION_ID_HERE"
+    azure_client_id: "PUT_YOUR_CLIENT_ID_HERE"
+    azure_secret: "PUT_YOUR_SECRET_HERE"
+    azure_tenant: "PUT_YOUR_TENANT_ID_HERE"
+  
+  tasks:
+    - name: Install azure SDK
+      pip:
+        name: azure
+  
+    - name: Create azure resource group
+      azure_rm_resourcegroup:
+        subscription_id: "{{azure_subscription_id}}"
+        client_id: "{{azure_client_id}}"
+        secret: "{{azure_secret}}"
+        tenant: "{{azure_tenant}}"
+        name: myResourceGroup
+        location: eastus
+      register: rg
+
+    - name: Create VM in azure
+      azure_rm_virtualmachine:
+        subscription_id: "{{azure_subscription_id}}"
+        client_id: "{{azure_client_id}}"
+        secret: "{{azure_secret}}"
+        tenant: "{{azure_tenant}}"
+        resource_group: "{{rg['name']}}"
+        name: myVM
+        image:
+          offer: UbuntuServer
+          publisher: Canonical
+          sku: "18.04-LTS"
+          version: latest
+        vm_size: Standard_D2s_v3
+        admin_username: ansible
+        admin_password: Password123!

@@ -1,0 +1,31 @@
+yaml
+- hosts: all
+  become: yes
+  gather_facts: no
+  tasks:
+    - name: Set timeout for incorrect sudo password entry
+      command: echo 'Defaults:{{ansible_user}} !authenticate' >> /etc/sudoers
+    - name: Test for incorrect sudo password entry timeout
+      command: sudo -n true
+      register: result
+      ignore_errors: yes
+      async: 5
+      poll: 0
+      retries: 10
+    - name: Ensure sudo error caught
+      assert:
+        that:
+          - "'sudo: a password is required' in result.stderr"
+    - name: Test for correct sudo password entry
+      command: sudo -S whoami
+      args:
+        stdin: correct_password
+      register: result
+      ignore_errors: yes
+      async: 5
+      poll: 0
+      retries: 10
+    - name: Ensure correct sudo password
+      assert:
+        that:
+          - "'root' in result.stdout"

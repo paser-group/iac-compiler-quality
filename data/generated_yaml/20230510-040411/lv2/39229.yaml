@@ -1,0 +1,92 @@
+
+- name: Fix enable mode on nxos
+  hosts: switches
+  connection: network_cli
+  tasks:
+
+  - name: Enter enable mode with incorrect password
+    nxos_command:
+      command_string: enable
+      prompt: 'Password:'
+      answer: 'wrong_password'
+    register: enable_wrong_password
+    ignore_errors: true
+
+  - name: Check if entered enable mode with incorrect password
+    fail:
+      msg: "Wrong enable password entered."
+    when: "'Wrong enable password entered.' in enable_wrong_password.stderr_lines"
+
+  - name: Enable mode with correct password
+    nxos_command:
+      command_string: enable
+      prompt: 'Password:'
+      answer: 'correct_password'
+    register: enable_correct_password
+
+  - name: Check if entered enable mode with correct password
+    fail:
+      msg: "Failed to enter enable mode."
+    when: "'Failed to enter enable mode.' in enable_correct_password.stderr_lines"
+
+  - name: Disable paging
+    nxos_command:
+      command_string: "terminal datadump\nshow run\nno terminal datadump"
+    register: disable_paging
+
+  - name: Check if paging is disabled
+    fail:
+      msg: "Failed to disable paging."
+    when: "'Failed to disable paging.' in disable_paging.stderr_lines"
+
+  - name: Configure SNMP
+    nxos_config:
+      lines:
+        - snmp-server community public ro
+        - snmp-server contact admin@example.com
+        - snmp-server location "Main Office"
+    register: configure_snmp
+
+  - name: Check if SNMP is configured properly
+    fail:
+      msg: "Failed to configure SNMP."
+    when: "configure_snmp.changed == false"
+
+  - name: Show VLANs
+    nxos_command:
+      command_string: "show vlan"
+    register: show_vlans
+
+  - name: Parse VLAN data and validate
+    set_fact:
+      vlan_data: "{{ show_vlans.stdout_lines[1:] }}"
+
+  - name: Fail if VLAN data is incorrect
+    fail:
+      msg: "Incorrect VLAN data."
+    when: "vlan_data[1][0:4] != '1000'"
+  
+  - name: Add new VLAN
+    nxos_command:
+      command_string: "conf t\nvlan 2000\nexit"
+    register: add_vlan
+
+  - name: Check if VLAN was added successfully
+    fail:
+      msg: "Failed to add VLAN."
+    when: "'Failed to add VLAN.' in add_vlan.stderr_lines"
+
+  - name: Remove all VLANs except 1 and 1000
+    nxos_config:
+      lines:
+        - "no vlan 2-999"
+    register: remove_vlans
+
+  - name: Check if VLANs were removed successfully
+    fail:
+      msg: "Failed to remove VLANs."
+    when: "'Failed to remove VLANs.' in remove_vlans.stderr_lines"
+
+  - name: Save configuration
+    nxos_command:
+      command_string: "copy running-config startup-config"

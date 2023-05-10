@@ -1,0 +1,28 @@
+
+- name: Recreate error in ios_vlans module
+  hosts: router
+  gather_facts: no
+  connection: network_cli
+
+  tasks:
+  - name: Show VLANs
+    ios_command:
+      commands:
+        - show vlan
+    register: vlan_output
+
+  - name: Configure VLAN
+    ios_vlan:
+      vlan_id: 100
+      name: test_vlan
+      state: present
+      provider:
+        host: "{{ ansible_host }}"
+        username: "{{ ansible_user }}"
+        password: "{{ ansible_password }}"
+        authorize_password: "{{ ansible_password }}"
+    when: "'100    test_vlan' not in vlan_output.stdout[0]"
+
+  - name: Error occurred
+    debug:
+      msg: "Unexpected 'show vlan' output, unable to configure VLAN"

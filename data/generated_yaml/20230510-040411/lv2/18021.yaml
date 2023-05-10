@@ -1,0 +1,29 @@
+yaml
+- name: Test any_errors_fatal
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    fail_with_loop: "{{ my_var|int }}"
+    fail_with_condition: "{{ my_var is defined and my_var is not none }}"
+
+  tasks:
+    - name: A task that always fails
+      fail:
+        msg: "This task always fails"
+      loop: "{{ range(0, 10) }}"
+      any_errors_fatal: yes
+
+    - name: A task that fails when a variable is not defined
+      debug:
+        var: fail_with_condition
+      any_errors_fatal: "{{ fail_with_condition }}"
+
+    - name: A task that fails when a variable is not an integer
+      debug:
+        var: fail_with_loop
+      with_items:
+        - "not an integer"
+        - ""
+        - "{{ my_var }}"
+      any_errors_fatal: "{{ fail_with_loop }}"

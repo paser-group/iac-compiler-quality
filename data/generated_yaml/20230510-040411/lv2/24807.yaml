@@ -1,0 +1,40 @@
+
+- name: Deploy EC2 instances and create ASG
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    min_count: 0
+    max_count: 0
+    region: 'us-west-2'
+    desired_capacity: [0, [], {}]
+
+  tasks:
+    - name: Create security group
+      ec2_group:
+        name: "test-group"
+        description: "Test Security Group"
+        vpc_id: "vpc-1234abc"
+      register: sec_group
+
+    - name: Launch EC2 instances
+      ec2:
+        group_id: "{{ sec_group.group_id }}"
+        instance_type: "t2.micro"
+        image: "ami-1234abcd"
+        wait: true
+        region: "{{ region }}"
+      register: instances
+
+    - name: Create ASG
+      ec2_asg:
+        name: "test-asg"
+        state: "present"
+        region: "{{ region }}"
+        launch_config_name: "test-launch-config"
+        availability_zones: ["us-west-2a", "us-west-2b", "us-west-2c"]
+        min_size: "{{ min_count }}"
+        max_size: "{{ max_count }}"
+        desired_capacity: "{{ desired_capacity }}"
+      register: asg

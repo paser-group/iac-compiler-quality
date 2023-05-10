@@ -1,0 +1,43 @@
+yaml
+---
+- name: Test nxos_igmp_interface module
+  hosts: nxos_devices
+  gather_facts: no
+  become: yes
+  vars:
+    igmp_int_name: Ethernet1/1 #define the variable specific to the nxos_igmp_interface
+  tasks:
+    - name: Configure IGMP on nxos_igmp_interface module for device {{ inventory_hostname }}
+      nxos_igmp_interface:
+        name: "{{ igmp_int_name }}"
+        state: present
+        version: 2
+        immediate_leave: false
+        multicast_router_learning: false
+        query_interval: 60
+        query_response_interval: 10
+        last_member_query_interval: 1
+        last_member_query_count: 2 
+        join_group:
+          - group: 224.0.0.22
+            group_name: test_group_name
+        config:
+          - command: "ip igmp snoop tcn flood"
+    - name: Check the output of the module and notify if it fails
+      register: output
+      nxos_igmp_interface:
+        name: "{{ igmp_int_name }}"
+        state: present
+        version: 2
+      failed_when: "'Unable to change' in output.msg"
+    - name: Notify the admin when nxos_igmp_interface module fails
+      debug:
+        msg: "nxos_igmp_interface module failed at {{ inventory_hostname }}"
+      when: output.failed
+      notify: notify_admin
+      
+  handlers:
+    - name: notify the admin
+      debug:
+        msg: "The module failed at {{ inventory_hostname }}"
+

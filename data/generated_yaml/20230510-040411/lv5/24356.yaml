@@ -1,0 +1,29 @@
+
+- name: Check btrfs file system integrity
+  hosts: "{{ target }}"
+  become: yes
+  
+  tasks:
+  
+  - name: Check if btrfs is installed
+    stat:
+      path: /sbin/btrfs
+    register: check_btrfs
+    
+  - name: Print error message if btrfs is not installed
+    debug:
+      msg: "btrfs not installed"
+    when: not check_btrfs.stat.exists
+    
+  - name: Run btrfs check and generate error if errors exist
+    command: /sbin/btrfs check --force-sanity --repair {{ item }}
+    register: cmd_output
+    changed_when: false
+    ignore_errors: yes
+    with_lines: cat /proc/mounts | grep -E 'btrfs'
+    failed_when: "'no errors detected' not in cmd_output.stderr"
+  
+  - name: Print error if btrfs check failed
+    debug:
+      msg: "btrfs check failed"
+    failed_when: "'no errors detected' not in cmd_output.stderr"

@@ -1,0 +1,50 @@
+
+- name: Test Playbook for sts_asume_role error
+  hosts: localhost
+  vars:
+    region: "{{ lookup('env', 'AWS_REGION') }}"
+    assume_role: "arn:aws:iam::0123456789012:role/test-role"
+  tasks:
+    - name: Test sts_asume_role with invalid region
+      sts_assume_role:
+        region: "invalid_region"
+        role_arn: "{{ assume_role }}"
+      register: output1
+      ignore_errors: yes
+    
+    - name: Test sts_asume_role with valid region
+      sts_assume_role:
+        region: "{{ region }}"
+        role_arn: "{{ assume_role }}"
+      register: output2
+      
+    - name: Verify output
+      debug:
+        var: output2
+      when: output2 is defined and output2 is not failed
+      
+    - name: Test sts_asume_role with invalid role_arn
+      sts_assume_role:
+        region: "{{ region }}"
+        role_arn: "invalid_role_arn"
+      register: output3
+      ignore_errors: yes
+      
+    - name: Test sts_asume_role with missing role_arn
+      sts_assume_role:
+        region: "{{ region }}"
+      register: output4
+      ignore_errors: yes
+      
+    - name: Test sts_asume_role with extra parameter
+      sts_assume_role:
+        region: "{{ region }}"
+        role_arn: "{{ assume_role }}"
+        extra_parameter: "test"
+      register: output5
+      ignore_errors: yes
+      
+    - name: Verify output
+      debug:
+        var: output5
+      when: output5 is defined and output5 is not failed

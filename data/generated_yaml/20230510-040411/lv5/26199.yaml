@@ -1,0 +1,34 @@
+
+- name: Install Jenkins plugins
+  hosts: all
+  
+  vars:
+    plugins:
+      - jenkins-plugin-1
+      - jenkins-plugin-2
+      - jenkins-plugin-3
+  
+  tasks:
+    - name: Install Jenkins plugins
+      loop: "{{ plugins }}"
+      become: yes
+
+      shell: |
+        /usr/bin/java -jar /path/to/jenkins-cli.jar -s http://localhost:8080 install-plugin {{ item }}
+
+      register: result
+
+      when: "'SUCCESS' not in result.stdout"
+
+    - name: Check if installation was successful
+      debug:
+        msg: "{{ item.item }} was {{ 're' if item.changed else '' }}installed"
+
+      loop: "{{ result.results }}"
+
+    - name: Print error message if installation failed
+      debug:
+        msg: "Installation of {{ item.item }} has failed"
+      
+      loop: "{{ result.results }}"
+      when: "'FAILURE' in item.stdout"

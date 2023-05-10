@@ -1,0 +1,24 @@
+
+---
+- hosts: localhost
+  connection: local
+  vars:
+    vault_password_file: "/path/to/vault-password-file"
+  tasks:
+    # Create a vault file and add a sensitive variable
+    - name: Create a vault file
+      ansible.builtin.file:
+        path: "/path/to/vault.yml"
+        state: touch
+        mode: '0600'
+      changed_when: False
+
+    - name: Add sensitive variable to the vault file
+      ansible.builtin.lineinfile:
+        path: "/path/to/vault.yml"
+        line: "my_secret: '{{ lookup(''password'', ''/dev/null chars=ascii_letters,digits length=32'') }}'"
+      changed_when: False
+
+    # Create a Playbook using the Vault Password Client
+    - name: Use the vault password client
+      ansible.builtin.command: ansible-playbook -i inventory.cfg --vault-password-file={{ vault_password_file }} playbook.yml 

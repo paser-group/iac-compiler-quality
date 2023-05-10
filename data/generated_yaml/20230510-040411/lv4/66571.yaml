@@ -1,0 +1,38 @@
+
+---
+- name: Install Postgres packages
+  hosts: all
+  become: true
+  become_user: root
+  tasks:
+    - name: Install Postgres packages
+      apt:
+        name:
+          - postgresql
+          - postgresql-contrib
+      become: true
+      become_user: root
+
+- name: Create a new Postgres user with privileges
+  hosts: all
+  become_user: postgres
+  become: true
+  tasks:
+    - name: Create a Postgres user
+      postgresql_user:
+        name: testuser
+        password: "{{vault_pass}}"
+        role_attr_flags: CREATEDB
+
+- name: Escalate the privileges of Postgres user to perform database operations
+  hosts: all
+  become_user: postgres
+  tasks:
+    - name: Perform Privilege escalation
+      command: psql -U "{{testuser}}" -c "select * from testtable"
+      register: command_result
+
+- name: Report discovered issues
+  debug:
+    msg: "{{command_result.stderr}}"
+  when: "command_result.stderr is defined"

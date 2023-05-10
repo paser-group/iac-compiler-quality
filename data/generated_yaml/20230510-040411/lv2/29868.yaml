@@ -1,0 +1,51 @@
+
+- hosts: localhost
+  connection: local
+  gather_facts: no
+
+  vars:
+    region: us-east-1
+    asg_name: example_asg
+    instance_id: i-0123456789abcdefg
+
+  tasks:
+  - name: Test replace_all_instances with no existing instances
+    ec2_asg:
+      name: "{{ asg_name }}"
+      region: "{{ region }}"
+      replace_all_instances: true
+    register: result
+    ignore_errors: true
+  - set_fact:
+      asg_created: "{{ result.failed }}"
+  - name: Create Auto Scaling Group
+    ec2_asg:
+      name: "{{ asg_name }}"
+      region: "{{ region }}"
+      desired_capacity: 1
+      min_size: 1
+      max_size: 1
+  - name: Test replace_all_instances with one existing instance
+    ec2_asg:
+      name: "{{ asg_name }}"
+      region: "{{ region }}"
+      replace_all_instances: true
+    when: not asg_created
+  - name: Add instance to Auto Scaling Group
+    ec2:
+      instance_ids:
+        - "{{ instance_id }}"
+      region: "{{ region }}"
+      wait: yes
+  - name: Test replace_all_instances with multiple existing instances
+    ec2_asg:
+      name: "{{ asg_name }}"
+      region: "{{ region }}"
+      replace_all_instances: true
+    when: not asg_created
+  - name: Remove instance from Auto Scaling Group
+    ec2_asg:
+      name: "{{ asg_name }}"
+      region: "{{ region }}"
+      instance_ids:
+        - "{{ instance_id }}"

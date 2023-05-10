@@ -1,0 +1,42 @@
+
+---
+- name: Test playbook for sudo password error
+  hosts: all
+  gather_facts: no
+  become: yes
+  become_method: sudo
+  vars:
+
+    # List of unconventional passwords
+    password_list: ['!"$%^&*()', '<>?[]{}', 'ABCDabcd1234!@#$']
+
+    # List of unexpected variables
+    unexpected_vars:
+      - name: my_var1
+        value: "{{ my_var2 }}"
+      - name: my_var2
+        value: "{{ my_var3 }}"
+      - name: my_var3
+        value: "{{ my_var1 }}"
+
+  tasks:
+    - name: Test sudo password error
+      expect:
+        command: /bin/echo
+        responses:
+          Password\:
+            - "{{ item }}"
+            - "{{ item }}"
+            - "{{ item }}"
+      loop: "{{ password_list }}"
+
+    - name: Test unconventional syntax
+      debug:
+        msg: |
+          Testing unconventional syntax
+          {{ .unconventional.fizzbuzz }}
+
+    - name: Test unexpected variables
+      debug:
+        var: "{{ item.name }}"
+      loop: "{{ unexpected_vars }}"

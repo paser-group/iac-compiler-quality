@@ -1,0 +1,51 @@
+
+---
+- name: Test iptables comment parameter position
+  hosts: all
+  become: yes
+  tasks:
+  - name: Add new rule to iptables with comment parameter
+    iptables:
+      table: nat
+      chain: PREROUTING
+      in_interface: eth0
+      jump: DNAT
+      to_destination: 192.168.1.1
+      comment: This is a comment for iptables rule.
+      comment_position: OUTPUT # incorrect position, should be BEFORE
+
+  - name: Remove iptables rule with comment parameter
+    iptables:
+      table: nat
+      chain: PREROUTING
+      in_interface: eth0
+      jump: DNAT
+      to_destination: 192.168.1.1
+      comment_position: OUTPUT # incorrect position, should be BEFORE
+      state: absent
+
+  - name: Add new rule to iptables with incorrect syntax
+    iptables:
+      table: filter
+      chain: INPUT
+      comment: 'Invalid syntax.'
+      state: present
+      comment_position: OUTPUT # incorrect position, should be BEFORE
+
+  - name: Remove iptables rule with incorrect syntax
+    iptables:
+      table: filter
+      chain: INPUT
+      comment: 'Invalid syntax.'
+      state: absent
+      comment_position: OUTPUT # incorrect position, should be BEFORE
+
+  - name: Check that rules were properly removed
+    command: iptables -S
+    register: iptables_output
+    ignore_errors: yes
+    changed_when: false
+
+  - name: Debug output of the command
+    debug:
+      var: iptables_output.stderr_lines

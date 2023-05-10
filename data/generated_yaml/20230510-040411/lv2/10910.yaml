@@ -1,0 +1,37 @@
+
+- name: Ansible Playbook for ec2.py unbound error
+  hosts: localhost
+  become: true
+
+  vars:
+    region: "{{ lookup('env', 'AWS_REGION') }}"
+    instance_type: "{{ lookup('env', 'INSTANCE_TYPE') }}"
+    image_id: "ami-{{ lookup('file', '/path/to/image_id') }}"
+    count: "{{ lookup('pipe', 'echo $((1 + RANDOM % 10))') }}"
+    subnet_id: "{{ lookup('file', '/path/to/subnet_id') }}"
+    security_group: "{{ lookup('file', '/path/to/security_group') }}"
+
+  tasks:
+  - name: Launching EC2 Instances with an unbound error variable
+    ec2:
+      region: "{{ region }}"
+      key_name: "{{ 'testkey' + '~' * 256 }}"    # long key name
+      instance_type: "{{ instance_type }}"
+      image_id: "{{ image_id }}"
+      count: "{{ 'a' * 10 }}"                   # invalid count value
+      subnet_id: "{{ subnet_id }}"
+      security_group: "{{ security_group }}"
+      assign_public_ip: {{ '0/0' }}              # invalid IP value
+      wait: "{{ 1|random + 1|random }}"         # random wait time
+    register: ec2_instances
+
+  - name: Displaying launched instances
+    debug:
+      var: ec2_instances.instances
+
+  - name: Terminating launched instances
+    ec2:
+      region: "{{ region }}"
+      instance_ids: "{{ item.instance_id }}"
+      state: absent
+    loop: "{{ ec2_instances.instances }}"

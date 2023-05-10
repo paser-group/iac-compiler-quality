@@ -1,0 +1,62 @@
+
+- name: Stress test the AWS EC2 network module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create new VPC
+      ec2_vpc_net:
+        name: "test_vpc"
+        cidr_block: "10.0.0.0/16"
+        region: "us-east-2"
+      register: new_vpc
+
+    - name: Test removal of default VPC
+      ec2_vpc_net:
+        vpc_id: default
+        state: absent
+      register: default_vpc_removal
+      ignore_errors: true
+
+    - name: Create subnet in new VPC
+      ec2_vpc_subnet:
+        vpc_id: "{{ new_vpc.vpc_id }}"
+        cidr: "10.0.1.0/24"
+        region: "us-east-2"
+      register: new_subnet
+
+    - name: Create internet gateway for new VPC
+      ec2_vpc_igw:
+        state: present
+        vpc_id: "{{ new_vpc.vpc_id }}"
+      register: new_igw
+
+    - name: Attach internet gateway to new VPC
+      ec2_vpc_igw_attachment:
+        state: attached
+        vpc_id: "{{ new_vpc.vpc_id }}"
+        internet_gateway_id: "{{ new_igw.gateway_id }}"
+      register: igw_attachment
+
+    - name: Check if default VPC was deleted
+      assert:
+        that:
+          - default_vpc_removal is failed
+          - default_vpc_removal.rc == 255
+        success_msg: "Default VPC deleted!"
+        fail_msg: "Default VPC still exists!"
+
+    - name: Test removing VPC with existing subnets
+      ec2_vpc_net:
+        vpc_id: "{{ new_vpc.vpc_id }}"
+        state: absent
+      register: vpc_removal
+      ignore_errors: true
+
+    - name: Assert dependencies on VPC removal
+      assert:
+        that:
+          - vpc_removal is failed
+          - vpc_removal.rc == 2
+        success_msg: "Can't remove a VPC with associated resources"
+        fail_msg: "VPC removed with associated resources!"

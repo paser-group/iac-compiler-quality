@@ -1,0 +1,25 @@
+
+- name: Generate IOSXR L3 configuration file
+  iosxr_l3_config:
+    lines:
+      - interface loopback10
+      - ipv4 address 10.0.0.1/24
+    parents:
+      - interface Loopback
+  register: config_file
+
+- name: Modify IOSXR L3 configuration file
+  set_fact:
+    modified_config_file: "{{ config_file }}"
+  vars:
+    - modified_line: 'ipv4 address 10.0.0.2/24'
+  set_fact:
+    - modified_config_file.lines[1]: "{{ modified_line }}"
+
+- name: Apply IOSXR L3 configuration file
+  iosxr_l3_config:
+    src: "{{ item }}"
+    replace: "line"
+  with_items:
+    - "{{ config_file }}"
+    - "{{ modified_config_file }}"

@@ -1,0 +1,88 @@
+yaml
+---
+- name: Test playbook for issue with with_items loop and when condition
+  hosts: localhost
+  become: true
+  
+  vars:
+    some_var: some_value
+    list_var:
+      - "{{ some_var }}"
+  
+  tasks:
+    - name: Test with_items loop with when condition in a role
+      include_role:
+        name: test-role
+      loop: "{{ list_var }}"
+      when: some_var is defined and some_var == list_var[0]
+
+    - name: Test with_items loop with when condition in a play
+      debug:
+        msg: "Running play task"
+      with_items: "{{ list_var }}"
+      when: some_var is defined and some_var == list_var[0]
+
+    - name: Test with_items loop with when condition and empty list
+      debug:
+        msg: "Empty list"
+      with_items: []
+      when: some_var is defined and some_var == list_var[0]
+
+    - name: Test with_items and when with incorrect list variable
+      include_role:
+        name: test-role
+      loop: "{{ wrong_list_var }}"
+      when: some_var is defined and some_var == list_var[0]
+
+    - name: Test with_items and when with incorrect variable name
+      debug:
+        msg: "This task should always fail"
+      with_items: "{{ list_var }}"
+      when: some_var_wrong_name is defined and some_var_wrong_name == list_var[0]
+
+    - name: Test with_items and when with a non-existent variable
+      debug:
+        msg: "This task should always fail"
+      with_items: "{{ list_var }}"
+      when: non_existent_var is defined and non_existent_var == list_var[0]
+
+    - name: Test with_items and when with a boolean input
+      debug:
+        msg: "This task should always fail"
+      with_items: "{{ list_var }}"
+      when: some_var is true
+
+    - name: Test with_items and when with a string input
+      debug:
+        msg: "This task should always fail"
+      with_items: "{{ list_var }}"
+      when: some_var is "some value"
+
+    - name: Test with_items and when with an integer input
+      debug:
+        msg: "This task should always fail"
+      with_items: "{{ list_var }}"
+      when: some_var is 123
+
+    - name: Test with_items and when with an empty input
+      debug:
+        msg: "This task should always fail"
+      with_items: "{{ list_var }}"
+      when: some_var is
+
+    - name: Test with_items and when using a Jinja2 filter in when condition
+      debug:
+        msg: "This task should always fail"
+      with_items: "{{ list_var }}"
+      when: some_var | upper is defined and some_var | upper == list_var[0]
+
+    - name: Test with_items and when using a Jinja2 expr in with_items
+      debug:
+        msg: "This task should always fail"
+      with_items: "{{ [1, 2, 3] if some_var is defined else [4, 5, 6] }}"
+      when: some_var == list_var[0]
+
+  handlers:
+    - name: Test handler
+      debug:
+        msg: "Test handler triggered"

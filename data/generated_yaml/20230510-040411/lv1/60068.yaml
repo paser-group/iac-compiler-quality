@@ -1,0 +1,34 @@
+yaml
+---
+- name: Create DNS PTR records
+  hosts: windows_servers
+  gather_facts: no
+
+  vars:
+    dns_server: 192.168.1.1
+    hostname: server01
+    ip_address: 192.168.1.10
+
+  tasks:
+    - name: Get existing PTR records
+      win_shell: Get-DnsServerResourceRecord -ComputerName {{ dns_server }} -name {{ ip_address }} | Where-Object {$_.RecordType -eq "PTR"}
+      register: ptr_records
+      become: yes
+
+    - name: Remove existing PTR records
+      win_dns_record:
+        computer_name: "{{ dns_server }}"
+        type: PTR
+        name: "{{ ip_address }}"
+        state: absent
+      when: ptr_records.stdout_lines|length > 0
+      become: yes
+
+    - name: Create new PTR record
+      win_dns_record:
+        computer_name: "{{ dns_server }}"
+        type: PTR
+        name: "{{ ip_address }}"
+        ptrdname: "{{ hostname }}.{{ ansible_domain }}"
+        ttl: 3600
+      become: yes

@@ -1,0 +1,33 @@
+
+- name: Test Ansible WinRM Read Timeout Parameter with SSL
+  hosts: server
+  gather_facts: no
+  vars:
+    ansible_winrm_read_timeout_sec: 12.5
+    ansible_winrm_server_cert_validation: ignore
+    ansible_connection: winrm
+    ansible_winrm_transport: ssl
+  tasks:
+  - name: Establish an SSL connection using winrm module
+    winrm:
+      become_method: runas
+      become_user: Administrator
+      hostname: "{{ inventory_hostname }}"
+      username: "{{ ansible_user }}"
+      password: "{{ ansible_password }}"
+      port: 5986
+      ssl: yes
+      transport: ntlm
+      ansible_winrm_read_timeout_sec: "{{ ansible_winrm_read_timeout_sec }}"
+  - name: Debug Ansible WinRM Read Timeout Sec
+    debug:
+      var: ansible_winrm_read_timeout_sec
+  - name: Verify Ansible WinRM Read Timeout Sec is a float
+    assert:
+      that:
+        - ansible_winrm_read_timeout_sec is defined
+        - ansible_winrm_read_timeout_sec | type_debug == 'float'
+  - name: Fail the playbook if Ansible WinRM Read Timeout Sec is not a float
+    fail:
+      msg: "Ansible WinRM Read Timeout Sec must be a float"
+      when: not ansible_winrm_read_timeout_sec is defined or not ansible_winrm_read_timeout_sec | type_debug == 'float'

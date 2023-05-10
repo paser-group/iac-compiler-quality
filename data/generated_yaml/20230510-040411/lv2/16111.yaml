@@ -1,0 +1,61 @@
+
+- name: Test File Permissions on ec2.ini and ec2.py
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+  - name: Change ownership and permissions of ec2.ini and ec2.py
+    file:
+      path: "/path/to/ec2.ini"
+      owner: root
+      group: root
+      mode: "0777"
+    register: ownership
+
+  - name: Check if the ownership of ec2.ini has changed
+    stat:
+      path: "/path/to/ec2.ini"
+    register: stat_res
+
+  - name: Debug ownership change
+    debug:
+      msg: "Ownership status {{ stat_res }}"
+
+  - name: Attempt to read ec2.ini with incorrect permissions
+    command: cat /path/to/ec2.ini
+    become: yes
+    become_user: non_existing_user
+    ignore_errors: true
+    register: read_ec2_ini
+
+  - name: Debug the contents of ec2.ini
+    debug:
+      var: read_ec2_ini.stdout_lines
+
+  - name: Change ownership and permissions of ec2.py
+    file:
+      path: "/path/to/ec2.py"
+      owner: non_existing_user
+      group: non_existing_group
+      mode: "0000"
+    register: ownership_py
+
+  - name: Check if the ownership of ec2.py has changed
+    stat:
+      path: "/path/to/ec2.py"
+    register: file_stat
+
+  - name: Debug ownership change
+    debug:
+      msg: "Ownership status {{ file_stat }}"
+
+  - name: Attempt to execute ec2.py with incorrect permissions
+    command: python /path/to/ec2.py
+    become: yes
+    become_user: non_existing_user
+    ignore_errors: true
+    register: execute_ec2_py
+
+  - name: Debug the output of ec2.py
+    debug:
+      var: execute_ec2_py.stdout_lines

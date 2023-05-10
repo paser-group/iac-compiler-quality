@@ -1,0 +1,28 @@
+
+- name: Stress testing Terraform module for relative path issues
+  hosts: localhost
+  gather_facts: no
+  
+  tasks:
+    - name: Run Terraform module with multiple plan_file paths
+      terraform:
+        state: present
+        plan_file:
+          - "relative/path/to/plan"
+          - "{{ ansible_env.HOME }}/plan2"
+          - "{{ ['plan1', 'plan2', 'plan3'] | random }}"
+          - "{{ item }}"
+        workspace: "{{ [1, 2, 3, 4, 5] | random }}"
+        lock: "{{ [true, false] | random }}"
+        force_unlock: "{{ [true, false] | random }}"
+      loop:
+        - "{{ ['plan4', 'plan5', 'plan6'] | shuffle }}"
+        - "{{ loop.index0 }}"
+        - "{{ loop.index }}"
+        - "{{ loop.revindex }}"
+      
+    - name: Verify terraform module status
+      assert:
+        that: "'lock' in item"
+        with_items:
+          - "{{ terraform_lock | default({}) }}"

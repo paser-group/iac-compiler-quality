@@ -1,0 +1,32 @@
+
+- hosts: all
+  vars:
+    fact_caching_methods:
+      - jsonfile
+      - memory
+
+  tasks:
+    - name: Test fact caching
+      block:
+        - name: Set fact caching method
+          set_fact:
+            fact_caching: "{{ item }}"
+
+        - name: Gather facts
+          setup:
+            cache_valid_time: 0
+            fact_caching: "{{ fact_caching }}"
+
+        - name: Print fact cache
+          debug:
+            var: ansible_facts
+
+        - name: Check if fact cache is populated
+          fail:
+            msg: "Fact cache is empty"
+          when: ansible_facts == {}
+
+      rescue:
+        - name: Catch exception
+          debug:
+            msg: "Caught exception during fact gathering"

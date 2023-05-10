@@ -1,0 +1,47 @@
+
+- name: Assign fixed IP address to OpenStack instance
+  hosts: localhost
+  gather_facts: no
+  tasks:
+    - name: Create floating IP
+      os_floating_ip:
+        network: default
+        state: present
+      register: floating_ip
+
+    - name: Get available subnets
+      os_subnet_facts:
+      register: subnet_facts
+
+    - name: Assign fixed IP address to instance
+      os_server:
+        state: present
+        auth:
+          auth_url: "{{ auth_url }}"
+          username: "{{ username }}"
+          password: "{{ password }}"
+          project_name: "{{ project_name }}"
+          project_domain_name: "{{ project_domain_name }}"
+          user_domain_name: "{{ user_domain_name }}"
+        name: "{{ instance_name }}"
+        image: "{{ image_name }}"
+        flavor: "{{ flavor_name }}"
+        networks:
+          - network: "{{ network_name }}"
+            fixed_ip: "{{ floating_ip }}"
+        meta:
+          ssh-user: "{{ ssh_user }}"
+          ssh-key: "{{ ssh_key }}"
+      register: server
+
+    - name: Fail the playbook if server has more than one IP address
+      fail:
+        msg: "Server has multiple IP addresses!"
+      when: server.instance.addresses | count > 1
+  
+    - name: Ensure openstack VM is up and running
+      wait_for:
+        host: "{{ server.instance.addresses | map(attribute='addr') | list | first }}"
+        port: 22
+        delay: 10
+        timeout: 180

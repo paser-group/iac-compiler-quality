@@ -1,0 +1,41 @@
+
+---
+- name: Resolve issue with ec2_vpc module
+  hosts: localhost
+  connection: local
+  gather_facts: no
+
+  vars:
+    ec2_instance_id: i-0123456789abcdefg  # Replace with your instance ID
+
+  tasks:
+
+    - name: Create new VPC
+      ec2_vpc_net:
+        name: new_vpc
+        cidr_block: "10.10.0.0/16"
+        region: us-east-1
+        subnets:
+          - cidr: "10.10.1.0/24"
+            az: "us-east-1a"
+            name: new_subnet
+
+    - name: Obtain route table ID
+      ec2_vpc_route_table_info:
+        filters:
+          "association.subnet-id": "{{ item.id }}"
+        region: us-east-1
+      register: rt
+      with_items: "{{ ansible_facts['ec2_vpc_subnet'] }}"
+
+    - name: Assign instance to route table
+      ec2_vpc_route_table:
+        vpc_id: "{{ ansible_facts['ec2_vpc_net'][0]['id'] }}"
+        association:
+          subnet_id: "{{ item.id }}"
+          route_table_id: "{{ rt.results[0].route_table_id }}"
+        routes:
+          - dest: 0.0.0.0/0
+            instance_id: "{{ ec2_instance_id }}"
+        state: present
+      with_items: "{{ ansible_facts['ec2_vpc_subnet'] }}"

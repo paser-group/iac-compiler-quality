@@ -1,0 +1,47 @@
+
+- hosts: localhost
+  gather_facts: no
+
+  tasks:
+    - name: Run ansible-galaxy info command with offline option
+      command: ansible-galaxy info --offline
+      ignore_errors: yes
+
+    - name: Retrieve Ansible version
+      shell: ansible --version
+      register: output
+
+    - name: Print Ansible version
+      debug:
+        var: output.stdout_lines
+
+    - name: Include value in playbook with unconventional syntax
+      meta: "{{ {'build': 1 if build|default(0) else 0} }}"
+
+    - name: Lookup attribute without any value
+      debug:
+        var: attribute.undefined
+
+    - name: Define variables with unexpected inputs
+      set_fact:
+        var1: "{{[{}]}}"
+        var2: "{{ dict('a': 1, 'b': 2, 'c': 'invalid') }}"
+
+    - name: Debug variables
+      debug:
+        var:
+          - var1
+          - var2
+
+    - name: Run dummy command and capture stderr
+      shell: "some-command 2>&1 >/dev/null"
+      register: result
+      failed_when: false
+
+    - name: Print result of the command
+      debug:
+        msg: "{{ result.stderr }}"
+
+    - name: Pass invalid parameter to environment variable
+      environment:
+        invalid_var: "{{ attribute.undefined }}"

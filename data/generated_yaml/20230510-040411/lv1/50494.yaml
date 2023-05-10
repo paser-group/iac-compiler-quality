@@ -1,0 +1,36 @@
+yaml
+---
+- name: Configure network devices
+  hosts: network_devices
+  gather_facts: no
+
+  vars:
+    username: your_username
+    password: your_password
+
+  tasks:
+    - name: Ensure SSH connection to devices
+      wait_for: host={{ inventory_hostname }} port=22 delay=5 timeout=10
+
+    - name: Configure devices
+      vars:
+        cli:
+          host: "{{ inventory_hostname }}"
+          username: "{{ username }}"
+          password: "{{ password }}"
+          transport: cli
+      block:
+        - name: Install netmiko library
+          pip:
+            name: netmiko
+            state: present
+
+        - name: Configure device
+          net_interface:
+            name: "{{ interface_name }}"
+            state: "{{ interface_state }}"
+            provider: "{{ cli }}"
+      rescue:
+        - name: Handle errors
+          debug:
+            msg: "Error while configuring device {{ inventory_hostname }}: {{ ansible_failed_result }}"

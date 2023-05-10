@@ -1,0 +1,40 @@
+
+- name: Dynamic Inventory Stress Test Playbook
+  hosts: all
+  gather_facts: false
+
+  tasks:
+  - name: Define some internal hosts incorrectly
+    set_fact:
+      incorrect_hosts: "{{ {'web1': '10.10.1.1', 'web2': '10.10.1.2', 'web3': '10.10.2.2'} }}"
+
+  - name: Show incorrectly set internal hosts
+    debug:
+      var: incorrect_hosts
+
+  - name: Generate dynamic inventory based on incorrect hosts
+    set_fact:
+      hosts_inventory: "{{ {'internal': {'hosts': incorrect_hosts}} }}"
+
+  - name: Show generated dynamic inventory
+    debug:
+      var: hosts_inventory
+
+  - name: Use dynamic inventory to execute command with incorrect hosts
+    shell: |
+      echo "Internal host IP: {{ hostvars[item]['ansible_default_ipv4']['address'] }}"
+    with_inventory_hostnames:
+      - internal[0]
+      - internal[1]
+      - internal[2]
+
+  - name: Use dynamic inventory to execute command with correct hosts
+    shell: |
+      echo "Internal host IP: {{ hostvars[item]['ansible_default_ipv4']['address'] }}"
+    with_inventory_hostnames:
+      - internal[0]
+      - internal[1]
+      - internal[2]
+      - web1
+      - web2
+      - web3

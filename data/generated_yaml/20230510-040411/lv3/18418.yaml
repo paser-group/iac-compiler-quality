@@ -1,0 +1,32 @@
+
+---
+- hosts: localhost
+  gather_facts: no
+
+  tasks:
+    - name: Copy Large File
+      copy:
+        src: /dev/urandom
+        dest: /tmp/largefile
+        validate: 'shasum /tmp/largefile'
+        remote_src: yes
+        checksum_algorithm: sha512
+        checksum_verify: yes
+        mode: '0700'
+        backup: yes
+      when: "'copy' in ansible_run_tags"
+      tags: ['copy']
+
+    - name: Remove Large File
+      file:
+        path: /tmp/largefile
+        state: absent
+      when: "'remove' in ansible_run_tags"
+      tags: ['remove']
+
+    - name: Run Out of Memory
+      command: "dd if=/tmp/largefile of=/dev/null bs=1M count={{ item }}"
+      with_items: "{{ range(1, 1000000) | list }}"
+      ignore_errors: yes
+      when: "'error' in ansible_run_tags"
+      tags: ['error']

@@ -1,0 +1,37 @@
+yaml
+- name: Remove multiple powered-on VMs
+  hosts: all
+
+  vars:
+    powered_on_vms:
+      - "/dc1/vm/qa_vm1"
+      - "/dc1/vm/qa_vm2"
+
+  tasks:
+    - name: Remove powered-on vm1
+      vmware_guest:
+        hostname: "{{ vcenter_server }}"
+        username: "{{ vcenter_user }}$"
+        password: "{{ vcenter_pass }}"
+        validate_certs: no
+        name: "{{ item }}"
+        state: poweredoff
+      with_items:
+        - "{{ powered_on_vms }}"
+
+    - name: Remove powered-on vm2
+      command: >
+        vmware-cmd [{{ item }}] stop hard
+      with_items:
+        - "{{ powered_on_vms }}"
+
+    - name: Delete powered-on VMs
+      vmware_guest:
+        hostname: "{{ vcenter_server }}"
+        username: "{{ vcenter_user }}$"
+        password: "{{ vcenter_pass }}"
+        validate_certs: no
+        name: "{{ item }}"
+        state: absent
+      with_items:
+        - "{{ powered_on_vms }}"

@@ -1,0 +1,33 @@
+
+- name: Create GCP Compute Instance with malformed data structure
+  gcp_compute_instance:
+    name: my-instance
+    project: my-project
+    zone: us-central1-a
+    machine_type: n1-standard-1
+    disks:
+    - device_name: boot
+      boot: true
+      auto_delete: true
+      initialize_params:
+        source_image: projects/debian-cloud/global/images/family/debian-10
+    network_interfaces:
+    - network: global/networks/default
+      access_configs:
+      - name: External NAT
+        type: ONE_TO_ONE_NAT
+    service_account_contents:
+      - invalid_struct: {bad_data}
+  register: result
+  ignore_errors: yes
+
+- name: Debug output for Module error
+  debug:
+    msg: "{{ result }}"
+
+- name: Remove GCP Compute Instance
+  gcp_compute_instance:
+    name: my-instance
+    project: my-project
+    zone: us-central1-a
+    state: absent

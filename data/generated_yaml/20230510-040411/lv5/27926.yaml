@@ -1,0 +1,26 @@
+
+---
+- name: Testing nxos_vxlan_vtep_vni idempotence
+  hosts: target_nodes
+  gather_facts: no
+
+  tasks:
+    - name: Remove nxos_vxlan_vtep_vni idempotence
+      nxos_vxlan_vtep_vni:
+         vni: "{{ vni }}"
+         vtep_ip: "{{ vtep_ip }}"
+         vxlan_interface: "{{ vxlan_interface }}"
+         vrf: "{{ vrf }}"
+         state: present
+      when: "'present' not in (nxos_vxlan_vtep_vni | default({}) | default(''))"
+
+    - name: Check nxos_vxlan_vtep_vni idempotence
+      nxos_vxlan_vtep_vni:
+         vni: "{{ vni }}"
+         vtep_ip: "{{ vtep_ip }}"
+         vxlan_interface: "{{ vxlan_interface }}"
+         vrf: "{{ vrf }}"
+         state: present
+      register: check_fact
+      until: "check_fact is not defined or 'changed' in check_fact"
+      retries: 5

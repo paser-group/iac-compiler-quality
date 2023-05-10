@@ -1,0 +1,24 @@
+
+---
+- name: Clone Bitbucket repository
+  hosts: localhost
+  gather_facts: no
+  vars:
+    repo_url: "{{ bitbucket_repo_url | default('') }}"
+    ssh_key: "{{ bitbucket_ssh_key | default('') }}"
+  tasks:
+    - name: Clone repository using SSH
+      git:
+        repo: "{{ repo_url }}"
+        dest: "{{ bitbucket_dest_dir | default('./repository') }}"
+        accept_hostkey: yes
+        key_file: "{{ ssh_key }}"
+      register: git_clone_result
+
+    - name: Validate git clone result
+      assert:
+        that:
+          - git_clone_result.rc == 0
+          - 'stderr' not in git_clone_result
+          - git_clone_result.stdout is regex('.*git clone.*') | length > 0
+          - git_clone_result.changed or (git_clone_result.stdeerr and "already exists" in git_clone_result.stderr)

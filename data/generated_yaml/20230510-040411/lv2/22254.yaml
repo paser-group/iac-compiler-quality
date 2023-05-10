@@ -1,0 +1,37 @@
+
+- name: Test unarchive module behavior with non-default permissions
+  hosts: all
+  tasks:
+    - name: Create temporary directory
+      tempfile:
+        state: directory
+      register: tempdir
+
+    - name: Download zip file
+      get_url:
+        url: https://example.com/archive.zip
+        dest: "{{ tempdir.path }}/archive.zip"
+
+    - name: Unarchive zip file with non-default permissions
+      unarchive:
+        src: "{{ tempdir.path }}/archive.zip"
+        dest: "{{ tempdir.path }}"
+        remote_src: true
+        mode: "0755"
+        creates: "{{ tempdir.path }}/archive"
+      notify: report_changed
+
+    - name: Report whether changes were made
+      debug:
+        var: ansible_job_id_changed
+        verbosity: 1
+
+    - name: Remove temporary directory
+      file:
+        path: "{{ tempdir.path }}"
+        state: absent
+
+  handlers:
+    - name: Report changed status
+      debug:
+        msg: "Unarchive module changed state = {{ ansible_job_id_changed }}"

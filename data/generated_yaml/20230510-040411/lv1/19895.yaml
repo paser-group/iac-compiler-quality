@@ -1,0 +1,31 @@
+
+---
+- name: Create EC2 VPC and wait for subnets to be created
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+    - name: Create EC2 VPC
+      ec2_vpc:
+        aws_access_key: "<your_access_key>"
+        aws_secret_key: "<your_secret_key>"
+        region: "<region>"
+        cidr_block: "<cidr_block>"
+        resource_tags:
+          Name: "<name>"
+      register: vpc_info
+
+    - name: Wait for subnets to be created
+      ec2_vpc_subnet_facts:
+        aws_access_key: "<your_access_key>"
+        aws_secret_key: "<your_secret_key>"
+        region: "<region>"
+        filters:
+          "vpc-id": "{{ vpc_info.vpc.id }}"
+        wait: true
+        wait_timeout: 300
+      register: subnet_facts
+
+    - name: Debug subnets
+      debug:
+        var: subnet_facts

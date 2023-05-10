@@ -1,0 +1,25 @@
+
+- name: Reboot a Windows server and intentionally disrupt the connection
+  hosts: windows_servers
+  vars:
+    reboot_timeout: 300
+    disrupt_connection: true
+  tasks:
+    - name: Reboot the server
+      win_reboot:
+        reboot_timeout_sec: "{{ reboot_timeout }}"
+      register: reboot_result
+
+    - name: Disconnect in the middle of the reboot
+      block:
+        - name: Get the reboot task PID
+          win_command: tasklist | findstr ansible_win_reboot
+          register: reboot_pid
+
+        - name: Disconnect from the server
+          raw: taskkill /f /pid {{ reboot_pid.stdout.split()[1] }}
+          when: reboot_pid.stdout is defined and disrupt_connection|bool
+
+    - name: Debug information
+      debug:
+        var: reboot_result

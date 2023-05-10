@@ -1,0 +1,59 @@
+
+---
+- name: Create security groups in VPC-A and VPC-B
+  hosts: localhost
+  connection: local
+  gather_facts: no
+  vars:
+    vpc_A_id: "vpc-123456"
+    vpc_B_id: "vpc-789012"
+  tasks:
+  - name: Create security groups in VPC-A
+    ec2_group:
+      region: "{{ region }}"
+      vpc_id: "{{ vpc_A_id }}"
+      name: "sg-A-1"
+      description: "Security group A1"
+      rules:
+        - proto: tcp
+          from_port: 22
+          to_port: 22
+          cidr_ip: 0.0.0.0/0
+        - proto: tcp
+          from_port: 80
+          to_port: 80
+          cidr_ip: 0.0.0.0/0
+  - name: Create security groups in VPC-B
+    ec2_group:
+      region: "{{ region }}"
+      vpc_id: "{{ vpc_B_id }}"
+      name: "sg-B-1"
+      description: "Security group B1"
+      rules:
+        - proto: tcp
+          from_port: 22
+          to_port: 22
+          cidr_ip: 0.0.0.0/0
+        - proto: tcp
+          from_port: 80
+          to_port: 80
+          cidr_ip: 0.0.0.0/0
+
+- name: Cross-reference security groups between VPCs
+  hosts: localhost
+  connection: local
+  gather_facts: no
+  vars:
+    vpc_A_id: "vpc-123456"
+    vpc_B_id: "vpc-789012"
+  tasks:
+  - name: Add security group rule to allow SSH traffic from VPC-A to VPC-B
+    ec2_group:
+      region: "{{ region }}"
+      vpc_id: "{{ vpc_A_id }}"
+      name: "sg-A-1"
+      rules:
+        - proto: tcp
+          from_port: 22
+          to_port: 22
+          security_group: "sg-B-1@{{ vpc_B_id }}"

@@ -1,0 +1,60 @@
+yaml
+- name: Create an EC2 instance and add it to an Auto Scaling group
+  hosts: localhost
+  gather_facts: no
+  vars:
+    ami_id: "ami-01234567"
+    instance_type: "t3.micro"
+    key_name: "my_ec2_key"
+    security_group: "my_ec2_sg"
+    launch_config_name: "my_launch_config"
+    asg_name: "my_auto_scaling_group"
+    min_size: 1
+    max_size: 3
+    desired_capacity: 2
+  tasks:
+    - name: Create an EC2 instance
+      ec2:
+        aws_access_key: "{{ aws_access_key }}"
+        aws_secret_key: "{{ aws_secret_key }}"
+        image: "{{ ami_id }}"
+        instance_type: "{{ instance_type }}"
+        key_name: "{{ key_name }}"
+        group: "{{ security_group }}"
+        wait: true
+        instance_tags:
+          Name: "my_instance"
+      register: ec2_result
+    
+    - name: Check if the instance creation was successful
+      debug:
+        msg: "Instance ID is {{ ec2_result.instance_id }}"
+      when: ec2_result is succeeded
+    
+    - name: Create a launch configuration
+      ec2_lc:
+        name: "{{ launch_config_name }}"
+        image_id: "{{ ami_id }}"
+        instance_type: "{{ instance_type }}"
+        security_groups: ["{{ security_group }}"]
+      register: lc_result
+
+    - name: Check if the launch configuration was successful
+      debug:
+        msg: "Launch configuration name is {{ launch_config_name }}"
+      when: lc_result is succeeded
+    
+    - name: Create an Auto Scaling group
+      ec2_asg:
+        name: "{{ asg_name }}"
+        launch_config_name: "{{ launch_config_name }}"
+        min_size: "{{ min_size }}"
+        max_size: "{{ max_size }}"
+        desired_capacity: "{{ desired_capacity }}"
+        availability_zones: ["us-east-1a", "us-east-1b"]
+      register: asg_result
+
+    - name: Check if the Auto Scaling group was successful
+      debug:
+        msg: "Auto Scaling group name is {{ asg_name }}"
+      when: asg_result is succeeded

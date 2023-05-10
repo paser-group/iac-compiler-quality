@@ -1,0 +1,26 @@
+
+- name: Async task fails on 2.1 with WinRMTransportError
+  hosts: all
+  tasks:
+    - name: Run async task
+      async: 10
+      poll: 2
+      ignore_errors: yes
+      win_command: "{{ item }}"
+      loop:
+        - "echo 'async task running'"
+        - "exit 1"
+        
+    - name: Wait for async task to complete
+      async_status:
+        jid: "{{ item.ansible_job_id }}"
+      register: result
+      until: result.finished
+      retries: 100
+      delay: 5
+      loop: "{{ ansible_play_batch }}"
+        
+    - name: Debug async task results
+      debug:
+        var: item
+      with_items: "{{ result.results }}"

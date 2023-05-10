@@ -1,0 +1,48 @@
+yaml
+- name: Test Vault Error Issue
+  hosts: localhost
+  vars:
+    unencrypted_var: "plaintext data"
+    encrypted_var: !vault |
+      $ANSIBLE_VAULT;1.1;AES256
+      61613836666636333135393439396636613730303639666161333238343338353264666461393461
+  tasks:
+    - name: print unencrypted variable
+      debug:
+        var: unencrypted_var 
+
+    - name: print encrypted variable
+      debug:
+        var: encrypted_var
+
+    - name: access encrypted variable using hostvars[]
+      debug:
+        var: hostvars['localhost']['encrypted_var']
+
+    - name: access unencrypted variable using hostvars[]
+      debug:
+        var: hostvars['localhost']['unencrypted_var']
+
+    - name: encrypt a variable using ansible-vault
+      ansible.builtin.command: >
+        echo "My secret" > secret.txt && ansible-vault encrypt secret.txt --vault-password-file ./vault.txt
+
+    - name: decrypt a variable using ansible-vault
+      ansible.builtin.command: >
+        ansible-vault decrypt secret.txt --vault-password-file ./vault.txt && cat secret.txt
+
+    - name: read a vault password from a file
+      ansible.builtin.set_fact:
+        my_password: "{{ lookup('file', './vault.txt') }}"
+
+    - name: encrypt a dictionary using master password and write to file
+      ansible.builtin.copy:
+        content: |
+          {{ {'password': 'secret', 'username': 'admin'} |ansible_vault_encrypt(master_password, '/') }}
+        dest: /tmp/encrypted.yml
+
+    - name: decrypt an encrypted dictionary from a file using master password and print username
+      ansible.builtin.debug:
+        var: "{{ lookup('file', '/tmp/encrypted.yml') | ansible_vault_decrypt(master_password, '/') | from_yaml }}"['username']
+      vars:
+        master_password: "mysecretpassword"

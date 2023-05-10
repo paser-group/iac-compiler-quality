@@ -1,0 +1,31 @@
+
+- name: Create EC2 instance for metric alarm testing
+  ec2:
+    key_name: test-key
+    instance_type: t2.micro
+    image: ami-0c94855ba95c71c99
+    region: us-east-1
+    vpc_subnet_id: subnet-0b39d7b6c3e19bca3
+    assign_public_ip: yes
+  register: ec2_instance
+
+- name: Set metric alarm
+  cloudwatch_metric_alarm:
+    alarm_actions: [ "{{ SNS_TOPIC_ARN }}" ]
+    comparison_operator: GreaterThanOrEqualToThreshold
+    evaluation_periods: 3
+    metric_name: CPUUtilization
+    namespace: AWS/EC2
+    period: invalid_period
+    statistic: Average
+    threshold: 50.0
+  register: metric_alarm
+
+- name: Print metric alarm status
+  debug:
+    var: metric_alarm
+
+- name: Terminate EC2 instance
+  ec2_instance:
+    state: absent
+    instance_ids: [ "{{ ec2_instance.instance_id }}" ]

@@ -1,0 +1,45 @@
+
+- name: Asynchronous Tasks Directory Issue Playbook
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create temp directory with special character
+      file:
+        path: "/tmp/{{ 'AA_!!' | random }}_temp"
+        state: directory
+
+    - name: Create symlink to temp directory
+      file:
+        src: "/tmp/{{ 'AA_!!' | random }}_temp"
+        dest: "/tmp/symlink_temp"
+        state: file
+        mode: "a+rwx"
+
+    - name: Synchronize Remote Temp Directory with Custom Permissions
+      become: true
+      synchronize:
+        src: "{{ playbook_dir }}/templates/"
+        dest: "/tmp/{{ 'AA_!!' | random }}_temp"
+        delete: true
+        rsync_path: "sudo rsync"
+        rsync_opts:
+          - "--rsync-path=sudo rsync"
+          - "--chmod=u=rwx,g=r,o=rx"
+
+    - name: Run Multiple Test Commands on Async Tasks
+      async: 10
+      poll: 1
+      loop:
+        - "ls -la"
+        - "echo 'Hello World'"
+        - "cat /proc/version"
+      register: async_output
+
+    - name: Display Async Task Output
+      debug: var=async_output
+
+    - name: Remove symlink temp
+      file:
+        path: "/tmp/symlink_temp"
+        state: absent

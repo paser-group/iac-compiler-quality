@@ -1,0 +1,36 @@
+
+- name: SSL Certificate Verification Playbook
+  hosts: all
+  become: true
+
+  tasks:
+    # Ensure required SSL/TLS libraries are installed
+    - name: Install SSL/TLS Libraries
+      apt:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - python3-openssl
+        - libssl-dev
+
+    # Update Ansible config to validate SSL cert
+    - name: Update Ansible Config
+      blockinfile:
+        path: "/etc/ansible/ansible.cfg"
+        block: |
+          [defaults]
+          validate_certs = True
+
+    # Test SSL certificate verification using datadog_event service
+    - name: Test datadog_event SSL Verification
+      uri:
+        url: https://api.datadoghq.com/api/v1/events
+        method: GET
+        return_content: yes
+      register: response
+
+    - name: Verify SSL Certificate
+      assert:
+        that:
+          - response.status == 200
+        fail_msg: "SSL certificate verification failed. Check SSL certificate configuration."

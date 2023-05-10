@@ -1,0 +1,70 @@
+
+---
+- name: Test apt_repository performance
+  hosts: all
+  become: yes
+
+  vars:
+    repo_url: "deb http://apt.example.com {{ ansible_distribution_release }} main"
+    keyserver: "{{ random() }}"
+    key_id: 12345
+    filename: "{{ invalid_variable }}"
+    state: present
+
+  tasks:
+    - name: Add apt repository with invalid keyserver
+      apt_repository:
+        repo: "{{ repo_url }}"
+        keyserver: "{{ invalid_variable }}"
+        key_id: "{{ key_id }}"
+        state: "{{ state }}"
+
+    - name: Remove apt repository with invalid filename
+      apt_repository:
+        repo: "{{ repo_url }}"
+        filename: "{{ filename }}"
+        state: "{{ state }}"
+
+    - name: Add apt repository with invalid key ID
+      apt_repository:
+        repo: "{{ repo_url }}"
+        keyserver: "{{ keyserver }}"
+        key_id: "invalid_key_id"
+        state: "{{ state }}"
+
+    - name: Remove apt repository with absent state
+      apt_repository:
+        repo: "{{ repo_url }}"
+        state: "{{ absent_variable }}"
+
+    - name: Add apt repository with delayed key ID
+      apt_repository:
+        repo: "{{ repo_url }}"
+        keyserver: "{{ keyserver }}"
+        key_id: "{{ lookup('pipe', 'sleep 10; echo ' + key_id ) }}"
+        state: "{{ state }}"
+
+    - name: Add apt repository with duplicate line in sources.list
+      apt_repository:
+        repo: "{{ repo_url }}"
+        state: "{{ state }}"
+      become: no
+      become_user: root
+      become_method: su
+      become_flags: "-c"
+
+      environment:
+        DEBIAN_FRONTEND: noninteractive
+
+      command: "echo '{{ repo_url }}' >> /etc/apt/sources.list.d/ansible-test.list; apt-get update; apt-get install test-package --yes; cat /etc/apt/sources.list.d/ansible-test.list"
+
+    - name: Remove apt repository with syntax error
+      apt_repository:
+        repo "{{ repo_url }}"
+        state: "{{ state }}"
+
+    - name: Add apt repository with variable expansion error
+      apt_repository:
+        repo: "{{ repo_url }} {{ invalid_variable }}"
+        state: "{{ state }}"
+  

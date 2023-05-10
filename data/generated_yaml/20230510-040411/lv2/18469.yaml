@@ -1,0 +1,41 @@
+
+---
+- hosts: localhost
+  gather_facts: false
+  tasks:
+    # Attempt to run multiple plays in parallel, which AWS Lambda does not support
+    - name: Parallel plays
+      async: 10
+      poll: 3
+      ignore_errors: true
+      serial: 1
+      block:
+        - name: Play 1
+          debug:
+            msg: "Running play 1"
+        - name: Play 2
+          debug:
+            msg: "Running play 2"
+      when: "'lambda' in ansible_playbook_python"
+
+    # Overload the module_args with a long string
+    - name: Long module_args
+      uri:
+        url: http://example.com
+        method: GET
+        body: "{{ 'a' * 100000 }}"
+      ignore_errors: true
+
+    # Use an invalid syntax
+    - name: Invalid syntax
+      command: "ls {{/usr/local/bin}}"
+      ignore_errors: true
+
+    # Pass an unexpected input type that should fail
+    - name: Invalid input type
+      debug:
+        msg: "{{ ['this', 'is', 'a', 'list'] }}"
+
+    # Pass a parameter outside of the range supported by its datatype
+    - name: Integer overflow
+      command: "echo {{2 ** 1000}}"

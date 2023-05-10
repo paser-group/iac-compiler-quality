@@ -1,0 +1,39 @@
+
+- name: Test SSO and ADFS authentication issues with Ansible snow modules
+  hosts: all
+  vars:
+    sso_domain: "example.com"
+    adfs_server: "adfs.example.com"
+    adfs_username: "admin@example.com"
+    adfs_password: "password123"
+  tasks:
+    - name: Install Ansible snow modules
+      yum:
+        name: "{{ item }}"
+        state: present
+      with_items:
+        - ansible-snow
+    - name: Execute Ansible snow module with SSO authentication
+      snow_record:
+        instance: "{{ sso_domain }}"
+        username: "{{ adfs_username }}"
+        password: "{{ adfs_password }}"
+        table: "incident"
+        state: present
+    - name: Execute Ansible snow module with ADFS authentication
+      snow_record:
+        instance: "{{ adfs_server }}"
+        username: "{{ adfs_username }}"
+        password: "{{ adfs_password }}"
+        table: "problem"
+        state: present
+        custom_fields:
+          - name: "Impact"
+            value: "High"
+          - name: "Urgency"
+            value: "Critical"
+          - name: "Category"
+            value: "{{ 'Hardware' if 'hardware' in adfs_username else 'Software' }}"
+        comments:
+          - "This is a test comment"
+          - "{{ 'This is a really long comment that should exceed the maximum comment size limit of the module.' | upper }}"

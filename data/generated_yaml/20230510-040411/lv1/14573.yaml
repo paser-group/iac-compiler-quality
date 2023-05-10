@@ -1,0 +1,36 @@
+yaml
+---
+- name: Update Ansible installation on all hosts
+  hosts: all
+  become: true
+  vars:
+    ansible_version: "2.10.5"  # Update this to the latest version of Ansible
+
+  tasks:
+  - name: Install the latest version of Ansible
+    raw: test -e /usr/bin/python || (apt -y update && apt -y install python-minimal)
+    changed_when: false
+
+  - name: Create a new file to display the error message
+    file:
+      path: /tmp/error_message.txt
+      state: touch
+
+  - name: Debug the issue with the Ansible debug module
+    debug:
+      msg: "Parsing error in Ansible 1.9.4 in debug module if string contains special sequences"
+
+  - name: Update to the latest version of Ansible
+    apt:
+      name: ansible
+      state: latest
+
+  - name: Verify that the latest version of Ansible is installed
+    command: ansible --version | grep "{{ ansible_version }}"
+    register: ansible_version_output
+    changed_when: false
+
+  - name: Display the Ansible version
+    lineinfile:
+      dest: /tmp/error_message.txt
+      line: "{{ ansible_version_output.stdout }}"

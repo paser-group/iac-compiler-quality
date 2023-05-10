@@ -1,0 +1,69 @@
+
+    - name: Create and upload new file to gc_storage bucket
+      hosts: localhost
+      become: no
+      vars:
+        file_content: "Hello, World!"
+      tasks:
+          - name: Ensure target gc_storage bucket exists
+            google.cloud.gcp_storage:
+              name: "{{ bucket_name }}"
+              state: present
+
+          - name: Create a new file with specified content
+            tempfile:
+              state: file
+              suffix: .txt
+            register: new_file
+            changed_when: true
+
+          - name: Write specified content to new file
+            copy:
+              dest: "{{ new_file.path }}"
+              content: "{{ file_content }}"
+            changed_when: true
+
+          - name: Upload new file to gc_storage bucket
+            google.cloud.gcp_storage:
+              name: "{{ bucket_name }}"
+              src: "{{ new_file.path }}"
+              object_name: "{{ file_name }}"
+            changed_when: true
+      
+    - name: Verify uploaded file in gc_storage bucket
+      hosts: localhost
+      become: no
+      tasks:
+          - name: List the contents of gc_storage bucket
+            google.cloud.gcp_storage:
+              name: "{{ bucket_name }}"
+              mode: list
+            register: bucket_contents
+            changed_when: false
+          
+          - name: Fail if uploaded file is not in the gc_storage bucket
+            fail:
+              msg: "File {{ file_name }} not found in bucket {{ bucket_name }}"
+            when: "not bucket_contents.object_list | map(attribute='name') | list | contains(file_name)"
+
+          - name: Verify file contents in gc_storage bucket
+            shell: "gsutil cp gs://{{bucket_name}}/{{file_name}} -"
+            register: content_verify
+            changed_when: false
+            failed_when: false
+
+          - name: Fail if uploaded file contents are not correct
+            fail:
+              msg: "Uploaded file content does not match specified content"
+            when: "not content_verify.stdout == file_content"
+
+    - name: Delete uploaded file from gc_storage bucket
+      hosts: localhost
+      become: no
+      tasks:
+          - name: Delete file from gc_storage bucket
+            google.cloud.gcp_storage:
+              name: "{{ bucket_name }}"
+              object_name: "{{ file_name }}"
+              state: absent
+            changed_when: true

@@ -1,0 +1,26 @@
+
+- hosts: all
+  become: true
+
+  tasks:
+  - name: Run Docker container with unconventional syntax
+    docker_container:
+      image: "nginx:{{ item }}"
+      name: "{{ item }}"
+      state: "{{ 'running' if loop.first else 'absent' }}"
+    loop:
+    - "latest"
+    - "alpine-{{ item }}"
+    - "debian-{{ item }}"
+    vars:
+      item: "{{ [ 'latest', 1, '!' ] | random }}"
+      my_volume: "{{ [ '/data:/data:ro', '/dev:/dev:ro' ] | random }}"
+
+  - name: Run Docker container with unexpected inputs
+    docker_container:
+      image: "{{ item }}"
+      name: "{{ item.split(':')[0] }}"
+      state: running
+      network_mode: "{{ [ 'host', item.split(':')[1], 'somethingelse', none ] | random }}"
+    vars:
+      item: "{{ [ 'nginx', 'redis:latest', 'redis:alpine-3.9@sha256:33a8f9bfeb27...' ] | random }}"

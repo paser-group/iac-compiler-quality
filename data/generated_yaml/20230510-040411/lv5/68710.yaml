@@ -1,0 +1,23 @@
+
+- name: Test Ansible compiler bug
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+  - name: Create a list with one invalid item
+    set_fact:
+      my_list: ["item1", "item2", "invalid_item"]
+
+  - name: Loop over the list and generate an error
+    command: /bin/false
+    loop: "{{ my_list }}"
+    register: result
+    ignore_errors: yes
+
+  - name: Handle the error in the rescue section
+    debug:
+      msg: "Error occurred: {{ item }}"
+    loop: "{{ result.results | rejectattr('failed', '==', false) | map(attribute='item') | list }}"
+    rescue:
+      - debug:
+          msg: "Task 'loop over list and generate an error' failed with an unknown error"

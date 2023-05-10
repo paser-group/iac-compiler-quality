@@ -1,0 +1,47 @@
+
+---
+- name: Testing s3 bucket names with dots and fakes3 protocol
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    s3_bucket_name: "{{ ansible_user_id }}.example.com"
+
+  tasks:
+    - name: Create a fake s3 bucket
+      s3_bucket:
+        name: "{{ s3_bucket_name }}"
+        region: us-east-1
+        protocol: fakes3
+        state: present
+        tags: ['testing']
+
+    - name: Ensure s3 bucket has versioning enabled
+      s3_bucket:
+        name: "{{ s3_bucket_name }}"
+        versioning: true
+        notification_configuration: { }
+
+    - name: Upload a file with unconventional syntax
+      s3:
+        bucket: "{{ s3_bucket_name }}"
+        object: "{{ item }}"
+        src: "/tmp/{{ item }}"
+        mode: "{{ [ 'read', 'write' ] | random }}"
+      with_items:
+        - "..txt"
+        - "..."
+        - "...."
+        - ".txt."
+        - "_.txt"
+        - "!.txt"
+        - "\".txt"
+
+    - name: Delete the fake s3 bucket
+      s3_bucket:
+        name: "{{ s3_bucket_name }}"
+        region: us-east-1
+        protocol: fakes3
+        versioning: false
+        notification_configuration: { }
+        state: absent

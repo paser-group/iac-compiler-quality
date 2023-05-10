@@ -1,0 +1,35 @@
+yaml
+---
+- name: Ensure 'follow' file's default is unchanged
+  hosts: all
+  become: true
+
+  vars:
+    file_path: /path/to/follow
+
+  tasks:
+  - name: Check current state of the file
+    stat:
+      path: "{{ file_path }}"
+    register: file_state
+
+  - name: Update file's default
+    file:
+      path: "{{ file_path }}"
+      state: touch
+      force: yes
+      mode: '0644'
+      modified_time: "{{ file_state.stat.mtime }}"
+    when: file_state.stat.exists == true and file_state.stat.islnk == false
+
+  - name: Display file's properties
+    stat:
+      path: "{{ file_path }}"
+    register: updated_file_state
+
+  - name: Validate file's default
+    assert:
+      that:
+        - updated_file_state.stat.mode == '0644'
+      success_msg: "'follow' file's default is unchanged"
+      fail_msg: "'follow' file's default has changed"

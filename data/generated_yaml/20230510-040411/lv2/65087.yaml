@@ -1,0 +1,38 @@
+
+- name: Test Ansible Config leaving strings from default as bytes
+  hosts: localhost
+  vars:
+      user:      # This should raise an error as variable 'user' is undefined
+      var1: Äbcdefghijklmnopqrstuvwxyz0123456789!#%"&'()*+,-./:;<=>?@[]^_`{|}~"
+      var2: 2555
+      var3: "this_is_a_long_variable_name_which_will_be_truncated_at_some_point_so_we_can_test_the_behavior"
+
+  tasks:
+    - name: Set user variable as byte
+      set_fact:
+        user: !binary |-
+          "{{ 'user' }}"
+
+    - name: Test conversion of string with default
+      debug:
+        msg: "{{ var1 | default('defaultvalue') }}"
+
+    - name: Test invalid variable name
+      debug:
+        msg: "{{ var@Invalid#$%Symbol }}"
+            
+    - name: Test concatenation with undefined variable
+      debug:
+        msg: "{{ user ~ '_suffix' }}"
+
+    - name: Test concatenation with invalid variable
+      debug:
+        msg: "{{ var@Invalid#$%Symbol ~ '_suffix' }}"
+
+    - name: Test division by zero
+      debug:
+        msg: "{{ var2 / 0 }}"
+
+    - name: Test truncating long variable names
+      debug:
+        msg: "{{ var3 }}"

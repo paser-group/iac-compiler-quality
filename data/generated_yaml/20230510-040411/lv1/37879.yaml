@@ -1,0 +1,18 @@
+yaml
+---
+- name: Enhance win_dns_client module to support DNS suffix
+  hosts: windows_servers
+  gather_facts: false
+  vars:
+    dns_suffix: company.local
+  tasks:
+    - name: check if DNS suffix is already configured
+      win_command: Get-DnsClient | Select-Object -ExpandProperty ConnectionSpecificSuffix
+      register: dns_check
+      until: dns_separator in dns_check.stdout
+      retries: 5
+      delay: 5
+      when: dns_separator not in dns_check.stdout
+    - name: add DNS suffix if missing
+      win_command: Set-DnsClientServerAddress -ConnectionSpecificSuffixSearchOrder "{{dns_suffix}}"
+      when: dns_separator not in dns_check.stdout

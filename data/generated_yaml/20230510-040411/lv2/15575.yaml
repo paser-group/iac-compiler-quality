@@ -1,0 +1,69 @@
+
+- name: Ansible Playbook to stress test env lookup functionality
+  hosts: localhost
+
+  vars:
+    # Define some variables with different data types and values
+    var_str: This is a string
+    var_int: 10
+    var_float: 3.14
+    var_bool: true
+    var_none: None
+    var_list: [1, 2, 3]
+
+  tasks:
+    - name: edge case - lookup with invalid variable name
+      debug:
+        msg: "{{ lookup('env', 'invalid') | default(None) }}"
+
+    - name: edge case - lookup with improper syntax
+      debug:
+        msg: "{{ lookup(env, 'HOME') | default(var_none) }}"
+
+    - name: edge case - lookup with own default value
+      debug:
+        msg: "{{ lookup('env', 'HOME', default='~') }}"
+
+    - name: edge case - lookup with default set to zero
+      debug:
+        msg: "{{ lookup('env', 'SHELL', default=0) }}"
+
+    - name: edge case - lookup with invalid default value
+      debug:
+        msg: "{{ lookup('env', 'EDITOR', default=var_list) }}"
+
+    - name: edge case - lookup with default as a function
+      debug:
+        msg: "{{ lookup('env', 'LANG', default=lambda: 'en_US.UTF-8') }}"
+
+    - name: edge case - mixture of lookup and set_fact
+      set_fact:
+        var_test: "{{ lookup('env', 'NOT_SET') | default('not_set') }}"
+      debug:
+        var: var_test
+
+    - name: edge case - lookup with invalid environment variable name in loop
+      debug:
+        msg: "{{ lookup('env', item) }}"
+      loop:
+        - var_str
+        - var_int
+        - var_float
+        - var_bool
+        - var_list
+
+    - name: edge case - lookup with default set to another lookup
+      debug:
+        msg: "{{ lookup('env', 'HISTFILE-{{ lookup('env', 'USER') }}', default=lookup('env', 'HOME') + '/.bash_history') }}"
+
+    - name: edge case - lookup with undefined variables in default value
+      debug:
+        msg: "{{ lookup('env', 'TZ', default='Timezone: {{ var_undefined }}') }}"
+
+    - name: edge case - lookup with default set to a file content
+      debug:
+        msg: "{{ lookup('env', 'LICENSE', default=lookup('file', '/etc/LICENSE.txt')) }}"
+
+    - name: edge case - lookup with default set to a group variable
+      debug:
+        msg: "{{ lookup('env', 'CONFIG', default=groups['web'][0]['config_file']) }}"

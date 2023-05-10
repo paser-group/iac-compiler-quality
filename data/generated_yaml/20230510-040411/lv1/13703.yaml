@@ -1,0 +1,23 @@
+
+---
+- name: Redis fact caching bug fix
+  hosts: all
+  become: true
+  tasks:
+    - name: Install Python Redis client
+      yum:
+        name: python-redis
+        state: present
+      when: ansible_distribution == 'RedHat' and ansible_distribution_major_version == '6'
+
+    - name: Enable Redis fact caching
+      lineinfile:
+        path: /etc/ansible/facts.d/redis.fact
+        line: "REDIS_HOST='127.0.0.1'"
+      notify: Restart Redis
+
+  handlers:
+    - name: Restart Redis
+      service:
+        name: redis
+        state: restarted

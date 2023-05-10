@@ -1,0 +1,34 @@
+
+---
+- hosts: ios_switch
+  gather_facts: no
+  vars:
+    __ios_vlans_cmd: >
+      {{
+        "show vlan | include Active|Name|Status",
+        "show vlan | exclude -| inactive | 1005 | 1002,1003",
+        "show vlan brief | except isolated|EtherChannel",
+        "show vlan id 1000",
+        "show vlan name TestVLAN",
+        "show vlan summary",
+        "show vlan",
+        "show vlan access-log",
+        "show vlan brief",
+        "show vlan internal usage",
+        "show vlan internal usage interface g1/0/1",
+        "show vlan mapping",
+        "show vlan private-vlan",
+        "show vlan remote-span",
+        "show vlan usage",
+        "show vlan vtp",
+        "show vlan status",
+        "show vlan traffic"
+      }}
+  tasks:
+    - name: Fail if ios_vlans throws error
+      ios_vlans:
+        provider: "{{ ios_provider }}"
+        command_string: "{{ item }}"
+      with_items: "{{ __ios_vlans_cmd }}"
+      register: ios_vlans_result
+      failed_when: "'Unrecognized command' not in item.stdout"

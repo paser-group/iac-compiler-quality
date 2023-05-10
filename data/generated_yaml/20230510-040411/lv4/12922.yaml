@@ -1,0 +1,24 @@
+
+- hosts: all
+  vars:
+    ssh_pub_key: "/path/to/public/key"
+    ssh_priv_key: "/path/to/private/key"
+    user: "username"
+    host: "192.168.0.1"
+  
+  tasks:
+    - name: Get SSH host public key
+      shell: "ssh-keyscan {{ host }}"
+      register: ssh_keyscan_output
+  
+    - name: Compare local and remote public key
+      ansible.posix.getent:
+        database: passwd
+        key: "{{ user }}"
+      register: passwd_output
+      when: ssh_keyscan_output.changed
+  
+    - name: Fail if SSH key mismatch is detected
+      fail:
+        msg: "SSH-key mismatch detected between local key {{ ssh_pub_key }} and remote host key {{ passwd_output.passwd | regex_search('ssh-rsa (.*)$', '\\1') }}"
+      when: ssh_keyscan_output.changed and (ssh_pub_key | read_file(mode='r') != passwd_output.passwd | regex_search('ssh-rsa (.*)$', '\\1'))

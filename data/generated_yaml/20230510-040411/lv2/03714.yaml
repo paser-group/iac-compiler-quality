@@ -1,0 +1,55 @@
+
+- name: Remove Logical Volume If Volume Group Does Not Exist
+  hosts: localhost
+  tasks:
+    - name: Set incorrect volume group (edge case)
+      set_fact:
+        vg_name: non-existent_group
+
+    - name: Remove Logical Volume
+      lvol:
+        vg: "{{ vg_name }}"
+        lv: test
+        state: absent
+      ignore_errors: yes
+
+    - name: Set lv state to absent within missing vg (edge case)
+      lvol:
+        vg: "{{ vg_name }}"
+        lv: test
+        state: absent
+      register: lv_absent_directory
+
+    - name: Asserting that lv_absent_directory should contain a failure message (edge case)
+      assert:
+        that:
+          - "'FAILED' in lv_absent_directory.stderr"        
+
+    - name: Set variable with large vg-name (unexpected input)
+      set_fact:
+        vg_name: "{{ 'a'*500 }}"
+
+    - name: Set lv state to absent with large VG name (unexpected input)
+      lvol:
+        vg: "{{ vg_name }}"
+        lv: test
+        state: absent
+      register: lv_absent_file
+
+    - name: Asserting that lv_absent_file operation fails with large vg name (unexpected input)
+      assert:
+        that:
+          - "'FAILED' in lv_absent_file.stderr"
+       
+    - name: Remove Logical Volume if volume-group does not exist (edge case)
+      lvol:
+        vg: "{{ vg_name }}"
+        lv: test2
+        state: absent
+      ignore_errors: yes
+
+    - name: Cleanup; remove logical volume
+      lvol:
+        vg: "{{ vg_name }}"
+        lv: test
+        state: absent

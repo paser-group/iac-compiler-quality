@@ -1,0 +1,62 @@
+python
+import paramiko
+
+class LocalConnection:
+    def __init__(self):
+        pass
+
+    def open(self):
+        pass
+
+    def close(self):
+        pass
+
+    def execute(self, command):
+        pass
+
+class SSHConnection:
+    def __init__(self, host, username, password):
+        self._host = host
+        self._username = username
+        self._password = password
+        self._ssh = None
+
+    def open(self):
+        self._ssh = paramiko.SSHClient()
+        self._ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        self._ssh.connect(self._host, username=self._username, password=self._password)
+
+    def close(self):
+        if self._ssh is not None:
+            self._ssh.close()
+
+    def execute(self, command):
+        stdin, stdout, stderr = self._ssh.exec_command(command)
+        output = stdout.read().decode()
+        error = stderr.read().decode()
+        if error:
+            raise Exception(f"Error executing command: {error}")
+        return output
+
+class SynchronizeModule:
+    def __init__(self, host, username, password):
+        self._local_connection = LocalConnection()
+        self._ssh_connection = SSHConnection(host, username, password)
+
+    def synchronize_files(self, local_path, remote_path):
+        self._local_connection.open()
+        self._ssh_connection.open()
+
+        try:
+            # Copy files from local to remote
+            command = f"scp -r {local_path} {self._ssh_connection._username}@{self._ssh_connection._host}:{remote_path}"
+            self._local_connection.execute(command)
+
+            # Copy files from remote to local
+            command = f"scp -r {self._ssh_connection._username}@{self._ssh_connection._host}:{remote_path} {local_path}"
+            self._local_connection.execute(command)
+        except Exception as e:
+            raise e
+        finally:
+            self._ssh_connection.close()
+            self._local_connection.close()

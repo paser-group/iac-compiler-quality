@@ -1,0 +1,68 @@
+yaml
+- name: Generate java cert
+  hosts: localhost
+  
+  vars:
+    java_home: "/usr/lib/jvm/java-8-oracle"
+    cert_name: "test_cert"
+    cert_location: "/usr/local/certs/{{cert_name}}"
+    multi_line_string: |
+      This is a string \n
+      with multiple lines. \n
+      It contains single 'quotes', 
+      "double quotes",
+      special characters that aren't always allowed: !@#$%^&*()
+      
+  tasks:
+  - name: Install dependencies
+    block:
+      - name: Install OpenSSL
+        apt:
+          name: openssl
+          state: present
+          
+  - name: Generate java keystore
+    block:
+      - name: Create certificate directory
+        file:
+          path: "{{cert_location}}"
+          state: directory
+          
+      - name: Generate key pair
+        openssl_privatekey:
+          path: "{{cert_location}}/privatekey.pem"
+          passphrase: "test_password"
+          
+      - name: Create certifcate request
+        openssl_csr:
+          path: "{{cert_location}}/csr.pem"
+          privatekey_path: "{{cert_location}}/privatekey.pem"
+          common_name: "example.com"
+          subject: "/C=US/ST=CA/L=San Francisco/O=Example Co./CN=example.com"
+          
+      - name: Create self-signed certificate
+        openssl_certificate:
+          action: "create"
+          path: "{{cert_location}}/cert.pem"
+          privatekey_path: "{{cert_location}}/privatekey.pem"
+          csr_path: "{{cert_location}}/csr.pem"
+          provider: selfsigned
+          
+  - name: Install certificate in Java keystore
+    block:
+      - name: Convert certificate to PKCS12
+        openssl_pkcs12:
+          action: "export"
+          path: "{{cert_location}}/cert.p12"
+          name: "{{cert_name}}"
+          privatekey_path: "{{cert_location}}/privatekey.pem"
+          passphrase: "test_password"
+          
+      - name: Add certifcate to Java keystore
+        command: "{{java_home}}/bin/keytool -importkeystore -srckeystore {{cert_location}}/cert.p12 -srcstoretype pkcs12 -destkeystore {{java_home}}/jre/lib/security/cacerts -storepass changeit -noprompt"
+        
+  - name: Print multi-line string
+    block:
+      - name: Debugging statement
+        debug:
+          var: multi_line_string

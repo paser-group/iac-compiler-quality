@@ -1,0 +1,30 @@
+
+- name: Test s3_bucket with unconventional name
+  hosts: localhost
+  become: true
+  
+  vars:
+    bucket_name: "{{ ['my.bucket', 'MyBucket.'] | random }}"
+  
+  tasks:
+
+    - name: create s3 bucket with unconventional name
+      community.aws.s3_bucket:
+        name: "{{ bucket_name }}"
+        region: us-east-1
+      register: bucket_create
+  
+    - name: check if s3 bucket exists
+      command: aws s3api head-bucket --bucket "{{ bucket_name }}"
+      ignore_errors: yes
+      register: head_bucket
+  
+    - name: debug
+      debug:
+        var: bucket_create.bucket_metadata
+  
+    - name: delete s3 bucket
+      community.aws.s3_bucket:
+        name: "{{ bucket_name }}"
+        state: absent
+

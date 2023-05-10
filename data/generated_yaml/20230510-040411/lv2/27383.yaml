@@ -1,0 +1,38 @@
+
+---
+- name: Ansible Playbook for testing nxos_ntp 501 errors
+  hosts: all
+  vars:
+    ntp_servers: ["10.0.1.1", "10.0.1.2", "10.0.1.3", 12345, "invalid_ntp_server"]
+    ntp_source_interface: "Vlan1"
+    ntp_peer:
+      - host: "10.0.1.4"
+        version: "3"
+      - host: "invalid_peer"
+        version: "invalid"
+    service_policy: "{% if inventory_hostname == 'nxos-device-1' %}input {% elif inventory_hostname == 'nxos-device-2' %}output {% else %}invalid {% endif %}"
+  tasks:
+  - name: Configure NTP servers and sources
+    nxos_ntp:
+      ntp_servers: "{{ ntp_servers }}"
+      ntp_source_interface: "{{ ntp_source_interface }}"
+      state: present
+    register: result_ntp_servers
+  - name: Print NTP server configuration status
+    debug:
+      msg: "{{ result_ntp_servers }}"
+  - name: Configure NTP peers
+    nxos_ntp_peer:
+      peers: "{{ ntp_peer }}"
+      state: present
+    register: result_ntp_peers
+  - name: Print NTP peer configuration status
+    debug:
+      msg: "{{ result_ntp_peers }}"
+  - name: Apply service-policy for NTP
+    nxos_command:
+      commands: "service-policy {{ service_policy }} NTP"
+    register: result_service_policy
+  - name: Print service-policy configuration status
+    debug:
+      msg: "{{ result_service_policy }}"

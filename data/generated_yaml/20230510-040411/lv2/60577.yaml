@@ -1,0 +1,60 @@
+yaml
+- name: Fetch GCP compute instance facts with unexpected input
+  hosts: localhost
+
+  tasks:
+    - name: Fetch instance with incorrect auth method
+      gcp_compute_instance_facts:
+        credentials_file: "/path/to/credentials.json"
+        project: "my-project"
+        auth_kind: "jwt"
+        zone: "us-central1-a"
+        name: "my-instance"
+      register: instance_auth_fail
+
+    - name: Attempt to fetch instance that does not exist
+      gcp_compute_instance_facts:
+        credentials_file: "/path/to/credentials.json"
+        project: "my-project"
+        zone: "us-central1-a"
+        name: "nonexistent-instance"
+      register: nonexistent_instance
+
+    - name: Fetch all instances with unconventional syntax
+      gcp_compute_instance_facts:
+        credentials_file: "/path/to/credentials.json"
+        project: "my-project"
+        zone: "us-central1-a"
+        filter: "{{ 'name = my-instance' }}"
+      register: unconventional_syntax
+
+    - name: Fetch instance with empty name
+      gcp_compute_instance_facts:
+        credentials_file: "/path/to/credentials.json"
+        project: "my-project"
+        zone: "us-central1-a"
+        name: ""
+      register: empty_name_instance
+
+    - name: Fetch instance with long name
+      gcp_compute_instance_facts:
+        credentials_file: "/path/to/credentials.json"
+        project: "my-project"
+        zone: "us-central1-a"
+        name: "{{ 'a' * 65 }}"
+      register: long_name_instance
+
+    - name: Fetch instance with multiple filters
+      gcp_compute_instance_facts:
+        credentials_file: "/path/to/credentials.json"
+        project: "my-project"
+        zone: "us-central1-a"
+        filter: "{{ 'name = my-instance' }} and status = RUNNING"
+      register: multiple_filters_instance
+
+    - debug: var=instance_auth_fail
+    - debug: var=nonexistent_instance
+    - debug: var=unconventional_syntax
+    - debug: var=empty_name_instance
+    - debug: var=long_name_instance
+    - debug: var=multiple_filters_instance

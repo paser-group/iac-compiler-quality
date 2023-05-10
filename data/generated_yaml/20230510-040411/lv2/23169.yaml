@@ -1,0 +1,49 @@
+
+- name: Testing json stdout stats issue with skip tags
+  hosts: localhost
+  vars:
+    skip_tags: [skip]
+  tasks:
+    - name: Generate json data
+      command: /usr/bin/python -c 'import json; print(json.dumps(dict(name="Alice", age=25, hobbies=["gaming", "reading"])))'
+      register: json_data
+
+    - name: Output json data
+      debug:
+        var: json_data
+
+    - name: Skip tag task 1
+      debug:
+        msg: This task should be skipped because of tag 'skip'
+      tags:
+        - skip
+
+    - name: Skip tag task 2
+      debug:
+        msg: This task should also be skipped because of tag 'skip'
+      tags:
+        - skip
+
+    - name: Regular task
+      debug:
+        var: json_data.stdout | from_json
+
+    - name: Missing json file
+      debug:
+        var: json_file.stdout | from_json
+
+    - name: Corrupted json data
+      debug:
+        var: '{"name": "Bob", "age": "thirty"}' | from_json
+
+    - name: Mix of valid and invalid json data
+      vars:
+        mixed_json: '[{"name": "Alice", "age": 25}, {"name": "Bob", "age": "thirty"}, {"name": "Charlie", "age": 30}]'
+      debug:
+        var: mixed_json | from_json
+
+    - name: Use non-standard key names
+      vars:
+        non_standard: '{"first-name": "Alice", "last-name": "Doe", "email_address": "alice@example.com"}'
+      debug:
+        var: non_standard | from_json

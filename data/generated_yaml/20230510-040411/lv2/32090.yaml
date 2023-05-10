@@ -1,0 +1,44 @@
+
+- hosts: localhost
+  gather_facts: no
+  vars:
+    ansible_version: 2.7.10
+    ansible_tarball_url: "https://github.com/ansible/ansible/archive/v{{ansible_version}}.tar.gz"
+  tasks:
+    - name: Install required packages
+      yum:
+        name:
+          - gcc
+          - make
+          - openssl-devel
+          - python-devel
+        state: present
+
+    - name: Download Ansible source tarball
+      get_url:
+        url: "{{ ansible_tarball_url }}"
+        dest: "/tmp/ansible-{{ ansible_version }}.tar.gz"
+
+    - name: Extract Ansible source tarball
+      unarchive:
+        src: "/tmp/ansible-{{ ansible_version }}.tar.gz"
+        dest: "/tmp/ansible"
+        remote_src: yes
+        extra_opts: "--no-same-owner"
+
+    - name: Build Ansible from source
+      command: "cd /tmp/ansible && python setup.py install"
+      register: ansible_build_output
+      ignore_errors: yes
+
+    - name: Check Ansible version
+      command: "ansible --version"
+      register: ansible_version_output
+
+    - name: Debug Ansible build output
+      debug:
+        var: ansible_build_output
+
+    - name: Debug Ansible version output
+      debug:
+        var: ansible_version_output

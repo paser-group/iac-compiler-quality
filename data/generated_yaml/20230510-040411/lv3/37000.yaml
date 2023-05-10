@@ -1,0 +1,30 @@
+
+- name: Test vmware_guest module delete on powered on machines
+  hosts: target_host
+  vars:
+    guest_name: test_guest
+  tasks:
+  - name: Create the guest
+    vmware_guest:
+      hostname: '{{ vcenter_hostname }}'
+      username: '{{ vcenter_username }}'
+      password: '{{ vcenter_password }}'
+      name: '{{ guest_name }}'
+      state: poweredon
+  - name: Attempt deleting a powered on guest
+    vmware_guest:
+      hostname: '{{ vcenter_hostname }}'
+      username: '{{ vcenter_username }}'
+      password: '{{ vcenter_password }}'
+      name: '{{ guest_name }}'
+      state: absent
+    register: delete_task
+    ignore_errors: yes
+  - name: Power off guest
+    vmware_guest:
+      hostname: '{{ vcenter_hostname }}'
+      username: '{{ vcenter_username }}'
+      password: '{{ vcenter_password }}'
+      name: '{{ guest_name }}'
+      state: poweredoff
+    when: delete_task is failed

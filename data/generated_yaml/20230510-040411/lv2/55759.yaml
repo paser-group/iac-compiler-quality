@@ -1,0 +1,32 @@
+
+- name: Test azure_rm_virtualnetworkpeering module
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+    - name: Create virtual network
+      azure_rm_virtualnetwork:
+        resource_group: my-resource-group
+        name: my-virtual-network
+        address_prefixes:
+          - 10.0.0.0/16
+        tags:
+          environment: test
+
+    - name: Create peering with remote resource ID
+      azure_rm_virtualnetworkpeering:
+        resource_group: my-resource-group
+        virtual_network_name: my-virtual-network
+        name: my-virtual-network-peer
+        remote_virtual_network_id: "/subscriptions/{{ subscription_id }}/resourceGroups/my-remote-resource-group/providers/Microsoft.Network/virtualNetworks/my-remote-virtual-network"
+        allow_forwarded_traffic: true
+        allow_gateway_transit: true
+        use_remote_gateways: true
+        direction: InvalidDirection        # Unconventional syntax
+      ignore_errors: True                   # Unexpected input for task keyword
+      
+    - name: Verify the existence of the peering
+      assert:
+        that:
+          - "'my-virtual-network-peer' in lookup('azure_rm_virtualnetworkpeerings', 'my-virtual-network', 'my-resource-group')"
+        msg: "The peering wasn't created successfully"

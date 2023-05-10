@@ -1,0 +1,71 @@
+
+- hosts: all
+  vars:
+    ssh_control_path: "{{ ansible_env.SSH_CONTROL_PATH | default('/dev/null') }}"
+  tasks:
+    - name: Check if SSH_CONTROL_PATH is set
+      assert:
+        that:
+          - "'SSH_CONTROL_PATH' not in ansible_env"
+          - "'ControlPath' not in ssh_config.stdout_lines"
+          - "ssh_control_path == '/dev/null'"
+      become: yes
+      become_method: su
+
+    - name: Set the SSH_CONTROL_PATH
+      command: echo "ControlPath ~/.ssh/ctl/%L-%r@%h:%p" >> ~/.ssh/config
+      become: yes
+      become_method: su
+
+    - name: Ensure SSH_CONTROL_PATH is set correctly
+      assert:
+        that:
+          - "'SSH_CONTROL_PATH' not in ansible_env"
+          - "'ControlPath ~/.ssh/ctl/%L-%r@%h:%p' in ssh_config.stdout_lines"
+          - "ssh_control_path == '~/.ssh/ctl/%L-%r@%h:%p'"
+      become: yes
+      become_method: su
+
+    - name: Override the SSH_CONTROL_PATH
+      vars:
+        ssh_control_path: "{{ lookup('env', 'HOME') }}/.ssh/test"
+      command: ssh -o ControlPath={{ ssh_control_path }} -F /dev/null localhost
+      become: yes
+      become_method: su
+
+    - name: Ensure SSH_CONTROL_PATH is set temporarily
+      assert:
+        that:
+          - "'SSH_CONTROL_PATH' not in ansible_env"
+          - "'ControlPath ~/.ssh/ctl/%L-%r@%h:%p' not in ssh_config.stdout_lines"
+          - "ssh_control_path == '{{ lookup('env', 'HOME') }}/.ssh/test'"
+      become: yes
+      become_method: su
+
+    - name: Remove SSH_CONTROL_PATH
+      command: sed -i '/ControlPath.*ctl/d' ~/.ssh/config
+      become: yes
+      become_method: su
+
+    - name: Ensure SSH_CONTROL_PATH is removed
+      assert:
+        that:
+          - "'SSH_CONTROL_PATH' not in ansible_env"
+          - "'ControlPath ~/.ssh/ctl/%L-%r@%h:%p' not in ssh_config.stdout_lines"
+          - "ssh_control_path == '/dev/null'"
+      become: yes
+      become_method: su
+
+    - name: Test SSH_CONTROL_PATH without specifying the ControlPath option
+      command: ssh -F /dev/null localhost
+      become: yes
+      become_method: su
+
+    - name: Ensure SSH_CONTROL_PATH is not used without specifying the ControlPath option
+      assert:
+        that:
+          - "'SSH_CONTROL_PATH' not in ansible_env"
+          - "'ControlPath ~/.ssh/ctl/%L-%r@%h:%p' not in ssh_config.stdout_lines"
+          - "ssh_control_path == '/dev/null'"
+      become: yes
+      become_method: su

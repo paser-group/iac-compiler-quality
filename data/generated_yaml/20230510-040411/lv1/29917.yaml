@@ -1,0 +1,35 @@
+yaml
+---
+- name: Bugfix for s3 bucket name with dots and fakes3 protocol
+  hosts: all
+  gather_facts: False
+
+  vars:
+    s3_bucket_name: "my.bucket.name"
+    s3_protocol: "fakes3://"
+
+  tasks:
+  - name: Mount S3 bucket
+    mount:
+        src: "{{ s3_protocol + s3_bucket_name }}"
+        path: /mnt/s3-bucket
+        fstype: s3fs
+        opts: "noatime,_netdev,allow_other,use_cache=/tmp"
+    become: yes
+
+  - name: Verify S3 bucket mount point
+    stat:
+        path: "/mnt/s3-bucket"
+    register: s3_mount
+
+  - name: Fail if S3 bucket mount fails
+    fail:
+        msg: "S3 bucket mount failed"
+    when: s3_mount.stat is undefined
+
+  - name: Restart NFS
+    service:
+        name: nfs
+        state: restarted
+    become: yes
+...

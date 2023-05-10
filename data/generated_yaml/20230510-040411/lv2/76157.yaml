@@ -1,0 +1,29 @@
+
+- name: Run Ansible Playbook with sudo over SSH as unprivileged user
+  hosts: localhost
+  become: true
+  gather_facts: no
+  
+  vars:
+    ansible_user: unprivileged
+    ansible_become_method: sudo
+    ansible_become_user: root
+    ansible_ssh_private_key_file: /home/unprivileged/.ssh/id_rsa
+    ansible_tmpdir: /tmp/ansible
+
+  tasks:
+    - name: Create temp file as unprivileged user
+      shell: echo ansible_test > /tmp/ansible/ansible_test.txt
+      become: false
+      
+    - name: Copy temp file to privileged user
+      copy:
+        src: /tmp/ansible/ansible_test.txt
+        dest: /home/privileged/
+      become: true
+      
+    - name: Remove temp file as unprivileged user
+      file:
+        path: /tmp/ansible/ansible_test.txt
+        state: absent
+      become: false

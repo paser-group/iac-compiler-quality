@@ -1,0 +1,24 @@
+
+# Check if WinRM service is running
+Get-Service -Name WinRM
+
+# If not running, start the service
+Start-Service -Name WinRM
+
+# Enable WinRM HTTP listener
+Enable-PSRemoting -Force
+
+# Check firewall rules for WinRM
+Get-NetFirewallRule | Where-Object {$_.DisplayName -like "*WinRM*"}
+
+# If necessary, create a new inbound firewall rule for WinRM
+New-NetFirewallRule -DisplayName "WinRM HTTPS" -Direction Inbound -Protocol TCP -LocalPort 5986 -Action Allow
+
+# Test WinRM connectivity
+Test-WSMan -ComputerName <RemoteComputer> -Authentication Negotiate
+
+# If Test-WSMan fails, try adjusting WinRM configuration settings
+Set-Item -Path WSMan:\localhost\Service\Auth\Basic -Value $true
+Set-Item -Path WSMan:\localhost\Service\CertMapping\Enabled -Value $false
+Set-Item -Path WSMan:\localhost\Service\AllowUnencrypted -Value $true
+Restart-Service -Name WinRM

@@ -1,0 +1,41 @@
+yaml
+---
+
+- name: Fix None Type Error with memtotal_mb fact
+  hosts: hpux_b1111
+
+  tasks:
+  - name: Install lsof package
+    become: true
+    package:
+      name: lsof
+      state: present
+
+  - name: Add Gather Facts Variable for HP-UX B.11.11
+    set_fact:
+      ansible_facts:
+        gather_subset:
+          - "!all"
+          - "!any"
+          - hardware
+    when: ansible_distribution == 'HP-UX' and ansible_distribution_version == 'B.11.11'
+
+  - name: Check if memtotal_mb fact returns None
+    shell: facter memtotal_mb
+    register: memtotal_out
+    ignore_errors: yes
+
+  - name: Calculate total memory manually
+    set_fact:
+      calculated_mem: "{{ ansible_memtotal_mb }} * 1024"
+    when: memtotal_out.rc != 0
+
+  - name: Update memtotal_mb fact
+    set_fact:
+      memtotal_mb: "{{ calculated_mem|float }}"
+    when: calculated_mem is defined
+
+  - name: Display total memory
+    debug:
+      var: memtotal_mb
+

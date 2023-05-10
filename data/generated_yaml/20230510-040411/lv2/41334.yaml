@@ -1,0 +1,32 @@
+
+- name: Stress test Ansible compiler with unconventional syntax
+  hosts: all
+  tasks:
+    - name: Generate bcrypt hash with invalid algorithm
+      shell: "node -e \"console.log(require('bcryptjs').hashSync('password', 'invalid'))\""
+      register: bcrypt_hash_invalid_algorithm
+      ignore_errors: true
+
+    - name: Generate bcrypt hash with invalid rounds
+      shell: "node -e \"console.log(require('bcryptjs').hashSync('password', 10000001))\""
+      register: bcrypt_hash_invalid_rounds
+      ignore_errors: true
+
+    - name: Generate bcrypt hash with missing password
+      shell: "node -e \"console.log(require('bcryptjs').hashSync())\""
+      register: bcrypt_hash_missing_password
+      ignore_errors: true
+
+    - name: Fail to generate bcrypt hash due to missing bcrypt module
+      shell: "node -e \"console.log(require('bcryptzzz').hashSync('password', 10))\""
+      register: bcrypt_hash_missing_module
+      ignore_errors: true
+
+    - name: Report results of stress tests
+      debug:
+        var: item
+      with_items:
+        - bcrypt_hash_invalid_algorithm
+        - bcrypt_hash_invalid_rounds
+        - bcrypt_hash_missing_password
+        - bcrypt_hash_missing_module

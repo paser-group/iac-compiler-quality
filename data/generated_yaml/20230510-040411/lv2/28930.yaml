@@ -1,0 +1,36 @@
+
+- hosts: localhost
+  gather_facts: no
+  tasks:
+
+  - name: Create instance template with non-default network
+    gce_instance_template:
+      instance_template_name: "{{ item.name }}"
+      machine_type: "{{ item.machine_type }}"
+      network_interface:
+        network: "{{ item.network }}"
+        subnetwork: "{{ item.subnetwork | default('') }}"
+        access_configs:
+        - name: "{{ item.access_config_name | default('') }}"
+          nat_ip: "{{ item.nat_ip | default('') }}"
+      project_id: "{{ item.project_id }}"
+      auth_kind: "{{ item.auth_kind | default('') }}"
+    with_items:
+      - { name: "template1", machine_type: "n1-standard-1", network: "custom-network" }
+      - { name: "template2", machine_type: "n1-highmem-2", network: "another-network", subnetwork: "subnetwork-1", access_config_name: "external-nat", nat_ip: "10.1.2.3", project_id: "example-project", auth_kind: "serviceaccount" }
+      - { name: "template3", machine_type: "n1-standard-4", network: "yet-another-network" }
+      - { name: "template4", machine_type: "n1-highcpu-8", network: "custom-network", auth_kind: "authorized_user" }
+      - { name: "template5", machine_type: "n1-highmem-4", network: "", subnetwork: "", access_config_name: "", nat_ip: "", project_id: "", auth_kind: "" }
+
+  - name: Delete instance templates
+    gce_instance_template:
+      instance_template_name: "{{ item.name }}"
+      state: absent
+      project_id: "{{ item.project_id }}"
+      auth_kind: "{{ item.auth_kind | default('') }}"
+    with_items:
+      - { name: "template1", project_id: "example-project", auth_kind: "application_default" }
+      - { name: "template2", project_id: "example-project", auth_kind: "serviceaccount" }
+      - { name: "template3", project_id: "example-project", auth_kind: "authorized_user" }
+      - { name: "template4", project_id: "example-project", auth_kind: "application_default" }
+      - { name: "template5", project_id: "", auth_kind: "" }

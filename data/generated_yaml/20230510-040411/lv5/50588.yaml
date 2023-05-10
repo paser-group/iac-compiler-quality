@@ -1,0 +1,21 @@
+
+- name: Test win_reboot module
+  hosts: windows
+  tasks:
+    - name: Reboot machine with timeout less than 5 seconds
+      win_reboot:
+        timeout: 3
+        msg: "Rebooting with timeout of 3 seconds"
+      register: reboot_result
+
+    - name: Wait for machine to come back online
+      wait_for:
+        host: "{{ inventory_hostname }}"
+        port: 5985
+        state: started
+        timeout: 300
+      when: reboot_result.reboot_required
+      become: yes
+
+    - debug:
+        msg: "Machine {{ inventory_hostname }} is back online after reboot"

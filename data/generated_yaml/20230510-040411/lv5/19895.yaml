@@ -1,0 +1,51 @@
+
+- name: Test ec2_vpc module for potential bugs
+  hosts: localhost
+  vars:
+    region: us-west-1
+    vpc_cidr: 10.0.0.0/16
+    subnet_cidr: 10.0.1.0/24
+    igw_name: my-internet-gateway
+    rt_name: my-route-table
+  tasks:
+  - name: Create VPC and wait for it to be available
+    ec2_vpc:
+      state: present
+      cidr_block: "{{ vpc_cidr }}"
+      region: "{{ region }}"
+      wait: yes
+      tags:
+        Name: my-vpc
+    register: vpc
+
+  - name: Create Internet Gateway and wait for it to be available
+    ec2_vpc_igw:
+      state: present
+      region: "{{ region }}"
+      vpc_id: "{{ vpc.id }}"
+      tags:
+        Name: "{{ igw_name }}"
+    register: igw
+    when: vpc.changed
+
+  - name: Create Route Table and wait for it to be available
+    ec2_vpc_route_table:
+      state: present
+      region: "{{ region }}"
+      vpc_id: "{{ vpc.id }}"
+      tags:
+        Name: "{{ rt_name }}"
+    register: rt
+    when: vpc.changed
+
+  - name: Create subnet and wait for it to be available
+    ec2_vpc_subnet:
+      state: present
+      cidr_block: "{{ subnet_cidr }}"
+      region: "{{ region }}"
+      vpc_id: "{{ vpc.id }}"
+      availability_zone: "{{ region }}a"
+      tags:
+        Name: my-subnet
+    register: subnet
+    when: vpc.changed and rt.changed and igw.changed

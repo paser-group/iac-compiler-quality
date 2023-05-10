@@ -1,0 +1,68 @@
+
+- name: Test registered variable access
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+    - name: Create file with spaces
+      shell: touch "my test file.txt"
+
+    - name: Get file info
+      shell: ls -l "my test file.txt"
+      register: file_info
+
+    - name: Access file info with dot notation
+      debug:
+        msg: "{{ file_info.stdout_lines.0 }}"
+
+    - name: Access file info with bracket notation
+      debug:
+        msg: "{{ file_info['stdout_lines'][0] }}"
+
+    - name: Access file info with invalid notation
+      debug:
+        msg: "{{ file_info.stdout_lines.1 }}"
+
+    - name: Access undefined variable with dot notation
+      debug:
+        msg: "{{ undefined_var.undefined_field }}"
+
+    - name: Access undefined variable with bracket notation
+      debug:
+        msg: "{{ undefined_var['undefined_field'] }}"
+
+    - name: Access undefined variable with invalid notation
+      debug:
+        msg: "{{ undefined_var.undefined_field2 }}"
+
+    - name: Access registered variable with invalid notation
+      debug:
+        msg: "{{ file_info.undefined_field }}"
+
+    - name: Access registered variable with unexpected input
+      debug:
+        msg: "{{ file_info.stdout_lines.test }}"
+
+    - name: Access registered variable with unconventional syntax
+      debug:
+        msg: "{{ file_info.stdout_lines[0]: }}"
+
+    - name: Access registered variable with reserved word in bracket notation
+      debug:
+        msg: "{{ file_info.stdout_lines[int] }}"
+
+    - name: Access registered variable with reserved word in dot notation
+      debug:
+        msg: "{{ file_info.int }}"
+
+    - name: Attempt to register variable with invalid name
+      shell: echo "test"
+      register: 1-2-3
+
+    - name: Access registered variable with invalid name
+      debug:
+        msg: "{{ 1-2-3 }}"
+
+    - name: Access registered variable with unexpected escape character
+      debug:
+        msg: "{{ file_info.stdout_lines.0|regex_replace('\w', '\\') }}"

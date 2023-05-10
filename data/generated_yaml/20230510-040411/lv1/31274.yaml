@@ -1,0 +1,41 @@
+yaml
+---
+- hosts: localhost
+  gather_facts: no
+  tasks:
+    - name: Install boto and boto3
+      pip:
+        name: "{{ item }}"
+      with_items:
+        - boto
+        - boto3
+      become: yes
+
+    - name: Create AWS S3 Bucket
+      become: yes
+      vars:
+        region: "us-east-1"
+        s3_bucket: "my-s3-bucket"
+      amazon.aws.aws_s3:
+        name: "{{ s3_bucket }}"
+        region: "{{ region }}"
+        state: "present"
+
+    - name: Ensure AWS CLI is installed
+      become: yes
+      shell: "aws --version"
+      register: aws_version
+      failed_when: "'aws-cli' not in aws_version.stdout"
+      changed_when: false
+
+    - name: Get the list of all S3 buckets
+      become: yes
+      shell: "aws s3api list-buckets --query 'Buckets[].Name'"
+      register: s3_buckets
+      changed_when: false
+
+    - name: Print the list of all S3 buckets
+      debug:
+        var: s3_buckets.stdout_lines
+
+    # add more tasks as per your requirements

@@ -1,0 +1,39 @@
+
+- name: Test ansible compiler for any_errors_fatal
+  hosts: all
+  gather_facts: false
+  
+  vars:
+    any_errors_fatal: true
+  
+  tasks:
+  - name: Ping all hosts
+    ping:
+  
+  - name: Fail task on unreachable hosts
+    command: "/bin/false"
+    register: res
+    any_errors_fatal: "{{ any_errors_fatal }}"
+    ignore_unreachable: yes
+  
+  - name: Print message on failed host
+    debug:
+      msg: "Task failed on host {{ inventory_hostname }}"
+    when: res['failed'] and not res['unreachable']
+  
+  - name: Ignore task failure on unreachable hosts
+    debug:
+      msg: "Task failed on unreachable host {{ inventory_hostname }}"
+    when: res['unreachable']
+    ignore_errors: yes
+  
+  - name: Fail task on remaining hosts
+    command: "/bin/false"
+    when: not res['unreachable']
+    any_errors_fatal: "{{ any_errors_fatal }}"
+    ignore_unreachable: yes
+  
+  - name: Print message on non-failed host
+    debug:
+      msg: "Task not failed on host {{ inventory_hostname }}"
+    when: not res['failed'] and not res['unreachable']

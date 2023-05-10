@@ -1,0 +1,30 @@
+
+- name: Identify bugs with 'server_port' in bigip_node module
+  hosts: bigip_device
+  gather_facts: no
+  connection: local
+
+  vars:
+    sys_host: "{{ ansible_host }}"
+    sys_user: "{{ ansible_user }}"
+    sys_pass: "{{ ansible_password }}"
+
+  tasks:
+    - name: Create new BIG-IP node with invalid 'server_port' value
+      bigip_node:
+        state: present
+        host: "{{ sys_host }}"
+        user: "{{ sys_user }}"
+        password: "{{ sys_pass }}"
+        partition: Common
+        node_name: test-node
+        address: 10.1.1.1
+        server_port: "{{ '10.1.1.1' }}"
+        validate_certs: no
+      register: result
+      ignore_errors: yes
+
+    - name: Print error message if 'server_port' value is invalid
+      debug:
+        var: result.msg
+      failed_when: "'invalid port' not in result.msg"

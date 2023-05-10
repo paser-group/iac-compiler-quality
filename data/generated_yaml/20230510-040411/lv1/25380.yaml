@@ -1,0 +1,31 @@
+yaml
+---
+- name: Restart RabbitMQ service
+  hosts: <YOUR_HOSTNAME_OR_IP_ADDRESS>
+  become: true
+  tasks:
+    - name: Stop RabbitMQ service
+      systemd:
+        name: rabbitmq-server
+        state: stopped
+
+    - name: Remove RabbitMQ configuration file directory
+      file:
+        path: "/var/lib/rabbitmq"
+        state: absent
+
+    - name: Start RabbitMQ service
+      systemd:
+        name: rabbitmq-server
+        state: started
+
+    - name: Create RabbitMQ users and grant access
+      shell: |
+        rabbitmqctl add_user <USERNAME> <PASSWORD>
+        rabbitmqctl set_permissions -p / <USERNAME> ".*" ".*" ".*"
+      ignore_errors: yes
+
+    - name: Restart RabbitMQ service
+      systemd:
+        name: rabbitmq-server
+        state: restarted

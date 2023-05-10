@@ -1,0 +1,39 @@
+
+- hosts: all
+  gather_facts: no
+  tasks:
+    - name: Create a new role with permissions on DVS folder
+      vmware_guest:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: no
+        folder: /Datacenters/MyDatacenter/vm/MyVM
+        name: MyVM
+        state: present
+        hardware:
+          memory_mb: 1024
+          num_cpus: 2
+        networks:
+          - name: "VM Network"
+            start_connected: yes
+        esxi:
+          hostname: "{{ esxi_hostname }}"
+          username: "{{ esxi_username }}"
+          password: "{{ esxi_password }}"
+          validate_certs: no
+        wait_for_ip_address: yes
+        vm_extra_config:
+          disk.enableUUID: "true"
+          tools.syncTime: "true"
+        vmware_guest_customization:
+          hostname: MyVM.example.com
+          domain: example.com
+          ip_settings:
+            ipv4:
+              address: 192.168.1.50
+              netmask: 255.255.255.0
+  roles:
+    - role: "Administrators in MyDatacenter.Datacenter"
+      permission: "{{ ['VirtualMachine.State.Create', 'VirtualMachine.State.Remove'] }}"
+      propagate: True

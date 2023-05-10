@@ -1,0 +1,21 @@
+
+- name: Test playbook for zlib-related issues in Ansible MySQL module
+  hosts: localhost
+  tasks:
+    - name: Install zlib library
+      become: true
+      apt:
+        name: zlib
+        state: present
+
+    - name: Compress a file using zlib
+      shell: cat /etc/os-release | gzexe > /tmp/os-release.gz
+      register: compressed_file
+
+    - name: Attempt to decompress the file, expecting an error
+      shell: gunzip -c {{ compressed_file.stdout_lines }} > /dev/null
+      ignore_errors: yes
+
+    - name: Print the output of the gunzip command
+      debug: msg="{{ item }}"
+      with_items: "{{ compressed_file.stderr_lines }}"

@@ -1,0 +1,98 @@
+yaml
+---
+- name: Test gcp_container_cluster module with edge cases
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+  - name: Create a cluster without specifying username and password
+    gcp_container_cluster:
+      name: test-cluster
+      zone: us-central1-a
+      project: my-project
+      network: https://www.googleapis.com/compute/v1/projects/my-project/regions/us-central1-a/networks/default
+      subnetwork: https://www.googleapis.com/compute/v1/projects/my-project/regions/us-central1-a/subnetworks/default
+      service_account_contents: "{{ lookup('file', '/path/to/service-account.json') }}"
+      node_pools:
+        - name: test-node-pool
+          initial_node_count: 1
+          machine_type: n1-standard-1
+          autoscaling:
+            enabled: true
+            max_node_count: 3
+            min_node_count: 1
+          version: "latest"
+      state: present
+    register: cluster_without_username_password
+
+  - name: Create a cluster with unconventional syntax
+    gcp_container_cluster: name='test-cluster' zone='us-central1-a' project='my-project' network=https://www.googleapis.com/compute/v1/projects/my-project/regions/us-central1-a/networks/default subnetwork=https://www.googleapis.com/compute/v1/projects/my-project/regions/us-central1-a/subnetworks/default service_account_contents='{{ lookup(''file'', ''/path/to/service-account.json'') }}' node_pools=[{'name': 'test-node-pool', 'initial_node_count': 1, 'machine_type': 'n1-standard-1', 'autoscaling': {'enabled': true, 'max_node_count': 3, 'min_node_count': 1}, 'version': 'latest'}] state=present
+    register: cluster_with_unconventional_syntax
+
+  - name: Create a cluster with unexpected input
+    gcp_container_cluster:
+      name: te$t-clus+er
+      zone: us-central1-a
+      project: my-project
+      network: https://www.googleapis.com/compute/v1/projects/my-project/regions/us-central1-a/networks/default
+      subnetwork: https://www.googleapis.com/compute/v1/projects/my-project/regions/us-central1-a/subnetworks/default
+      service_account_contents: "{{ lookup('file', '/path/to/service-account.json') }}"
+      node_pools:
+        - name: te$t-node-pool
+          initial_node_count: 1
+          machine_type: n1-standard-1
+          autoscaling:
+            enabled: true
+            max_node_count: 3
+            min_node_count: 1
+          version: "latest"
+      state: present
+    register: cluster_with_unexpected_input
+
+  - name: Fail to create a cluster due to wrong parameter type
+    gcp_container_cluster:
+      name: test-cluster
+      zone: us-central1-a
+      project: my-project
+      network: https://www.googleapis.com/compute/v1/projects/my-project/regions/us-central1-a/networks/default
+      subnetwork: https://www.googleapis.com/compute/v1/projects/my-project/regions/us-central1-a/subnetworks/default
+      service_account_contents: "{{ lookup('file', '/path/to/service-account.json') }}"
+      node_pools:
+        - name: test-node-pool
+          initial_node_count: 1
+          machine_type: n1-standard-1
+          autoscaling:
+            enabled: true
+            max_node_count: "3"
+            min_node_count: 1
+          version: "latest"
+      state: present
+    register: cluster_with_wrong_parameter_type
+
+  - name: Fail to create a cluster due to missing project parameter
+    gcp_container_cluster:
+      name: test-cluster
+      zone: us-central1-a
+      network: https://www.googleapis.com/compute/v1/projects/my-project/regions/us-central1-a/networks/default
+      subnetwork: https://www.googleapis.com/compute/v1/projects/my-project/regions/us-central1-a/subnetworks/default
+      service_account_contents: "{{ lookup('file', '/path/to/service-account.json') }}"
+      node_pools:
+        - name: test-node-pool
+          initial_node_count: 1
+          machine_type: n1-standard-1
+          autoscaling:
+            enabled: true
+            max_node_count: 3
+            min_node_count: 1
+          version: "latest"
+      state: present
+    register: cluster_with_missing_project_parameter
+
+  - name: Debug info
+    debug: var=item
+    with_items:
+      - cluster_without_username_password
+      - cluster_with_unconventional_syntax
+      - cluster_with_unexpected_input
+      - cluster_with_wrong_parameter_type
+      - cluster_with_missing_project_parameter

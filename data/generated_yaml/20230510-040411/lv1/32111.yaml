@@ -1,0 +1,48 @@
+yaml
+- name: Configure VRFs with eos_eapi module
+  hosts: network_devices
+  gather_facts: no
+  become: yes  # assuming root access is required
+  tasks:
+    # Ensure the necessary dependencies are installed
+    - name: Install required Python packages
+      apt:
+        name:
+          - python3
+          - python3-pip
+        state: present
+
+    # Configure the default VRF
+    - name: Configure default VRF
+      eos_eapi:
+        transport: eapi
+        host: "{{ inventory_hostname }}"
+        username: "{{ ansible_user }}"
+        password: "{{ ansible_password }}"
+        commands:
+          - default vrf
+          - interface loopback0
+          - ip address 10.0.0.1/32
+
+    # Configure non-default VRFs (if necessary)
+    - name: Configure additional VRFs
+      eos_eapi:
+        transport: eapi
+        host: "{{ inventory_hostname }}"
+        username: "{{ ansible_user }}"
+        password: "{{ ansible_password }}"
+        commands:
+          - vrf management
+          - interface ethernet1
+          - ip address 172.16.1.1/24
+
+    # Verify VRF configurations
+    - name: Verify VRF configurations
+      eos_eapi:
+        transport: eapi
+        host: "{{ inventory_hostname }}"
+        username: "{{ ansible_user }}"
+        password: "{{ ansible_password }}"
+        commands:
+          - show interfaces detail
+          - show ip interface brief

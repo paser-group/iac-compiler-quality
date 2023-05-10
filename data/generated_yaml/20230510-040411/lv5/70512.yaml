@@ -1,0 +1,34 @@
+
+- name: Test ansible_user_* facts with different become_methods
+  hosts: all
+  vars:
+    methods:
+      - sudo
+      - su
+    facts:
+      sudo:
+        ansible_user_shell: /bin/bash
+        ansible_user_uid: 0
+      su:
+        ansible_user_shell: /bin/sh
+        ansible_user_uid: 1000
+  tasks:
+    - name: Reset user password with sudo
+      ansible.builtin.user:
+        name: testuser
+        password: "{{ 'password' | password_hash('sha512') }}"
+        state: present
+      become_method: "{{ item }}"
+      become_user: root
+      with_items: "{{ methods }}"
+      when: item == 'sudo'
+
+    - name: Reset user password with su
+      ansible.builtin.user:
+        name: testuser
+        password: "{{ 'password' | password_hash('sha512') }}"
+        state: present
+      become_method: "{{ item }}"
+      become_user: root
+      with_items: "{{ methods }}"
+      when: item == 'su'

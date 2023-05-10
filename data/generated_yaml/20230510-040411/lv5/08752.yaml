@@ -1,0 +1,34 @@
+
+# Playbook task to create a new encrypted YAML file using Ansible vault
+- name: Create an encrypted file with sensitive data
+  ansible.builtin.copy:
+    content: |
+      database_server: db.example.com
+      database_password: "{{ vault_db_password }}"
+    dest: /path/to/new-data.yml
+    mode: '0600'
+  vars:
+    vault_db_password: !vault |
+                      $ANSIBLE_VAULT;1.1;AES256
+                      333961653830353566666431613362...
+
+# Playbook task to decrypt the encrypted YAML file and verify its contents
+- name: Decrypt and verify file content
+  ansible.builtin.vars_prompt:
+    password: "Enter the Ansible vault password:"
+    prompt: "The file contains a new database server: {{ database_server }} and password: {{ database_password }}. Is this content correct? [yes/no] "
+  register: database_credentials
+  ignore_errors: true
+  changed_when: false
+  failed_when: false
+  no_log: "{{ vault_passphrase is not defined }}"
+  vars:
+    deploy_env: "{{ ENV | default('dev') }}"
+    vault_passphrase: "{{ lookup('env', 'VAULT_PASS') }}"
+    decrypted_content: "{{ lookup('file', '/path/to/new-data.yml') | from_yaml }}"
+  when: "'yes' not in database_credentials.prompt_response or database_credentials.prompt_response == ''"
+  block:
+    - set_fact:
+        database_server: "{{ decrypted_content[deploy_env].database_server }}"
+        database_password: "{{ decrypted_content[deploy_env].database_password }}"
+      when: deploy_env in decrypted_content

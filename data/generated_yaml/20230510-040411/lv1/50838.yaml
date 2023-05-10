@@ -1,0 +1,29 @@
+yaml
+---
+- name: Update random_mac filter in Ansible
+  hosts: localhost
+  gather_facts: no
+  tasks:
+    - name: Update random_mac filter
+      lineinfile:
+        path: /path/to/ansible/library/filters.py
+        regexp: "^def random_mac"
+        line: |
+          def random_mac(prefix=None, byte_fmt="%02x", byte_separator=":"):
+              if not prefix:
+                  prefix = "52:54:00"
+              prefix_bytes = prefix.split(":")
+              if len(prefix_bytes) not in [2, 4]:
+                  raise ValueError("Prefix must have exactly 2 or 4 bytes")
+              num_bytes = 6 - len(prefix_bytes)
+              mac_bytes = prefix_bytes + [None] * num_bytes
+              for i in range(num_bytes):
+                  mac_bytes[i + len(prefix_bytes)] = random.randint(0, 255)
+              return byte_separator.join(
+                  [byte_fmt % byte for byte in mac_bytes if byte is not None]
+              )
+      notify: Reload filters
+
+  handlers:
+    - name: Reload filters
+      command: ". /path/to/ansible/handler_reload.sh"

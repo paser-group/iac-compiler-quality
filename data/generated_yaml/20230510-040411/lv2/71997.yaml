@@ -1,0 +1,47 @@
+yaml
+---
+- hosts: all
+  gather_facts: no
+
+  handlers:
+    # This handler should be triggered every time a service is restarted
+    - name: restart service handler
+      service: name={{ service_name }} state=restarted
+
+  tasks:
+    # Installing a package that triggers a service restart
+    - name: installing package
+      yum:
+        name: "{{ package_name }}"
+        state: installed
+
+    # Stopping the service before its restart
+    - name: stopping service
+      service: name={{ service_name }} state=stopped
+
+    # Starting the service again with notify to handler
+    - name: starting service
+      service: name={{ service_name }} state=started
+      notify:
+        - restart service handler
+
+    # Using an invalid argument name to test error handling
+    - name: using invalid argument
+      service:
+        name={{ service_name }}
+        invalidarg: "{{ invalid_arg }}"
+      ignore_errors: yes
+
+    # Using a variable with an invalid name to test error handling
+    - name: using invalid variable name
+      service:
+        name={{ service_name }}
+        state="{{ invalid_variable }}"
+      ignore_errors: yes
+
+    # Using an invalid condition to test error handling
+    - name: using invalid condition
+      service:
+        name={{ service_name }}
+        state: started
+      when: "{{ invalid_condition }}"

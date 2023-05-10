@@ -1,0 +1,43 @@
+yaml
+---
+- name: Test Ansible command on bastion
+  hosts: bastion
+
+  tasks:
+    - name: Test connection to remote server
+      ping:
+      delegate_to: "{{ item }}"
+      with_items:
+        - "{{ groups['remote_server'] }}"
+      ignore_errors: yes
+
+    - name: Install dependencies on remote server
+      shell: |
+        sudo apt update
+        sudo apt install -y python3-pip
+      delegate_to: "{{ item }}"
+      with_items:
+        - "{{ groups['remote_server'] }}"
+      become: yes
+
+    - name: Test SSH connection from bastion to remote server
+      command: ssh -o StrictHostKeyChecking=no {{ item }} exit
+      delegate_to: localhost
+      with_items:
+        - "{{ groups['remote_server'] }}"
+      ignore_errors: yes
+
+    - name: Run command on remote server
+      command: |
+        echo "hello"
+      delegate_to: "{{ item }}"
+      with_items:
+        - "{{ groups['remote_server'] }}"
+      become: yes
+
+  handlers:
+    - name: restart ssh service
+      become: yes
+      service:
+        name: ssh
+        state: restarted

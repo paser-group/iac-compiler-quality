@@ -1,0 +1,30 @@
+
+- name: Fix WinRM Connection Error on Windows Server 2019
+  hosts: all
+  gather_facts: no
+  vars:
+    ansible_user: administrator
+    ansible_password: your_password_here
+    ansible_connection: winrm
+    ansible_winrm_server_cert_validation: ignore
+  tasks:
+    - name: Test WinRM Connection
+      win_ping:
+    - name: Enable WinRM Service
+      win_service:
+        name: winrm
+        start_mode: auto
+        state: started
+    - name: Add WinRM Firewall Rule
+      win_firewall_rule:
+        name: "WinRM Remote Management"
+        direction: in
+        protocol: tcp
+        localport: 5985
+        state: present
+    - name: Configure WinRM Trusted Hosts
+      win_shell: Set-Item -Path WSMan:\localhost\Client\TrustedHosts -Value "*" -Force
+    - name: Restart WinRM Service
+      win_service:
+        name: winrm
+        state: restarted

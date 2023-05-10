@@ -1,0 +1,91 @@
+
+- name: Verify gluster_volume module error handling
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create a volume with invalid transport type
+      gluster_volume:
+        state: present
+        name: "{{ random(1, 1000, 'gluster-') }}"
+        transport: "ftp"
+      register: volume_error
+
+    - name: Assert that module throws an error with unsupported transport type
+      assert:
+        that:
+          - volume_error is failed
+          - 'unsupported transport type' in volume_error.msg
+
+    - name: Create a volume with invalid transport address
+      gluster_volume:
+        state: present
+        name: "{{ random(1, 1000, 'gluster-') }}"
+        transport: "tcp"
+        transport_address: "localhost:12345"
+      register: volume_error
+
+    - name: Assert that module throws an error with invalid transport address
+      assert:
+        that:
+          - volume_error is failed
+          - 'Unable to reach glusterd' in volume_error.msg
+
+    - name: Create a distributed replicated volume
+      gluster_volume:
+        state: present
+        name: "{{ random(1, 1000, 'gluster-') }}"
+        state: present
+        brick_transport: "rdma"
+        bricks:
+          - host: "10.0.0.1"
+            path: "/vol/brick1"
+            replica: "2"
+          - host: "10.0.0.2"
+            path: "/vol/brick2"
+            replica: "2"
+      register: vol_result
+
+    - name: Assert that volume creation is successful
+      assert:
+        that:
+          - vol_result is succeeded
+          
+    - name: Mount the volume
+      mount:
+        path: "/mnt/{{ vol_result.name }}"
+        src: "{{ hostvars[item]['ansible_fqdn'] }}:/{{ item.brick.path }}"
+        fstype: glusterfs
+        opts: _netdev
+      with_items:
+        - "{{ vol_result.bricks }}"
+
+    - name: Assert that mount is successful
+      assert:
+        that:
+        - "'{{ vol_result.name }}' in ansible_mounts[*].mount'"
+
+    - name: Start volume with unsuported options
+      gluster_volume:
+        state: started
+        name: "{{ vol_result.name }}"
+        options:
+          - "-t"
+      register: volume_error
+
+    - name: Assert that module throws an error with unsupported option
+      assert:
+        that:
+          - volume_error is failed
+          - 'invalid option' in volume_error.msg
+
+    - name: Stop and delete the volume
+      gluster_volume:
+        state: absent
+        name: "{{ vol_result.name }}"
+      register: vol_result
+
+    - name: Assert that volume deletion is successful
+      assert:
+        that:
+          - vol_result is succeeded

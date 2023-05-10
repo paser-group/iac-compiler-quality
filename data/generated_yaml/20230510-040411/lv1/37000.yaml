@@ -1,0 +1,24 @@
+
+---
+- name: Proper fix for #26020:vmware_guest state:absent fails on powered on machines
+  hosts: your_vmware_host
+  gather_facts: yes
+
+  tasks:
+  - name: Check if VM exists
+    vmware_guest_find:
+      name: your_vm_name
+    register: vm_find_result
+
+  - name: Power off VM if found
+    vmware_guest_powerstate:
+      name: your_vm_name
+      state: powered_off
+    when: vm_find_result.moid is defined
+
+  - name: Unregister VM if found
+    vmware_guest:
+      name: your_vm_name
+      template: no
+      state: absent
+    when: vm_find_result.moid is defined

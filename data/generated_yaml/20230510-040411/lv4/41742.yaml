@@ -1,0 +1,31 @@
+
+- hosts: localhost
+  connection: local
+  tasks:
+    - name: Create SQL database
+      azure_rm_sqldatabase:
+        resource_group: my_rg
+        name: testdb
+        server_name: my_server
+        login_password: "{{ lookup('env', 'DB_PASSWORD') }}"
+      register: db_result
+      
+    - name: Get database details
+      azure_rm_sqldatabase_info:
+        resource_group: my_rg
+        name: testdb
+        server_name: my_server
+        login_password: "{{ lookup('env', 'DB_PASSWORD') }}"
+      register: db_info
+      
+    - name: Serialize database details
+      set_fact:
+        serialized_data: "{{ db_info | json_query('{}.dependencies') }}"
+        
+    - name: Deserialize database details
+      set_fact:
+        deserialized_data: "{{ serialized_data | from_json }}"
+        
+    - name: Compare original and deserialized data
+      assert:
+        that: db_info.dependencies == deserialized_data

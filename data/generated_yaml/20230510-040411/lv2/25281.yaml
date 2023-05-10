@@ -1,0 +1,31 @@
+yaml
+- hosts: localhost
+  vars:
+    file_name: "{{ lookup('env', 'HOME') }}/test.txt"
+
+  tasks:
+    - name: Install Vim
+      command: "{{ item }}"
+      with_items:
+        - sudo apt-get update
+        - sudo apt-get install vim
+
+    - name: Copy file to remote host with Vim
+      command: "vim {{ file_name }}"
+      args:
+        chdir: "{{ lookup('env', 'HOME') }}"
+      delegate_to: localhost
+
+    - name: Check if file exists
+      stat:
+        path: "{{ file_name }}"
+      register: file_stat
+
+    - assert:
+        that:
+          - file_stat.stat.exists == true
+
+    - name: Remove the file
+      file:
+        path: "{{ file_name }}"
+        state: absent

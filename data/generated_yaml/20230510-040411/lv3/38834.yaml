@@ -1,0 +1,33 @@
+
+# Playbook: selective_callback_issue.yml
+
+- hosts: all
+  vars:
+    pattern: "new-line"
+  tasks:
+    - name: Update lineinfile
+      lineinfile:
+        path: "/tmp/test.txt"
+        regexp: "{{ pattern }}"
+        line: "This is a new line"
+        state: present
+      register: line_edited
+      notify:
+        - Revert file
+    - name: Check lineinfile update status
+      debug:
+        var: line_edited
+      notify:
+        - Selective callback handler
+      
+  handlers:
+    - name: Selective callback handler
+      debug:
+        msg: "Selective callback triggered"
+      when: "'line_edited' in triggered"
+
+    - name: Revert file
+      lineinfile:
+        path: "/tmp/test.txt"
+        regexp: "{{ pattern }}"
+        state: absent

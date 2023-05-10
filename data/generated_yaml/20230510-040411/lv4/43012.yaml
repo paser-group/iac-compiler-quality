@@ -1,0 +1,46 @@
+
+- name: IIS Provisioning using Win_DSC with PSCredential
+  hosts: windows_servers
+  gather_facts: no
+  tasks:
+  - name: Install Win_DSC
+    raw: Install-Module -Name PSDesiredStateConfiguration -Force
+    args:
+      executable: powershell.exe
+      creates: C:\\Program Files\\WindowsPowerShell\\Modules\\PSDesiredStateConfiguration
+  - name: Copy Win_DSC Config Files
+    ansible.windows.win_copy:
+      src: ./WinDSC
+      dest: "C:\\Ansible"
+  - name: Configure Win_DSC
+    raw: Set-DscLocalConfigurationManager -Path "C:\\Ansible" -Verbose
+    args:
+      executable: powershell.exe
+  - name: Install IIS 
+    ansible.windows.win_feature:
+      name: Web-Server
+  - name: Generic Script
+    ansible.windows.win_shell: |
+                        $username = "Admin"
+                        $password = "P@ssw0rd"
+                        $securePassword = ConvertTo-SecureString $password -AsPlainText -Force
+                        $credential = New-Object System.Management.Automation.PSCredential($username, $securePassword)
+                        $CreateWebsite = @{
+                            Name = "Ansible";
+                            WebSiteName = "Ansible";
+                            PhysicalPath = "C:\\inetpub\\wwwroot\\Ansible";
+                            Credential = $credential
+                            Ensure = "Present";
+                            State = "Started"
+                        }
+                        Try {
+                            $result = Set-DscLocalConfigurationManager -Path "C:\\Ansible" -Verbose 
+                            $result += Import-DscResource -ModuleName 'PSDesiredStateConfiguration'
+                            $result += Get-DscConfiguration -Verbose
+                            $result += Apply-DscConfiguration -Verbose -Wait -Force 
+                            $result += New-Website @CreateWebsite
+                            }
+                            Catch {
+                            $result += $_.Exception.Message
+                            }
+                        Write-Host $result -ForegroundColor Green

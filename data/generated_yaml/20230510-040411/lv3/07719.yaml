@@ -1,0 +1,53 @@
+
+---
+- name: Test EC2 volume attachment from snapshot
+  hosts: localhost
+  gather_facts: no
+  vars:
+    instance_type: t2.micro
+    region: us-east-1
+    image: ami-0c94855ba95c71c99 # Amazon Linux 2
+    volume_size: 6
+    snapshot_id: snap-0a8bc55dcec5aaa11
+
+  tasks:
+    - name: Launch EC2 instance
+      ec2:
+        key_name: my-key
+        group: my-security-group
+        instance_type: "{{ instance_type }}"
+        image: "{{ image }}"
+        wait: yes
+        region: "{{ region }}"
+        count: 1
+        instance_tags:
+          Name: my-test-instance
+      register: ec2_instance
+
+    - name: Create volume from snapshot
+      ec2_vol:
+        instance: "{{ ec2_instance.instances[0].id }}"
+        region: "{{ region }}"
+        snapshot: "{{ snapshot_id }}"
+        size: "{{ volume_size }}"
+        state: present
+      register: ec2_vol
+
+    - name: Attach volume to instance
+      ec2_vol:
+        instance: "{{ ec2_instance.instances[0].id }}"
+        region: "{{ region }}"
+        volume: "{{ ec2_vol.volume_id }}"
+        device_name: /dev/sdf
+        state: attached
+      register: ec2_vol_attach
+
+    - name: Verify volume attachment
+      ec2_vol:
+        region: "{{ region }}"
+        volume: "{{ ec2_vol.volume_id }}"
+      register: ec2_vol_verify
+
+    - name: Debug output
+      debug:
+        var: ec2_vol_verify

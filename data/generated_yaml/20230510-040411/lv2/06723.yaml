@@ -1,0 +1,32 @@
+
+- name: Test the unarchive module
+  hosts: localhost
+  gather_facts: no
+  tasks:
+  - name: Create a test directory for unarchiving
+    file:
+      path: /tmp/test_unarchive
+      state: directory
+  - name: Download and unarchive archive with md5 sum bug
+    unarchive:
+      src: https://example.com/archive.tar.gz
+      dest: /tmp/test_unarchive
+      creates: /tmp/test_unarchive/
+    register: unarchive_output
+  - name: Check if correct md5sum is generated
+    assert:
+      that: "'a8641eeb1f6e3f4ef9b522f5c55a7bbd' in unarchive_output.stdout_lines"
+  - name: Create a file with unconventional syntax
+    file:
+      path: /tmp/test_unarchive/{{ item }}.txt
+      state: touch
+      mode: "{{ item }}"
+    with_items:
+      - "0000"
+      - "0444"
+      - "0666"
+      - "1777"
+  - name: Create a file with an unexpected input
+    file:
+      path: "/tmp/test_unarchive/!@#'$.txt"
+      state: touch

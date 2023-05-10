@@ -1,0 +1,58 @@
+
+- hosts: all
+  become: true
+  vars:
+    user_name: "test_user"
+    user_password: "UnsecurePassword"
+    user_hashed_password: "$6$6Wye6UszF97GtggZ$6IoF5S6pq8rNCZM9a6phBt6gq1ELcu6wXND3I47aVbF8zkApc.k8Zk11IMAF3IjcDBbbB4vemzN.JgamA3JWt/"
+    user_encrypted_password: !vault |
+          $ANSIBLE_VAULT;1.1;AES256
+          62623865643836666133613331316234326331623938323464613963313565376631613731336432
+          3661633461303762366132326363633864303564386138350a343237653865663961333238
+          38313938666537343036356433636230326334323032646630616661653564303263656565306134
+  tasks:
+    - name: Create User with a plain text password
+      user:
+        name: "{{ user_name }}"
+        password: "{{ user_password }}"
+      register: result_plain_text
+      ignore_errors: yes
+
+    - name: Change password with a plain text password
+      user:
+        name: "{{ user_name }}"
+        password: "new_UnsecurePassword"
+      register: result_plain_changed_password_plain_text
+      when: result_plain_text is succeeded
+
+    - name: Create User with a hashed password
+      user:
+        name: "{{ user_name }}"
+        password: "{{ user_hashed_password }}"
+        crypt_password: yes
+      register: result_hashed_password
+      ignore_errors: yes
+
+    - name: Change password with a hashed password
+      user:
+        name: "{{ user_name }}"
+        password: "{{ user_hashed_password }}"
+        crypt_password: yes
+      register: result_plain_changed_password_hashed
+      when: result_hashed_password is succeeded
+
+    - name: Create User with an encrypted password
+      user:
+        name: "{{ user_name }}"
+        password: "{{ user_encrypted_password }}"
+        encrypted: yes
+      register: result_encrypted_password
+      ignore_errors: yes
+
+    - name: Change password with an encrypted password
+      user:
+        name: "{{ user_name }}"
+        password: "{{ user_encrypted_password }}"
+        encrypted: yes
+      register: result_plain_changed_password_encrypted
+      when: result_encrypted_password is succeeded

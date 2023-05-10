@@ -1,0 +1,24 @@
+yaml
+- name: Configure SVI (Interface VLAN)
+  hosts: network_devices
+  gather_facts: false
+
+  vars:
+    vlan_id: 100
+    vlan_name: "vlan100"
+    vlan_state: "no shutdown"
+    vlan_ip: "10.0.0.1/24"
+
+  tasks:
+    - name: Configure interface VLAN
+      nxos_config:
+        lines: "{{ ['interface Vlan' + vlan_id, 'description ' + vlan_name, vlan_state, 'ip address ' + vlan_ip] | join('\n') }}"
+        parents: "interface VLAN" + vlan_id
+        before: "interface VLAN" + vlan_id
+        after: "interface VLAN" + vlan_id
+      register: config_output
+
+    - name: Verify configuration is idempotent
+      debug:
+        msg: "Configuration change detected"
+      when: config_output.changed

@@ -1,0 +1,70 @@
+
+- hosts: all
+  vars:
+    username: "{{ vars | random }}"
+    password: "{{ vars | random }}"
+    url: "https://example.com"
+  tasks:
+    - name: Test basic authentication with correct credentials
+      uri:
+        url: "{{ url }}"
+        method: GET
+        user: "{{ username }}"
+        password: "{{ password }}"
+        force_basic_auth: yes
+      register: response
+      ignore_errors: yes
+    - name: Assert 200 OK response code
+      assert:
+        that:
+          - response.status == 200
+    - name: Test basic authentication with incorrect credentials
+      uri:
+        url: "{{ url }}"
+        method: GET
+        user: "{{ vars | random }}"
+        password: "{{ vars | random }}"
+        force_basic_auth: yes
+      register: response
+      ignore_errors: yes
+    - name: Assert 401 Unauthorized response code
+      assert:
+        that:
+          - response.status == 401
+    - name: Test without basic authentication
+      uri:
+        url: "{{ url }}"
+        method: GET
+        register: response
+        ignore_errors: yes
+    - name: Assert 200 OK response code without authentication
+      assert:
+        that:
+          - response.status == 200
+    - name: Test with basic authentication and custom headers
+      uri:
+        url: "{{ url }}"
+        method: GET
+        user: "{{ username }}"
+        password: "{{ password }}"
+        force_basic_auth: yes
+        headers:
+          X-Custom-Header: "{{ vars | random }}"
+      ignore_errors: yes
+    - name: Assert 200 OK response code with custom headers
+      assert:
+        that:
+          - response.status == 200
+    - name: Test with basic authentication and invalid URL
+      uri:
+        url: "{{ url }}/?{{ vars | random }}"
+        method: GET
+        user: "{{ username }}"
+        password: "{{ password }}"
+        force_basic_auth: yes
+      register: response
+      ignore_errors: yes
+    - name: Assert 404 Not Found response code with invalid URL
+      assert:
+        that:
+          - response.status == 404

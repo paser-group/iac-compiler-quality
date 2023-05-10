@@ -1,0 +1,53 @@
+
+- name: Testing Ansible 2.8.1 apt module
+  hosts: localhost
+  tasks:
+    - name: Attempting to install a package with non-standard arguments
+      apt:
+        name: example_pkg
+        update_cache: true
+        state: latest
+        force: yes
+        install_options:
+          - "--foo"
+          - "-bar"
+        upgrade: yes
+    - name: Attempting to install a non-existent package
+      apt:
+        name: non_existent_pkg
+        update_cache: true
+        state: latest
+    - name: Attempting to upgrade a non-installed package
+      apt:
+        name: non_installed_pkg
+        update_cache: true
+        state: latest
+        download_only: yes
+    - name: Attempting to remove a package that doesn't exist
+      apt:
+        name: non_existent_pkg
+        state: absent
+    - name: Attempting to remove a package with non-standard arguments
+      apt:
+        name: example_pkg
+        purge: no
+        allow_unauthenticated: yes
+        state: absent
+    - name: Attempting to suppress error messages
+      apt:
+        name: example_pkg
+        state: present
+        update_cache: true
+      register: apt_output
+      failed_when: false
+    - name: Verifying that 'failed_to_execute_invalid_command' will fail the task
+      apt:
+        name: example_pkg
+        state: missing
+        update_cache: true
+        invalid_command: true
+      ignore_errors: true
+    - name: Testing the cache update feature
+      apt:
+        update_cache: yes
+      when: "'ansible_distribution_major_version' == '18'"

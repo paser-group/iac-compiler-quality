@@ -1,0 +1,40 @@
+
+- name: Remove nxos_vrf_interface
+  hosts: switches
+  vars:
+    pre_check: "{{ nxos_vrf_interface | default({}) }}"
+  tasks:
+    - name: Remove interface
+      nxos_vrf_interface:
+        vrf_name: "{{ item.vrf_name }}"
+        interface: "{{ item.interface }}"
+        state: absent
+      with_items: "{{ nxos_vrf_interface }}"
+      register: result
+
+    - name: Check the difference
+      set_fact:
+        changes: "{{ result | json_query(query) }}"
+      vars:
+        query: "results[*].{ vrf_name: item.vrf_name, interface: item.interface }"
+      
+    - name: Handle errors
+      fail:
+        msg: "Error occurred while removing the nxos_vrf_interface"
+
+  vars:
+    post_check: "{{ nxos_vrf_interface }}"
+
+- name: Check idempotency
+  hosts: switches
+  tasks:
+    - name: Check the difference
+      set_fact:
+        changes: "{{ (post_check | difference(pre_check)) | json_query(query) }}"
+      vars:
+        query: "results[*].{ vrf_name: item.vrf_name, interface: item.interface }"
+      
+    - name: Handle errors
+      fail:
+        msg: "The execution is not idempotent"
+      when: changes | length > 0

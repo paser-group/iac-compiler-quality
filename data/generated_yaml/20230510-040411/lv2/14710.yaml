@@ -1,0 +1,42 @@
+
+- hosts: winrm_servers
+  gather_facts: no
+
+  vars:
+    username: Administrator
+    password: "{{ vaulted_password }}"
+    winrm_port: 5986
+    ssl: true
+    ca_trust_path: "{{vaulted_ca_path}}"
+    transport: winrm
+
+  tasks:
+    - name: Configure WinRM HTTPS
+      winrm_config_listener:
+        address: "*"
+        transport: "{{transport}}"
+        cert_thumbprint: "{{ thumbprint.stdout }}"
+        hostname: "{{ ansible_host }}"
+        port: "{{ winrm_port }}"
+        protocol: "https"
+        ssl: "{{ ssl }}"
+        client_verify: "{{ client_verify }}"
+        listener_backlog: "100"
+
+    - name: Get Windows Update history
+      win_updates:
+        category_names: "{{category_names}}"
+        classification_names: "{{classification_names}}"
+        deployment_kind: "{{deployment_kind}}"
+        host_ignores: "{{host_ignores}}"
+        skip: "{{skip}}"
+        source: "{{source}}"
+        update_cache: "{{update_cache}}"
+        update_languages: "{{update_languages}}"
+        update_name: "{{update_name}}"
+      register: result
+
+    - name: Fail on SSL certificate verification errors
+      fail:
+        msg: "Certificate verification failed when connecting to the WinRM service."
+      when: result.stdout.find('CERTIFICATE_VERIFY_FAILED') > -1

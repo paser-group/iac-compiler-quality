@@ -1,0 +1,24 @@
+
+- hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: Create mesh network
+      network_cli:
+        commands:
+          - mesh enable
+
+    - name: Set interface addresses
+      network_interface:
+        interface: eth0
+        address: "{{ hostvars[inventory_hostname].ip }}"
+        mask: 24
+
+    - name: Add static routes
+      network_route:
+        network: 10.0.0.0
+        netmask: 255.255.255.0
+        gateway: "{{ hostvars[groups['all'] | difference([inventory_hostname])][0].ip }}"
+
+    - name: Ping test
+      ping:

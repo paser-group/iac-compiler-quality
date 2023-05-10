@@ -1,0 +1,49 @@
+
+- name: Test ec2.py module
+  hosts: localhost
+  vars:
+    ec2_region: us-west-2
+  tasks:
+    - name: Test if ec2.py module loads successfully
+      import_module:
+        module_name: ec2
+      ignore_errors: True
+
+    - name: Test if ec2.py module is accessible
+      command: python -c 'from ansible.modules.cloud.amazon import ec2; print ec2.__file__'
+      register: ec2_path
+      ignore_errors: True
+
+    - name: Test if module_utils is present
+      command: python -c 'import ansible.module_utils'
+      register: module_utils_present
+      ignore_errors: True
+
+    - name: Debug output
+      debug:
+        var: ec2_path
+
+    - name: Override module_utils path
+      set_fact:
+        ANSIBLE_MODULE_UTILS:
+          - /tmp/ansible/module_utils
+      register: override_module_utils
+      when: "'module_utils_present' not in module_utils_present.stderr"
+
+    - name: Create temp directory for module_utils
+      become: true
+      file:
+        path: /tmp/ansible/module_utils
+        state: directory
+
+    - name: Add empty __init__.py file
+      become: true
+      file:
+        path: /tmp/ansible/module_utils/__init__.py
+        state: touch
+
+    - name: Run ec2.py module
+      environment:
+        PYTHONPATH: /tmp/ansible/module_utils
+      command: python /usr/share/ansible/ec2.py
+      ignore_errors: True

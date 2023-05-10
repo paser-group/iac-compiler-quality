@@ -1,0 +1,30 @@
+yaml
+---
+- name: Fix ansible galaxy error
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+    - name: Check if galaxy command exists
+      become: true
+      command: galaxy
+      register: galaxy_check
+      ignore_errors: yes
+
+    - name: Install ansible-galaxy if not exists
+      become: true
+      command: pip install ansible-galaxy
+      when: "'No module named galaxy.cli.main' in galaxy_check.stderr"
+
+    - name: Install required dependencies
+      become: true
+      command: pip install -r requirements.txt
+      ignore_errors: yes
+
+    - name: Run ansible-galaxy command
+      become: true
+      command: ansible-galaxy {{ command }}
+      register: galaxy_output
+
+    - debug:
+        var: galaxy_output

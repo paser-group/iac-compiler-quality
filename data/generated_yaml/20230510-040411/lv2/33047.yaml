@@ -1,0 +1,80 @@
+
+- name: Test network module with persistent connections
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Create persistent connection
+      net_connect:
+        host: "{{ host }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        transport: "{{ transport }}"
+        persistent: true
+      register: conn
+
+    - name: Execute command on persistent connection
+      net_command:
+        command_string: "{{ command }}"
+      register: output
+      when: conn.connected
+
+    - name: Print debug logs if enabled
+      debug:
+        msg: "{{ output.stdout }}"
+      when: debug_enabled == true
+
+    # Test unconventional syntax
+    - name: Test invalid input
+      net_connect:
+        host: "{{ }}}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        transport: "{{ transport }}"
+        persisten: true
+
+    # Test unexpected input types
+    - name: Test unexpected input types
+      net_connect:
+        host: "{{ host }}"
+        username: ["{{ username }}"]
+        password: "{{ password }}"
+        transport: "{{ transport }}"
+        persistent: "true"
+
+    # Test command timeout
+    - name: Test command timeout
+      net_command:
+        command_string: "{{ command }}"
+        timeout: 1
+      failed_when: "'timeout' in result.msg"
+
+    # Test invalid transport type
+    - name: Test invalid transport type
+      net_connect:
+        host: "{{ host }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        transport: "invalid"
+        persistent: true
+
+    # Test edge case of disabling persistent connection
+    - name: Test disabling persistent connection
+      net_connect:
+        host: "{{ host }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        transport: "{{ transport }}"
+        persistent: false
+      register: conn_disabled
+
+    - name: Execute command without persistent connection
+      net_command:
+        command_string: "{{ command }}"
+      register: output_disabled
+      when: not conn_disabled.connected
+
+    # Test unexpected data format in network response
+    - name: Test unexpected data format in network response
+      debug:
+        msg: "{{ {'unexpected': 'data'} }}"
+

@@ -1,0 +1,73 @@
+
+---
+- name: Test hostname module in Docker containers
+  hosts: localhost
+  gather_facts: false
+  
+  vars:
+    container_name: "{{ 'test-container-' ~ lookup('pipe', 'date +%s') }}"
+
+  tasks:
+  
+    # Create a test container
+    - name: Create test Docker container
+      docker_container:
+        name: "{{ container_name }}"
+        image: "ubuntu:latest"
+      register: container
+      
+    # Set the hostname to a valid input
+    - name: Set hostname to valid input
+      hostname:
+        name: "test-hostname"
+      delegate_to: "{{ container_name }}"
+    
+    # Set the hostname to an empty string
+    - name: Set hostname to empty string
+      hostname:
+        name: ""
+      delegate_to: "{{ container_name }}"
+  
+    # Set the hostname to a string with multiple spaces
+    - name: Set hostname to spaced string
+      hostname:
+        name: "test    hostname"
+      delegate_to: "{{ container_name }}"
+        
+    # Set the hostname to a string with special characters
+    - name: Set hostname to special character string
+      hostname:
+        name: "@#^*&!"
+      delegate_to: "{{ container_name }}"
+      
+    # Set the hostname to a number
+    - name: Set hostname to a number
+      hostname:
+        name: 123
+      delegate_to: "{{ container_name }}"
+  
+    # Set the hostname to a boolean
+    - name: Set hostname to a boolean
+      hostname:
+        name: false
+      delegate_to: "{{ container_name }}"
+  
+    # Try to get hostname on a non-existing container
+    - name: Get hostname on non-existing container
+      hostname:
+        name: "test-hostname"
+      delegate_to: "non-existing-container"
+      
+    # Try to set hostname on a non-existent container
+    - name: Set hostname on non-existing container
+      hostname:
+        name: "test-hostname"
+      delegate_to: "non-existing-container"
+  
+    # Remove the test container
+    - name: Stop and remove test Docker container
+      docker_container:
+        name: "{{ container_name }}"
+        state: absent
+
+...

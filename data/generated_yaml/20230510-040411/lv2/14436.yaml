@@ -1,0 +1,26 @@
+
+- name: Upgrade to PS3 with memory fix
+  hosts: all
+  tasks:
+    - name: Check if memory fix is required
+      shell: >
+        if grep -q "memory_fix=1" /etc/ps3.conf; then
+          exit 0
+        else
+          exit 1
+        fi
+      register: memfix_required
+      ignore_errors: yes
+
+    - name: Add memory fix if required
+      shell: echo "memory_fix=1" >> /etc/ps3.conf
+      when: memfix_required.rc == 1
+
+    - name: Download update file from server
+      get_url:
+        url: "http://server.com/updates/ps3/ps3update.dat"
+        dest: "/tmp/ps3update.dat"
+
+    - name: Apply PS3 update
+      win_command: Upgrade_to_PS3.ps1 /tmp/ps3update.dat
+      ignore_errors: yes

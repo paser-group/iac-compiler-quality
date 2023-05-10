@@ -1,0 +1,39 @@
+
+---
+- name: Docker Image Parsing Bug Playbook
+  hosts: localhost
+  gather_facts: false
+  tasks:
+
+  - name: Pull Docker Image with Digest
+    docker_image:
+      name: "nginx@sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+      pull: always
+
+  - name: Pull Docker Image with Port Mapping
+    docker_image:
+      name: "nginx:latest"
+      pull: always
+    register: nginx_image
+
+  - name: Run Docker Image with Invalid Port Mapping Syntax
+    docker_container:
+      name: "nginx-invalid-port-mapping"
+      image: "{{ nginx_image }}"
+      ports:
+        - "invalid-port-mapping:some-port"
+
+  - name: Run Docker Image with Environment Variables
+    docker_container:
+      name: "nginx-env-vars"
+      image: "{{ nginx_image }}"
+      env:
+        - "SOME_ENV_VAR=some-value"
+        - "ANOTHER_ENV_VAR=another-value"
+
+  - name: Remove Docker Container with Invalid Syntax
+    docker_container:
+      name: "nginx-invalid-container"
+      image: "{{ nginx_image }}"
+    force: yes
+    state: absent

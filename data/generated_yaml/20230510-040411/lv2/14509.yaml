@@ -1,0 +1,56 @@
+
+- name: OpenStack Py Issue (UNREACHABLE) Test Playbook
+  hosts: all
+  tasks:
+    - name: Test UNREACHABLE error
+      command: openstack image list --unreachable
+      register: output
+      ignore_errors: true
+
+    - name: Print UNREACHABLE error message based on stderr
+      debug:
+        var: output.stderr_lines
+
+    - name: Ensure openstack module exists
+      assert:
+        that:
+          - openstack is defined
+
+    - name: Test invalid command
+      shell: sudo openstack network create --test
+
+    - name: Test edge case for invalid IP address format
+      openstack:
+        state: present
+        cloud: mycloud
+        key_name: example_key
+        image_name: example_image
+        flavor_name: example_flavor
+        name: example_instance
+        networks:
+          - name: example_network
+            fixed_ip: 256.256.256.256
+
+    - name: Test unconventional YAML syntax
+      openstack_compute_floating_ip:
+        cloud: mycloud 
+        action: release 
+        fip: |
+          {% for i in classes if i.released %}
+            {{i.fip}}
+          {% endfor %}
+
+    - name: Test unexpected input type
+      openstack:
+        state: present
+        cloud: mycloud
+        group: "{{ 1/0 }}" 
+
+    - name: Test edge case for special characters in cloud name
+      openstack:
+        state: running
+        cloud: mycloud!@#$
+        name: example_instance
+        image_name: example_image
+        flavor_name: example_flavor
+        network_name: example_network

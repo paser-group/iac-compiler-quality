@@ -1,0 +1,34 @@
+
+---
+- hosts: all
+  gather_facts: no
+  any_errors_fatal: true
+  tasks:
+    - name: Task 1
+      command: echo "Task 1"
+      register: task_output
+      ignore_errors: yes
+      failed_when: "'fatal' in task_output.stderr"
+      retries: 2
+      delay: 5
+      until: task_output.stdout == ''
+      vars:
+        variable: "{{ lookup('env', 'SOME_VARIABLE') }}"
+      environment:
+        ANSIBLE_SSH_ARGS: "-C -o ControlMaster=auto -o ControlPersist=60s -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no"
+    - name: Task 2
+      debug:
+        msg: "Task 2"
+    - name: Rescue task
+      debug:
+        msg: "Rescue Task"
+      rescue:
+        - name: Rescued Task
+          debug:
+            msg: "Rescued Task"
+    - name: Task 3
+      command: echo "Task 3"
+      always:
+        - name: Always Task
+          debug:
+            msg: "Always Task"

@@ -1,0 +1,30 @@
+yaml
+---
+- name: Example playbook to resolve persistent connection issue
+  hosts: all
+  become: true
+
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
+
+  tasks:
+  - name: Disable debug logs
+    block:
+    - name: Set logging level
+      ansible.builtin.logging:
+        level: critical
+    - name: Restart network service
+      service:
+        name: network
+        state: restarted
+    when: ansible_verbosity > 1
+
+  - name: Configure network with persistent connection
+    ansible.network.network_cli:
+      commands:
+        - configure terminal
+        - interface eth0
+        - ip address 192.0.2.1/24
+        - exit
+        - exit
+      persistent: true

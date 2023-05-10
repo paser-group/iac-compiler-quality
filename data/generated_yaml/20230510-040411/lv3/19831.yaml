@@ -1,0 +1,32 @@
+
+- name: Attempt to mount file system with incorrect permissions
+  hosts: localhost
+  vars:
+    file_system_id: fs-abc123
+    mount_path: /mnt/efs
+  
+  tasks:
+  
+  - name: Retrieve EFS facts
+    efs_facts:
+      file_system_id: "{{ file_system_id }}"
+    register: efs_facts_result
+  
+  - name: Create mount directory if it doesn't exist
+    file:
+      state: directory
+      path: "{{ mount_path }}"
+      
+  - name: Run mount command with incorrect permissions
+    shell: |
+      sudo mount -t nfs4 {{ efs_facts_result.file_system_dns_name }}:/ {{ mount_path }} -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport,ac
+    ignore_errors: yes
+    
+  - name: Wait indefinitely
+    async: 0
+    poll: 0
+    become: false
+    shell: |
+      while true; do
+        sleep 60
+      done

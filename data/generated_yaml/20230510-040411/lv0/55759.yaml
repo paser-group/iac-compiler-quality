@@ -1,0 +1,32 @@
+
+# Import required modules
+from azure.common.credentials import ServicePrincipalCredentials
+from azure.mgmt.resource import ResourceManagementClient
+from azure.mgmt.network import NetworkManagementClient
+from azure.mgmt.network.models import VirtualNetworkPeering
+
+# Set up credentials and clients
+subscription_id = '<subscription_id>'
+tenant_id = '<tenant_id>'
+client_id = '<client_id>'
+client_secret = '<client_secret>'
+
+credentials = ServicePrincipalCredentials(client_id=client_id, secret=client_secret, tenant=tenant_id)
+resource_client = ResourceManagementClient(credentials, subscription_id)
+network_client = NetworkManagementClient(credentials, subscription_id)
+
+# Define the source and destination virtual networks
+source_vnet_id = '/subscriptions/{0}/resourceGroups/{1}/providers/Microsoft.Network/virtualNetworks/{2}'.format(subscription_id, 'source_rg', 'source_vnet')
+destination_vnet_id = '/subscriptions/{0}/resourceGroups/{1}/providers/Microsoft.Network/virtualNetworks/{2}'.format(subscription_id, 'destination_rg', 'destination_vnet')
+
+# Define the peering settings
+peering_parameters = VirtualNetworkPeering(
+    remote_virtual_network={'id': destination_vnet_id},
+    allow_virtual_network_access=True,
+    allow_forwarded_traffic=False,
+    allow_gateway_transit=False,
+    use_remote_gateways=False)
+
+# Create the virtual network peering
+peering_name = 'source_vnet_to_destination_vnet'
+peering_resource = network_client.virtual_network_peerings.create_or_update('source_rg', 'source_vnet', peering_name, peering_parameters).result()

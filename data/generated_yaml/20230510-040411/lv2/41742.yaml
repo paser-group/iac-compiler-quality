@@ -1,0 +1,51 @@
+yaml
+- name: Azure SQL Database Stress Test
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+    - name: Create SQL firewalls with invalid IP addresses
+      azure_rm_sqldatabase_firewall:
+        resource_group: "my_resource_group"
+        server_name: "my_server"
+        database_name: "my_database"
+        # provide invalid IP addresses
+        start_ip_address: "1.2.3.4.5"
+        end_ip_address: "192.168.0.256"
+      register: firewall_creation_result
+      ignore_errors: yes
+
+    - name: Create SQL database with invalid collation
+      azure_rm_sqldatabase:
+        resource_group: "my_resource_group"
+        server_name: "my_server"
+        name: "my_database"
+        collation: "invalid_collation"
+        # try to use invalid collation
+      register: database_creation_result
+      ignore_errors: yes
+
+    - name: Get SQL database with invalid name
+      azure_rm_sqldatabase_info:
+        resource_group: "my_resource_group"
+        server_name: "my_server"
+        name: "invalid_database_name"
+        # specify an invalid database name
+      register: database_info_result
+      ignore_errors: yes
+
+    - name: Delete SQL database
+      azure_rm_sqldatabase:
+        resource_group: "my_resource_group"
+        server_name: "my_server"
+        name: "my_database"
+        state: "absent"
+
+    - name: Delete SQL server without confirmation prompt
+      azure_rm_sqlserver:
+        resource_group: "my_resource_group"
+        name: "my_server"
+        # delete without prompt
+      register: server_deletion_result
+      ignore_errors: yes
+      prompt: no

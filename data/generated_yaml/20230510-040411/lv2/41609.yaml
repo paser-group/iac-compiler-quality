@@ -1,0 +1,49 @@
+
+- name: Test invalid JSON handling by Ansible
+  hosts: localhost
+
+  vars:
+    invalid_json: '{foo": "bar"}' # missing open brace
+
+  tasks:
+    - name: Execute facts.d script that returns invalid JSON
+      command: /path/to/facts.d/script.sh
+      register: fact_output
+      ignore_errors: true
+
+    - name: Ensure fact is set to error string
+      set_fact:
+        invalid_fact_output: "{{ fact_output.stderr | default(fact_output.stdout) | default('ERROR') }}"
+      when: fact_output.rc != 0
+
+    - name: Test if fact is set to error when JSON is invalid
+      fail:
+        msg: "Fact failed to set to error string when invalid JSON was returned from facts.d script"
+      when: invalid_fact_output != 'ERROR'
+
+    - name: Ensure fact is set to correct value when JSON is valid
+      set_fact:
+        valid_fact_output: "{{ fact_output.stdout }}"
+      when: fact_output.rc == 0 and fact_output.stdout | from_json is succeed
+
+    - name: Test if fact is set to correct value when JSON is valid
+      fail:
+        msg: "Fact failed to set to correct value when valid JSON was returned from facts.d script"
+      when: valid_fact_output is not defined
+
+    - name: Test if error string is set correctly when script fails
+      fail:
+        msg: "Error string fact failed to be set when the facts.d script failed"
+      when: invalid_fact_output is undefined and valid_fact_output is undefined
+
+    - name: Debug fact output
+      debug:
+        var: invalid_fact_output
+        verbosity: 2
+      when: invalid_fact_output is defined
+
+    - name: Debug fact output
+      debug:
+        var: valid_fact_output
+        verbosity: 2
+      when: valid_fact_output is defined

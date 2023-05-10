@@ -1,0 +1,42 @@
+yaml
+---
+- name: GCP Container Cluster Node Pool Deployment
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+    - name: Create GCP Container Cluster Node Pool with location
+      gcp_container_node_pool:
+        name: "test-pool"
+        location: "{{ item }}"
+        cluster: "test-cluster"
+        nodeConfig:
+          machineType: "n1-standard-1"
+          diskSizeGb: 100
+          serviceAccount: "{{ lookup('env', 'GCP_SERVICE_ACCOUNT_EMAIL') }}"
+          preemptible: false
+          metadata:
+            disable-legacy-endpoints: "true"
+          oauth_scopes:
+            - "https://www.googleapis.com/auth/cloud-platform"
+        autoscaling:
+          enabled: true
+          minNodeCount: 0
+          maxNodeCount: 20
+        initial_node_count: "{{ item }}"
+        state: present
+      loop:
+        - "{{ ['us-central1-a', 'us-central1-b', 'us-central1-c', 'us-west1-a', 'us-west1-b', 'us-west1-c'] }}"
+        - "{{ range(1,10) }}"
+        
+    - name: Update GCP Container Cluster Node Pool
+      gcp_container_node_pool:
+        name: "test-pool"
+        location: "{{ item }}"
+        cluster: "test-cluster"
+        nodePool: "test-pool"
+        nodeCount: "{{ item }}"
+        state: present
+      loop:
+        - "{{ ['us-central1-a', 'us-central1-b', 'us-central1-c'] }}"
+        - "{{ range(15,20) }}"

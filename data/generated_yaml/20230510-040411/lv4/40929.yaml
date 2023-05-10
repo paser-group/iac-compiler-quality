@@ -1,0 +1,43 @@
+
+- name: Test Ansible file module
+  hosts: target_hosts
+  gather_facts: false
+
+  vars:
+    create_dir_path: "{{ lookup('env', 'HOME') }}/~None/"
+    special_char_path: "{{ lookup('env', 'HOME') }}/[!@#^]/"
+  
+  tasks:
+    - name: Establish SSH connection with user None
+      become: true
+      become_user: None
+      remote_user: None
+      vars:
+        ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
+      ignore_errors: true
+
+    - name: Create sample directory
+      file:
+        state: directory
+        path: "{{ create_dir_path }}"
+      register: dir_create_result
+
+    - name: Check if directory exists
+      shell: "ls -ld {{ create_dir_path }}"
+      ignore_errors: true
+
+    - name: Create directory with special characters
+      file:
+        state: directory
+        path: "{{ special_char_path }}"
+
+    - name: Remove sample directory
+      file:
+        state: absent
+        path: "{{ create_dir_path }}"
+      register: dir_remove_result
+
+    - name: Output results
+      debug:
+        var: dir_create_result
+        var: dir_remove_result

@@ -1,0 +1,46 @@
+
+- name: Test openstack_inventory.py
+  hosts: localhost
+  gather_facts: no
+  tasks:
+    - name: Create virtual environment
+      command: virtualenv -p python3 /tmp/venv
+      args:
+        chdir: "{{ playbook_dir }}"
+    
+    - name: Install openstacksdk dependency
+      pip:
+        name: "openstacksdk>=0.51.0"
+        virtualenv: /tmp/venv
+    
+    - name: Test openstack_inventory.py
+      inventory_plugin: openstack_inventory.py
+      vars:
+        cloud: my_cloud
+        auth: 
+          auth_url: '{{ lookup("env", "OS_AUTH_URL") }}'
+          username: "{{ lookup('env', 'OS_USERNAME') }}"
+          password: "{{ lookup('env', 'OS_PASSWORD') }}"
+          project_id: "{{ lookup('env', 'OS_PROJECT_ID') }}"
+          project_name: "{{ lookup('env', 'OS_PROJECT_NAME') }}"
+        groups:
+          - name: "{{ '{{' }} '%s_subnet_group' % (subnet.id) {{ '}}' }}"
+            subnet_id: "invalid-subnet-id"
+          - name: "{{ '{{' }} '%s_security_group' % (security_group.id) {{ '}}' }}"
+            vpc_id: "invalid-vpc-id"
+    
+    - name: Test openstack_inventory.py with unexpected inputs
+      inventory_plugin: openstack_inventory.py
+      vars:
+        cloud: my_cloud
+        auth: 
+          auth_url: "https://invalid-auth-url:5000/v2.0"
+          username: "invalid-username"
+          password: "invalid-password"
+          project_id: "invalid-project-id"
+          project_name: "invalid-project-name"
+        groups:
+          - name: "{{ '{{' }} '%s_subnet_group' % (subnet.id) {{ '}}' }}"
+            subnet_id: "invalid-subnet-id"
+          - name: "{{ '{{' }} '%s_security_group' % (security_group.id) {{ '}}' }}"
+            vpc_id: "invalid-vpc-id"

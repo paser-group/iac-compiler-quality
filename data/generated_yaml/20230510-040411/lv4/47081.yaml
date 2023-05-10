@@ -1,0 +1,34 @@
+
+---
+- name: Test k8s_raw module for AttributeError
+  hosts: localhost
+  gather_facts: no
+  become: yes
+  tasks:
+    - name: Install kubernetes client
+      command: >
+        kubectl version
+      register: k8s_version
+
+    - name: Test k8s_raw with incorrect attributes
+      k8s_raw:
+        definition:
+          apiVersion: v1
+          kind: Pod
+          metadata:
+            name: busybox-test-pod
+            labels:
+              app: busybox
+        state: "present"
+      register: k8s_raw_output
+      ignore_errors: true
+      
+    - name: Check for AttributeError
+      fail:
+        msg: "AttributeError occurred."
+      when: k8s_raw_output is failed and "NoneType" in k8s_raw_output.stdout_lines[0] 
+
+    - name: Default task
+      debug:
+        msg: "Task successfully completed without errors."
+        

@@ -1,0 +1,79 @@
+
+- name: Async vsphere_guest test
+  hosts: vsphere
+  gather_facts: no
+
+  tasks:
+  - name: Launching VM
+    async: 60
+    poll: 0
+    vsphere_guest:
+      virtual_machine_name: myVM{{ inventory_hostname }}
+      from_template: False
+      guest_os_id: rhel7_64Guest
+      disk:
+        - size_gb: 10
+          type: thin
+          datastore: datastore1
+      network:
+        interfaces:
+          - network: VM Network
+            adapter_type: vmxnet3
+      state: powered_off
+      datacenter: mydc
+      folder: myfolder
+      cluster: mycluster
+      esxi_hostname: myesxi
+    register: async_vm_creation
+
+  - name: Checking Async Status
+    async_status:
+      jid: '{{ async_vm_creation.ansible_job_id }}'
+      mode: status
+    register: async_status_result
+    until: async_status_result.finished
+    retries: 30
+    delay: 10
+    ignore_errors: true
+    changed_when: false
+
+  - name: Create vSphere VM
+    vsphere_guest:
+      vcenter_hostname: myvcenter.local
+      username: myuser
+      password: mypassword
+      guest_id: rhel7_64Guest
+      name: myVM{{ inventory_hostname }}
+      disk:
+        - size_gb: 10
+          type: thin
+          datastore: datastore1
+      hardware:
+        memory_mb: 2048
+        num_cpus: 2
+      networks:
+        - name: VM Network
+          start_connected: true
+          adapter_type: vmxnet3
+      folder: myfolder
+      state: present
+      datacenter: mydc
+      cluster: mycluster
+      esxi_hostname: myesxi
+
+  - name: Check vSphere VM Status
+    vsphere_guest_info:
+      vcenter_hostname: myvcenter.local
+      username: myuser
+      password: mypassword
+      name: myVM{{ inventory_hostname }}
+      vm_extra_config:
+        - extraConfigKey: tools.syncTimeWithHost
+          extraConfigValue: "True"
+    delegate_to: localhost
+    register: vm_info
+
+  - name: Verify VM is powered on
+    debug:
+     msg: "VM is {{ vm_info.guest_power_state }}"
+    when: vm_info.guest_power_state == 'poweredOn'

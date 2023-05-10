@@ -1,0 +1,59 @@
+yaml
+---
+- hosts: localhost
+  gather_facts: no
+  vars:
+    empty_list: []
+    non_empty_list:
+      - a
+      - b
+      - c
+
+  tasks:
+    - name: Find key in empty list - should fail
+      debug:
+        var: empty_list.item.0.key
+
+    - name: Find key in non-empty list - should succeed
+      debug:
+        var: non_empty_list.item.0.key
+
+    - name: Find key in empty dict - should fail
+      debug:
+        var: empty_list.0.key
+
+    - name: Find key in non-empty dict - should succeed
+      debug:
+        var: non_empty_list.0.key
+
+    - name: Trying to resolve a dictionary key from an empty list using Jinja2 - should fail
+      debug:
+        msg: "{{ empty_list | first | default({}) | d('key') }}"
+
+    - name: Trying to resolve a dictionary key from an empty dictionary using Jinja2 - should fail
+      debug:
+        msg: "{{ empty_dict | d('key') }}"
+
+    - name: Accessing a nested dictionary that does not exist - should fail
+      debug:
+        var: non_empty_list.0.key.subkey.non_existent_key
+
+    - name: Using an unconventional notation to access a dictionary key - should succeed
+      debug:
+        msg: "{{ non_empty_list.0['key'] }}"
+
+    - name: Trying to access an undefined variable - should fail
+      debug:
+        msg: "{{ undefined_variable }}"
+
+    - name: Using unexpected input with a Jinja2 filter - should fail
+      debug:
+        msg: "{{ 'string'|to_nothing|d('key') }}"
+
+    - name: Using unconventional syntax to set a variable - should succeed
+      set_fact:
+        unconventional_value: !unsafe "unconventional syntax"
+
+    - name: Trying to use an undefined module - should fail
+      non_existing_module:
+        argument: value

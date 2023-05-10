@@ -1,0 +1,53 @@
+
+---
+- name: Stress-test playbook for DNS resolution issues
+  hosts: all
+  vars:
+    dns_server: "{{ lookup('env', 'DNS_SERVER') }}"
+  tasks:
+
+  - name: Install iptables
+    become: true
+    apt:
+      name: iptables
+      state: present
+
+  - name: Configure iptables rules for wrong host
+    become: true
+    iptables:
+      chain: INPUT
+      destination: "{{ dns_server }}"
+      jump: REJECT
+      protocol: tcp
+      source: wrong_client
+      state: present
+
+  - name: Add invalid host to /etc/hosts
+    become: true
+    blockinfile:
+      dest: /etc/hosts
+      block: |
+        127.0.0.1 wrong_client
+
+  - name: Restart network service for changes to take effect
+    become: true
+    service:
+      name: network
+      state: restarted
+
+  - name: Test DNS resolution with wrong client
+    uri:
+      url: https://{{ dns_server }}
+      status_code: 200
+    register: dns_resolution_result
+
+  - name: Check DNS resolution output for errors
+    debug:
+      var: dns_resolution_result
+
+  - name: Remove invalid host entry from /etc/hosts
+    become: true
+    lineinfile:
+      dest: /etc/hosts
+      state: absent
+      regexp: "^127\.0\.0\.1 wrong_client$"

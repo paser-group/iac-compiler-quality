@@ -1,0 +1,34 @@
+
+---
+- hosts: localhost
+  connection: local
+  gather_facts: no
+  vars:
+    resource_group: "test-azure-rm"
+    vm_name: "invalid-vm-name"
+  
+  tasks:
+  - name: Create Azure RM Virtual Machine
+    azure_rm_virtualmachine:
+      resource_group: "{{resource_group}}"
+      name: "{{vm_name}}"
+      location: eastus
+      vm_size: Standard_DS1_v2
+      admin_username: "adminuser"
+      admin_password: "password"
+      network_interface_names: "nic-name"
+    register: result
+    ignore_errors: yes
+
+  - name: Assert errors are present
+    assert:
+      that:
+      - result is failed
+
+  - name: Ensure resources are cleaned-up
+    azure_rm_resource:
+      group_name: "{{resource_group}}"
+      id: "{{resource_group}}"
+      api_version: "2018-05-01"
+      state: absent
+    when: result is defined and result.failed == True

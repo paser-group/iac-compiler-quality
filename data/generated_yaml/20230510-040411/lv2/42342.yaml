@@ -1,0 +1,40 @@
+yaml
+---
+- name: Test mysql_user error with python3 interpreter
+  hosts: localhost
+  become: true
+  vars:
+    mysql_user: dbuser
+    mysql_password: dbpass
+    mysql_database: dbname
+    python3_bin: /usr/bin/python3.6
+    mysql_conn_params: "{host: 'localhost', port: '3306', user: '{{ mysql_user }}', password: '{{ mysql_password }}', database: '{{ mysql_database }}'}"
+
+  tasks:
+    - name: Install MySQL Python Package
+      pip:
+        name: MySQL-python
+        executable: "{{ python3_bin }}"
+      ignore_errors: true
+
+    - name: Create MySQL user with python3 interpreter
+      mysql_user:
+        name: "{{ mysql_user }}"
+        password: "{{ mysql_password }}"
+        host: "{{ item }}"
+        state: present
+        login_user: root
+        login_password: rootpass
+        login_unix_socket: "{{ mysql_conn_params['unix_socket']|default(omit) }}"
+        login_host: "{{ mysql_conn_params['host']|default(omit) }}"
+        login_port: "{{ mysql_conn_params['port']|default(omit) }}"
+        executable: "{{ python3_bin }}"
+      with_items:
+        - 127.0.0.1
+        - localhost
+      register: result
+      ignore_errors: true
+
+    - name: Debug error if any
+      debug:
+        var: result

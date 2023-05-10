@@ -1,0 +1,16 @@
+
+- name: Test ansible_processor_vcpus fact for containers
+  hosts: all
+  gather_facts: yes
+  tasks:
+  - name: Fetch ansible_processor_vcpus fact for container
+    command: "docker run --rm alpine /bin/sh -c 'grep processor /proc/cpuinfo | wc -l'"
+    register: container_vcpus
+  - name: Fetch ansible_processor_vcpus fact for host
+    set_fact:
+      host_vcpus: "{{ ansible_processor_vcpus }}"
+    when: not inventory_hostname in groups['docker_host']
+  - name: Compare facts for container and host
+    fail:
+      msg: "{{ inventory_hostname }}: Container and host vCPU count don't match"
+    when: container_vcpus.stdout|int != host_vcpus|int

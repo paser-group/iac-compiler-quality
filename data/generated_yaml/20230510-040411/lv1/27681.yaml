@@ -1,0 +1,17 @@
+yaml
+---
+- name: Resolve DNS entries and add iptables rules for clients
+  hosts: all
+
+  tasks:
+    - name: Resolve DNS entries
+      command: nslookup "{{ inventory_hostname }}"
+      register: nslookup_result
+
+    - name: Add iptables rules for clients
+      iptables:
+        chain: INPUT
+        destination: "{{ nslookup_result.stdout_lines[1] | regex_replace('Address:\\s+') }}"
+        protocol: tcp
+        port: 22
+        jump: ACCEPT

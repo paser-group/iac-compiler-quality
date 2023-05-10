@@ -1,0 +1,54 @@
+
+- name: Stress testing firewalld module
+  hosts: localhost
+  vars:
+    fw_offline: true
+    fw_online: false
+    fw_protocol: tcp
+    fw_port: 1024-65535
+    fw_service: web
+    fw_zone: work
+  tasks:
+  - name: Ensure firewalld module works correctly
+    firewalld:
+      service: "{{ fw_service }}"
+      port: "{{ fw_port }}"
+      permanent: "{{ fw_online }}"
+      zone: "{{ fw_zone }}"
+      state: enabled
+      immediate: yes
+      protocol: "{{ fw_protocol }}"
+  - name: Ensure undefined variable modifies firewalld state
+    firewalld:
+      service: "{{ fw_service }}"
+      port: "{{ fw_port }}"
+      permanent: "{{ fw_offline }}"
+      zone: "{{ fw_zone }}"
+      state: enabled
+      immediate: yes
+      protocol: "{{ fw_protocol }}"
+  - name: Pass invalid values to firewalld module
+    firewalld:
+      service: "{{ fw_service }}invalid"
+      port: "{{ fw_port }}invalid"
+      permanent: "{{ fw_online }}invalid"
+      zone: "{{ fw_zone }}invalid"
+      state: "{{ fw_offline }}invalid"
+      immediate: yes
+      protocol: "{{ fw_protocol }}invalid"
+  - name: Add rule with unconventional syntax to zone
+    firewalld:
+      service: "{{ fw_service }}"
+      port: "{{ fw_port }}"
+      state: enabled
+      zone: "{{ fw_zone }}"
+    args:
+      permanent: true
+      immdiate: yes
+      protocol: "{{ fw_protocol }}"
+  - name: Remove zone with undefined variable
+    firewalld:
+      zone: "{{ fw_zone }}invalid"
+      state: absent
+  - name: Add rule with command line
+    command: "{{ playbook_dir }}/firewalld.sh"

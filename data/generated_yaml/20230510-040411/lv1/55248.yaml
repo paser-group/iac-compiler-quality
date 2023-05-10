@@ -1,0 +1,53 @@
+yaml
+---
+- name: Assign permissions on VMware folder
+  hosts: all
+  gather_facts: false
+  
+  vars:
+    folder_name: "my_vmware_folder"
+    user_name: "my_user"
+    role_name: "my_role"
+  
+  tasks:
+  
+    - name: Get folder information
+      vmware_object_role_permission:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ vmware_username }}"
+        password: "{{ vmware_password }}"
+        validate_certs: no
+        object_type: folder
+        object_name: "{{ folder_name }}"
+        state: present
+      register: folder
+    
+    - name: Add user to folder role
+      vmware_object_role_permission:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ vmware_username }}"
+        password: "{{ vmware_password }}"
+        validate_certs: no
+        object_type: folder
+        object_name: "{{ folder_name }}"
+        user_name: "{{ user_name }}"
+        role_name: "{{ role_name }}"
+        changed_on_diff: true
+        role_action: add
+        state: present
+      when: user_name not in folder.object_permissions[0].principal_name.split('/', 1)[1:]
+  
+    - name: Remove user from folder role
+      vmware_object_role_permission:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ vmware_username }}"
+        password: "{{ vmware_password }}"
+        validate_certs: no
+        object_type: folder
+        object_name: "{{ folder_name }}"
+        user_name: "{{ user_name }}"
+        role_name: "{{ role_name }}"
+        changed_on_diff: true
+        role_action: remove
+        state: present
+      when: user_name in folder.object_permissions[0].principal_name.split('/', 1)[1:]

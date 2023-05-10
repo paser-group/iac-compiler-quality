@@ -1,0 +1,32 @@
+yaml
+---
+- name: s3_lifecycle rule with random prefix for testing unexpected inputs
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    s3_bucket_name: "my-bucket"
+    max_prefix_length: 5
+    max_num_prefixes: 5
+    valid_days: 30
+
+  tasks:
+  - name: Generate random prefixes
+    set_fact:
+      prefixes: "{{ prefixes | default([]) + [item] }}"
+    with_sequence: count={{ max_num_prefixes }}
+    vars:
+      prefix: "{{ s3_bucket_name }}_{{ '%04d' | format(ansible_random | random * 10000) }}"
+    when: prefix | length <= max_prefix_length
+
+  - name: Create s3 lifecycle configurations
+    s3_lifecycle:
+      bucket: "{{ s3_bucket_name }}"
+      rules:
+        - id: "{{ item.id }}"
+          status: enabled
+          prefix: "{{ item.prefix }}"
+          expiration:
+            days: "{{ valid_days }}"
+    with_items: "{{ prefixes }}"
+

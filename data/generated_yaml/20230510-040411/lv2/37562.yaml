@@ -1,0 +1,36 @@
+
+---
+- name: Test playbook
+  hosts: localhost
+
+  vars:
+    foreman_auth_errors: True
+
+  tasks:
+    # Test edge cases
+    - name: Test edge cases
+      debug:
+        msg: "{{ 1 / 0 }}"
+      when: foreman_auth_errors
+
+    # Test unconventional syntax
+    - name: Test unconventional syntax
+      lineinfile:
+        dest: /path/to/file
+        regexp: '{{ item }}'
+        line: '{{ item }}'
+      loop:
+        - "{{ foo }}"
+        - "{% for bar in baz %}{{ bar }}{% endfor %}"
+
+    # Test unexpected inputs
+    - name: Test unexpected inputs
+      foreman_callback:
+        api_url: "{{ foreman_url }}"
+        username: "{{ foreman_user }}"
+        password: "{{ foreman_pass }}"
+        state: present
+      vars:
+        foreman_user: "{{ lookup('env', 'FOREMAN_USER') }}"
+        foreman_pass: "{{ lookup('env', 'FOREMAN_PASS') }}"
+      when: foreman_auth_errors

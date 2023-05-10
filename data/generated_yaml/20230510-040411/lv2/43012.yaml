@@ -1,0 +1,64 @@
+
+- name: Win_DSC PSCredential conversion error test
+  hosts: windows
+  vars:
+    username: 'admin'
+    password: 'very_secure_password'
+  tasks:
+  - name: Converting PSCredential without username and password
+    win_dsc:
+      module_name: TestDsc
+      module_args:
+        Properties:
+          Name: Test
+          Description: This is a test
+          Credential: @{
+            ServerCertificateThumbprint='dummy_thumbprint';
+            PublicKey='dummy_key';
+          }
+    register: result1
+    ignore_errors: True
+  - name: Converting non-PSCredential to PSCredential
+    win_dsc:
+      module_name: TestDsc
+      module_args:
+        Properties:
+          Name: Test
+          Description: This is a test
+          Credential: "{{ 'non-pscredential' | to_nice_json }}"
+    register: result2
+    ignore_errors: True
+  - name: Converting invalid PSCredential
+    win_dsc:
+      module_name: TestDsc
+      module_args:
+        Properties:
+          Name: Test
+          Description: This is a test
+          Credential: @{
+            Username='admin';
+            Password='very_secure_password';
+          }
+    register: result3
+    ignore_errors: True
+  - name: Converting PSCredential with password as integer
+    win_dsc:
+      module_name: TestDsc
+      module_args:
+        Properties:
+          Name: Test
+          Description: This is a test
+          Credential: @{
+            Username='admin';
+            Password={{ 1234 }};
+          }
+    register: result4
+    ignore_errors: True
+  - name: Printing results
+    debug:
+      var: item
+    with_items:
+      - result1
+      - result2
+      - result3
+      - result4

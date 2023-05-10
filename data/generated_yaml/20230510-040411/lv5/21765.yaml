@@ -1,0 +1,36 @@
+
+- name: Test ec2_asg module with target groups and replace_all_instances parameter
+  hosts: localhost
+  gather_facts: no
+  vars:
+    target_group_name: "test_target_group"
+    auto_scaling_name: "test_auto_scaling"
+    launch_config_name: "test_launch_config"
+    ami_id: "{{ lookup('var', 'ami_id') }}"
+
+  tasks:
+  - name: Create Target Group
+    elbv2_target_group:
+      name: "{{ target_group_name }}"
+      port: 80
+      protocol: HTTP
+      vpc_id: "{{ lookup('env', 'VPC_ID') | default('vpc-123456') }}"
+    register: target_group
+
+  - name: Create Launch Configuration
+    ec2_lc:
+      name: "{{ launch_config_name }}"
+      image_id: "{{ ami_id }}"
+      instance_type: "{{ lookup('var', 'instance_type') }}"
+    register: launch_config
+
+  - name: Create Auto Scaling Group
+    ec2_asg:
+      name: "{{ auto_scaling_name }}"
+      launch_config_name: "{{ launch_config_name }}"
+      min_size: 1
+      max_size: 2
+      desired_capacity: 1
+      target_group_arns: "{{ target_group.arn }}"
+      replace_all_instances: true
+    register: auto_scaling_group

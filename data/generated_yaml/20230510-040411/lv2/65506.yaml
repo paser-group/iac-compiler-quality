@@ -1,0 +1,24 @@
+
+---
+
+- name: Fuzzing playbook for beadm module AttributeError
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    - attr: "attr{{ item }}"
+    - attrs: "{{ [attr0, attr1, attr2] | shuffle }}"
+
+  tasks:
+    - name: Set module attributes
+      set_fact:
+        "{{ attrs[loop.index0] }}": "{{ loop.index0 }}"
+
+    - name: Execute beadm module
+      become: yes
+      beadm:
+        state: present
+        boot-environment: "be{{ attr | truncate(length=1, omission='') }}"
+        from-existing: yes
+        unmount: "{{ 'True' if loop.index == 2 else 'False' }}"
+      loop: "{{ attrs }}"

@@ -1,0 +1,40 @@
+
+- name: Install Ansible via setup.py
+  hosts: localhost
+  gather_facts: no
+  tasks:
+    - name: Copy Ansible to temporary directory
+      copy:
+        src: "{{ lookup('env', 'HOME') }}/ansible-2.10.11"
+        dest: "/tmp/ansible"
+
+    - name: Install with setuptools v51.3.3
+      shell: 'python setup.py install'
+      args:
+        chdir: "/tmp/ansible"
+        environment:
+            PYTHONPATH: "{{ lookup('env', 'PYTHONPATH') }}"
+            PATH: "{{ lookup('env', 'PATH') }}:/usr/local/bin"
+            SETUPTOOLS_USE_DISTUTILS: stdlib
+
+    - name: Test Ansible installation
+      ansible.builtin.command: ansible-playbook --version
+      register: output
+      failed_when: output.stderr.find("Failed to load transport protocol") == -1 || output.stderr.find("ansible-playbook: command not found") != -1
+      changed_when: false
+      ignore_errors: yes
+
+    - name: Copy 'default' folder to '/tmp'
+      copy:
+        src: "/tmp/ansible/lib/ansible/galaxy/data/default"
+        dest: "/tmp"
+
+    - name: Change the ownership of the /tmp/default folder
+      shell: 'chown root:root /tmp/default'
+      become: yes
+      become_method: sudo
+
+    - name: Test for issues in copying files
+      copy:
+        src: "/tmp/default"
+        dest: "/etc/ansible/conf.d/default"

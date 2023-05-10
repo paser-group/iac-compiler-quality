@@ -1,0 +1,44 @@
+
+- name: Test nxos_vxlan_vtep_vni with nxapi
+  hosts: switch
+  connection: local
+  vars:
+    vni_id: "{{ 4097 | random }}"
+    vtep_ip: "{{ '1.2.3.4' | random }}"
+  tasks:
+    - name: Create VLAN
+      nxos_vlan:
+        vlan_id: "{{ vni_id }}"
+        state: present
+      register: vlan
+
+    - name: Configure VXLAN
+      nxos_vxlan_vtep_vni:
+        host: "{{ inventory_hostname }}"
+        vtep_ip: "{{ vtep_ip }}"
+        vrf: default
+        vni: "{{ vlan.vlan_id }}"
+        transport: nxapi
+        provider:
+          host: "{{ inventory_hostname }}"
+          username: admin
+          password: admin
+      ignore_errors: true
+
+    - name: Verify VxLAN configuration
+      nxos_command:
+        commands: show vxlan vtep
+        provider:
+          host: "{{ inventory_hostname }}"
+          username: admin
+          password: admin
+      register: output
+
+    - name: Debug output
+      debug:
+        var: output.stdout
+
+    - name: Remove VLAN
+      nxos_vlan:
+        vlan_id: "{{ vni_id }}"
+        state: absent

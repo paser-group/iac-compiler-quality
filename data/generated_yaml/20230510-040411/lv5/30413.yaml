@@ -1,0 +1,17 @@
+
+- name: Detect concurrent modifications to a file
+  hosts: target_host
+  tasks:
+    - name: Check if the specified line exists in the file
+      lineinfile:
+        path: /path/to/file
+        line: 'some line to be added'
+        check_mode: yes
+      delegate_to: delegated_host
+      register: line_check
+      ignore_errors: yes
+
+    - name: Fail the task if the line exists and was delegated from a different source
+      fail:
+        msg: 'Concurrent modification detected!'
+      when: "line_check.changed and 'delegated_host' not in line_check.delegated_vars.ansible_delegated_vars.delegate_to"

@@ -1,0 +1,55 @@
+
+---
+- name: CloudWatchEvent_rule error
+  hosts: localhost
+  gather_facts: no
+  
+  tasks:
+    - name: Create a new CloudWatchEvent rule
+      cloudwatchevent_rule:
+        name: "{{ item.name }}"
+        state: "{{ item.state }}"
+        event_pattern:
+          source:
+            - "{{ item.source }}"
+          detail:
+            type:
+              - "{{ item.type }}"
+        targets:
+          - id: "{{ item.id }}"
+            arn: "{{ item.arn }}"
+        schedule_expression: "{{ item.schedule_expression }}"
+        region: "{{ item.region }}"
+      with_items:
+        - 
+          name: Test Rule
+          state: present
+          source: 
+            - aws.test
+          type: aws.test
+          id: 1
+          arn: arn:aws:lambda:us-west-2:123456789012:function:TestLambda
+          schedule_expression: cron(0 12 * * ? *)
+          region: us-west-2
+        - 
+          name: Test Rule2
+          state: absent
+          source:
+            - aws.test
+          type: aws.test
+          id: 2
+          arn: arn:aws:lambda:us-west-2:123456789012:function:TestLambda2
+          schedule_expression: "rate(5 minutes)"
+          region: us-west-2
+          
+    - name: Delete CloudWatchEvent rule
+      cloudwatchevent_rule:
+        name: "{{ item.name }}"
+        state: "{{ item.state }}"
+      with_items:
+        - 
+          name: Test Rule
+          state: absent
+        - 
+          name: Test Rule2
+          state: present

@@ -1,0 +1,48 @@
+
+- name: Set up virtual machine
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  
+  tasks:
+  - name: Create virtual machine
+    virt:
+      name: "{{ vm_name }}"
+      state: running
+      memory: "{{ vm_memory }}"
+      vcpu: "{{ vm_vcpu }}"
+      disk:
+        - path: "{{ vm_disk_path }}"
+          size: "{{ vm_disk_size }}"
+      network:
+        - bridge: "{{ vm_bridge }}"
+          mac: "{{ vm_mac }}"
+
+- name: Install Ansible
+  hosts: "{{ vm_name }}"
+  become: yes
+  gather_facts: true
+  
+  tasks:
+  - name: Install dependencies
+    apt:
+      name: "{{ item }}"
+      state: present
+    with_items:
+      - python
+      - python-pip
+  - name: Install Ansible
+    pip:
+      name: ansible
+      executable: pip2
+
+- name: Test ansible_default_ipv4
+  hosts: "{{ vm_name }}"
+  become: yes
+  
+  tasks:
+  - name: Retrieve ansible_default_ipv4
+    command: "echo {{ ansible_default_ipv4 }} > /tmp/ansible_default_ipv4"
+    changed_when: false
+  - name: Validate ansible_default_ipv4
+    command: "cmp -s /tmp/ansible_default_ipv4 {{ expected_value }}"

@@ -1,0 +1,27 @@
+yaml
+---
+- name: Authentication Fix using Callback Plugin in Foreman
+  hosts: all
+  become: true
+  
+  tasks:
+    - name: Install Foreman Callback Plugin
+      pip:
+        name: foreman-callback
+        state: present
+    
+    - name: Configure Foreman Callback Plugin
+      lineinfile:
+        path: /etc/ansible.cfg
+        line: "callback_whitelist = foreman"
+
+    - name: Check if Configuration Changed
+      command: ansible --version
+      register: output
+      changed_when: False
+
+    - name: Reload Ansible Configuration
+      shell: "/bin/systemctl restart ansible"
+
+    - name: Verify Authentication
+      shell: "ansible 'all' -m ping"

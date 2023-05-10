@@ -1,0 +1,37 @@
+
+---
+- name: Install packages using yum module
+  hosts: ec2
+  become: true
+  
+  vars:
+    package_name: "httpd"
+    state: "installed"
+    
+  tasks:
+    - name: Install package
+      yum:
+        name: "{{ package_name }}"
+        state: "{{ state }}"
+      register: install_status
+      ignore_errors: true
+      
+    - name: Verify installation
+      assert:
+        that:
+          - install_status is success
+        
+    - name: Introduce error
+      command: "yum -a"
+      ignore_errors: true
+      
+    - name: Verify error handling
+      assert:
+        that:
+          - "'error' in install_status.stderr"
+          - "'1 errors' in install_status.stderr"
+        
+    - name: Uninstall package
+      yum:
+        name: "{{ package_name }}"
+        state: "absent"

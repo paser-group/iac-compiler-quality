@@ -1,0 +1,54 @@
+yaml
+- name: Ensure idempotence of vmware_portgroup
+  hosts: all
+  gather_facts: false
+
+  vars:
+    vm_name: "my_vm"
+    portgroup_name: "my_portgroup_name"
+
+  tasks:
+    - name: Gather VMware facts
+      vmware_vm_facts:
+        hostname: "{{ vcenter }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        validate_certs: no
+      delegate_to: localhost
+      register: vm_facts
+
+    - name: Get network adapter configuration of VM
+      vmware_guest_nic_info:
+        hostname: "{{ vcenter }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        validate_certs: no
+        name: "{{ vm_name }}"
+        vm_id: "{{ vm_facts.virtual_machines[0].moid }}"
+      delegate_to: localhost
+      register: nic_facts
+
+    - name: Get portgroup properties
+      vmware_portgroup_facts:
+        hostname: "{{ vcenter }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        validate_certs: no
+        name: "{{ portgroup_name }}"
+      delegate_to: localhost
+      register: pg_facts
+
+    - name: Create or update portgroup on VM if necessary
+      vmware_guest_network_interface:
+        hostname: "{{ vcenter }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        validate_certs: no
+        nic_type: "vmxnet3"
+        name: "{{ vm_name }}"
+        network_label: "{{ portgroup_name }}"
+        state: "{{ 'present' if pg_facts.portgroup else 'absent' }}"
+        mac: "{{ nic_facts.nic_info[0].mac_address }}"
+        vm_id: "{{ vm_facts.virtual_machines[0].moid }}"
+      delegate_to: localhost
+      when: pg_facts.portgroup is defined

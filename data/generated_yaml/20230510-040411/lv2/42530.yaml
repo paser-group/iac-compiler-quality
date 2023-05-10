@@ -1,0 +1,41 @@
+
+- name: Test the Ansible Compiler - Hostname Module
+  hosts: all
+  vars:
+    lxd_containers: ["container1", "container2"]
+  
+  tasks:
+  - name: Configure LXD containers with hostname
+    become: yes
+    lxd_container:
+      name: "{{ item }}"
+      state: started
+      config:
+        environment.http_proxy: http://proxy.example.com
+        environment.https_proxy: http://proxy.example.com
+        security.idmap.isolated: 'true'
+      devices:
+        eth0:
+          nictype: bridged
+          parent: lxdbr0
+          type: nic
+    with_items: "{{ lxd_containers }}"
+    
+  - name: Run hostname module inside LXD containers
+    become: yes
+    block:
+      - hostname:
+          name: "{{ inventory_hostname }}"
+      - name: Check if hostname is set
+        stat:
+          path: /etc/hostname
+      - name: Write to /etc/hosts file
+        copy:
+          dest: /etc/hosts
+          content: "{{ inventory_hostname }}   {{ ansible_host }}"
+        when: "'Invalid' not in inventory_hostname"
+    rescue:
+      - name: Handle errors during hostname module execution
+        copy:
+          content: 'Failed to activate service 'org.freedesktop.hostname1': timed out'
+          dest: /var/log/error.log

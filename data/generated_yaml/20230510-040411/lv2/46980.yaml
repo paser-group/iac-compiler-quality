@@ -1,0 +1,62 @@
+
+- name: SSH Error Playbook
+  hosts: all
+  become: yes
+  
+  vars:
+    python_version: "3.9.7"
+  
+  tasks:
+    - name: Install Python3
+      raw: test -e /usr/bin/python || (apt -y update && apt install -y python-minimal)
+
+    - name: Ensure SSH service is running
+      service:
+        name: ssh
+        state: started
+
+    - name: Generate SSH keys if not exist
+      when: not ssh_pub_key.stat.exists
+      openssh_keypair:
+        path: /root/.ssh/id_rsa
+        owner: root
+        group: root
+  
+    - name: Add SSH key to authorized_keys
+      authorized_key:
+        user: root
+        key: "{{ lookup('file', '/root/.ssh/id_rsa.pub') }}"
+
+    - name: Disable SSH password authentication
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: "^PasswordAuthentication"
+        line: "PasswordAuthentication no"
+      become: yes
+  
+    - name: Install Python{{ python_version }}
+      apt:
+        name: python{{ python_version }}
+        state: present
+      
+    - name: Ensure Python{{ python_version }} is installed
+      assert:
+        that:
+            - python_version in ansible_play_hosts[0]|inventory_hostname|command_output
+        fail_msg: "Python{{ python_version }} not found on {{ ansible_play_hosts[0] }}"
+  
+    - name: Run Python script
+      script:
+        target: "{{ play_hosts }}"
+        script: |
+          import sys, paramiko
+          try:
+            client = paramiko.SSHClient()
+            client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            client.connect("{{ inventory_hostname }}", port=22, username="root", key_filename="/root/.ssh/id_rsa")
+            stdin, stdout, stderr = client.exec_command("python --version")
+            print(stdout.read().decode())
+            return True
+          except Exception as e:
+            print(str(e))
+            return False

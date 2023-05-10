@@ -1,0 +1,30 @@
+
+---
+- name: Playbook to simulate 'template error while templating string: unexpected ']' After Dictionary Combine' issue
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    dict_list1:
+      - string: "foo"
+        dict1:
+          key: "value"
+
+    dict_list2:
+      - string: "bar"
+        dict2:
+          key: "value"
+
+  tasks:
+  - name: Combine two dictionaries
+    set_fact:
+      combined_dict: "{{ dict_list1 + dict_list2 }}"
+
+  - name: Execute template with combined dictionary
+    template:
+      src: '{{ item.string }}'
+      dest: '/tmp/{{ item.string }}'
+      mode: '0644'
+      vars:
+        dict_val: "{{ item.dict1 | default([]) + item.dict2 | default([]) }}"
+    with_items: '{{ combined_dict }}'

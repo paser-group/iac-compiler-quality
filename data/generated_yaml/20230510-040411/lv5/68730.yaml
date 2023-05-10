@@ -1,0 +1,61 @@
+
+- name: Install Docker
+  hosts: target_machine
+  become: true
+  tasks:
+    - name: Install Docker dependencies
+      apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gnupg-agent
+          - software-properties-common
+        state: present
+
+    - name: Add Docker’s official GPG key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: Add Docker repository
+      apt_repository:
+        repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable
+        state: present
+
+    - name: Install Docker
+      apt:
+        name: docker-ce docker-ce-cli containerd.io
+        state: present
+
+- name: Build Docker container using docker_compose module
+  hosts: target_machine
+  become: true
+  tasks:
+    - name: Build Docker container
+      docker_compose:
+        project_name: myproject
+        build: true
+        force_build: true
+        file: mydockercompose.yml
+      register: docker_output
+
+- name: Verify Docker container is running correctly
+  hosts: target_machine
+  become: true
+  tasks:
+    - name: Check Docker container status
+      command: docker ps | grep myproject
+      register: container_output
+
+- name: Debugging info
+  hosts: target_machine
+  become: true
+  tasks:
+    - name: Show Docker Compose output
+      debug:
+        var: docker_output
+
+    - name: Show container status output
+      debug:
+        var: container_output

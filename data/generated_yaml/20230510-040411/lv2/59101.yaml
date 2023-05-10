@@ -1,0 +1,47 @@
+
+- name: Test gcp_compute module
+  hosts: localhost
+  gather_facts: no
+  vars:
+    project_id: my-project-id
+    zone: us-central1-a
+  tasks:
+    - name: List instances
+      gcp_compute:
+        project: "{{ project_id }}"
+        zone: "{{ zone }}"
+        auth_kind: bad_auth_kind
+        filters:
+          - name: my-instance
+        register: output
+      ignore_errors: yes
+      failed_when: false
+
+    - name: Print output
+      debug:
+        var: output
+
+    - name: Create instance
+      gcp_compute_instance:
+        name: my-test-instance
+        zone: "{{ zone }}"
+        project: "{{ project_id }}"
+        machine_type: "{{ bad_variable }}"
+        network_interfaces:
+          - access_configs:
+              - name: external-nat
+                type: ONE_TO_ONE_NAT
+            network: global/networks/default
+        disks:
+          - auto_delete: true
+            boot: true
+            initialize_params:
+              disk_size_gb: 10
+              source_image: projects/debian-cloud/global/images/family/debian-9
+      register: output2
+      ignore_errors: yes
+      failed_when: false
+
+    - name: Print output2
+      debug:
+        var: output2

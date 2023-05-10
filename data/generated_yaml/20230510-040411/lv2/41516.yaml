@@ -1,0 +1,87 @@
+
+- hosts: localhost
+  gather_facts: no
+
+  vars:
+    s3_bucket_name: "test-bucket"
+    s3_object_key: "test-object"
+    invalid_region: "{{ ['us-east-2', '', 'us-east-1'] }}"
+    invalid_mode: "{{ ['auto', 'standard', 'reduced_redundancy', 'glacier'] }}"
+    non_string_values: [123, True, ['test'], {'key': 'value'}]
+    invalid_dest_path: "{{ ['~/path', './path', '../path'] }}"
+    invalid_access_key: "{{ ['access_key', ''] }}"
+    invalid_secret_key: "{{ ['secret_key', ''] }}"
+    invalid_session_token: "{{ ['session_token', ''] }}"
+
+  tasks:
+    - name: Upload object to a non-existent bucket
+      s3:
+        bucket: "{{ non_existent_bucket }}"
+        object: "{{ s3_object_key }}"
+        src: "/tmp/object"
+        mode: "{{ invalid_mode | random }}"
+        region: "{{ invalid_region | random }}"
+        aws_access_key: "{{ invalid_access_key | random }}"
+        aws_secret_key: "{{ invalid_secret_key | random }}"
+        aws_session_token: "{{ invalid_session_token | random }}"
+        dest: "{{ invalid_dest_path | random }}"
+      register: s3_upload_result
+      ignore_errors: yes
+
+    - name: Check `Max Retries Exceeded` error message
+      fail:
+        msg: "Unexpected error message: {{ s3_upload_result.msg }}"
+      when: "'Max Retries Exceeded' not in s3_upload_result.msg"
+
+    - name: Upload a non-existing file
+      s3:
+        bucket: "{{ s3_bucket_name }}"
+        object: "{{ s3_object_key }}"
+        src: "{{ non_existent_file }}"
+        dest: "."
+      ignore_errors: yes
+
+    - name: Check if object was uploaded successfully
+      stat:
+        path: "{{ s3_object_key }}"
+      register: object_stat
+
+    - name: Download object to a non-existent directory
+      s3:
+        bucket: "{{ s3_bucket_name }}"
+        object: "{{ s3_object_key }}"
+        dest: "{{ invalid_dest_path | random }}"
+        mode: "{{ invalid_mode | random }}"
+        region: "{{ invalid_region | random }}"
+        aws_access_key: "{{ invalid_access_key | random }}"
+        aws_secret_key: "{{ invalid_secret_key | random }}"
+        aws_session_token: "{{ invalid_session_token | random }}"
+      register: s3_download_result
+      ignore_errors: yes
+
+    - name: Check `Max Retries Exceeded` error message
+      fail:
+        msg: "Unexpected error message: {{ s3_download_result.msg }}"
+      when: "'Max Retries Exceeded' not in s3_download_result.msg"
+
+    - name: Download a non-existing object
+      s3:
+        bucket: "{{ s3_bucket_name }}"
+        object: "{{ non_existent_object }}"
+        dest: "."
+      ignore_errors: yes
+
+    - name: Check that non-string values are rejected
+      s3:
+        bucket: "{{ s3_bucket_name }}"
+        object: "{{ s3_object_key }}"
+        src: "/tmp/object"
+        dest: "."
+        mode: "{{ non_string_values | random }}"
+      register: s3_non_string_values_result
+      ignore_errors: yes
+
+    - name: Check `invalid mode` error message
+      fail:
+        msg: "Unexpected error message: {{ s3_non_string_values_result.msg }}"
+      when: "'invalid mode' not in s3_non_string_values_result.msg"

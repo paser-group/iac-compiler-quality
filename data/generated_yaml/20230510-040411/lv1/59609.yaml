@@ -1,0 +1,38 @@
+yaml
+---
+- name: Install required packages
+  hosts: all
+  become: true
+  tasks:
+    # Install pip package manager
+    - name: Install pip
+      apt:
+        name: python-pip
+        state: present
+
+    # Install required Python modules for AWS
+    - name: Install required Python modules
+      pip:
+        name: boto
+        state: present
+
+- name: Use aws_secret lookup plugin
+  hosts: all
+  become: true
+  tasks:
+    # Ensure necessary credentials are set up for AWS
+    - name: Ensure AWS CLI credentials are set up
+      include_vars:
+        file: ~/.aws/credentials
+        name: aws_credentials
+      ignore_errors: yes
+    - name: Save AWS credentials
+      set_fact:
+        aws_access_key: "{{ aws_credentials.aws_access_key_id }}"
+        aws_secret_key: "{{ aws_credentials.aws_secret_access_key }}"
+      when: aws_credentials is defined
+
+    # Use aws_secret lookup plugin to retrieve secrets
+    - name: Use aws_secret lookup plugin
+      debug:
+        msg: "{{ lookup('aws_secret', 'path/to/secret', 'aws_access_key_id=' + aws_access_key + ' aws_secret_access_key=' + aws_secret_key) }}"

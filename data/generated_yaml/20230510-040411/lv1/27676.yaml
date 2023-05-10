@@ -1,0 +1,29 @@
+
+- name: Ensure nxos_vtp_password is idempotent
+  hosts: localhost
+  gather_facts: no
+  connection: local
+
+  tasks:
+    - name: Remove nxos_vtp_password
+      nxos_vtp_password:
+        password: null
+        provider: "{{ vtp_provider }}"
+        state: absent
+      register: remove_output
+      ignore_errors: true
+
+    - name: Save vtp_provider output
+      set_fact:
+        vtp_provider_data: "{{ remove_output }}"
+      when: remove_output is defined
+
+    - name: Set nxos_vtp_password
+      nxos_vtp_password:
+        password: "{{ vtp_password }}"
+        provider: "{{ vtp_provider }}"
+        state: present
+      when:
+        - not remove_output.changed
+        - "'vtp_provider_data' in vars and 'ansible_module_results' in vtp_provider_data"
+

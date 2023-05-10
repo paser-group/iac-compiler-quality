@@ -1,0 +1,39 @@
+
+---
+- hosts: localhost
+  gather_facts: no
+
+  tasks:
+    - name: Set git credentials
+      lineinfile:
+        path: ~/.netrc
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+      with_items:
+        - { regexp: "^machine github.com$", line: "    login <YOUR_GITHUB_USERNAME>\n    password <YOUR_GITHUB_PASSWORD>\n" }
+        - { regexp: "^machine api.github.com$", line: "    login <YOUR_GITHUB_USERNAME>\n    password <YOUR_GITHUB_PASSWORD>\n" }
+
+    - name: Install Ansible Galaxy roles
+      community.general.galaxy_collection:
+        name: "{{ item }}"
+        version: "{{ version | default('') }}"
+      loop:
+        - ansible.disk_info
+        - ansible.posix
+        - ansible.netcommon
+
+    - name: Test connection to Github
+      uri:
+        url: https://api.github.com
+        method: GET
+        return_content: yes
+        headers:
+          Authorization: "Bearer {{ lookup('env', 'GITHUB_TOKEN') }}"
+      register: response
+
+    - name: Display response content
+      debug:
+        var: response.content
+
+  vars:
+    version: ""

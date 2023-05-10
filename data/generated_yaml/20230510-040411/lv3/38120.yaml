@@ -1,0 +1,33 @@
+
+- hosts: target_host 
+  vars:
+      api_token: "{{vault_api_token}}"
+  tasks:
+    - name: Test authentication with URI module
+      uri:
+        url: some_url
+        method: GET
+        headers:
+           Authorization: "Bearer {{ api_token }}"
+        return_content: yes
+      register: authentication_response
+      ignore_errors: true
+
+    - name: Show response content in case of authentication failure
+      debug:
+        var: authentication_response
+
+    - name: Perform a real API call using the authenticated token
+      uri:
+        url: some_url
+        method: GET
+        headers:
+           Authorization: "Bearer {{ api_token }}"
+        return_content: yes
+      notify:
+        - send_notification
+
+  handlers:
+    - name: send_notification
+      debug:
+        msg: "Authenticated API call successful"

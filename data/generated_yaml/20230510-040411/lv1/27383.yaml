@@ -1,0 +1,27 @@
+
+---
+- name: Configure NTP on Cisco Nexus switches
+  hosts: nxos_switches
+  gather_facts: no
+
+  vars:
+    ntp_servers:
+      - 10.0.1.1
+      - 10.0.1.2
+
+  tasks:
+    - name: Install NTP package on switches
+      nxos_command:
+        commands:
+          - feature ntp
+          - feature-set ntp
+          - install feature-set ntp
+        provider: "{{ nxos_provider }}"
+      register: ntp_install
+      check_mode: yes
+
+    - name: Configure NTP servers on switches
+      nxos_ntp:
+        servers: "{{ ntp_servers }}"
+        provider: "{{ nxos_provider }}"
+      when: ntp_install.changed

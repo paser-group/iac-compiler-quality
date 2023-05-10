@@ -1,0 +1,53 @@
+
+---
+- name: Ansible Fuzzing Playbook
+  hosts: localhost
+  vars:
+    github_url: "https://github.com"
+    galaxy_url: "https://galaxy.ansible.com"
+    username: "user"
+    password: "password"
+    netrc_file: "~/.netrc"
+  gather_facts: no
+
+  tasks:
+  - name: Test GitHub Connection with credentials
+    uri:
+      url: "{{ github_url }}"
+      user: "{{ username }}"
+      password: "{{ password }}"
+      return_content: yes
+      status_code: 200
+
+  - name: Test Ansible-Galaxy connection with credentials
+    uri:
+      url: "{{ galaxy_url }}"
+      user: "{{ username }}"
+      password: "{{ password }}"
+      return_content: yes
+      status_code: 200
+
+  - name: Test GitHub Fuzzing by passing an incorrect username
+    uri:
+      url: "{{ github_url }}"
+      user: "wrong_username"
+      password: "{{ password }}"
+      return_content: yes
+
+  - name: Test Ansible-Galaxy Fuzzing by passing an incorrect password
+    uri:
+      url: "{{ galaxy_url }}"
+      user: "{{ username }}"
+      password: "wrong_password"
+      return_content: yes
+
+  - name: Test .netrc File Fuzzing by removing the credentials
+    lineinfile:
+      path: "{{ netrc_file }}"
+      regexp: 'machine {{ github_url }}'
+      state: absent
+
+  - name: Test .netrc File Fuzzing without authentication
+    uri:
+      url: "{{ github_url }}"
+      return_content: yes

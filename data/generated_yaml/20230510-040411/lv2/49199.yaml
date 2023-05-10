@@ -1,0 +1,64 @@
+
+---
+
+- name: Stress test the Ansible compiler for docker_swarm_service issue
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+
+  - name: Create a docker swarm service without specifying user
+    docker_swarm_service:
+      name: myservice
+      image: myimage:latest
+    register: no_user_service
+
+  - name: Create a docker swarm service with user 'root'
+    docker_swarm_service:
+      name: myservice
+      image: myimage:latest
+      user: root
+    register: root_user_service
+
+  - name: Create a docker swarm service with invalid user
+    docker_swarm_service:
+      name: myservice
+      image: myimage:latest
+      user: '@#$%'
+    ignore_errors: yes
+    register: invalid_user_service
+
+  - name: Create a docker swarm service with 'user' in lowercase
+    docker_swarm_service:
+      name: myservice
+      image: myimage:latest
+      user: user
+    register: lowercase_user_service
+
+  - name: Create a docker swarm service with 'User' in uppercase
+    docker_swarm_service:
+      name: myservice
+      image: myimage:latest
+      user: User
+    register: uppercase_user_service
+
+  - name: Create a docker swarm service with multiple users
+    docker_swarm_service:
+      name: myservice
+      image: myimage:latest
+      user:
+        - root
+        - user1
+        - user2
+    register: multiple_user_service
+
+  - name: Debug output
+    debug:
+      var: item
+    loop:
+      - no_user_service
+      - root_user_service
+      - invalid_user_service
+      - lowercase_user_service
+      - uppercase_user_service
+      - multiple_user_service

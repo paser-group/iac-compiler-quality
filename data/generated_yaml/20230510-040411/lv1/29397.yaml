@@ -1,0 +1,31 @@
+
+---
+- name: Example playbook for S3 bucket error
+  hosts: localhost
+  vars:
+    bucket_name: my-bucket-name
+
+  tasks:
+  - name: Check if S3 bucket already exists
+    block:
+      - name: Get a list of all S3 buckets
+        aws_s3_bucket_facts:
+          region: us-east-1
+        register: s3_buckets
+
+      - name: Check if the specified S3 bucket already exists
+        debug:
+          msg: "Bucket {{ bucket_name }} already exists"
+        when: s3_buckets.buckets | map(attribute='name') | list | contains(bucket_name)
+    rescue:
+      - name: Create S3 bucket if it doesn't already exist
+        aws_s3:
+          bucket: "{{ bucket_name }}"
+          region: us-east-1
+        register: created_bucket
+        when: "'BucketAlreadyOwnedByYou' not in created_bucket.stderr"
+
+      - name: Display debug message if bucket creation succeeds
+        debug:
+          msg: "Created S3 bucket {{ bucket_name }}"
+        when: created_bucket.changed

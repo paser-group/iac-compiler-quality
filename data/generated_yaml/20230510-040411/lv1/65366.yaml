@@ -1,0 +1,32 @@
+
+---
+- name: Fix ANSIBLE_DUPLICATE_YAML_DICT_KEY error
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Load playbook variables
+      include_vars:
+
+    - name: Check for duplicate dict keys in all YAML files
+      find:
+        paths: "{{ playbook_dir }}"
+        file_type: file
+        patterns: "*.yml,*.yaml"
+      register: yaml_files
+
+    - name: Check YAML files for duplicate keys
+      shell: grep -nH "^\s*[a-zA-Z0-9_-]\+:\s*\(\S\+:\)\{1,\}" "{{ item.path }}"
+      with_items: "{{ yaml_files.files }}"
+      register: duplicate_keys
+      ignore_errors: true
+
+    - name: Report duplicate keys
+      debug:
+        var: duplicate_keys.stdout_lines
+      when: duplicate_keys.stdout_lines is defined
+
+    - name: Fail if duplicate keys found
+      fail:
+        msg: "{{ item }}"
+      with_items: "{{ duplicate_keys.stdout_lines }}"

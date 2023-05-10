@@ -1,0 +1,54 @@
+
+- name: Test bigip_pool_member module
+  hosts: server
+  gather_facts: false
+  
+  vars:
+    pool_name: 'test_pool'
+    partition: '/test/partition'
+    members:
+      - address: '192.168.1.1'
+        port: 8080
+        state: 'present'
+      - address: "{{ hostvars['localhost']['ansible_eth0']['ipv4']['address'] }}"
+        port: "{{ lookup('env', 'SSH_PORT') }}"
+        session: "{{ lookup('env', 'SSH_SESSION') }}"
+        state: 'absent'
+
+  tasks:
+    - name: Create pool with members
+      bigip_pool_member:
+        provider:
+          server: 192.168.1.100
+          user: admin
+          password: secret
+          validate_certs: no
+        partition: "{{ partition }}"
+        name: "{{ pool_name }}"
+        description: "test pool creation"
+        members: "{{ members }}"
+      register: result_create_pool
+      
+    - name: Remove members from pool
+      bigip_pool_member:
+        provider:
+          server: 192.168.1.100
+          user: admin
+          password: secret
+          validate_certs: no
+        partition: "{{ partition }}"
+        name: "{{ pool_name }}"
+        state: "absent"
+      register: result_remove_members
+      
+    - name: Delete pool
+      bigip_pool_member:
+        provider:
+          server: 192.168.1.100
+          user: admin
+          password: secret
+          validate_certs: no
+        partition: "{{ partition }}"
+        name: "{{ pool_name }}"
+        state: "absent"
+      register: result_delete_pool

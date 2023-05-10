@@ -1,0 +1,35 @@
+
+import requests
+
+class NXAPI:
+    def __init__(self, host, user, password, use_ssl=True):
+        self.host = host
+        self.user = user
+        self.password = password
+        self.use_ssl = use_ssl
+        self.base_url = 'https://{}/ins'.format(host if use_ssl else host + ':80')
+        if use_ssl:
+            self.port = 443
+        else:
+            self.port = 80
+        self.cookies = None
+
+    def login(self):
+        if not self.cookies:
+            url = self.base_url + '/authcookie'
+            payload = 'username={}&password={}'.format(self.user, self.password)
+            headers = {'Content-Type': 'application/x-www-form-urlencoded'}
+            response = requests.post(url, data=payload, headers=headers, verify=False)
+            self.cookies = response.cookies
+
+    def run_commands(self, commands):
+        self.login()
+        headers = {'Content-Type': 'application/json-rpc'}
+        payload = {
+            'jsonrpc': '2.0',
+            'method': 'cli',
+            'params': {'cmd': commands, 'version': 1},
+            'id': 1,
+        }
+        response = requests.post(self.base_url, headers=headers, cookies=self.cookies, json=payload, verify=False)
+        return response.json()

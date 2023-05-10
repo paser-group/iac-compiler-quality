@@ -1,0 +1,34 @@
+yaml
+- name: Configure SSH Key Authentication for Cisco IOS
+  hosts: all
+  gather_facts: no
+  vars:
+    ssh_username: "your_username"
+    ssh_key_path: "/home/your_username/.ssh/id_rsa.pub"
+    
+  tasks:
+    
+  - name: Ensure SSH directory exists
+    file:
+      path: ~/.ssh
+      state: directory
+      mode: '0700'
+    become: yes
+    
+  - name: Copy Public Key to Remote Host
+    authorized_key:
+      user: "{{ ssh_username }}"
+      key: "{{ lookup('file', ssh_key_path) }}"
+    become: yes
+    
+  - name: Configure SSH options
+    lineinfile:
+      path: /etc/ssh/sshd_config
+      regexp: '^(PasswordAuthentication|ChallengeResponseAuthentication)'
+      line: '#\1 no'
+    become: yes
+    
+  - name: Restart SSH service
+    service:
+      name: sshd
+      state: restarted

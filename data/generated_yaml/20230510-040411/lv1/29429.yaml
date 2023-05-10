@@ -1,0 +1,29 @@
+yaml
+- name: Ensure that lvol indempotency succeeds with any size argument
+  hosts: your_servers
+  become: yes
+  vars:
+    lvol_size: "50g"  # Update this as per your server(s)
+    lvol_name: "your_lvol_name"  # Update this as per your server(s) 
+
+  tasks:
+
+    - name: Create lvol
+      lvol:
+        vg: your_lvm_volume_group_name
+        lv: "{{ lvol_name }}"
+        size: "{{ lvol_size }}"
+        thin_pool: yes
+      register: lvol_result
+
+    - name: Ensure that lvol is indempotent with float value of lvol size
+      lvol:
+        vg: your_lvm_volume_group_name
+        lv: "{{ lvol_name }}"
+        size: "{{ lvol_size | float }}"  # Typecasting to float to ensure consistency 
+        thin_pool: yes
+      register: lvol_result_updated
+
+    - name: debug the lvol_result_updated content
+      debug:
+        var: lvol_result_updated

@@ -1,0 +1,24 @@
+
+---
+- name: ios_interfaces bug testing playbook
+  hosts: ios_devices
+  gather_facts: no
+
+  tasks:
+    - name: declare interfaces and override state
+      ios_interface:
+        name: "{{ item.name }}"
+        state: "{{ item.state }}"
+      loop:
+        - { name: "GigabitEthernet0/0", state: "administratively down" }
+        - { name: "GigabitEthernet1/0", state: "administratively down" }
+
+    - name: gather interface information
+      ios_interfaces:
+        gather_subset: all
+
+    - name: verify overridden state
+      assert:
+        that:
+          - "'administratively down' in item.show_running_config"
+        loop: "{{ ansible_facts['ansible_net_interfaces'] }}"

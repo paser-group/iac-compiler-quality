@@ -1,0 +1,28 @@
+
+- name: Test azure_rm_securitygroup create rules with comma-separated IP address prefixes
+  hosts: localhost
+  gather_facts: false
+  vars:
+    address_prefixes: "10.0.0.1/24, 192.168.1.0/24"
+
+  tasks:
+    - name: Create security group with comma-separated IP address prefixes
+      azure_rm_securitygroup:
+        resource_group: my_resource_group
+        name: my_securitygroup
+        rules:
+          - name: rule1
+            protocol: tcp
+            source_address_prefixes: "{{ address_prefixes }}"
+            destination_port_range: "3389"
+
+    - name: Create security group with unconventional syntax and unexpected inputs
+      azure_rm_securitygroup:
+        resource_group: my_resource_group
+        name: my_securitygroup
+        rules:
+          - name: "{{ 'rule-' + item }}"
+            protocol: "{{ item if item|int <= 65535 else 'HTTP' }}"
+            source_address_prefixes: "{{ lookup('env', 'IP_PREFIX') | default('10.0.0.0/8') }}"
+            destination_port_range: "{{ item + '-5000' }}"
+          loop: "{{ [1, 'abc', '65536', '443'] }}"

@@ -1,0 +1,44 @@
+
+- name: Create GCE instance with RSA key format
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    project_id: "my-project"
+    zone: "us-central1-a"
+    instance_name: "my-instance"
+    rsa_key_file: "my_rsa_key.pub"
+
+  tasks:
+    - name: Create a new GCE instance using RSA key format
+      gce:
+        instance_names: "{{ instance_name }}"
+        zone: "{{ zone }}"
+        project_id: "{{ project_id }}"
+        machine_type: "n1-standard-1"
+        image_family: "ubuntu-2004-lts"
+        disks:
+          - mode: "READ_WRITE"
+            boot: true
+            auto_delete: true
+        network_interfaces:
+          - name: "default"
+            access_configs:
+              - name: "External NAT"
+                type: "ONE_TO_ONE_NAT"
+        metadata:
+          sshKeys: "test:{{ lookup('file', rsa_key_file) }}"
+      register: gce_instance
+
+    - name: SSH into GCE instance using the RSA key
+      wait_for:
+        host: "{{ gce_instance.network_interfaces[0].network_ip }}"
+        port: 22
+        timeout: 30
+        search_regex: "OpenSSH"
+        delay: 5
+        msg: "Failed to SSH into the GCE instance with the RSA key format"
+      remote_user: test
+      become: yes
+      become_method: sudo
+      become_user: root

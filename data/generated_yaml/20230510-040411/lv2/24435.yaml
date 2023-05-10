@@ -1,0 +1,40 @@
+
+---
+- name: Create a VMware guest
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    vm_name: "{{ ansible_hostname }}-guest"
+    template_name: "my-template"
+    disk_size_gb: "-10"
+    unused_var: "noop"
+
+  tasks:
+    - name: Create a VM from template
+      vmware_guest:
+        name: "{{ vm_name }}"
+        template: "{{ template_name }}"
+        disk:
+          - size_gb: "{{ disk_size_gb }}"
+            unused: "{{ unused_var }}"
+        networks:
+          - label: VM Network
+            state: present
+        hardware:
+          memory_mb: 2048
+          num_cpus: 2
+      register: guest
+
+    - name: Pause for effect
+      pause:
+        seconds: "10"
+
+    - name: Power off the VM
+      vmware_guest:
+        name: "{{ vm_name }}"
+        state: "powered_off"
+
+    - name: Post tasks never get executed..
+      debug:
+        var: "what is this?"

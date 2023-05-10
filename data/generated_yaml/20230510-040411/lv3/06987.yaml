@@ -1,0 +1,54 @@
+
+- name: Provision EC2 instance in VPC with Private IP in AWS
+  hosts: localhost
+  tasks:
+    - name: Create VPC network
+      ec2_vpc_net:
+        name: test_vpc
+        cidr_block: "10.0.0.0/16"
+      register: vpc_net
+
+    - name: Create subnet
+      ec2_vpc_subnet:
+        state: present
+        vpc_id: "{{ vpc_net.vpc.id }}"
+        cidr: '10.0.1.0/24'
+        az: "{{ aws_region }}a"
+        resource_tags:
+          Name: test_subnet
+      register: subnet
+
+    - name: Create security group
+      ec2_group:
+        name: Test_SG
+        description: "Test Security Group"
+        vpc_id: "{{ vpc_net.vpc.id }}"
+        rules:
+          - proto: tcp
+            from_port: 22
+            to_port: 22
+            cidr_ip: "{{ ansible_host }}/32"
+      register: security_group
+
+    - name: Provision EC2 instance
+      ec2:
+        key_name: test_rsa
+        instance_type: t2.micro
+        image: ami-0c94855ba95c71c99
+        vpc_subnet_id: "{{ subnet.subnet.id }}"
+        group: "{{ security_group.group_id }}"
+        assign_public_ip: yes   # To assign public IP
+        instance_tags:
+          Name: test_instance
+      register: ec2_instance
+
+    - name: Retrieve instance public IP and subnet
+      ec2_instance_facts:
+        region: "{{ aws_region }}"
+        filters:
+          "tag:Name": "test_instance"
+      register: ec2_facts
+
+    - name: Show instance details
+      debug:
+        var: ec2_facts

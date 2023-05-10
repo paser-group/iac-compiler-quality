@@ -1,0 +1,35 @@
+
+---
+- name: Virtual Environment Setup
+  hosts: localhost
+  gather_facts: yes
+
+  vars:
+    virtualenv_command: virtualenv
+    pip_path_command: "{{ virtualenv_command }} --system-site-packages --python=/usr/bin/python3 /opt/my-project/env"
+
+  tasks:
+    - name: Install virtualenv Package
+      apt:
+        name: python3-virtualenv
+        state: present
+
+    - name: Create a Virtual Environment
+      command: "{{ pip_path_command }}"
+      args:
+        executable: /bin/bash
+        creates: /opt/my-project/env
+
+    - name: Set PATH for Virtual Environment
+      lineinfile:
+        path: ~/.bashrc
+        regexp: '^PATH='
+        line: 'PATH=$PATH:/opt/my-project/env/bin'
+
+    - name: Refresh Bashrc File to Update PATH
+      action: shell source ~/.bashrc
+
+    - name: Install Dependencies to Virtual Environment
+      pip:
+        requirements: requirements.txt
+        virtualenv: /opt/my-project/env

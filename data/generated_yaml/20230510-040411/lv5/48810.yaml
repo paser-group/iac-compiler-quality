@@ -1,0 +1,26 @@
+
+- name: Set permissions for cloudwatchlogs_log_group
+  cloudwatchlogs_log_group:
+    name: example-log-group
+    state: present
+    region: us-west-2
+    tags:
+      env: prod
+    retention: 30
+    aws_access_key: "{{ access_key }}"
+    aws_secret_key: "{{ secret_key }}"
+    state: present
+    log_group_name: example-group
+    kinesis_stream_name: example-stream
+    kinesis_role_arn: example-role
+  register: log_group_permissions
+
+- name: Verify Permissions for cloudwatchlogs_log_group
+  assert:
+    that:
+      - "'logs:CreateLogStream' in item.actions"
+      - "'logs:PutLogEvents' in item.actions"
+      - "'logs:DescribeLogStreams' in item.actions"
+      - "'logs:GetLogEvents' in item.actions"
+      - "'logs:DeleteLogGroup' in item.actions"
+    loop: "{{ log_group_permissions.permissions }}"

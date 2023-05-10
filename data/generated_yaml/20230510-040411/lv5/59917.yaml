@@ -1,0 +1,28 @@
+
+- name: Create VMware port group
+  hosts: localhost
+  vars:
+    portgroup_name: "my_port_group"
+    vswitch_name: "vSwitch0"
+  tasks:
+  - name: Check if port group already exists
+    vmware_portgroup_facts:
+      hostname: "{{inventory_hostname}}"
+      username: "{{esxi_username}}"
+      password: "{{esxi_password}}"
+      datacenter_name: "{{datacenter_name}}"
+    register: portgroup_facts
+  - name: Fail if port group is not found
+    fail:
+      msg: "Port group {{portgroup_name}} not found in switch {{vswitch_name}}."
+    when: "'{{portgroup_name}}' not in portgroup_facts.portgroups[vswitch_name]"
+  - name: Create port group
+    vmware_portgroup:
+      hostname: "{{inventory_hostname}}"
+      username: "{{esxi_username}}"
+      password: "{{esxi_password}}"
+      datacenter_name: "{{datacenter_name}}"
+      vswitch_name: "{{vswitch_name}}"
+      portgroup_name: "{{portgroup_name}}"
+      vlan_id: 0
+      state: present

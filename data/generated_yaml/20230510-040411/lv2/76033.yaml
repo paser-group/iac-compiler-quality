@@ -1,0 +1,88 @@
+
+- name: Test gcp_compute_instance_group_manager error
+  hosts: localhost
+  tasks:
+
+  - name: Create instance group manager
+    gcp_compute_instance_group_manager:
+      name: "test-instance-group-manager"
+      region: "us-central1"
+      base_instance_name: "instance"
+      target_size: 10
+      autohealing_policies:
+        - initial_delay_sec: 1800
+          health_check:
+            type: HTTPS
+            port: 443
+            request_path: /health
+          mode: AUTO
+          max_failures: 3
+      update_policy:
+        type: PROACTIVE
+        minimal_action:
+          replacement_method: RECREATE
+        maximal_action:
+          replacement_method: RECREATE
+          max_surge: 1
+          max_unavailable: 0
+      wait_for_instances: True
+    register: mgr
+
+  - name: Modify instance group manager
+    gcp_compute_instance_group_manager:
+      name: "test-instance-group-manager"
+      region: "us-central1"
+      base_instance_name: "instance"
+      target_size: 5
+      autohealing_policies:
+        - initial_delay_sec: 1800
+          health_check:
+            type: HTTPS
+            port: 80
+            request_path: /health
+          mode: AUTO
+          max_failures: 2
+      update_policy:
+        type: REFRESH
+        minimal_action:
+          replacement_method: RECREATE
+        maximal_action:
+          replacement_method: RECREATE
+          max_surge: 2
+          max_unavailable: 1
+      wait_for_instances: False
+    when: mgr.target_size > 5
+
+  - name: Delete instance group manager
+    gcp_compute_instance_group_manager:
+      name: "test-instance-group-manager"
+      region: "us-central1"
+      state: absent
+
+  - name: Fail the Playbook with unconventional syntax
+    fail:
+      msg: "This Playbook fails intentionally due to unconventional syntax %a#^@!^#)+&nX**lC_"
+
+  - name: Test the unexpected input for instance_group_manager
+    gcp_compute_instance_group_manager:
+      name: "test-instance-group-manager"
+      region: "us-central1"
+      base_instance_name: "instance$%^&*()"
+      target_size: 10
+      autohealing_policies:
+        - initial_delay_sec: 1800
+          health_check:
+            type: TCP
+            port: ABCD
+            request_path: /health
+          mode: AUTO
+          max_failures: 3
+      update_policy:
+        type: PJAVJAGJ
+        minimal_action:
+          replacement_method: RECREATE
+        maximal_action:
+          replacement_method: RECREATE
+          max_surge: XYZ
+          max_unavailable: 0
+      wait_for_instances: abc

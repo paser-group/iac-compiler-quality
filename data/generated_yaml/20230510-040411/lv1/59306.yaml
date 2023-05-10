@@ -1,0 +1,30 @@
+yaml
+---
+- hosts: localhost
+  gather_facts: no
+  tasks:
+    - name: Execute multiple tasks asynchronously
+      async: 30
+      poll: 0
+      ignore_errors: yes
+      shell: "{{ item }}"
+      loop:
+        - "command-1"
+        - "command-2"
+        - "command-3"
+      register: async_result
+
+    - name: Wait for async tasks to complete
+      async_status:
+        jid: "{{ item.ansible_job_id }}"
+      loop: "{{ async_result.results }}"
+      register: job_result
+      until: job_result.finished
+      retries: 30
+      delay: 5
+
+    - name: Display async task results
+      debug:
+        msg: "{{ item.stdout }}"
+      loop: "{{ job_result.results }}"
+      when: item.rc == 0

@@ -1,0 +1,48 @@
+
+---
+- name: EC2 Transit Gateway Issue Playbook
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  tasks:
+    - name: Create Transit Gateway VPC Attachment with erroneous subnet ID
+      ec2_transit_gateway_vpc_attachment:
+        subnet_id: "{{ not_a_subnet_id }}"
+        transit_gateway_id: "tgw-00000000000000000"
+        vpc_id: "vpc-00000000000000000"
+      ignore_errors: yes
+
+    - name: Create Transit Gateway VPC Attachment with invalid CIDR block
+      ec2_transit_gateway_vpc_attachment:
+        subnet_ids:
+          - "subnet-00000000000000000"
+        transit_gateway_id: "tgw-00000000000000000"
+        vpc_id: "vpc-00000000000000000"
+        ipv4_cidr_blocks:
+          - "{{ invalid_cidr }}"
+      ignore_errors: yes
+
+    - name: Create Transit Gateway Multicast Domain without providing Transit Gateway ID
+      ec2_transit_gateway_multicast_domain:
+        state: present
+        multicast_domain_name: "{{ random_name }}"
+      ignore_errors: yes
+
+    - name: Create Transit Gateway Multicast Group with invalid IP address
+      ec2_transit_gateway_multicast_group:
+        state: present
+        transit_gateway_id: "tgw-00000000000000000"
+        multicast_domain_name: "{{ random_name }}"
+        group_ip_address: "{{ not_an_ip_address }}"
+      ignore_errors: yes
+
+    - name: Create Transit Gateway Route Table with duplicated route
+      ec2_transit_gateway_route_table:
+        transit_gateway_attachment_id: "tgw-attach-00000000000000000"
+        routes:
+          - destination_cidr_block: "192.168.0.0/24"
+            transit_gateway_attachment_id: "tgw-attach-11111111111111111"
+          - destination_cidr_block: "192.168.0.0/24"
+            transit_gateway_attachment_id: "tgw-attach-11111111111111111"
+      ignore_errors: yes

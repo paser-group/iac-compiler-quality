@@ -1,0 +1,50 @@
+
+---
+- name: Test play
+  hosts: all
+  gather_facts: no
+
+  tasks:
+  - name: Execute '/etc/ansible/facts.d/network_interface_mapping.fact'
+    command: "/etc/ansible/facts.d/network_interface_mapping.fact | /bin/echo 'Test'"
+    args:
+      executable: /bin/bash
+    register: output
+
+  - name: Verify output
+    debug:
+      var: output.stdout_lines
+
+  - name: Execute with wrong shebang
+    copy:
+      dest: /tmp/my_script.sh
+      content: |
+        #!/usr/local/bin/powershell
+        echo "Hello world"
+        echo "Test"
+      mode: 0755
+    become: yes
+
+  - name: Execute script with wrong shebang
+    command: "/tmp/my_script.sh"
+    register: wrong_shebang_output
+
+  - name: Verify wrong shebang output
+    debug:
+      var: wrong_shebang_output.stdout_lines
+
+  - name: Execute script with unconventional syntax
+    command: "/etc/ansible/facts.d/network_interface_mapping.fact | /bin/echo 'Foo & Bar'"
+    register: unconventional_syntax_output
+
+  - name: Verify unconventional syntax output
+    debug:
+      var: unconventional_syntax_output.stdout_lines
+
+  - name: Execute script with unexpected input
+    command: "/etc/ansible/facts.d/network_interface_mapping.fact | /bin/echo 'Foo > Bar'"
+    register: unexpected_input_output
+
+  - name: Verify unexpected input output
+    debug:
+      var: unexpected_input_output.stdout_lines

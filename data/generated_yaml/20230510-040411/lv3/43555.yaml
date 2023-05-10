@@ -1,0 +1,36 @@
+yaml
+---
+- name: Test gce_pd error while creating disk from snapshot
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    project_id: <your_project_id>
+    zone: <your_zone>
+    source_disk: <your_disk>
+    snapshot: <your_snapshot>
+    disk_name: <new_disk_name>
+
+  tasks:
+
+  - name: Create snapshot of a disk
+    gce_snapshot:
+      name: gce-pd-snapshot-{{ ansible_date_time.iso8601_basic_short }}
+      source_disk: "{{ source_disk }}"
+      project_id: "{{ project_id }}"
+      zone: "{{ zone }}"
+    register: snapshot_result
+
+  - name: Create a disk from the snapshot
+    gce_pd:
+      name: "{{ disk_name }}"
+      source_image: ""
+      source_snapshot: "{{ snapshot_result }}"
+      state: present
+      project_id: "{{ project_id }}"
+      zone: "{{ zone }}"
+    register: pd_result
+
+  - name: Display Disk Information
+    debug:
+      msg: "{{ pd_result }}"

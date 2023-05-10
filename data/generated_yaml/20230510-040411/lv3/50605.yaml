@@ -1,0 +1,40 @@
+
+---
+- hosts: localhost
+  gather_facts: no
+
+  tasks:
+  - name: Create a folder with improper permissions
+    file:
+      path: /tmp/test
+      state: directory
+      mode: 0777
+
+  - name: Provision a vmware_guest machine
+    vmware_guest:
+      hostname: "{{ vcenter_hostname }}"
+      username: "{{ vcenter_username }}"
+      password: "{{ vcenter_password }}"
+      validate_certs: False
+      esxi_hostname: "{{ esxi_hostname }}"
+      folder: "/tmp/test"
+      name: "test-vm"
+      state: poweredon
+      guest_id: "{{ guest_id }}"
+      disk:
+      - size_gb: 20
+        type: thin
+        datastore: "{{ datastore }}"
+      networks:
+      - name: "{{ network }}"
+        ip: "{{ ipaddress }}"
+        netmask: "{{ netmask }}"
+        gateway: "{{ gateway }}"
+      hardware:
+        memory_mb: "{{ memory }}"
+        num_cpus: "{{ num_cpus }}"
+    register: result
+
+  - name: Display the result
+    debug:
+      var: result

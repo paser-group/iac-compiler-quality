@@ -1,0 +1,50 @@
+
+- name: Web Application Deployment
+  hosts: web_servers
+  vars:
+    app_name: "my_web_app"
+    domain_name: "example.com"
+    user_input: "{{ input }}"
+   
+  tasks:
+    - name: Install Dependencies
+      apt:
+        name:
+          - "{{ item }}"
+        state: present
+      with_items:
+         - nginx
+         - uwsgi
+      become: true
+    
+    - name: Configure Nginx
+      copy:
+        src: nginx.conf
+        dest: /etc/nginx/sites-available/{{ app_name }}
+        mode: 0644
+      become: true
+
+    - name: Enable NGINX configuration
+      nginx:
+        state: present
+        name: "{{ app_name }}"
+        enabled: yes
+      become: true
+
+    - name: Start uWSGI
+      become: true
+      command: uwsgi --http :8000 --wsgi-file wsgi.py --callable app -p 4 --enable-threads
+
+    - name: Validate User Input
+      fail:
+        msg: "Invalid Input"
+      when: user_input is not match('^[\w-]+$')
+
+    - name: Process User Input
+      set_fact:
+        processed_input: "{{ user_input | replace('-', '_') }}"
+
+    - name: User Input Loop
+      debug:
+        msg: "{{ item }}"
+      with_items: "{{ processed_input.split(' ') }}"

@@ -1,0 +1,31 @@
+
+---
+- name: Reproduce apt module permissions bug
+  hosts: localhost
+  become: true
+
+  tasks:
+    - name: Update apt-cache
+      apt: update_cache=yes
+          
+    - name: Install apache2
+      apt:
+        name: apache2
+        state: present
+      become: yes
+          
+    - name: Stop apache2 service
+      service:
+        name: apache2
+        state: stopped
+      become: yes
+      
+    - name: Remove apache2 package
+      apt:
+        name: apache2
+        state: absent
+      become: yes
+      
+    - name: Check if Apache package still exists
+      shell: if [ $(dpkg-query -W -f='${Status}' apache2 2>/dev/null | grep -c "ok installed") -eq 0 ]; then echo 'apache2 package is not installed'; else echo 'apache2 package is installed'; >&2 fi
+  # Script to check if the apache2 package has been removed successfully or not

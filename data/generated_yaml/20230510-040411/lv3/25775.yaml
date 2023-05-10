@@ -1,0 +1,23 @@
+
+- name: Test timeout issue
+  hosts: localhost
+  vars:
+    timeout_value: 10
+  tasks:
+  - name: Upload OS image
+    os_image:
+      username: "{{username}}"
+      password: "{{password}}"
+      image_name: "{{image_name}}"
+    async: "{{timeout_value}}"
+    poll: 5
+    register: upload_result
+
+  - name: Check for upload errors
+    debug:
+      var: upload_result
+
+  - name: Raise exception if upload exceeds timeout
+    debug:
+      msg: "Image upload exceeded the timeout: {{timeout_value}} seconds."
+    when: upload_result.finished is not defined or upload_result.failed

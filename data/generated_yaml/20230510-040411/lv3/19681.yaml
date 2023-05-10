@@ -1,0 +1,24 @@
+
+- hosts: localhost
+  gather_facts: no
+
+  tasks:
+    - name: Check if running on Docker container
+      command: cat /proc/self/cgroup | grep "docker"
+      register: docker_check
+      ignore_errors: True
+
+    - name: Display Docker error message for hostname module
+      fail:
+        msg: |
+          The hostname module cannot be used in a Docker container. Please use a different module.
+      when: docker_check.rc == 0
+
+    - name: Retrieve hostname
+      hostname:
+      register: hostname_output
+
+    - name: Check hostname value
+      assert:
+        that:
+          - hostname_output.stdout.strip() != ''

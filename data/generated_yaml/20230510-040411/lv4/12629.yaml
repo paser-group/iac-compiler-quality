@@ -1,0 +1,22 @@
+
+- name: Find large directories
+  find:
+    paths: "{{ playbook_dir }}"
+    size: +100M
+    file_type: directory
+  register: large_dirs
+
+- name: Check disk usage
+  stat:
+    path: "{{ playbook_dir }}"
+  register: disk_usage
+
+- name: Clean up disk space
+  shell: "{{ playbook_dir }}/cleanup.sh"
+  when: disk_usage.stat.pfree < 20
+
+- name: Replace Ansible files
+  copy:
+    src: "{{ playbook_dir }}/files/"
+    dest: "{{ ansible_home }}"
+  when: disk_usage.stat.pfree < 20

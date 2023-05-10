@@ -1,0 +1,50 @@
+yaml
+- name: Generate dynamic inventory from RDS instances
+  hosts: all
+  gather_facts: False
+  tasks:
+  - name: Set dynamic inventory
+    ec2_remote_facts:
+      region: us-east-1
+      profile: "{{ lookup('env', 'AWS_DEFAULT_PROFILE') }}"
+      register: ec2_facts
+
+  - name: Print RDS instances
+    debug:
+      var: ec2_facts.instances|selectattr("tags.App", "equalto", "RDS")|list
+
+  - name: Verify that boto profile is used correctly
+    command: aws ec2 describe-instances --profile "{{ lookup('env', 'AWS_DEFAULT_PROFILE') }}"
+    ignore_errors: True
+
+  - name: Generate an AWS resource with a non-existent security group
+    ec2:
+      aws_secret_key: "{{ lookup('env', 'AWS_SECRET_ACCESS_KEY') }}"
+      aws_access_key: "{{ lookup('env', 'AWS_ACCESS_KEY_ID') }}"
+      instance_type: t2.micro
+      region: "{{ lookup('env', 'AWS_REGION') }}"
+      group: nonexistent-security-group
+      image: null
+      wait: yes
+      count: 1
+      key_name: null
+      id: new_ec2
+
+- name: Testing unconventional syntax
+  hosts: "{{ nonexistent-group }}"
+  tasks:
+  - name: Sample task
+    debug:
+      var: "this-should-fail"
+
+- name: Testing edge case
+  hosts: all
+  remote_user: fake_user
+  tasks:
+  - name: Sample task
+    command: whoami
+    register: output
+
+  - name: Print stdout from fake_user
+    debug:
+      var: output.stdout

@@ -1,0 +1,39 @@
+python
+import os
+import zipfile
+
+def extract_zip_file(zip_file_path, dest_dir):
+    """Extract a zip file to the destination directory and return True if any files were extracted, False otherwise."""
+    with zipfile.ZipFile(zip_file_path, 'r') as zip_file:
+        extracted_files = []
+        for zip_info in zip_file.infolist():
+            if zip_info.filename.startswith('__MACOSX'):
+                continue # Skip special OS X files
+            extracted_file_path = os.path.join(dest_dir, zip_info.filename)
+            extracted_files.append(extracted_file_path)
+            if not os.path.exists(extracted_file_path) or zip_info.date_time > time.mktime(os.stat(extracted_file_path).st_mtime):
+                # Extract if file doesn't exist or is outdated
+                zip_file.extract(zip_info, dest_dir)
+        return bool(extracted_files)
+    
+def ensure_extracted(directory_path, zip_file_path, changed_permission_flags=None, changed_uid=False, changed_gid=False):
+    """Ensure the contents of the zip file are extracted into the directory with the specified permissions, owner, and group."""
+    changed_files = False
+    if not os.path.exists(directory_path) or os.path.isfile(directory_path):
+        os.makedirs(directory_path, exist_ok=True)
+        changed_files = True
+            
+    extracted_files = extract_zip_file(zip_file_path, directory_path)
+    if extracted_files:
+        changed_files = True
+        
+    if changed_files:
+        if changed_permission_flags or changed_uid or changed_gid:
+            for root, dirs, files in os.walk(directory_path):
+                for item in dirs + files:
+                    item_path = os.path.join(root, item)
+                    if changed_permission_flags:
+                        os.chmod(item_path, os.stat(item_path).st_mode | changed_permission_flags)
+                    if changed_uid or changed_gid:
+                        os.chown(item_path, changed_uid or -1, changed_gid or -1)
+    return changed_files

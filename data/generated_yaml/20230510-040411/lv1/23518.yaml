@@ -1,0 +1,32 @@
+
+- name: Gather Azure RM security group facts and fix SSL error
+  hosts: localhost
+  connection: local
+  become: yes
+  vars:
+    http_proxy: "http://proxy_server:port"
+    https_proxy: "http://proxy_server:port"
+  tasks:
+  - name: Gather Azure RM security group facts
+    azure_rm_securitygroup_facts:
+      subscription_id: "<subscription_id>"
+      resource_group: "<resource_group>"
+    register: azure_security_groups
+
+  - name: Debug Azure security group facts
+    debug:
+      var: azure_security_groups
+
+  - name: Fix SSL error for azure api calls via a proxy server
+    become_user: "{{ ansible_user }}"
+    environment:
+      http_proxy: "{{ http_proxy }}"
+      https_proxy: "{{ https_proxy }}"
+    shell: "echo -n | openssl s_client -connect management.azure.com:443 | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' > azurecert.pem"
+    notify: restart network
+
+  handlers:
+  - name: restart network
+    systemd:
+      name: NetworkManager
+      state: restarted

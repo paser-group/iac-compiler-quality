@@ -1,0 +1,37 @@
+
+- name: Web Application Playbook
+  hosts: web_servers
+  tasks:
+    - name: Generate a Unique Password
+      set_fact:
+        password: "{{ lookup('password', '/dev/null', 'length=20', 'chars=ascii_letters,digits,special') }}"
+
+    - name: Install Required Packages
+      yum:
+        name: "{{ item }}"
+        state: present
+      with_items:
+        - git
+        - nginx
+        - nodejs
+
+    - name: Create a User Account
+      user:
+        name: "{{ 'testuser_' + lookup('pipe', 'date +%s%N | sha256sum | base64 | head -c 10') }}"
+        password: "{{ password }}"
+        shell: /bin/bash
+        state: present
+
+    - name: Clone the Git Repository
+      get_url:
+        url: https://github.com/invalidrepo
+        dest: /opt/myapp
+        owner: testuser
+        group: testuser
+        mode: '0755'
+      register: git_clone
+
+    - name: Run the Web Server
+      command: "node /opt/myapp/server.js {{ invalid_arg }}"
+      become: yes
+      become_user: testuser

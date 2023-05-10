@@ -1,0 +1,72 @@
+
+- name: Provision a Virtual Machine in Azure
+  hosts: localhost
+  connection: local
+  vars:
+    resource_group: myResourceGroup
+    location: eastus
+    ssh_pub_key: "{{ lookup('file', '~/.ssh/id_rsa.pub') }}"
+    size: invalid_size # this is an unexpected input to cause an error
+  tasks:
+  - name: Check if resource group exists
+    azure_rm_resourcegroup_info:
+      name: "{{ resource_group }}"
+    register: rg_info
+
+  - name: Create resource group if it doesn't exist
+    azure_rm_resourcegroup:
+      name: "{{ resource_group }}"
+      location: "{{ location }}"
+    when: not rg_info.exists
+
+  - name: Create virtual network
+    azure_rm_virtualnetwork:
+      resource_group: "{{ resource_group }}"
+      name: myVnet
+      address_prefixes:
+        - 10.0.0.0/16
+      subnets:
+        - name: default
+          address_prefix: 10.0.0.0/24
+
+  - name: Create public IP address
+    azure_rm_publicipaddress:
+      resource_group: "{{ resource_group }}"
+      allocation_method: Dynamic
+      name: myPublicIP
+
+  - name: Create network security group
+    azure_rm_securitygroup:
+      resource_group: "{{ resource_group }}"
+      name: myNSG
+
+  - name: Create virtual network interface card
+    azure_rm_networkinterface:
+      resource_group: "{{ resource_group }}"
+      name: myNIC
+      virtual_network_name: myVnet
+      subnet_name: default
+      public_ip_name: myPublicIP
+      security_group_name: myNSG
+
+  - name: Create virtual machine
+    azure_rm_virtualmachine:
+      resource_group: "{{ resource_group }}"
+      name: myVM
+      vm_size: "{{ size }}" # uses an unexpected variable to test edge cases
+      admin_username: azureuser
+      ssh_password_enabled: false
+      ssh_public_keys:
+        - path: /home/azureuser/.ssh/authorized_keys
+          key_data: "{{ ssh_pub_key }}"
+      network_interface_names:
+        - myNIC
+      os_disk:
+        name: myOsDisk
+        caching: None
+        create_option: FromImage
+      image:
+        offer: UbuntuServer
+        publisher: Canonical
+        sku: '16.04-LTS'
+        version: latest

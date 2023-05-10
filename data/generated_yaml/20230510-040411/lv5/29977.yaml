@@ -1,0 +1,43 @@
+
+---
+- hosts: localhost
+  tasks:
+  - name: Provision AWS ASG with wait_for_instances property set to true
+    ec2_asg:
+      name: MyASG
+      state: present
+      wait_for_instances: true
+      spot_max_price: "0.03"
+      launch_config_name: MyLaunchConfiguration
+      region: us-west-2
+      subnets: [subnet-01a23b45c, subnet-12d34e56f]
+      tags: 
+         Name: MyASGTag
+
+  - name: Provision instances with the same tag as defined in the ASG module
+    ec2:
+      key_name: mykey
+      instance_type: t2.micro
+      image: ami-042e8287309f5df03
+      wait: yes
+      count: 2
+      vpc_subnet_id: subnet-01a23b45c
+      assign_public_ip: true
+      region: us-west-2
+      instance_tags: 
+         Name: MyASGTag
+
+  - name: Attempt to provision another instance with the same tag
+    ec2:
+      key_name: mykey
+      instance_type: t2.micro
+      image: ami-042e8287309f5df03
+      wait: yes
+      count: 1
+      vpc_subnet_id: subnet-12d34e56f
+      assign_public_ip: true
+      region: us-west-2
+      instance_tags: 
+         Name: MyASGTag
+    register: ec2_instance_failures
+    failed_when: "'InstanceLimitExceeded' not in ec2_instance_failures.msg"

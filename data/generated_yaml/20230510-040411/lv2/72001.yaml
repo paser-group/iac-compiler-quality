@@ -1,0 +1,40 @@
+
+- name: KubeVirt VMs 
+  hosts: all
+  gather_facts: true
+  vars:
+    virt_role: "{{ hostvars[inventory_hostname]['ansible_virtualization_role'] | default(false) }}"
+    invalid_role: "invalid_role"
+  tasks:
+    - name: Check for correct ansible_virtualization_role
+      debug:
+        msg: "ansible_virtualization_role is {{ virt_role }}"
+      failed_when: "virt_role == invalid_role"
+
+    - name: Set ansible_virtualization_role to invalid_role
+      set_fact:
+        ansible_virtualization_role: "{{ invalid_role }}"
+
+    - name: Check for incorrect ansible_virtualization_role
+      debug:
+        msg: "ansible_virtualization_role is {{ hostvars[inventory_hostname]['ansible_virtualization_role'] }}"
+      failed_when: "hostvars[inventory_hostname]['ansible_virtualization_role'] != invalid_role"
+
+    - name: Set invalid values to ansible_virtualization_role
+      set_fact:
+        ansible_virtualization_role: "{{ invalid_role }}|{{ invalid_role }}"
+
+    - name: Check for invalid ansible_virtualization_role
+      debug:
+        msg: "ansible_virtualization_role is {{ hostvars[inventory_hostname]['ansible_virtualization_role'] }}"
+      failed_when: "invalid_role in hostvars[inventory_hostname]['ansible_virtualization_role']"
+
+    - name: Attempt to change ansible_virtualization_role to invalid integer value
+      set_fact:
+        ansible_virtualization_role: 1234
+          ansible_virtualization_type: "{{ ansible_virtualization_type }}"
+      failed_when: "hostvars[inventory_hostname]['ansible_virtualization_role'] == 1234"
+
+    - name: Check ansible_virtualization_type
+      debug:
+        msg: "ansible_virtualization_type is {{ hostvars[inventory_hostname]['ansible_virtualization_type'] }}"

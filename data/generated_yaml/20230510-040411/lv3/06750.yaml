@@ -1,0 +1,22 @@
+
+- name: Test Git module error
+  hosts: local
+  tasks:
+    - name: Clone repository with submodules
+      git:
+        repo: https://github.com/example/repo-with-submodules.git
+        dest: /tmp/repo
+        recursive: true
+      register: git_clone
+
+    - name: Update submodules
+      git:
+        repo: "{{ item.repo }}"
+        dest: /tmp/repo
+        update: true
+      with_items: "{{ git_clone.submodule_git }}"
+      ignore_errors: True
+
+    - name: Print submodule status
+      command: cd /tmp/repo/{{ item.path }} && git status
+      with_items: "{{ git_clone.submodule_git }}"

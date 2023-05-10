@@ -1,0 +1,76 @@
+
+- name: Test Python3 YAML Inventory Parsing Error
+  hosts: localhost
+  gather_facts: False
+
+  tasks:
+
+    - name: Use an invalid YAML file as inventory
+      ping:
+      ansible_connection: local
+      ansible_inventory_sources:
+        - ./invalid_inventory.yaml
+
+    - name: Add an incomplete group name in YAML inventory file
+      ping:
+      ansible_connection: local
+      ansible_inventory_sources:
+        - |
+          {
+            "ungrouped": {"hosts": ["unknown_host"]},
+            "a": {"hosts": ["known_host"]},
+            "b": {"childen": ["c"]},
+            "c": {"hosts": ["known_host"]}
+          }
+
+    - name: Use unconventional YAML syntax to define hosts
+      ping:
+      ansible_connection: local
+      ansible_inventory_sources:
+        - |
+          {
+            "all": {
+              "hosts": ["host1", "host2"],
+              "vars": {"ansible_ssh_user": "ubuntu"}
+            },
+            "dev": {
+              "hosts": ["host3", "host4"],
+              "vars": {"ansible_become": True}
+            }
+          }
+
+    - name: Test if YAML tags break inventory parsing
+      ping:
+      ansible_connection: local
+      ansible_inventory_sources:
+        - |
+          {
+            "!<tag:yaml><unknown_key>": {"hosts": ["host1"]},
+            "all": {
+              "hosts": ["host2"],
+              "vars": {"ansible_ssh_user": "ubuntu"}
+            }
+          }
+
+    - name: Define unexpected inventory in JSON format
+      ping:
+      ansible_connection: local
+      ansible_inventory_sources:
+        - |
+          {
+            "all": {
+              "hosts": ["host1"],
+              "vars": {"ansible_become": True}
+            },
+            "dev": {
+              "hosts": ["host2"],
+              "vars": {"ansible_ssh_user": "ubuntu"}
+            },
+            "prod": {
+              "hosts": ["host3"],
+              "vars": {"ansible_become": True}
+            },
+            "ungrouped": {
+              "children": []
+            }
+          }

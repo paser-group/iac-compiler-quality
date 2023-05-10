@@ -1,0 +1,29 @@
+
+---
+- name: Test shell module limitations
+  hosts: all
+  gather_facts: false
+  vars:
+    command: "ls /tmp/does-not-exist || echo 'file does not exist'"
+    expected_msg: "file does not exist"
+    exit_code: -11
+    
+  tasks:
+    - name: Test for segfault
+      shell: "{{ command }}"
+      register: cmd_output
+      ignore_errors: true
+
+    - name: Verify expected message
+      assert:
+        that: expected_msg in cmd_output.stderr
+        success_msg: "Test successful - expected message found"
+        fail_msg: "Test failed - expected message not found"
+        tags: segfault
+
+    - name: Verify exit code
+      assert:
+        that: cmd_output.rc == exit_code
+        success_msg: "Test successful - negative exit code found"
+        fail_msg: "Test failed - negative exit code not found"
+        tags: exit_code

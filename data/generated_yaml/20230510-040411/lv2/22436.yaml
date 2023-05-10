@@ -1,0 +1,49 @@
+
+- name: Test Ansible Crash with ISO8859-15 and Diff Option
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    sample_text: "avoção"
+
+  tasks:
+  - name: Create sample file with ISO8859-15 encoding
+    copy:
+      content: "{{ sample_text }}"
+      dest: /tmp/sample_file.txt
+      mode: "0444"
+      charset: "iso8859-15"
+    register: file_created
+
+  - name: Create second sample file with ISO8859-15 encoding and different text
+    copy:
+      content: "{{ sample_text }} extra text"
+      dest: /tmp/sample_file2.txt
+      mode: "0444"
+      charset: "iso8859-15"
+
+  - name: Diff the two files
+    shell: diff /tmp/sample_file.txt /tmp/sample_file2.txt -u
+    register: diff_result
+    changed_when: false
+
+  - name: Check for Ansible crash with iso8859-15
+    debug:
+      var: diff_result.stderr_lines
+    failed_when: "'unknown error handler name' in diff_result.stderr_lines[0]"
+
+  - name: Change file to unix encoding
+    command: iconv -f ISO8859-15 -t UTF-8 /tmp/sample_file.txt > /tmp/sample_unix_file.txt
+
+  - name: Change file to windows encoding
+    command: iconv -f ISO8859-15 -t UTF-16 /tmp/sample_file.txt > /tmp/sample_windows_file.txt
+
+  - name: Remove created files
+    file:
+      path: "{{ item }}"
+      state: absent
+    with_items:
+      - /tmp/sample_file.txt
+      - /tmp/sample_file2.txt
+      - /tmp/sample_unix_file.txt
+      - /tmp/sample_windows_file.txt

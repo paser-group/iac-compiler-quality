@@ -1,0 +1,39 @@
+
+- name: Ensure VMware portgroup idempotency
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    datacenter_name: "Datacenter"
+    cluster_name: "Cluster"
+    portgroup_name: "VM Network"
+
+  tasks:
+    - name: Capture the current state of the portgroup
+      vmware_vmnetwork_info:
+        datacenter_name: "{{ datacenter_name }}"
+        cluster_name: "{{ cluster_name }}"
+        name: "{{ portgroup_name }}"
+        validate_certs: no
+      register: current_portgroup_state
+
+    - name: Create or modify the portgroup
+      vmware_portgroup:
+        state: present
+        name: "{{ portgroup_name }}"
+        vswitch_name: "{{ current_portgroup_state.network.vswitch_name }}"
+        vlan_id: "{{ current_portgroup_state.network.vlan }}"
+        mtu: "{{ current_portgroup_state.network.mtu }}"
+        datacenter_name: "{{ datacenter_name }}"
+        cluster_name: "{{ cluster_name }}"
+        validate_certs: no
+      register: created_or_modified_portgroup_state
+
+    - name: Check for idempotency of the portgroup
+      assert:
+        that:
+          - current_portgroup_state.network.vswitch_name == created_or_modified_portgroup_state.network.vswitch_name
+          - current_portgroup_state.network.vlan == created_or_modified_portgroup_state.network.vlan
+          - current_portgroup_state.network.mtu == created_or_modified_portgroup_state.network.mtu
+
+      failed_when: false

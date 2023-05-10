@@ -1,0 +1,27 @@
+
+- name: Test s3_bucket aws:kms encryption default s3 key
+  hosts: localhost
+  gather_facts: no
+  vars:
+    bucket_name_list:
+      - my-bucket
+      - my_bucket_with_special_chars
+      - my-bucket-123
+      - MyBucket
+    access_key_list:
+      - AKIAXXXXXXXXXXXXX
+      - EXAMPLE_ACCESS_KEY
+      - INVALID_ACCESS_KEY
+  tasks:
+    - name: Test S3 bucket and aws:kms encryption
+      aws_s3:
+        bucket: "{{ item.0 }}"
+        access_key: "{{ item.1 }}"
+      register: s3_bucket_result
+      loop: "{{ product(bucket_name_list, access_key_list) }}"
+    - name: Verify the bucket exists and default encryption key is used
+      assert:
+        that:
+          - item.is_object == true
+          - item.metadata.aws:kms:default_key_id == "alias/aws/s3"
+        loop: "{{ s3_bucket_result.results }}"

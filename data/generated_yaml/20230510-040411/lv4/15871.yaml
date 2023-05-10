@@ -1,0 +1,27 @@
+
+- name: Find errored nodes
+  os_server_facts:
+    cloud: <cloud_name>
+  register: server_facts
+  until: server_facts.instance_name | length > 0
+  retries: 30
+  delay: 10
+  ignore_errors: True
+
+- name: Print errored nodes
+  debug:
+    var: server_facts.instance_name
+  when: server_facts.failed
+  # Here, `failed` is a boolean value that denotes if the module fails due to any error in the API call, network, etc.
+
+- name: Check internal IP
+  set_fact:
+    has_internal_ip: "{{ 'true' if item.addresses.internal|selectattr('version', '==', 4)|list else 'false' }}"
+  with_items: "{{ server_facts.instances }}"
+  # This module sets a variable `has_internal_ip` to true if the node has an internal IP and false otherwise.
+
+- name: Print nodes without internal IP
+  debug:
+    var: item.name
+  when: not item.has_internal_ip
+  with_items: "{{ server_facts.instances }}"

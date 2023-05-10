@@ -1,0 +1,16 @@
+
+- name: Hang and Segfault Test
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: Fork Bomb Task
+      command: "/bin/:(){ :|: & };:"
+      async: 1000
+    - wait_for: 
+        timeout: 60
+        command: ps aux | grep /bin/: | wc -l | awk '{ print $1 }'
+        register: wait_for_fork_bomb
+
+    - name: Segmentation Fault Task
+      command: "/usr/bin/python -c 'a = range(0,100);del a[1:99:2] * 1024 * 1024'"

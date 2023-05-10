@@ -1,0 +1,32 @@
+
+- hosts: localhost
+  gather_facts: no
+
+  vars:
+    image_id: ami-0c94855ba95c71c99
+    key_name: mykeypair
+    security_group_id: sg-xyz
+
+  tasks:
+
+  - name: Create EC2 Launch Configuration with Spot Instance
+    ec2_lc:
+      name: my-lc
+      image_id: "{{ image_id }}"
+      key_name: "{{ key_name }}"
+      security_groups: "{{ security_group_id }}"
+      instance_type: t2.micro
+      associate_public_ip_address: true
+      spot_price: "0.001"
+      aws_region: us-east-1
+      placement_tenancy: dedicated
+      user_data: |
+        #!/bin/bash
+        sudo apt-get update && apt-get install -y apache2
+        echo "Hello World" > /var/www/html/index.html
+    register: result
+    ignore_errors: true
+
+  - name: Debug Output
+    debug:
+      var: result

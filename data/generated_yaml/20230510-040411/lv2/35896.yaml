@@ -1,0 +1,30 @@
+
+---
+- hosts: all
+  gather_facts: no
+  vars:
+    invalid_memory_size:
+      - "-1"
+      - "0"
+      - "1abc"
+      - "1 2 3"
+      - "1<=>2"
+      - "{{ '1' * 10000000000 }}"
+      - "{% set x = ['1'] * 10000000 %} {{ x }}"
+      - "{% if 1 == 2 %} {{ '1' * 10000000000 }} {% endif %}"
+
+  tasks:
+    - name: Test invalid memory sizes
+      command: echo "Testing memory size {{ item }}"
+      loop: "{{ invalid_memory_size }}"
+      register: result
+      ignore_errors: true
+
+    - name: Print errors
+      debug:
+        msg: "{{ result | json_query('results[*].stderr') }}"
+
+    - name: Exit with error code if there are errors
+      fail:
+        msg: "Unexpected Exception: Cannot allocate memory"
+      when: "'Cannot allocate memory' in result | json_query('results[*].stderr') | join(' ')"

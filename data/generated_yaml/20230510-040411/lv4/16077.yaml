@@ -1,0 +1,25 @@
+
+- name: Execute command asynchronously
+  hosts: all
+  gather_facts: false
+  tasks:
+  - name: Execute command
+    async: 45
+    poll: 0
+    shell: <command>
+    register: command_output
+
+  - name: Wait for command execution to complete
+    async_status:
+      jid: "{{ command_output.ansible_job_id }}"
+    register: job_result
+    until: job_result.finished
+    retries: 30
+    delay: 10
+    ignore_errors: true
+    notify: handler_task_completed
+
+  handlers:
+    - name: handler_task_completed
+      debug:
+        var: job_result

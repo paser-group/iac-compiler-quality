@@ -1,0 +1,31 @@
+yaml
+---
+- name: Execute tasks outside Ansible default role locations
+  hosts: all
+  gather_facts: true
+  vars:
+    ANSIBLE_ROLES_PATH: "{{ playbook_dir }}/roles:{{ playbook_dir }}/external_roles"
+  tasks:
+
+    - name: Create external_roles directory
+      file:
+        path: "{{ playbook_dir }}/external_roles"
+        state: directory
+
+    - name: Clone external roles from GitHub
+      git:
+        repo: https://github.com/externalroles/role.git
+        dest: "{{ playbook_dir }}/external_roles/role"
+        version: master
+        force: true
+    
+    - name: Include external role tasks
+      include_role:
+        name: role
+    
+  handlers:
+
+    - name: Restart Apache
+      service:
+        name: apache2
+        state: restarted

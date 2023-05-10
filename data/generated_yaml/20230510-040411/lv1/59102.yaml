@@ -1,0 +1,21 @@
+yaml
+- name: Configure IAM Password Policy
+  hosts: localhost
+  become: yes
+
+  tasks:
+    - name: Retrieve current password policy
+      iam_password_policy_info:
+        fail_on_not_found: no
+      register: current_policy
+
+    - name: Set password expiration policy to 90 days
+      iam_password_policy:
+        max_password_age: 90
+      register: updated_policy
+      when: not current_policy.exists or current_policy.max_password_age != 90
+
+    - name: Verify password policy
+      debug:
+        msg: "IAM password policy updated successfully."
+      when: updated_policy.changed

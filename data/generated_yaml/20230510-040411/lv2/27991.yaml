@@ -1,0 +1,47 @@
+
+---
+- hosts: all
+  gather_facts: no
+  tasks:
+
+  - name: Clone git repository without depth and with branch
+    git:
+      repo: https://github.com/user/repository.git
+      dest: /home/user/repository
+      depth: 1
+      version: "{{ variable | default('develop', true) }}"
+      clone: true
+    register: git_output
+
+  - name: Check the branch name
+    debug:
+      msg: "Branch {{ git_output.after }} checked out successfully"
+    failed_when: not "develop" in git_output.after
+
+  - name: Clone git repository with depth and without branch
+    git:
+      repo: https://github.com/user/repository.git
+      dest: /home/user/repository
+      depth: 2
+      refspec: "HEAD"
+      clone: true
+
+  - name: Clone git repository with unconventional syntax
+    git: repo=https://github.com/user/repository.git dest=/home/user/repository clone=yes
+
+  - name: Clone git repository with unexpected inputs
+    git:
+      repo: "{{
+      '/home/user/repo' if is_mac else '/opt/user/repo'
+      }}"
+      dest: "{{ default('/home/user/repository', '/opt/user/repository', true) }}"
+      depth: '{{ item }}'
+      version: "{{ variable | default('master', true) }}"
+      clone: "{{ item | bool }}"
+    with_items:
+      - 1
+      - 2
+      - True
+      - False
+      - ""
+      - None

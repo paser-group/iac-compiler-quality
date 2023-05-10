@@ -1,0 +1,37 @@
+yaml
+---
+- name: Test Ansible Compiler
+  hosts: all
+
+  tasks:
+  - name: Execute ansible_facts for service state
+    register: service_state
+
+    ansible.builtin.service:
+      name: "{{ service_name }}"
+      state: "{{ service_desired_state }}"
+      enabled: "{{ service_desired_enabled_state }}"
+
+  - name: Print results of ansible_facts for service state
+    debug:
+      var: service_state
+
+  - name: Ensure service state in enabled or disabled
+    fail:
+      msg: "Invalid state: {{ service_state['state'] }}"
+    when: service_state['state'] not in ['enabled', 'disabled']
+
+  - name: Ensure enabled state is correct
+    fail:
+      msg: "Incorrect enabled state: {{ service_state['enabled'] }}"
+    when: service_state['enabled'] != service_desired_enabled_state
+
+  - name: Ensure desired state is correct
+    fail:
+      msg: "Incorrect service state: {{ service_state['state'] }} (should be {{ service_desired_state }})"
+    when: service_state['state'] != service_desired_state
+
+  vars:
+    service_name: "{{ lookup('env', 'SERVICE_NAME') | default('httpd') }}"
+    service_desired_state: "{{ lookup('env', 'SERVICE_DESIRED_STATE') | default('started') }}"
+    service_desired_enabled_state: "{{ lookup('env', 'SERVICE_DESIRED_ENABLED_STATE') | default('true') }}"

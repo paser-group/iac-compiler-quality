@@ -1,0 +1,29 @@
+
+- name: Test docker_login module for tls_hostname vulnerability
+  docker_login:
+    registry_url: "example.com"
+    username: "foo"
+    password: "bar"
+    tls_hostname: "{{ item }}"
+  with_items:
+    - "example.com"
+    - "{{ ansible_hostname }}"
+  register: login_result
+  ignore_errors: yes
+
+- name: Verify login succeeded
+  debug:
+    msg: "Login failed with hostname {{ item }}!"
+  when: "'failed' in item.stderr"
+  with_items: "{{ login_result.results }}"
+
+- name: Test delegate_to parameter with localhost
+  command: echo "Hello, world!"
+  delegate_to: localhost
+  become: false
+
+- name: Check if the command was executed on localhost
+  debug:
+    msg: "Command was executed on {{ item }}"
+  with_items: "{{ command_result.results }}"
+

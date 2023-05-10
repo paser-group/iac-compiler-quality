@@ -1,0 +1,41 @@
+
+---
+- name: Test ec2 module change tracking
+  hosts: localhost
+  become: True
+  vars:
+    instance_name: test_instance
+    image_id: ami-0c55b159cbfafe1f0
+  tasks:
+    - name: Launch an EC2 instance
+      ec2:
+        key_name: "{{ ansible_ssh_private_key_file }}"
+        instance_type: t2.micro
+        image_id: "{{ image_id }}"
+        wait: yes
+        region: '{{ region }}'
+        count: 1
+        instance_tags:
+          Name: "{{ instance_name }}"
+      register: ec2
+
+    - name: Stop the EC2 instance
+      ec2:
+        instance_ids: "{{ ec2.instances[0].id }}"
+        state: stopped
+
+    - name: Start the EC2 instance
+      ec2:
+        instance_ids: "{{ ec2.instances[0].id }}"
+        state: started
+      register: ec2_start
+
+    - name: Check if Instance was changed
+      debug:
+        var: ec2_start.changed
+      when: ec2_start is defined and ec2_start.changed
+
+    - name: Terminate the EC2 instance
+      ec2:
+        instance_ids: "{{ ec2.instances[0].id }}"
+        state: absent

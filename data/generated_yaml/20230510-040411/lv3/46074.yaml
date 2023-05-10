@@ -1,0 +1,49 @@
+
+---
+- name: Recreate network configuration issue in gcp_compute_instance module
+  hosts: all
+  gather_facts: false
+  
+  vars:
+    project_id: "myprojectid"
+    zone: "us-central1-a"
+    instance_name: "my-instance"
+    network_name: "default"
+    new_network_name: "new-network-name"
+  
+  tasks:
+  - name: Create a new network in GCP
+    gcp_compute_network:
+      name: "{{ new_network_name }}"
+      project: "{{ project_id }}"
+      auth_kind: serviceaccount
+      service_account_file: "{{ lookup('env','GOOGLE_APPLICATION_CREDENTIALS') }}"
+    register: network_result
+  
+  - name: Update instance network configuration to the new network
+    gcp_compute_instance:
+      name: "{{ instance_name }}"
+      zone: "{{ zone }}"
+      network_interface:
+        network: "{{ new_network_name }}"
+      project: "{{ project_id }}"
+      auth_kind: serviceaccount
+      service_account_file: "{{ lookup('env','GOOGLE_APPLICATION_CREDENTIALS') }}"
+    register: instance_result
+  
+  - name: Debug Ansible result
+    debug:
+      var: instance_result
+
+  - name: Delete the new network created
+    gcp_compute_network:
+      name: "{{ new_network_name }}"
+      project: "{{ project_id }}"
+      auth_kind: serviceaccount
+      state: absent
+      service_account_file: "{{ lookup('env','GOOGLE_APPLICATION_CREDENTIALS') }}"
+    register: network_cleanup_result
+
+  - name: Debug the cleaning up of network
+    debug:
+    msg: "{{ network_cleanup_result }}"

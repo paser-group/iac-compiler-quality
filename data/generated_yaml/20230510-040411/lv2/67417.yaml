@@ -1,0 +1,27 @@
+yaml
+- name: Test Playbook for get_url with incorrect If-Modified-Since header
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Get file from URL with incorrect If-Modified-Since header
+      get_url:
+        url: "http://example.com/file.zip"
+        dest: "/tmp/file.zip"
+        headers:
+          if-modified-since: "invalid-date-format"
+      register: get_url_output
+      failed_when: False
+
+    - name: Check if get_url failed due to invalid headers
+      debug:
+        msg: "get_url failed due to invalid headers"
+      when: get_url_output.failed and "invalid date format" in get_url_output.msg
+
+    - name: Check if file exists
+      debug:
+        msg: "File successfully downloaded"
+      when: get_url_output|succeeded and ('exists' in get_url_output.stat.keys() and get_url_output.stat.exists)
+
+    - name: Print get_url output
+      debug:
+        var: get_url_output

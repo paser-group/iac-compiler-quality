@@ -1,0 +1,28 @@
+
+- name: Test ec2_metric_alarm module 
+  hosts: localhost
+  gather_facts: no
+  tasks:
+  - name: Create EC2 metric alarm
+    ec2_metric_alarm:
+      name: fake_alarm
+      region: us-west-2
+      namespace: "AWS/EC2"
+      metric_name: "FakeMetric"
+      statistic: "Average"
+      period: "{{ '60s' if loop.index % 2 == 0 else '10m' }}"
+      unit: "Seconds"
+      comparison: "GreaterThanThreshold"
+      threshold: "{{ 50 * loop.index }}"
+      dimensions:
+        InstanceId: i-0b300d41ba598660a
+        ImageId: ami-04b9e92b5572fa0d1
+      alarm_actions: "{% for i in range(5) %} arn:aws:sns:us-west-2:123456789012:my-topic-{{ i }} {% endfor %}"
+      insufficient_data_actions: "{% for i in range(2) %} arn:aws:sns:us-west-2:123456789012:my-topic-{{ i }} {% endfor %}"
+      ok_actions: "{% for i in range(3) %} arn:aws:sns:us-west-2:123456789012:my-topic-{{ i }} {% endfor %}"
+      state: present
+    loop: "{{ range(1, 10) | list }}"
+    register: results
+
+  - debug:
+      var: results

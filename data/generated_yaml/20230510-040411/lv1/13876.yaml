@@ -1,0 +1,34 @@
+yaml
+---
+- name: Fix remote temporary directory resolution error on Linux kernel > 3.12
+  hosts: your_servers
+  become: yes
+
+  tasks:
+
+  - name: Install openssh-client
+    apt:
+      name: openssh-client
+      state: present
+
+  - name: Create temporary directory
+    tempfile:
+      state: directory
+      prefix: temp_dir
+
+  - name: Ensure permissions for temporary directory
+    file:
+      path: "{{ item }}"
+      owner: user
+      group: group
+      mode: '0755'
+      state: directory
+    with_items:
+      - /tmp/temp_dir
+
+  - name: Run command with temporary directory
+    command: "your_command {{ item }}"
+    args:
+      chdir: "/tmp/temp_dir"
+    with_items:
+      - your_arguments

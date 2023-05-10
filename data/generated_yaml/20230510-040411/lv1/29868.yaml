@@ -1,0 +1,26 @@
+
+---
+- name: Replace all instances in EC2 Auto Scaling Group
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Check if instances exist in Auto Scaling Group
+      ec2_instance_info:
+        region: us-east-1
+        filters:
+          "tag:aws:autoscaling:groupName": "my-asg-group-name"
+        instance_state: running
+      register: asg_instances
+
+    - name: Replace all instances in Auto Scaling Group
+      ec2_asg:
+        region: us-east-1
+        name: "my-asg-group-name"
+        state: present
+        recreate_instances: true
+        health_check_grace_period: 300
+        replace_all_instances: true
+        min_size: '{{ asg_instances.results | length }}'
+        max_size: '{{ asg_instances.results | length }}'
+      when: asg_instances.results | length > 0

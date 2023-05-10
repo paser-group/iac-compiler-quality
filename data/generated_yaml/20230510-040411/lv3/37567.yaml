@@ -1,0 +1,25 @@
+
+---
+- name: Vulnerability exposing playbook for the Ansible compiler
+  hosts: tower-server
+  gather_facts: no
+
+  vars:
+    tower_host: "{{ lookup('env', 'TOWER_HOST') }}"
+    tower_username: "{{ lookup('env', 'TOWER_USERNAME') }}"
+    tower_password: "{{ lookup('env', 'TOWER_PASSWORD') }}"
+
+  tasks:
+    - name: Launch job in Ansible Tower using tower_job_launch module
+      tower_job_launch:
+        job_template: "{{ job_template_id }}"
+      register: job_launch_result
+
+    - name: Debugging the API response from tower_job_launch
+      debug:
+        var: job_launch_result.results[0].id
+
+    - name: Expect 3 job IDs response
+      fail:
+        msg: "Unexpected result from Ansible Tower API"
+      when: job_launch_result.results | length > 1

@@ -1,0 +1,21 @@
+
+- hosts: all
+  tasks:
+    - name: Upload multiple files to S3 bucket
+      s3:
+        bucket: "{{ s3_bucket }}"
+        object: "{{ item }}"
+        src: "{{ item }}"
+        mode: "{{ item }}" # Unconventional syntax
+        region: "{{ s3_region }}"
+      with_items:
+        - "{{ s3_files }}" # s3_files contains empty string ""
+        - "{{ s3_files }}"
+        - "{{ s3_files }}{{ s3_region }}"
+        - "{{ s3_files | truncate(0, 'left') }}" # Edge case where file name is empty string
+        - "{{ s3_files | length }}" # Edge case where file name is integer
+        - "{{ s3_files | default('default_file', true) }}" # Edge case where file name is not present in the list
+      register: result
+
+    - name: Debug S3 upload results
+      debug: var=result

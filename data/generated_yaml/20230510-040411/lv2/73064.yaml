@@ -1,0 +1,74 @@
+
+- hosts: all
+  remote_user: "{{ ssh_user | default('root') }}"
+  become: yes
+
+  vars:
+    inventory_file: "{{ inventory }}"
+    ssh_key_file: "{{ ssh_key | default('/root/.ssh/id_rsa') }}"
+
+  tasks:
+    - name: Check SSH version
+      command: ssh -V
+      register: ssh_version
+      ignore_errors: True
+      changed_when: False
+
+    - name: Print SSH version
+      debug:
+        var: ssh_version.stdout_lines
+
+    - name: Copy SSH key file
+      copy:
+        src: "{{ ssh_key }}"
+        dest: "/root/.ssh/id_rsa"
+      when: ssh_key is defined
+
+    - name: Create temporary file
+      tempfile:
+        state: touch
+        suffix: ".tmp"
+
+    - name: Verify inventory
+      meta: clear_host_errors
+      failed_when: false
+      delegate_to: localhost
+      run_once: true
+      vars:
+        hosts: "{{ inventory_file }}"
+      ignore_errors: True
+      register: inventory_raw
+
+    - name: Print inventory errors
+      debug:
+        msg: "{{ inventory_raw | json_query('host_failures[*].msg') }}"
+
+    - name: Parse inventory
+      ini_file:
+        path: "{{ inventory_file }}"
+        section: "{{ item }}"
+      with_items: "{{ groups.keys() }}"
+
+    - name: Generate SSH key
+      command: ssh-keygen -t rsa -f /root/.ssh/id_rsa -N ''
+      args:
+        creates: "/root/.ssh/id_rsa"
+
+    - name: Run Ansible
+      command: ansible-playbook playbook.yml -i "{{ inventory_file }}"
+      failed_when: false
+      delegate_to: localhost
+      run_once: true
+      vars:
+        command_timeout: 5
+        inventory: "{{ inventory_file }}"
+        ssh_key: "{{ ssh_key_file }}"
+        extra_vars:
+          ansible_ssh_user: "{{ ssh_user }}"
+          ansible_ssh_timeout: "{{ command_timeout }}"
+      ignore_errors: True
+      register: ansible_output
+
+    - name: Print Ansible output
+      debug:
+        var: ansible_output.stderr_lines

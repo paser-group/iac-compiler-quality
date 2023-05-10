@@ -1,0 +1,31 @@
+
+---
+- name: Test Ansible Distribution Module
+  hosts: all
+  become: true
+
+  vars:
+    deb_pkg: my-deb-package
+    rhel_pkg: my-rhel-package
+
+  tasks:
+    - name: Check Distro ID
+      ansible_distribution_fact:
+      register: distro_info
+
+    - block:
+        - name: Install Debian Package
+          apt:
+            name: "{{ deb_pkg }}"
+            state: present
+          when: "'Debian' in distro_info.ansible_distribution"
+
+        - name: Install Red Hat Package
+          yum:
+            name: "{{ rhel_pkg }}"
+            state: present
+          when: "'RedHat' in distro_info.ansible_distribution"
+      rescue:
+        - name: Distribution Error
+          debug:
+            msg: "Distribution not found"

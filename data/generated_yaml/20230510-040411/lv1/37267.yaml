@@ -1,0 +1,57 @@
+yaml
+- name: Configure ELB target group and application load balancer in AWS
+  hosts: localhost
+  connection: local
+  gather_facts: no
+
+  vars:
+    region: us-west-2
+    elb_name: my-elb
+    target_group_name: my-target-group
+
+  tasks:
+
+    - name: Check if target group exists
+      ec2_elbv2_target_group_info:
+        name: "{{ target_group_name }}"
+        region: "{{ region }}"
+      register: target_group_info
+      ignore_errors: true
+
+    - name: Create target group if not exists
+      ec2_elbv2_target_group:
+        name: "{{ target_group_name }}"
+        region: "{{ region }}"
+        protocol: http
+        port: 8080
+      when: target_group_info.failed
+
+    - name: Check if load balancer exists
+      ec2_elb_application_lb_info:
+        name: "{{ elb_name }}"
+        region: "{{ region }}"
+      register: elb_info
+      ignore_errors: true
+
+    - name: Create load balancer if not exists
+      ec2_elb_application_lb:
+        name: "{{ elb_name }}"
+        region: "{{ region }}"
+        listeners:
+          - protocol: http
+            load_balancer_port: 80
+            instance_protocol: http
+            instance_port: 8080
+        zones:
+          - "{{ region }}a"
+          - "{{ region }}b"
+      when: elb_info.failed
+
+    - name: Register instance with target group
+      ec2_elbv2_target_group:
+        name: "{{ target_group_name }}"
+        region: "{{ region }}"
+        targets:
+          - id: "{{ inventory_hostname }}"
+            port: 8080
+      when: not target_group_info.failed and not elb_info.failed

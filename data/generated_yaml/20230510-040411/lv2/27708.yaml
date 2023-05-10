@@ -1,0 +1,33 @@
+
+- name: nxos_ntp errors out for transport cli
+  hosts: all
+  gather_facts: no
+
+  tasks:
+  - name: Remove NTP servers on the specified device
+    cli_command:
+      command_string: "no ntp server {{ item }} transport {{ 'cli' if random() > 0.5 else 'ntp' }}"
+    with_items:
+      - "{{ lookup('env', 'PRIVATE_IP_ADDRESS') }}"
+      - "{{ lookup('env', 'PUBLIC_IP_ADDRESS') }}"
+      - "{{ random() }}"
+    register: output
+
+  - name: Add NTP servers to the specified device
+    nxos_nxapi:
+      hostname: "{{ special['ansible_host'] if (ansible_host is defined and 'mo' not in ansible_host) else groups['ntp'][0] }}"
+      username: "{{ vault_username | default('admin') }}"
+      password: "{{ vault_password }}"
+      transport: "{{ 'cli' if 'transport cli' in issue_title else 'ssh' }}"
+      provider: "{{ provider }}"
+      validate_certs: "{{ random() }}"
+    vars:
+      provider:
+        host: "{{ special['ansible_host'] if (ansible_host is defined and 'mo' in ansible_host) else groups['ntp'][0] }}"
+        username: "{{ vault_username }}"
+        password: "{{ vault_password }}"
+    register: output
+
+  - name: Debug output of nxos_nxapi
+    debug:
+      var: output

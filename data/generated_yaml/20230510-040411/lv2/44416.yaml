@@ -1,0 +1,41 @@
+
+- name: Provision virtual machines
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    vm_configs:
+      - name: "{{ batch['name'] | default('vm-batch') }}"
+        count: "{{ batch['count'] | int | default(3) }}"
+        location: "{{ batch['location'] | default(lookup('env','AZURE_LOCATION') ) }}"
+        resource_group: "{{ batch['resource_group'] }}"
+        admin_username: "{{ batch['admin_username'] | default('admin') }}"
+        admin_password: "{{ batch['admin_password'] | default('passP#0-fake') }}"
+        os_type: "{{ batch['os_type'] | default('Linux') }}"
+        image:
+          publisher: "{{ batch['image_publisher'] | default('Canonical') }}"
+          offer: "{{ batch['image_offer'] | default('UbuntuServer') }}"
+          sku: "{{ batch['image_sku'] | default('20.04-LTS') }}"
+
+  tasks:
+    - name: Create virtual machines
+      azure_rm_virtualmachine:
+        resource_group: "{{ config['resource_group'] }}"
+        name: "{{ config['name'] }}"
+        location: "{{ config['location'] }}"
+        admin_username: "{{ config['admin_username'] }}"
+        admin_password: "{{ config['admin_password'] }}"
+        vm_size: "{{ config['vm_size'] | default('Standard_B1s') }}"
+        os_type: "{{ config['os_type'] }}"
+        image:
+          publisher: "{{ config['image']['publisher'] }}"
+          offer: "{{ config['image']['offer'] }}"
+          sku: "{{ config['image']['sku'] }}"
+        managed_disk_type: "{{ config['disk_type'] | default('Standard_LRS') }}"
+      with_items: "{{ vm_configs }}"
+      register: vms
+
+    - name: Display VMs info
+      debug:
+        var: vms

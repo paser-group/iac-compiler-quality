@@ -1,0 +1,61 @@
+
+---
+- name: Stress Testing Ansible Compiler for SSH Issues
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Install Ansible
+      become: true
+      package:
+        name: ansible
+        state: latest
+
+    - name: Test unexpected ssh keys
+      ssh_keypair:
+        path: '/home/{{ ansible_user }}/.ssh/test-key'
+        force: yes
+        size: 4096
+        type: ssh-ed25519
+
+    - name: Test unconventional SSH arguments
+      ansible_ssh_extra_args: -o ProxyCommand="ssh -W %h:%p -q user@proxy.example.com"
+
+    - name: Test invalid SSH command
+      command: ssh invalid-command
+
+    - name: Test SSH known_hosts validation
+      lineinfile:
+        path: /home/{{ ansible_user }}/.ssh/known_hosts
+        line: "{{inventory_hostname}} ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDJTfuMyfzdhZf6s6wDW3nityp7eUN7xguMx1K+QFPkp3I765t3WtiIPcJvVxfu2e/gyF1Wm8Dv+pLqyfjDVPkHiZLILxmVUDURtK6iZLrddUW/IxJGgSO/0tdP4EZrV7+2T0eH8dxtP7kwoDmzQ4DXgPh8fh5Py6ouolPbL3dfxnz8fLk6gkx+YQDzCQpRll1OXO2IO45Urdi+VD3p6V2kte3Jged8kZMC7vrmb0d9N06qkCdP6skQYz915MA1SjJrZ22w7a2zvx8pPPxLCAqKNO/eDY7uUwMYNpqDn4wt4QRoeV1EZl8xqsPHXsDzZgX5j4oCl0oO8/Dqn root@{{ inventory_hostname }}"
+        state: present
+        create: true
+        validate: /usr/bin/ssh-keygen -l -f %f | awk '{print $2}' | sed 's/://g' | diff - {{ inventory_hostname }}-ssh-key.pub.sha256
+
+    - name: Test edge case inventory file
+      hosts: |-
+        {% set myhosts = [] %}
+        {% for i in range(255) %}
+        {%     set ip = "172.17.0." ~ i %}
+        {%     set hname = "edge-" ~ i %}
+        {%     set myhosts = myhosts + [ip + " ansible_host=" + hname + ".example.com"] %}
+        {% endfor %}
+        {{ myhosts | join('\n') }}
+
+    - name: Test invalid user input
+      ansible.builtin.shell: "{{ 'ls -la ~/' ~ (1/0) }}"
+
+    - name: Test unconventional module arguments
+      file:
+        path: /tmp/testfile.txt
+        content: "{{ lookup('file', '/path/to/file') }}"
+        backup: yes
+        group: "{{ (ansible_env['SUDO_USER'] or ansible_user) }}"
+        force: yes
+        changed_when: true
+        other_argument: invalid_option
+
+    - name: Test invalid module
+      invalid_module:
+        argument1: value1
+        argument2: value2

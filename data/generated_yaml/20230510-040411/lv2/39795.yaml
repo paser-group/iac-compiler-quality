@@ -1,0 +1,80 @@
+yaml
+---
+- name: Test playbook for docker_service error
+  hosts: localhost
+  vars:
+    service_name: my_service
+    registry: my_registry
+    image_name: my_image
+    container_name: my_container
+    restart_policy: always
+    service_port: 8080
+  tasks:
+    - name: Start a service with invalid port
+      docker_service:
+        project_name: "{{ service_name }}"
+        registry_login_username: "my_user"
+        registry_login_password: "my_password"
+        registry_url: "{{ registry }}"
+        definition:
+          name: "{{ container_name }}"
+          image: "{{ image_name }}"
+          network: host
+          restart_policy: "{{ restart_policy }}"
+          ports:
+            - "{{ service_port }}invalid"
+      register: service_with_invalid_port
+      ignore_errors: yes
+    
+    - name: Remove the service if it exists
+      docker_service:
+        project_name: "{{ service_name }}"
+        state: absent
+        timeout: 60
+      when: service_with_invalid_port is failed
+    
+    - name: Start a service with invalid restart policy
+      docker_service:
+        project_name: "{{ service_name }}"
+        registry_login_username: "my_user"
+        registry_login_password: "my_password"
+        registry_url: "{{ registry }}"
+        definition:
+          name: "{{ container_name }}"
+          image: "{{ image_name }}"
+          network: host
+          restart_policy: invalid_restart_policy
+          ports:
+            - "{{ service_port }}:{{ service_port }}"
+      register: service_with_invalid_restart_policy
+      ignore_errors: yes
+    
+    - name: Remove the service if it exists
+      docker_service:
+        project_name: "{{ service_name }}"
+        state: absent
+        timeout: 60
+      when: service_with_invalid_restart_policy is failed
+    
+    - name: Start a service with invalid image name
+      docker_service:
+        project_name: "{{ service_name }}"
+        registry_login_username: "my_user"
+        registry_login_password: "my_password"
+        registry_url: "{{ registry }}"
+        definition:
+          name: "{{ container_name }}"
+          image: "{{ image_name }}:invalid_tag_missing_semicolon"
+          network: host
+          restart_policy: "{{ restart_policy }}"
+          ports:
+            - "{{ service_port }}:{{ service_port }}"
+      register: service_with_invalid_image_name
+      ignore_errors: yes
+    
+    - name: Remove the service if it exists
+      docker_service:
+        project_name: "{{ service_name }}"
+        state: absent
+        timeout: 60
+      when: service_with_invalid_image_name is failed

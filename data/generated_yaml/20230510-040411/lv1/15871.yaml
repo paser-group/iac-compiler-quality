@@ -1,0 +1,24 @@
+yaml
+---
+- name: Update OpenStack inventory
+  hosts: localhost
+  connection: local
+  gather_facts: no
+
+  vars:
+    inventory_file: "/path/to/inventory/file"
+
+  tasks:
+    - name: Get list of errored nodes without internal IP
+      shell: |
+        openstack server list --status ERROR -c Name -f value | \
+        xargs -n1 openstack server show -f json | \
+        jq -r '.name + " " + .addresses | select((.|split(";")|length) == 1) | select((.|split(";")[0]|contains("10.")) | not) | .name'
+      register: errored_nodes
+
+    - name: Add errored nodes to inventory file
+      lineinfile:
+        path: "{{ inventory_file }}"
+        line: "{{ item }}"
+        state: present
+      with_items: "{{ errored_nodes.stdout_lines }}"

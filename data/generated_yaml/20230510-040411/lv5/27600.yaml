@@ -1,0 +1,37 @@
+
+- name: Test Playbook for nxos_vrf_interface module
+  hosts: switch
+  gather_facts: no
+
+  vars:
+    vrf_name: "vrf01"
+    interface_name: "eth1/1"
+    
+  tasks:
+    - name: Create a VRF interface
+      nxos_vrf_interface:
+        vrf: "{{ vrf_name }}"
+        interface: "{{ interface_name }}"
+        state: present
+      register: create_output
+
+    - name: Fail if unable to create the VRF interface
+      fail:
+        msg: "VRF interface creation failed"
+      when: create_output.changed is not defined or create_output.changed is false
+    
+    - name: Remove the VRF interface
+      nxos_vrf_interface:
+        vrf: "{{ vrf_name }}"
+        interface: "{{ interface_name }}"
+        state: absent
+      register: remove_output
+
+    - name: Check if VRF interface is removed successfully and is idempotent
+      assert:
+        that: 
+          - remove_output.changed is defined and remove_output.changed is true
+          - remove_output.ansible_facts is defined and remove_output.ansible_facts.vrf_interface is defined
+          - remove_output.ansible_facts.vrf_interface.interface == vrf_name
+          - remove_output.ansible_facts.vrf_interface.state == 'absent'
+      become: yes

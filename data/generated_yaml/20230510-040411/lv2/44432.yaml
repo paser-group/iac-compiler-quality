@@ -1,0 +1,41 @@
+yaml
+- name: Generate OpenStack router
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Create OpenStack network
+      os_network:
+        state: present
+        name: "test_network"
+        external: true
+
+    - name: Create OpenStack subnet
+      os_subnet:
+        state: present
+        network_name: "test_network"
+        cidr: "172.16.0.0/24"
+
+    - name: Generate OpenStack router
+      os_router:
+        state: present
+        name: "test_router"
+        external_gateway: true
+        external_gateway_info:
+          network: "public"
+      delegate_to: localhost
+
+    # This task will try to add a wrong policy to the router, to provoke the PolicyNotAuthorized error
+    - name: Add rule to router with wrong policy
+      os_router:
+        state: present
+        name: 'test_router'
+        firewall_rules:
+          - name: "test_rule"
+            action: "deny"
+            protocol: "tcp"
+            source: "10.0.0.0/24"
+      delegate_to: localhost
+
+    - name: Debug router
+      debug:
+        var: "{{ ansible_facts.openstack_routers }}"

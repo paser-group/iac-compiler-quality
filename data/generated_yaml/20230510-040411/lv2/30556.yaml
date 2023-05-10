@@ -1,0 +1,87 @@
+
+- name: Test 'copy' with decrypt option
+  hosts: localhost
+  tasks:
+    - name: Create empty test file
+      copy:
+        content: ""
+        dest: "{{ playbook_dir }}/files/testfile.txt"
+        force: true
+      register: copy_result
+
+    - name: Copy file with decrypt: no option
+      copy:
+        src: "{{ playbook_dir }}/files/testfile.txt"
+        dest: "{{ playbook_dir }}/files/testfile.txt"
+        decrypt: no
+      register: copy_decrypt_no
+
+    - name: Copy file with decrypt: yes option
+      copy:
+        src: "{{ playbook_dir }}/files/testfile.txt"
+        dest: "{{ playbook_dir }}/files/testfile.txt"
+        decrypt: yes
+      register: copy_decrypt_yes
+
+    - name: Copy file with non-existent source
+      copy:
+        src: "{{ playbook_dir }}/files/non_existent_file.txt"
+        dest: "{{ playbook_dir }}/files/testfile.txt"
+        force: true
+      register: copy_non_existent_src
+
+    - name: Copy file with reserved characters in filename
+      copy:
+        src: "{{ playbook_dir }}/files/testfile.txt"
+        dest: "{{ playbook_dir }}/files/@$#&!filename.txt"
+        force: true
+      register: copy_reserved_chars
+
+    - name: Copy file with group and owner options
+      copy:
+        src: "{{ playbook_dir }}/files/testfile.txt"
+        dest: "{{ playbook_dir }}/files/testfile.txt"
+        group: www-data
+        owner: www-data
+      register: copy_group_owner
+
+    - name: Copy file while preserving timestamps
+      copy:
+        src: "{{ playbook_dir }}/files/testfile.txt"
+        dest: "{{ playbook_dir }}/files/testfile.txt"
+        preserve_timestamps: yes
+      register: copy_preserve_ts
+
+    - name: Copy file with symbolic link option
+      copy:
+        src: "{{ playbook_dir }}/files/testfile.txt"
+        dest: "{{ playbook_dir }}/files/testfile_symlink.txt"
+        symbolic: yes
+      register: copy_symlink
+
+    - name: Copy file with changed file mode option
+      copy:
+        src: "{{ playbook_dir }}/files/testfile.txt"
+        dest: "{{ playbook_dir }}/files/testfile.txt"
+        mode: u+x
+      register: copy_mode_change
+
+    - name: Copy file with backup option
+      copy:
+        src: "{{ playbook_dir }}/files/testfile.txt"
+        dest: "{{ playbook_dir }}/files/testfile.txt"
+        backup: yes
+      register: copy_backup
+
+    - name: Check if file already exists
+      stat:
+        path: "{{ playbook_dir }}/files/testfile.txt"
+      register: file_stat
+
+    - name: Copy file with force option when file already exists
+      copy:
+        src: "{{ playbook_dir }}/files/testfile.txt"
+        dest: "{{ playbook_dir }}/files/testfile.txt"
+        force: true
+      when: file_stat.stat.exists == true
+      register: copy_force

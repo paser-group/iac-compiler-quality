@@ -1,0 +1,100 @@
+yaml
+- name: Test os_security_group_rule module
+  hosts: localhost
+  gather_facts: false
+  vars:
+    sg: "default"
+    protocol: "tcp"
+    port: 22
+  tasks:
+  - name: Add ingress rule with valid port
+    os_security_group_rule:
+      security_group: "{{ sg }}"
+      protocol: "{{ protocol }}"
+      port_range_min: "{{ port }}"
+      port_range_max: "{{ port }}"
+      direction: ingress
+      remote_ip_prefix: "0.0.0.0/0"
+    register: result
+
+  - name: Add ingress rule with invalid protocol
+    os_security_group_rule:
+      security_group: "{{ sg }}"
+      protocol: "invalid_protocol"
+      port_range_min: "{{ port }}"
+      port_range_max: "{{ port }}"
+      direction: ingress
+      remote_ip_prefix: "0.0.0.0/0"
+    ignore_errors: true
+
+  - name: Add ingress rule with invalid port
+    os_security_group_rule:
+      security_group: "{{ sg }}"
+      protocol: "{{ protocol }}"
+      port_range_min: "invalid_port"
+      port_range_max: "invalid_port"
+      direction: ingress
+      remote_ip_prefix: "0.0.0.0/0"
+    ignore_errors: true
+
+  - name: Add egress rule
+    os_security_group_rule:
+      security_group: "{{ sg }}"
+      protocol: "{{ protocol }}"
+      port_range_min: "{{ port }}"
+      port_range_max: "{{ port }}"
+      direction: egress
+      remote_ip_prefix: "0.0.0.0/0"
+    register: result
+
+  - name: Remove ingress rule
+    os_security_group_rule:
+      security_group: "{{ sg }}"
+      protocol: "{{ protocol }}"
+      port_range_min: "{{ port }}"
+      port_range_max: "{{ port }}"
+      direction: ingress
+      remote_ip_prefix: "0.0.0.0/0"
+      state: absent
+    register: result
+
+  - name: Remove egress rule
+    os_security_group_rule:
+      security_group: "{{ sg }}"
+      protocol: "{{ protocol }}"
+      port_range_min: "{{ port }}"
+      port_range_max: "{{ port }}"
+      direction: egress
+      remote_ip_prefix: "0.0.0.0/0"
+      state: absent
+    register: result
+
+  - name: Add ingress rule with different source group
+    os_security_group_rule:
+      security_group: "{{ sg }}"
+      protocol: "{{ protocol }}"
+      port_range_min: "{{ port }}"
+      port_range_max: "{{ port }}"
+      direction: ingress
+      remote_group_id: "different_security_group"
+    register: result
+
+  - name: Add ingress rule with invalid remote IP prefix
+    os_security_group_rule:
+      security_group: "{{ sg }}"
+      protocol: "{{ protocol }}"
+      port_range_min: "{{ port }}"
+      port_range_max: "{{ port }}"
+      direction: ingress
+      remote_ip_prefix: "invalid_ip_prefix"
+    ignore_errors: true
+
+  - name: Add ingress rule with invalid remote group ID
+    os_security_group_rule:
+      security_group: "{{ sg }}"
+      protocol: "{{ protocol }}"
+      port_range_min: "{{ port }}"
+      port_range_max: "{{ port }}"
+      direction: ingress
+      remote_group_id: "invalid_group_id"
+    ignore_errors: true

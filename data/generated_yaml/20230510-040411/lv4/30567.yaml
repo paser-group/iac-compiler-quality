@@ -1,0 +1,24 @@
+yaml
+---
+- name: Test Ansible's handling of network errors
+  hosts: targetdevice
+  vars:
+    ansible_ssh_user: "{{ lookup('env', 'USER') }}"
+  
+  tasks:
+  
+  - name: SSH to the device
+    expect:
+      command: ssh user@{{ inventory_hostname }}
+      responses:
+        'Password:': 'mypassword'
+  
+  - name: Configure the device to drop packets
+    shell: | 
+      iptables -A OUTPUT -p tcp --dport 22 --tcp-flags RST RST -j DROP
+      iptables -A OUTPUT -p tcp --dport 22 -j DROP
+    become: true
+  
+  - name: Attempt to execute command on the device
+    shell: somecommand
+    ignore_errors: true

@@ -1,0 +1,64 @@
+
+---
+- name: Test missing collection module error
+  hosts: localhost
+  gather_facts: false
+  vars:
+    collection_name: "{{ 'custom_collection.xyz' }}"
+    module_name: "custom_module"
+    args: '"{{ '--something-very-weird' }}"'
+
+  tasks:
+    - name: Test missing collection module
+      shell: >
+        ansible {{ collection_name }}.{{ module_name }} {{ args }}
+      register: result
+      ignore_errors: true
+
+    - name: Print result
+      debug:
+        var: result
+
+    # Edge case: Pass a nonexistent collection name with the core module name
+    - name: Test missing collection module with core module name
+      shell: >
+        ansible nonexistent_collection_name.{{ module_name }} {{ args }}
+      register: result
+      ignore_errors: true
+
+    - name: Print result
+      debug:
+        var: result
+
+    # Edge case: Pass an empty collection name with the core module name
+    - name: Test missing collection module with empty collection name
+      shell: >
+        ansible .{{ module_name }} {{ args }}
+      register: result
+      ignore_errors: true
+
+    - name: Print result
+      debug:
+        var: result
+
+    # Unconventional syntax: Pass module name with trailing slash
+    - name: Test unconventional syntax
+      shell: >
+        ansible {{ collection_name }}/{{ module_name }}/ {{ args }}
+      register: result
+      ignore_errors: true
+
+    - name: Print result
+      debug:
+        var: result
+
+    # Unexpected input: Pass a variable as collection name
+    - name: Test unexpected input
+      shell: >
+        ansible {{ my_custom_collection_name }}.{{ module_name }} {{ args }}
+      register: result
+      ignore_errors: true
+
+    - name: Print result
+      debug:
+        var: result

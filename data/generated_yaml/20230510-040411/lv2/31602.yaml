@@ -1,0 +1,114 @@
+yaml
+- name: Test Kubernetes module
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Get list of all namespaces
+      k8s_info:
+        api_version: v1
+        kind: Namespace
+        namespace: "{{ item }}"
+      register: namespace_info
+      with_items: ["", "namespace1", "namespace2", "namespace3", "namespace4", "namespace5", "namespace6", "namespace7", "namespace8", "namespace9", "namespace10"]
+
+    - name: Check if all namespaces exist
+      assert:
+        that:
+          - namespace_info.results[0].response.status == 200
+          - namespace_info.results[1].response.status == 200
+          - namespace_info.results[2].response.status == 200
+          - namespace_info.results[3].response.status == 200 
+          - namespace_info.results[4].response.status == 200 
+          - namespace_info.results[5].response.status == 200 
+          - namespace_info.results[6].response.status == 200 
+          - namespace_info.results[7].response.status == 200 
+          - namespace_info.results[8].response.status == 200 
+          - namespace_info.results[9].response.status == 200 
+          - namespace_info.results[10].response.status == 200
+
+    - name: Create a namespace with invalid syntax
+      k8s:
+        api_version: v1
+        kind: Namespace
+        name: '{{ "invalid namespace!" }}'
+        state: present
+        validate: no
+      register: create_invalid_namespace
+
+    - name: Check if invalid namespace exists
+      assert:
+        that:
+          - create_invalid_namespace.rc == 0
+          - create_invalid_namespace.status == 422
+      
+    - name: Add a label that exceeds the maximum length allowed
+      k8s:
+        api_version: v1
+        kind: Namespace
+        name: '{{ item.name }}'
+        state: present
+        validate: no
+        labels:
+          '{{ "x" * 256 }}': '{{ "x" * 256 }}'
+      loop:
+        - { name: "namespace1" }
+        - { name: "namespace2" }
+        - { name: "namespace3" }
+
+    - name: Check if label was added successfully
+      k8s_info:
+        api_version: v1
+        kind: Namespace
+        namespace: "{{ item.namespace }}"
+        label_selectors:
+          '{{ "x" * 256 }}': '{{ "x" * 256 }}'
+      loop:
+        - { namespace: "namespace1" }
+        - { namespace: "namespace2" }
+        - { namespace: "namespace3" }
+      register: labels_info
+      
+    - name: Check if label exists
+      assert:
+        that:
+        - labels_info.results[0].response.status == 200
+        - labels_info.results[1].response.status == 200
+        - labels_info.results[2].response.status == 200
+
+    - name: Delete non-existent namespace
+      k8s:
+        api_version: v1
+        kind: Namespace
+        name: "non-existent-namespace"
+        state: absent
+        validate: no
+      register: delete_nonexistent_namespace
+      
+    - name: Check if delete non-existent namespace command failed
+      assert:
+        that:
+          - delete_nonexistent_namespace.rc != 0
+          - delete_nonexistent_namespace.stderr.find("not found") != -1
+    
+    - name: Delete a namespace with its finalizers stuck in Terminating state
+      k8s:
+        api_version: v1
+        kind: Namespace
+        name: "namespace1"
+        state: absent
+        validate: no
+        force: true
+      register: delete_namespace_with_finalizer_stuck
+
+    - name: Check if the namespace with its finalizers stuck in Terminating state still exists
+      k8s_info:
+        api_version: v1
+        kind: Namespace
+        namespace: "namespace1"
+      register: namespace_with_finalizer_stuck_info
+      
+    - name: Check if the namespace with its finalizers stuck in Terminating state was deleted
+      assert:
+        that:
+          - delete_namespace_with_finalizer_stuck.rc == 0
+          - namespace_with_finalizer_stuck_info.response.status == 404

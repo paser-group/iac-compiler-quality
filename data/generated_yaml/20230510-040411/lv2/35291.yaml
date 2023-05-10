@@ -1,0 +1,77 @@
+
+---
+- name: Test User Module Idempotency
+  hosts: localhost
+  gather_facts: false
+  
+  vars:
+    my_user: "testuser"
+    my_group: "testgroup"
+
+  tasks:
+    - name: Create User with Invalid Syntax
+      user:
+        name: "testuser123!"
+        group: "{{ my-group }}"
+      register: invalid_syntax
+      ignore_errors: true
+      
+    - name: Create Group with Invalid Syntax
+      group:
+        name: "{{ my_user }}"
+        state: present
+        system: true
+      register: invalid_group
+      
+    - name: Get User Details without Existence
+      user:
+        name: "{{ my_user }}"
+        state: present
+      register: user_details
+      ignore_errors: true
+      
+    - name: Update User Password without Existence
+      user:
+        name: "{{ my_user }}"
+        password: "testpassword"
+      register: update_password
+      ignore_errors: true
+      
+    - name: Delete Non-existent User
+      user:
+        name: "{{ my_user }}"
+        state: absent
+      register: delete_user
+      
+    - name: Ensure User is Created with Correct Syntax
+      user:
+        name: "{{ my_user }}"
+        group: "{{ my_group }}"
+        state: present
+      register: create_user
+      
+    - name: Ensure User is Idempotent
+      user:
+        name: "{{ my_user }}"
+        group: "{{ my_group }}"
+        state: present
+      register: idempotency_check
+    
+    - name: Ensure User is Deleted
+      user:
+        name: "{{ my_user }}"
+        state: absent
+      register: delete_user2
+      
+    - name: Debug Output
+      debug:
+        var: item
+      with_items:
+        - invalid_syntax
+        - invalid_group
+        - user_details
+        - update_password
+        - delete_user
+        - create_user
+        - idempotency_check
+        - delete_user2

@@ -1,0 +1,65 @@
+
+---
+- name: Fuzz Ansible-galaxy Attributes
+  hosts: localhost
+  tasks:
+    - name: Install Ansible-galaxy Dependencies
+      become: true
+      apt: name={{item}} state=latest update_cache=yes
+      with_items:
+        - python-pip
+        - virtualenv
+      tags: [install]
+    
+    - name: Create Virtualenv
+      command: virtualenv venv
+      args:
+        chdir: ~/ansible-galaxy-fuzzer
+      tags: [virtualenv]
+    
+    - name: Activate Virtualenv
+      command: source ~/ansible-galaxy-fuzzer/venv/bin/activate
+      tags: [activate]
+      
+    - name: Install Ansible and Dependencies
+      pip:
+        name: ansible
+        extra_args: "--ignore-installed"
+      tags: [pip]
+    
+    - name: Fuzz Ansible-galaxy
+      shell: ansible-galaxy info --offline={% raw %}{{ item }}{% endraw %}
+      with_items:
+        - example1
+        - example2
+        - example3
+      register: test_out
+      tags: [fuzzing]
+
+    - name: Check Output for Attribute Errors
+      assert:
+        that:
+          - "{{ item.stderr | search('AttributeError: Values instance has no attribute') }}"
+        success_msg: "Discovery: {{ item.item }} caused a traceback in Ansible-galaxy."
+      loop: "{{ test_out.results }}"
+      tags: [testing]
+
+    - name: Archive Results
+      archive:
+        dest: results.tar.gz
+        path: ~/ansible-galaxy-fuzzer/
+        excludes:
+          - venv/
+      tags: [cleanup]
+      
+  handlers:
+    - name: Deactivate Virtualenv
+      shell: deactivate
+      args:
+        chdir: ~/ansible-galaxy-fuzzer/
+        
+    - name: Remove Virtualenv
+      file:
+        state: absent
+        path: ~/ansible-galaxy-fuzzer/venv
+      

@@ -1,0 +1,29 @@
+
+- name: Download test deb package with apt module
+  hosts: localhost
+  become: true
+
+  tasks:
+
+    - name: Install apt dependencies and update apt cache
+      apt:
+        update_cache: yes
+      become: true
+
+    - name: Configure the repository containing the test deb package
+      apt_repository:
+        repo: 'deb http://example.com/ testing main'
+        state: present
+      become: true
+
+    - name: Attempt to download the test deb package using the apt module
+      apt:
+        name: test-deb-package
+        state: present
+      become: true
+      register: result
+
+    - name: Verify that the apt module download task failed with an expected 403 error code
+      fail:
+        msg: 'Expected HTTP response code 403, but got {{result|json_query("failed_when|first")}}'
+      when: result|failed and result|json_query('failed_when|first') != '403'

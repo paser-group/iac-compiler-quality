@@ -1,0 +1,52 @@
+yaml
+---
+- name: Test playbook for 'setup' module
+  hosts: windows
+  tasks:
+    - name: Gather custom facts
+      setup:
+        fact_path: "C:\Program Files\My Facts"
+        gather_subset: all
+        gather_timeout: 60
+        gather_timeout_override: yes
+        fact_caching: yes
+        fact_caching_connection: https://myfactscache.example.com
+        fact_caching_timeout: 7200
+        fact_caching_prefix: windows_
+        fact_caching_network_group: all
+        fact_caching_subset: ['hardware', 'network']
+
+    - debug: var=ansible_local.windows.MyCustomFacts
+
+    - name: Install Package
+      win_package:
+        name: "{{ item }}"
+        state: present
+      with_items:
+        - "Package1"
+        - "Package2"
+    - name: Create User
+      win_user:
+        name: "TestName"
+        password: "TestPassword"
+        state: present
+        groups:
+          - "Administrators"
+
+    - name: Check current date
+      win_shell: echo %date%_%time%
+      register: dateOutput
+
+    - debug: var=dateOutput.stdout
+
+    - name: Stop Service
+      win_service:
+        name: "TestService"
+        state: stopped
+
+    - name: Restart Computer
+      win_reboot:
+        reason: "Test Reason"
+        msg: "Test Message"
+        timeout: 600
+        force: yes

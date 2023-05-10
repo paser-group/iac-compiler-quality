@@ -1,0 +1,46 @@
+yaml
+---
+- name: Configure ElastiCache instances dynamic inventory
+  hosts: localhost
+  connection: local
+  gather_facts: no
+  vars:
+    cache_endpoint: "yourcachecluster.123456.usw2.cache.amazonaws.com:6379"
+    cache_region: "us-west-2"
+    cache_node_type: "cache.m3.medium"
+  tasks:
+    - name: Install python modules
+      pip:
+        name: "boto"
+        state: present
+    - name: Create EC2-cache credentials file
+      copy:
+        dest: "~/.aws/credentials"
+        content: |
+          [default]
+          aws_access_key_id=YOUR_ACCESS_KEY
+          aws_secret_access_key=YOUR_SECRET_KEY
+          region={{ cache_region }}
+    - name: Prepare ec2.py dynamic inventory
+      copy:
+        dest: /etc/ansible/ec2.py
+        mode: "u=rw,g=r,o=r"
+        src: https://raw.githubusercontent.com/ansible/ansible/devel/contrib/inventory/ec2.py
+    - name: Create ec2.ini inventory configuration
+      copy:
+        dest: /etc/ansible/ec2.ini
+        mode: "u=rw,g=r,o=r"
+        src: https://raw.githubusercontent.com/ansible/ansible/devel/contrib/inventory/ec2.ini
+      register: result
+    - name: Update ec2.ini with cache cluster
+      lineinfile:
+        path: /etc/ansible/ec2.ini
+        line: "elasticache = True"
+        regexp: "^elasticache = False"
+        insertafter: "^# elasticache settings"
+      notify: restart apache
+  handlers:
+    - name: restart apache
+      service:
+        name: httpd
+        state: restarted

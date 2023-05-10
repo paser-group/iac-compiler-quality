@@ -1,0 +1,43 @@
+
+- name: Test vault error message
+  hosts: localhost
+  gather_facts: true
+
+  tasks:
+    - name: Check if Vim is installed
+      shell: >
+        if ! type "vim" > /dev/null 2>&1; then
+          echo "Vim not installed!";
+          exit 1;
+        fi
+      ignore_errors: true
+      register: vim_check
+
+    - name: Install Vim
+      package:
+        name: vim
+        state: present
+      when: vim_check.rc == 1
+
+    - name: Create vault file
+      copy:
+        content: "password: secret"
+        dest: /tmp/vault.yml
+        mode: '0600'
+
+    - name: Test vault encryption
+      vars_files:
+        - /tmp/vault.yml
+      ansible_become: true
+      ansible_become_method: su
+      ansible_become_user: root
+      command: ansible-playbook --vault-password-file /tmp/vault_pass playbook.yml
+      environment:
+        ANSIBLE_VAULT_PASSWORD_FILE: /tmp/vault_pass
+      ignore_errors: true
+      register: vault_error
+
+    - name: Print error message
+      debug:
+        var: vault_error.stderr_lines
+      when: vault_error.rc != 0

@@ -1,0 +1,49 @@
+
+- name: Configure FEX on Nexus 5K with idempotency
+  hosts: nexus_5k
+  gather_facts: false
+
+  tasks:
+    - name: Configure FEX
+      nxos_config:
+        lines:
+          - fex 100
+          - pinning max-links 1
+        before:
+          - show interface ethernet 1/1/1 | include FEX
+      register: config_result
+
+    - name: Ensure FEX configuration is idempotent
+      nxos_config:
+        lines:
+          - fex 100
+          - pinning max-links 1
+        before:
+          - show interface ethernet 1/1/1 | include FEX
+      register: idempotent_check
+
+    - name: Print idempotency check result
+      debug:
+        var: idempotent_check
+
+    - name: Configure FEX with unconventional syntax
+      nxos_config:
+        commands:
+          - ["fex 200", "pinning max-links 2"]
+        before:
+          - show interface ethernet 1/1/1 | include FEX
+
+    - name: Configure FEX with unexpected inputs
+      nxos_config:
+        lines:
+          - fex "abc"  # Unexpected input
+          - pinning max-links 3
+        before:
+          - show interface ethernet 1/1/1 | include FEX
+
+    - name: Remove FEX configuration
+      nxos_config:
+        lines:
+          - no fex 100
+      before:
+        - show interface ethernet 1/1/1 | include FEX

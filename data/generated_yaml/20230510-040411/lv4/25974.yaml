@@ -1,0 +1,33 @@
+
+- name: Test for bug in docker_container.py
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Ensure Docker is installed
+      block:
+        - name: Install Docker
+          become: true
+          apt:
+            name: docker.io
+            state: latest
+          vars:
+            ansible_python_interpreter: /usr/bin/python3
+
+    - name: Create Docker containers with same name and image
+      docker_container:
+        name: test-container
+        image: nginx:latest
+        state: started
+      register: container_1
+
+    - docker_container:
+        name: test-container
+        image: nginx:latest
+        state: started
+      register: container_2
+
+    - name: Assert that containers should not match
+      assert:
+        that: container_1 != container_2
+        fail_msg: "Duplicate containers created. Bug detected in docker_container.py"

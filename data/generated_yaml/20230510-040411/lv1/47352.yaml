@@ -1,0 +1,18 @@
+
+---
+- name: Resolve Idempotency Issue with win_domain
+  hosts: windows-hosts
+  gather_facts: no
+
+  tasks:
+  - name: Check if computer is already joined to the domain
+    win_shell: Get-WmiObject -Class Win32_ComputerSystem | Select-Object -ExpandProperty Domain
+    register: domain_check
+  - name: Join the computer to the domain if it is not already joined
+    win_domain:
+      domain_name: mydomain.local
+      username: myuser
+      password: mypassword
+      ou_path: "OU=MyOU,DC=mydomain,DC=local"
+      state: present
+    when: domain_check.stdout != "mydomain.local"

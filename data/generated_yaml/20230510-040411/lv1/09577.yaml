@@ -1,0 +1,61 @@
+yaml
+---
+- name: Import Windows modules
+  hosts: windows
+  gather_facts: false
+
+  vars:
+    ansible_connection: winrm
+    ansible_port: 5986
+    ansible_winrm_transport: ntlm
+    ansible_winrm_server_cert_validation: ignore
+
+  tasks:
+    - name: Test connectivity to Windows hosts
+      win_ping:
+
+    # Ensure SSL certificate can be trusted
+    - name: Install self-signed SSL certificates 
+      win_chocolatey:
+        name: 'win-acme'
+        version: '2.1.3'
+      args:
+        choco_install_args: '--params="/AcmeCertificateDirectory:C:\certs /AcceptTerms"'
+        choco_install_location: 'C:\Program Files\win-acme'
+        become: yes
+
+    - name: Create SSL Certificate
+      win_acme:
+        version: 2.1.3
+        state: present
+        renewal_days: 60
+        hostnames:
+          - "{{ inventory_hostname }}"
+        certificate_store_name: My
+        acme_flags:
+          - --force
+          - --renew'
+        become: yes
+
+    # Configure custom SSL cert
+    - name: Set HttpsBinding for PowershellVirtualDirectory
+      win_iis_website:
+        name: Default Web Site
+        state: started
+        bindings:
+          - protocol: https
+            ip: "*"
+            port: 5986
+            ssl_certificate_name: "winrm"
+        virtual_directories:
+        - name: powershell
+          application: '/PowerShell'
+          physical_path: C:\inetpub\wwwroot\PowerShell
+          auth_basic: true
+          auth_negotiate: true
+          require_ssl: true
+        become: yes
+
+    - name: Wait 10 seconds after HTTPS Binding to be updated
+      wait_for_connection:
+        timeout: 10

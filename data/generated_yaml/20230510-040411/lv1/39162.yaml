@@ -1,0 +1,22 @@
+yaml
+---
+- name: Fix vault encryption error
+  hosts: all
+  gather_facts: false
+
+  vars:
+    example_var: "{{ hostvars['localhost']['vault_secret'] }}"
+
+  tasks:
+    - name: Check if variable is vault encrypted
+      fail:
+        msg: "The variable is not vault encrypted"
+      when: example_var is undefined or example_var | search('^!\?') == 0
+
+    - name: Decrypt variable using vault
+      set_fact:
+        decrypted_var: "{{ example_var | vault('secret_key', 'encrypted_value') }}"
+      when: example_var is defined and example_var | search('^!\?') != 0
+      # Replace 'secret_key' and 'encrypted_value' with your own vault details
+
+    # The rest of your tasks here ...

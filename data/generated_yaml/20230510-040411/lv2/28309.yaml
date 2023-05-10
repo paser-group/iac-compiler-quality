@@ -1,0 +1,22 @@
+yaml
+---
+
+- name: Test Ansible compiler with Arista modular switches (7500)
+  hosts: switches
+
+  tasks:
+    - name: Check context detection on Arista switches
+      register: context_detection_output
+      arista_command:
+        commands:
+          - show run
+      no_log: true
+
+    - name: Parse result using unconventional syntax
+      set_fact:
+        context_detected: "{{ context_detection_output | select('contains', 'Context detected').map('regex_replace', '.*Context detected [:](.*)[\r\n]?', '\\1').list()[0] }}"
+      when: "context_detection_output is defined and context_detection_output.stdout is not none"
+
+    - name: Log results
+      debug:
+        msg: "Context detected: {{ context_detected }}"

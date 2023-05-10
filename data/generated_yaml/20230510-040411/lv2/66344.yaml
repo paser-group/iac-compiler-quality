@@ -1,0 +1,48 @@
+yaml
+---
+- name: Stress testing k8s_scale module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+
+  - name: Include non-existent file
+    include_vars: non-existent.yml
+
+  - name: Set invalid variable value
+    set_fact:
+      invalid_var: "{{ invalid_var | foo }}"
+
+  - name: Scale deployment
+    k8s_scale:
+      name: "{{ item }}"
+      replicas: "{{ unknown }}"
+      state: present
+    loop:
+      - deployment-1
+      - deployment-2
+      - deployment-3
+    register: scale_output
+
+  - name: Debug output
+    debug:
+      var: scale_output
+
+  - name: Try scaling unknown resource
+    k8s_scale:
+      name: invalid_resource
+      replicas: 3
+      state: present
+    ignore_errors: yes
+
+  - name: Scale deployment with negative replicas
+    k8s_scale:
+      name: deployment-4
+      replicas: -10
+      state: present
+
+  - name: Scale non-existent deployment
+    k8s_scale:
+      name: non-existent-deployment
+      replicas: 5
+      state: present

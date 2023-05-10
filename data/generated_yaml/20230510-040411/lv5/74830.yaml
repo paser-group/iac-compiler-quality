@@ -1,0 +1,38 @@
+
+- name: set file permissions
+  hosts: localhost
+  tasks:
+    - name: create file
+      file:
+        path: /tmp/testfile
+        state: touch
+        mode: '0644'
+
+    - name: set file permissions
+      file:
+        path: /tmp/testfile
+        mode: 'u+rw,go+r'
+
+    - name: check file permissions
+      stat:
+        path: /tmp/testfile
+      register: stat_result
+
+    - name: change to unprivileged user
+      become: true
+      become_user: unprivileged_user
+      shell: touch /tmp/testfile
+
+    - name: ensure file is owned by unprivileged user
+      stat:
+        path: /tmp/testfile
+      register: test_result
+
+- name: print results
+  hosts: localhost
+  tasks:
+    - debug:
+        var: stat_result.stat.mode
+
+    - debug:
+        var: test_result.stat.mode

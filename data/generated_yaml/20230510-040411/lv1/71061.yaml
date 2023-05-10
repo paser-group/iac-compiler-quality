@@ -1,0 +1,42 @@
+yaml
+---
+- name: Yum list and repoquery stable package
+  hosts: all
+  become: yes
+
+  tasks:
+    - name: Ensure that packages are up to date
+      yum:
+        name: '*'
+        state: latest
+
+    - name: Install stable packages
+      yum:
+        name: '{{ item }}'
+        state: present
+      with_items:
+        - package_1
+        - package_2
+        - package_3
+
+    - name: Get list of repositories
+      shell: yum repolist all
+      register: repos
+
+    - name: Check if repoquery returns errors
+      shell: repoquery package_1
+      register: query
+      ignore_errors: true
+
+    - name: Debug repoquery output
+      debug:
+        var: query.stdout_lines
+
+    - name: Handle repoquery errors
+      fail:
+        msg: "Error with repoquery output"
+      when: query.rc != 0
+
+    - name: Display list of available packages
+      yum:
+        list: available

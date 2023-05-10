@@ -1,0 +1,30 @@
+yml
+---
+- name: Kubernetes Module idempotency issue
+  hosts: your_host
+  gather_facts: no
+
+  tasks:
+    - name: Check and Deploy Kubernetes Cluster based on stateful file
+      k8s:
+        state: "{{ state }}"
+        src: "{{ cluster_file }}"
+      register: k8s_result
+
+    - name: Set Register to ignore 422 Responses
+      set_fact:
+        ignore_422: true
+      when: k8s_result.rc == 422
+
+    - name: Check and Deploy Kubernetes Cluster based on stateful file again if 422 ignored
+      k8s:
+        state: "{{ state }}"
+        src: "{{ cluster_file }}"
+      when: ignore_422 is defined and ignore_422 == true
+      register: k8s_result2
+
+    - name: Fail if deployment state is not matched
+      fail:
+        msg: "Kubernetes deployment state was not successful, please check logs: {{ k8s_result2 }}"
+      when: k8s_result2.rc != state
+...

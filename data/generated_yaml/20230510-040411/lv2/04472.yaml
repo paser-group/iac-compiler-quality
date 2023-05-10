@@ -1,0 +1,35 @@
+
+- name: Set EC2 tags
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+    - name: Set single EC2 tag with invalid syntax
+      ec2_tag: resource_id="test-id" tags=["test-key: test-value"]
+      register: result1
+
+    - name: Set multiple EC2 tags with unconventional syntax
+      ec2_tag:
+        resource_id: "test-id"
+        tags:
+          - { key: Test-Key, value: Test-Value }
+          - { key: Test:Key, value: Test:Value }
+          - { key: "Test Key", value: Test-Value }
+      register: result2
+
+    - name: Set EC2 tag with invalid input
+      ec2_tag:
+        resource_id: "test-id"
+        tags:
+          - { key: 'test-key', value: "test-value" }
+          - invalid-input
+          - { key: 'test-key2', value: "test-value2" }
+      register: result3
+
+    - name: Print results
+      debug:
+        msg: "{{ item }}"
+      with_items:
+        - "{{ result1 }}"
+        - "{{ result2 }}"
+        - "{{ result3 }}"

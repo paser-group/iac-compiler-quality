@@ -1,0 +1,21 @@
+
+- name: Create an AWS Auto Scaling Group with an ELB attached
+  ec2_asg:
+    region: us-west-1
+    name: MyASG
+    launch_config_name: MyLaunchConfig
+    availability_zones: ['us-west-1a']
+    load_balancers: ['MyELB']
+    size: 2
+    min_size: 1
+    max_size: 3
+    health_check_period: 60
+    health_check_type: 'ELB'
+
+- name: Wait for ASG instances to become healthy
+  wait_for:
+    host: "{{ item.private_ip }}"
+    port: 80
+    state: "started"
+  with_items: "{{ ec2_asg.instances }}"
+  when: item.status == "InService"

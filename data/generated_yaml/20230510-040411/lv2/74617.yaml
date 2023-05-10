@@ -1,0 +1,22 @@
+
+- hosts: all
+  gather_facts: no
+  tasks:
+  - name: Check if sudoers has oracle user with -u flag
+    command: "grep 'oracle.*-u' /etc/sudoers"
+    register: grep_output
+    ignore_errors: yes
+
+  - name: Remove oracle user from sudoers with -u flag
+    lineinfile:
+      path: /etc/sudoers
+      state: absent
+      regexp: "{{ item }}"
+    with_items:
+    - "%oracle ALL=(ALL) NOPASSWD: ALL -u"
+    when: "grep_output.rc == 0"
+
+  - name: Install oracle sudoers without -u flag
+    lineinfile:
+      path: /etc/sudoers
+      line: "%oracle ALL=(ALL) NOPASSWD: ALL"

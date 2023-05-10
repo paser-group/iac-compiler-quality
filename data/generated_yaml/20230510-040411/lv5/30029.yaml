@@ -1,0 +1,56 @@
+
+---
+- name: Test S3 module for multipart downloads
+  hosts: localhost
+  become: false
+  gather_facts: false
+  vars:
+    aws_access_key: '{{ lookup("env", "AWS_ACCESS_KEY_ID") }}'
+    aws_secret_key: '{{ lookup("env", "AWS_SECRET_ACCESS_KEY") }}'
+    aws_region: '{{ lookup("env", "AWS_REGION") }}'
+    aws_bucket: 'test-bucket'
+    aws_object_key: 'multipart-object'
+    dest_folder: '/downloads'
+  
+  tasks:
+    - name: Configure AWS credentials
+      env:
+        AWS_ACCESS_KEY_ID: '{{ aws_access_key }}'
+        AWS_SECRET_ACCESS_KEY: '{{ aws_secret_key }}'
+        AWS_REGION: '{{ aws_region }}'
+  
+    - name: Test multipart download
+      s3_multipart_copy:
+        src: "{{ aws_bucket }}/{{ aws_object_key }}"
+        dest: "{{ dest_folder }}"
+      register: multipart_copy_result
+  
+    - name: Verify downloaded multipart object
+      assert:
+        that:
+          - multipart_copy_result.changed == True
+          - multipart_copy_result.failed == False
+          - multipart_copy_result.warning == None
+      vars:
+        error_msg: "{{ multipart_copy_result.msg }} | {{ dest_folder }}/{{ aws_object_key }}"
+      fail:
+        msg: "Multipart download failed, error message: {{ error_msg }}"
+      changed_when: True
+      
+    - name: Test error messages
+      s3_multipart_copy:
+        src: "{{ aws_bucket }}/{{ aws_object_key }}"
+        dest: "{{ dest_folder }}"
+      register: error_result
+      ignore_errors: True
+  
+    - name: Verify error messages
+      assert:
+        that:
+          - error_result.failed == True
+          - 'destination folder' in error_result.msg
+          - 'no space' in error_result.msg
+      vars:
+        error_msg: "{{ error_result.msg }} | {{ dest_folder }}"
+      fail:
+        msg: "Error message format invalid, error message: {{ error_msg }}"

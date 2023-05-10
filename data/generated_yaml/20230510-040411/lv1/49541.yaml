@@ -1,0 +1,32 @@
+
+---
+- name: Fix Broken Build for CloudStackException due to multiple default isolated networks
+  hosts: your_host_name
+  become: true
+
+  tasks:
+  - name: Get default Isolated networks
+    shell: |
+      csaccount="Your_Account"
+      csapikey="Your_API_Key"
+      cssecret="Your_Secret_Key"
+      queryname="default"
+
+      curl -s -S -H "Content-Type: application/json" -H "Authorization: Basic $(echo -n $csapikey:$cssecret | base64)" \
+          https://cloudstack.example.com/client/api?command=listIsolatedNetworks&account=${csaccount}&isdefault=true \
+          | jq -r ".isolatednetwork[].id"
+    register: default_iso_networks
+
+  - name: Remove All Default Isolated networks except first one
+    shell: |
+      csaccount="Your_Account"
+      csapikey="Your_API_Key"
+      cssecret="Your_Secret_Key"
+      default_iso_network_id="{{ default_iso_networks.stdout_lines | first }}"
+
+      for nwid in {{ default_iso_networks.stdout_lines | join(' ') }}; do
+        if [ "$nwid" != "$default_iso_network_id" ]; then
+            curl -H "Content-Type: application/json" -H "Authorization: Basic $(echo -n $csapikey:$cssecret | base64)" \
+        https://cloudstack.example.com/client/api?command=deleteIsolatedNetwork&account=${csaccount}&id=$nwid
+        fi
+      done

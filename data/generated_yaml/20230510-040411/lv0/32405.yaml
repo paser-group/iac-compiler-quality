@@ -1,0 +1,30 @@
+
+import napalm
+
+def net_vlan(hostname, vlans, username, password, device_type='ios', transport='cli'):
+    # Set default transport to CLI
+    if transport is None:
+        transport = 'cli'
+
+    # Create a NAPALM object for the device
+    driver = napalm.get_network_driver(device_type)
+    device = driver(hostname=hostname, username=username, password=password, optional_args={'transport': transport})
+
+    try:
+        # Open a connection to the device
+        device.open()
+
+        # Configure VLANs on the device
+        device.load_merge_candidate(config='\n'.join(vlans))
+        device.commit_config()
+
+        # Return success if configuration is successful
+        return {'status': 'success'}
+
+    except Exception as e:
+        # Return error if configuration fails
+        return {'status': 'failed', 'error': str(e)}
+
+    finally:
+        # Close the connection to the device
+        device.close()

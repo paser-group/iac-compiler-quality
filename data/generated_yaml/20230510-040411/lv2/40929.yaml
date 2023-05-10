@@ -1,0 +1,29 @@
+
+- name: Perform Home Directory Check
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Ensure Home Directory is not None
+      command: echo "{{ ansible_env.HOME }}"
+      register: home_output
+
+    - name: Create a copy of the home directory
+      copy:
+        src: "{{ ansible_env.HOME }}"
+        dest: "{{ ansible_env.HOME }}/backup_{{ ansible_date_time.date }}"
+
+    - name: Check existence of None directory
+      stat:
+        path: "{{ ansible_env.HOME }}/~None"
+      register: none_output
+
+    - name: Remove None directory if it exists
+      file:
+        path: "{{ ansible_env.HOME }}/~None"
+        state: absent
+      when: none_output.stat.exists
+
+    - name: Create new None directory
+      file:
+        path: "{{ ansible_env.HOME }}/~None"
+        state: directory

@@ -1,0 +1,24 @@
+
+---
+- name: Update netscaler module
+  hosts: all
+  vars:
+    netscaler_version: 12.1
+  tasks:
+    - name: Install netscaler module dependencies
+      apt:
+        name: python-pip
+        state: latest
+    - name: Install netscaler module
+      pip:
+        name: nsnitro
+        version: "{{ netscaler_version }}"
+    - name: Update auth and json decoding method
+      lineinfile:
+        path: /usr/local/lib/python2.7/dist-packages/nssrc/param.py
+        regexp: 'C_ARRAY_TYPES_BASIC'
+        insertafter: '{{ item.line }}'
+        line: 'C_CUSTOM_TPYE_CHECK = True'
+      vars:
+        item:
+          line: 'C_TYPEDEF = ctypeslib.load_library(\"nitro\",\"/netscaler/nitro/lib\")'

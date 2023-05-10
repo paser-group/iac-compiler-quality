@@ -1,0 +1,34 @@
+
+- name: Update Security Group with ELB rule
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+    - name: Create security group
+      ec2_group:
+        name: my_security_group
+        description: Security group for testing ELB rule updates
+        region: us-east-1
+        purge_rules: true
+      register: created_security_group
+
+    - name: Create ELB rule
+      ec2_group:
+        group_id: "{{created_security_group.group_id}}"
+        rule_protocol: tcp
+        rule_port: 80
+        cidr_ip: 0.0.0.0/0
+      register: created_elb_rule
+
+    - name: Update ELB rule
+      ec2_group:
+        group_id: "{{created_security_group.group_id}}"
+        rule_protocol: tcp
+        rule_port: 80
+        cidr_ip: 0.0.0.0/0
+        state: present  # This line is added to correct the issue mentioned in the given GitHub issue title
+      register: updated_elb_rule
+
+    - name: Print results
+      debug:
+        var: updated_elb_rule

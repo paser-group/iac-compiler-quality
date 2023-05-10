@@ -1,0 +1,39 @@
+
+---
+- name: Test EC2 user-data when spot_price is not null
+  hosts: localhost
+  connection: local
+
+  vars:
+    aws_access_key: "<your_access_key>"
+    aws_secret_key: "<your_secret_key>"
+    region: "us-east-1"
+    ami_id: "<ami_id>"
+    instance_type: "t2.micro"
+    spot_price: "0.02"
+
+  tasks:
+    - name: Create EC2 instance
+      ec2:
+        aws_access_key: "{{ aws_access_key }}"
+        aws_secret_key: "{{ aws_secret_key }}"
+        region: "{{ region }}"
+        image: "{{ ami_id }}"
+        instance_type: "{{ instance_type }}"
+        spot_price: "{{ spot_price }}"
+        user_data: "{{ lookup('template', 'userdata.j2') }}"
+        count: 1
+        instance_tags:
+          Name: "test-instance"
+      register: ec2_instance
+
+    - name: Print user-data
+      debug:
+        var: ec2_instance.instances[0].user_data
+
+    - name: Terminate EC2 instance
+      ec2_instance:
+        aws_access_key: "{{ aws_access_key }}"
+        aws_secret_key: "{{ aws_secret_key }}"
+        region: "{{ region }}"
+        instance_ids: "{{ ec2_instance.instance_ids }}"

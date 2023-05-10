@@ -1,0 +1,68 @@
+
+- name: IAM module stress test playbook
+  hosts: localhost
+  gather_facts: no
+  
+  tasks:
+    - name: Create new user with invalid credentials
+      iam_user:
+        name: "<&*$^>"
+        state: present
+        password: "ThisIsNotAPassword"
+        access_key_state: active
+        secret_key_state: active
+      ignore_errors: yes
+    
+    - name: Generate EC2 instance with invalid role
+      ec2:
+        count: 1
+        instance_type: t2.micro
+        image: ami-0c55b159cbfafe1f0
+        region: us-west-2
+        key_name: non_existent_key
+        count_tag:
+          Name: Stress_Test_EC2
+      ignore_errors: yes
+    
+    - name: Create S3 bucket with invalid name
+      s3_bucket:
+        name: "<&*$^>"
+        state: present
+        region: us-west-2
+        versioning: true
+        force_destroy: true
+      ignore_errors: yes
+      
+    - name: Create new user with expected error message
+      iam_user:
+        name: "user1"
+        state: present
+        password: "ThisIsNotAPassword"
+        access_key_state: active
+        secret_key_state: active
+      register: user_output
+      failed_when: "'InvalidClientTokenId' not in user_output.stderr"
+      changed_when: False
+      
+    - name: Assign invalid policy to user
+      iam_policy:
+        user: user1
+        policy_name: "Invalid_Policy"
+        state: present
+        policy_json: |
+          {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "s3:*",
+                "Resource": "arn:aws:s3:::*"
+              },
+              {
+                "Effect": "NoSuchAction",
+                "Action": "somethingelse:*",
+                "Resource": "*"
+              }
+            ]
+          }
+      ignore_errors: yes

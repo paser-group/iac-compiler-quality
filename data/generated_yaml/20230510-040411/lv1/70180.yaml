@@ -1,0 +1,33 @@
+yaml
+---
+- name: Install SCM Ansible Galaxy Collection
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Install Ansible Galaxy Collection
+      ansible-galaxy:
+        name: scm
+        state: present
+
+    - name: Fix common SCM collection practice
+      block:
+        - name: git clone SCM collection
+          git:
+            repo: https://github.com/scm-collection/scm
+            dest: /usr/share/ansible/collections/ansible_collections/scm
+
+        - name: fix SCM issue
+          lineinfile:
+            path: /usr/share/ansible/collections/ansible_collections/scm/plugins/modules/some_module.py
+            regexp: '^from scm import some_module$'
+            line: 'from ansible_collections.scm.plugins.module import some_module'
+      rescue:
+        - name: remove SCM collection
+          ansible-galaxy:
+            name: scm
+            state: absent
+        - name: raise error message
+          fail:
+            msg: "Failed to fix SCM collection issue"
+

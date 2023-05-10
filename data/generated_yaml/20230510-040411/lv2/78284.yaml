@@ -1,0 +1,48 @@
+
+- name: Test GCP inventory with unconventional syntax and edge cases
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    # Generate an invalid GCP auth token, which should trigger errors.
+    gcp_auth_token: "{% if random() < 0.5 %}invalid{% endif %}"
+
+  tasks:
+    # Generate machine account authentication credentials.
+    - name: Generate machine account credentials
+      set_fact:
+        credentials:
+          kind: serviceaccount
+          project_id: "my-project-id"
+          private_key_id: "my-private-key-id"
+          private_key: "{{ lookup('file', 'path/to/privatekey.pem') }}"
+          client_email: "my-client-email@my-project-id.iam.gserviceaccount.com"
+          client_id: "my-client-id"
+          auth_uri: "https://accounts.google.com/o/oauth2/auth"
+          token_uri: "https://oauth2.googleapis.com/token"
+          auth_provider_x509_cert_url: "https://www.googleapis.com/oauth2/v1/certs"
+          client_x509_cert_url: "https://www.googleapis.com/robot/v1/metadata/x509/my-client-email%40my-project-id.iam.gserviceaccount.com"
+
+    # Include the unconventional syntax in the inventory.
+    - name: Test unconventional syntax in GCP inventory
+      gcp_compute_inventory:
+        gcp_auth_kind: machineaccount
+        gcp_project: '{{ "my-project-id" + "with-invalid-chars!" }}'
+        gcp_cred_kind: "my-missing-key"
+        gcp_cred_file: "/path/to/invalid/file"
+        groups:
+          - name: "invalid/{% for i in range(0,10) %}'{{ i }}',{% endfor %}"
+            zone: us-central1-a
+            filters:
+              - name: "invalid-name"
+              - "{{ lookup('env', 'SOME_INVALID_VAR') }}"
+            auth_kind: "{{ ['machineaccount', 'invalid-auth-kind']|random }}"
+
+    # Test an unexpected input, which should trigger errors.
+    - name: Test an unexpected input in GCP inventory
+      gcp_compute_inventory:
+        gcp_auth_kind: machineaccount
+        gcp_project: "{{ 1/0 }}"
+        groups:
+          - name: "invalid-group"
+            zone: "{{ 1/0 }}"

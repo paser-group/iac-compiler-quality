@@ -1,0 +1,23 @@
+
+- name: Test OpenSCManager Access
+  hosts: windows
+  gather_facts: no
+  become: yes
+  vars:
+    service_name: "example_service"
+  tasks:
+  - name: Check OpenSCManager Access
+    win_service:
+      name: "{{ service_name }}"
+      state: stopped
+    ignore_errors: true
+    register: output
+  - name: Check if Access Error Occurred
+    fail:
+      msg: "OpenSCManager access check failed with Access is Denied error"
+    when: output.rc != 0 and 'OpenSCManager' in output.stderr
+  - name: Start Example Service
+    win_service:
+      name: "{{ service_name }}"
+      state: started
+    when: "'Access is denied.' not in output.stderr"

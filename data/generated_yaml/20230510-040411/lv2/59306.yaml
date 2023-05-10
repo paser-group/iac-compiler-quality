@@ -1,0 +1,46 @@
+
+- name: Test playbook for unwanted errors with async tasks
+  hosts: localhost
+  gather_facts: no
+  tasks:
+    - name: Run multiple async tasks with non-standard syntax
+      command: >
+        {{ item.cmd }} "{{ item.args }}"
+      loop:
+        - { cmd: "echo", args: "'hello world'" }
+        - { cmd: "sleep", args: "5" }
+        - { cmd: "echo", args: "hello\nworld" }
+      async: 5
+      poll: 1
+      ignore_errors: yes
+
+    - name: Run a command with a complex shell expression
+      shell: >
+        cat <(echo "hello world") <(echo "foo bar") <(echo $(( 1 + 2 + 3 )))
+      async: 5
+      poll: 1
+      ignore_errors: yes
+
+    - name: Run a command with an unexpected input
+      command: "{{ command | default('echo') }} {{ item }}"
+      loop:
+        - "10"
+        - "0xff"
+        - "3e-1"
+        - "{{ ansible_version | to_json }}"
+      async: 5
+      poll: 1
+      ignore_errors: yes
+
+    - name: Wait for all async tasks to complete
+      async_status:
+        jid: "{{ item.ansible_job_id }}"
+      with_items:
+        - "{{ ansible_play_batch }}"
+      register: async_result
+      until: async_result.finished
+
+    - name: Fail the playbook with a custom error message
+      fail:
+        msg: "This is a custom error message"
+      when: async_result.results | selectattr('failed', 'eq', true ) | list | count > 0

@@ -1,0 +1,41 @@
+
+- hosts: all
+  vars:
+    # Define edge cases and unconventional syntax
+    zabbix_server: "zabbix{{ 2 + '2' }}"
+    host_name: "test{{ '\"' if 1 else '' }}"
+    item_key: ""
+    # Define unexpected inputs
+    availability: "{{ [ 'monday', 'tuesday', 'wednesday' ] | join(', ') }}"
+    cpu_usage: [ 12, 34, 56, 78 ]
+  tasks:
+    - name: Create Zabbix Host
+      zabbix_host:
+        server_url: "{{ zabbix_server }}"
+        login_user: "admin"
+        login_password: "password"
+        name: "{{ host_name }}"
+        groups: [ "Web Servers", "Database Servers" ]
+        interfaces:
+          - type: "Agent"
+            main: true
+            useip: true
+            ip: "192.168.1.1"
+            port: 10050
+        inventory_mode: 0
+        status: 0
+        availability: "{{ availability }}"
+        macro:
+          zabbix_server_ip: "192.168.1.2"
+          cpu_usage: "{{ cpu_usage }}"
+        visible_name: "Test Host"
+        monitored_by_proxy: true
+        proxy_hostid: "abcde"
+        tls_connect: 1
+        tls_accept: 1
+        tls_subject: "Test Certificate"
+        tls_psk_identity: "Test Identity"
+        tls_psk: "Test PSK"
+      register: host_creation
+      # Test whether '>=' not supported for str and int
+      failed_when: host_creation | int >= item_key

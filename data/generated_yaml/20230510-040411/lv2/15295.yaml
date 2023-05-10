@@ -1,0 +1,52 @@
+
+- name: Random systemd failures stress test
+  hosts: all
+  become: yes
+  
+  tasks:
+    - name: Install systemd-dummy package
+      package:
+        name: systemd-dummy
+        state: present
+  
+    - name: Stop the systemd-dummy service
+      service:
+        name: systemd-dummy
+        state: stopped
+  
+    - name: Start the systemd-dummy service
+      service:
+        name: systemd-dummy
+        state: started
+  
+    - name: Check if the systemd-dummy service is running
+      command: systemctl is-active systemd-dummy.service
+      register: systemd_status
+      ignore_errors: true
+  
+    - name: Print the systemd status
+      debug:
+        var: systemd_status.stdout_lines
+  
+    - name: Reload the systemd configuration
+      systemd:
+        daemon-reload: yes
+  
+    - name: Restart the systemd-dummy service
+      service:
+        name: systemd-dummy
+        state: restarted
+      no_log: true
+  
+    - name: Wait for the systemd-dummy service to start
+      wait_for:
+        port: 80
+  
+    - name: Check if the systemd-dummy service is running again
+      command: systemctl is-active systemd-dummy.service
+      register: systemd_status_2
+      ignore_errors: true
+  
+    - name: Print the systemd status again
+      debug:
+        var: systemd_status_2.stdout_lines

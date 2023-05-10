@@ -1,0 +1,39 @@
+
+---
+- name: Recreate docker_network module bug in icc option
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+    - name: Create Docker network
+      docker_network:
+        name: my-network
+
+    - name: Start container1 and configure network
+      docker_container:
+        name: container1
+        image: ubuntu
+        command: sleep infinity
+        networks:
+          - name: my-network
+            ipv4_address: 172.18.0.2
+            ipv6_address: "2001:db8:1::2"
+            links: container2:db
+        state: started
+
+    - name: Start container2 and configure network
+      docker_container:
+        name: container2
+        image: ubuntu
+        command: sleep infinity
+        networks:
+          - name: my-network
+            ipv4_address: 172.18.0.3
+            ipv6_address: "2001:db8:1::3"
+            links: container1:db
+        state: started
+
+    - name: Verify connectivity between containers
+      wait_for_connection:
+        host: container1
+        timeout: 5

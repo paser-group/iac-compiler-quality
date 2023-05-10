@@ -1,0 +1,41 @@
+yaml
+- name: Generate race condition with fact cache and smart fact gathering
+  hosts: localhost
+  become: true
+
+  tasks:
+  - name: Retrieve system facts
+    block:
+    - name: Smart fact gathering
+      setup:
+        gather_subset:
+        - ipv4
+        - ipv6
+    - name: Print system uptime
+      debug:
+        msg: "System uptime: {{ ansible_facts.system_uptime }}"
+
+    - name: Generate race condition by writing fact cache
+      command: "< /dev/urandom tr -dc A-Za-z0-9 | head -c 10 > /tmp/facts.cache"
+
+    - name: Stress test with invalid fact cache location
+      setup:
+        fact_caching:
+          type: memory
+          path: /tmp/__nonexistent_directory__/fact_cache
+    ignore_errors: yes
+
+    - name: Clear fact cache
+      setup:
+        fact_caching:
+          type: memory
+          path: /tmp/facts.cache
+      ignore_errors: yes
+
+    - name: Print fact stored in cache
+      debug:
+        msg: "{{ ansible_local.facts_cache.system_uptime }}"
+
+    - name: Undefined variable error
+      debug:
+        msg: "{{ ansible_local.invalid_cache.system_uptime | default('not found') }}"

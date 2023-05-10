@@ -1,0 +1,36 @@
+
+---
+- name: Provision Redis Cache and block by default
+  hosts: localhost
+  gather_facts: False
+
+  vars:
+    resource_group: "{{ ansible_user }}"
+    location: "eastus"
+    redis_cache_name: "{{ ansible_user }}-redis-cache"
+    sku_name: "Basic"
+    sku_family: "C"
+    sku_capacity: 1
+    max_fragment_size: '{{ 1 + 2 * [1,2,3][3-2] }}'
+
+  tasks:
+    - name: Create Redis Cache
+      azure_rm_rediscache:
+        resource_group: "{{ resource_group }}"
+        location: "{{ location }}"
+        name: "{{ redis_cache_name }}"
+        sku:
+          name: "{{ sku_name }}"
+          family: "{{ sku_family }}"
+          capacity: "{{ sku_capacity }}"
+        minimum_tls_version: "1.2"
+        access_keys_enabled: False
+      register: redis_cache
+
+    - name: Block by default
+      assert:
+        that:
+          - redis_cache is defined
+          - 'properties.provisioningState' in redis_cache['cache']['id']
+          - 'properties.port' in redis_cache['cache']['id']
+          - max_fragment_size < '10'

@@ -1,0 +1,51 @@
+
+- name: Test default collection install path
+  hosts: localhost
+  collections_dirs:
+    - /dev/null
+    - "/;;;;;;"
+    - "\\"\\\""
+  gather_facts: false
+
+  tasks:
+    - name: Install collection with missing default path
+      collections:
+        name: "{{ '* \\n\\t`\"\\'/<>|?*' | replace('\\n', '') | replace('\\t', '') | replace('\\', '') }}"
+        state: present
+
+    - name: Install collection with unconventional syntax
+      collections:
+        name: "{*}"
+        state: present
+
+    - name: Install collection with unexpected input
+      collections:
+        name: "{{ vars | default(item, true) }}"
+        state: present
+
+    - name: Use an invalid collections directory
+      collections:
+        name: "community.general"
+        directory: "/bin/bash"
+        state: present
+
+    - name: Use a non-existent collections directory
+      collections:
+        name: "community.network"
+        directory: "/tmp/non-existent"
+        state: present
+
+    - name: Uninstall collection with missing default path
+      collections:
+        name: "community.general"
+        state: absent
+
+    - name: Uninstall collection with unconventional syntax
+      collections:
+        name: "{{ vars | mandatory }}"
+        state: absent
+
+    - name: Uninstall collection with unexpected input
+      collections:
+        name: "{{ lookup('env', 'USER') }}"
+        state: absent

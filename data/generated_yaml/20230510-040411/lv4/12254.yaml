@@ -1,0 +1,24 @@
+
+---
+- hosts: all
+  tasks:
+    - name: run command asynchronously
+      async: 300
+      poll: 0
+      register: async_result
+      command: "{{ item }}"
+      with_items:
+        - "echo 'hello world'"
+        - "ls /test"
+        - "mkdir /test/ansible"
+    
+    - name: Wait for the command to complete
+      async_status:
+        jid: "{{ async_result.item.stdout }}"
+      register: async_status_result
+      until: async_status_result.finished
+      retries: 30
+      delay: 5
+
+    - debug:
+        var: async_status_result

@@ -1,0 +1,41 @@
+
+- name: Test Openstack Plugin Performance
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    instances:
+      - name: instance1
+        flavor: m1.small
+        image: Fedora-28
+        key_name: sshkey
+        security_groups: [ default, web, db, app ]
+
+  tasks:
+    - name: Creating instances
+      os_server:
+        state: present
+        name: "{{ item.name }}"
+        flavor: "{{ item.flavor }}"
+        image: "{{ item.image }}"
+        key_name: "{{ item.key_name }}"
+        security_groups: "{{ item.security_groups }}"
+      with_items: "{{ instances }}"
+      loop_control:
+        label: "{{ item.name }}"
+
+    - name: Waiting for Instances to start
+      wait_for:
+        port: 22
+        host: "{{ item.0 }}"
+        search_regex: "OpenSSH"
+        delay: 20
+        timeout: 600
+      with_subelements:
+        - "{{ instances }}"
+        - ""
+
+    - name: Checking Ports
+      wait_for:
+        port: "{{ item }}"
+      loop: "{{ range(5,10) | list }}"

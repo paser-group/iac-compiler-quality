@@ -1,0 +1,20 @@
+
+- name: Get S3 bucket request payment status
+  hosts: localhost
+  gather_facts: false
+  tasks:
+  - name: Retrieve S3 bucket list
+    command: aws s3api list-buckets --query 'Buckets[].Name' --output text
+    register: s3_bucket_list
+
+  - name: Get S3 payment request status
+    s3_request_payment_status:
+      bucket: "{{ item }}"
+    loop: "{{ s3_bucket_list.stdout_lines }}"
+    register: s3_payment_status
+    ignore_errors: true
+
+  - name: Verify if errors occurred
+    fail:
+      msg: "Unbounded variable in s3_request_payment_status module"
+    when: "'unbounded' in s3_payment_status.stderr"

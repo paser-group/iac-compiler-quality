@@ -1,0 +1,32 @@
+
+- name: Connect to EC2 Inventory and test connection reset error
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Check if EC2 instance is running
+      ec2_instance_facts:
+        instance_ids:
+          - i-1234567890abcdef0
+      register: ec2_info
+
+    - name: Verify if EC2 instance is running
+      fail:
+        msg: "EC2 instance is not running or does not exist!"
+      when: ec2_info.instances[0].state.name != "running"
+
+    - name: Test the connection reset error
+      ec2:
+        instance_ids: i-1234567890abcdef0
+        state: stopped
+        terminate_on_shutdown: yes
+        wait: yes
+      ignore_errors: yes
+
+    - name: Parse the inventory file for errors
+      command: ansible-inventory -i ${PWD}/inventory/ec2.py --list --export
+      register: inventory_output
+
+    - name: Check for parsing errors
+      fail:
+        msg: "Parsing errors detected in the inventory file!"
+      when: inventory_output.rc != 0

@@ -1,0 +1,33 @@
+
+from azure.mgmt.network import NetworkManagementClient
+from azure.mgmt.network.v2021_02_01.models import NetworkInterface, NetworkSecurityGroup, SubResource
+
+# Replace with your own values
+SUBSCRIPTION_ID = 'your-subscription-id'
+RESOURCE_GROUP_NAME = 'your-resource-group-name'
+LOCATION = 'your-location'
+NIC_NAME = 'your-nic-name'
+NSG_NAME = 'your-nsg-name'
+
+# Create a Network Interface with a default Network Security Group
+network_client = NetworkManagementClient.from_subscription_id(subscription_id=SUBSCRIPTION_ID)
+nsg = NetworkSecurityGroup(id='/subscriptions/{}/resourceGroups/{}/providers/Microsoft.Network/networkSecurityGroups/{}'.format(SUBSCRIPTION_ID, RESOURCE_GROUP_NAME, NSG_NAME))
+nic = NetworkInterface(location=LOCATION, network_security_group=nsg)
+
+# Create the Network Interface
+network_interface = network_client.network_interfaces.create_or_update(
+    resource_group_name=RESOURCE_GROUP_NAME,
+    network_interface_name=NIC_NAME,
+    parameters=nic
+)
+
+# Associate the Network Security Group with the Network Interface
+nsg_id = '/subscriptions/{}/resourceGroups/{}/providers/Microsoft.Network/networkSecurityGroups/{}'.format(SUBSCRIPTION_ID, RESOURCE_GROUP_NAME, NSG_NAME)
+parameters = {
+    'network_security_group': SubResource(id=nsg_id)
+}
+network_client.network_interfaces.update(
+    resource_group_name=RESOURCE_GROUP_NAME,
+    network_interface_name=NIC_NAME,
+    parameters=parameters
+)

@@ -1,0 +1,34 @@
+
+- name: Create multiple virtual machines
+  hosts: localhost
+  connection: local
+  tasks:
+  - name: Generate VM list
+    set_fact:
+      vm_list: "{{ ['vm1', 'vm2', 'vm3', 'vm4'] }}"
+  
+  - name: Create VMs
+    azure_rm_virtualmachine:
+      resource_group: myresourcegroup
+      location: eastus
+      name: "{{ item }}"
+      vm_size: Standard_B1ls
+      admin_username: azureuser
+      admin_password: MyPassword123!
+      network_interfaces: "{{ item }}-nic"
+      image:
+        offer: CentOS
+        publisher: OpenLogic
+        sku: '7.5'
+        version: latest
+      storage_account: "{{ storage_account_name }}"
+      os_disk_create_option: fromImage
+      os_disk_name: "{{ item }}-disk"
+      data_disks: []
+    loop: "{{ vm_list }}"
+    batch_size: 0
+    register: vm_output
+
+  - name: Debug
+    debug:
+      var: vm_output

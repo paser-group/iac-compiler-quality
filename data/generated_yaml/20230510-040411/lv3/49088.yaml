@@ -1,0 +1,26 @@
+
+---
+- name: Generate incorrect SSH configurations
+  hosts: target_hosts
+  tasks:
+    - name: Generate incorrect SSH Key
+      lineinfile:
+        dest: /etc/ssh/sshd_config
+        regexp: '^(HostKey.*)'
+        line: 'HostKey /etc/ssh/ssh_host_unknown_key'
+        state: present
+      notify:
+        - Restart SSH
+    - name: Generate incorrect SSH Ciphers
+      lineinfile:
+        dest: /etc/ssh/sshd_config
+        regexp: '^(Ciphers.*)'
+        line: 'Ciphers cipher1,cipher2,cipher3' # Include ciphers that are known to be weak or no longer recommended
+        state: present
+      notify:
+        - Restart SSH
+  handlers:
+    - name: Restart SSH
+      service:
+        name: sshd
+        state: restarted

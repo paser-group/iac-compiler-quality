@@ -1,0 +1,23 @@
+
+---
+- hosts: localhost
+  become: true
+  vars:
+    payment_status: "{{ s3_bucket.get_request_payment_status(bucket_name='test_bucket') }}"
+  tasks:
+    - name: introduce syntax error to s3_bucket module
+      block:
+        - name: call get_request_payment_status method. introduce syntax error
+          command: /bin/echo "{{ payment_status }"
+      rescue:
+        - debug:
+            msg: "returned error: {{ ansible_failed_result }}"
+
+    - name: demonstrate unbounded recursion risk
+      block:
+        - name: nested loop with function call
+          command: /bin/bash -c 'for i in `seq 1 3`; do for j in `seq 1 3`; do sleep 1; done; done;'
+
+      rescue:
+        - debug:
+            msg: "looped too many times. {{ ansible_failed_result }}"

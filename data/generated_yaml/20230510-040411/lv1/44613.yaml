@@ -1,0 +1,57 @@
+yaml
+---
+- name: Install boto3 and botocore python libraries
+  hosts: localhost
+  connection: local
+  gather_facts: False
+  become: yes
+  tasks:
+    - name: Install python3 pip and boto3 botocore pip packages
+      package:
+        name: "{{ item }}"
+        state: present
+      with_items:
+        - python3-pip
+        - boto3
+        - botocore
+      when: ansible_python.version.major == 3
+      
+- name: Update Route53 hosted zone records
+  hosts: localhost
+  connection: local
+  gather_facts: False
+  become: yes
+  vars:
+    hosted_zone: example.com
+  tasks:
+    - name: Get instance metadata
+      uri:
+        url: http://169.254.169.254/latest/meta-data/instance-id
+        return_content: yes
+      register: instance_id
+    
+    - name: Get Route53 zone ID
+      command: >
+        aws route53 list-hosted-zones-by-name --dns-name {{ hosted_zone }} |
+        jq -r '.HostedZones[] | select(.Name=="{{ hosted_zone }}.") | .Id' |
+        sed 's/\/hostedzone\///'
+      register: zone_id
+    
+    - name: Update Route53 DNS record
+      command: >
+        aws route53 change-resource-record-sets --hosted-zone-id {{ zone_id.stdout }} --change-batch '{
+        "Changes": [{
+            "Action": "UPSERT",
+             "ResourceRecordSet": {
+                "Name": "www.example.com",
+                "Type": "A",
+                "TTL": 300,
+                "ResourceRecords": [{ "Value": "{{ ansible_default_ipv4.address }}" }]
+             }
+          }]
+        }'
+      environment:
+        AWS_ACCESS_KEY_ID: "{{ lookup('env', 'AWS_ACCESS_KEY_ID') }}"
+        AWS_SECRET_ACCESS_KEY: "{{ lookup('env', 'AWS_SECRET_ACCESS_KEY') }}"
+        AWS_REGION: "{{ lookup('env', 'AWS_REGION') }}"
+      when: instance_id.status == 200 and zone_id.rc == 0

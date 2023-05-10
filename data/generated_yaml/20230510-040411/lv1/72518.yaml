@@ -1,0 +1,28 @@
+
+---
+- name: Fix custom fact error
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Ensure fact file exists
+      file:
+        path: /etc/ansible/facts.d/custom.fact
+        state: touch
+
+    - name: Add fact content to file
+      lineinfile:
+        path: /etc/ansible/facts.d/custom.fact
+        line: "{{ ansible_facts.custom_fact }}"
+        create: true
+        mode: '0644'
+
+    - name: Validate custom fact syntax
+      command: python -c "import json; json.loads('{{ ansible_facts.custom_fact }}')"
+      ignore_errors: true
+
+    - name: Fix syntax error
+      replace:
+        path: /etc/ansible/facts.d/custom.fact
+        regexp: "^.*$"
+        replace: "{{ ansible_facts.custom_fact | regex_replace('^/.*?python*', '#!/usr/bin/env python') }}"

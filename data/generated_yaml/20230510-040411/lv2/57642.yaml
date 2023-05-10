@@ -1,0 +1,45 @@
+
+---
+- name: Test playbook for VMware vmware_vm_inventory
+  hosts: localhost
+  gather_facts: no
+  vars:
+    vm_inventory: "{{ vmware_vm_inventory }}"
+  tasks:
+
+  - name: Test custom syntax
+    debug:
+      var: "vm_inventory|[?name=='test_vm_name']|[?orphaned==True]"
+
+  - name: Test unconventional input
+    set_fact:
+      test_vm:
+        - name: "{{ vmware_vm_inventory|first }}"
+        - status: "orphaned"
+    when: vm_inventory|length > 0
+
+  - name: Test expected failure
+    fail:
+      msg: "This playbook should fail gracefully due to orphaned VMs present in vCenter inventory"
+    when: vm_inventory|selectattr('orphaned', '==', True)|list|length > 0
+
+  - name: Generate unexpected input
+    set_fact:
+      vm_inventory: "{{ vmware_vm_inventory + ['unexpected_vm'] }}"
+
+  - name: Test nested syntax
+    debug:
+      var: "vm_inventory|[?name=='test_vm_name'].ip_address"
+
+  - name: Test complex expression
+    debug:
+      msg: "The number of orphaned VMs in the inventory is {{ vm_inventory|selectattr('orphaned', '==', True)|list|length }}"
+
+  - name: Test unconventional syntax
+    debug:
+      var: "vm_inventory..name"
+
+  - name: Test edge case
+    when: vm_inventory is not defined
+    fail:
+      msg: "The vmware_vm_inventory variable must be defined for this playbook to work"

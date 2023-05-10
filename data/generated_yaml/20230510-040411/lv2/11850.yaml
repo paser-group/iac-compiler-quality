@@ -1,0 +1,46 @@
+
+- hosts: localhost
+  gather_facts: no
+  vars:
+    invalid_command: "command_dne"
+  tasks:
+    - name: Test Shell Module with Invalid Command
+      shell: "{{ invalid_command }}"
+      register: result
+      ignore_errors: yes
+      
+    - name: Fail on Incorrect Error Code
+      fail:
+        msg: "Shell module returned unexpected error code"
+      when: result.rc == 0
+      
+    - name: Check Error Message
+      debug:
+        var: result.stderr_lines
+      when: result.rc == 0
+    
+    - name: Test Shell Module with Unconventional Syntax
+      shell: |
+        echo "Hello World"
+        true
+        echo "Goodbye World"
+      register: result2
+      
+    - name: Check Error Code and Message
+      assert:
+        that:
+        - result2.rc == 0
+        - result2.stderr_lines == null
+        
+    - name: Test Shell Module with Unexpected Input
+      shell: |
+        echo "This is a comment"
+        echo "line1\nline2\nline3"
+        exit 1
+      register: result3
+      
+    - name: Check Error Code and Message
+      assert:
+        that:
+        - result3.rc == 1
+        - result3.stderr == ''

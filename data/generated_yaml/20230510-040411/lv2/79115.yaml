@@ -1,0 +1,38 @@
+
+- name: Test for None early
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+    - name: Check for None variable early
+      block:
+        - set_fact:
+            some_var: "{{ some_value | default(None) }}"
+        - name: Do something with the value
+          debug:
+            msg: "{{ some_var }}"
+      rescue:
+        - debug:
+            msg: "Variable is None"
+
+    - name: Check if variable is empty string
+      when: some_var == ""
+      debug:
+        msg: "Variable is empty"
+
+    - name: Run command with invalid argument syntax
+      shell: "echo somevalue"
+      register: cmd_output
+      failed_when: cmd_output.rc != 0 
+
+    - name: Divide by zero
+      set_fact:
+        result: "{{ some_var | int / 0 }}"
+
+    - name: Concatenate two None variables
+      set_fact:
+        concatenated_str: "{{ none_var1 | default(None) }}{{ none_var2 | default(None) }}"
+
+    - name: Use undefined variable
+      debug:
+        msg: "{{ undefined_var }}"

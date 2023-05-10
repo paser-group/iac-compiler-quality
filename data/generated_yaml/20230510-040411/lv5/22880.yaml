@@ -1,0 +1,59 @@
+
+- name: Test junos_config update overwrite issue
+  hosts: juniper-devices
+  gather_facts: false
+
+  tasks:
+    - name: Write initial configuration
+      junos_config:
+        lines:
+          - "set system host-name {{ inventory_hostname }}"
+        provider: "{{ cli }}"
+
+    - name: Test update parameter when configuration exists
+      junos_config:
+        lines:
+          - "set system services ssh protocol-version v2"
+        provider: "{{ cli }}"
+        update: True
+      register: output_true
+
+    - name: Print output when update parameter is True
+      debug:
+        var: output_true
+
+    - name: Test update parameter when configuration exists
+      junos_config:
+        lines:
+          - "set system services ssh protocol-version v2"
+        provider: "{{ cli }}"
+        update: False
+      register: output_false
+
+    - name: Print output when update parameter is False
+      debug:
+        var: output_false
+
+    - name: Test update parameter when configuration does not exist
+      junos_config:
+        lines:
+          - "set interfaces ge-0/0/0 unit 0 family inet address 192.0.2.1/24"
+        provider: "{{ cli }}"
+        update: True
+      register: output_noconfig_true
+
+    - name: Print output when update parameter is True and configuration does not exist
+      debug:
+        var: output_noconfig_true
+
+    - name: Test update parameter when configuration does not exist
+      junos_config:
+        lines:
+          - "set interfaces ge-0/0/0 unit 0 family inet address 192.0.2.1/24"
+        provider: "{{ cli }}"
+        update: False
+      register: output_noconfig_false
+
+    - name: Print output when update parameter is False and configuration does not exist
+      debug:
+        var: output_noconfig_false

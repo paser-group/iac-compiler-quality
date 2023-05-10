@@ -1,0 +1,53 @@
+
+- name: Test Ansible compiler for undefined variable issues
+  hosts: all
+  gather_facts: no
+
+  vars:
+    parent_var: "{{ vars.child_var }}"
+    child_var: "{{ vars.undefined_var }}"
+
+  tasks:
+    - name: Try to access an undefined variable
+      debug:
+        var: unspecified_var
+
+    - name: Try to access a parent variable that references a nested undefined variable
+      debug:
+        var: "{{ parent_var }}"
+
+    - name: Try to access a child variable that references an undefined variable
+      debug:
+        var: "{{ child_var }}"
+
+    - name: Set a variable with a value
+      set_fact:
+        myvar: "success"
+
+    - name: Try to access an undefined variable using a Jinja2 filter
+      debug:
+        var: "{{ myvar | nonexistent_filter }}"
+
+    - name: Try to access an undefined variable inside a loop
+      debug:
+        var: "{{ item.var }}"
+      loop:
+        - { var: "{{ nonexistent_var }}" }
+        - { var: "{{ parent_var }}" }
+
+    - name: Try to access an undefined variable inside a when clause
+      debug:
+        var: "{{ nonexistent_var }}"
+      when: "{{ parent_var }} == 'notundefined'"
+
+    - name: Try to access an undefined variable inside an include task
+      include_tasks: "task_with_undefined.yaml"
+
+    - name: Try to access an undefined variable inside a block
+      block:
+        - name: block 1
+          debug:
+            var: "{{ child_var }}"
+        - name: block 2
+          debug:
+            var: "{{ nonexistent_var }}"

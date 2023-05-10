@@ -1,0 +1,19 @@
+
+- name: Test Ansible Compiler for invalid JSON handling in facts.d script
+  hosts: localhost
+
+  tasks:
+    - name: Simulate invalid facts
+      command: echo "invalid_json_here" > /etc/ansible/facts.d/test.fact
+      changed_when: false
+
+    - name: Test invalid JSON handling
+      set_fact:
+        my_fact: "{{ lookup('file', '/etc/ansible/facts.d/test.fact') }}"
+      register: fact_output
+      failed_when: fact_output | failed
+
+    - name: Abort playbook execution if the facts returned are invalid JSON
+      fail:
+        msg: "The facts returned by facts.d script are not valid JSON."
+      fail_when: fact_output.changed

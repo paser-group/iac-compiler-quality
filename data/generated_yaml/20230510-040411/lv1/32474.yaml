@@ -1,0 +1,27 @@
+
+---
+- hosts: all
+  become: yes
+  vars:
+    rhel7_repo_file: /etc/yum.repos.d/rhel7.repo
+  tasks:
+  - name: Backup existing RHEL7 repository file
+    backup:
+      src: "{{ rhel7_repo_file }}"
+      dest: "{{ rhel7_repo_file }}.backup"
+  - name: Copy new RHEL7 repository file
+    copy:
+      src: rhel7.repo
+      dest: "{{ rhel7_repo_file }}"
+      owner: root
+      group: root
+      mode: 0644
+  - name: Import the correct key for the repository
+    rpm_key:
+      key: https://example.com/RPM-GPG-KEY-redhat-release
+      state: present
+  - name: Clean up old cache and update package list
+    yum:
+      name: '*'
+      state: latest
+      update_cache: yes

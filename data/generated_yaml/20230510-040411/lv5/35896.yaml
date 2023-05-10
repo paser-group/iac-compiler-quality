@@ -1,0 +1,71 @@
+
+- name: Test Memory Allocation in Ansible Compiler
+  hosts: localhost
+  vars:
+    data1: "{{ range(100000) | list }}"
+    data2: "{{ range(100000) | map('random', 'abcde') | list }}"
+    data3: "{{ range(100000) | map('random', '12345') | list }}"
+  tasks:
+    - name: Test Loop with Small Data
+      block:
+        - debug:
+            msg: "Starting Loop with Small Data"
+        - set_fact:
+            output: "{{ [] }}"
+        - set_fact:
+            i: 0
+        - set_fact:
+            temp: "{{ item }}"
+          loop: "{{ data1 }}"
+          when: i < 100
+          retries: 3
+          delay: 1
+          register: result
+        - set_fact:
+            output: "{{ output + [result] }}"
+        - set_fact:
+            i: "{{ i + 1 }}"
+          when: i < 100
+        - debug:
+            var: output
+      rescue:
+        - debug:
+            msg: "Error in Loop with Small Data"
+
+    - name: Test Condition Check with Medium Data
+      block:
+        - debug:
+            msg: "Starting Condition Check with Medium Data"
+        - set_fact:
+            output: "{{ [] }}"
+        - name: Check list length with medium data
+          set_fact:
+            output: "{{ output + [item] }}"
+          with_items: "{{ data2 }}"
+          when: item | length > 3 and item | length < 10
+          retries: 3
+          delay: 1
+          register: result
+        - debug:
+            var: output
+      rescue:
+        - debug:
+            msg: "Error in Condition Check with Medium Data"
+
+    - name: Test List Processing with Large Data
+      block:
+        - debug:
+            msg: "Starting List Processing with Large Data"
+        - set_fact:
+            data: "{{ data3 | difference([data3[0]]) + [data3[0]] }}"
+        - name: Shuffle the list of data
+          set_fact:
+            shuffled_data: "{{ data | shuffle }}"
+          retries: 3
+          delay: 1
+          register: result
+        - debug:
+            var: shuffled_data
+      rescue:
+        - debug:
+            msg: "Error in List Processing with Large Data"

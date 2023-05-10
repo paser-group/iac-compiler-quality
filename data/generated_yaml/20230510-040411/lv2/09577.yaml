@@ -1,0 +1,32 @@
+
+- name: Connect to Windows server and run command
+  hosts: windows_servers
+  gather_facts: no
+  tasks:
+    - name: Generate SSL certificate
+      win_certificate:
+        store_location: authroot
+        store_name: root
+        common_name: ansible.com
+        state: present
+    - name: Install SSL certificate
+      win_package:
+        path: C:\ansible\certificate.crt
+        arguments: /quiet
+    - name: Connect to server using WinRM
+      win_rm:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ ansible_user }}"
+        password: "{{ ansible_password }}"
+        transport: ssl
+        port: 5986
+        validate_certs: no
+        env:
+          ANSIBLE_WINRM_SERVER_CERT_VALIDATION: ignore
+      register: winrm_result
+
+    - assert:
+        that:
+          - "winrm_result is success"
+        fail_msg: "WinRM connection failed, please check certificate and connection parameters"
+        success_msg: "WinRM connection successful"

@@ -1,0 +1,46 @@
+
+---
+- name: Test playbook for s3_bucket error with Minio - GetBucketVersioning NotImplemented
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    s3_bucket: "{{ item }}"          # unexpected input: s3_bucket defined as a variable
+    invalid_input: "{{ random }}"    # unexpected input: using an undefined variable
+    
+  tasks:
+  
+  - name: Create an S3 bucket with edge case name containing a special character
+    s3_bucket:
+      name: "Test-bucket_{{ hostvars.localhost.ansible_date_time.iso8601_micro }}"
+      region: "us-east-1"
+    register: result_create
+    ignore_errors: true              # to test error-handling capabilities
+
+  - name: Upload files to S3 bucket
+    s3_sync:
+      bucket: "{{ s3_bucket }}"
+      file_root: /path/to/local/files
+      file_glob: "*"
+      delete: "{{ invalid_input | default(true) }}"   # unexpected input: using default filter with invalid variable
+      acl: "{{ item }}"                              # edge case: applying ACL based on undefined variable
+    with_items:
+      - "public-read"
+      - "authenticated-read"
+      - "invalid-acl-value"    # edge case: using an invalid ACL value
+      - "aws-exec-read"
+
+  - name: Get versioning information of S3 bucket using non-existent profile
+    s3_bucket_info:
+      bucket: "{{ s3_bucket }}"
+      profile: "{{ invalid_input }}"      # unexpected input: using an undefined variable
+    register: result_version
+    ignore_errors: true        # to test error-handling capabilities
+  
+  - name: Print outputs
+    debug:
+      var: result_create
+    when: result_create is defined
+  - debug:
+      var: result_version
+    when: result_version is defined and "GetBucketVersioning" in result_version.stderr   # edge case: debug only when specific string is found in stderr

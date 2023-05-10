@@ -1,0 +1,42 @@
+
+- name: Test ec2_elb module with unconventional inputs
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    invalid_input: "{ \"foo\": \"bar\" }"
+
+  tasks:
+    - name: Create a new load balancer with an invalid instance ID
+      ec2_elb:
+        state: present
+        aws_access_key: "{{ aws_access_key }}"
+        aws_secret_key: "{{ aws_secret_key }}"
+        region: "{{ region }}"
+        name: "test-lb-{{ ansible_date_time.iso8601 }}"
+
+        availability_zones:
+          - "{{ ec2_placement }}"
+
+        instances:
+          - "{{ instance_id }}"
+          - "{{ invalid_input }}"
+
+        scheme: "{{ scheme }}"
+        listeners:
+          - protocol: "{{ protocol }}"
+            load_balancer_port: "{{ lb_port }}"
+            instance_protocol: "{{ instance_protocol }}"
+            instance_port: "{{ instance_port }}"
+        health_check:
+          target: "{{ target }}"
+          interval: "{{ interval }}"
+          healthy_threshold: "{{ healthy_threshold }}"
+
+    - name: Delete the load balancer
+      ec2_elb:
+        state: absent
+        aws_access_key: "{{ aws_access_key }}"
+        aws_secret_key: "{{ aws_secret_key }}"
+        region: "{{ region }}"
+        name: "test-lb-{{ ansible_date_time.iso8601 }}"

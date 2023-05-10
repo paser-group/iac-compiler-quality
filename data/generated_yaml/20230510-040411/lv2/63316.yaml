@@ -1,0 +1,57 @@
+
+- name: Test playbook for buildah connection permission error
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+    - name: Create buildah connection
+      buildah:
+        name: mycontainer
+        state: started
+        pull: true
+        volumes:
+          - "{{ playbook_dir }}:/opt/playbook"
+        user: "{{ item }}"
+        tags:
+          - edge-case
+      with_items:
+         - root
+         - nobody
+         - 'non-existing-user'
+      
+    - name: Create directory
+      file:
+        path: /opt/testdir
+        state: directory
+        mode: "{{ item }}"
+        tags:
+          - unconventional-syntax
+      with_items:
+        - "777"
+        - "000"
+        - "-1"
+        - "1"
+        - "a"
+
+    - name: Run a command with non-existing binary
+      command: "{{ item }} arg"
+      register: command_output
+      ignore_errors: yes
+      tags:
+        - unexpected-inputs
+      with_items:
+        - "/usr/non-existing-binary"
+        - "invalid_command"
+        - "123abc"
+
+    - name: Set a wrong file permission
+      file:
+        path: /tmp/testfile
+        mode: "{{ item }}"
+        tags:
+          - edge-case
+      with_items:
+        - "555"
+        - "751"
+        - "1"
+        - "a"

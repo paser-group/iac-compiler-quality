@@ -1,0 +1,31 @@
+
+---
+- name: Test SCP failure on newer OpenSSH
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Verify invalid filename error
+      command: scp invalid_file.txt user@{{ inventory_hostname }}:/{{ 'invalid_%d.txt'|format(1.1) }}
+      register: scp_output
+      ignore_errors: yes
+
+    - name: Verify multiple misformatted filenames error
+      command: scp *.txt user@{{ inventory_hostname }}:/invalid_file.txt/invalid_%d.txt
+      register: scp_output
+      ignore_errors: yes
+
+    - name: Verify directory conflict error
+      command: scp file.txt user@{{ inventory_hostname }}:/tmp/
+      register: scp_output
+      changed_when: false
+      ignore_errors: yes
+
+    - name: Verify permission denied error
+      command: scp file.txt user@{{ inventory_hostname }}:/root/file.txt
+      register: scp_output
+      ignore_errors: yes
+
+    - name: Display scp output
+      debug:
+        var: scp_output.stderr

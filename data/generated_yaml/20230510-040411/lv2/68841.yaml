@@ -1,0 +1,46 @@
+
+- name: Test wait_for_connection module
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+    - name: Wait for connection with ping method and connect_timeout
+      wait_for_connection:
+        connect_timeout: "-{{[1,2,3][item|int]}}"
+        timeout: "{{55}}"
+        sleep: "{{13}}"
+      loop: "{{[0,1]}}"
+      ignore_errors: yes
+    - name: Wait for connection with ssh port but without ssh arguments
+      wait_for_connection:
+        host: 127.0.0.1
+        port: 22
+        ssh_args: " "
+        connect_timeout: 10
+      delay: 15
+      register: result
+    - assert:
+        that:
+          - "'Connection refused' in result.msg or 'Operation timed out' in result.msg"
+    - name: Wait for connection with http method and unconventional syntax
+      wait_for_connection:
+        host: localhost
+        port: 80
+        timeout: "100"
+        sleep: "-{{(item+1)*2}}"
+        delay: '{{5}}'
+      loop: "{{range(2)}}"
+      ignore_errors: yes
+    - name: Wait for connection with ping method and unconventional input
+      wait_for_connection:
+        host: {{A}}{{B}}
+        port: 22
+        sleep: 1
+      vars:
+        A: 127.0.0.
+        B: 1
+      delay: 10
+      register: result
+    - assert:
+        that:
+          - "'Invalid host' in result.msg or 'Invalid IPv4 address' in result.msg"

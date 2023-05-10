@@ -1,0 +1,32 @@
+
+---
+- name: Test WinRMTransport with Kerberos authentication
+  hosts: windows
+
+  vars:
+    ansible_connection: winrm
+    ansible_winrm_server_cert_validation: ignore
+
+  tasks:
+    - name: Install Kerberos Package
+      win_package:
+        path: "\\myshare\kerberos.msi"
+        state: present
+      
+    - name: Ensure core Kerberos configuration is correct.
+      win_reboot:
+        reason: "Core Kerberos configuration present. Rebooting for effect."
+        reboot_timeout: 300
+      when: reg_query.stdout.find('foo') == -1
+
+    - name: Verify Kerberos authentication
+      win_command: klist
+      register: klist_output
+
+    - name: Assert that Kerberos authentication succeeded
+      assert:
+        that:
+          - "'krbtgt' in klist_output.stdout"
+
+    - name: Test WinRMTransport with Kerberos authentication
+      win_ping:

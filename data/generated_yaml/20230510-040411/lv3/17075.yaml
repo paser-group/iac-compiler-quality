@@ -1,0 +1,41 @@
+
+- hosts: localhost
+  gather_facts: no
+  
+  vars:
+    project_id: "my-project-id"
+    credentials_file: "path/to/credentials.json"
+    service_account_email: "service-account-email@my-project-id.iam.gserviceaccount.com"
+  
+  tasks:
+    - name: Install GCP SDK
+      apt:
+        name: "google-cloud-sdk"
+        state: present
+  
+    - name: Configure GCP SDK
+      block:
+        - name: Configure gcloud
+          command: gcloud auth activate-service-account {{ service_account_email }} --key-file={{ credentials_file }} --project {{ project_id }}
+        - name: Check gcloud version
+          command: gcloud --version
+      when: credentials_file is file
+  
+    - name: Create instance using gce module and OAuth client authentication
+      gce:
+        instance_names: "test-instance"
+        instance_zone: "us-central1-c"
+        machine_type: "f1-micro"
+        disk_size: "10"
+        image: "debian-cloud/debian-9"
+        credentials_file: "{{ credentials_file }}"
+        project_id: "{{ project_id }}"
+        auth_kind: "serviceaccount"
+        scopes:
+          - "https://www.googleapis.com/auth/compute"
+          - "https://www.googleapis.com/auth/devstorage.read_only"
+      register: instance_info
+      
+    - name: Print instance information
+      debug:
+        var: instance_info

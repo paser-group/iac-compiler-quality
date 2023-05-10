@@ -1,0 +1,31 @@
+
+---
+- name: Install GCE module
+  hosts: all
+  gather_facts: false
+
+  vars:
+    keyfile: "/path/to/keyfile.json"  #Change this to the location of your OAuth key file
+
+  tasks:
+    - name: Install google-auth and google-auth-oauthlib python modules
+      pip:
+        name:
+          - google-auth
+          - google-auth-oauthlib
+        state: present
+
+    - name: Authorize service account
+      command: gcloud auth activate-service-account --key-file={{keyfile}}
+      register: result
+      changed_when: False
+
+    - name: Use GCE module
+      gce:
+        instance_names:  #Change these values accordingly
+          - instance1
+        zone: zone-name
+        auth_kind: serviceaccount
+        service_account_file: "{{ keyfile }}"
+        state: running
+      register: instance_status

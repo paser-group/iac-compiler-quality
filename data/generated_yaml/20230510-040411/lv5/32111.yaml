@@ -1,0 +1,38 @@
+
+- name: Configure device to enable non-default VRFs
+  hosts: switches
+  gather_facts: False
+
+  vars:
+    vrf_name: "my_vrf"
+    command_string: "ip vrf {{ vrf_name }}"
+    
+  tasks:
+    - name: Check if VRF exists
+      eos_command:
+        command: "show ip vrf {{vrf_name}} | i Name"
+      register: show_vrf
+      ignore_errors: true
+    
+    - name: Add VRF if it does not exist
+      eos_command:
+        command: "{{ command_string }}"
+      when: "'% Invalid input detected' in show_vrf.stderr_lines"
+
+    - name: Enable non-default VRFs
+      iosxe_command:
+        commands:
+          - "ip vrf definition {{ vrf_name }}"
+          - "rd auto"
+          - "address-family ipv4 unicast"
+          - "exit"
+      register: enable_vrf
+
+    - name: Display output of enabled VRFs
+      eos_command:
+        command: "show ip vrf"
+      register: show_vrf
+      ignore_errors: true
+
+    - name: Debug output
+      debug: msg="{{enable_vrf}}"

@@ -1,0 +1,93 @@
+
+---
+- hosts: localhost
+  gather_facts: no
+
+  vars:
+    string: "This is a <test> string"
+    regex: "\<\w+\>"
+    replacement: "regex pattern"
+
+  tasks:
+    - name: Replace matching pattern with string
+      replace:
+        path: /tmp/test_file.txt
+        regexp: '{{ regex }}'
+        replace: '{{ replacement }}'
+        backup: yes
+        backrefs: no
+        remote_src: no
+        validate: ls -l
+        after: echo "File has been successfully updated."
+        before: echo "Replacing pattern in file."
+
+    - name: Replace with multiple backreferences
+      replace:
+        path: /tmp/test_file.txt
+        regexp: '(\<)(\w+)(\>)'
+        replace: '{{ "\\<2>1\\<\\/2>" }}'
+        backup: yes
+        remote_src: no
+        validate: ls -l
+        after: echo "Multiple backreferences in pattern have been replaced successfully."
+        before: echo "Replacing pattern with multiple backreferences."
+
+    - name: Replace when original content is not present
+      replace:
+        path: /tmp/test_file.txt
+        regexp: '(\<)(\w+)(\>)'
+        replace: '{{ "\\<4>" }}'
+        backup: yes
+        remote_src: no
+        validate: ls -l
+        after: echo "Pattern not found in file."
+        before: echo "Replacing pattern when the original content is not present."
+
+    - name: Replace without backup
+      replace:
+        path: /tmp/test_file.txt
+        regexp: '{{ regex }}'
+        replace: '{{ replacement }}'
+        remote_src: no
+        after: echo "File has been successfully updated without backup."
+        before: echo "Replacing pattern in a file without backup."
+
+
+    - name: Replace with unsupported parameters
+      replace:
+        path: /tmp/test_file.txt
+        regexp: '{{ regex }}'
+        replace: '{{ replacement }}'
+        backup: yes
+        remote_src: no
+        unmatched_param: some_value
+        invalid_param: some_value
+        after: echo "File has been successfully updated with unsupported parameters."
+        before: echo "Replacing pattern with unsupported parameters."
+
+    - name: Replace with invalid pattern
+      replace:
+        path: /tmp/test_file.txt
+        regexp: '\?'
+        replace: '{{ replacement }}'
+        remote_src: no
+        always_run: true
+        after: echo "Replacing pattern with an invalid regex."
+        before: echo "Executing a task that should always run."
+
+    - name: Replace with non-existent file path
+      replace:
+        path: /tmp/non_existent_file.txt
+        regexp: '{{ regex }}'
+        replace: '{{ replacement }}'
+        remote_src: no
+        after: echo "Replacing pattern in a non-existent file path."
+        before: echo "Executing a task on a non-existent file path."
+
+    - name: Replace with multi-line pattern
+      replace:
+        path: /tmp/multi_line_file.txt
+        regexp: '{{ regex }}'
+        replace: "multi-\nline-\npattern"
+        after: echo "Replacing a multi-line pattern"
+        before: echo "Executing a task that replaces a multi-line pattern in a file"

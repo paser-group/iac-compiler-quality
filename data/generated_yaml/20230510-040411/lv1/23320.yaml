@@ -1,0 +1,43 @@
+yaml
+---
+- name: Install and configure WinRM on Windows servers
+  hosts: windows_servers
+  gather_facts: False
+
+  vars:
+    winrm_port: 5985
+    winrm_timeout: 1800
+
+  tasks:
+    - name: Install the necessary Windows features for WinRM
+      win_feature:
+        name:
+        - WinRM-Powershell
+        - WinRM-Service
+        state: present
+
+    - name: Enable WinRM on the Windows servers
+      win_shell: winrm quickconfig -quiet
+      ignore_errors: yes
+
+    - name: Set up WinRM listener to allow Ansible to connect
+      win_shell: winrm create winrm/config/Listener?Address=*+Transport=HTTP
+        Bindings='{{"Address=HTTP://0.0.0.0:{0}+Transport=HTTP"}}' -quiet
+      ignore_errors: yes
+
+    - name: Configure WinRM timeouts to prevent ReadTimeout errors
+      win_shell: Set-Item -Path WSMan:\localhost\Shell\MaxTimeoutms -Value {{winrm_timeout}}
+      ignore_errors: yes
+
+    - name: Open the WinRM firewall port
+      win_firewall_rule:
+        name: Allow WinRM through firewall
+        port: '{{winrm_port}}'/tcp
+        protocol: tcp
+        action: allow
+
+    - name: Test WinRM connectivity
+      win_ping:
+
+    - name: Gather system facts from the Windows servers
+      setup:

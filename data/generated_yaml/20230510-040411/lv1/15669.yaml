@@ -1,0 +1,38 @@
+
+- hosts: <your-target-host>
+  gather_facts: false
+  become: yes
+
+  vars:
+    winrm_authentication: kerberos
+
+  tasks:
+    - name: "Ensure Kerberos authentication is enabled"
+      winrm_config:
+        kerberos: yes
+
+    - name: "Test WinRM Connectivity using Kerberos"
+      win_ping:
+
+    - name: "Create log folder if it does not exist"
+      win_file:
+        path: "C:\\Temp\\Logs"
+        state: directory
+      
+    - name: "Collecting logs from Windows PowerShell event viewer"
+      win_shell: |
+        $events = Get-WinEvent -FilterHashtable @{LogName='Windows PowerShell';ProviderName='Microsoft-Windows-PowerShell';ID=40961,4624;StartTime=(Get-Date).AddDays(-1)}
+        $events | select TimeCreated, Id, LevelDisplayName, Message | ConvertTo-Json -Depth 3 | Out-File -FilePath "C:\\Temp\\Logs\\WinRMAuth.log"
+
+    - name: "Check for Kerberos Authentication issues in the logs"
+      win_shell: |
+        $logs = Get-Content "C:\\Temp\\Logs\\WinRMAuth.log"
+        $logs | Select-String -Pattern "WinRMTransport.*Kerberos authentication failed" 
+      ignore_errors: yes
+      register: logs_found
+
+    - name: "Display logs if authentication issue found"
+      debug:
+        var: logs_found.stdout_lines
+      when: logs_found.stdout_lines
+

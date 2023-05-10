@@ -1,0 +1,42 @@
+
+---
+- name: Test docker_image error
+  hosts: localhost
+  become: yes
+  
+  vars:
+    registry: "{{ item.registry }}"
+    username: "{{ item.username | default('username') }}"
+    password: "{{ item.password | default('password') }}"
+    image_name: "{{ item.image_name }}:{{ item.image_tag }}"
+
+  tasks:
+  - name: Conventional syntax with credential errors
+    docker_image:
+      name: "{{ image_name }}"
+      registry_url: "{{ registry | default('https://registry.hub.docker.com') }}"
+      source: pull
+      username: "{{ username }}"
+      password: "{{ password }}"
+    register: stdout
+    ignore_errors: true
+    with_items:
+    - { registry: 'https://registry1.docker.io', username: 'user1', password: 'secret1', image_name: 'test1', image_tag: 'latest' }
+    - { registry: 'https://registry2.docker.io', username: 'user2', password: 'secret2', image_name: 'test2', image_tag: 'latest' }
+    - { registry: 'https://registry3.docker.io', username: 'user3', password: 'secret3', image_name: 'test3', image_tag: 'latest' }
+
+  - name: Unconventional syntax with credential errors
+    docker_image: name="{{ image_name }}" registry_url="{{ registry | default('https://registry.hub.docker.com') }}" source=pull username="{{ username }}" password="{{ password }}"
+    ignore_errors: true
+    with_items:
+    - { registry: 'https://registry1.docker.io', username: 'user1' }
+    - { registry: 'https://registry2.docker.io', password: 'secret2' }
+    - { registry: 'https://registry3.docker.io', image_name: 'test3', image_tag: 'missing' }
+
+  - name: Input verification with credential errors
+    assert:
+      that:
+      - item.rc != 0
+      - 'credential' in item.stderr
+      - 'Error' in item.stderr
+    with_items: "{{ stdout.results }}"

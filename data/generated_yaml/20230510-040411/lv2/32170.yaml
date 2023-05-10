@@ -1,0 +1,55 @@
+
+- name: Test ec2_asg target_group_arns parameter
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    # Define test input values
+    invalid_arn: arn:aws:elasticloadbalancing:us-east-1:123456789012:loadbalancer/nlb-1
+    valid_arn: arn:aws:elasticloadbalancing:us-east-1:123456789012:targetgroup/tg-1
+    empty_arn: ""
+    arn_list:
+      - arn:aws:elasticloadbalancing:us-east-1:123456789012:targetgroup/tg-1
+      - arn:aws:elasticloadbalancing:us-east-1:123456789012:targetgroup/tg-2
+      - arn:aws:elasticloadbalancing:us-east-1:123456789012:targetgroup/tg-3
+      - arn:aws:elasticloadbalancing:us-east-1:123456789012:targetgroup/tg-4
+      - invalid_arn
+
+  tasks:
+    - name: Test ec2_asg module with invalid target_group_arns
+      ec2_asg:
+        name: test-asg
+        launch_template: {}
+        target_group_arns:
+          - "{{ invalid_arn }}"
+      register: result
+      ignore_errors: yes
+      failed_when: result.rc == 0
+
+    - name: Test ec2_asg module with empty target_group_arns
+      ec2_asg:
+        name: test-asg
+        launch_template: {}
+        target_group_arns: "{{ empty_arn }}"
+      register: result
+      ignore_errors: yes
+      failed_when: result.rc == 0
+        
+    - name: Test ec2_asg module with single valid target_group_arn
+      ec2_asg:
+        name: test-asg
+        launch_template: {}
+        target_group_arns:
+          - "{{ valid_arn }}"
+      register: result
+      ignore_errors: yes
+      failed_when: result.rc == 0
+        
+    - name: Test ec2_asg module with multiple valid target_group_arns
+      ec2_asg:
+        name: test-asg
+        launch_template: {}
+        target_group_arns: "{{ arn_list }}"
+      register: result
+      ignore_errors: yes
+      failed_when: result.rc == 0

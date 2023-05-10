@@ -1,0 +1,38 @@
+
+---
+- name: Test win_chocolatey task with useEnhancedExitCodes enabled
+  hosts: localhost
+  gather_facts: no
+  
+  tasks:
+    - name: Install package with Chocolatey
+      win_chocolatey:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - firefox
+        - 7zip
+        - notepadplusplus
+        - wireshark
+      register: result
+      ignore_errors: true
+      
+    - name: Check if package is installed
+      win_chocolatey:
+        name: "{{ item }}"
+        state: present
+      with_items: "{{ result.results }}"
+      when: item.rc != 2
+      register: result2
+      ignore_errors: true
+      
+    - name: Uninstall package with Chocolatey
+      win_chocolatey:
+        name: "{{ item.item }}"
+        state: absent
+      with_items: "{{ result2.results }}"
+      ignore_errors: true
+      
+    - name: Debug Print
+      debug:
+        var: result2

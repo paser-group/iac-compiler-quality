@@ -1,0 +1,61 @@
+
+- name: Ansible Fuzzing Playbook
+  hosts: all
+
+  vars:
+    invalid_filter: "{{1/0}}" # division by zero
+    empty_filter: ""
+    invalid_syntax_filter: "name-Foo" # invalid syntax
+
+  tasks:
+    - name: Test invalid filter
+      vmware_inventory:
+        host_filter: "{{ invalid_filter }}"
+      ignore_errors: yes
+
+    - name: Test empty filter
+      vmware_inventory:
+        host_filter: "{{ empty_filter }}"
+
+    - name: Test invalid syntax filter
+      vmware_inventory:
+        host_filter: "{{ invalid_syntax_filter }}"
+
+    - name: Test null filter
+      vmware_inventory:
+        host_filter: null
+
+    - name: Test boolean filter
+      vmware_inventory:
+        host_filter: true
+
+    - name: Test integer filter
+      vmware_inventory:
+        host_filter: 42
+
+    - name: Test list filter
+      vmware_inventory:
+        host_filter:
+          - name: Foo
+          - name: Bar
+            power_state: poweredOff
+
+    - name: Test dictionary filter
+      vmware_inventory:
+        host_filter:
+          name: Foo
+          power_state: poweredOn
+
+    - name: Test complex filter
+      vmware_inventory:
+        host_filter:
+          or:
+            - name: Foo
+            - and:
+              - power_state: poweredOff
+              - not:
+                - name: Bar
+          and:
+            - tag: cluster
+            - not:
+              - tag: virtual-machine

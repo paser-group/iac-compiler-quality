@@ -1,0 +1,57 @@
+
+---
+- name: Test nxos_facts module
+  hosts: switches
+  gather_facts: no
+
+  vars:
+      device_name: "test-device"
+      device_ip: "10.1.1.1"
+      username: "test-username"
+      password: "test-password"
+
+  tasks:
+    - name: Get device facts
+      nxos_facts:
+        host: "{{ device_name }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+      register: facts
+
+    - name: Print facts
+      debug:
+        var: facts
+
+    - name: Catch exception
+      ignore_errors: True
+
+    - name: Test with invalid device name
+      nxos_facts:
+        host: "{{ device_name }}, invalid"
+        username: "{{ username }}"
+        password: "{{ password }}"
+      register: invalid_name
+
+    - name: Print error message if present
+      debug:
+        var: invalid_name.stderr_lines
+
+    - name: Test with invalid IP address
+      nxos_facts:
+        host: "{{ device_ip }}, invalid"
+        username: "{{ username }}"
+        password: "{{ password }}"
+      register: invalid_ip
+
+    - name: Print error message if present
+      debug:
+        var: invalid_ip.stderr_lines
+
+    - name: Test with missing credentials
+      nxos_facts:
+        host: "{{ device_name }}"
+      register: missing_creds
+
+    - name: Print error message if present
+      debug:
+        var: missing_creds.stderr_lines

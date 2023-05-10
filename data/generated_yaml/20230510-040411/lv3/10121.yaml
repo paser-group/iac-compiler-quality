@@ -1,0 +1,33 @@
+
+- name: Launch EC2 instance with long name
+  hosts: localhost
+  gather_facts: False
+  vars:
+    aws_instance_name: "This_is_a_really_long_EC2_instance_name_that_should_trigger_an_error_caused_by_ecryptfs_home_directory"
+    aws_keypair: "my_keypair"
+    aws_security_group: "default"
+    aws_subnet_id: "subnet-123456"
+    aws_region: "us-east-1"
+  tasks:
+    - name: Launch EC2 instance
+      ec2:
+        key_name: "{{ aws_keypair }}"
+        group: "{{ aws_security_group }}"
+        instance_type: t2.micro
+        image: ami-0c55b159cbfafe1f0
+        wait: true
+        count: 1
+        instance_tags:
+          Name: "{{ aws_instance_name }}"
+      register: ec2
+
+    - name: Wait for SSH to come up
+      wait_for:
+        host: "{{ ec2.instances[0].public_ip }}"
+        port: 22
+        delay: 10
+        timeout: 320
+
+    - name: Print EC2 instance details
+      debug:
+        var: ec2.instances[0]

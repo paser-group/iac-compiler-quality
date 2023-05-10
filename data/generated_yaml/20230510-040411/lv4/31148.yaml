@@ -1,0 +1,38 @@
+yaml
+- name: Redis cache test
+  hosts: localhost
+  gather_facts: true
+  vars:
+    ansible_cache_plugin: redis
+    ansible_cache_plugin_connection: localhost:6379
+
+  tasks:
+    - name: Test fact caching with Redis
+      set_fact:
+        example_fact: "Hello, World!"
+
+    - name: Check that fact is cached
+      assert:
+        that:
+          - example_fact == ansible_local.example_fact
+        msg: "Cached fact not found"
+
+    - name: Flush Redis cache
+      command: ansible-cache --flush-cache
+
+    - name: Check that cache is flushed
+      assert:
+        that:
+          - not ('_cache/redis' in ansible_local)
+        msg: "Redis facts cache not flushed"
+
+    - name: Retrieve cached fact
+      set_fact:
+        cached_fact: "{{ ansible_local.example_fact }}"
+
+    - name: Assert cached fact is missing
+      assert:
+        that:
+          - cached_fact is not defined
+        msg: "Cached fact not deleted"
+

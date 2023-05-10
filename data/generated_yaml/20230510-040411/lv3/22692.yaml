@@ -1,0 +1,36 @@
+
+- name: Create EC2 spot request
+  hosts: localhost
+  gather_facts: no
+  vars:
+    spot_price: 0.25
+    key_name: key_name_here
+    instance_type: t2.micro
+    image_id: ami-XXXXX # Replace XXXXX with the appropriate image ID
+    security_group_id: sg-XXXXX # Replace XXXXX with the appropriate security group ID
+
+  tasks:
+    - name: Create EC2 Spot Instance Request
+      ec2:
+        spot_price: "{{ spot_price }}"
+        key_name: "{{ key_name }}"
+        instance_type: "{{ instance_type }}"
+        image_id: "{{ image_id }}"
+        count: 1
+        wait: yes   # wait until instance is in 'running' state before moving to next task
+        group_id: "{{ security_group_id}}"
+        state: present
+      register: ec2_spot_request
+
+    - name: Pause - Wait for the instance to start by sleeping for 60 seconds
+      pause:
+        seconds: 60
+
+    - name: Provision the Instance
+      hosts: "{{ item.public_ip }}"
+      remote_user: ec2-user
+      gather_facts: no
+      tasks:
+        - name: Run Python script to reproduce the issue
+          script: path/to/Python/script.py
+          ignore_errors: yes

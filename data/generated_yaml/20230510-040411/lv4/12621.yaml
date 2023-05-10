@@ -1,0 +1,45 @@
+
+---
+- hosts: all
+  become: true
+  
+  tasks:
+    - name: Test SSH connection with invalid username
+      ssh_connection:
+        user: 'invalid_username'
+        password: 'password'
+        host: 'localhost'
+        port: '22'
+      register: result
+      ignore_errors: True
+    
+    - name: Verify SSH connection error message is returned
+      assert:
+        that: "result|failed"
+        fail_msg: "SSH connection error message not returned"
+    
+    - name: Test SSH command with incorrect arguments
+      ssh_command:
+        chdir: '/tmp'
+        executable: '/usr/bin/invalid_command'
+        ssh_args: '-p 22'
+      ignore_errors: True
+      
+    - name: Check SSH command error message is returned
+      assert:
+        that: "ansible_play_hosts_all_failed == True"
+        fail_msg: "SSH command error message not returned"
+    
+    - name: Test Paramiko connection with invalid hostname
+      paramiko_connection:
+        hostname: 'invalid_host'
+        username: 'user'
+        password: 'password'
+        port: 22
+      register: result
+      ignore_errors: True
+      
+    - name: Verify Paramiko connection error message is returned
+      assert:
+        that: "result|failed"
+        fail_msg: "Paramiko connection error message not returned"

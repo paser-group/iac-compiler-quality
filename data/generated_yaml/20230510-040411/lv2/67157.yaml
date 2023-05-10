@@ -1,0 +1,127 @@
+
+---
+- name: Test playbook for string_conversion_action=error issue
+  hosts: localhost
+  vars:
+    input_var: "Ansible is cool!"
+    output_var: "Ansible is the coolest!"
+  tasks:
+    - name: Execute copy with string_conversion_action=error
+      copy:
+        src: "{{ input_var }}"
+        dest: "/tmp/test_file.txt"
+        string_conversion_action: error
+
+    - name: Execute template with string_conversion_action=error
+      template:
+        src: "/tmp/test_template.j2"
+        dest: "/tmp/test_template_out.txt"
+        string_conversion_action: error
+
+    - name: Execute copy with conv_method="safe"
+      copy:
+        src: "{{ input_var }}"
+        dest: "/tmp/test_file.txt"
+        conv_method: "safe"
+
+    - name: Execute copy with conv_method="unsafe"
+      copy:
+        src: "{{ input_var }}"
+        dest: "/tmp/test_file.txt"
+        conv_method: "unsafe"
+
+    - name: Execute copy with conv_method=0
+      copy:
+        src: "{{ input_var }}"
+        dest: "/tmp/test_file.txt"
+        conv_method: 0
+
+    - name: Execute copy with conv_method=1
+      copy:
+        src: "{{ input_var }}"
+        dest: "/tmp/test_file.txt"
+        conv_method: 1
+
+    - name: Execute copy with conv_method=2
+      copy:
+        src: "{{ input_var }}"
+        dest: "/tmp/test_file.txt"
+        conv_method: 2
+
+    - name: Execute copy with conv_method=3
+      copy:
+        src: "{{ input_var }}"
+        dest: "/tmp/test_file.txt"
+        conv_method: 3
+
+    - name: Execute template with trim_blocks=True
+      template:
+        src: "/tmp/test_template.j2"
+        dest: "/tmp/test_template_out.txt"
+        trim_blocks: True
+
+    - name: Execute template with lstrip_blocks=True
+      template:
+        src: "/tmp/test_template.j2"
+        dest: "/tmp/test_template_out.txt"
+        lstrip_blocks: True
+
+    - name: Execute template with keep_trailing_newline=True
+      template:
+        src: "/tmp/test_template.j2"
+        dest: "/tmp/test_template_out.txt"
+        keep_trailing_newline: True
+
+    - name: Execute template with newline_sequence="\r\n"
+      template:
+        src: "/tmp/test_template.j2"
+        dest: "/tmp/test_template_out.txt"
+        newline_sequence: "\r\n"
+
+    - name: Execute template with newline_sequence="\n"
+      template:
+        src: "/tmp/test_template.j2"
+        dest: "/tmp/test_template_out.txt"
+        newline_sequence: "\n"
+
+    - name: Execute template with newline_sequence="\r"
+      template:
+        src: "/tmp/test_template.j2"
+        dest: "/tmp/test_template_out.txt"
+        newline_sequence: "\r"
+
+    - name: Block with invalid syntax
+      block:
+        - name: Child task 1
+          copy:
+            src: "{{ input_var }}"
+            dest: "/tmp/test_file.txt"
+        - name: Child task 2 with bad syntax
+          copy  # missing colon symbol
+            src: "{{ output_var }}"
+            dest: "/tmp/test_file.txt"
+      rescue:
+        - name: Rescue task
+          debug:
+            var: ansible_failed_task
+
+    - name: Nested block with invalid syntax
+      block:
+        - name: Child task 1
+          copy:
+            src: "{{ input_var }}"
+            dest: "/tmp/test_file.txt"
+        - name: Child task 2
+          block:  # missing dash symbol
+            - name: Nested child task 1
+              copy:
+                src: "{{ output_var }}"
+                dest: "/tmp/test_file.txt"
+            - name: Nested child task 2
+              copy:
+                src: "{{ output_var }}"
+                dest: "/tmp/test_file.txt"
+      rescue:
+        - name: Rescue task
+          debug:
+            var: ansible_failed_task

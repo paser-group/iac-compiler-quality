@@ -1,0 +1,31 @@
+
+- hosts: all
+  gather_facts: false
+  vars:
+    ssh_config_options:
+      StrictHostKeyChecking: no
+      ForwardAgent: yes
+      UserKnownHostsFile: /dev/null
+  tasks:
+    - name: Test ssh prompt issue
+      expect:
+        command: ssh user@{{ inventory_hostname }}
+        responses:
+          (?i)password: "{{ ssh_password }}"
+          (?i)Verification code: "{{ verification_code }}"
+          (?i)Enter passphrase: "{{ private_key_passphrase|default('') }}"
+          (?i)Are you sure you want to continue connecting: yes
+          (?i)ECDSA key fingerprint: {{ ssh_key_fingerprint|default('') }}
+      vars:
+        ssh_password: "test123"
+        verification_code: "123456"
+        private_key_passphrase: "supersecret"
+        ssh_key_fingerprint: "ee:aa:bb:cc:dd:ff:00:11:22:dd:33:55:66:77:88:99"
+    - name: Test unconventional syntax
+      shell: echo "hello"; echo "world" >
+      become: true
+      args:
+        executable: /bin/bash
+    - name: Test unexpected input
+      command: "{{ unknown_command }}"
+      ignore_errors: true

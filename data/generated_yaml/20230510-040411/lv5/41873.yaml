@@ -1,0 +1,31 @@
+
+---
+- name: letsencrypt.py certificate expiration testing playbook
+  hosts: localhost
+  become: true
+
+  vars:
+    cert_path: "/etc/ssl/certs/cert.pem"
+    key_path: "/etc/ssl/private/key.pem"
+    cert_owner: root
+    cert_group: root
+    cert_mode: "0644"
+    cn: "example.com"
+    cert_days: 5
+
+  tasks:
+    - name: Create a self-signed certificate
+      openssl_certificate:
+        path: "{{ cert_path }}"
+        privatekey_path: "{{ key_path }}"
+        owner: "{{ cert_owner }}"
+        group: "{{ cert_group }}"
+        mode: "{{ cert_mode }}"
+        common_name: "{{ cn }}"
+        days: "{{ cert_days }}"
+
+    - name: Debug certificate expiry date
+      debug:
+        var: days_until_expiry
+      vars:
+        days_until_expiry: "{{ ((ansible_date_time.epoch | int) + ((cert_days | int) * 86400)) - (ansible_date_time.epoch | int) }}"

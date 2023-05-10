@@ -1,0 +1,69 @@
+
+---
+- name: Stress Test Playbook for Ansible nxos_facts Issue
+  hosts: localhost
+  gather_facts: false
+  tasks:
+  - name: Test Custom Gathering for NXOS
+    nxos_facts:
+      host: "{{ inventory_hostname }}"
+      gather_subset:
+        - 'hardware'
+        - 'config'
+      provider:
+        username: 'user'
+        password: 'password@123'
+        transport: 'cli'
+    register: output
+
+  - name: Test Facts Output for NXOS
+    debug:
+      var: output['hardware']['switch_id']
+
+  - name: Test Custom Gathering with Invalid Inputs
+    nxos_facts:
+      host: "{{ inventory_hostname }}"
+      gather_subset:
+        - 'invalid_stream_name'
+      provider:
+        username: 'invalid_username'
+        password: 'invalid@password381'
+        transport: 'invalid_transport_name'
+    register: invalid_output
+
+  - name: Test Facts Output with Invalid Inputs
+    debug:
+      var: invalid_output
+
+  - name: Test Custom Gathering with TypeError Input
+    nxos_facts:
+      host: "{{ inventory_hostname }}"
+      gather_subset:
+        - 123
+        - ['valid_stream_name']
+      provider:
+        username: 'user'
+        password: 'password@123'
+        transport: 'cli'
+    register: type_error_output
+
+  - name: Test Facts Output with TypeError Input
+    debug:
+      var: type_error_output
+
+  - name: Test Custom Gathering with Unauthorized Access
+    nxos_facts:
+      host: "{{ inventory_hostname }}"
+      gather_subset:
+        - 'hardware'
+        - 'config'
+      provider:
+        username: 'invalid_user'
+        password: 'invalid_password'
+        transport: 'cli'
+    register: unauthorized_output
+    ignore_errors: yes
+
+  - name: Test Facts Output with Unauthorized Access
+    debug:
+      var: unauthorized_output

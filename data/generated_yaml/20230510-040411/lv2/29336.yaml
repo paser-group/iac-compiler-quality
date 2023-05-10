@@ -1,0 +1,90 @@
+
+- hosts: localhost
+  connection: local
+  vars:
+    container_name: "my_container"
+  tasks:
+    # Attempt to create a snapshot clone with unconventional syntax
+    - name: Attempt to create a snapshot clone with unconventional syntax
+      lxc_container:
+        name: "{{ container_name }}"
+        state: stopped
+        snapshot: "{{ container_name }}-snapshot"
+        clone: True
+        start: True
+
+    # Attempt to create a second clone of the same snapshot, providing unexpected input
+    - name: Attempt to create a second clone of the same snapshot, providing unexpected input
+      lxc_container:
+        name: "{{ container_name }}-2"
+        state: stopped
+        snapshot: "{{ container_name }}-snapshot"
+        clone: True
+        start: False
+        force_stop: True
+
+    # Provide unexpected input for snapshot creation
+    - name: Create snapshot with unconventional syntax
+      lxc_container:
+        name: "{{ container_name }}"
+        state: stopped
+        clone: False
+        start: False
+        snapshot: "{{ container_name }}-snapshot+^)()_"
+
+    # Attempt to create a snapshot clone while the container is already running
+    - name: Attempt to create a snapshot clone while the container is already running
+      lxc_container:
+        name: "{{ container_name }}"
+        state: started
+        snapshot: "{{ container_name }}-snapshot"
+        clone: True
+
+    # Attempt to create a snapshot clone when the container does not exist
+    - name: Attempt to create a snapshot clone when the container does not exist
+      lxc_container:
+        name: "{{ container_name }}-non-existent"
+        snapshot: "{{ container_name }}-snapshot"
+        clone: True
+
+    # Provide an unexpected value for the clone parameter
+    - name: Provide an unexpected value for the clone parameter
+      lxc_container:
+        name: "{{ container_name }}"
+        state: started
+        snapshot: "{{ container_name }}-snapshot"
+        clone: "not-a-boolean-value"
+
+    # Provide unexpected input for container creation
+    - name: Create container with unconventional syntax
+      lxc_container:
+        name: "{{ container_name }}+())$&(/"
+        state: started
+        template: ubuntu
+        clone: False
+        start: True
+
+    # Try to create a snapshot with special characters as the name
+    - name: Try to create a snapshot with special characters as the name
+      lxc_container:
+        name: "{{ container_name }}"
+        state: stopped
+        snapshot: "{{ container_name }}-[]\;',./<>?:\"{}|_+()=a"
+        clone: False
+
+    # Attempt to clone a non-existent snapshot
+    - name: Attempt to clone a non-existent snapshot
+      lxc_container:
+        name: "{{ container_name }}-non-existent-clone"
+        state: stopped
+        snapshot: "{{ container_name }}-non-existent-snapshot"
+        clone: True
+        start: False
+
+    # Try to create a snapshot with a name that is too long
+    - name: Try to create a snapshot with a name that is too long
+      lxc_container:
+        name: "{{ container_name }}"
+        state: stopped
+        snapshot: "{{ container_name }}-this-is-a-very-long-snapshot-name-that-exceeds-the-maximum-allowed-length"
+        clone: False

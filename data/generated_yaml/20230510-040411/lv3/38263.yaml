@@ -1,0 +1,68 @@
+
+- hosts: localhost
+  gather_facts: no
+  vars:
+    vmware_username: <vmware_username>
+    vmware_password: <vmware_password>
+    vmware_hostname: <vmware_hostname>
+    vmware_datacenter: <vmware_datacenter>
+    vmware_cluster: <vmware_cluster>
+    vmware_datastore: <vmware_datastore>
+    vmware_guest_name: Test_VM
+    vmware_guest_cpu: 2
+    vmware_guest_memory_mb: 2048
+    vmware_guest_disk_size_gb: 20
+    vmware_guest_os_family: linux
+    vmware_guest_username: testuser
+    vmware_guest_password: testpassword
+    vmware_guest_disk_type: thin
+    vmware_guest_customization_spec: Test_Customization
+  tasks:
+    - name: Create a virtual machine
+      vmware_guest:
+        username: "{{ vmware_username }}"
+        password: "{{ vmware_password }}"
+        hostname: "{{ vmware_hostname }}"
+        datacenter: "{{ vmware_datacenter }}"
+        cluster: "{{ vmware_cluster }}"
+        datastore: "{{ vmware_datastore }}"
+        name: "{{ vmware_guest_name }}"
+        state: poweredon
+        hardware:
+          memory_mb: "{{ vmware_guest_memory_mb }}"
+          num_cpus: "{{ vmware_guest_cpu }}"
+          scsi: paravirtual
+        customization:
+          dns_servers:
+            - 8.8.8.8
+          domain: example.com
+          hostname: test-vm
+          linux_options:
+            domain: example.com
+            host_name: test-vm
+            time_zone: America/New_York
+          network_interfaces:
+            "{{ vmware_guest_network }}"
+        disk:
+          - size_gb: "{{ vmware_guest_disk_size_gb }}"
+            type: "{{ vmware_guest_disk_type }}"
+        wait_for_ip_address: yes
+        vm_extra_config:
+          workingLocation: "[{{ vmware_datastore }}]"
+          annotation: "Test Annotation"
+          notes: "Test Notes"
+        customization_spec: "{{ vmware_guest_customization_spec }}"
+    # Intentionally configure wrong hard disk controller to cause the error
+    - name: Set incorrect permissions to a virtual machine
+      vmware_guest_disk:
+        hostname: "{{ vmware_hostname }}"
+        username: "{{ vmware_username }}"
+        password: "{{ vmware_password }}"
+        datacenter: "{{ vmware_datacenter }}"
+        validate_certs: no
+        name: "{{ vmware_guest_name }}"
+        state: present
+        disk:
+        - size_gb: 100
+          type: thin
+        controller: wrong_controller

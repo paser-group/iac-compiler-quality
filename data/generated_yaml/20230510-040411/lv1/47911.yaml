@@ -1,0 +1,26 @@
+
+---
+- name: Debug mesh ping issue
+  hosts: all
+  tasks:
+    - name: Check if mesh is enabled
+      command: ip -o link show | awk '{print $2}' | grep "mesh"
+      register: mesh_enabled
+      ignore_errors: true
+
+    - name: Display current mesh settings
+      command: iw dev mesh0 info
+      when: mesh_enabled.rc == 0
+      register: mesh_info
+
+    - name: Restart mesh interface
+      command: ifdown mesh0 && ifup mesh0
+      when: mesh_enabled.rc == 0
+      ignore_errors: true
+
+    - name: Test mesh ping connection
+      command: ping -c 1 {{ inventory_hostname }}
+      register: mesh_ping
+
+    - name: Display mesh ping result
+      debug: var=mesh_ping.stdout_lines

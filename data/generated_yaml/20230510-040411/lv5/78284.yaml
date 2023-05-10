@@ -1,0 +1,28 @@
+
+- name: Add GCP instances to inventory
+  hosts: localhost
+  gather_facts: no
+  
+  vars:
+    labels:
+      environment: production
+
+  tasks:
+    - name: Authenticate with GCP
+      gcp_compute_auth:
+        auth_kind: serviceaccount
+        service_account_file: /path/to/service_account_file.json
+        project: my-gcp-project
+
+    - name: Retrieve instance information
+      gcp_compute_instance_info:
+        filters:
+          labels: "{{ labels }}"
+      register: instances
+
+    - name: Add instances to inventory
+      add_host:
+        name: "{{ item.networkInterfaces[0].accessConfigs[0].natIP }}"
+        groups: my-group
+        ansible_host: "{{ item.networkInterfaces[0].accessConfigs[0].natIP }}"
+      with_items: "{{ instances.instances }}"

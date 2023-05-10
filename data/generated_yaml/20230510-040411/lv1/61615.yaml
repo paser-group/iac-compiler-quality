@@ -1,0 +1,53 @@
+
+---
+- name: Fixing maximum recursion error while using the FortiOS HTTPAPI
+  hosts: your_fortios_servers
+  gather_facts: no
+  
+  vars:
+    fortios_httpapi_devel_version: latest
+    fortios_httpapi_stable_version: stable-2.9
+    fortios_httpapi_repo: fortios-httpapi
+
+  tasks:
+    - name: Install FortiOS HTTPAPI dependencies
+      yum:
+        name:
+          - gcc
+          - python3-devel
+          - openssl-devel
+        state: present
+
+    - name: Install FortiOS HTTPAPI package with the selected branch
+      pip:
+        name: "{{ fortios_httpapi_repo }}=={{ fortios_httpapi_devel_version }}"
+        state: present
+      when: "'devel' in fortios_httpapi_devel_version"
+
+    - name: Install FortiOS HTTPAPI package with the selected branch
+      pip:
+        name: "{{ fortios_httpapi_repo }}=={{ fortios_httpapi_stable_version }}"
+        state: present
+      when: "'stable' in fortios_httpapi_stable_version"
+
+    - name: Fix maximum recursion error
+      block:
+        - name: Get users
+          fortios_system_global:
+            username: admin
+            password: fortinet
+            host: 192.0.2.10
+            https: yes
+            trust_env: yes
+            debug: no
+
+      rescue:
+        - name: Reboot the device and try again
+          fortios_system_global:
+            username: admin
+            password: fortinet
+            host: 192.0.2.10
+            https: yes
+            trust_env: yes
+            debug: no
+            fallback: true

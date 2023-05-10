@@ -1,0 +1,34 @@
+
+- name: Fuzz testing for gcp_compute_instance
+  hosts: localhost
+  vars:
+    project_id: 'myproject'
+    zone: 'us-east1-b'
+  tasks:
+    - name: Testing unexpected inputs
+      gcp_compute_instance:
+        name: '{{ item }}'
+        machine_type: f1-micro
+        zone: '{{ zone }}'
+        project: '{{ project_id }}'
+        disks:
+          - auto_delete: true
+            boot: true
+            initialize_params:
+              source_image: projects/debian-cloud/global/images/debian-9-stretch-v20190326
+        network_interfaces:
+          - network: '/wrong-value'
+            access_configs:
+              - name: AccessConfig
+                type: ONE_TO_ONE_NAT
+                nat_ip: ''
+        metadata:
+          items: []
+      loop:
+        - 'test-instance'
+        - 1
+        - 12.3
+        - []
+        - {}
+        - null
+        - 'this-is-a-very-long-instance-name-that-should-fail-because-the-maximum-is-63-characters-and-this-is-way-too-long-for-that'

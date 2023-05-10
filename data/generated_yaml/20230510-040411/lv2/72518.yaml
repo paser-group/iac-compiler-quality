@@ -1,0 +1,83 @@
+
+---
+- name: Test Playbook for [Errno 2] No such file or directory
+  hosts: all
+  gather_facts: yes
+
+  vars:
+    custom_fact_dir: "/etc/ansible/facts.d/"
+
+  tasks:
+    # Exercise the bad interpreter error scenario
+    - name: Test bad interpreter error scenario
+      command: "{{ custom_fact_dir }}/mycustomfact.py"
+      register: result
+      changed_when: false
+      ignore_errors: true
+      environment:
+        PATH: "/usr/bin:/usr/sbin:/bin:/sbin"
+
+    - name: Show bad interpreter error output
+      debug:
+        var: result.stdout_lines
+
+    # Exercise other scenarios
+    - name: Test with missing custom fact file
+      ansible.builtin.file:
+        path: "{{ custom_fact_dir }}/missing_fact.py"
+        state: absent
+
+    - name: Test with non-executable fact file
+      ansible.builtin.file:
+        path: "{{ custom_fact_dir }}/non_exec_fact.py"
+        mode: "0644"
+
+    - name: Test with invalid fact file content
+      copy:
+        dest: "{{ custom_fact_dir }}/invalid_fact.py"
+        mode: "0744"
+        content: |
+          #!/usr/bin/python
+
+          print("This is an invalid fact file syntax )
+
+    - name: Test with unreadable fact file
+      ansible.builtin.file:
+        path: "{{ custom_fact_dir }}/unreadable_fact.py"
+        mode: "0000"
+
+    - name: Test with empty fact file
+      copy:
+        dest: "{{ custom_fact_dir }}/empty_fact.py"
+        mode: "0744"
+        content: ""
+
+    - name: Test with custom fact containing incorrect character
+      copy:
+        dest: "{{ custom_fact_dir }}/mycustomfact.py"
+        mode: "0744"
+        content: |
+          #!/usr/bin/python
+
+          print("This fact contains an incorrect character ÷" + " - this should generate an [Errno 2] No such file or directory error.")
+
+    - name: Test with custom fact using unconventional syntax
+      copy:
+        dest: "{{ custom_fact_dir }}/my_custom_fact.sh"
+        mode: "0744"
+        content: |
+          #!/usr/bin/sh
+
+          echo "my_custom_fact_value"
+
+    - name: Test with custom fact using unexpected input
+      copy:
+        dest: "{{ custom_fact_dir }}/my_custom_fact.py"
+        mode: "0744"
+        content: |
+          #!/usr/bin/python
+
+          import subprocess
+
+          disk_usage = subprocess.check_output(["df", "-h"])
+          print("My_custom_fact: " + disk_usage)

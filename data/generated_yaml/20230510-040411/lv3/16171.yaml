@@ -1,0 +1,46 @@
+
+---
+- hosts: all
+  become: yes
+  gather_facts: yes
+
+  vars:
+    elb_name: "your-elb-name"
+    elb_dns_name: "your-elb-dns-name"
+    region: "your-region"
+
+  tasks:    
+  - name: Create HTTPS ELB listeners
+    ec2_elb_lb:
+      state: present
+      name: "{{ elb_name }}"
+      region: "{{ region }}"
+      listeners:
+        - elb_protocol: https
+          elb_port: 443
+          instance_protocol: http
+          instance_port: 80
+          ssl_certificate_id: "your-ssl-certificate-id"
+      subnets:
+        - "your-subnet-id"
+      security_group: "your-security-group-id"
+      dns_name: "{{ elb_dns_name }}"
+      wait: true
+    register: create_elb
+
+  - name: Check HTTPS ELB listeners
+    uri:
+      url: "https://{{ elb_dns_name }}"
+    failed_when: false
+    register: result
+
+  - name: Debug HTTPS ELB listeners
+    debug:
+      var: result
+
+    
+- name: Remove ELB and related listeners
+    ec2_elb_lb:
+      state: absent
+      name: "{{ elb_name }}"
+      region: "{{ region }}"

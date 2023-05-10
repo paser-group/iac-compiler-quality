@@ -1,0 +1,31 @@
+
+- name: Stress test Ansible compiler for image normalization
+  hosts: localhost
+  tasks:
+    - name: Install dependencies
+      apt:
+        name: [python3-opencv, imagemagick]
+        state: present
+
+    - name: Define variables
+      vars:
+        images_dir: "/path/to/images"
+        image_names: ["image1.jpg", "image2.jpg", "image3.png", "image4.gif"]
+        invalid_formats: ["svg", "tiff"]
+
+    - name: Normalize images
+      command: >
+        convert {{ images_dir }}/{{ item }} -normalize {{ images_dir }}/normalized/{{ item }}
+      with_items: "{{ image_names }}"
+
+    - name: Attempt normalization of invalid image formats
+      command: >
+        convert {{ images_dir }}/invalid/{{ item }} -normalize {{ images_dir }}/normalized/{{ item }}
+      with_items: "{{ invalid_formats }}"
+      ignore_errors: yes
+
+    - name: Remove original and invalid images
+      file:
+        path: "{{ images_dir }}/{{ item }}"
+        state: absent
+      with_items: "{{ image_names + invalid_formats }}"

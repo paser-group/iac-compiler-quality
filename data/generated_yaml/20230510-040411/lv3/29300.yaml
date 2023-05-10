@@ -1,0 +1,45 @@
+yaml
+- hosts: localhost
+  gather_facts: no
+
+  vars:
+    aws_access_key: "<access_key>"
+    aws_secret_key: "<secret_key>"
+    region: "<region>"
+    vpc_id: "<vpc_id>"
+    route_table_name: "SampleRouteTable"
+    destination_cidr_block: "10.0.0.0/16"
+    gateway_id: "<internet_gateway_id>"
+
+  tasks:
+    - name: Create VPC Route Table
+      ec2_vpc_route_table:
+        state: present
+        region: "{{ region }}"
+        vpc_id: "{{ vpc_id }}"
+        tags:
+          Name: "{{ route_table_name }}"
+
+    - name: Add First Route to SampleRouteTable
+      ec2_vpc_route:
+        region: "{{ region }}"
+        vpc_id: "{{ vpc_id }}"
+        route_table: "{{ route_table_name }}"
+        destination_cidr_block: "{{ destination_cidr_block }}"
+        gateway_id: "{{ gateway_id }}"
+
+    - name: Add Second Route with same name
+      ec2_vpc_route_table:
+        state: present
+        region: "{{ region }}"
+        vpc_id: "{{ vpc_id }}"
+        tags:
+          Name: "{{ route_table_name }}"
+
+      register: second_route
+
+      # verify that the register variable contains the error message in case of a 'Name' tag already existing
+    - assert:
+        that:
+          - second_route is failed
+          - "A VPC route table already exists with the same Name tag." in second_route.msg

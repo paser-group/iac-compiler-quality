@@ -1,0 +1,37 @@
+
+---
+- name: Test Ansible inventory parsing
+  hosts: localhost
+  gather_facts: no
+  
+  tasks:
+  - name: Setup OpenStack credentials
+    os_auth:
+      cloud: myopenstack
+      auth:
+        username: "{{ os_username }}"
+        password: "{{ os_password }}"
+        project_name: "{{ os_tenant_name }}"
+        auth_url: "{{ os_auth_url }}"
+    register: os_auth
+  
+  - name: Get inventory from OpenStack
+    os_server:
+      cloud: myopenstack
+      name: "{{ inventory_server }}"
+      state: present
+    register: os_inventory
+  
+  - name: Write inventory to file
+    copy:
+      content: "{{ os_inventory.stdout | from_json | to_nice_json }}"
+      dest: /tmp/inventory.json
+  
+  - name: Load inventory from file
+    inventory:
+      host_list: /tmp/inventory.json
+    register: inv
+  
+  - name: Debug inventory
+    debug:
+      var: inv

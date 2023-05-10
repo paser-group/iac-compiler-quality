@@ -1,0 +1,30 @@
+yaml
+---
+- name: Get URL from HTTPS endpoint
+  hosts: localhost
+  gather_facts: no
+  tasks:
+    - name: Download File
+      get_url:
+        url: "https://example.com/file.txt"
+        dest: "/path/to/destination/file.txt"
+      register: result
+      retries: 3
+      delay: 5
+      until: result.status == 200 or result.status == 404
+      when: result is failed
+
+- name: Retry get_url task if it fails due to TLS issue
+  hosts: localhost
+  gather_facts: no
+  tasks:
+    - name: Retry download file
+      get_url:
+        url: "https://example.com/file.txt"
+        dest: "/path/to/destination/file.txt"
+      register: result
+      retries: 5
+      delay: 10
+      until: result.status == 200 or result.status == 404
+      failed_when: >
+        "Request failed: <urlopen error [SSL: TLSV1_ALERT_PROTOCOL_VERSION] tlsv1 alert protocol version (_ssl.c:590)>" in result.stdout

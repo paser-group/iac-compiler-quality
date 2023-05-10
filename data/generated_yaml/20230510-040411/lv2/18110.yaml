@@ -1,0 +1,24 @@
+
+- name: Ansible playbook for Async error with check_mode issue
+  hosts: localhost
+  gather_facts: false
+  tasks:
+  - name: Set up test environment
+    file: path=/tmp/async_test state=directory
+  - name: Install required python libraries
+    pip: name={{ item }} state=latest
+    with_items:
+    - testlibrary
+    - asyncssh
+    - pytest
+  - name: Run pytest with async test case
+    command: pytest -m async -s
+    async: true
+    poll: 5
+    ignore_errors: true
+    changed_when: false
+    register: test_result
+  - name: Stop the pytest task
+    async_status:
+      jid: "{{ test_result.ansible_job_id }}"
+      state: stopped

@@ -1,0 +1,30 @@
+yaml
+---
+- hosts: all
+  gather_facts: no
+  tasks:
+    - name: Create a list of dictionaries with random keys and values
+      set_fact:
+        my_dict_list: >-
+          {{
+            [
+              {'foo': 'bar', 'baz': 42},
+              {'alice': 'bob', 'charlie': 3.14},
+              {'ping': 'pong', 'spam': 'eggs'},
+              {'ham': 'spam', 'parrot': [1,2,3]},
+              {'foo': 'baz', 'answer': 42},
+              {'alice': 'charlie', 'ping': 'pong'},
+              {'spam': 'eggs', 'parrot': {'a': 1, 'b': 2}},
+              {'foo': 'bar', 'baz': {'a' :[1,2,3], 'b': 'spam'}}
+            ] | shuffle | choose(4)
+          }}
+
+    - name: Group the list by the 'foo' key
+      group_by:
+        key: "{{ item.foo }}"
+      with_items: "{{ my_dict_list }}"
+
+    - name: Check the group membership for each item in the list
+      debug:
+        msg: "{{ item }} is a member of the group: {{ item.foo }}"
+      with_items: "{{ my_dict_list }}"

@@ -1,0 +1,35 @@
+yaml
+---
+# Playbook to configure a FEX on Nexus 5K switches using nxos_config module
+
+- name: Configure FEX on Nexus 5K
+  hosts: nexus-switches
+
+  vars:
+    fex_id: 101
+    fabric_id: 101
+    parent_interface: Ethernet1/1
+
+  tasks:
+    - name: Configure FEX interface
+      nxos_config:
+        lines:
+          - interface fex {{ fex_id }}
+            fabric-id {{ fabric_id }}
+            pinning border
+            description "FEX {{ fex_id }}"
+      register: output_fex_interface
+      become: yes
+      become_method: enable
+
+    - name: Configure parent interface
+      nxos_config:
+        lines:
+          - interface {{ parent_interface }}
+            switchport mode fex-fabric
+            fex associate {{ fex_id }}
+            description "Parent interface for FEX {{ fex_id }}"
+      register: output_parent_interface
+      when: output_fex_interface.changed == True
+      become: yes
+      become_method: enable

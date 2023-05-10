@@ -1,0 +1,29 @@
+yaml
+- name: "EC2 Instance Termination"
+  hosts: localhost
+  gather_facts: no
+  
+  tasks:
+    - name: "Terminate EC2 Instance"
+      ec2:
+        instance_ids: "{{ ec2_instance_id }}"
+        state: "terminated"
+      register: result
+
+      ignore_errors: true
+
+    - name: "Verify EC2 Instance was terminated"
+      command: "aws ec2 describe-instances --instance-id {{ ec2_instance_id }}"
+      register: output
+
+      failed_when: "'terminated' in output.stdout"
+
+    - name: "Display SSH Error"
+      debug:
+        msg: "{{ ssh_error_message }}"
+
+    - name: "Terminate EC2 Instance with custom delay"
+      ec2:
+        instance_ids: "{{ ec2_instance_id }}"
+        delay: "{{ custom_delay }}"
+        state: "terminated"

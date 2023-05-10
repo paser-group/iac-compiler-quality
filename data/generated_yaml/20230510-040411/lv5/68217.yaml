@@ -1,0 +1,70 @@
+
+---
+- name: Ansible Playbook to test ec2_group
+  hosts: localhost
+  connection: local
+  gather_facts: False
+
+  vars:
+    vpcs:
+      - name: vpc1
+        cidr_block: 10.0.0.0/16
+        region: us-east-1
+        groups:
+          - name: group1
+            region: us-east-1
+            vpc: vpc1
+            rules:
+              - proto: tcp
+                from_port: 22
+                to_port: 22
+              - proto: tcp
+                from_port: 80
+                to_port: 80
+      - name: vpc2
+        cidr_block: 192.168.0.0/16
+        region: us-west-2
+        groups:
+          - name: group2
+            region: us-west-2
+            vpc: vpc2
+            rules:
+              - proto: tcp
+                from_port: 443
+                to_port: 443
+  tasks:
+    - name: Create VPCs
+      ec2_vpc_net:
+        name: "{{ item.name }}"
+        cidr_block: "{{ item.cidr_block }}"
+        region: "{{ item.region }}"
+        state: present
+      with_items: "{{ vpcs }}"
+      register: vpcs_created
+
+    - name: Create Security Groups
+      ec2_group:
+        state: present
+        region: "{{ item.region }}"
+        name: "{{ item.name }}"
+        description: "{{ item.name }}"
+        vpc_id: "{{ hostvars[item.vpc].ec2_vpc_net.id }}"
+        rules: "{{ item.rules }}"
+        tags:
+          Name: "{{ item.name }}"
+      with_items: "{{ vpcs|selectattr('groups')|map(attribute='groups')|flatten }}"
+      when: vpcs_created.changed
+
+    - name: Create instances in each group
+      ec2:
+        state: present
+        region: "{{ item.region }}"
+        key_name: mykey
+        instance_type: t2.micro
+        image: ami-0f65671a86f061fcd
+        vpc_subnet_id: "{{ hostvars[item.vpc].ec2_vpc_net.subnets[0].id }}"
+        group_id: "{{ hostvars[item].ec2_group[0].id }}"
+        count: 2
+        wait: true
+      with_items: "{{ vpcs|selectattr('groups')|map(attribute='groups')|flatten }}"
+      when: vpcs_created.changed

@@ -1,0 +1,34 @@
+yaml
+---
+- name: Set mem_reservation to 0 for VMWare guest
+  hosts: all
+  tasks:
+    - name: Set mem_reservation to 0
+      vmware_guest:
+        hostname: vcenter.example.com
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: no
+        datacenter: dc1
+        name: "TestVM"
+        mem_reservation: 0
+        state: poweredon
+      register: guest_mem_reservation
+
+    - name: Verify if mem_reservation set to 0
+      debug:
+        var: guest_mem_reservation
+
+    - fail:
+        msg: "Failed to set mem_reservation to 0"
+      when: guest_mem_reservation.failed == true
+
+    - name: Power off the VM
+      vmware_guest:
+        hostname: vcenter.example.com
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: no
+        datacenter: dc1
+        name: "TestVM"
+        state: poweredoff

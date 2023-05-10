@@ -1,0 +1,20 @@
+
+- name: Install package with arguments in virtual environment
+  hosts: all
+  gather_facts: true
+  tasks:
+  - name: Create a virtual environment
+    command: virtualenv -p python3 {{ virtualenv_dir }}
+  - name: Install package with arguments
+    pip:
+      name: package_name
+      virtualenv: "{{ virtualenv_dir }}"
+      virtualenv_command: "{{ virtualenv_dir }}/bin/python -m venv"
+  - name: Check if package is installed in the expected location
+    stat:
+        path: "{{ virtualenv_dir }}/lib/python3.8/site-packages/package_name"
+    register: file_stat
+  - name: Fail the task if the package is not present in the expected location
+    fail:
+        msg: "Package is present in an unexpected location, vulnerability found!"
+    when: not file_stat.stat.exists

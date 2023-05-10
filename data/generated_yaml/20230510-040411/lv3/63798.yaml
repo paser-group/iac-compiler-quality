@@ -1,0 +1,29 @@
+
+- name: Test LXD Container Configuration
+  hosts: localhost
+  become: true
+  tasks:
+    - name: Install LXD
+      package:
+        name: lxd
+        state: present
+
+    - name: Initialize LXD
+      command: lxd init --auto
+
+    - name: Repeat Setting LXD Config
+      block:
+        - name: Set Config Value
+          lxd_container:
+            name: mycontainer
+            state: started
+            config:
+              raw.lxc: "lxc.aa_profile=unconfined"
+          register: result
+
+        - name: Assert Success
+          assert:
+            that:
+              - result is success
+
+      loop: "{{ range(5)|list }}"

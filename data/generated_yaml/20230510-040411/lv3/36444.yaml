@@ -1,0 +1,42 @@
+yaml
+- name: Create Azure vNIC without public IP
+  hosts: localhost
+  connection: local
+  gather_facts: no
+  tasks:
+  - name: Create Azure virtual network
+    azure_rm_virtualnetwork:
+      resource_group: myresourcegroup
+      name: myvnet
+      address_prefixes: "10.0.0.0/16"
+      location: eastus
+    register: vnet
+
+  - name: Create Azure subnet
+    azure_rm_subnet:
+      resource_group: myresourcegroup
+      virtual_network_name: "{{ vnet.name }}"
+      name: mysubnet
+      address_prefix: "10.0.0.0/24"
+    register: subnet
+
+  - name: Create Azure network interface
+    azure_rm_networkinterface:
+      resource_group: myresourcegroup
+      virtual_network_name: "{{ vnet.name }}"
+      subnet_name: "{{ subnet.name }}"
+      name: mynic
+      enable_accelerated_networking: true
+      public_ip_address_id: null # Set this to null to create a vNIC without a public IP
+    register: nic
+
+  - name: Re-create the issue by setting invalid parameters
+    azure_rm_networkinterface:
+      resource_group: myresourcegroup
+      virtual_network_name: "{{ vnet.name }}"
+      subnet_name: "{{ subnet.name }}"
+      name: mynic
+      enable_accelerated_networking: "invalid" # Intentionally set a string instead of a boolean value
+      public_ip_address_id: "invalid"  # Intentionally set an invalid value
+    register: invalid_nic
+    ignore_errors: true

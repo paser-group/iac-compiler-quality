@@ -1,0 +1,34 @@
+
+---
+- name: Test playbook for privilege escalation issue
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    prompt: '\nolt1# '
+
+  tasks:
+    - name: Attempting privilege escalation with wrong password
+      expect:
+        shell: "su -c 'whoami' root"
+        responses:
+          Password: "wrongpassword\r"
+        echo: yes
+      register: wrong_password
+      
+    - name: Fail the playbook if the previous task succeeds
+      fail:
+        msg: "Escalation with wrong password was successful"
+      when: wrong_password.rc == 0
+    
+    - name: Attempting privilege escalation with correct password
+      expect:
+        shell: "su -c 'whoami' root"
+        responses:
+          Password: "correctpassword\r"
+          "{{ prompt }}": "\r"
+        echo: yes
+
+This playbook makes use of the `expect` module to try and escalate privileges to enable mode. The `wrong_password` task tests what happens when a wrong password is supplied for the root user. The `fail` module is then called if the `wrong_password` task manages to succeed, which would be unexpected. The `correct_password` task tests what happens when the correct password is provided, and includes the prompt to enable mode in the responses field, using unconventional syntax.
+
+This playbook uses unexpected inputs by passing the prompt symbol as a variable and uses unconventional syntax by including it inside the `responses` field with a double quoting.

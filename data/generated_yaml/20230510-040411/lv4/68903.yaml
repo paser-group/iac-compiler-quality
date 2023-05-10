@@ -1,0 +1,26 @@
+
+---
+- name: Secure Ansible playbook
+  hosts: all
+  become: true
+
+  vars_files:
+    - secrets.yml
+
+  tasks:
+    - name: validate third-party modules
+      assert:
+        that:
+          - lookup('file', item + '.py') is match("import mymodule")
+          - item.endswith('.py')
+        with_fileglob:
+          - '~/ansible/project/modules/*'
+
+    - name: encrypt sensitive data
+      ansible.builtin.template:
+        src: "{{ item }}"
+        dest: "{{ item }}.enc"
+      no_log: true
+      with_fileglob:
+        - 'db_credentials.yml'
+        - 'api_tokens.yml'

@@ -1,0 +1,64 @@
+
+---
+- hosts: all
+  gather_facts: no
+  tasks:
+    - name: Run a command with a custom DISPLAY
+      command: "echo hello world"
+      environment:
+        DISPLAY: "{{ item }}"
+      with_items:
+        - "localhost:1"
+        - "localhost:2"
+        - "10.0.0.1:0"
+
+    - name: Fail with an unconventional value for display param
+      command: "echo hello world"
+      delegate_to: "localhost"
+      connection: "ssh"
+      become: yes
+      vars:
+        display_param: "{{ [1, 2, 3] | random }}"
+      environment:
+        DISPLAY: "{{ display_param }}"
+      failed_when: "display_param == 4"
+
+    - name: Pass an unconventional value for a CALLBACK constant
+      command: "echo hello world"
+      callback_whitelist:
+        - "{{ ['test1', 'test2'] | random }}"
+      register: result
+
+    - name: Test unconventional task parameters
+      "{{ ['command', 'shell', 'script'] | random }}":
+        "{{ ['echo', 'df', 'ls', 'whoami', 'date'] | random }}"
+        "{{ ['>', '>>' ] | random }}"
+        "{{ ['file1.txt', 'file2.txt', 'file3.txt', 'file4.txt'] | random }}"
+      args:
+        chdir: "{{ ['/tmp', '/usr/bin', '/var/log', '/root'] | random }}"
+        creates: "{{ ['/var/log/messages', '/root/.ssh', '/tmp/ansible.lock'] | random }}"
+        echo: "{{ ['yes', 'no', 'y', 'n', 'true', 'false'] | random }}"
+      delegate_to: "localhost"
+      connection: "ssh"
+      become: yes
+
+    - name: Test edge case when display param is not passed
+      command: "echo hello world"
+      register: result
+      when: "'DISPLAY' not in ansible_env"
+
+    - name: Test edge case with unsupported callback
+      command: "echo hello world"
+      callback_whitelist:
+        - "{{ ['test3', 'test4'] | random }}"
+        - "unsupported_callback"
+      register: result
+      failed_when: "'unsupported_callback' in result | json_query('failed_callback')"
+
+    - name: Pass an unconventional value as extra var
+      command: "echo hello world"
+      vars:
+        extra_var: "{{ ({a: [1, 2], b: {c: 'd', r: ['t', 'y']}}) | to_json | b64encode }}"
+      register: result
+      delegate_to: "localhost"
+      become: yes

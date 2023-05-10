@@ -1,0 +1,40 @@
+
+- name: Test gce.py inventory script
+  hosts: localhost
+  tasks:
+    - name: Install google-auth module
+      pip:
+        name: google-auth
+    - name: Install apache-libcloud library
+      pip:
+        name: apache-libcloud
+    - name: Include the contrib inventory plugin
+      include_vars:
+        file: "{{ inventory_dir }}/../contrib/inventory/gce.py"
+    - name: Set gce.py credentials
+      set_fact:
+        gce_credentials_file: "{{ '~/.gce/credentials' }}"
+    - name: Override gce.py vars
+      set_fact:
+        gce_project: "{{ 'my-gce-project' }}"
+    - name: Test missing GCE credentials
+      set_fact:
+        gce_credentials_file: "{{ '/invalid/path/to/credentials' }}"
+      run_once: true
+      delegate_to: localhost
+    - name: Test with invalid gce_project
+      set_fact:
+        gce_project: "non-existent-gce-project-123"
+    - name: Test empty instance_tags
+      set_fact:
+        gce_instance_tags: []
+    - name: Test invalid zone
+      set_fact:
+        gce_zone: "us-west-2c"
+    - name: Test invalid default_timeout_minutes
+      set_fact:
+        gce_default_timeout_minutes: -5
+    - name: Execute gce.py
+      inventory:
+        script: "{{ inventory_dir }}/../contrib/inventory/gce.py"
+      register: inventory_output

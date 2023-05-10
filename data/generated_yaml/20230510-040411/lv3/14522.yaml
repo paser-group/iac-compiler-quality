@@ -1,0 +1,33 @@
+
+- hosts: localhost
+  tasks:
+    - name: Create a soft link and encrypt it using Ansible Vault
+      file:
+        src: "/path/to/source/file"
+        dest: "/path/to/destination/link"
+        state: link
+        follow: false
+      vars_prompt:
+        - name: "vault_key"
+          prompt: "Enter the Ansible Vault encryption key"
+          private: true
+      vars:
+        vault_destination: !vault |
+              $ANSIBLE_VAULT;1.1;AES256
+              62323033303866646665333236363264303335623235643635386232356237366639623134303966
+              6464373438663338356133386538356431376537646138380a363165613238353930313062336436
+              32316335353130326461376365323430346266636365306634613536326239633462646264306465
+              6661663632616331380a383331666565656337333062323664323835356663613033633335323066
+              3433
+
+    - name: Check if link is created successfully
+      stat:
+        path: "/path/to/destination/link"
+      register: result
+
+    - name: Decrypt and display the destination link data
+      command: "cat /path/to/destination/link"
+      no_log: true
+      when: result.stat.exists
+      vars:
+        destination_content: !vault "{{ vault_destination }}"

@@ -1,0 +1,70 @@
+
+---
+- name: Test Ansible MySQL module error handling
+  hosts: localhost
+  vars:
+    mysql_user: test_user
+    mysql_password: test_pwd
+    mysql_database: testdb
+  tasks:
+  - name: Install MySQL client library with command module
+    command: sudo apt install -y mysql-client
+    register: command_output
+    changed_when: false
+    ignore_errors: true
+  - name: Display command output with debug module
+    debug:
+      msg: "{{ command_output.stdout_lines }}"
+  - name: Create MySQL user with quote and semi-colon as password
+    mysql_user:
+      name: "{{ mysql_user }}"
+      password: '"; DROP DATABASE testdb; --'
+      login_user: root
+      login_password: root
+      login_host: localhost
+      login_port: 3306
+  - name: Create MySQL database with non-ASCII name
+    mysql_db:
+      name: "测试数据库"
+      state: present
+      login_user: "{{ mysql_user }}"
+      login_password: "{{ mysql_password }}"
+      login_host: localhost
+      login_port: 3306
+  - name: Backup MySQL database with non-standard directory
+    mysql_db:
+      name: "{{ mysql_database }}"
+      state: dump
+      target: "/tmp/{{ mysql_database }}.sql"
+      login_user: "{{ mysql_user }}"
+      login_password: "{{ mysql_password }}"
+      login_host: localhost
+      login_port: 3306
+  - name: Restore MySQL database from incomplete file
+    mysql_db:
+      name: "{{ mysql_database }}"
+      state: import
+      source: '/tmp/incomplete.sql'
+      login_user: "{{ mysql_user }}"
+      login_password: "{{ mysql_password }}"
+      login_host: localhost
+      login_port: 3306
+  - name: Check if MySQL database exists with incorrect syntax
+    mysql_db:
+      state: "{{ mysql_database }} present"
+      login_user: "{{ mysql_user }}"
+      login_password: "{{ mysql_password }}"
+      login_host: localhost
+      login_port: 3306
+  - name: Insert data with SQL injection using MySQL query module
+    mysql_query:
+      db: "{{ mysql_database }}"
+      login_user: "{{ mysql_user }}"
+      login_password: "{{ mysql_password }}"
+      login_host: localhost
+      login_port: 3306
+      query: 'INSERT INTO users (username, password) VALUES ("admin", "admin"); DROP DATABASE testdb;")--")'
+    register: mysql_query_output
+  - name: Display MySQL query output with debug module
+    debug:
+      msg: "{{ mysql_query_output }}"

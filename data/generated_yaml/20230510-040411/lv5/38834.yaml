@@ -1,0 +1,23 @@
+yaml
+- name: selective callback test
+  hosts: localhost
+  tasks:
+    - name: selective callback task
+      apt:
+        name: apache2
+        state: present
+      register: apache_install
+
+    - name: lineinfile edits
+      lineinfile:
+        path: /etc/apache2/apache2.conf
+        regexp: '^(.*)LoadModule rewrite_module(.*)'
+        line: 'LoadModule rewrite_module modules/mod_rewrite.so'
+      register: line_edit
+
+    - name: verify selective callback status
+      command: echo "status is {{ item.ansible_job_status }}"    
+      with_items: "{{ ansible_play_batch }}"
+      when: item.ansible_job_uuid == '{{ apache_install._ansible_job_id }}'
+      register: selective_callback_status
+      ignore_errors: true

@@ -1,0 +1,26 @@
+
+---
+- name: Fix conditional error in inventory
+  hosts: all
+  gather_facts: true
+  tasks:
+    - name: Ensure option is set to yes
+      set_fact:
+        my_option: yes
+      when: my_option is not defined
+    - name: Update inventory file
+      lineinfile:
+        path: "/path/to/inventory-file"
+        regexp: "^my_option="
+        line: "my_option={{ my_option }}"
+      become: yes
+      backup: yes
+      register: inventory_updated
+    - name: Restart services if inventory file updated
+      service:
+        name: "{{ item }}"
+        state: restarted
+      with_items:
+        - service1
+        - service2
+      when: inventory_updated is changed

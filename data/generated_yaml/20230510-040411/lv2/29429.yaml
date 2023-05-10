@@ -1,0 +1,36 @@
+
+---
+- name: Test lvol indempotency
+  hosts: localhost
+  tasks:
+    - name: Create a logical volume with a float argument
+      lvol:
+        vg: test_vg
+        lv: test_lv
+        size: 2.5g
+      register: lv_result
+
+    - name: Check if logical volume was created
+      assert:
+        that: "'successfully created' in lv_result.msg"
+        msg: "Logical volume creation should succeed."
+      register: lv_created
+
+    - name: Re-create the logical volume with unconventional syntax
+      lvol: vg=test_vg lv='test_lv!@#%*' size=2.5g force=yes
+      when: not lv_created['failed']
+
+    - name: Check if logical volume was re-created
+      assert:
+        that: "'successfully created' in lv_result.msg and 'size was changed' in lv_result.msg"
+        msg: "Logical volume re-creation should succeed and size should be changed."
+      when: not lv_created['failed']
+
+    - name: Create a logical volume with an unexpected input
+      lvol: vg=test_vg lv=test_lv size='NaN'
+      ignore_errors: yes
+
+    - name: Check if logical volume creation failed with NaN input
+      assert:
+        that: "'invalid argument' in lv_result.msg"
+        msg: "Logical volume creation should fail with NaN input."

@@ -1,0 +1,34 @@
+
+- name: Test playbook for host_vars in large inventories
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Initialize variables
+      set_fact:
+         large_var_list: "{{ range(0, 100000) | map('string') | list }}"
+    
+    - name: Generate host_vars
+      set_fact:
+        hostvars: "{{ lookup('template', 'empty.yml.j2') }}"
+      vars:
+        key_list: "{{ large_var_list }}"
+
+    - name: Test host_vars performance
+      debug:
+        msg: "{{ hostvars }}"
+      loop: "{{ key_list }}"
+        
+    - name: Test YAML syntax edge case
+      debug:
+        msg: |
+          {{- 'a' if true else '' }}
+          {{- 'b' if false else '' }}
+          {{- 'c' -}}
+
+    - name: Test Jinja2 syntax edge case
+      debug:
+        msg: "{% if ['a', 'b']|random %}Yes{% endif %}"
+
+    - name: Test unexpected input
+      debug: msg="{{ 1/0 }}"

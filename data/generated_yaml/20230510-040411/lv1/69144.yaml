@@ -1,0 +1,17 @@
+
+---
+- hosts: all
+  tasks:
+    - name: Get service facts
+      service_facts:
+        - name: "{{ item }}"
+      loop: "{{ ansible_services }}"
+      register: service_facts_result
+      when: ansible_os_family == 'RedHat' and ansible_service_mgr == 'systemd'
+
+    - name: Stop disabled services
+      systemd:
+        name: "{{ item }}"
+        state: stopped
+      loop: "{{ service_facts_result.services }}"
+      when: item.state == 'unknown' and item.status == 'disabled'

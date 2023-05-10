@@ -1,0 +1,47 @@
+
+- name: Deploy a virtual machine in Azure
+  hosts: localhost
+  connection: local
+  gather_facts: no
+  tasks:
+  - name: Deploy a virtual machine
+    azure_rm_virtualmachine:
+      resource_group: test-resource-group
+      name: test-vm
+      region: eastus
+      admin_username: testuser
+      admin_password: testpassword
+      image:
+        offer: CentOS
+        publisher: OpenLogic
+        sku: '7.6'
+        version: latest
+      vm_size: Standard_DS1_v2
+      network_interfaces:
+        - name: test-nic
+          primary: true
+      os_disk:
+        name: test-osdisk
+        create_option: FromImage
+      data_disks:
+        - name: test-datadisk
+          lun: 0
+          create_option: Empty
+          disk_size_gb: 1
+      storage_account: teststorageaccount
+      storage_container: teststoragecontainer
+      unmanaged_blob: test.vhd
+      state: present
+      invalid_parameter: invalid_value
+    register: result
+
+  - name: Verify that the virtual machine was not deployed successfully
+    fail:
+      msg: "The virtual machine was deployed successfully even though an error was expected"
+    when: not result.failed
+
+  - name: Delete the virtual machine
+    azure_rm_virtualmachine:
+      resource_group: test-resource-group
+      name: test-vm
+      state: absent

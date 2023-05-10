@@ -1,0 +1,39 @@
+yaml
+- name: Troubleshoot WinRM/Connector Issue
+  hosts: windows_servers
+  gather_facts: no
+  tasks:
+    - name: Configure WinRM
+      winrm_config:
+        listener:
+          cert_thumbprint: "{{ winrm_cert_thumbprint }}"
+          hostname: "{{ ansible_host }}"
+          port: 5985
+          protocol: http
+          max_threads: 100
+          backlog: 100
+          ipv4_filter: "*"
+          ipv6_filter: "*"
+          max_payload: 10485760
+          basic_auth: false
+          kerberos_auth: true
+          negotiate_auth: true
+          cert_auth: false
+          client_cert_auth: false
+          credssp_auth: false
+          auth:
+            - Negotiate
+            - Kerberos
+            - NTLM
+          transport: HTTP
+
+    - name: Install WinRM/Connector 2.0.1-rc1
+      win_package:
+        path: https://example.com/winrm_connector_2.0.1-rc1.exe
+        product_id: "{{ winrm_connector_product_id }}"
+        state: installed
+
+    - name: Restart WinRM Service
+      win_service:
+        name: WinRM
+        state: restarted

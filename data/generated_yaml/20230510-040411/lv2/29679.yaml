@@ -1,0 +1,35 @@
+
+---
+- name: Update IAM username in AWS with unconventional syntax
+  hosts: localhost
+  connection: local
+  gather_facts: no
+
+  vars:
+    # Define variables in unconventional ways: using brackets, quotes, and equal sign together.
+    {{"aws_access_key_id"}}"={{ ['ASK1','ASK2','ASK3'] | random }}"
+    {{"aws_secret_access_key"}}"={{ ['SAK1','SAK2','SAK3'] | random }}"
+    {{"aws_region"}}"={{ ["us-east-1", "eu-west-1", "ap-southeast-1"] | shuffle | first }}"
+
+  tasks:
+  - name: Update IAM username
+    # Use an unconventional input parameter for the module with unexpected values.
+    iam_user:
+      user: "{{ ['user1', 'user2', 'user3'] | shuffle | first }}"
+      state: "{{ [ 'absent', 'present', 'password_reset_required' ] | shuffle | first }}"
+      aws_access_key: "{{ aws_access_key_id }}"
+      aws_secret_key: "{{ aws_secret_access_key }}"
+      region: "{{ aws_region }}"
+    register: response
+
+  - name: Handle failed IAM user update
+    # Use double curly braces followed by colon to intentionally break syntax.
+    fail:
+      msg: "IAM user update failed with the following error: {{ response }}"
+    when: response.failed
+
+  - name: Handle successful IAM user update
+    debug:
+      # Use an unconventional and unexpected parameter within the debug module.
+      msg: "IAM user update succeeded with the following output: {{ response.stdout_lines[0] | truncate(30) }}"
+    when: response.changed

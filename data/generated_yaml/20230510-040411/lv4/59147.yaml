@@ -1,0 +1,46 @@
+
+---
+- hosts: localhost
+  gather_facts: false
+
+  vars:
+    gcp_project_id: "my-gcp-project-id"
+    gcp_credentials_file: "/path/to/gcp-creds.json"
+    gcp_service_account_email: "user@example.com"
+
+  tasks:
+    - name: Set up GCP credentials
+      run_once: true
+      delegate_to: localhost
+      gcp_compute_auth:
+        credentials_file: "{{ gcp_credentials_file }}"
+        project_id: "{{ gcp_project_id }}"
+        service_account_email: "{{ gcp_service_account_email }}"
+
+    - name: Retrieve inventory using GCP plugin
+      delegate_to: localhost
+      gcp_compute:
+        auth_kind: "serviceaccount"
+        project: "{{ gcp_project_id }}"
+        zone: "us-central1-a"
+        instance_filters:
+          - name: "my-vm-{{ inventory_hostname }}"
+        auth_file: "{{ gcp_credentials_file }}"
+      register: gcp_inventory
+
+    - name: Modify service account email and retrieve inventory
+      delegate_to: localhost
+      gcp_compute:
+        auth_kind: "serviceaccount"
+        project: "{{ gcp_project_id }}"
+        zone: "us-central1-a"
+        instance_filters:
+          - name: "my-vm-{{ inventory_hostname }}"
+        service_account_email: "invalid-user@example.com"
+        auth_file: "{{ gcp_credentials_file }}"
+      register: gcp_inventory_error
+
+    - name: Check for error message
+      fail:
+        msg: "Ansible compiler bug detected. Inventory retrieval failed when service_account_email is not set."
+      when: "'Failed to retrieve inventory' in gcp_inventory_error.stderr"

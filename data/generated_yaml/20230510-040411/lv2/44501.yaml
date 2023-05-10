@@ -1,0 +1,35 @@
+
+- name: Configure iOS devices
+  hosts: ios-devices
+
+  tasks:
+    - name: Set timeout for SSH session
+      ios_command:
+        commands:
+          - 'ip ssh time-out 300'
+        wait_for:
+          timeout: 5
+          search_regex: '.*'
+          msg: 'SSH timeout not set'
+
+    - name: Configure interface
+      ios_command:
+        commands:
+          - 'interface GigabitEthernet0/0/1'
+          - 'no shutdown'
+          - 'ip address 192.168.0.1 255.255.255.0 timeout=500'
+        wait_for:
+          timeout: 5
+          search_regex: '.*'
+          msg: 'Interface configuration failed'
+
+    - name: Check interface configuration
+      ios_command:
+        commands:
+          - 'show interfaces status'
+        register: interface_output
+        failed_when: interface_output.stdout_lines is not defined
+
+    - name: Display output
+      debug:
+        var: interface_output

@@ -1,0 +1,59 @@
+
+---
+- name: Deploy EC2 instance with private IP, retrieve public IP, and print to terminal
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    region: us-west-2
+    vpc_id: vpc-123456789
+    subnet_id: subnet-123456789
+    private_ip_address: 10.0.0.5
+
+  tasks:
+    # Define necessary variables
+    - name: Define EC2 instance parameters
+      set_fact:
+        ec2_params:
+          region: "{{ region }}"
+          instance_type: t2.micro
+          key_name: my-keypair
+          vpc:
+            id: "{{ vpc_id }}"
+          subnet:
+            id: "{{ subnet_id }}"
+          private_ip_address: "{{ private_ip_address }}"
+          image:
+            id: ami-0c55b159cbfafe1f0
+
+    # Launch EC2 instance
+    - name: Launch EC2 instance
+      ec2:
+        instance_tags:
+          Name: My instance
+        name: My instance
+        state: present
+        count: 1
+        wait: true
+        assign_public_ip: false
+        exact_count: 1
+        instance_type: "{{ ec2_params.instance_type }}"
+        key_name: "{{ ec2_params.key_name }}"
+        vpc_subnet_id: "{{ ec2_params.subnet.id }}"
+        private_ip_address: "{{ ec2_params.private_ip_address }}"
+        image_id: "{{ ec2_params.image.id }}"
+        region: "{{ ec2_params.region }}"
+      register: ec2_instance
+
+    # Retrieve public IP
+    - name: Retrieve public IP
+      uri:
+        url: http://169.254.169.254/latest/meta-data/public-ipv4
+        method: GET
+        return_content: true
+      register: public_ip
+
+    # Print public IP to terminal
+    - name: Print public IP
+      debug:
+        var: public_ip.content

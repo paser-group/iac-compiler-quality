@@ -1,0 +1,66 @@
+
+- name: Test win_unzip error reporting
+  hosts: localhost
+  gather_facts: false
+  
+  tasks:
+  - name: Unzip with no source file
+    win_unzip:
+      src:
+      dest: C:\test
+    register: result1
+    ignore_errors: yes
+    
+  - name: Check result for task1
+    debug:
+      var: result1
+    failed_when: "'Could not find file' not in result1.stderr_lines"
+    
+  - name: Unzip with invalid file extension
+    win_unzip:
+      src: C:\test\invalid.zipx
+      dest: C:\test
+    register: result2
+    ignore_errors: yes
+    
+  - name: Check result for task2
+    debug:
+      var: result2
+    failed_when: "'Could not find file' not in result2.stderr_lines"
+    
+  - name: Unzip with corrupt file
+    win_unzip:
+      src: C:\test\corrupt.zip
+      dest: C:\test
+    register: result3
+    ignore_errors: yes
+    
+  - name: Check result for task3
+    debug:
+      var: result3
+    failed_when: "'The archive is corrupt' not in result3.stderr_lines"
+    
+  - name: Unzip with password
+    win_unzip:
+      src: C:\test\password.zip
+      dest: C:\test
+      password: invalidpassword
+    register: result4
+    ignore_errors: yes
+    
+  - name: Check result for task4
+    debug:
+      var: result4
+    failed_when: "'The archive is password-protected' not in result4.stderr_lines"
+    
+  - name: Unzip with non-windows path
+    win_unzip:
+      src: /tmp/test.zip
+      dest: C:\test
+    register: result5
+    ignore_errors: yes
+    
+  - name: Check result for task5
+    debug:
+      var: result5
+    failed_when: "'only works on the Windows platform' not in result5.stderr_lines"

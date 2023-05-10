@@ -1,0 +1,32 @@
+
+---
+- hosts: target
+  tasks:
+    - name: Install Docker 1.3.2
+      command: docker run hello-world
+      register: docker_1_3_2
+      ignore_errors: true
+      until: docker_1_3_2.rc == 0
+      retries: 3
+      changed_when: false
+    - name: Install docker-py 0.7.0
+      pip:
+        name: docker-py==0.7.0
+      register: docker_py_0_7_0
+      ignore_errors: true
+      until: docker_py_0_7_0.rc == 0
+      retries: 3
+      changed_when: false
+    - name: Test Docker module
+      docker_image:
+        name: hello-world
+        state: present
+      register: docker_test_result
+      ignore_errors: true
+      until: docker_test_result.rc == 0
+      retries: 3
+      changed_when: false
+    - name: Record Results
+      lineinfile:
+        path: /tmp/docker_test.log
+        line: "{{ inventory_hostname }} - Docker Version: 1.3.2, docker-py Version: 0.7.0, Result: {{ docker_test_result.rc }}"

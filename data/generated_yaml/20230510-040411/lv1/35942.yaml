@@ -1,0 +1,29 @@
+yaml
+---
+- name: Fix invalid Jinja2 syntax in become password
+  hosts: your_host_name
+  become: true
+  gather_facts: false
+
+  tasks:
+    - name: Update sudoers file with valid syntax
+      template:
+        src: /etc/sudoers
+        dest: /tmp/sudoers
+        mode: 0440
+        validate: /usr/sbin/visudo -cf %s
+        backup: yes
+      register: sudoers_template
+
+    - name: Check if sudoers file syntax is valid
+      debug:
+        msg: "sudoers file syntax test passed."
+      when: sudoers_template is not changed
+
+    - name: Replace old sudoers file with new one
+      command: mv /tmp/sudoers /etc/
+
+    - name: Restart sudo service
+      service:
+        name: sudo
+        state: restarted

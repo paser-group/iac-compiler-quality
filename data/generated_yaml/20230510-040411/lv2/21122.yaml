@@ -1,0 +1,57 @@
+
+- name: Test GCE module for service account issue
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    gcp_service_account_json: "{{ lookup('file', '/path/to/service/account.json') }}"
+    gcp_project_id: "my-project-id"
+
+  tasks:
+    # Use unconventional syntax to set gcp_service_account_json
+    - gce:
+        instance_names: "{{ item }}"
+        image: debian-10-buster-v20220420
+        size: f1-micro
+        state: present
+        zone: us-west1-a
+        network: default
+        gcp_service_account_json: '{{ "{{" }} {{ "gcp_service_account_json" }} {{ "}}" }}'
+        project_id: "{{ '{{' }}gcp_project_id{{ '}}' }}"
+      with_items:
+        - instance-1
+        - instance-2
+        - instance-3
+
+    # Test unexpected input by setting state to a non-existent value
+    - gce:
+        instance_names: test-vm
+        image: debian-10-buster-v20220420
+        size: f1-micro
+        state: absentee
+        zone: us-west1-a
+        network: default
+        gcp_service_account_json: "{{ gcp_service_account_json }}"
+        project_id: "{{ gcp_project_id }}"
+
+    # Test edge case by specifying an invalid image
+    - gce:
+        instance_names: instance-4
+        image: ubuntu-11.04
+        size: f1-micro
+        state: present
+        zone: us-west1-a
+        network: default
+        gcp_service_account_json: "{{ gcp_service_account_json }}"
+        project_id: "{{ gcp_project_id }}"
+
+  handlers:
+    - name: Restart instance(s)
+      gce:
+        instance_names: "{{ item }}"
+        state: restarted
+      with_items:
+        - instance-1
+        - instance-2
+        - instance-3
+        - instance-4

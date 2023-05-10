@@ -1,0 +1,113 @@
+python
+import requests
+from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.primitives import serialization
+import acme
+import acme.jose
+import acme.client
+import acme.challenges
+import acme.messages
+import acme.jws
+import acme.exceptions
+import OpenSSL
+import os
+import shutil
+
+# Create a new RSA key pair for account and certificate
+key = rsa.generate_private_key(
+    public_exponent=65537,
+    key_size=2048,
+)
+
+# Serialize the key to store it
+account_key = key.private_bytes(
+    encoding=serialization.Encoding.PEM,
+    format=serialization.PrivateFormat.TraditionalOpenSSL,
+    encryption_algorithm=serialization.NoEncryption(),
+)
+
+# Create an ACME client instance
+directory_url = 'https://acme-v02.api.letsencrypt.org/directory'
+net = acme.client.ClientNetwork(key)
+client = acme.client.Client(directory_url, net=net)
+
+# Register an account with Let's Encrypt's ACME server
+regr = client.new_account(
+    acme.messages.NewRegistration.from_data(
+        email='user@example.com',
+        terms_of_service_agreed=True,
+    )
+)
+
+# Choose a domain name to request a certificate for
+domain_name = 'example.com'
+
+# Create authorization objects for the domain name
+authzr = client.new_authorization(
+    acme.messages.NewAuthorization.from_data(
+        identifier=acme.messages.Identifier(
+            acme.messages.IDENTIFIER_FQDN, domain_name,
+        ),
+    )
+)
+
+# Request and validate the http-01 challenge for the authorization object
+challenge = authzr.body.challenges[1]  # Pick http-01 challenge
+response = challenge.response(account_key)
+r = requests.get(challenge.uri)
+c = response.simple_verify(
+    challenge.token,
+    r.content,
+    challenge.authorization_key,
+)
+if not c:
+    raise ValueError('Challenge validation failed')
+
+# Request a certificate for the authorized domain name
+csr_pem = OpenSSL.crypto.create_request(
+    OpenSSL.crypto.FILETYPE_PEM,
+    OpenSSL.crypto.X509Req(),
+)
+csr = acme.messages.CertificateRequest(
+    jws=acme.jws.JWS(
+        payload=OpenSSL.crypto.dump_privatekey(
+            OpenSSL.crypto.FILETYPE_PEM,
+            key,
+        ),
+        protected=acme.jose.Header(
+            alg=acme.jose.RS256,
+            jwk=acme.jose.JWK(
+                key=OpenSSL.crypto.dump_privatekey(
+                    OpenSSL.crypto.FILETYPE_PEM,
+                    key.public_key(),
+                ),
+                alg=acme.jose.RS256,
+                kid=None,
+            ),
+            kid=None,
+            nonce=None,
+        ),
+    ).sign(),
+    csr_pem=OpenSSL.crypto.dump_certificate_request(
+        OpenSSL.crypto.FILETYPE_PEM, csr_pem,
+    ),
+    authorizations=[authzr.uri],
+)
+
+acme_cert = client.request_certificate(csr)
+
+# Save the certificate and key files to a directory
+base_dir = '/home/user/ssl_certs'
+os.makedirs(base_dir, exist_ok=True)
+with open(os.path.join(base_dir, 'cert.pem'), 'w') as f:
+    f.write(acme_cert.fullchain_pem)
+with open(os.path.join(base_dir, 'privkey.pem'), 'w') as f:
+    f.write(key.private_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PrivateFormat.TraditionalOpenSSL,
+        encryption_algorithm=serialization.NoEncryption(),
+    ))
+
+# Provide the certificate to the user, and delete the other certificate
+shutil.copy2(os.path.join(base_dir, 'cert.pem'), '/var/www/example.com/cert.pem')
+os.remove(os.path.join(base_dir, 'cert.pem'))

@@ -1,0 +1,46 @@
+
+- name: Test Ansible Worker Error Handling
+  hosts: all
+  tasks:
+    - name: Attempt to write to read-only file system
+      copy:
+        src: /tmp/example.txt
+        dest: /etc/
+      become: true
+      ignore_errors: yes
+
+    - name: Execute a command as a user with no permission to write to disk
+      command: touch /tmp/testfile
+      become: true
+      become_user: nobody
+      ignore_errors: yes
+
+    - name: Confirm uninformative error when attempting to write a file
+      assert:
+        that: >
+          "error" in command_result.stderr
+          and "permission" in command_result.stderr
+      failed_when: false
+      ignore_errors: yes
+
+    - name: Execute a command that is not installed on the system
+      command: nonexistentcommand
+      ignore_errors: yes
+
+    - name: Confirm uninformative error when a command is not found
+      assert:
+        that: >
+          "not found" in command_result.stderr
+      failed_when: false
+      ignore_errors: yes
+
+    - name: Execute a command with unconventional syntax
+      command: "echo hello world > /dev/null"
+      ignore_errors: yes
+
+    - name: Confirm error when executing a command with unconventional syntax
+      assert:
+        that: >
+          "unexpected token" in command_result.stderr
+      failed_when: false
+      ignore_errors: yes

@@ -1,0 +1,36 @@
+
+- name: Create GCP container node pool
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+    - name: Create a new node pool
+      gcp_container_node_pool:
+        name: test-pool
+        location: "{{ item }}"
+        cluster: test-cluster
+        node_config:
+          machine_type: e2-small
+          disk_size_gb: "{{ lookup('randint', 4096, 8192) }}"
+          preemptible: "{{ lookup('bool', omit) }}"
+          labels:
+            apiversion: v1
+            priority: high
+            test: "unconventional'{{ item }}'"
+        initial_node_count: "{{ item }}"
+      with_items:
+        - central1
+        - central1-a
+        - central1-b
+        - asia-northeast1
+        - global
+        - invalid_location
+        - ['central1-a', 'central1-b', 'central1-c']
+        - null
+        - 0
+        - -1
+        - 99999999999999999999
+      register: node_pool
+
+    - debug:
+        var: node_pool

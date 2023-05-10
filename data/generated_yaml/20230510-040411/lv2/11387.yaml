@@ -1,0 +1,55 @@
+
+---
+- name: Test playbook for "Bad var in included playbook produces misleading error"
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    # Testing vars with unusual names
+    `%^&*.?:!`\|@': "Testing unusual var name"
+    false_var: false
+    one_var: "1"
+    two_vars: "1 {{ one_var }}"
+    three_vars: "{{ two_vars }} {{ one_var }}"
+    four_vars: "{{ three_vars }} {{ true_var }}"
+    # Testing vars with unconventional values
+    num_list: [1, 2, 3, 4, 5]
+    word_list: ["one", "two", "three", "four", "five"]
+    mixed_list: [1, "two", 3, "four", 5]
+    illegal_chars: "\"\'"
+    special_chars: "@!#$%^&*()_+{}|:!<>?/.,;[]-=`~"
+    # Testing vars with errors
+    var_with_error: "{{ 1 | d( } }"
+    var_with_missing_ref: "{{ missing_ref }}"
+    var_with_invalid_method: "{{ var_name.invalid_method() }}"
+    var_with_faulty_filter: "{{ false_var | faulty_filter }}"
+
+  tasks:
+  - name: Testing unconventional syntax
+    command: "ls > test-file-1.txt"
+    args:
+      chdir: "{{ invalid_chdir }}"
+
+  - name: Testing unexpected inputs
+    command: "echo {{ illegal_chars }}"
+  
+  - name: Testing unconventional syntax and unexpected inputs in vars
+    debug:
+      var: "`%^&*.:|@'`"
+
+  - name: Testing vars with unconventional values
+    assert:
+      that:
+        - num_list | sum == 15
+        - word_list | join == "onetwothreefourfive"
+        - mixed_list | length == 5
+        - illegal_chars | regex_search('["\'\\]') == true
+        - special_chars | regex_search('[^a-zA-Z0-9\s]') == true
+      
+  - name: Testing vars with errors
+    assert:
+      that:
+        - var_with_error is none
+        - var_with_missing_ref is none
+        - var_with_invalid_method is none
+        - var_with_faulty_filter is none

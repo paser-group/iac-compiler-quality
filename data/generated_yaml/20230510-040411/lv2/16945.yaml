@@ -1,0 +1,59 @@
+yaml
+- hosts: all
+  gather_facts: false
+
+  vars:
+    group_name: "group1,group2,group3" # Multiple groups
+
+  tasks:
+    - name: "Create group with duplicate name"
+      group:
+        name: group1
+      ignore_errors: yes
+
+    - name: "Add multiple groups in same group"
+      group:
+        name: "{{ group_name }}"
+      with_items:
+        - "{{ group_name.split(',') }}"
+      ignore_errors: yes
+
+    - name: "Add existing group to itself"
+      group:
+        name: "group1:group1"
+      ignore_errors: yes
+
+    - name: "Add nested group to parent group"
+      group:
+        name: "parent_group:{{ group_name }}"
+        state: "present"
+      with_items:
+        - "{{ group_name.split(',') }}"
+
+    - name: "Check if duplicate group exists"
+      fail:
+        msg: "Duplicate group exists"
+      when: >
+        (
+          lookup('group', 'group1') is defined and
+          lookup('group', 'group1').name == "group1"
+        )
+
+    - name: "Check if group is added to itself"
+      fail:
+        msg: "'Can't add group to itself' error"
+      when: >
+        (
+          lookup('group', 'group1') is defined and
+          lookup('group', 'group1').users is defined and
+          'group1' in lookup('group', 'group1').users
+        )
+
+  handlers:
+    - name: "Cleanup group"
+      group:
+        name: "{{ item }}"
+        state: "absent"
+      with_items:
+        - "{{ group_name.split(',') }}"
+

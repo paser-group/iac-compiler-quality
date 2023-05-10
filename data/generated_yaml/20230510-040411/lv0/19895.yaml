@@ -1,0 +1,25 @@
+
+- name: Create VPC and subnets
+  ec2_vpc:
+    state: present
+    region: "{{ aws_region }}"
+    cidr_block: "{{ vpc_cidr }}"
+    resource_tags:
+      Name: "{{ vpc_name }}"
+  register: vpc_result
+
+- name: Wait for subnets to be created
+  wait_for:
+    host: "{{ item.id }}"
+    port: 22
+    state: started
+    timeout: 120
+  loop: "{{ vpc_result.subnets }}"
+
+- name: Create security group
+  ec2_group:
+    name: "{{ sg_name }}"
+    description: "{{ sg_description }}"
+    vpc_id: "{{ vpc_result.id }}"
+    rules:
+      [...]

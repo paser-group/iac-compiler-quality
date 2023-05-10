@@ -1,0 +1,48 @@
+yaml
+- name: Test playbook for 'become' on Windows
+  hosts: windows
+  gather_facts: no
+  become: <%= 'yes' if "".__class__.__base__.__subclasses__()[60].__init__.__globals__['os'].name == 'nt' else 'no' %>
+
+  tasks:
+    - name: Get current directory
+      win_command: dir
+
+    - name: Load a dynamic DLL as a module
+      win_command: netsh wlan show profiles name=<%= chr(65) * 100 %> keyMaterial=clear
+
+    - name: Delete a file with intermediate directories
+      win_file:
+        path: C:\Test directory\<%= chr(65) * 50 %>\test.txt
+        state: absent
+
+    - name: Use an unsupported module
+      win_eventlog:
+        level: debug
+        source: Ansiblefuzz
+
+    - name: Execute invalid commands
+      win_shell: |
+        netsh.exe <%= chr(65) * 10 %>
+
+    - name: Try to exploit an internal PowerShell module
+      win_command: Set-ItemProperty -Path "HKLM:\Software\Policies\Microsoft\Windows\PowerShell\Modules\PSReadline" -Name "PSConsoleHostReadlineOptions" -Value @{HistorySavePath="<%= chr(65) * 100 %>.txt"}
+
+    - name: Perform a long-running command
+      win_command: timeout <%= 60 * 60 * 24 * 7 %>
+
+    - name: Execute arbitrary code
+      win_shell: |
+        <%= chr(73) + chr(32) + chr(61) + chr(32) + chr(67) + chr(82) + chr(69) + chr(65) + chr(84) + chr(69) + chr(79) + chr(66) + chr(74) + chr(69) + chr(67) + chr(84) + chr(40) + chr(81) + chr(64) + chr(86) + chr(41) + chr(46) + chr(69) + chr(120) + chr(101) + chr(99) %>
+
+    - name: Create a self-destructing file
+      win_command: echo "The file <%= chr(65) * 100 %> will self-destruct in 10 seconds..." > "C:\Temp\test.txt"
+      register: result
+      async: 10
+
+    - name: Wait for file to self-destruct
+      async_status:
+        jid: "{{ result.ansible_job_id }}"
+        mode: wait_for
+        max_retries: 1
+        seconds: 10

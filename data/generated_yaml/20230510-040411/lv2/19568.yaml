@@ -1,0 +1,38 @@
+
+- name: Test gc_storage module with new file to bucket
+  hosts: localhost
+  gather_facts: no
+  tasks:
+    - name: Set up Google Cloud Storage credentials
+      gc_storage_auth:
+        service_account_email: "{{ secret_service_account_email }}"
+        credentials_file: "{{ secret_credentials_file }}"
+        project_id: "{{ secret_project_id }}"
+
+    - name: Create test bucket
+      gc_storage_bucket:
+        name: test-bucket
+        project: "{{ secret_project_id }}"
+        state: present
+        
+    - name: Upload new file to test bucket with bad syntax
+      gc_storage_object:
+        bucket: "test-bucket"
+        src: "/{{bad_file_path}}"
+        dest: "$bad\$dest"
+        content_type: text/plain
+        state: present
+        
+    - name: Change ACL on test bucket to undefined user
+      gc_storage_bucket_acl:
+        bucket: test-bucket
+        entity: undefined-user
+        role: writer
+        
+    - name: Upload new file to test bucket
+      gc_storage_object:
+        bucket: test-bucket
+        src: "{{ test_file }}"
+        dest: "/new-file.txt"
+        content_type: text/plain
+        state: present

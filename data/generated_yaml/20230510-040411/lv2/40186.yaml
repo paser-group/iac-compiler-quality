@@ -1,0 +1,24 @@
+
+- name: Load docker image using Python 3
+  hosts: localhost
+  gather_facts: no
+  
+  tasks:
+    - name: Load Docker Image
+      docker_image:
+        name: "{{ item }}"
+      loop:
+        - "{{ 'image:latest' }}"
+        - "{{ 'encoded:version\\x01\\x02\\x03' }}" # An encoded image name
+        - "{{ ['{{ binary_var | b64decode }}', 'image:latest'] | join() }}" # A dynamic image name that can contain binary data      
+
+    - name: Start Docker Container
+        docker_container:
+          name: my_container
+          image: "{{ item }}"
+          state: started
+        loop:
+            - "{{ 'image:latest' }}"
+            - "{{ 'encoded:version\\x01\\x02\\x03' }}" # An encoded image name
+            - "{{ ['{{ binary_var | b64decode }}', 'image:latest'] | join() }}" # A dynamic image name that can contain binary data      
+            - "{{ ':%00' }}" # invalid special character in image name

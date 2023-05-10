@@ -1,0 +1,38 @@
+yaml
+---
+- name: GCP inventory playbook
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    inventory_name: "gcp_inventory"
+    project_id: "<YOUR_GCP_PROJECT_ID>"
+    auth_kind: "machineaccount"
+  
+  tasks:
+
+  - name: Install Python 3
+    raw: test ! -e /usr/bin/python3 || /usr/bin/python3 --version || (apt -y update && apt -y install python3-minimal)
+
+  - name: Install GCP SDK
+    raw: test ! -e /usr/bin/gcloud || /usr/bin/gcloud --version || (echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | tee -a /etc/apt/sources.list.d/google-cloud-sdk.list && curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key --keyring /usr/share/keyrings/cloud.google.gpg add - && apt-get -y update && apt-get -y install google-cloud-sdk)
+
+  - name: Authenticate with GCP
+    command: gcloud auth {{ auth_kind }} login
+    args:
+      stdin_open: true
+      tty: true
+
+  - name: Create GCP inventory
+    gcp_compute_inventory:
+      name: "{{ inventory_name }}"
+      auth_kind: "{{ auth_kind }}"
+      gcp_compute_auth: "{{ inventory_name }}.json"
+      project_id: "{{ project_id }}"
+
+  - name: Generate GCP auth file
+    command: gcloud auth activate-service-account --key-file="{{ inventory_name }}.json"
+    environment:
+      CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE: "/root/{{ inventory_name }}.json"
+    args:
+      creates: "/root/{{ inventory_name }}.json"

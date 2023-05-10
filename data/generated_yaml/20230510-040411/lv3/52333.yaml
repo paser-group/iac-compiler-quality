@@ -1,0 +1,43 @@
+
+- hosts: localhost
+  gather_facts: no
+  vars:
+    region1: us-west-2
+    region2: eu-west-1
+    vpc1_cidr: "10.0.1.0/16"
+    vpc2_cidr: "10.1.1.0/16"
+  tasks:
+    - name: "Create VPCs"
+      ec2_vpc:
+        name: "VPC {{ item }}"
+        cidr_block: "{{ vpc1_cidr if item == 1 else vpc2_cidr }}"
+        region: "{{ region1 if item == 1 else region2 }}"
+        state: present
+      loop: [1, 2]
+      register: vpc_outputs
+      
+    - name: "Create VPC peering connection"
+      ec2_vpc_peer:
+        vpc_id: "{{ vpc_outputs.results | selectattr('item','equalto', 1) | map(attribute='ansible_facts.vpc_id') | list | first }}"
+        peer_vpc_id: "{{ vpc_outputs.results | selectattr('item','equalto', 2) | map(attribute='ansible_facts.vpc_id') | list | first }}"
+        region: "{{ region1 }}"
+        auto_accept: true
+        state: present
+      register: vpc_peer_output
+      
+    - name: "Introduce an error in VPC peering connection"
+      ec2_vpc_peer:
+        vpc_id: "{{ vpc_outputs.results | selectattr('item','equalto', 1) | map(attribute='ansible_facts.vpc_id') | list | first }}"
+        peer_vpc_id: "{{ vpc_outputs.results | selectattr('item','equalto', 2) | map(attribute='ansible_facts.vpc_id') | list | first }}"
+        region: "{{ region1 }}"
+        status: "pending-accept"
+        state: present
+      register: vpc_peer_error
+      
+    - name: "Verify error message for VPC peering connection error"
+      assert:
+        that:
+          - vpc_peer_error | failed
+          - '"The peering connection\'s request status was {}"'.format(vpc_peer_error.changed_from) in vpc_peer_error.msg
+        success_msg: "Error message is informative and helpful"
+        fail_msg: "Error message is not informative and helpful"

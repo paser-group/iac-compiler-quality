@@ -1,0 +1,43 @@
+
+- name: Regular 'yum lockfile is held by another process' errors with package/yum modules
+  hosts: all
+
+  tasks:
+  - name: Try to install package normally
+    yum:
+      name: "{{ item }}"
+    with_items:
+      - tree
+      - httpd
+      - mysql
+    register: normal_result
+    ignore_errors: yes
+
+  - name: Attempt to unlock yum lockfile
+    command: echo "Unlocking Yum Lockfile" && echo $$ > /var/run/yum.pid
+    register: unlock_command_result
+    ignore_errors: yes
+
+  - name: Check if unlocking succeeded
+    debug:
+      msg: "Unlock Yum Lockfile command succeeded"
+    when: "'Unlocking Yum Lockfile' in unlock_command_result.stderr_lines"
+
+  - name: Check for 'locked by another process' error
+    fail:
+      msg: "Yum Lockfile is held by another process"
+    when: "'Another app is currently holding the yum lock' in normal_result.stderr_lines"
+
+  - name: Try to install package once more
+    yum:
+      name: "{{ item }}"
+    with_items:
+      - tree
+      - httpd
+      - mysql
+    ignore_errors: yes
+
+  - name: Check if second attempt installation succeeded
+    debug:
+      msg: "Second attempt installation succeeded"
+    when: "'already installed' not in normal_result.stdout_lines"

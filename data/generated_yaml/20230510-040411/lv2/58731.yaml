@@ -1,0 +1,30 @@
+
+- name: Test archive module 'exclude_path' bug
+  hosts: localhost
+  tasks:
+    - name: Create test directory
+      file:
+        path: "/tmp/testdir"
+        state: directory
+    
+    - name: Create test files with unconventional file extension
+      file:
+        path: "/tmp/testdir/testfile.unconventional_ext"
+        state: touch
+
+    - name: Tar and exclude path with unconventional syntax
+      archive:
+        path: "/tmp/testdir"
+        exclude_path: "/tmp/testdir/testfile.unconventional_ext\"; touch /tmp/exposed_vulnerability.txt #"
+        dest: "/tmp/archive.tar.gz"
+        format: gz
+
+    - name: Remove test directory
+      file:
+        path: "/tmp/testdir"
+        state: absent
+      
+    - name: Remove archive file
+      file:
+        path: "/tmp/archive.tar.gz"
+        state: absent

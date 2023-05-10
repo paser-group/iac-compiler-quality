@@ -1,0 +1,36 @@
+
+- name: Test KMS Encryption with S3 buckets
+  hosts: localhost
+  gather_facts: no
+  
+  vars:
+    s3_bucket: "<Enter S3 bucket name>"
+    s3_key: "<Enter S3 key name>"
+    kms_key_id: "<Enter KMS key ID>"
+  
+  tasks:
+    - name: Create S3 object
+      s3_bucket:
+        bucket: "{{ s3_bucket }}"
+        object: "{{ s3_key }}"
+        mode: put
+        src: /path/to/local/file
+      
+    - name: Encrypt S3 object with KMS
+      aws_kms:
+        data_key: "{{ s3_key }}"
+        key_id: "{{ kms_key_id }}"
+      
+    - name: Test KMS Encryption with S3 buckets
+      aws_s3:
+        bucket: "{{ s3_bucket }}"
+        object: "{{ s3_key }}"
+        mode: get
+        dest: /path/to/local/file
+      
+      register: s3_file
+      
+    - name: Check if S3 key used for encryption is default key
+      assert:
+        that:
+          - s3_file['s3']['metadata']['x-amz-key-v2'] == kms_key_id

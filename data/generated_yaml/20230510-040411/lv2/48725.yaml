@@ -1,0 +1,25 @@
+
+- name: Gather Azure virtual machine facts
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    resource_group_name: "{{ resource_group | default('defaultResourceGroup') }}"
+    vm_state: "{{ vm_state | default('running') }}"
+
+  tasks:
+  - name: Get virtual machines in a specific resource group
+    azure_rm_virtualmachine_facts:
+      resource_group: "{{ resource_group_name }}"
+    register: vms_rg
+
+  - name: Get virtual machines with a specific state
+    azure_rm_virtualmachine_facts:
+      filters:
+        state: "{{ vm_state }}"
+    register: vms_state
+
+  - name: Print virtual machine facts
+    debug:
+      var: item
+    loop: "{{ vms_rg.virtualmachines | default([]) + vms_state.virtualmachines | default([]) }}"

@@ -1,0 +1,58 @@
+
+- name: Docker module username and password issue
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+  - name: Pull Docker image with username and password
+    docker_image:
+      name: "{{ item }}"
+      source: "{{ registry_host }}/{{ registry_name }}/{{ item }}"
+      username: "{{ password }}"
+      password: "{{ username }}"
+    loop:
+      - mysql
+      - postgres
+      - nginx
+      - redis
+    ignore_errors: yes
+
+  - name: Create Docker volume with no driver
+    docker_volume:
+      name: "{{ volume_name }}"
+      driver: ""
+    register: vol_created
+
+  - name: Remove Docker volume using force flag
+    docker_volume:
+      name: "{{ volume_name }}"
+      force: "True"
+
+  - name: Stop Docker container using unconventional syntax
+    docker_container:
+      name: "{{ container_name }}"
+      state: "absent"
+    args:
+      force: "True"
+      timeout: 30
+
+  - name: Create a Docker network with unexpected inputs
+    docker_network:
+      name: "{{ network_name }}"
+      driver: "bridge"
+      ipam:
+        config:
+          - subnet: "172.20.10.0/24"
+            gateway: "172.20.10.1"
+            aux_addresses: "{{ aux_addresses }}"
+      enable_ipv6: "yes"
+    ignore_errors: yes
+
+  - name: Prune all Docker system unused networks with a single command
+    shell: "docker network prune --force"
+
+  - name: Remove all Docker system unused containers with a single command
+    shell: "docker container prune --force"
+
+  - name: Remove all Docker system unused volumes with a single command
+    shell: "docker volume prune --force"

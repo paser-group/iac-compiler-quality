@@ -1,0 +1,60 @@
+python
+from azure.common.credentials import ServicePrincipalCredentials
+from azure.mgmt.network import NetworkManagementClient
+from azure.mgmt.network.v2019_02_01.models import SecurityRule, SecurityGroup, SecurityRuleAccess
+from msrestazure.azure_exceptions import CloudError
+import os
+
+# Define the credentials
+subscription_id = os.environ.get('AZURE_SUBSCRIPTION_ID')
+credentials = ServicePrincipalCredentials(
+    client_id=os.environ['AZURE_CLIENT_ID'],
+    secret=os.environ['AZURE_CLIENT_SECRET'],
+    tenant=os.environ['AZURE_TENANT_ID']
+)
+
+# Define the network client
+network_client = NetworkManagementClient(credentials, subscription_id)
+
+# Define the security group parameters
+group_name = '<your_security_group_name>'
+location = '<your_resource_group_location>'
+prefixes = ['10.0.0.0/24', '192.168.0.0/24']  # define your IP address prefixes
+
+# Create the security group
+try:
+    result_create_group = network_client.security_groups.create_or_update(
+        '<your_resource_group_name>', group_name,
+        {
+            'location': location
+        }
+    )
+    print('Create Security Group:\n{}'.format(result_create_group))
+
+# Add the security rules to the security group
+    result_security_rules = []
+    for prefix in prefixes:
+        security_rule_params = SecurityRule(
+            name='Allow-{}'.format(prefix),
+            access=SecurityRuleAccess.allow,
+            direction='Inbound',
+            protocol='*',
+            source_address_prefix=prefix,
+            destination_address_prefix='*',
+            source_port_range='*',
+            destination_port_range='*',
+            priority=10,
+            description='Allow {} IP address prefix.'.format(prefix)
+        )
+        result_security_rules.append(
+            network_client.security_rules.create_or_update(
+                '<your_resource_group_name>', group_name,
+                name=security_rule_params.name,
+                security_rule_parameters=security_rule_params
+            )
+        )
+    
+    print('Create Security Rules:\n{}'.format(result_security_rules))
+
+except CloudError as ex:
+    print(ex)

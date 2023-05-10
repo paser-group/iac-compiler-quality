@@ -1,0 +1,55 @@
+
+- name: SSHD Debug Mode Parsing Error
+  hosts: all
+  become: yes
+
+  vars:
+    sshd_config_file: /etc/ssh/sshd_config
+
+  tasks:
+  - name: Run SSHD in Debug Mode
+    command: /usr/sbin/sshd -ddd -f {{ sshd_config_file }}
+    ignore_errors: yes
+
+  - name: Create SSHD Config File with Unconventional Syntax
+    include_vars:
+      file: "{{ sshd_config_file }}"
+      name: sshd_config
+    replace:
+      path: "{{ sshd_config_file }}"
+      regexp: '.*'
+      replace: "{{ sshd_config }}\nThis is an unexpected input"
+
+  - name: Restart SSHD Service
+    service:
+      name: sshd
+      state: restarted
+    async: 60
+    poll: 0
+
+  - name: Verify SSHD is running in Debug Mode
+    shell: ps ax | grep sshd | grep -v grep
+    register: sshd_process_status
+    failed_when: sshd_process_status.rc != 0
+
+  - name: Generate an Edge Case Input
+    set_fact:
+      edge_case_input: "{% for item in range(10) %}{{ item }}, {% endfor %}}"
+
+  - name: Pass Edge Case Input to SSHD Config File
+    lineinfile:
+      path: "{{ sshd_config_file }}"
+      line: "Edge Case Input: {{ edge_case_input }}"
+      insertbefore: EOF
+
+  - name: Verify Edge Case Input in the SSHD Config File
+    shell: cat "{{ sshd_config_file }}"
+    register: sshd_config_file_contents
+    failed_when: '"Edge Case Input: " not in sshd_config_file_contents.stdout'
+
+  - name: Restart SSHD Service Again
+    service:
+      name: sshd
+      state: restarted
+    async: 60
+    poll: 0

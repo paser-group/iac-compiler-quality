@@ -1,0 +1,22 @@
+
+- name: Fix random failures of service module caused by systemd bug
+  hosts: all
+  become: true       # Run as root
+  tasks:
+    - name: Check if SystemD is running
+      systemd:
+        daemon_reloaded: yes
+        daemon_reexecuted: yes
+        daemon_restarted: yes
+      register: systemd_status
+          
+    - name: Make sure SystemD is active and running
+      fail:
+        msg: "SystemD is not running"
+      when: systemd_status.daemon.0.active_state != 'active'
+          
+    - name: Restarting service to recover from failure
+      service:
+        name: <YOUR SERVICE NAME HERE>
+        state: restarted
+        enabled: true

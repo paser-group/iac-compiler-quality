@@ -1,0 +1,19 @@
+
+- name: Generate Ansible playbook from terraform plan file with relative path
+  hosts: localhost
+  gather_facts: no
+  tasks:
+    - name: Run terraform plan
+      command: terraform plan -out=output.plan -var-file=../vars.tfvars
+      register: terraform_plan
+
+    - name: Create Ansible playbook
+      block:
+        - stat:
+            path: "{{ item }}"
+          with_items:
+            - ../vars.tfvars
+        - copy:
+            src: "{{ terraform_plan.stdout }}"
+            dest: "{{ playbooks_path }}/generated-playbook.yml"
+          when: terraform_plan.stdout != ""

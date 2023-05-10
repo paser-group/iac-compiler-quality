@@ -1,0 +1,45 @@
+
+- name: Manage Azure VMs made by managed image
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    resource_group_name: "myrg"
+    virtual_network_name: "mynetwork"
+    subnet_name: "mysubnet"
+
+  tasks:
+    - name: Create virtual machine
+      azure_rm_virtualmachine:
+        resource_group: "{{ resource_group_name }}"
+        name: "myvm"
+        image:
+          id: "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/myrg/providers/Microsoft.Compute/images/myimage"
+        vm_size: "Standard_DS2_v2"
+        network_interface_names:
+          - "myvm-nic-1"
+        os_disk_create_option: "FromImage"
+      register: create_vm_output
+
+    - name: Start virtual machine
+      azure_rm_virtualmachine:
+        resource_group: "{{ resource_group_name }}"
+        name: "myvm"
+        operation: "start"
+      when: create_vm_output is defined and not create_vm_output.failed
+
+    - name: Stop virtual machine
+      azure_rm_virtualmachine:
+        resource_group: "{{ resource_group_name }}"
+        name: "myvm"
+        operation: "stop"
+      when: create_vm_output is defined and not create_vm_output.failed
+
+    - name: Delete virtual machine
+      azure_rm_virtualmachine:
+        resource_group: "{{ resource_group_name }}"
+        name: "myvm"
+        delete_os_disk: true
+        delete_data_disks: true
+      when: create_vm_output is defined and not create_vm_output.failed
+

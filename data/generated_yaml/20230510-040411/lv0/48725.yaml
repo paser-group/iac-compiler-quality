@@ -1,0 +1,29 @@
+yaml
+- name: Gather facts about a virtual machine
+  hosts: localhost
+  connection: local
+  gather_facts: False
+
+  tasks:
+    - name: Get Azure credentials from environment variables
+      azure_rm_credential:
+      register: credentials
+
+    - name: Gather facts about virtual machine
+      azure_rm_virtualmachine_facts:
+        resource_group: my-resource-group
+        name: my-virtual-machine
+      register: vm_facts
+      tags:
+        - gather_facts
+
+    - name: Print virtual machine facts
+      debug:
+        var: vm_facts
+
+    - name: Fail if no VM in resource group or state not running
+      fail:
+        msg: "No virtual machine found or state not running"
+      when: vm_facts is not defined or (vm_facts.failed | bool) or (vm_facts | json_query('virtual_machines[0].statuses[0].displayStatus') != 'VM running')
+      tags:
+        - gather_facts

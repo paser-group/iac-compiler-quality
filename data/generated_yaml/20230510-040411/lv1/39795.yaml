@@ -1,0 +1,16 @@
+yaml
+---
+- name: Fix docker_service error
+  hosts: all
+  become: true
+  tasks:
+    - name: Check syntax of docker_service command
+      command: docker_service -h
+      register: syntax_result
+      ignore_errors: true
+
+    - name: Restart docker_service if there is a syntax error
+      systemd:
+        name: docker
+        state: restarted
+      when: "'DOCKER_OPTS' not in syntax_result.stderr"

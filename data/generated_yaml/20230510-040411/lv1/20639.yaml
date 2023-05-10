@@ -1,0 +1,49 @@
+
+---
+- hosts: <target host>
+  gather_facts: false
+
+  vars:
+    vm_name: <vm_name>
+    vm_template: <vm_template>
+    guest_credentials:
+      username: <guest_username>
+      password: <guest_password>
+    vcenter_server: <vcenter_server>
+    esxi_hostname: <esxi_hostname>
+    datastore: <datastore>
+
+  tasks:
+
+  - name: Clone a Virtual Machine from Template and Power it On
+    vmware_guest:
+      hostname: "{{ vcenter_server }}"
+      username: "{{ vcenter_username }}"
+      password: "{{ vcenter_password }}"
+      validate_certs: false
+      timeout_sec: 240
+      datacenter: <datacenter>
+      name: "{{ vm_name }}"
+      template: "{{ vm_template }}"
+      folder: <vm_folder>
+      cluster: <cluster>
+      datastore: "{{ datastore }}"
+      hardware:
+        memory_mb: <vm_memory_mb>
+        num_cpus: <vm_num_cpus>
+        scsi: paravirtual
+      networks:
+        - name: <network_name>
+      guest_id: <guest_id>
+      state: poweredon
+    async: 5
+    poll: 0
+    register: guest_result
+
+  - name: Wait for VM to be powered on
+    async_status:
+      jid: "{{ guest_result.ansible_job_id }}"
+      mode: status
+    async: 60
+    poll: 5
+    register: guest_status

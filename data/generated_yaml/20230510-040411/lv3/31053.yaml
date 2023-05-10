@@ -1,0 +1,27 @@
+
+---
+- name: Ansible Playbook to expose XML parsing issues
+  hosts: localhost
+  gather_facts: no
+  
+  tasks:
+    - name: Install dependencies
+      pip:
+        name:
+          - boto
+          - boto3
+          - botocore
+
+    - name: Create a malformed S3 Bucket
+      become: yes
+      become_user: root
+      shell: echo "<test> </test>>" > /var/www/html/test.xml
+
+    - name: Retrieve bucket facts using aws_s3_bucket_facts module
+      aws_s3_bucket_facts:
+        bucket: test
+      register: s3_bucket_facts
+
+    - name: Print the bucket facts
+      debug:
+        var: s3_bucket_facts

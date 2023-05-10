@@ -1,0 +1,38 @@
+
+- name: Add new prefix to netbox
+  netbox_prefix:
+    token: "{{ lookup('env', 'NETBOX_TOKEN') }}"
+    netbox_url: "{{ lookup('env', 'NETBOX_URL') }}"
+    data:
+      prefix: "{{ none }}"
+  register: results
+  
+# Unconventional syntax - passing in the invalid 'none' value as a prefix.
+
+- debug:
+    msg: "{{ results }}"
+    
+- name: Check for 'changed' property in results
+  assert:
+    that:
+      - not results.changed
+  # Unexpected input - The 'netbox_prefix' module should have changed to 'True',
+  # given that a new prefix is being added. But, it returns changed=False instead.
+  
+- name: Add new prefix to netbox with correct input
+  netbox_prefix:
+    token: "{{ lookup('env', 'NETBOX_TOKEN') }}"
+    netbox_url: "{{ lookup('env', 'NETBOX_URL') }}"
+    data:
+      prefix: "{{ '10.0.0.0/8' }}"
+  register: new_results
+  
+- debug:
+    msg: "{{ new_results }}"
+    
+- name: Check for changed status in new result
+  assert:
+    that:
+      - new_results.changed
+  # Edge case - passing in the correct IP prefix to the module this time.
+  # Should return changed=True.

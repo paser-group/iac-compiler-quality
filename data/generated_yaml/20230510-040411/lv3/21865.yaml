@@ -1,0 +1,23 @@
+
+- hosts: localhost
+  connection: local
+  gather_facts: no
+  
+  vars:
+    region: us-west-2
+  
+  tasks:
+    - name: Create a new ELB if it does not exist
+      ec2_elb_lb:
+        name: my-test-elb
+        state: present
+        region: "{{region}}"
+        
+    - name: Register the ELB in case of a change
+      meta: clear_facts
+      register: result
+      when: result.changed == true
+       
+    - name: Ensure idempotence by always registering the ELB
+      debug:
+        msg: "The ELB with ARN {{result.elb_configurations[0].load_balancer_arn}} is registered."

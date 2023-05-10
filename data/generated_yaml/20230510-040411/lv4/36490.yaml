@@ -1,0 +1,38 @@
+yaml
+- name: Test iptables module tcp_flags option
+  hosts: localhost
+  gather_facts: no
+  tasks:
+    - name: Configure iptables rule to match packets with set TCP SYN flag
+      iptables:
+        chain: INPUT
+        protocol: tcp
+        tcp_flags: SYN
+        jump: DROP
+        state: present
+        comment: "Test Rule 1: Match TCP SYN flag packets and drop"
+      become: yes
+      become_method: sudo
+
+    - name: Verify the rule behavior by printing the number of matching packets
+      debug:
+        msg: "Number of packets matched by rule 1: {{ query('iptables', '-nvL INPUT | grep DROP | awk \'{print $1}\'') }}"
+      become: yes
+      become_method: sudo
+
+    - name: Configure iptables rule to match packets with set TCP ACK flag
+      iptables:
+        chain: INPUT
+        protocol: tcp
+        tcp_flags: ACK
+        jump: DROP
+        state: present
+        comment: "Test Rule 2: Match TCP ACK flag packets and drop"
+      become: yes
+      become_method: sudo
+
+    - name: Verify the rule behavior by printing the number of matching packets
+      debug:
+        msg: "Number of packets matched by rule 2: {{ query('iptables', '-nvL INPUT | grep DROP | awk \'{print $1}\'') }}"
+      become: yes
+      become_method: sudo

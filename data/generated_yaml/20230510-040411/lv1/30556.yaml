@@ -1,0 +1,35 @@
+
+---
+- name: Copy file if it doesn't exist
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: copy file with 'decrypt: no' option'
+      copy:
+        src: /path/to/source/file
+        dest: /path/to/destination/file
+        decrypt: no
+        force: no
+      register: result
+      ignore_errors: true
+
+    - name: check if the file already exists
+      stat:
+        path: /path/to/destination/file
+      register: stat_result
+
+    - name: remove the file if it already exists
+      file:
+        path: /path/to/destination/file
+        state: absent
+      when: stat_result.stat.exists
+
+    - name: copy the file again
+      copy:
+        src: /path/to/source/file
+        dest: /path/to/destination/file
+      when: result is failed
+
+    - name: display message
+      debug:
+        var: result.msg

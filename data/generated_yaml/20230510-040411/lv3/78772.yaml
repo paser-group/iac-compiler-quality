@@ -1,0 +1,21 @@
+
+---
+- hosts: localhost
+  gather_facts: false
+
+  tasks:
+  - name: Touch file with bad file descriptor
+    file:
+      path: "/tmp/testfile"
+      state: touch
+      mode: "0000"
+
+  - name: Attempt to read file with bad file descriptor
+    command: cat /tmp/testfile
+    register: file_output
+    ignore_errors: yes
+
+  - name: Print bad file descriptor error
+    fail:
+      msg: "ERROR! Unexpected Exception, this is probably a bug: [Errno 9] Bad file descriptor"
+    when: "'Bad file descriptor' in file_output.stderr"

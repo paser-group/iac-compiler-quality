@@ -1,0 +1,54 @@
+
+- hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: Check for load error
+      script: /tmp/check_for_load_error.sh
+      args:
+        chdir: "/non_existing_directory"
+
+    - name: Complex command with redirection
+      shell: "echo 'This is a test' > /non_existing_directory/invalid_file.txt 2>&1 || true"
+
+    - name: Register variable
+      command: /non_existing_directory/invalid_command.sh
+      register: invalid_command_output
+      ignore_errors: yes
+
+    - name: Print variable
+      debug:
+        var: invalid_command_output
+
+    - name: Execute command conditionally
+      command: echo 'This command is executed'
+      when: "'Non_existing_file' in invalid_command_output.stderr"
+
+    - name: Set a fact with undefined variable
+      set_fact:
+        my_fact: "{{ invalid_variable }}"
+
+    - name: Run a task with an undefined variable
+      command: /non_existing_directory/{{ non_existing_variable }}.sh
+
+    - name: Execute a command with invalid environment variable
+      command: /bin/true
+      environment:
+        INVALID_VAR: "{{ invalid_variable }}"
+
+    - name: Use an invalid inventory
+      ping:
+        inventory: /tmp/invalid_inventory
+
+    - name: Run a command with arguments with unconventional syntax
+      command: echo This is a test with '\n' new line and '\t' tab
+
+    - name: Run a command that takes input from a file
+      command: cat /non_existing_file.txt
+      args:
+        stdin: "{{ lookup('file', '/non_existing_file.txt') }}"
+
+    - name: Use an invalid module name
+      invalid_module:
+        arg1: "This is an argument"
+        arg2: "{{ invalid_variable }}"

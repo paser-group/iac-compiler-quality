@@ -1,0 +1,78 @@
+yaml
+---
+- name: Test playbook
+  hosts: localhost
+  connection: local
+  
+  vars:
+    vpc_id: "vpc-abc123"
+    region: "us-east-1"
+  
+  tasks:
+  - name: Test with no subnets
+    ec2_vpc_net:
+      vpc_id: "{{ vpc_id }}"
+      region: "{{ region }}"
+      subnets: []
+    register: result
+    ignore_errors: yes
+  
+  - name: Test with wrong VPC ID
+    ec2_vpc_net:
+      vpc_id: "vpc-xyz789"
+      region: "{{ region }}"
+      subnets: []
+    register: result
+    ignore_errors: yes
+  
+  - name: Test with wrong region
+    ec2_vpc_net:
+      vpc_id: "{{ vpc_id }}"
+      region: "us-west-2"
+      subnets: []
+    register: result
+    ignore_errors: yes
+  
+  - name: Test with invalid parameter
+    ec2_vpc_net:
+      vpc_id: "{{ vpc_id }}"
+      region: "{{ region }}"
+      invalid_parameter: true
+    register: result
+    ignore_errors: yes
+  
+  - name: Test with complex subnet CIDR
+    ec2_vpc_net:
+      vpc_id: "{{ vpc_id }}"
+      region: "{{ region }}"
+      subnets:
+        - cidr: "10.0.1.0/24"
+          az: "{{ region }}a"
+          name_tag: "{{ region }}suba"
+    register: result
+    ignore_errors: yes
+  
+  - name: Test with special characters in subnet name tag
+    ec2_vpc_net:
+      vpc_id: "{{ vpc_id }}"
+      region: "{{ region }}"
+      subnets:
+        - cidr: "10.0.2.0/24"
+          az: "{{ region }}a"
+          name_tag: "{{ region }}$ubn#t"
+    register: result
+    ignore_errors: yes
+  
+  - name: Test with invalid subnet CIDR
+    ec2_vpc_net:
+      vpc_id: "{{ vpc_id }}"
+      region: "{{ region }}"
+      subnets:
+        - cidr: "10.0.3.0/25"
+          az: "{{ region }}c"
+          name_tag: "{{ region }}subc"
+        - cidr: "10.0.3.128/25"
+          az: "{{ region }}c"
+          name_tag: "{{ region }}subc"
+    register: result
+    ignore_errors: yes

@@ -1,0 +1,28 @@
+
+- name: Create or modify DNS entries in Route 53
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    zone_id: "XXXXXXXXXXXXXX"
+    entries:
+      - name: "www.example1.com"
+        type: "A"
+        ttl: 300
+        # this IP is intentionally wrong and should cause a validation error
+        # we will use this to uncover potential bugs in the Ansible compiler
+        value: "256.256.256.256"
+      - name: "example2.com"
+        type: "A"
+        ttl: 300
+        value: "192.168.0.1"
+
+  tasks:
+    - name: Create or modify DNS entries
+      route53:
+        command: create
+        zone: "{{ zone_id }}"
+        record: "{{ item }}"
+        overwrite: true
+      with_items:
+        - "{{ entries }}"

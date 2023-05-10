@@ -1,0 +1,35 @@
+yaml
+---
+- name: Update Network Configs for GCP Instances 
+  hosts: localhost 
+  become: true 
+  vars: 
+    instance_name: "my-instance" 
+    project_id: "my-gcp-project" 
+    zone: "us-central1-a" 
+    network_interface_configs: 
+      - name: "nic0"
+        access_configs:
+          - name: "external-nat"
+            type: "ONE_TO_ONE_NAT"
+  tasks:
+    - name: Get Instance Network Info 
+      gcp_compute_instance_info: 
+        name: "{{ instance_name }}" 
+        project: "{{ project_id }}" 
+        zone: "{{ zone }}"
+      register: instance_info 
+      
+    - name: Update Network Configs 
+      gcp_compute_instance:
+        name: "{{ instance_name }}" 
+        project: "{{ project_id }}" 
+        zone: "{{ zone }}"
+        network_interfaces: "{{ instance_info.instance.network_interfaces }}" 
+        exact_match: true 
+        network_interface_configs: "{{ network_interface_configs }}" 
+      register: resp 
+      
+    - name: Show Changes 
+      debug: 
+        var: resp 

@@ -1,0 +1,65 @@
+
+---
+- name: GCE Module RSA Key Format Bug Report
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    invalid_key1: "{{ lookup('file', 'invalid_rsa_key1') }}" # invalid key (file not found)
+    invalid_key2: "{{ 'invalid_rsa_key2' | b64decode }}" # invalid key (invalid base64 encoding)
+    invalid_key3: "{{ '-----BEGIN PUBLIC KEY-----\nINVALID KEY\n-----END PUBLIC KEY-----' }}" # invalid key (invalid format)
+    
+  tasks:
+    - name: Initialize required vars
+      set_fact:
+        my_project: "my-awesome-project"
+        zone: "us-central1-a"
+        instance_name: "my-awesome-instance"
+    
+    - name: Test invalid RSA key1
+      gce:
+        project_id: "{{ my_project }}"
+        zone: "{{ zone }}"
+        name: "{{ instance_name }}"
+        auth_kind: serviceaccount
+        credentials_file: "invalid_file_path.json" # invalid credentials file
+        machine_type: "n1-standard-1"
+        disk_size: "100"
+        image: "ubuntu-os-cloud/ubuntu-1604-lts"
+        ssh_user: "ubuntu"
+        ssh_private_key_file: "{{ invalid_key1 }}" # using invalid key1
+    
+    - name: Test invalid RSA key2
+      gce:
+        project_id: "{{ my_project }}"
+        zone: "{{ zone }}"
+        name: "{{ instance_name }}"
+        auth_kind: serviceaccount
+        credentials_file: "invalid_file_path.json" # invalid credentials file
+        machine_type: "n1-standard-1"
+        disk_size: "100"
+        image: "ubuntu-os-cloud/ubuntu-1604-lts"
+        ssh_user: "ubuntu"
+        ssh_private_key_file: "{{ invalid_key2 }}" # using invalid key2 (invalid base64 encoding)
+    
+    - name: Test invalid RSA key3
+      gce:
+        project_id: "{{ my_project }}"
+        zone: "{{ zone }}"
+        name: "{{ instance_name }}"
+        auth_kind: serviceaccount
+        credentials_file: "invalid_file_path.json" # invalid credentials file
+        machine_type: "n1-standard-1"
+        disk_size: "100"
+        image: "ubuntu-os-cloud/ubuntu-1604-lts"
+        ssh_user: "ubuntu"
+        ssh_private_key: "{{ invalid_key3 }}" # using invalid key3 (invalid format)
+    
+    - name: Cleanup
+      gce:
+        project_id: "{{ my_project }}"
+        zone: "{{ zone }}"
+        name: "{{ instance_name }}"
+        auth_kind: serviceaccount
+        credentials_file: "invalid_file_path.json" # invalid credentials file
+        state: absent

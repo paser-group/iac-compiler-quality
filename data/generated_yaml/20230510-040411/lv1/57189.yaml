@@ -1,0 +1,14 @@
+
+---
+- name: Fix 'yum lockfile is held by another process' errors in Ansible
+  hosts: all
+  become: true
+  tasks:
+    - name: Check if yum is locked
+      shell: lsof /var/cache/yum/$(arch)/$(head -1 /etc/yum.conf | cut -d= -f2)/updateinfo | grep "^yum" | awk '{print $2}' | uniq | wc -l
+      register: yum_lockfile_check
+      ignore_errors: True
+
+    - name: Unlock yum if it is locked
+      shell: lsof /var/cache/yum/$(arch)/$(head -1 /etc/yum.conf | cut -d= -f2)/updateinfo | grep "^yum" | awk '{print $2}' | uniq | xargs kill
+      when: yum_lockfile_check.stdout|int > 0

@@ -1,0 +1,25 @@
+
+---
+- hosts: all
+  gather_facts: no
+  
+  tasks:
+    - name: Install a package that is already installed
+      package:
+        name: <package-name>
+        state: present
+      ignore_errors: true
+      register: result
+
+    - name: Retry mechanism for yum lockfile errors
+      when: result|failed and "'Error: Lock file' in result.msg" 
+      command: sleep 1
+
+    - name: Log yum lockfile error
+      when: result|failed and "'Error: Lock file' in result.msg"
+      debug:
+        msg: "{{ result.msg }}"
+
+    - name: Test error handling mechanism
+      command: "exit 1"
+      ignore_errors: true

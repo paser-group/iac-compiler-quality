@@ -1,0 +1,48 @@
+yaml
+- name: Install Ansible
+  hosts: localhost
+  become: yes
+
+  tasks:
+    - name: Install dependencies
+      apt:
+        name: python-pip python-dev sshpass
+        update_cache: yes
+      environment:
+        DEBIAN_FRONTEND: noninteractive
+
+    - name: Upgrade pip
+      pip:
+        name: pip
+        state: latest
+
+    - name: Install ansible
+      pip:
+        name: ansible
+        state: latest
+
+- name: Test Connection to Hosts
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: Test Connection
+      ping:
+
+- name: Enable SSH password authentication
+  hosts: all
+  gather_facts: no
+  become: yes
+
+  tasks:
+    - name: Enable SSH password authentication
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^#?PasswordAuthentication'
+        line: 'PasswordAuthentication yes'
+        backup: yes
+
+    - name: Restart SSH service
+      service:
+        name: sshd
+        state: restarted

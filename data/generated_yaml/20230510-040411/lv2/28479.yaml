@@ -1,0 +1,75 @@
+yaml
+---
+- name: ios_command testcase
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+    - name: Single quotes in command
+      ios_command:
+        commands: ['show version\'s']
+      register: result1
+
+    - name: Double quotes in command
+      ios_command:
+        commands: ["show version\"ss"]
+      register: result2
+
+    - name: Command with backquotes
+      ios_command:
+        commands: ['echo `uname -a\'']
+      register: result3
+
+    - name: Running Multiple Commands
+      ios_command:
+        commands: ['show version','show interfaces description']
+      register: result4
+
+    - name: Redirecting Output
+      ios_command:
+        commands: ['show version > /dev/null']
+      register: result5
+
+    - name: Invalid Command
+      ios_command:
+        commands: ['show nothing']
+      register: result6
+
+    - name: Output as JSON
+      ios_command:
+        commands: ['show version']
+        format: json
+      register: result7
+
+    - name: Display raw output
+      debug:
+        var: result7.stdout_lines[0]
+
+    - name: Testing `changed_when`
+      command: /bin/false
+      changed_when: False
+      register: result8
+
+    - name: Conditionally execute task
+      ios_command:
+        commands: ['show version']
+      when: result8 is success
+      register: result9
+
+    - name: Check length of command output
+      fail:
+        msg: Command output is too long
+      when: result7.stdout_lines[0]|length > 100
+
+    - name: Display results
+      debug:
+        var: item.stdout_lines[0]
+      with_items:
+        - result1
+        - result2
+        - result3
+        - result4
+        - result5
+        - result6
+        - result7
+        - result9

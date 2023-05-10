@@ -1,0 +1,36 @@
+yaml
+- hosts: localhost
+  connection: local
+  gather_facts: no
+
+  vars:
+    project_id: "<your-project-id>"
+    zone: "<your-zone>"
+    instance_name: "<your-instance-name>"
+    service_account_file: "<path-to-your-service-account-file.json>"
+
+  tasks:
+
+  - name: Stop instance
+    gcp_compute_instance:
+      project: "{{ project_id }}"
+      zone: "{{ zone }}"
+      name: "{{ instance_name }}"
+      auth_kind: serviceaccount
+      service_account_file: "{{ service_account_file }}"
+      state: stopped
+    register: stopped
+
+  - name: Deconstruct service account contents
+    set_fact:
+      service_account_contents: "{{ stopped.service_account_contents|json_query('["serviceAccounts"][0]["email"]') }}"
+
+  - name: Start instance
+    gcp_compute_instance:
+      project: "{{ project_id }}"
+      zone: "{{ zone }}"
+      name: "{{ instance_name }}"
+      auth_kind: serviceaccount
+      service_account_file: "{{ service_account_file }}"
+      service_account_contents: "{{ service_account_contents }}"
+      state: running

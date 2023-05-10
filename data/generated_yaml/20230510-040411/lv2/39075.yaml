@@ -1,0 +1,26 @@
+
+- hosts: localhost
+  tasks:
+    - name: Install Ansible via pip
+      pip:
+        name: ansible
+        executable: /usr/bin/python3
+
+    - name: Verify Ansible version
+      assert:
+        that: ansible_version.full == '2.9.21'
+
+    - name: Define custom module directory
+      environment:
+        ANSIBLE_LIBRARY: "{{ playbook_dir }}/custom_modules"
+
+    - name: Execute playbook with custom module
+      include_tasks: "{{ item }}"
+      loop:
+        - "{{ playbook_dir }}/tasks/main.yml"
+        - "{{ playbook_dir }}/tasks/unexpected.yml"
+        - "{{ playbook_dir }}/tasks/bad_syntax.yml"
+
+    - name: Check for module not found error
+      assert:
+        that: "'No module named' in ansible_result.stderr"

@@ -1,0 +1,49 @@
+
+---
+- name: Test SSL implementation while running fortios_firewall_address module
+  hosts: localhost
+  gather_facts: false
+  vars:
+    self_signed_cert_dir: '/etc/ssl/self-signed-cert'
+  tasks:
+  - name: GET request with SSLv3 
+    uri:
+      url: "https://{{ inventory_hostname }}/api/firewall/address"
+      method: GET
+      validate_certs: false
+      ssl_version: SSLv3
+    register: result_sslv3
+
+  - name: GET request with TLSv1.1
+    uri:
+      url: "https://{{ inventory_hostname }}/api/firewall/address"
+      method: GET
+      validate_certs: false
+      ssl_version: TLSv1.1
+    register: result_tlsv1_1
+
+  - name: GET request with TLSv1.3
+    uri:
+      url: "https://{{ inventory_hostname }}/api/firewall/address"
+      method: GET
+      validate_certs: false
+      ssl_version: TLSv1.3
+    register: result_tlsv1_3
+
+  - name: GET request with client certificate verification 
+    uri:
+      url: "https://{{ inventory_hostname }}/api/firewall/address"
+      method: GET
+      validate_certs: true
+      client_cert: "{{ self_signed_cert_dir }}/client.crt"
+      client_key: "{{ self_signed_cert_dir }}/client.key"
+      ca_cert: "{{ self_signed_cert_dir }}/ca.crt"
+    register: result_client_cert
+
+  - name: Assert success
+    assert:
+      that:
+        - result_sslv3.status == 200
+        - result_tlsv1_1.status == 200
+        - result_tlsv1_3.status == 200
+        - result_client_cert.status == 200

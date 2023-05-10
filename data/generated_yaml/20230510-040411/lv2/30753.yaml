@@ -1,0 +1,27 @@
+
+- name: Test Ansible Service Manager Fact
+  hosts: all
+  gather_facts: false
+  vars:
+    service_mgr_fact: ansible_service_mgr
+  tasks:
+    - name: Check if the service manager fact is correct
+      assert:
+        that:
+          - ansible_fact[service_mgr_fact] == 'sysvinit'
+        fail_msg: 'The service manager fact is incorrect'
+    - name: Print a message using an unconventional syntax
+      debug:
+        msg: 'The {{ "{{service_mgr_fact}}" }} fact is currently set to {{ "{{ ansible_fact[service_mgr_fact] }}" }}'
+    - name: Attempt to overwrite an internal ansible variable
+      set_fact:
+        ansible_service_mgr: 'initd'
+    - name: Check if the service manager fact is still correct after attempting to change the internal variable
+      assert:
+        that:
+          - ansible_fact[service_mgr_fact] == 'sysvinit'
+        fail_msg: 'The service manager fact has been incorrectly overwritten'
+    - name: Enter an unexpected input
+      shell: |
+          service {{ unknown_input }} status
+      ignore_errors: true

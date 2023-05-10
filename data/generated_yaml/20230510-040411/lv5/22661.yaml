@@ -1,0 +1,42 @@
+
+- name: Test ec2_eni_facts module
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    ec2_instance_region: "us-east-1"
+    ec2_instance_type: "t2.micro"
+    ec2_instance_ami: "ami-04b9e92b5572fa0d1"
+    ec2_instance_subnet: "subnet-0db2e0a7"
+
+  tasks:
+    - name: Launch EC2 Instance
+      ec2:
+        assign_public_ip: true
+        region: "{{ ec2_instance_region }}"
+        aws_access_key: "{{ aws_access_key }}"
+        aws_secret_key: "{{ aws_secret_key }}"
+        instance_type: "{{ ec2_instance_type }}"
+        image_id: "{{ ec2_instance_ami }}"
+        count: 1
+        wait: true
+        monitoring: false
+        vpc_subnet_id: "{{ ec2_instance_subnet }}"
+        key_name: "{{ deployment_key }}"
+        instance_tags:
+          Name: "test-instance"
+      register: ec2_results
+
+    - name: Fetch ENI facts with invalid conn_type parameter value
+      ec2_eni_facts:
+        region: "{{ ec2_instance_region }}"
+        aws_access_key: "{{ aws_access_key }}"
+        aws_secret_key: "{{ aws_secret_key }}"
+        instance_id: "{{ ec2_results.instances[0].id }}"
+        conn_type: "{{ invalid_parameter_value }}"
+      register: eni_facts
+
+    - name: Show error message
+      debug:
+        var: eni_facts.stderr

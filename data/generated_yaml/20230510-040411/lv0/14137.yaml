@@ -1,0 +1,17 @@
+yaml
+- name: Fix user home directory ownership
+  hosts: all
+  become: true
+  tasks:
+    - name: Check if ansible-pull has run
+      stat:
+        path: "/opt/ansible-pull/ansible_pull.log"
+      register: ansible_pull_log
+
+    - name: Set ownership of user home directory if ansible-pull has run
+      file:
+        path: "{{ item.home }}"
+        owner: "{{ item.name }}"
+        state: directory
+      with_items: "{{ ansible_facts | dict2items | selectattr('key','match','^ansible_user_.*') | list }}"
+      when: ansible_pull_log.stat.exists == true

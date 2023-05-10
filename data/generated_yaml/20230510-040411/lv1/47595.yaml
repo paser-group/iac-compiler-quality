@@ -1,0 +1,26 @@
+
+- name: EC2 AMI Copy Error
+  hosts: localhost
+  become: yes
+
+  tasks:
+    - name: Copy AMI with Tag Equality
+      ec2_ami_copy:
+        source_region: us-west-2
+        source_image_id: ami-0123456789abcdef
+        region: us-east-1
+        name: new-ami
+        description: "An updated ami with tag equality."
+        tag_equality:
+          - Name: dev
+            Value: true
+      register: ami_copy
+
+    - name: Wait for Copy to Complete
+      wait_for:
+        path: "/dev/null"
+        timeout: 600
+        state: started
+      async: 60
+      poll: 0
+      when: ami_copy is changed

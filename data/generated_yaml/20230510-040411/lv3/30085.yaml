@@ -1,0 +1,34 @@
+
+- name: Create an EC2 Launch Configuration without default VPC
+  hosts: localhost
+  vars:
+    region: "{{ aws_region }}"
+    image_id: "{{ ec2_image_id }}"
+    instance_type: "{{ ec2_instance_type }}"
+    key_name: "{{ ec2_key_name }}"
+    lc_name: "{{ ec2_lc_name }}"
+    lc_security_groups: "{{ ec2_lc_security_groups }}"
+  tasks:
+  - name: Get VPC ID
+    ec2_vpc_net_facts:
+      region: "{{ region }}"
+    register: vpc_net_facts
+  - name: Set the VPC ID for the Launch Configuration
+    set_fact: 
+      vpc_id: "{{ vpc_net_facts.vpc_net_info[0].id }}"
+  - name: Create a Launch Configuration
+    ec2_lc:
+      name: "{{ lc_name }}"
+      image_id: "{{ image_id }}"
+      instance_type: "{{ instance_type }}"
+      key_name: "{{ key_name }}"
+      security_groups: "{{ lc_security_groups }}"
+      vpc_id: "{{ vpc_id }}"
+      region: "{{ region }}"
+  - name: Register the Launch Configuration
+    ec2_lc_facts:
+      region: "{{ region }}"
+    register: lc_facts
+  - name: Debug Launch Configuration
+    debug:
+      var: lc_facts

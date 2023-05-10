@@ -1,0 +1,48 @@
+
+---
+- hosts: all
+  become: true
+  gather_facts: true
+
+  tasks:
+  - name: Log system memory usage before Yum update
+    debug:
+      msg: "System memory usage before Yum update: {{ ansible_memtotal_mb - ansible_memfree_mb }} MB"
+
+  - name: Update Yum packages
+    yum:
+      update_cache: yes
+      name: '*'
+
+  - name: Log system memory usage after Yum update
+    debug:
+      msg: "System memory usage after Yum update: {{ ansible_memtotal_mb - ansible_memfree_mb }} MB"
+
+  - name: Verify Yum update was successful
+    assert:
+      that:
+        - "'No package found' not in yum_update.stdout"
+        - "'Error' not in yum_update.stdout"
+
+  - name: Detect Errors using Yum module
+    yum:
+      name: '*'
+      state: latest
+      disablerepo: 'epel-testing'
+    ignore_errors: true
+    register: yum_output
+
+  - name: Assert no errors during Yum update
+    assert:
+      that:
+        - yum_output.rc == 0
+
+  - name: Execute Yum update via Shell module
+    shell: yum update -y
+    register: yum_shell_output
+
+  - name: Assert no errors in Shell module output
+    assert:
+      that:
+        - "'No package found' not in yum_shell_output.stdout"
+        - "'Error' not in yum_shell_output.stdout"

@@ -1,0 +1,59 @@
+yaml
+- name: Test playbook for issue #1234
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+    - name: Create dictionary with raw jinja2 variables
+      set_fact:
+        my_dict: "{{ { 'var1': '{{ jinja_var1 }}', 'var2': '{{ jinja_var2 }}', 'var3': '{{ jinja_var3 }}' } }}"
+
+    - name: Print dictionary
+      debug:
+        var: my_dict
+
+    - name: Loop over dictionary keys
+      debug:
+        msg: "{{ item.key }}: {{ item.value }}"
+      loop: "{{ my_dict | dict2items }}"
+
+    - name: Loop over dictionary values
+      debug:
+        var: item
+      loop: "{{ my_dict.values() }}"
+
+    - name: Use jinja2 filter on raw jinja2 variable
+      debug:
+        msg: "{{ jinja_var1 | to_json }}"
+
+    - name: Add raw jinja2 variables
+      debug:
+        msg: "{{ jinja_var1 + jinja_var2 + jinja_var3 }}"
+
+    - name: Access raw jinja2 variable in loop
+      debug:
+        msg: "{{ item.jinja_var }}"
+      loop: "{{ [{'jinja_var': jinja_var1}, {'jinja_var': jinja_var2}, {'jinja_var': jinja_var3}] }}"
+
+    - name: Nested dictionary with raw jinja2 variables
+      set_fact:
+        my_nested_dict:
+          key1: "{{ jinja_var1 }}"
+          key2: "{{ { 'nested_var1': '{{ jinja_var2 }}', 'nested_var2': '{{ jinja_var3 }}' } }}"
+          key3: '{{ {"nested_var3": jinja_var1} }}'
+
+    - name: Print nested dictionary
+      debug:
+        var: my_nested_dict
+
+    - name: Use raw jinja2 variable in template
+      vars:
+        my_template: |
+          This is a raw jinja2 template.
+          Var1: {{ jinja_var1 }}
+          Var2: {{ jinja_var2 }}
+          Var3: {{ jinja_var3 }}
+      template:
+        src: /dev/null
+        dest: /dev/null
+        content: "{{ my_template }}"

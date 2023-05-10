@@ -1,0 +1,52 @@
+yaml
+---
+- name: Create a new DVS and verify its existence
+  hosts: localhost
+  gather_facts: no
+  vars:
+    vcenter_hostname: vcenter.example.com
+    vcenter_username: admin
+    vcenter_password: password
+    dvs_name: my_dvs
+  tasks:
+    - name: Create DVS
+      vmware_dvs:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        switch_name: "{{ dvs_name }}"
+        state: present
+      register: dvs_result
+
+    - name: Check DVS existence
+      vmware_dvswitch_facts:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+      register: dvs_facts
+
+    - name: Run vmware_guest multiple times
+      vmware_guest:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: no
+        name: my_vm
+        state: "{{ item }}"
+        disk:
+          - size_gb: 20
+            type: thin
+            datastore: datastore1
+        hardware:
+          memory_mb: 2048
+          num_cpus: 2
+        networks:
+          - name: "{{ dvs_name }}"
+        folder: my_folder
+        customvalues:
+          - key: my_key
+            value: my_value
+      register: vm_result
+      with_items:
+        - poweredon
+        - poweredoff

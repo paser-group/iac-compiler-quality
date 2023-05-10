@@ -1,0 +1,60 @@
+yaml
+---
+- name: Test cases for the ec2_asg and ELB integration
+  hosts: localhost
+  gather_facts: no
+  vars:
+    target_sg_id: "sg-0123456789abcdefg"
+    target_az: "us-west-2c"
+    target_instance_type: "t2.micro"
+    target_key_pair: "test_key_pair"
+    lb_name: "test_lb_name"
+  tasks:
+  - name: launch ec2 instances in ASG
+    ec2_asg:
+      name: "test_asg"
+      min_size: 0
+      max_size: 2
+      desired_capacity: 2
+      launch_template:
+        id: "{{ lookup('template', 'template.json.j2') }}"
+        version: 1
+      target_group_arns:
+        - "{{ lb_target_group }}"
+      health_check_type: "ELB"
+      wait_for_instances:
+        state: running
+        health_check_timeout: 600 # Unusual input
+        wait_timeout: 400 # Unusual input
+      region: "{{ target_az[:-1] }}" # Unusual syntax, should strip the last character from the target_az
+      subnets:
+        - "{{ lookup('dig', 'elb-test.example.com') }}" # Unusual syntax, attempting to do DNS lookup
+      instance_ids: # unexpected input
+        - "i-0123456789abcdefg"
+    register: result1
+  - name: terminate ec2 instances in ASG
+    ec2_asg:
+      name: "test_asg"
+      min_size: 0
+      max_size: 2
+      desired_capacity: 0 # unexpected input, should terminate all instances in the ASG
+      region: "{{ target_az[:-1] }}" # Unusual syntax, should strip the last character from the target_az
+    register: result2
+  - name: verify ec2 instances terminated
+    assert:
+      that: result2.changed
+      msg: "Not all instances terminated successfully."
+  - name: create more than 99 tags for resources (launch_template)
+    ec2_tag:
+      region: "{{ target_az[:-1] }}" # Unusual syntax, should strip the last character from the target_az
+      resource: "{{ lb_target_group }}"
+      tags:
+        {{"test_tag_1_" + "-"*99 + "_end": "test_value_1"}} # edge case, create tag with 100 characters name
+        {{"test_tag_2_" + "-"*99 + "_end": "test_value_2"}} # edge case, create tag with 100 characters name
+        {{"test_tag_3_" + "-"*99 + "_end": "test_value_3"}} # edge case, create tag with 100 characters name
+        {{"test_tag_4_" + "-"*99 + "_end": "test_value_4"}} # edge case, create tag with 100 characters name
+    register: result3
+  - name: assert for tags failure
+    assert:
+      that: "'Failed to add tags due to too many tags or resources': in result3.msg"
+      msg: "Expected a failure due to too many tags or resources"

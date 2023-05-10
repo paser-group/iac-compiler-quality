@@ -1,0 +1,24 @@
+
+- hosts: webserver
+  become: true
+
+  tasks:
+  - name: Create an invalid keyfile path
+    file:
+      path: /tmp/my_key
+      state: touch
+      mode: "0000"
+
+  - name: Add an invalid key to a user
+    authorized_key:
+      user: root
+      key: /tmp/my_key
+      state: present
+      validate_certs: no
+    register: result
+    ignore_errors: true
+
+  - name: Check the error message
+    fail:
+      msg: "The module didn't report an error when given an invalid key path."
+    when: '"failed to open file" not in result.msg'

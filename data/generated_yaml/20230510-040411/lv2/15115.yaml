@@ -1,0 +1,24 @@
+
+- hosts: all
+  gather_facts: false
+  tasks:
+    - name: Add EC2 dynamic inventory
+      add_host:
+        name: "{{ item.public_ip }}"
+        groups: [ec2]
+        ansible_user: "{{ item.username }}"
+        ansible_ssh_private_key_file: "{{ item.key_path }}"
+        ansible_connection: ssh
+      with_items:
+        - { public_ip: '10.0.0.1', username: 'admin', key_path: '/path/to/key_file' }
+        - { public_ip: '10.0.0.2', username: 'admin', key_path: '/path/to/key_file' }
+        - { public_ip: '10.0.0.3', username: 'admin', key_path: '/path/to/key_file' }
+      register: ec2_hosts
+  
+    - name: Refresh inventory
+      meta: refresh_inventory
+      when: inventory_hostname in groups['ec2']
+
+    - name: Print inventory
+      debug:
+        var: hostvars[inventory_hostname]

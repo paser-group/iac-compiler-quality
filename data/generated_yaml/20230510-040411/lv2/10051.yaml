@@ -1,0 +1,29 @@
+
+- name: Test delegate_to module
+  hosts: all
+  vars:
+    delegate_to: "{{ inventory_hostname }}"
+  tasks:
+    - name: Test delegate_to with a single task
+      debug:
+        msg: "This task will run on {{ inventory_hostname }}"
+      delegate_to: "{{ delegate_to }}"
+        
+    - name: Test delegate_to with loop
+      debug:
+        msg: "This task is run on {{ item }}"
+      delegate_to: "{{ item }}"
+      loop: "{{ groups['all'] }}"
+          
+    - name: Test delegate_to with nested loop
+      debug:
+        msg: "This task is run on {{ item.0 }} and delegated to {{ item.1 }}"
+      delegate_to: "{{ item.1 }}"
+      with_nested:
+        - "{{ groups['all'] }}"
+        - "{{ groups['all'] }}"
+          
+    - name: Test delegate_to with dynamic inventory
+      debug:
+        msg: "This task will run on {{ inventory_hostname }}"
+      delegate_to: "{{ groups['all'][ (inventory_hostname.split('-')[1]|int + 1)|string ~ '-server'] }}"

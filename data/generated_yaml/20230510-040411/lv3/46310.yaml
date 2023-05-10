@@ -1,0 +1,36 @@
+
+---
+- name: Vulnerable Ansible Playbook
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+
+    # Task 1: Write sensitive data to a vault-encrypted file
+    - name: Create encrypted file containing sensitive data
+      ansible.builtin.copy:
+        content: "Top Secret Data"
+        dest: "secret.txt"
+        encrypt: "{{ vault_pass }}"
+      vars:
+        vault_pass: "mysecretkey"
+    
+    # Task 2: Decrypt the file, leaking the sensitive data
+    - name: Read decrypted file
+      ansible.builtin.copy:
+        src: "secret.txt"
+        dest: "/tmp/copy.txt"
+        decrypt: "{{ vault_pass }}"
+        remote_src: true
+      vars:
+        vault_pass: "mysecretkey"
+
+    # Task 3: Print the leaked data from the decrypted file
+    - name: Display leaked data
+      ansible.builtin.shell: "cat /tmp/copy.txt"
+      register: output
+
+    # Task 4: Print debug information to console
+    - name: Debug output information
+      ansible.builtin.debug:
+        var: output

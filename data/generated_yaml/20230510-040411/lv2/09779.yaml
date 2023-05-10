@@ -1,0 +1,78 @@
+
+---
+- hosts: all
+  become: yes
+
+  vars:
+    - python_version: 3.9.0
+
+  tasks:
+  - name: Install python
+    become: yes
+    raw: "sudo apt-get -y install python{{ python_version }}"
+
+  - name: Install pip
+    become: yes
+    raw: "sudo apt-get -y install python{{ python_version }}-pip"
+
+  # Add custom apt repository
+  - name: Add custom apt repository
+    apt_repository:
+      repo: 'deb http://example.com/ansible stable main'
+      state: present
+
+  # Install Ansible from the custom repository
+  - name: Install Ansible
+    become: yes
+    apt:
+      name: ansible
+      state: present
+      update_cache: yes
+
+  # Uninstall Ansible
+  - name: Uninstall Ansible
+    become: yes
+    apt:
+      name: ansible
+      state: absent
+
+  # Run an invalid command with an incorrect syntax
+  - name: Run invalid command with improper syntax
+    raw: "sudo apt-get -y install python{{ python_version }};'"
+
+  # Execute a shell command using a single-quote character
+  - name: Run command with a single-quote character
+    shell: "echo 'This is a test'"
+
+  # Generate an error using invalid module syntax
+  - name: Use invalid module syntax in a task
+    command: echo "This is an invalid module syntax" creates=/tmp/invalid_module
+
+  # Create a file containing invalid characters
+  - name: Create a file with invalid characters
+    file:
+      path: "/tmp/invalid_file\$%@#&*!^#?"
+      state: touch
+
+  # Add a nonexistent host to the inventory file
+  - name: Add nonexistent host to inventory
+    add_host:
+      name: "invalid_host"
+      groups: "all"
+
+  # Use an invalid argument syntax in a task
+  - name: Use invalid argument syntax
+    lineinfile:
+      dest: /etc/hosts
+      regexp: '^{{ item }}'
+      line: '{{ item }}'
+      invalid_arg: "-i"
+    with_items:
+      - '127.0.0.1'
+      - '::1'
+  
+  # Remove a nonexistent package
+  - name: Attempt to remove a nonexistent package
+    apt:
+      pkg: nonexistent_package
+      state: absent

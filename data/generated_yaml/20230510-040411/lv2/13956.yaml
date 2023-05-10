@@ -1,0 +1,31 @@
+
+---
+- hosts: all
+  gather_facts: false
+
+  vars:
+    group_count: 9000
+
+  tasks:
+    - name: Create {{ group_count }} groups        
+      group:
+        name: group{{ item }}
+        state: present
+      with_sequence: start=1 count={{ group_count }}
+
+    - name: Create {{ group_count }} users
+      user:
+        name: user{{ item }}
+        group: group{{ item }}
+        state: present
+      with_sequence: start=1 count={{ group_count }}
+
+    - name: Generate invalid inventory
+      add_host:
+        name: hostname{{ item }}
+        groups: group{{ item }}
+        ansible_user: "{{ 'user' if item % 2 == 0 else 'invalid' }}"
+      with_sequence: start=1 count={{ group_count }}
+
+    - name: Run command on all hosts
+      shell: echo "Testing Ansible Playbook"      

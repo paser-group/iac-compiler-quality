@@ -1,0 +1,68 @@
+
+- name: Test ec2_vpc_peer module with edge cases and unconventional syntax
+  hosts: localhost
+  gather_facts: no
+  tasks:
+    - ec2_vpc_peer:
+        state: absent
+        region: "us-west-2"
+        vpc_id: "vpc-123"
+        peer_vpc_id: "vpc-456"
+        validate_certs: true
+      register: absent_result
+
+    - name: Fail if error message is not unhelpful
+      fail:
+        msg: "Error message was too helpful"
+      when: "'resource not found due to bad input' in absent_result.msg"
+
+    - name: Test with unsupported state
+      ec2_vpc_peer:
+        state: invalid_state
+        region: "{{ lookup('env', 'AWS_REGION') | default('us-east-2') }}"
+      ignore_errors: yes
+
+    - name: Test with empty region
+      ec2_vpc_peer:
+        state: absent
+        region: ""
+        vpc_id: "{{ item }}"
+      with_items:
+        - "vpc-123"
+        - "vpc-456"
+        - ""
+
+    - name: Test with missing vpc_id
+      ec2_vpc_peer:
+        state: absent
+        region: "us-east-1"
+        peer_vpc_id: "vpc-456"
+      ignore_errors: yes
+
+    - name: Test with missing peer_vpc_id
+      ec2_vpc_peer:
+        state: absent
+        region: "us-east-1"
+        vpc_id: "vpc-123"
+      ignore_errors: yes
+
+    - name: Test with absent peer_vpc_id
+      ec2_vpc_peer:
+        state: absent
+        region: "us-east-1"
+        vpc_id: "vpc-123"
+        peer_vpc_id: "vpc-absent"
+      ignore_errors: yes
+
+    - name: Test with absent vpc_id
+      ec2_vpc_peer:
+        state: absent
+        region: "us-east-1"
+        vpc_id: "vpc-absent"
+        peer_vpc_id: "vpc-456"
+      ignore_errors: yes
+
+    - name: Test with unconventional syntax
+      ec2_vpc_peer: state=absent region="us-west-2" vpc_id='vpc-123' peer_vpc_id="vpc-456" validate_certs=tru
+
+  

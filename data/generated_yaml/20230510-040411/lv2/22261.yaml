@@ -1,0 +1,53 @@
+yaml
+---
+- hosts: localhost
+  vars:
+      symlink_args:
+        name: 'ansible-3.6'
+        src: '/usr/bin/ansible'
+        state: 'link'
+        force: 'no'
+        ignore_unlink: 'no'
+        owner: 'root'
+        group: 'root'
+  tasks:
+    - name: create symlink
+      file:
+        state: link
+        dest: '/usr/bin/ansible-test'
+        src: '/usr/bin/ansible'
+        force: yes
+      register: symlink_created
+
+    - name: check if symlink exists
+      assert:
+        that:
+          - "'/usr/bin/ansible-test' is symlink"
+          - "'{{ symlink_args.src }}' == '{{ item }}'"
+        vars:
+          item: '{{ ansible_file_symlink_dest | basename }}'
+
+    - name: delete symlink
+      file:
+        path: '/usr/bin/ansible-test'
+        state: absent
+
+    - name: create symlink with args
+      file:
+        path: '/usr/bin/{{ symlink_args.name }}'
+        args: "{{ symlink_args }}"
+        
+    - name: change symlink owner
+      file:
+        path: '/usr/bin/{{ symlink_args.name }}'
+        owner: '{{ symlink_args.owner }}'
+        
+    - name: change symlink group
+      file:
+        path: '/usr/bin/{{ symlink_args.name }}'
+        group: '{{ symlink_args.group }}'
+        
+    - name: change symlink permission
+      file:
+        path: '/usr/bin/{{ symlink_args.name }}'
+        mode: 'u=rwx,g=x,o=rx'

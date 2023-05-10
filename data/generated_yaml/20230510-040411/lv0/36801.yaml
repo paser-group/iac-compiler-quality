@@ -1,0 +1,31 @@
+
+- name: configure VLAN and SVI
+  hosts: nxos_devices
+  gather_facts: no
+  vars:
+    vlan_id: 100
+    vlan_name: VLAN100
+    svi_intf_name: vlan{{ vlan_id }}
+    svi_ip_addr: 10.0.0.1/24
+  tasks:
+    - name: create VLAN if it does not exist
+      nxos_vlans:
+        vlan_id: "{{ vlan_id }}"
+        vlan_name: "{{ vlan_name }}"
+        state: present
+        check_mode: yes
+      register: vlan_result
+      tags:
+        - vlans
+
+    - name: configure SVI
+      nxos_interface:
+        name: "{{ svi_intf_name }}"
+        ip_address: "{{ svi_ip_addr }}"
+        state: present
+        vlan: "{{ vlan_id }}"
+        delay: 5
+        wait_for_line: "^interface {{ svi_intf_name }}"
+      tags:
+        - svi
+      when: not vlan_result.changed or vlan_result.check_mode

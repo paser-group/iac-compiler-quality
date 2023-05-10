@@ -1,0 +1,35 @@
+
+- name: NFS Issue Fuzzing Playbook
+  hosts: all
+  vars:
+    mount_point: "{{ random_string(5) }}"
+
+  tasks:
+    - name: Mount NFS share
+      mount:
+        src: "{{ hostvars[item]['nfs_share'] }}:/export/{{ mount_point }}"
+        path: "/mnt/{{ mount_point }}"
+        fstype: nfs
+        opts: "hard,intr,rsize=8192,wsize=8192,timeo=14"
+      with_items: "{{ groups['all'] }}"
+
+    - name: Trigger Ansible hang
+      command: "tail -f /var/log/messages"
+      register: command_output
+      async: 100
+      poll: 0
+      ignore_errors: true
+
+    - name: Remove NFS mounts
+      mount:
+        path: "/mnt/{{ mount_point }}"
+        state: absent
+      with_items: "{{ groups['all'] }}"
+      when: mount_point is defined
+
+  handlers:
+    - name: Unblock Ansible hang
+      command: "pkill -f 'tail -f /var/log/messages'"
+      async: 0
+      poll: 0
+      listen: "Trigger Ansible hang"

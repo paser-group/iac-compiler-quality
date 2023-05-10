@@ -1,0 +1,48 @@
+yaml
+- hosts: localhost
+  gather_facts: no
+  vars:
+    region: eu-central-1
+    profile: default
+    aws_access_key: "{{ lookup('env', 'AWS_ACCESS_KEY_ID') }}"
+    aws_secret_key: "{{ lookup('env', 'AWS_SECRET_ACCESS_KEY') }}"
+  tasks:
+    - name: Install Boto3
+      pip:
+        name: boto3
+        state: latest
+    - name: Configure AWS CLI credentials
+      block:
+        - name: Export AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY
+          set_fact:
+            AWS_ACCESS_KEY_ID: "{{ aws_access_key }}"
+            AWS_SECRET_ACCESS_KEY: "{{ aws_secret_key }}"
+        - name: Verify AWS CLI credentials
+          command: aws sts get-caller-identity
+      rescue:
+        - fail:
+            msg: "Error, failed to get temporary credentials"
+    - name: Create the AWS Route53 Hosted Zone
+      block:
+        - name: Create the Hosted Zone
+          route53_zone:
+            state: present
+            private_zone: no
+            name: example.com
+            aws_access_key: "{{ aws_access_key }}"
+            aws_secret_key: "{{ aws_secret_key }}"
+            profile: "{{ profile }}"
+            region: "{{ region }}"
+        - name: Update Hosted Zone with NS servers
+          route53:
+            state: present
+            zone: example.com
+            record: mx
+            type: ns
+            ttl: 60
+            value:
+              - "ns1.thebestdnsprovider.com"
+              - "ns2.thebestdnsprovider.com"
+      rescue:
+        - fail:
+            msg: "Error, failed to create Hosted Zone"

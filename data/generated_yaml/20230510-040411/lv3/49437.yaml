@@ -1,0 +1,48 @@
+
+---
+- name: Tower Credentials Idempotency Issue
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    cred1:
+      name: dummy
+      organization: Default
+      description: "Dummy Credential 1"
+      inputs:
+        username: dummy
+        password: dummy
+    cred2:
+      name: dummy
+      organization: Default
+      description: "Dummy Credential 2"
+      inputs:
+        username: dummy
+        password: dummy
+
+  tasks:
+    - name: Create Credential 1
+      tower_credentials:
+        state: present
+        credential_type: Source Control
+        name: "{{ cred1.name }}"
+        organization: "{{ cred1.organization }}"
+        description: "{{ cred1.description }}"
+        inputs: "{{ cred1.inputs }}"
+      register: cred1_output
+
+    - name: Create Credential 2
+      tower_credentials:
+        state: present
+        credential_type: Source Control
+        name: "{{ cred2.name }}"
+        organization: "{{ cred2.organization }}"
+        description: "{{ cred2.description }}"
+        inputs: "{{ cred2.inputs }}"
+      register: cred2_output
+
+    - name: Check Idempotency Issue
+      assert:
+        that:
+          - cred1_output.id == cred2_output.id
+        msg: "Credentials modified instead of creating a new one"

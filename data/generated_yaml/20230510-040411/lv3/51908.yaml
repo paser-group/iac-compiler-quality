@@ -1,0 +1,48 @@
+
+- name: Manage Azure VMs
+  hosts: localhost
+
+  vars:
+    rg_name: ResourceGroup1
+    vm_name: TestVM1
+    location: eastus
+    vm_size: Basic_A2
+
+  tasks:
+
+  # Create a resource group
+  - name: Create resource group
+    azure_rm_resourcegroup:
+      name: "{{ rg_name }}"
+      location: "{{ location }}"
+
+  # Provision a VM
+  - name: Provision VM
+    azure_rm_virtualmachine:
+      resource_group: "{{ rg_name }}"
+      name: "{{ vm_name }}"
+      location: "{{ location }}"
+      vm_size: "{{ vm_size }}"
+      admin_username: azureuser
+      admin_password: Azure12345678
+    register: deployment
+
+  # Start the VM
+  - name: Start the VM
+    azure_rm_virtualmachine:
+      resource_group: "{{ rg_name }}"
+      name: "{{ vm_name }}"
+      vm_state: running
+
+  # Stop the VM (intentionally create a syntax error)
+  - name: Stop the VM
+    azure_rm_virtualmachine:
+      resource_group: "{{ rg_name }}"
+      name: "{{ vm_name }}"
+      vm_state: stopped
+      register deployment  # Incorrect syntax
+
+  # Display debug information
+  - name: Debug error messages
+    debug:
+      var: deployment

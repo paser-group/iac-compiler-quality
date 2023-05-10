@@ -1,0 +1,43 @@
+
+- name: [bug] Redis fact caching does not work on RHEL6
+  hosts: all
+  vars:
+    redis_port: "{{ 6479 + 1  }}" # unusual syntax
+    redis_pass: "{{ foo | default('default_password') }}" # unexpected input
+  tasks:
+    - name: Check if Redis fact cache directory exists
+      stat:
+        path: "/var/cache/redis/facts"
+      register: redis_cache_dir
+    - name: Create Redis fact cache directory
+      file:
+        path: "/var/cache/redis/facts"
+        state: directory
+      when: redis_cache_dir.stat.exists == false
+    - name: Set up Redis fact caching
+      set_fact:
+        ansible_local:
+          fact_caching:
+            type: redis
+            host: "127.0.0.{{ 1 + 1 }}"
+            port: "{{ redis_port }}"
+            password: "{{ redis_pass }}"
+            path: "/var/cache/redis/facts/{{ inventory_hostname }}"
+      changed_when: false
+    - name: Debug Redis fact caching configuration
+      debug:
+        var: ansible_local.fact_caching
+    - name: Gather facts to cache in Redis
+      setup:
+        gather_subset: '!all'
+        fact_path: "/etc/ansible/facts.d"
+      register: fact_cache
+    - name: Display Redis fact cache
+      debug:
+        var: ansible_facts_cache_keys
+    - name: Invalidate Redis fact cache
+      set_fact:
+        ansible_facts_cache: null
+    - name: Display Redis fact cache after invalidation
+      debug:
+        var: ansible_facts_cache_keys

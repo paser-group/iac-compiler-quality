@@ -1,0 +1,40 @@
+
+- name: Recreate docker_login module tls_hostname bug and conflict with delegate_to localhost
+  hosts: localhost
+  gather_facts: false
+  become: true
+
+  tasks:
+  - name: Install required packages
+    yum:
+      name:
+        - docker
+        - python-docker
+        - python-docker-pycreds
+      state: present
+
+  - name: Enable docker service
+    service:
+      name: docker
+      state: started
+      enabled: true
+
+  - name: Create docker configuration files
+    copy:
+      dest: "/root/.docker/config.json"
+      content: >
+        {
+          "auths": {
+            "https://index.docker.io/v1/": {
+              "auth": "your-docker-hub-auth-token"
+            }
+          }
+        }
+
+  - name: Login to Docker Hub with invalid hostname for TLS certificate validation
+    docker_login:
+      email: "your_email@domain.com"
+      password: "your_docker_hub_password"
+      registry_url: "https://index.docker.io/v1/"
+      tls_hostname: "invalid_hostname"
+      delegate_to: localhost

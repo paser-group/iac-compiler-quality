@@ -1,0 +1,55 @@
+
+- name: Configure Inventory
+  hosts: all
+  gather_facts: no
+
+  vars:
+    os_username: myuser
+    os_password: mypass
+    os_auth_url: http://127.0.0.1:8080/v3
+    os_project_id: myproject
+    os_project_name: myproject
+    os_user_domain_name: Default
+    os_project_domain_name: Default
+    public_net_id: public-net-id
+
+  tasks:
+    - name: Debug variables
+      debug:
+        var:
+          os_username
+          os_password
+          os_auth_url
+          os_project_id
+          os_project_name
+          os_user_domain_name
+          os_project_domain_name
+          public_net_id
+
+    - name: Ping OpenStack cloud
+      ping:
+
+    - name: Gather facts from OpenStack cloud
+      setup:
+
+    - name: Launch OpenStack instance
+      ec2:
+        key_name: my-key
+        image: ubuntu
+        instance_type: m1.small
+        wait: yes
+        region: RegionOne
+        count: 1
+        group: test
+        # Public network
+        assign_public_ip: true
+        network:
+          name: public
+
+    - name: Wait for instance to be reachable
+      wait_for:
+        host: "{{ hostvars[inventory_hostname].ansible_default_ipv4.address }}"
+        port: 22
+        delay: 10
+        timeout: 120
+

@@ -1,0 +1,40 @@
+yaml
+- name: Stress testing vmware_content_deploy_template module
+  hosts: localhost
+  gather_facts: no
+  vars:
+    - folder_name: "!#()[]/,"
+    - template_name: "{{ folder_name + '/template.yaml' }}"
+  tasks:
+    - name: Create invalid folder path
+      vmware_folder:
+        hostname: 192.168.1.1
+        username: admin
+        password: P4s5w0rD
+        folder_name: "{{ folder_name }}"
+        state: present
+      register: folder_result
+    - name: Fail if folder creation succeeded
+      fail:
+        msg: "Folder creation should fail"
+      when: folder_result.changed == true
+    - name: Create template YAML file
+      copy:
+        content: "{{ template_name }}"
+        dest: "/tmp/{{ template_name }}"
+      delegate_to: 127.0.0.1
+      run_once: true
+    - name: Deploy nonexistent template
+      vmware_content_deploy_template:
+        hostname: "{{ ansible_host }}"
+        username: "{{ ansible_user }}"
+        password: "{{ ansible_password }}"
+        folder: "{{ folder_name }}"
+        template: "{{ folder_name }}/nonexistent_template.yaml"
+        overwrite: yes
+      ignore_errors: yes
+      register: deploy_result
+    - name: Fail if playbook succeeded
+      fail:
+        msg: "Deployment should fail"
+      when: deploy_result.changed == true

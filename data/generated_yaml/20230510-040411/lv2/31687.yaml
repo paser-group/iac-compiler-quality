@@ -1,0 +1,31 @@
+
+- name: Test authorized_key module bug
+  hosts: localhost
+  become: true
+  
+  tasks:
+    - name: Add SSH public key for user {{ ansible_user }}
+      authorized_key:
+        user: "{{ ansible_user }}"
+        state: present
+        key: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAAAgQDTnHi6WfFZHZd3QJ5EGEOyEf0Ajr5oOdxQh1VVuIb+Kjuv9T65JrOnQr8h7n73CyXvzBpJHfGcmTdPPTx4G758cXw7mE/mQfJuuKRWoqsc4XKZ4IQl4jbs3zctg+rDMhOqk6MdVi/SpFpgshFUh7ewRA4FR5qpfsL+TJfUw0ww== {{ ansible_user }}@{{ inventory_hostname }}"
+      register: authorized_key_result
+
+    - name: Remove SSH public key for user {{ ansible_user }}
+      authorized_key:
+        user: "{{ ansible_user }}"
+        state: absent
+        key: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAAAgQDTnHi6WfFZHZd3QJ5EGEOyEf0Ajr5oOdxQh1VVuIb+Kjuv9T65JrOnQr8h7n73CyXvzBpJHfGcmTdPPTx4G758cXw7mE/mQfJuuKRWoqsc4XKZ4IQl4jbs3zctg+rDMhOqk6MdVi/SpFpgshFUh7ewRA4FR5qpfsL+TJfUw0ww== {{ ansible_user }}@{{ inventory_hostname }}"
+      register: unauthorized_key_result
+
+    - name: Verify authorized_key module output
+      assert:
+        that:
+          - authorized_key_result.changed is true
+          - unauthorized_key_result.changed is true
+      register: assertion_result
+
+    - name: Fail the task if assertion fails
+      debug:
+        msg: "Assertion failed: {{ assertion_result }}"
+      failed_when: assertion_result is failed

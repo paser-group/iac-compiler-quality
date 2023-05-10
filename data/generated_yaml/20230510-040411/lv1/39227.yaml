@@ -1,0 +1,29 @@
+yaml
+---
+- name: Handle Ansible Error
+  hosts: all
+  gather_facts: true
+
+  tasks:
+    - name: Execute risky task
+      command: /path/to/command
+      register: command_output
+      ignore_errors: yes
+
+    - name: Handle failure
+      block:
+        - name: Notify admin
+          mail:
+            to: admin@example.com
+            subject: "Task failed"
+            body: "Task failed with error: {{ command_output.stderr }}"
+      rescue:
+        - name: Notify admin
+          mail:
+            to: admin@example.com
+            subject: "Task failed but was recovered"
+            body: "Task failed with error: {{ command_output.stderr }}. Task will continue running."
+
+    - name: Continue playbook execution
+      debug:
+        msg: "Task completed successfully"

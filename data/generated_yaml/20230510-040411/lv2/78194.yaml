@@ -1,0 +1,51 @@
+
+---
+- name: Test ansible_parent_role_paths issue
+  hosts: localhost
+  vars:
+    role_paths:
+      - "~/roles"
+      - "{{ playbook_dir }}/roles"
+  tasks:
+    - name: Ensure that ansible_parent_role_paths is empty by default
+      assert:
+        that:
+          - ansible_parent_role_paths == []
+    - name: Add paths to ansible_parent_role_paths
+      set_fact:
+        ansible_parent_role_paths: "{{ role_paths }}"
+    - name: Ensure that ansible_parent_role_paths contains all the added paths
+      assert:
+        that:
+          - ansible_parent_role_paths == role_paths
+    - name: Add a non-existent role path to ansible_parent_role_paths
+      set_fact:
+        ansible_parent_role_paths: "{{ role_paths + ['/invalid/path/to/role'] }}"
+    - name: Ensure that the invalid role path has been removed from ansible_parent_role_paths
+      assert:
+        that:
+          - '/invalid/path/to/role' not in ansible_parent_role_paths
+    - name: Add a role path with unconventional syntax to ansible_parent_role_paths
+      set_fact:
+        ansible_parent_role_paths: "{{ role_paths + ['{{ playbook_dir }}/{{myfile[loop.index -1]}}'] }}"
+      loop: "{{ range(1,4)|list }}"
+      vars:
+        myfile:
+          - 'file1.yml'
+          - 'myfolder/file2.yml'
+          - "my{{'file'}}.yml"
+    - name: Ensure that the role path with unconventional syntax is correctly added to ansible_parent_role_paths
+      assert: 
+        that:
+          - ansible_parent_role_paths | length == 5
+          - "{{ playbook_dir }}/file1.yml" in ansible_parent_role_paths
+          - "{{ playbook_dir }}/myfolder/file2.yml" in ansible_parent_role_paths
+          - "{{ playbook_dir }}/myfile.yml" in ansible_parent_role_paths
+    - name: Add a role path with unexpected inputs
+      set_fact:
+        ansible_parent_role_paths: "{{ role_paths + ['/path/to/roles/' ~ '\n'] }}"
+    - name: Ensure that the role path with unexpected inputs has been removed from ansible_parent_role_paths
+      assert:
+        that:
+          - '\n' not in ansible_parent_role_paths
+          - '{{ role_paths[-1] }}\n' not in ansible_parent_role_paths

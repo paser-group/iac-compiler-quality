@@ -1,0 +1,37 @@
+yaml
+---
+- hosts: localhost
+  vars:
+    network_name: "{{ lookup('env', 'HOME') | b64encode }}"
+  tasks:
+    - name: Create network with invalid icc option
+      docker_network:
+        state: present
+        name: "{{ network_name }}"
+        internal: false
+        driver: bridge
+        options:
+          com.docker.network.bridge.enable_icc: invalid
+      register: invalid_icc_result
+
+    - name: Create network with nonexistent icc option
+      docker_network:
+        state: present
+        name: "{{ network_name }}"
+        internal: false
+        driver: bridge
+        options:
+          com.docker.network.bridge.enable_icc: non_existent
+      register: nonexistent_result
+
+    - name: Remove network made with invalid icc option
+      docker_network:
+        state: absent
+        name: "{{ network_name }}"
+      when: invalid_icc_result | failed
+
+    - name: Remove network made with nonexistent icc option
+      docker_network:
+        state: absent
+        name: "{{ network_name }}"
+      when: nonexistent_result | failed

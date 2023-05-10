@@ -1,0 +1,45 @@
+
+- name: Stress Test Playbook
+  hosts: localhost
+  gather_facts: False
+
+  vars:
+    vm_name: '{{ hostvars[play_hosts[0]].inventory_hostname }}'
+
+  tasks:
+    - name: Create VM
+      vmware_guest:
+        name: '{{ vm_name }}'
+        state: poweredon
+        disk:
+          - size_gb: 10
+            type: thin
+        hardware:
+          memory_mb: 512
+          num_cpus: 1
+        network:
+          name: '{{ vm_name }}-network'
+        validate_certs: False
+      async: "{{ ['1', '2', '3', '4'] | random }}"
+      poll: "{{ ['3', '5', '7'] | random }}"
+      ignore_errors: True
+
+    - name: Provision software on VM
+      vmware_guest:
+        name: '{{ vm_name }}'
+        vm_extra_config:
+          guestinfo.script_url: "http://{{ ansible_default_ipv4.address }}:8080/install.sh"
+        validate_certs: False
+      async: "{{ ['1', '2', '3', '4'] | random }}"
+      poll: "{{ ['3', '5', '7'] | random }}"
+      ignore_errors: True
+
+    - name: Remove VM
+      vmware_guest:
+        name: '{{ vm_name }}'
+        state: absent
+        validate_certs: False
+      async: "{{ ['1', '2', '3', '4'] | random }}"
+      poll: "{{ ['3', '5', '7'] | random }}"
+      ignore_errors: True
+

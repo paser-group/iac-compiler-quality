@@ -1,0 +1,18 @@
+
+- name: Troubleshoot "scp: fail on newer OpenSSH builds - protocol error: filename does not match request"
+  hosts: all
+  become: true
+  tasks:
+  - name: Check installed version of OpenSSH
+    command: ssh -V
+    register: ssh_version
+  - name: Update OpenSSH configuration file
+    lineinfile:
+      path: /etc/ssh/sshd_config
+      regexp: '^#?Protocol\s+'
+      line: 'Protocol 2'
+    notify: restart sshd
+    when: ssh_version.stdout.find('OpenSSH_6.') == 0
+  handlers:
+  - name: restart sshd
+    service: name=sshd state=restarted

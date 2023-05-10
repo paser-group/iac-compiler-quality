@@ -1,0 +1,29 @@
+
+import subprocess
+
+# Function to retrieve the current DNS resolver configuration
+def get_dns_resolvers():
+    output = subprocess.check_output('netsh interface ip show dns', shell=True)
+    resolvers = []
+    for line in output.split("\n"):
+        line = line.strip()
+        if "DNS servers configured through DHCP" in line:
+            break
+        if line.startswith("DNS servers"):
+            resolvers.extend(line.split(":")[1].strip().split(" "))
+    return resolvers
+
+# Function to change the order of DNS resolvers
+def set_dns_resolvers(resolvers):
+    servers = " ".join(resolvers)
+    subprocess.call('netsh interface ip set dns name="Local Area Connection" static {}'.format(servers), shell=True)
+
+# Sample usage
+dns_resolvers = get_dns_resolvers()
+print("Current DNS resolvers:", dns_resolvers)
+
+new_resolvers = [dns_resolvers[1], dns_resolvers[0]]   # change the order of resolvers
+set_dns_resolvers(new_resolvers)
+
+dns_resolvers = get_dns_resolvers()
+print("New DNS resolvers:", dns_resolvers)

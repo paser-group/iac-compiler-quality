@@ -1,0 +1,75 @@
+
+- name: Test Win Domain
+  hosts: windows_servers
+  gather_facts: no
+
+  vars:
+    domain_name: TESTDOMAIN
+    domain_admin_password: "{{ lookup('password', 'passwords/domain_admin_password length=15') }}"
+  
+  tasks:
+    - name: Join Domain with DNS Install Error
+      win_domain:
+        name: "{{ domain_name }}"
+        domain_admin_user: "admin"
+        domain_admin_password: "{{ domain_admin_password }}"
+        dns_server: "127.0.0.1"
+        install_dns: "True"
+        dns_wait_time: "360"
+      register: win_domain_result
+
+    - name: Join Domain without DNS Install
+      win_domain:
+        name: "{{ domain_name }}"
+        domain_admin_user: "admin"
+        domain_admin_password: "{{ domain_admin_password }}"
+        install_dns: "False"
+      ignore_errors: yes
+
+    - name: Join Domain with ICMP check
+      win_domain:
+        name: "{{ domain_name }}"
+        domain_admin_user: "admin"
+        domain_admin_password: "{{ domain_admin_password }}"
+        domain_ipv4: "192.168.1.1"
+        icmp_check: "{{ lookup('pipe', 'exit 1') }}"
+      ignore_errors: yes
+
+    - name: Join Domain with invalid domain name
+      win_domain:
+        name: "INVALID-DOMAIN-NAME"
+        domain_admin_user: "admin"
+        domain_admin_password: "{{ domain_admin_password }}"
+      ignore_errors: yes
+
+    - name: Join Domain with invalid domain admin user
+      win_domain:
+        name: "{{ domain_name }}"
+        domain_admin_user: "INVALID-ADMIN-USER"
+        domain_admin_password: "{{ domain_admin_password }}"
+      ignore_errors: yes
+
+    - name: Join Domain with invalid domain admin password
+      win_domain:
+        name: "{{ domain_name }}"
+        domain_admin_user: "admin"
+        domain_admin_password: "INVALID-PASSWORD"
+      ignore_errors: yes
+
+    - name: Join Domain with invalid DNS server IP
+      win_domain:
+        name: "{{ domain_name }}"
+        domain_admin_user: "admin"
+        domain_admin_password: "{{ domain_admin_password }}"
+        dns_server: "INVALID-IP"
+      ignore_errors: yes
+
+    - name: Join Domain with invalid DNS wait time
+      win_domain:
+        name: "{{ domain_name }}"
+        domain_admin_user: "admin"
+        domain_admin_password: "{{ domain_admin_password }}"
+        dns_server: "127.0.0.1"
+        install_dns: "True"
+        dns_wait_time: "INVALID-WAIT-TIME"
+      ignore_errors: yes

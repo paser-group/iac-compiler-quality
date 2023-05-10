@@ -1,0 +1,50 @@
+
+- name: Test IAM module credential handling
+  hosts: localhost
+  vars:
+    aws_access_key: "{{ lookup('env','AWS_ACCESS_KEY_ID') }}"
+    aws_secret_key: "{{ lookup('env','AWS_SECRET_ACCESS_KEY') }}"
+    aws_region: "{{ lookup('env','AWS_REGION') }}"
+
+  tasks:
+  - name: Test with valid credentials
+    ec2_account_info:
+      aws_access_key: "{{ aws_access_key }}"
+      aws_secret_key: "{{ aws_secret_key }}"
+      region: "{{ aws_region }}"
+    register: result
+    delegate_to: localhost
+    become: false
+    ignore_errors: true
+
+  - block:
+      - name: Test with invalid credentials
+        ec2_account_info:
+          aws_access_key: "INVALID_ACCESS_KEY"
+          aws_secret_key: "{{ aws_secret_key }}"
+          region: "{{ aws_region }}"
+        register: result
+        delegate_to: localhost
+        become: false
+        ignore_errors: true
+
+   rescue:
+     - name: Assert that invalid credentials test fails
+       assert:
+         that: result is failed
+
+  - block:
+      - name: Test with expired credentials
+        ec2_account_info:
+          aws_access_key: "{{ aws_access_key }}"
+          aws_secret_key: "EXPIRED_SECRET_KEY"
+          region: "{{ aws_region }}"
+        register: result
+        delegate_to: localhost
+        become: false
+        ignore_errors: true
+
+   rescue:
+     - name: Assert that expired credentials test fails
+       assert:
+         that: result is failed

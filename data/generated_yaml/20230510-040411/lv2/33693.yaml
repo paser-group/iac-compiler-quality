@@ -1,0 +1,31 @@
+
+- name: Test playbook for import_role error
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+    - name: Import a role within a child play
+      block:
+        - debug:
+            var: variable_that_does_not_exist
+
+        - name: Child play that imports role
+          import_role:
+            name: "{{ not_a_role }}"
+
+        - block:
+            - name: Loop through a list of roles to import
+              import_role:
+                name: "{{ item }}"
+              loop:
+                - "{{ not_a_role }}"
+                - "{{ variable_with_role_name }}"
+
+          rescue:
+            - name: Print error message
+              debug:
+                msg: "{{ ansible_failed_result.msg }}"
+      rescue:
+        - name: Print error message
+          debug:
+            msg: "{{ ansible_failed_result.msg }}"

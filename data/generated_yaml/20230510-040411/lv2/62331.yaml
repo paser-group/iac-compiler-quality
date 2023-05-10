@@ -1,0 +1,52 @@
+
+- name: Test ec2_eip module
+  hosts: localhost
+  gather_facts: no
+  vars:
+    invalid_ip: "10.0.0.1000"
+  tasks:
+    - name: Test if ec2_eip throws error on non-existent IP
+      ec2_eip:
+        region: us-east-1
+        ip: "{{ invalid_ip }}"
+        state: absent
+      register: result
+      ignore_errors: yes
+      failed_when: "result|failed and 'InvalidElasticIpID.NotFound' not in result.msg"
+
+    - name: Test if ec2_eip throws error on non-existent allocation ID
+      ec2_eip:
+        region: us-east-1
+        allocation_id: nonexistent-id
+        state: absent
+      register: result
+      ignore_errors: yes
+      failed_when: "result|failed and 'InvalidAllocationID.NotFound' not in result.msg"
+
+    - name: Test if ec2_eip throws error on non-existent public IP address association ID
+      ec2_eip:
+        region: us-east-1
+        public_ip: nonexistent-ip
+        state: absent
+      register: result
+      ignore_errors: yes
+      failed_when: "result|failed and 'InvalidAssociationID.NotFound' not in result.msg"
+
+    - name: Test if ec2_eip throws error on invalid IP address format
+      ec2_eip:
+        region: us-east-1
+        ip: "invalid-ip-format"
+        state: absent
+      register: result
+      ignore_errors: yes
+      failed_when: "result|failed and 'EC2ResponseError' not in result.msg"
+
+    - name: Test if ec2_eip throws error when both IP and allocation ID are specified
+      ec2_eip:
+        region: us-east-1
+        ip: 10.0.0.1
+        allocation_id: allocation-id
+        state: absent
+      register: result
+      ignore_errors: yes
+      failed_when: "'InvalidParameterCombination' not in result.msg"

@@ -1,0 +1,25 @@
+
+- name: Test stderr output from inventory script
+  hosts: all
+  become: yes
+
+  tasks:
+  - name: Execute inventory script
+    command: /path/to/inventory_script.sh
+    register: inventory_script_output
+
+  - name: Simulate an error within the inventory script
+    fail:
+      msg: "{{ inventory_script_output.stderr }}"
+    when: inventory_script_output.returncode != 0
+
+  - name: Display output from inventory script
+    debug:
+      var: inventory_script_output.stdout_lines
+
+  - name: Verify output and error messages
+    assert:
+      that:
+        - inventory_script_output.stdout_lines is defined
+        - inventory_script_output.stderr_lines is defined
+        - inventory_script_output.stderr_lines | length == 0

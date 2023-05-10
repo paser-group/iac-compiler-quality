@@ -1,0 +1,21 @@
+
+- name: Stress test SSL functionality
+  hosts: all
+  vars:
+    # Set up some unconventional inputs
+    regex: "^[^:]+:[^:]+:(.*)$"
+    match: "{{ issue_title | regex_findall(regex) | join(' ') }}"
+    url: "https://example.com/some-path"
+    invalid_cert: "{{ true if randbool() else false }}"
+  tasks:
+    - name: "Make a GET request and validate SSL certificate"
+      uri:
+        url: "{{ url }}"
+        method: GET
+        validate_certs: "{{ not invalid_cert }}"
+        status_code: "{{ match }}"
+      register: result
+
+    - name: "Print results from GET request"
+      debug:
+        var: result

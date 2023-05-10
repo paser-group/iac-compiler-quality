@@ -1,0 +1,23 @@
+yaml
+---
+- name: Apply MySQL configuration
+  hosts: all
+  vars:
+    mysql_db_defaults_file: "/etc/mysql/mysql.conf.d/mysqld.cnf"
+  tasks:
+  - name: Set mysql_db_config_file variable
+    set_fact:
+      mysql_db_config_file: "/etc/my.cnf.d/{{ inventory_hostname }}.cnf"
+  - name: Rename MySQL configuration default file
+    shell: "mv {{ mysql_db_defaults_file }} {{ mysql_db_defaults_file }}.bak"
+    when: "'mysqld' not in file(mysql_db_defaults_file)"
+  - name: Copy MySQL configuration file
+    copy:
+      src: "{{ mysql_db_config_file }}"
+      dest: "{{ mysql_db_defaults_file }}"
+    notify: restart mysql
+  handlers
+  - name: restart mysql
+    service:
+      name: mysql
+      state: restarted

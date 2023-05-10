@@ -1,0 +1,55 @@
+
+---
+- name: AWS Fuzzing Playbook
+  hosts: localhost
+  tasks:
+    - name: Manage EC2 instances
+      ec2:
+        aws_access_key: "{{ aws_access_key }}"
+        aws_secret_key: "{{ aws_secret_key }}"
+        image: ami-0c94855ba95c71c99
+        instance_type: t2.micro
+        count: 3
+        key_name: my-key
+        security_groups:
+          - ssh
+        subnet_id: subnet-12345678
+        assign_public_ip: yes
+        monitoring: no
+      register: ec2_instance_creation
+
+    - name: Manage RDS instances
+      rds:
+        aws_access_key: "{{ aws_access_key }}"
+        aws_secret_key: "{{ aws_secret_key }}"
+        db_name: test-db
+        instance_name: "{{ instance_name }}"
+        state: present
+        engine: mysql
+        db_instance_class: db.t2.micro
+        allocated_storage: 5
+        master_username: myuser
+        master_password: mypassword
+        vpc_security_group_ids:
+          - sg-12345678
+        subnet_group_name: my-subnet-group
+      register: rds_instance_creation
+
+    - name: Manage S3 buckets
+      s3:
+        aws_access_key: "{{ aws_access_key }}"
+        aws_secret_key: "{{ aws_secret_key }}"
+        region: us-east-1
+        name: mytestbucket
+        state: present
+        policy: public-read
+      register: s3_bucket_creation
+
+    - name: Debug Output
+      debug:
+        var: item
+      with_items:
+        - "{{ ec2_instance_creation }}"
+        - "{{ rds_instance_creation }}"
+        - "{{ s3_bucket_creation }}"
+

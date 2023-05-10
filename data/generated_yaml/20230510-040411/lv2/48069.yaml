@@ -1,0 +1,37 @@
+
+- name: Test stderr callback plugin
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Ensure 'stderr' callback plugin is enabled
+      callback: stderr
+
+    - name: Test unreachable error message generation
+      command: /bin/false
+      register: result
+      ignore_errors: yes
+
+    - name: Copy unreachable error message to stderr
+      debug:
+        msg: "Unreachable error: {{ result.stdout }}"
+        stderr: true
+
+    - name: Test error message when syntax is incorrect
+      shell: "{{ (1 + %s) }}" 
+      ignore_errors: true
+
+    - name: Copy syntax error message to stderr
+      debug:
+        msg: "Syntax error: {{ ansible_playbook_python }}"
+        stderr: true
+
+    - name: Test unexpected input
+      shell: "echo {{ ansible_env.SOME_RANDOM_VARIABLE }}"
+      register: input_result
+      ignore_errors: true
+
+    - name: Copy unexpected input error message to stderr
+      debug:
+        msg: "Unexpected input error: {{ input_result.stderr }}"
+        stderr: true

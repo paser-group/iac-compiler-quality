@@ -1,0 +1,33 @@
+
+- name: Test Ansible playbook for EC2 metric alarm period issues
+  hosts: localhost
+  connection: local
+  vars:
+    region: "us-east-1"
+    metric_name: "CPUUtilization"
+    namespace: "AWS/EC2"
+    threshold: 80
+    evaluation_periods: 3
+    period: "3 minutes"
+  tasks:
+    - name: Create EC2 metric alarm
+      ec2_metric_alarm:
+        region: "{{ region }}"
+        metric_name: "{{ metric_name }}"
+        namespace: "{{ namespace }}"
+        dimensions:
+          - Name: InstanceId
+            Value: "i-0123456789abcdef0"
+        statistic: Average
+        comparison: ">"
+        threshold: "{{ threshold }}"
+        evaluation_periods: "{{ evaluation_periods }}"
+        period: "{{ period }}"
+        alarm_name: "Test alarm"
+        alarm_description: "Test alarm description"
+        alarm_actions:
+          - arn:aws:sns:us-east-1:123456789012:test-sns-topic
+      register: result
+    - name: Check metric alarm
+      debug:
+        var: result

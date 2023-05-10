@@ -1,0 +1,36 @@
+yaml
+---
+- name: Test playbook for lineinfile module
+  hosts: all
+  gather_facts: no
+  vars:
+    file_path: "/tmp/test-file"
+    delegated_hosts:
+      - host1
+      - host2
+  tasks:
+    - name: Create test file on delegate hosts
+      delegate_to: "{{ item }}"
+      file:
+        path: "{{ file_path }}"
+        state: touch
+      with_items: "{{ delegated_hosts }}"
+
+    - name: Check contents of test file on remote hosts
+      lineinfile:
+        path: "{{ file_path }}"
+        line: "This is a test line"
+        regexp: "This is.*test line"
+        state: present
+      delegate_to: "{{ item }}"
+      run_once: true
+      with_items: "{{ delegated_hosts }}"
+
+    - name: Modify file concurrently
+      lineinfile:
+        path: "{{ file_path }}"
+        line: "{{ inventory_hostname }} modified this line"
+        state: present
+      delegate_to: "{{ item }}"
+      run_once: true
+      with_items: "{{ delegated_hosts }}"

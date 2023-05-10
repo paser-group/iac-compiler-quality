@@ -1,0 +1,39 @@
+yaml
+- name: Test pip module $PATH issue
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    virtualenv_dir: "/tmp/testvenv"
+    venv_args: "--prompt testingvenv"
+
+  tasks:
+    - name: Install virtualenv
+      apt:
+        name: python-virtualenv
+        state: latest
+      become: true
+
+    - name: Create virtual environment
+      command: >
+        /usr/bin/virtualenv {{ virtualenv_dir }} {{ venv_args }}
+      args:
+        creates: "{{ virtualenv_dir }}/bin/activate"
+      become: true
+
+      changed_when: false
+
+    - name: Install packages into virtualenv
+      pip:
+        name: "{{ item }}"
+        virtualenv: "{{ virtualenv_dir }}"
+      become: true
+      with_items:
+        - requests
+        - Flask
+        - SQLAlchemy
+        - pandas
+
+    - name: Test pip module $PATH issue
+      command: >
+        {{ virtualenv_dir }}/bin/python -c 'import pandas; print(pandas.__version__)'

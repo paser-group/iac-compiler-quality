@@ -1,0 +1,31 @@
+
+- name: Test ansible-inventory --list --toml with unexpected inputs and syntax
+  hosts: localhost
+  gather_facts: no
+  tasks:
+    - name: Run ansible-inventory --list --toml command
+      command: ansible-inventory --list --toml {{ random(1,10) | string | to_json }} {{ random([True, False]) | string | to_json }} {{ random() | string | to_json }}
+      ignore_errors: yes
+      register: result
+      
+    - name: Check if result contains 'Unexpected Exception, this is probably a bug'
+      assert:
+        that: "'Unexpected Exception, this is probably a bug' in result.stderr"
+      
+    - name: Run ansible-inventory --list --toml with unconventional syntax
+      command: ansible-inventory --list --toml --foo=bar
+      ignore_errors: yes
+      register: result1
+      
+    - name: Check if result1 contains 'usage'
+      assert:
+        that: "'usage' in result1.stderr"
+      
+    - name: Run ansible-inventory --list --toml with an edge case input
+      command: ansible-inventory --list --toml '{{ random(["{", "}", ":", ",", "[", "]", "\\", "/"]) }}'
+      ignore_errors: yes
+      register: result2
+      
+    - name: Check if result2 contains 'Unexpected Exception, this is probably a bug'
+      assert:
+        that: "'Unexpected Exception, this is probably a bug' in result2.stderr"

@@ -1,0 +1,39 @@
+
+---
+- name: Test zabbix_template module for incorrect handling of non-ASCII strings
+  hosts: zabbix_server
+  tasks:
+  - name: Export a template
+    zabbix_template:
+      server_url: http://zabbix.example.com
+      login_user: admin
+      login_password: somepassword
+      template_name: my_template
+      export_file: /tmp/my_template_export.xml
+    register: export_result
+
+  - name: Import a template
+    zabbix_template:
+      server_url: http://zabbix.example.com
+      login_user: admin
+      login_password: somepassword
+      template_file: /tmp/my_template_export.xml
+    register: import_result
+
+  - name: Verify the imported and exported templates
+    assert:
+      that:
+      - "{{ export_result.template.name == import_result.template.name }}"
+      - "{{ export_result.template.description == import_result.template.description }}"
+      - "{{ export_result.template.tags == import_result.template.tags }}"
+      # Add more properties to verify...
+
+  - name: Ensure the template is installed
+    uri:
+      url: http://zabbix.example.com/api_jsonrpc.php
+      method: POST
+      body: '{"jsonrpc":"2.0","method":"template.get","params":{"output":["templateid"],"filter":{"name":["my_template"]}},"auth":"{{ auth }}","id":1}'
+      status_code: 200
+    register: get_template_result
+    vars:
+      auth: "{{ import_result.auth }}"

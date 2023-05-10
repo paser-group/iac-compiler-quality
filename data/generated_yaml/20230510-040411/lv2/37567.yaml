@@ -1,0 +1,38 @@
+
+- name: Tower job launch testing playbook
+  hosts: localhost
+  gather_facts: no
+  
+  vars:
+    # Edge case: empty list
+    empty_list: []
+    # Edge case: multiple inventories with same name
+    inventory_dupe: [ "my-inventory", "my-inventory", "my-inventory" ]
+    # Unconventional syntax: using local facts instead of host variables
+    local_facts:
+      tower_username: "admin"
+      tower_password: "password"
+      job_template_id: "1"
+      limit: "all"
+      extra_vars: {}
+    # Unexpected input: passing a string instead of a list to limit
+    invalid_limit_input: "all"
+
+  tasks:
+    - name: Launch Tower Job
+      tower_job_launch:
+        tower_username: "{{ local_facts.tower_username }}"
+        tower_password: "{{ local_facts.tower_password }}"
+        job_template_id: "{{ local_facts.job_template_id }}"
+        # Edge case: passing an empty list to inventory
+        inventory: "{{ empty_list }}"
+        # Edge case: passing a list with multiple instances of same inventory name
+        inventory: "{{ inventory_dupe }}"
+        # Unconventional syntax: using local facts instead of host variables for limit and extra_vars
+        limit: "{{ local_facts.limit }}"
+        extra_vars: "{{ local_facts.extra_vars }}"
+        # Unexpected input: passing an invalid input to limit module parameter
+        limit: "{{ invalid_limit_input }}"
+      register: result
+      
+    - debug: var=result

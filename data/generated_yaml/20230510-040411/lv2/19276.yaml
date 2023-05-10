@@ -1,0 +1,44 @@
+
+- hosts: localhost
+  gather_facts: no
+  vars:
+    aws_access_key: "xxxxxxxxxxxxxxxxxxxx"
+    aws_secret_key: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    region: "us-west-2"
+    instance_id: "i-xxxxxxxxxxxxxxxxx"
+  tasks:
+    - name: Test 1: Verify ec2.py module returns non-empty output
+      shell: python /path/to/ec2.py --list
+      register: ec2_output
+      ignore_errors: yes
+    - debug:
+        var: ec2_output
+      when: ec2_output.rc == 0
+    - name: Test 2: Check unconventional syntax
+      shell: python /path/to/ec2.py --no-tags
+      register: ec2_output
+      ignore_errors: yes
+    - debug:
+        var: ec2_output
+      when: ec2_output.rc == 0
+    - name: Test 3: Verify unexpected inputs
+      shell: python /path/to/ec2.py --query "Reservations[].Instances[].{ID:InstanceId,Type:InstanceType,State:State.Name}"
+      register: ec2_output
+      ignore_errors: yes
+    - debug:
+        var: ec2_output
+      when: ec2_output.rc == 0
+    - name: Test 4: Edge case 1 - An existing instance ID is provided
+      shell: python /path/to/ec2.py --host {{ instance_id }}
+      register: ec2_output
+      ignore_errors: yes
+    - debug:
+        var: ec2_output
+      when: ec2_output.rc == 0
+    - name: Test 5: Edge case 2 - Non-existent instance ID is provided
+      shell: python /path/to/ec2.py --host i-1234567890abcdef
+      register: ec2_output
+      ignore_errors: yes
+    - debug:
+        var: ec2_output
+      when: ec2_output.rc == 0

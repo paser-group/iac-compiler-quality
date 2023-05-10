@@ -1,0 +1,65 @@
+
+- name: Test playbook for cs_instance 'user_data' error with python2 and python3
+  hosts: all
+  gather_facts: no
+
+  vars:
+    user_data: |
+      #!/bin/bash
+      echo "Hello, world!"
+
+  tasks:
+    - name: Install python2 and python3 packages
+      apt:
+        name:
+          - python
+          - python3
+        state: present
+
+    - name: Different implementation with python2 interpreter
+      shell: python "{{ user_data }}"
+      register: result_py2
+      changed_when: false
+      failed_when: false
+
+    - name: Attempt with python2 interpreter - she-bang line
+      command: ./user_data
+      args:
+        executable: python
+      environment:
+        user_data: "{{ user_data }}"
+      register: result_shebang_py2
+      changed_when: false
+      failed_when: false
+
+    - name: Different implementation with python3 interpreter
+      shell: python3 "{{ user_data }}"
+      register: result_py3
+      changed_when: false
+      failed_when: false
+
+    - name: Attempt with python3 interpreter - she-bang line
+      command: ./user_data
+      args:
+        executable: python3
+      environment:
+        user_data: "{{ user_data }}"
+      register: result_shebang_py3
+      changed_when: false
+      failed_when: false
+
+    - name: Theoretical implementation with Aliased commands
+      shell: echo "{{ user_data }}" | base64 --decode | python -
+      register: result_aliased
+      changed_when: false
+      failed_when: false
+
+    - name: Debug and report results
+      debug:
+        var: item.stdout_lines
+      loop:
+        - "{{ result_py2 }}"
+        - "{{ result_py3 }}"
+        - "{{ result_shebang_py2 }}"
+        - "{{ result_shebang_py3 }}"
+        - "{{ result_aliased }}"

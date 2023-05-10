@@ -1,0 +1,44 @@
+yaml
+- name: Install DNS role in Windows domain
+  hosts: windows_servers
+  gather_facts: no
+  vars:
+    username: administrator
+    password: Password123!
+  tasks:
+    - name: Install DNS Server role
+      win_feature:
+        name: DNS
+        state: present
+        include_all_sub_features: yes
+      become: yes
+
+    - name: Install DNS management console
+      win_package:
+        path: C:\Windows\System32\WindowsPowerShell\v1.0\Modules\DNS\DnsServerPSModule.msi
+        arguments: '/quiet /qn /norestart'
+      become: yes
+
+- name: Join domain setup
+  hosts: windows_servers
+  gather_facts: no
+  vars:
+    domain_name: contoso.local
+  tasks:
+    - name: Joining Windows domain
+      win_domain:
+        name: "{{ domain_name }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        ou_path: "OU=Servers,OU=Contoso,DC=contoso,DC=local"
+      become: yes
+      
+    - name: Install DNS
+      win_domain:
+        name: "{{ domain_name }}"
+        state: domain_controller
+        type: active_directory
+        install_dns: yes
+        safe_mode_password: "{{ password }}"
+        domain_admin_password: "{{ password }}"
+      become: yes

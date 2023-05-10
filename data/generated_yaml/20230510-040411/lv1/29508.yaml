@@ -1,0 +1,30 @@
+
+- name: Terminate EC2 Instances
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Get EC2 Instance Id
+      shell: >
+        aws ec2 describe-instances --filter Name=tag-key,Values=Name Name=tag-value,Values={{ ec2_name }} --query 'Reservations[*].Instances[*].{Instance:InstanceId}' --output=text
+      register: instance_id
+
+    - name: Stop EC2 Instance
+      shell: >
+        aws ec2 stop-instances --instance-ids {{ instance_id.stdout }}
+      register: stop_instance_status
+      ignore_errors: yes
+
+    - name: Wait for instance to stop
+      local_action:
+        module: wait_for
+        host: "{{ ec2_public_ip }}"
+        port: 22
+        delay: 15
+        timeout: 300
+        state: stopped
+
+    - name: Terminate EC2 Instance
+      shell: >
+        aws ec2 terminate-instances --instance-ids {{ instance_id.stdout }}
+      register: terminate_instance_status
+      ignore_errors: yes

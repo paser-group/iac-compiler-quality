@@ -1,0 +1,52 @@
+
+- name: GCPubSub error testing playbook
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    project_id: "my-project"
+    topic_name: "my-topic"
+    subscription_name: "my-subscription"
+
+  tasks:
+    - name: Install GCP Python client library
+      pip:
+        name: google-cloud-pubsub
+
+    - name: Unconventional syntax tests
+      gcpubsub:
+        project: "{{ project_id }}"
+        topic: "{{ topic_name }}"
+        subscription: "{{ subscription_name }}"
+        invalid_argument: "@@invalid"
+
+    - name: Missing required argument tests
+      gcpubsub:
+        project: "{{ project_id }}"
+        topic: "{{ topic_name }}"
+
+    - name: Null value input test
+      gcpubsub:
+        project: "{{ project_id }}"
+        topic: "{{ topic_name }}"
+        subscription: "{{ lookup('env', 'NULL_VALUE') }}"
+
+    - name: Unexpected type input test
+      gcpubsub:
+        project: "{{ project_id }}"
+        topic: "{{ topic_name }}"
+        subscription: "{{ project_id|int }}"
+
+    - name: Exception handling test
+      block:
+        - name: Invalid credentials test
+          gcpubsub:
+            project: "{{ project_id }}"
+            topic: "{{ topic_name }}"
+            subscription: "{{ subscription_name }}"
+            credentials_file: "/non/existent/file/path.json"
+          rescue:
+            - name: Handle invalid credential error
+              debug:
+                msg: "Encountered invalid credentials error"
+  

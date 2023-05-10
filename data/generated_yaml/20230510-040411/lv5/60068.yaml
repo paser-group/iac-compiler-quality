@@ -1,0 +1,23 @@
+
+- name: Test win_dns_record module for PTR records
+  hosts: windows
+  vars:
+    domain_name: "{{ ansible_hostname }}.example.com"
+    ip_address: "{{ ansible_default_ipv4.address }}"
+  
+  tasks:
+    - name: Create PTR record for domain name
+      win_dns_record:
+        name: "{{ ip_address.split('.')[3] }}.{{ domain_name }}"
+        ptr_domain_name: "{{ domain_name }}"
+      register: dns_record_result
+
+    - name: Verify PTR record using nslookup
+      win_shell: "nslookup {{ domain_name }}"
+      register: nslookup_result
+
+    - name: Check that PTR record is correctly configured
+      assert:
+        that:
+          - dns_record_result.changed == True
+          - domain_name in nslookup_result.stdout_lines[2]

@@ -1,0 +1,26 @@
+
+- name: Stress test playbook for bigip_profile_client_ssl bug
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Define a variable with a list of edge cases for the chain parameter
+      set_fact:
+        chain: ["default(omit)", "default", "omit", "''", 0, [], {}]
+
+    - name: Generate an edge case for the chain parameter
+      set_fact:
+        edge_case: "{{ chain|random }}"
+
+    - name: Define a variable with an unconventional syntax for the bigip_profile_client_ssl module
+      set_fact:
+        syntax: "provider: { user = 'foo', password = 'bar', server = 'baz' }"
+
+    - name: Generate an unexpected input for the bigip_profile_client_ssl module
+      set_fact:
+        unexpected_input: "{{ syntax|regex_replace('=', ':') }}"
+
+    - name: Test bigip_profile_client_ssl with edge case and unconventional syntax
+      bigip_profile_client_ssl:
+        name: "testing_profile"
+        chain: "{{ edge_case }}"
+        {{ unexpected_input }}: true

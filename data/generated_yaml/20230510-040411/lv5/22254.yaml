@@ -1,0 +1,25 @@
+
+- name: Test unarchive module for permission changes
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create zip file with item and non-default permissions
+      command: "echo 'test content' > file.txt && chmod 751 file.txt && zip temp.zip file.txt"
+
+    - name: Extract file from zip with unarchive module and set non-default permissions
+      unarchive:
+        src: temp.zip
+        dest: /tmp/
+        remote_src: yes
+        mode: "0751"
+
+    - name: Check if the file was actually changed
+      stat:
+        path: /tmp/file.txt
+      register: file_stats
+
+    - name: Fail if the module reports a change when there should be none
+      fail:
+        msg: "Unarchive module reported a change even though the file permissions were already set to 0751"
+      when: file_stats.stat.mode != "0751"

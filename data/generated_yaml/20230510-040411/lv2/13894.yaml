@@ -1,0 +1,44 @@
+
+- name: Test custom library resolution order
+  hosts: localhost
+  connection: local
+  gather_facts: no
+  
+  vars:
+    custom_modules:
+      - 'my_custom_module'
+      - 'foo_bar'
+
+  tasks:
+    # Define variable to test invalid character in module name
+    - set_fact:
+        invalid_module: "{{ { 'invalid^.py': 'test' } }}"
+
+    # Define variable to test non-existent module
+    - set_fact:
+        non_existent_module: "{{ { 'fake_module.py': 'test' } }}"
+
+    # Define variable to test invalid module path
+    - set_fact:
+        invalid_module_path: "{{ { '../my_custom_module.py': 'test' } }}"
+
+    # Test module with unconventional name
+    - my_custom_module:
+        user: alice
+        password: bob
+
+    # Test module with invalid name character
+    - "{{ invalid_module | my_custom_module }}"
+
+    # Test module that does not exist
+    - "{{ non_existent_module | my_custom_module }}"
+
+    # Test module with invalid library path
+    - "{{ invalid_module_path | foo_bar }}"
+
+    # Test module lookup with incorrect order
+    - "{{ item }}":
+        user: alice
+        password: bob
+      with_items: custom_modules
+      when: item == 'my_custom_module'

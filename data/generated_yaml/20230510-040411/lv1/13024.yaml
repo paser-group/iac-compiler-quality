@@ -1,0 +1,53 @@
+
+---
+- hosts: all
+  gather_facts: false
+  vars:
+    http_proxy: "http://your_proxy_server:proxy_port"
+    https_proxy: "https://your_proxy_server:proxy_port"
+    no_proxy: "localhost,127.0.0.1"
+  tasks:
+    - name: Install package dependencies
+      apt:
+        name:
+          - ca-certificates
+          - apt-transport-https
+        state: present
+      become: true
+
+    - name: Configure proxy settings for APT
+      apt_proxy:
+        proxy: "{{ http_proxy }}"
+        no_proxy: "{{ no_proxy }}"
+        https_proxy: "{{ https_proxy }}"
+      become: true
+
+    - name: Configure proxy settings for Docker
+      systemd:
+        name: docker.service
+        daemon_reload: yes
+        state: restarted
+        environment:
+          http_proxy: "{{ http_proxy }}"
+          https_proxy: "{{ https_proxy }}"
+          no_proxy: "{{ no_proxy }}"
+      become: true
+
+    - name: Configure proxy settings for System-wide
+      lineinfile:
+        path: /etc/environment
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+      with_items:
+        - { regexp: '^http_proxy', line: "http_proxy={{ http_proxy }}" }
+        - { regexp: '^https_proxy', line: "https_proxy={{ https_proxy }}" }
+        - { regexp: '^NO_PROXY', line: "NO_PROXY={{ no_proxy }}" }
+      notify: reload env
+
+  handlers:
+    - name: reload env
+      systemd:
+        name: systemd-logind.service
+        state: restarted
+        daemon_reload: yes
+        no_block: true

@@ -1,0 +1,60 @@
+
+---
+- hosts: all
+  vars:
+    file_path: /etc/example.conf
+  tasks:
+    # Using an invalid path to stress test the compiler
+    - name: Test invalid file path
+      lineinfile:
+        path: /invalid/path/to/file
+        regexp: '^example\s+=\s+'
+        line: 'example = true'
+      register: test_invalid_path
+      ignore_errors: True
+
+    # Using an integer instead of a string to stress test the compiler
+    - name: Test integer file path
+      lineinfile:
+        path: 123
+        regexp: '^example\s+=\s+'
+        line: 'example = true'
+      register: test_integer_path
+      ignore_errors: True
+
+    # Using unconventional regexp syntax to match the line
+    - name: Test unconventional regexp syntax
+      lineinfile:
+        path: "{{ file_path }}"
+        regexp: '(?i)^Example\s+=\s+'
+        line: 'example = true'
+      register: test_unconventional_regexp_syntax
+      ignore_errors: True
+
+    # Using unexpected special characters in the line
+    - name: Test unexpected special characters in line
+      lineinfile:
+        path: "{{ file_path }}"
+        regexp: '^example\s+=\s+'
+        line: 'example = $#@!)('
+      register: test_unexpected_special_characters
+      ignore_errors: True
+
+    # Testing with multiple lines in file
+    - name: Test multiple lines in the file
+      lineinfile:
+        path: "{{ file_path }}"
+        regexp: '^example\s+=\s+'
+        line: 'example = true'
+      register: test_multiple_lines_in_file
+
+    # Reporting on failed tasks
+    - name: Report on failed tasks
+      debug:
+        msg: "{{ item }} failed"
+      when: item.failed
+      loop:
+        - test_invalid_path
+        - test_integer_path
+        - test_unconventional_regexp_syntax
+        - test_unexpected_special_characters

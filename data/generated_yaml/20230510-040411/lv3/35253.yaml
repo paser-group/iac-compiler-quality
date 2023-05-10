@@ -1,0 +1,36 @@
+
+---
+- name: Test Ansible Galaxy Ignores Flag
+  hosts: localhost
+  gather_facts: no
+  
+  tasks:
+  - name: Install role in the default location
+    shell: ansible-galaxy install username.role
+
+  - name: Verify role installation in default location
+    fail:
+      msg: "Role is not installed by default."
+    when: "not '/etc/ansible/roles/username.role' in lookup('fileglob', '/etc/ansible/roles/*')"
+
+  - name: Install role in the custom location
+    shell: ansible-galaxy install --roles-path=/opt/roles username.role
+
+  - name: Verify role installation in custom location
+    fail:
+      msg: "Role is not installed in the custom location."
+    when: "not '/opt/roles/username.role' in lookup('fileglob', '/opt/roles/*')"
+
+  - name: Check if the specified roles path is ignored
+    shell: ansible-galaxy install --roles-path=/etc/ansible/roles username.role
+    failed_when: false
+
+  - name: Verify if role installation in custom directory overrides default
+    fail:
+      msg: "Roles installed in the custom directory did not overwrite those in the default directory."
+    when: "/opt/roles/username.role not in lookup('fileglob', '/etc/ansible/roles/*')"
+
+  - name: Verify if role installation in default directory overrides custom
+    fail:
+      msg: "Roles installed in the default directory did not overwrite those in the custom directory."
+    when: "/etc/ansible/roles/username.role not in lookup('fileglob', '/opt/roles/*')"

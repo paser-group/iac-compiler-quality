@@ -1,0 +1,24 @@
+
+---
+- name: inventory error test playbook
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+  - name: set invalid package
+    set_fact:
+      package: "{{ ['invalidpkg', 'invalid-pkg', 'invalid_pkg'] | random }}"
+
+  - name: install package with invalid name
+    apt:
+      name: "{{ package }}"
+    ignore_errors: true
+
+  - name: check if the invalid package is installed
+    shell: "dpkg -l {{ package }}"
+    failed_when: false
+    register: dpkg_check
+
+  - assert:
+      that:
+        - "'distribution not found' not in dpkg_check.stderr"

@@ -1,0 +1,41 @@
+
+---
+- name: Test playbook for ignored host-vars bug
+  hosts: all
+  gather_facts: false
+  
+  # Define an inventory with host variables, but ignore them
+  vars:
+    ansible_inventory_ignore_host_vars: true
+  inventory:
+    - hosts:
+        host1:
+        host2:
+      vars:
+        host_var1: "value1"
+        host_var2: "value2"
+  
+  tasks:
+    - name: Test ignored host vars syntax 1
+      shell: echo "{{ host_var1 }}"
+    
+    - name: Test ignored host vars syntax 2
+      shell: echo "{{ host_var2 }}"
+      
+    - name: Test ignored host vars syntax 3
+      shell: echo "{{ host1.host_var1 }}"
+      
+    - name: Test ignored host vars syntax 4
+      shell: echo "{{ groups.all.host_var1 }}"
+      
+    - name: Test ignored host vars unexpected input 1
+      shell: "{{ not_a_valid_command }}"
+      
+    - name: Test ignored host vars unexpected input 2
+      shell: "{{ host_var1 | invalid_filter }}"
+      
+    - name: Test ignored host vars unconventional syntax 1
+      shell: echo "{{ host_var1 }}" {{- not_ran_command }}
+      
+    - name: Test ignored host vars unconventional syntax 2
+      shell: echo "{{ host_var1 }}" {%- for _ in range(10) -%}{{ not_ran_command }}{%- endfor -%}

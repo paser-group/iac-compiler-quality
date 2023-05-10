@@ -1,0 +1,33 @@
+
+- name: Install packages with --ignore-installed flag
+  pip:
+    name: "{{ item }}"
+    extra_args: "--ignore-installed"
+  with_items:
+    - package1
+    - package2
+    - package3
+  register: ignore_installed
+
+- name: Install packages without --ignore-installed flag
+  pip:
+    name: "{{ item }}"
+  with_items:
+    - package1
+    - package2
+    - package3
+  register: without_ignore
+
+- name: Verify packages installed with --ignore-installed flag
+  assert:
+    that: "{{ item.rc == 0 }}"
+    fail_msg: "{{ item.stdout }} failed to install with --ignore-installed flag"
+  with_items: "{{ ignore_installed.results }}"
+  when: "'--ignore-installed' in extra_args"
+
+- name: Verify packages fail to install without --ignore-installed flag
+  assert:
+    that: "{{ item.rc != 0 }}"
+    fail_msg: "{{ item.stdout }} installed when --ignore-installed flag wasn't present"
+  with_items: "{{ without_ignore.results }}"
+  when: "'--ignore-installed' in extra_args"

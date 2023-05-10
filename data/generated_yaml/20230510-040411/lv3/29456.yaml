@@ -1,0 +1,45 @@
+
+---
+- hosts: localhost
+  gather_facts: no
+
+  tasks:
+    - name: Launch EC2 instance
+      ec2:
+        key_name: mykey
+        group: webserver
+        instance_type: t2.micro
+        image: ami-0c55b159cbfafe1f0
+        wait: true
+        instance_initiated_shutdown_behavior: terminate
+        monitoring: no
+        count: 1
+        region: us-west-2
+        vpc_subnet_id: subnet-xxxxxxxx
+        assign_public_ip: no
+        register: ec2
+
+    - name: Wait for SSH to come up
+      wait_for:
+        host: "{{ item.public_ip }}"
+        port: 22
+        delay: 10
+        timeout: 320
+      with_items: "{{ ec2.instances }}"
+
+    - name: Install Nginx
+      become: true
+      become_user: ubuntu
+      hosts: "{{ item.public_ip }}"
+      remote_user: ubuntu
+      gather_facts: yes
+      tasks:
+        - name: Update apt cache
+          apt:
+            name: ''
+            update_cache: yes
+
+        - name: Install nginx
+          apt:
+            name: nginx
+            state: present

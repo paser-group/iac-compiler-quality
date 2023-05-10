@@ -1,0 +1,30 @@
+
+---
+- name: Generate edge cases and unconventional syntax
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+    - name: Create a docker container with an unconventional home directory
+      docker_container:
+        name: "{{ item }}"
+        image: "{{ item }}"
+        command: sleep infinity
+        volumes:
+          - src=/host/path/{{ item }},dest=~/~,type=bind
+        state: started
+      register: result
+      with_items:
+        - "{{ ['ubuntu', 'centos', 'debian'] | random }}"
+
+    - name: Copy a file from the container's unconventional home directory to the host
+      docker_copy:
+        src: "~/~/file"
+        dest: /host/path/
+      with_items: "{{ result.results }}"
+
+    - name: Clean up the docker containers
+      docker_container:
+        name: "{{ item }}"
+        state: absent
+      with_items: "{{ result.results }}"

@@ -1,0 +1,29 @@
+
+- hosts: localhost
+  connection: local
+  gather_facts: no
+
+  tasks:
+    - name: Gather ENI facts
+      ec2_eni_facts:
+        eni_ids:
+          - 'eni-1234567890123456'
+          - 'eni-1234567890123457'
+        aws_access_key: "{{var_aws_access_key}}"
+        aws_secret_key: "{{var_aws_secret_key}}"
+        region: "{{var_ec2_region}}"
+        conn_type: "{{conn_type|default(resource, true) or client}}"
+
+    - name: Create EC2 instance
+      ec2:
+        key_name: mykey
+        group_id: sg-73cd3d1e
+        instance_type: t2.micro
+        image: ami-0c55b159cbfafe1f0
+        wait: true
+        count: "{{count|string}}"
+
+    - name: Delete ENI
+      ec2_eni:
+        eni_id: eni-1234567890123456
+        state: "{{state|string|default(terminated)}}"

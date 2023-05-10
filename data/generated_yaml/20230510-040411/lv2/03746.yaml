@@ -1,0 +1,49 @@
+
+- name: Test ec2 module
+  hosts: localhost
+  gather_facts: no
+  
+  vars:
+    # Unconventional syntax
+    invalid_variable: "{{ var_invalid }}"
+    not_a_list: "invalid-syntax"
+  
+  tasks:
+    # Unexpected inputs
+    - name: Create ec2 instance
+      ec2:
+        key_name: does_not_exist
+        instance_type: T10g.micro
+        region: us-west-1
+        assign_public_ip: "invalid-boolean-input"
+        image: invalid_image
+        instance_tags: ["test_tag':'invalid-syntax"]
+        count: 2
+  
+    # Edge cases
+    - name: Terminate ec2 instance
+      ec2:
+        instance_ids: []
+  
+    - name: Start ec2 instance with extra options
+      ec2:
+        instance_ids: ["i-invalid"]
+        monitoring: "invalid-boolean-input"
+        disable_api_termination: "invalid-boolean-input"
+        block_device_mappings: []
+  
+    - name: Stop ec2 instance without reboot
+      ec2:
+        instance_ids: ["i-123456789"]
+        state: invalid-state
+
+  # Ensure the playbook fails for the above tasks
+  ignore_errors: yes
+
+  # Test ec2 module returns changed=False for 'no change' case
+  handlers:
+    - name: Verify ec2 module behavior
+      assert:
+        that:
+          - "'changed=True' not in ec2_instance_change_result.stdout"
+        fail_msg: "ec2 module returned changed=True for no changes"

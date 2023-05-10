@@ -1,0 +1,28 @@
+
+- name: Test nxos_config module for spanning tree
+  hosts: cisco_nxos_devices
+  connection: network_cli
+  gather_facts: no
+  tasks:
+  - name: Ensure VLAN is configured with spanning tree edge trunk port
+    nxos_config:
+      lines:
+        - vlan 10
+        - exit
+        - interface Ethernet1/1
+        - switchport
+        - switchport mode trunk
+        - spanning-tree port type edge trunk
+        - no shutdown
+      before:
+        - show vlan
+        - show interface ethernet1/1 switchport
+    register: output
+  - name: Confirm spanning-tree config is applied
+    nxos_command:
+      commands: 'show spanning-tree interface Ethernet1/1'
+    ignore_errors: yes
+    register: st_output
+  - name: Check for errors
+    debug:
+      msg: "{{ output }}"

@@ -1,0 +1,16 @@
+
+- hosts: my_junos_device
+  gather_facts: no
+  vars:
+    connection_type: ssh
+  tasks:
+    - name: Run Junos command
+      junos_command:
+        command: show interfaces terse
+      when: ansible_connection != connection_type
+      register: output
+      ignore_errors: true
+    - name: Check for errors
+      fail:
+        msg: "Invalid connection type: {{ ansible_connection }}. Connection type should be {{ connection_type }}"
+      when: output.rc != 0 and "'Unknown connection type' in output.stderr"

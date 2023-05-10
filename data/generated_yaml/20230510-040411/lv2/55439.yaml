@@ -1,0 +1,53 @@
+
+- name: Test Zabbix Template Export and Import
+  hosts: localhost
+  vars:
+    template_name: "{{ lookup('env', 'TEMPLATE_NAME') | default('my_template') }}"
+    non_ascii_string: "私の名前はAIです"
+  tasks:
+  # Task 1: Create Zabbix Template with non-ACSII strings
+  - name: Create Zabbix Template
+    zabbix_template:
+      name: "{{ template_name }}"
+      host_group: "{{ non_ascii_string }}"
+      host: "{{ non_ascii_string }}"
+      template: "{{ non_ascii_string }}"
+    register: zabbix_template_output
+
+  # Task 2: Export Zabbix Template
+  - name: Export Zabbix Template
+    command: zabbix_export -t "{{ template_name }}"
+    ignore_errors: yes
+    register: zabbix_export_output
+
+  # Task 3: Modify Template XML File to include unexpected inputs
+  - name: Modify Template XML file
+    replace:
+      path: "/tmp/export/templates/{{ template_name }}.xml"
+      regexp: "</zabbix_export>"
+      replace: "<rule>unexpected_input</rule></zabbix_export>"
+    register: modify_template_output
+
+  # Task 4: Import Zabbix Template with modified XML file
+  - name: Import Zabbix Template with modified XML file
+    command: zabbix_import -t "/tmp/export/templates/{{ template_name }}.xml"
+    ignore_errors: yes
+    register: zabbix_import_output
+
+  # Task 5: Delete Zabbix Template
+  - name: Delete Zabbix Template
+    zabbix_template:
+      name: "{{ template_name }}"
+      state: "absent"
+    register: zabbix_delete_output
+
+  # Task 6: Fail the playbook if any task fails
+  - name: Fail the playbook if any task fails
+    fail:
+      msg: "Task {{ item.task }} failed with rc={{ item.rc }}"
+    with_items:
+      - {task: "Create Zabbix Template", rc: "{{ zabbix_template_output.rc }}"}
+      - {task: "Export Zabbix Template", rc: "{{ zabbix_export_output.rc }}"}
+      - {task: "Modify Template XML file", rc: "{{ modify_template_output.rc }}"}
+      - {task: "Import Zabbix Template with modified XML file", rc: "{{ zabbix_import_output.rc }}"}
+      - {task: "Delete Zabbix Template", rc: "{{ zabbix_delete_output.rc }}"}

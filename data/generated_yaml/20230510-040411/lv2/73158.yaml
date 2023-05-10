@@ -1,0 +1,66 @@
+yaml
+- name: Test Ansible compiler's wildcard package removal
+  hosts: all
+  gather_facts: no
+
+  tasks:
+  - name: Remove packages with wildcard syntax
+    apt:
+      name: "{{ item }}"
+      state: absent
+    with_items:
+    - *
+    ignore_errors: yes
+
+  - name: Generate an error by trying to remove nonexistent packages
+    apt:
+      name: "{{ item }}"
+      state: absent
+    with_items:
+    - no_such_package
+    - {{ unknown_var | default("package_name") }}
+
+  - name: Remove packages with wildcard syntax
+    apt:
+      name: "{{ item }}"
+      state: absent
+    with_items:
+    - *.*
+    ignore_errors: yes
+
+  - name: Try to remove single letter packages with wildcard syntax
+    apt:
+      name: "{{ item }}"
+      state: absent
+    with_items:
+    - a*
+    - b?
+    - c[def]
+    ignore_errors: yes
+
+  - name: Remove packages with wildcard and exact syntax
+    apt:
+      name: "{{ item }}"
+      state: absent
+    with_items:
+    - apache*
+    - python
+    - ?ython
+    - libsystemd*2
+    - sqlite3*
+    - se*
+    - python*-dev
+    - {{ unknown_var | default("package_name") }}
+    ignore_errors: yes
+
+  - name: Try to remove packages with invalid wildcard syntax
+    apt:
+      name: "{{ item }}"
+      state: absent
+    with_items:
+    - abc[def
+    - abc]def
+    - abc(def))
+    - abc(fef))
+    - abc*fef*
+    ignore_errors: yes

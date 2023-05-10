@@ -1,0 +1,28 @@
+
+---
+- name: Ensure the os_server is idempotent
+  hosts: localhost
+  gather_facts: false
+  
+  tasks:
+    - name: Check if the default port-id matches multiple ports
+      shell: openstack port list | grep "default" | wc -l
+      register: port_id_count
+
+    - name: Remove the extra ports matching default port-id
+      shell: openstack port delete <PORT-ID>
+      with_items: "{{ query('json','ports[?name==`default`].id')}}"
+      when: port_id_count.stdout|int > 1
+  
+    - name: Create an os_server
+      os_server:
+        name: my-server
+        image: Ubuntu-18.04
+        flavor: m1.micro
+        network: my-network
+        port_id: <PORT-ID>
+      register: server
+
+    - name: Debug the os_server response
+      debug:
+        var: server

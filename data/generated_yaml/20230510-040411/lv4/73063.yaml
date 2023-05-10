@@ -1,0 +1,32 @@
+
+- hosts: localhost
+  vars:
+    myrole: https://github.com/username/rolename.git
+  tasks:
+    - name: Clone Role from Git
+      git:
+        repo: "{{ myrole }}"
+        dest: "/tmp/rolename"
+      register: output
+
+    - name: Install Role
+      ansible-galaxy:
+        name: "/tmp/rolename"
+      when: output.changed
+
+    - name: Check if Installation was successful
+      assert:
+        that:
+          - myrole in ansible_roles
+
+    - name: Check if the installed Role is the latest version from Git
+      git:
+        repo: "{{ myrole }}"
+        update: no
+        dest: "/tmp"
+      register: repo_output
+
+    - name: Fail if installed Role and Git latest version mismatch
+      fail:
+        msg: "Installed Role is not the latest version from Git"
+      when: repo_output.after.tag != repo_output.before.tag

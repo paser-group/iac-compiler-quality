@@ -1,0 +1,33 @@
+
+---
+- name: Test azure_rm_sqlserver module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Validate the SQL server
+      azure_rm_sqlserver:
+        resource_group: myResourceGroup
+        server_name: mySqlServer
+        login: badLogin    #invalid credentials to cause errors
+        password: badPassword  #invalid password to cause errors
+        state: started
+      async: 100
+      poll: 0
+      register: sqlserver
+
+    - name: Wait for the operation to complete
+      async_status:
+        jid: "{{ sqlserver.ansible_job_id }}"
+      register: job_result
+      until: job_result.finished
+
+    - name: Get the result of the asynchronous operation
+      async_status:
+        jid: "{{ sqlserver.ansible_job_id }}"
+      register: job_result
+      retries: 10
+      delay: 10
+
+    - name: Output the Result
+      debug: var=job_result

@@ -1,0 +1,57 @@
+yaml
+---
+- name: Stress test for nxos_snmp_community
+  hosts: switches
+  gather_facts: no
+  tasks:
+    - name: Test nxos_snmp_community with invalid syntax
+      nxos_snmp_community:
+        community: "{{ ['v1', 'v2c', 'invalid_syntax', 'v3'] | random }}"
+        transport: "{{ ['cli', 'nxapi'] | random }}"
+        provider:
+          host: "{{ inventory_hostname }}"
+          username: "{{ lookup('env', 'USERNAME') }}"
+          password: "{{ lookup('env', 'PASSWORD') }}"
+      register: result
+      ignore_errors: yes
+    
+    - name: Fail the Playbook if unexpected error message
+      fail:
+        msg: "Unexpected error message: {{ result.msg }}"
+      when: 
+        - "'invalid syntax' not in result.msg"
+        - "'invalid snmp version' not in result.msg"
+        - "'Unknown Error' not in result.msg"
+    
+    - name: Test nxos_snmp_community with invalid community
+      nxos_snmp_community:
+        community: "{{ ['this_one_does_not_exist', 'wrong_pswd', 'abandoned_community'] | random }}"
+        transport: "{{ ['cli', 'nxapi'] | random }}"
+        provider:
+          host: "{{ inventory_hostname }}"
+          username: "{{ lookup('env', 'USERNAME') }}"
+          password: "{{ lookup('env', 'PASSWORD') }}"
+      register: result
+      ignore_errors: yes
+
+    - name: Fail the Playbook if unexpected error message
+      fail:
+        msg: "Unexpected error message: {{ result.msg }}"
+      when: 
+        - "'unable to log in' not in result.msg"
+        - "'Unable to Connect to SNMP Server' not in result.msg"
+        - "'SNMP Error: Timed out during request' not in result.msg"
+        - "'Invalid Snmp Community:' not in result.msg"
+    
+    - name: Test nxos_snmp_community with unconventional syntax
+      nxos_snmp_community:
+        "{{ ['community', 'transport', 'provider'] | random }}": "{{ ['invalid_syntax', None, 12345, True, False, ['test_array', 'a', 1]] | random }}"
+      register: result
+      ignore_errors: yes
+
+    - name: Fail the Playbook if unexpected error message
+      fail:
+        msg: "Unexpected error message: {{ result.msg }}"
+      when: 
+        - "'invalid syntax for dictionary value' not in result.msg"
+        - "'Invalid community' not in result.msg"

@@ -1,0 +1,60 @@
+
+- name: Test playbook for "script finished while get share connection close error"
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+  
+  # Define variables with invalid values
+  - name: Set invalid variable value
+    set_fact:
+      invalid_value: <<invalid_value>>
+
+  # Attempt to use an undefined variable
+  - name: Use undefined variable
+    debug:
+      msg: "{{ undefined_variable }}"
+
+  # Attempt to use an invalid loop variable
+  - name: Use invalid loop variable
+    with_items: "{{ invalid_value }}"
+    debug:
+      msg: "Loop item: {{ item }}"
+
+  # Generate an error to test error handling
+  - name: Generate an error
+    command: echo "This command does not exist"
+    register: cmd_result
+    ignore_errors: true
+
+  # Attempt to use a failed command result
+  - name: Use failed command result
+    debug:
+      msg: "Command result: {{ cmd_result.stdout }}"
+
+  # Use an invalid module name
+  - name: Use invalid module name
+    shell:
+      command: echo "Hello World"
+    register: invalid_module_result
+    failed_when: false
+
+  # Attempt to use an invalid module result
+  - name: Use invalid module result
+    debug:
+      msg: "Invalid module result: {{ invalid_module_result.stdout }}"
+
+  # Attempt to close a share connection before it finishes
+  - name: Close share connection prematurely
+    mount:
+      path: /mnt/share
+      state: unmounted
+    async: 10
+    poll: 1
+    register: unmount_result
+
+  # Attempt to access the share after the connection has been closed
+  - name: Access closed share
+    stat:
+      path: /mnt/share/file.txt
+    when: unmount_result.finished

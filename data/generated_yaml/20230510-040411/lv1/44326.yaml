@@ -1,0 +1,33 @@
+
+---
+- name: VMware Portgroup Security Policy Update
+  hosts: vmware_servers
+
+  vars:
+    portgroup_name: "your-portgroup-name"
+    security_policy:
+      allow_promiscuous: false
+      forged_transmits: true
+      mac_changes: false
+
+  tasks:
+  - name: Get Facts for portgroup configuration
+    vmware_portgroup_facts:
+      hostname: "{{ inventory_hostname }}"
+      username: "{{ vmware_username }}"
+      password: "{{ vmware_password }}"
+      datacenter: "{{ datacenter_name }}"
+      portgroup_name: "{{ portgroup_name }}"
+    register: pg_facts
+
+  - name: Update portgroup security policy
+    vmware_portgroup:
+      hostname: "{{ inventory_hostname }}"
+      username: "{{ vmware_username }}"
+      password: "{{ vmware_password }}"
+      datacenter: "{{ datacenter_name }}"
+      portgroup_name: "{{ portgroup_name }}"
+      allow_promiscuous: "{{ security_policy.allow_promiscuous }}"
+      forged_transmits: "{{ security_policy.forged_transmits }}"
+      mac_changes: "{{ security_policy.mac_changes }}"
+    when: pg_facts.portgroup and (pg_facts.portgroup.security_policy.allow_promiscuous | bool) != security_policy.allow_promiscuous or (pg_facts.portgroup.security_policy.forged_transmits | bool) != security_policy.forged_transmits or (pg_facts.portgroup.security_policy.mac_changes | bool) != security_policy.mac_changes

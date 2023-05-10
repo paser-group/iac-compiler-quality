@@ -1,0 +1,55 @@
+
+- hosts: target_host
+  gather_facts: false
+  tasks:
+  - name: Push a file to the target host
+    copy:
+      src: "{{ lookup('env', 'TEMP') }}/test_file.txt"
+      dest: "/tmp/test/{{ lookup('env', 'USERNAME') }}/"
+  - name: Execute remote command and get output
+    shell:
+      cmd: "cat /etc/ssh/sshd_config | grep -i protocol"
+      executable: "/bin/bash"
+      warn: no
+      chdir: "{{ lookup('env', 'SYSTEMROOT') }}\\System32"
+    register: cmd_output
+  - name: Print Registration Data to the Console
+    debug:
+      var: cmd_output
+  - name: Execute Powershell Command
+    win_shell:
+      cmd: "Get-Service | Format-List *"
+    register: powershell_output
+  - name: Print Powershell Output
+    debug: 
+      var: powershell_output
+  - name: Set the Host on the network
+    set_fact:
+      host: "{{ ansible_host }}"
+  - name: Establish SSH connection and authenticate with password
+    expect:
+      command: ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 {{ host }}
+      responses:
+        "*?assword:*": "{{ ssh_password }}\n"
+    become: no
+    become_method: sudo
+  - name: Establish SSH connection and authenticate with private key
+    expect:
+      command: ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 -i {{ ssh_key_path }} {{ host }}
+      timeout: 10
+    become: no
+    become_method: sudo
+  - name: Install apache2 package and start httpd service
+    package:
+      name: httpd
+      state: present
+  - service:
+      name: httpd
+      state: started
+  - name: Check apache service status
+    systemd:
+      name: httpd.service
+    register: apache_status
+  - name: Print apache service status
+    debug: 
+      var: apache_status

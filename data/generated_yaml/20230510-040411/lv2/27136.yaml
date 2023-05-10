@@ -1,0 +1,37 @@
+
+---
+- hosts: all
+  gather_facts: no
+  tasks:
+    - name: Test network connectivity
+      wait_for:
+        host: "{{ ansible_host | default(inventory_hostname) }}"
+        port: "{{ ansible_port | default(22) }}"
+        timeout: 5
+        state: started
+      ignore_errors: yes
+
+    - name: Connect to remote system
+      shell: |
+        ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null {{ ansible_user }}@{{ ansible_host }} true
+      register: result
+      ignore_errors: yes
+
+    - name: Copy public key to remote system
+      copy:
+          content: "{{ lookup('file', '/root/.ssh/id_rsa.pub') }}"
+          dest: "/tmp/authorized_keys"
+          mode: "0640"
+      become: true
+      when: result.rc not in [0, 255]
+
+    - name: Add remote host key
+      known_hosts:
+        key: "{{ item }}"
+        path: "/root/.ssh/known_hosts"
+      with_items: "{{ special_hosts | default([]) }}"
+      become: true
+
+    - name: Test shell connection
+      shell: ssh {{ ansible_user }}@{{ ansible_host }} -T date </dev/null
+      ignore_errors: true

@@ -1,0 +1,28 @@
+
+---
+- name: Configure privilege escalation
+  hosts: all
+  become: true
+  tasks:
+    - name: Check if privilege escalation is working
+      command: whoami
+      register: whoami_output
+      ignore_errors: true
+
+    - name: If privilege escalation is not working, configure sudoers
+      lineinfile:
+        path: /etc/sudoers
+        line: "%sudo   ALL=(ALL) NOPASSWD:ALL"
+        validate: 'visudo -cf %s'
+      when: "'sorry' in whoami_output.stderr"
+
+    - name: Test privilege escalation
+      command: whoami
+      register: whoami_output
+
+    - name: Fail if privilege escalation is not working
+      fail:
+        msg: "Unable to elevate privilege to enable mode, at prompt [\nolt1# ] with error"
+      when: "'sorry' in whoami_output.stderr"
+
+    # Add additional tasks to configure your system as needed

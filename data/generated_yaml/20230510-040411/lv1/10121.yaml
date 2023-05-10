@@ -1,0 +1,26 @@
+yaml
+---
+- name: Configure ec2 instance to allow for long filenames in ecryptfs home directories
+  hosts: all
+  become: yes
+  
+  vars:
+    ecryptfs_sys_params:
+      - name: ecryptfs_enable_filename_crypto
+        value: y
+  
+  tasks:
+    - name: Update sysctl settings for ecryptfs
+      become: yes
+      sysctl:
+        name: "{{ item.name }}"
+        value: "{{ item.value }}"
+        state: present
+        sysctl_set: yes
+      with_items: "{{ ecryptfs_sys_params }}"
+      
+    - name: Restart ssh service to apply changes
+      become: yes
+      service:
+        name: sshd
+        state: restarted

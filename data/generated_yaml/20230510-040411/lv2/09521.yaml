@@ -1,0 +1,60 @@
+yaml
+---
+- name: Test playbook to stress test Ansible compiler
+  hosts: localhost
+  vars:
+    server_name: "localhost"
+  tasks:
+    - name: Install Apache web server with a typo (missing colon after server port)
+      apt:
+        name: apache2
+        listen: "80"
+        state: present
+        register: install_output
+      ignore_errors: yes
+      when: server_name is defined
+      
+    - name: Create a user with invalid name (special characters)
+      user:
+        name: "!@#$%^&*()_"
+        comment: "Test user with invalid name"
+        state: present
+      
+    - name: Install a package with an invalid version number (string instead of integer)
+      apt:
+        name: nginx
+        state: present
+        version: "invalid_version"
+      
+    - name: Execute a command using sudo, but with a user that doesn't exist
+      command: "ls /root"
+      become: yes
+      become_user: "nonexistent_user"
+      register: command_output
+      ignore_errors: yes
+      
+    - name: Use a variable with an undefined value
+      debug:
+        msg: "{{ undefined_variable }}"
+      
+    - name: Create a file with a very long filename (more than 255 characters)
+      file:
+        path: "{{ '/tmp/' + 'x' * 300 }}"
+        state: touch
+      
+    - name: Run a shell command with unused variable
+      shell: "echo {{ unused_variable }}"
+      vars:
+        unused_variable: "This variable is not used in this task"
+      
+    - name: Set invalid fact (string instead of dictionary)
+      set_fact:
+        invalid_fact: "This is not a dictionary"
+      
+    - name: Run a task with an invalid module name
+      invalid_module:
+        parameter: "This module doesn't exist"
+      
+    - name: Use an undefined filter plugin
+      debug:
+        msg: "{{ 'Hello, world!' | undefined_filter }}"

@@ -1,0 +1,40 @@
+
+- name: Test iam_policy.py with nsocket.error
+  hosts: localhost
+  tasks:
+    - name: Create IAM Role
+      iam_role:
+        name: "{{ item.role_name }}"
+        state: present
+        description: "{{ item.description }}"
+      with_items:
+        - { role_name: 'test-role-1', description: 'Test Role 1' }
+        - { role_name: 'test-role-2', description: 'Test Role 2' }
+        - { role_name: 'test-role-3', description: 'Test Role 3' }
+        - { role_name: 'test-role-4', description: 'Test Role 4' }
+
+    - name: Attach IAM Policy
+      iam_policy:
+        name: "{{ item.policy_name }}"
+        state: present
+        roles: "{{ item.roles }}"
+        policy: "{{ item.policy }}"
+      with_items:
+        - { policy_name: 'test-policy-1', roles: ['test-role-1'], policy: '{"Statement":[{"Action":"s3:GetObject","Effect":"Allow","Resource":"*"}],"Version":"2012-10-17"}' }
+        - { policy_name: 'test-policy-2', roles: ['test-role-2'], policy: '{"Statement":[{"Action":"s3:PutObject","Effect":"Allow","Resource":"*"}],"Version":"2012-10-17"}' }
+        - { policy_name: 'test-policy-3', roles: ['test-role-3'], policy: '{"Statement":[{"Action":"s3:ListBucket","Effect":"Deny","Resource":"*"}],"Version":"2012-10-17"}' }
+        - { policy_name: 'test-policy-4', roles: ['test-role-4'], policy: '{"Statement":[{"Action":"s3:ListBucketVersions","Effect":"Allow","Resource":"*"},"Version":"2012-10-17"}' }
+
+    - name: Test IAM Policy
+      shell: "/bin/echo 'Testing IAM policy execution'"
+      register: policy_output
+
+    - name: Test Connection Refused
+      shell: "/usr/bin/curl -v http://127.0.0.1:8080"
+      register: refused_output
+      ignore_errors: true
+      
+    - name: Debug Output
+      debug:
+        var: refused_output
+        verbosity: 3

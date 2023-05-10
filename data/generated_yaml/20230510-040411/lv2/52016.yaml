@@ -1,0 +1,52 @@
+
+# Generate a list of edge cases, including empty and missing values
+# for access logs prefix, different region names, and access logs
+# on different storage classes such as S3 Infrequent Access and Glacier
+
+vars:
+  elb_name: my-elb
+  elb_scheme: internet-facing
+  elb_s3_bucket: my-elb-logs-bucket
+  elb_s3_prefix: 
+  elb_region: us-east-1
+
+tasks:
+  - name: Create ELB
+    elb_application_lb:
+      name: "{{ elb_name }}"
+      scheme: "{{ elb_scheme }}"
+      subnets:
+        - "subnet-xxxxxx"
+        - "subnet-xxxxxx"
+      security_groups:
+        - "sg-xxxxxx"
+      listeners:
+        - Protocol: HTTP
+          Port: 80
+    register: elb_result
+
+  - name: Check access logs not enabled
+    debug:
+      msg: "Access logs not enabled"
+    when: "'access_logs.s3.enabled' not in elb_result.load_balancer.attributes"
+
+  - name: Enable access logs
+    elb_application_lb_attributes:
+      load_balancer_arn: "{{ elb_result.load_balancer.arn }}"
+      attributes:
+        access_logs.s3.enabled: true
+        access_logs.s3.bucket: "{{ elb_s3_bucket }}"
+        access_logs.s3.prefix: "{{ elb_s3_prefix }}"
+        access_logs.s3.region: "{{ elb_region }}"
+        access_logs.s3.bucket_prefix: "my-elb-logs"
+    register: elb_attrs_result
+
+  - name: Check access log bucket
+    debug:
+      var: elb_attrs_result.load_balancer.attributes.access_logs.s3.bucket
+    when: "'access_logs.s3.bucket' in elb_attrs_result.load_balancer.attributes"
+
+  - name: Check access log prefix
+    debug:
+      var: elb_attrs_result.load_balancer.attributes.access_logs.s3.prefix
+    when: "'access_logs.s3.prefix' in elb_attrs_result.load_balancer.attributes"

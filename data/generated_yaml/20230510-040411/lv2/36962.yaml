@@ -1,0 +1,41 @@
+yaml
+- name: Test string/binary encoding issue in pull.py
+  hosts: localhost
+  vars:
+    payload: "{{ 'Hello World' }}"
+    binary_payload: "{{ payload | b64encode }}"
+    
+  tasks:
+    - name: Ensure payload is a string
+      assert:
+        that:
+          - payload is string
+        success_msg: "Payload is a string"
+      
+    - name: Ensure binary_payload is bytes
+      assert:
+        that:
+          - binary_payload is byte
+        success_msg: "Binary payload is bytes"
+      
+    - name: Try to encode using the wrong encoding type
+      set_fact:
+        invalid_encoded_payload: "{{ payload | regex_replace('_', '-') | b64encode(encoding='invalid-encoding-type') }}"
+      ignore_errors: yes
+      
+    - name: Ensure invalid_encoded_payload is empty
+      assert:
+        that:
+          - invalid_encoded_payload == ''
+        success_msg: "Invalid encoded payload is empty"
+      
+    - name: Try to decode with the wrong encoding type
+      set_fact:
+        invalid_decoded_payload: "{{ binary_payload | regex_replace('_', '-') | b64decode(encoding='invalid-encoding-type') }}"
+      ignore_errors: yes
+      
+    - name: Ensure invalid_decoded_payload is empty
+      assert:
+        that:
+          - invalid_decoded_payload == ''
+        success_msg: "Invalid decoded payload is empty"

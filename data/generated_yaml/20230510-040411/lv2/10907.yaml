@@ -1,0 +1,48 @@
+
+---
+- name: Testing nested tasks in role
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    template_dir: /tmp/templates
+
+  tasks:
+    - name: Create parent directory for templates if it doesn't exist
+      file:
+        path: "{{ template_dir }}"
+        state: directory
+      ignore_errors: yes
+
+    - name: Create child directories for templates if they don't exist
+      file:
+        path: "{{ template_dir }}/{{ item }}"
+        state: directory
+      with_items:
+        - foo
+        - bar
+      ignore_errors: yes
+
+    - name: Create sample templates
+      copy:
+        content: "This is a {{ item }} template"
+        dest: "{{ template_dir }}/{{ item }}/template.j2"
+      with_items:
+        - foo
+        - bar
+      ignore_errors: yes
+
+    - name: Set correct permissions for templates
+      file:
+        path: "{{ template_dir }}/{{ item }}/template.j2"
+        mode: "0644"
+      with_items:
+        - foo
+        - bar
+      ignore_errors: yes
+
+    - name: Include templates in the role
+      include_tasks: "{{ item }}"
+      with_items:
+        - tasks/main.yml
+        - tasks/nested_tasks.yml

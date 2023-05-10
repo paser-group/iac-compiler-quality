@@ -1,0 +1,26 @@
+yaml
+---
+- hosts: web
+  become: yes
+  vars:
+    haproxy_backend_servers:
+      - server1.example.com
+      - server2.example.com
+      - server3.example.com
+  tasks:
+    - name: Install HAProxy
+      apt:
+        name: haproxy
+        state: present
+      delegate_to: "{{ groups['loadbalancers'][0] }}"
+
+    - name: Configure HAProxy
+      haproxy:
+        backend: web-backend
+        backend_servers: "{{ haproxy_backend_servers }}"
+      delegate_to: "{{ groups['loadbalancers'][0] }}"
+
+    - name: Restart HAProxy
+      haproxy:
+        state: restarted
+      delegate_to: "{{ groups['loadbalancers'][0] }}"

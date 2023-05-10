@@ -1,0 +1,19 @@
+yaml
+---
+- name: test Playbook
+  hosts: windows
+  become: no
+  tasks:
+    - name: run command without admin privileges
+      win_shell: cmd /C "echo hello"
+      ignore_errors: yes
+    - name: elevate privileges and run command
+      win_shell: RUNAS.EXE /user:Administrator cmd /C "echo hello"
+      vars:
+        ansible_become_method: runas
+        ansible_become_pass: "{{ 'admin_pass' | b64decode }}"
+    - name: check if command ran successfully
+      assert:
+        that:
+          - "'Access is denied.' in output"
+        fail_msg: "Expected 'Access is denied.' error message not found."

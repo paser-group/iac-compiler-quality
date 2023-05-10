@@ -1,0 +1,29 @@
+
+- name: Configure IGMP Snooping
+  nxos_igmp_snooping:
+    state: present
+    enabled: true
+    version: 3
+    mrouter_interface: Ethernet1/1
+    interfaces:
+      - Ethernet1/2
+      - Ethernet1/3
+  register: result
+
+- name: Check if IGMP Snooping was configured
+  nxos_command:
+    commands:
+      - show ip igmp snooping
+  register: output
+  failed_when: "'Version: {{ item.version }}' not in output.stdout[0] or 'Up Time: {{ item.enabled }}' not in output.stdout[0] or 'Mrouter Port: {{ item.mrouter_port }}' not in output.stdout[0]"
+  loop: "{{ result.igmp_interface_info | dict2items }}"
+
+- name: Re-apply IGMP Snooping configuration if necessary
+  nxos_igmp_snooping:
+    state: present
+    enabled: "{{ item.value.enabled }}"
+    version: "{{ item.value.version }}"
+    mrouter_interface: "{{ item.value.mrouter_interface }}"
+    interfaces: "{{ item.value.interfaces }}"
+  when: "'Version: {{ item.value.version }}' not in output.stdout[0] or 'Up Time: {{ item.value.enabled }}' not in output.stdout[0] or 'Mrouter Port: {{ item.value.mrouter_port }}' not in output.stdout[0]"
+  loop: "{{ result.igmp_interface_info | dict2items }}"

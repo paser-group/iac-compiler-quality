@@ -1,0 +1,40 @@
+yaml
+---
+- name: Install Boto package
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Install Boto
+      pip:
+        name: boto
+        state: latest
+
+- name: IAM Cert
+  hosts: all
+  vars:
+    certificate_file: /path/to/certificate
+    private_key_file: /path/to/key
+    certificate_name: awscert
+    certificate_chain: /path/to/chain
+  tasks:
+    - name: Check if Boto is working
+      command: boto
+      register: boto_check
+      ignore_errors: true
+    - name: Install Boto if not working
+      pip:
+        name: boto
+        state: latest
+      when: boto_check.rc != 0
+    - name: Get AWS regions
+      ec2_regions_facts:
+        regions: all
+      register: ec2_regions
+    - name: Create IAM certificate
+      iam_cert:
+        certificate_file: "{{ certificate_file }}"
+        private_key_file: "{{ private_key_file }}"
+        certificate_name: "{{ certificate_name }}"
+        certificate_chain: "{{ certificate_chain }}"
+        region: "{{ item }}"
+      with_items: "{{ ec2_regions.facts.regions }}"

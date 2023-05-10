@@ -1,0 +1,42 @@
+
+- name: Test playbook for async + vsphere_guest issue
+  hosts: all
+  tasks:
+    - name: Execute command on guest machine
+      vsphere_guest:
+        vcenter_hostname: '{{ vcenter_hostname }}'
+        username: '{{ vcenter_username }}'
+        password: '{{ vcenter_password }}'
+        guest: '{{ guest_machine_name }}'
+        vmware_guest_facts: yes
+        vmware_guest_facts_host: guest
+        validate_certs: no
+        command: 'ls /'
+      async: 600
+      poll: 0
+      register: result
+
+    - name: Wait for async task to complete
+      async_status:
+        jid: "{{ result.ansible_job_id }}"
+        mode: poll
+      register: job_result
+
+    - name: Check status of async task
+      debug:
+        var: job_result
+
+    - name: Gather facts for guest machine
+      vsphere_guest:
+        vcenter_hostname: '{{ vcenter_hostname }}'
+        username: '{{ vcenter_username }}'
+        password: '{{ vcenter_password }}'
+        guest: '{{ guest_machine_name }}'
+        vmware_guest_facts: yes
+        vmware_guest_facts_host: guest
+        validate_certs: no
+      register: guest_facts
+
+    - name: Display guest machine facts
+      debug:
+        var: guest_facts

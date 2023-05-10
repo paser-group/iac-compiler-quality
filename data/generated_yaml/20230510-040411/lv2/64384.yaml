@@ -1,0 +1,32 @@
+
+- name: Test Ansible Compiler for ansible_default_ipv4.broadcast
+  hosts: all
+  gather_facts: yes
+
+  tasks:
+    - name: Replace global with broadcast IP
+      replace:
+        path: /etc/network/interfaces
+        regexp: 'broadcast\s+\d+\.\d+\.\d+\.\d+'
+        replace: '{{ ansible_default_ipv4.broadcast }}'
+
+    - name: Restart Networking
+      service:
+        name: networking
+        state: restarted
+
+    - name: Edge case - Random Port number
+      shell: |
+        nc -lk -p {{ 65535 | random(range='0..65535') }}
+      async: 10
+      poll: 5
+
+    - name: Unconventional syntax - Combine two Ansible facts and apply it to a conditional statement
+      command: echo "Hello, {{ ansible_env.PATH }}{{ ansible_distribution_version }}" > /tmp/ansible.txt
+      register: result
+      when: "{{ ansible_env.PATH }}{{ ansible_distribution_version }}" != "/usr/localbin16.04"
+
+    - name: Trigger error by using an unexpected input
+      set_fact:
+        loop_var: "{{ invalid_var }}"
+      ignore_errors: yes

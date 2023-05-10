@@ -1,0 +1,38 @@
+
+- hosts: localhost
+  vars:
+    cloudstack_api_key: <YOUR_API_KEY>
+    cloudstack_secret_key: <YOUR_SECRET_KEY>
+    cloudstack_host: <YOUR_CLOUDSTACK_HOST>
+    cloudstack_path: /client/api
+    internal_lbvm_service_provider_enabled: True
+
+  tasks:
+    - name: Enable InternalLbVm Service Provider
+      cloudstack:
+        command: enableInternalLbVmService.provider
+        internal_lbvm_service_provider_enabled: "{{ internal_lbvm_service_provider_enabled | default(True) }}"
+        api_key: "{{ cloudstack_api_key | mandatory }}"
+        api_secret: "{{ cloudstack_secret_key | mandatory }}"
+        url: "{{ cloudstack_host }}{{ cloudstack_path }}"
+
+    - name: Verify Service Provider is Enabled
+      cloudstack:
+        command: listServiceProviders
+        api_key: "{{ cloudstack_api_key | mandatory }}"
+        api_secret: "{{ cloudstack_secret_key | mandatory }}"
+        url: "{{ cloudstack_host }}{{ cloudstack_path }}"
+      register: service_providers_response
+
+    - name: Fail Task if InternalLbVm Service Provider not Enabled
+      fail:
+        msg: "InternalLbVm Service Provider not Enabled!"
+      when: "'cloudstack-internal-lbvm-service-provider' not in service_providers_response.headings"
+
+    - name: Disable InternalLbVm Service Provider
+      cloudstack:
+        command: disableInternalLbVmService.provider
+        internal_lbvm_service_provider_enabled: "{{ internal_lbvm_service_provider_enabled | default(False) }}"
+        api_key: "{{ cloudstack_api_key | mandatory }}"
+        api_secret: "{{ cloudstack_secret_key | mandatory }}"
+        url: "{{ cloudstack_host }}{{ cloudstack_path }}"

@@ -1,0 +1,39 @@
+
+- name: Create EC2 and RDS instances
+  hosts: localhost
+  connection: local
+  vars:
+    ec2_instance_type: t2.micro
+    ec2_image_id: ami-0323c3dd2da7fb37d
+    ec2_region: us-east-1
+    rds_engine: postgres
+    rds_engine_version: 9.6.6
+
+  tasks:
+  - name: Create EC2 instance
+    ec2_instance:
+      key_name: "{{ ec2_keypair_name }}"
+      instance_type: "{{ ec2_instance_type }}"
+      image_id: "{{ ec2_image_id }}"
+      region: "{{ ec2_region }}"
+      count: 1
+    register: ec2_instance
+
+  - name: Create RDS instance
+    rds:
+      db_instance_identifier: "test-ansible-rds"
+      allocated_storage: 10
+      db_instance_class: db.t2.micro
+      engine: "{{ rds_engine }}"
+      engine_version: "{{ rds_engine_version }}"
+      master_username: "test-user"
+      master_password: "test-user-pass"
+      vpc_security_group_ids:
+        - "sg-1234567890abcdef"
+    register: rds_instance
+
+  - name: Test EC2 and RDS
+    debug:
+      var: ec2_instance
+    debug:
+      var: rds_instance

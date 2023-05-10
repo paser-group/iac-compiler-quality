@@ -1,0 +1,27 @@
+yaml
+---
+- name: Unarchive zip files with non-default permission
+  hosts: localhost
+  become: yes
+
+  tasks:
+    - name: Extract archive
+      unarchive:
+        src: /path/to/archive.zip
+        dest: /path/to/extract
+        remote_src: yes
+      register: extract_output
+
+    - name: Set correct permissions
+      file:
+        path: "{{ item }}"
+        mode: '0644'
+        recurse: yes
+      with_fileglob:
+        - "/path/to/extract/**/*"
+      when: item is file
+      register: permission_output
+
+    - name: Report changed
+      debug:
+        var: extract_output.changed or permission_output.changed

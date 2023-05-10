@@ -1,0 +1,25 @@
+
+---
+- name: Create CloudWatch Event Rule
+  hosts: localhost
+  become: true
+  gather_facts: false
+  vars:
+    region: "{{ aws_region }}"
+    event_pattern: "{{ lookup('template', 'cloudwatch_event_pattern.json.j2') }}"
+  tasks:
+  - name: Install AWS CLI
+    become: true
+    apt:
+      name: awscli
+      state: present
+  - name: Create CloudWatch Event Rule
+    command: >
+      aws events put-rule
+      --name "{{ rule_name }}"
+      --event-pattern "{{ event_pattern }}"
+      --region "{{ region }}"
+    register: rule
+  - name: Print CloudWatch Event Rule ARN
+    debug:
+      var: rule.stdout

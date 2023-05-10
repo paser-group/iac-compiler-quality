@@ -1,0 +1,31 @@
+
+- name: Install role using Ansible Galaxy
+  hosts: localhost
+  become: true
+
+  vars:
+    role_git_url: "git://github.com/user/repo.git"
+    role_name: "user.repo"
+    galaxy_install_path: "/etc/ansible/roles"
+
+  tasks:
+    - name: Install Ansible Galaxy
+      apt:
+        name: ansible
+        state: latest
+
+    - name: Install role from Git using Ansible Galaxy
+      ansible-galaxy:
+        name: "{{ role_name }}"
+        source: "{{ role_git_url }}"
+        path: "{{ galaxy_install_path }}"
+
+    - name: Verify installation
+      stat:
+        path: "{{ galaxy_install_path }}/{{ role_name }}"
+      register: stat_result
+
+    - name: Display error message if role installation failed
+      debug:
+        msg: "Role installation failed"
+      when: not stat_result.stat.exists

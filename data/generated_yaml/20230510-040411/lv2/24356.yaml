@@ -1,0 +1,38 @@
+
+---
+- hosts: all
+  gather_facts: true
+
+  tasks:
+    - name: Ensure btrfs-utils is installed
+      package:
+        name: btrfs-progs
+        state: latest
+
+    - name: Create subvolume with subvolume-quota
+      command: "btrfs subvolume create /mnt/btrfs/subvolume-quota && btrfs qgroup limit 10m /mnt/btrfs/subvolume-quota"
+      become: true
+
+    - name: Ensure subvolume has quota limit set
+      shell: |
+        btrfs qgroup show /
+        btrfs qgroup show /mnt/btrfs/subvolume-quota
+      register: output
+      failed_when: "'quota' not in output.stdout"
+
+    - name: Mount subvolume-quota volume
+      mount:
+        name: /mnt/btrfs/subvolume-quota
+        src: "{{ item.device }}"
+        fstype: "btrfs"
+      with_items:
+        - {"device": "/dev/sdb", "opts": "defaults"}
+
+    - name: Fetch Kernel logs with the word error
+      command: "journalctl -k | grep error"
+      register: logmsg
+
+    - name: Display logs when error occurs
+      debug:
+        var: logmsg.stdout_lines
+      when: "'error' in logmsg.stdout_lines"

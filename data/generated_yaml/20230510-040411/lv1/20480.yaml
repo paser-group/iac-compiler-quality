@@ -1,0 +1,28 @@
+yaml
+---
+- name: Playbook to handle Docker errors
+  hosts: target_servers
+  become: yes
+  gather_facts: yes
+
+  tasks:
+  - name: Stop Docker service
+    service:
+      name: docker
+      state: stopped
+    ignore_errors: yes
+    
+  - name: Ensure Docker is running
+    service:
+      name: docker
+      state: started
+    register: docker_service_status
+
+  - name: Check Docker service status
+    fail:
+      msg: "Docker service is not running"
+    when: docker_service_status is failed
+    
+  - name: Debug Docker service status
+    debug:
+      msg: "Docker service is up and running"

@@ -1,0 +1,47 @@
+
+- hosts: localhost
+  tasks:
+    - name: Generate Edge Cases for elb_application_lb
+      elb_application_lb:
+        profile: "{{ client | default(omit) }}"
+        conn_type: "{{ (resource is not defined) | ternary(client, resource) | lower }}"
+      register: elb
+      
+    - name: Edge Case 1 - Empty Resource
+      elb_application_lb:
+        resource: ""
+        conn_type: "{{ (resource is not defined) | ternary(client, resource) | lower }}"
+        
+    - name: Edge Case 2 - Null Client
+      elb_application_lb:
+        client: null
+        conn_type: "{{ (resource is not defined) | ternary(client, resource) | lower }}"
+        
+    - name: Edge Case 3 - Non-String Resource
+      elb_application_lb:
+        resource:
+         - app1
+         - app2
+        conn_type: "{{ (resource is not defined) | ternary(client, resource) | lower }}"
+        
+    - name: Edge Case 4 - Missing conn_type parameter
+      elb_application_lb:
+        client: "{{ client | default(omit) }}"
+        resource: "{{ resource | default(omit) }}"
+        
+    - name: Edge Case 5 - Special Character Input
+      elb_application_lb:
+        client: "{{ '&(cc)&' }}"
+        resource: "{{ resource | default(omit) }}"
+        conn_type: "{{ (resource is not defined) | ternary(client, resource) | lower }}"
+        
+    - name: Edge Case 6 - Extract client from resource
+      set_fact:
+        client_from_resource: "{{ resource.split('|')[1] }}"
+      when: resource is defined and '|' in resource
+          
+    - name: Edge Case 7 - Use extracted client parameter
+      elb_application_lb:
+        client: "{{ client_from_resource }}"
+        resource: "{{ resource.split('|')[0] }}"
+        conn_type: "{{ (resource is not defined) | ternary(client, resource) | lower }}"

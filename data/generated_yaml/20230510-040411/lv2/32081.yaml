@@ -1,0 +1,64 @@
+
+- name: Test seboolean module on Debian
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    boolean_name: "test_boolean"
+    
+  tasks:
+    - name: Install policycoreutils package
+      apt:
+        name: policycoreutils
+        state: present
+
+    - name: Create boolean with valid syntax
+      seboolean:
+        name: "{{ boolean_name }}"
+        state: present
+        persistent: yes
+        setype: unconfined_t
+        policy: targeted
+
+    - name: Check if boolean has been created
+      command: semanage boolean -l | grep "{{ boolean_name }}"
+      register: grep_out
+      changed_when: false
+
+    - name: Print boolean has been created
+      debug:
+        var: grep_out.stdout_lines
+
+    - name: Change value of boolean with invalid syntax
+      seboolean:
+        name: "{{ boolean_name }}"
+        value: "nottotallyvalidvalue"
+        state: yes
+        persistent: yes
+
+    - name: Check if boolean value has been changed
+      command: semanage boolean -l | grep "{{ boolean_name }}"
+      register: grep_out_result
+      changed_when: false
+      failed_when: grep_out_result.stdout.find('off') != -1
+
+    - name: Print boolean value has been changed
+      debug:
+        var: grep_out_result.stdout_lines
+
+    - name: Create boolean using invalid SELinux type
+      seboolean:
+        name: "{{ boolean_name }}2"
+        setype: "invalid_selinux_type"
+        state: present
+        persistent: yes
+
+    - name: Check if boolean with invalid SELinux type has been created
+      command: semanage boolean -l | grep "{{ boolean_name }}2"
+      register: grep_out_selinux
+      failed_when: false
+      ignore_errors: true
+
+    - name: Print boolean with invalid SELinux type has been created
+      debug:
+        var: grep_out_selinux.stderr_lines

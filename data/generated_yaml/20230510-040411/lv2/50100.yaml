@@ -1,0 +1,19 @@
+
+- name: Parse non-parsable inventory file
+  hosts: localhost
+  gather_facts: no
+  tasks:
+    - name: Create a non-parsable inventory file
+      command: echo "invalid inventory file content" > /tmp/non_parsable_inventory_file
+
+    - name: Try to parse the inventory file
+      command: ansible-inventory --inventory-file=/tmp/non_parsable_inventory_file
+      register: inventory_output
+      ignore_errors: true
+
+    - name: Clean up the test file
+      file: path=/tmp/non_parsable_inventory_file state=absent
+
+    - name: Check if the error message includes the extra text
+      assert:
+        that: "'extra error text' in inventory_output.stderr"

@@ -1,0 +1,44 @@
+
+---
+- name: Fix Ansible Galaxy install bug
+  hosts: all
+  become: true
+  
+  tasks:
+    - name: Install pip
+      apt:
+        name: python3-pip
+        state: present
+  
+    - name: Update pip
+      pip:
+        name: pip
+        state: latest
+      
+    - name: Remove and reinstall ansible and ansible-galaxy
+      pip:
+        name:
+          - ansible
+          - ansible-galaxy
+        state: absent
+      
+    - name: Verify ansible and ansible-galaxy are uninstalled
+      command: ansible --version
+      register: output
+      ignore_errors: true
+      
+    - name: Install ansible and ansible-galaxy
+      pip:
+        name:
+          - ansible
+          - ansible-galaxy
+        state: latest
+      
+    - name: Verify ansible and ansible-galaxy are installed
+      command: ansible --version
+      register: output
+      ignore_errors: true
+
+    - name: Rebuild cache for ansible-galaxy
+      command: ansible-galaxy collection build -v mynamespace.mycollection
+      register: output

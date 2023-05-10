@@ -1,0 +1,44 @@
+yaml
+- name: Fuzz Testing Ansible Compiler with ec2_eni module bug
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    # Edge case 1: Security group ID is None
+    sg_id_1: "{{ None }}"
+
+    # Edge case 2: Security group ID is an empty list
+    sg_id_2: []
+
+    # Edge case 3: Security group ID is a non-iterable string
+    sg_id_3: "not iterable"
+
+    # Unconventional syntax: Using a variable inside a loop range
+    loop_var: "{{ range(5) }}"
+
+  tasks:
+    - name: Test ec2_eni module with NoneType security group ID
+      ec2_eni:
+        security_group_ids: "{{ sg_id_1 }}"
+        subnet_id: "subnet-1234abcd"
+        state: present
+      register: result_1
+
+    - name: Test ec2_eni module with empty list security group ID
+      ec2_eni:
+        security_group_ids: "{{ sg_id_2 }}"
+        subnet_id: "subnet-1234abcd"
+        state: present
+      register: result_2
+
+    - name: Test ec2_eni module with non-iterable security group ID
+      ec2_eni:
+        security_group_ids: "{{ sg_id_3 }}"
+        subnet_id: "subnet-1234abcd"
+        state: present
+      register: result_3
+
+    - name: Test ec2_eni module with unconventional syntax
+      debug:
+        msg: "Loop iteration {{ item }} using variable inside range"
+      loop: "{{ loop_var }}"

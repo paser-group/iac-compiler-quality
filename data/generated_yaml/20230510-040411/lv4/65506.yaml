@@ -1,0 +1,40 @@
+
+- hosts: all
+  become: true
+  tasks:
+    - name: Create a new boot environment
+      beadm:
+        state: present
+        name: "testBE1"
+        mounts: []
+        options: []
+      register: be_results
+
+    - name: Add mountpoints to the boot environment
+      beadm:
+        state: mounted
+        name: "{{ item.name }}"
+        mounts: "{{ item.mounts }}"
+        options: "{{ item.options }}"
+      with_items:
+        - { name: "testBE1", mounts: [ "/tmp", "/var" ], options: [] }
+        - { name: "testBE2", mounts: [ "/usr", "/opt" ], options: [] }
+      register: be_mount_results
+
+    - name: List all boot environments
+      beadm:
+        state: list
+      register: be_list_results
+
+    - name: Remove the boot environment
+      beadm:
+        state: absent
+        name: "testBE1"
+      register: be_remove_results
+
+    - name: Debug results
+      debug:
+        var: be_results
+        var: be_mount_results
+        var: be_list_results
+        var: be_remove_results

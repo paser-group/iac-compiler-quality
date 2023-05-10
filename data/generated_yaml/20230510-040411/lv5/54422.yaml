@@ -1,0 +1,26 @@
+
+- name: Create new GCP Service Account
+  hosts: localhost
+  gather_facts: no
+  vars:
+    project_id: "my-project"
+    role: "roles/editor"
+  tasks:
+  - name: Create new service account
+    gcp_iam_service_account:
+      name: "new-account-{{item}}"
+      project: "{{project_id}}"
+      role: "{{role}}"
+      state: present
+    with_sequence: start=1 end=10
+    register: result
+  - name: Check if account was created successfully
+    assert:
+      that:
+        - result.item.response.status != 409
+  - name: Delete the service account
+    gcp_iam_service_account:
+      name: "new-account-{{item}}"
+      project: "{{project_id}}"
+      state: absent
+    with_sequence: start=1 end=10

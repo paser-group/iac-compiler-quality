@@ -1,0 +1,30 @@
+
+---
+- name: Test playbook for Ansible prefix '|-' on an encrypted variable on uri module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    # Define an encrypted variable with the prefix '|-'.
+    encrypted_var: !vault |
+                    $ANSIBLE_VAULT;1.1;AES256
+                    62316565623663653638373762313232636333316662626463323263653730653635323730383132
+                    3062653831613865623137323836316330363931356633330a343864353931336164633137343536
+                    36333235366133636430653237623438653063316166333865383934383632646234303762356639
+                    6561383864396561390a393636373865663363653361316666616365356365366162643562316630
+                    6266
+
+    headers: # Define headers
+      Content-Type: "application/json"
+
+  tasks:
+    - name: Send a GET request to a URI with an encrypted variable having prefix '|-'
+      uri:
+        url: "https://{{ inventory_hostname }}/api/users/{{ encrypted_var }}/"
+        method: GET
+        headers: "{{ headers }}"
+        return_content: yes
+      register: response
+
+    - debug:
+        var: response.content

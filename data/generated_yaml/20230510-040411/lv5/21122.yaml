@@ -1,0 +1,43 @@
+
+- hosts: localhost
+  gather_facts: no
+  vars:
+    project_id: "my_project"
+    zone: "my_zone"
+    gce_credentials_file: "/path/to/gce_credentials_file.json"
+    service_account_email: "my_service_account@my_project.iam.gserviceaccount.com"
+  tasks:
+    - name: Creating Instance with specified service account
+      gcp_compute_instance:
+        name: "test-instance"
+        project: "{{ project_id }}"
+        zone: "{{ zone }}"
+        machine_type: "n1-standard-1"
+        boot_disk_size_gb: "10"
+        service_account_email: "{{ service_account_email }}"
+        credentials_file: "{{ gce_credentials_file }}"
+      register: instance_details
+
+    - name: Verifying Instance has correct service account
+      debug:
+        msg: "Instance Service Account Email is {{ instance_details.instance.serviceAccounts[0].email }}"
+      when: instance_details.instance.serviceAccounts[0].email == service_account_email
+
+    - name: Testing instance with service account
+      become: yes
+      become_user: "root"
+      block:
+        - name: Install apache
+          apt:
+            name: apache2
+            update_cache: yes
+      
+        - name: Create index.html
+          copy:
+            content: "Hello World"
+            dest: "/var/www/html/index.html"
+      
+        - name: Start apache
+          service:
+            name: apache2
+            state: started

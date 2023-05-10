@@ -1,0 +1,34 @@
+
+---
+- hosts: localhost
+  tasks:
+    - name: Create S3 bucket
+      s3_bucket:
+        name: my-bucket
+        region: us-west-2
+      register: bucket
+
+    - name: Define Bucket Policy
+      s3_bucket_policy:
+        name: my-bucket
+        policy:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Principal:
+                AWS: arn:aws:iam::123456789012:user/user1
+              Action:
+                - s3:GetObject
+              Resource: arn:aws:s3:::my-bucket/*
+
+    - name: Read File from Bucket
+      s3:
+        bucket: "{{ bucket.name }}"
+        object: test.txt
+        mode: get
+        dest: /tmp/test.txt
+      register: read_file
+
+    - name: Debug Results
+      debug:
+        var: read_file

@@ -1,0 +1,59 @@
+
+---
+- hosts: localhost
+  gather_facts: no
+
+  vars:
+    load_balancer_name: "{{ 'test-lb-' + lookup('password', '/dev/null chars=ascii_letters,digits,length=10') }}"
+    listener_port: "{{ 80 + lookup('password', '/dev/null chars=digits,length=1') }}"
+    instance_port: "{{ 80 + lookup('password', '/dev/null chars=digits,length=1') }}"
+    target_groups:
+      - name: "{{ 'tg-' + lookup('password', '/dev/null chars=ascii_letters,digits,length=10') }}"
+        protocol: "{{ ['HTTP', 'TCP'] | random }}"
+        port: "{{ 80 + lookup('password', '/dev/null chars=digits,length=1') }}"
+        health_check_protocol: "{{ ['HTTP', 'HTTPS', 'TCP'] | random }}"
+        health_check_port: "{{ 80 + lookup('password', '/dev/null chars=digits,length=1') }}"
+        health_check_path: "/{{ lookup('password', '/dev/null chars=ascii_letters,digits,length=10') }}.html"
+
+  tasks:
+    - name: Create a new load balancer
+      ec2_elb_lb:
+        state: present
+        name: "{{ load_balancer_name }}"
+        listeners:
+          - protocol: HTTP
+            load_balancer_port: "{{ listener_port }}"
+            instance_protocol: HTTP
+            instance_port: "{{ instance_port }}"
+        region: us-west-2
+      register: lb_result
+
+    - name: Register instances to the load balancer
+      ec2_elb:
+        state: present
+        instance_id: "{{ item }}"
+        region: us-west-2
+        ec2_elbs: "{{ [load_balancer_name] }}"
+      loop: "{{ [] | random | random | random | random | lookup('password', '/dev/null chars=digits,length=1') | map('regex_replace', '^(.*)$', 'i-\\1') | list }}"
+      when: lb_result.changed
+
+    - name: Create target groups
+      ec2_elbv2_target_group:
+        state: present
+        name: "{{ item.name }}"
+        protocol: "{{ item.protocol }}"
+        port: "{{ item.port }}"
+        health_check_protocol: "{{ item.health_check_protocol }}"
+        health_check_port: "{{ item.health_check_port }}"
+        health_check_path: "{{ item.health_check_path }}"
+        vpc_id: "{{ aws_vpc_id }}"
+      with_items: "{{ target_groups }}"
+
+    - name: Register instances to target groups
+      ec2_elbv2_target:
+        state: present
+        target_group_arn: "{{ item.0.arn }}"
+        targets: "{{ item.1 }}"
+      with_nested:
+        - "{{ target_groups }}"
+        - "{{ [] | random | random | random | random | lookup('password', '/dev/null chars=digits,length=1') | map('regex_replace', '^(.*)$', 'i-\\1') | list }}"

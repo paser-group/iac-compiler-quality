@@ -1,0 +1,19 @@
+
+---
+- hosts: localhost
+  connection: local
+  tasks:
+  - name: Attempt to manage Key Vault secret with invalid credentials
+    azure_rm_keyvaultsecret:
+      vault_uri: https://myvault.vault.azure.net/
+      secret_name: mysecret
+      secret_value: mypassword
+      client_id: invalid_client_id
+      secret: invalid_secret
+    register: secret_result
+    ignore_errors: yes
+  
+  - name: Fail the playbook if error is not authentication-related
+    fail:
+      msg: "Unexpected error occurred: {{ secret_result }}"
+    when: "'not authorized' not in secret_result.stdout"

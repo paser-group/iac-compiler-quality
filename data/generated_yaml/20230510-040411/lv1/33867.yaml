@@ -1,0 +1,22 @@
+yaml
+---
+- hosts: all
+  tasks:
+    - name: Install required packages
+      apt:
+        name:
+          - python
+          - python-netaddr
+        state: latest
+    
+    - name: Update ovirt_host_networks.py
+      lineinfile:
+        path: /path/to/ovirt_host_networks.py
+        regexp: '^(\s+netmask = )(\S+)$'
+        line: '\1{{ ansible_default_ipv4.netmask | ipaddr(''prefixlen'') }}'
+      when: "'ValueError' in ansible_failed_result.exception|default('')"
+
+    - name: Restart ovirt-hosted-engine-ha-agent service
+      systemd:
+        name: ovirt-hosted-engine-ha-agent
+        state: restarted

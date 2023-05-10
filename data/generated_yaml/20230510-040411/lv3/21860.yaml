@@ -1,0 +1,27 @@
+
+---
+- name: Playbook to simulate ec2.py --list error
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    ec2_region: xxx-xxxx-x
+    ec2_url: https://ec2.xxxx.xxxx.xxx
+
+  tasks:
+    - name: Retrieve EC2 instance list using ec2.py module
+      ec2_instance_facts:
+        region: "{{ ec2_region }}"
+        url:    "{{ ec2_url }}"
+
+    # Simulating network issues by blocking port 12000
+    - name: Manipulating network route
+      shell: iptables -A INPUT -p tcp --dport 12000 -j DROP
+
+    # Perform module dependency resolution after creating port block
+    - name: List EC2 instances using ec2.py --list command
+      shell: ansible localhost -m ec2.py all --list
+
+  post_tasks:
+    - name: remove network route
+      shell: iptables -F

@@ -1,0 +1,37 @@
+
+---
+- name: Letsencrypt Certificate validation error playbook
+  hosts: localhost
+  gather_facts: False
+
+  tasks:
+    - name: Install letsencrypt v2.4
+      apt:
+        name: certbot
+        state: present
+
+    - name: Generate self-signed certificate
+      shell: |
+        openssl req -new -x509 -nodes -out cert.pem -keyout cert.key -days 365 -subj '/CN=localhost'
+      args:
+        creates: "cert.pem"
+
+    - name: Place letsenecrypt certificate in default location
+      copy:
+        src: "cert.pem"
+        dest: "/etc/letsencrypt/live/{{ inventory_hostname }}/cert.pem"
+        owner: root
+        group: root
+        mode: 0640
+      
+    - name: Obtain certificate using http-01 validation method
+      shell: |
+        certbot certonly --agree-tos --noninteractive --email admin@example.com --webroot -w /var/lib/letsencrypt/ --rsa-key-size 2048 -d example.com -d www.example.com
+      register: letsencrypt_cert
+
+    - name: Remove the 'Not After' Field from certificate
+      shell: "sed -i '/Not After/d' /etc/letsencrypt/live/{{ inventory_hostname }}/cert.pem"
+
+    - name: Execute the Certificate Renewal Process
+      shell: |
+        certbot renew --quiet

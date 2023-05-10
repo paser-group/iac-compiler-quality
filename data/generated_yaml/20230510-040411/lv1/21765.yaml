@@ -1,0 +1,34 @@
+yaml
+- name: Update Target Group of ASG
+  hosts: localhost
+  gather_facts: no
+  vars:
+    asg_name: "example-asg"
+    target_group_arn: "arn:aws:elasticloadbalancing:us-east-1:123456789012:targetgroup/example-target-group/abcdef1234567890"
+  tasks:
+  - name: Get Instance IDs of Existing Target Group
+    aws_ec2_instance_facts:
+      filters:
+        "tag:aws:autoscaling:groupName": "{{ asg_name }}"
+    register: instances
+  - name: Deregister Instances from Existing Target Group
+    elb_v2_target:
+      target_group_arn: "{{ target_group_arn }}"
+      targets:
+        - Id: "{{ item.id }}"
+          Port: 80
+      state: "absent"
+    with_items: "{{ instances.instances }}"
+  - name: Update Auto Scaling Group
+    ec2_asg:
+      name: "{{ asg_name }}"
+      replace_all_instances: true
+    when: instances.instances|length > 0
+  - name: Register Instances to New Target Group
+    elb_v2_target:
+      target_group_arn: "{{ target_group_arn }}"
+      targets:
+        - Id: "{{ item.id }}"
+          Port: 80
+      state: "present"
+    with_items: "{{ instances.instances }}"

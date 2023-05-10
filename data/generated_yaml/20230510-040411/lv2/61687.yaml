@@ -1,0 +1,37 @@
+
+---
+- hosts: localhost
+  vars:
+    s3_bucket_name: "{{ lookup('env', 'S3_BUCKET_NAME') }}"
+    aws_region: "{{ lookup('env', 'AWS_REGION') }}"
+    kms_key_id: "{{ lookup('env', 'KMS_KEY_ID') }}"
+    object_name: "test_file"
+    s3_url: "s3://{{ s3_bucket_name }}/{{ object_name }}"
+  tasks:
+    - name: Ensure s3 bucket exists
+      s3:
+        bucket: "{{ s3_bucket_name }}"
+        region: "{{ aws_region }}"
+        mode: create
+
+    - name: Create test file
+      copy:
+        content: "This is a test file"
+        dest: "{{ object_name }}"
+
+    - name: Upload file to S3 with default encryption
+      s3_sync:
+        src: "{{ object_name }}"
+        dest: "{{ s3_url }}"
+        encryption: AES256
+
+    - name: Test S3 bucket encryption with AWS KMS key
+      s3_sync:
+        src: "{{ object_name }}"
+        dest: "{{ s3_url }}"
+        kms_key_id: "{{ kms_key_id }}"
+
+    - name: Delete test file
+      file:
+        path: "{{ object_name }}"
+        state: absent

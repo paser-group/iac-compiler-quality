@@ -1,0 +1,53 @@
+
+---
+- hosts: localhost
+  vars:
+    - wrap_async: true
+  tasks:
+    - name: Task 1
+      command: echo "Executing task 1"
+      register: result
+      when: wrap_async = "false"
+    
+    - name: Task 2
+      copy: src=source_file.txt dest={{ item }}
+      with_fileglob_failed:
+        - dir1/*
+        - dir2/*
+      become: "yes"
+      ignore_errors: "{{ unpredictable_var }}"
+
+    - name: Task 3
+      command: echo "Executing task 3"
+      register: result
+      wrap_async: "false"
+
+    - name: Task 4
+      command: "echo 'Executing task 4'"
+      args:
+        chdir: "/tmp/test"
+        executable: "/usr/bin/python"
+      changed_when: "never"
+
+    - name: Task 5
+      debug: msg="{{ raw_output.split('\n') }}"
+      vars:
+        - raw_output: "{{ lookup('pipe', 'cat /etc/passwd | grep -i root') }}"
+      check_mode: "{{ 1/0 }}"
+
+    - name: Task 6
+      shell: |
+        echo "Executing task 6"
+        exit 1
+      no_log: "{{ secret_password }}"
+      
+  handlers:
+    - name: Handler 1
+      debug:
+        msg: "Executing handler 1: {{ item }}"
+      with_items: "{{ range(999999) | list }}"
+
+    - name: Handler 2
+      fail:
+        msg: "Executing handler 2"
+        when: wrap_async = 'true'

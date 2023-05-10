@@ -1,0 +1,25 @@
+
+---
+- name: Gather CloudFront Distribution Facts
+  hosts: localhost
+  gather_facts: False
+  gather_subset:
+    - '!all'
+    - '!min'
+    - '!not_cloudfront'
+
+  tasks:
+    - name: Gather CloudFront Distributions
+      cloudfront_facts:
+        distrib_state: 'deployed'
+      register: cloudfront_distrib_facts
+
+    - name: Display CloudFront Distributions
+      debug:
+        var: cloudfront_distrib_facts
+
+    - name: Terminate CloudFront Distributions
+      cloudfront:
+        distrib_id: "{{ item }}"
+        state: absent
+      with_items: "{{ cloudfront_distrib_facts.distributions | map(attribute='id') | list }}"

@@ -1,0 +1,31 @@
+yaml
+- name: Ownership issues with non-root remote_user
+  hosts: all
+  vars:
+    remote_user: "myuser"
+  tasks:
+    - name: Check if /tmp/.ansible exists
+      stat:
+        path: "/tmp/.ansible"
+      register: tmp_ansible
+
+    - name: Change ownership of /tmp/.ansible
+      file:
+        path: "/tmp/.ansible"
+        owner: "root"
+        group: "root"
+      when: tmp_ansible.stat.exists and tmp_ansible.stat.uid != 0
+
+    - name: Create /tmp/.ansible if it does not exist
+      file:
+        path: "/tmp/.ansible"
+        state: touch
+        mode: "0644"
+        owner: "root"
+        group: "root"
+      when: tmp_ansible.stat.exists == false
+
+    - name: Command execution with become
+      command: "whoami"
+      become: true
+      become_user: "root"

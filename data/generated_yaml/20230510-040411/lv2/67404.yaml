@@ -1,0 +1,26 @@
+
+---
+- name: Fuzzing Playbook for YAML Parsing Bug
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    - yaml_string: "# This is a comment\nkey: # This is a nested comment\n  # Commented value\n"
+    - yaml_file: "{{ playbook_dir }}/test.yaml"
+
+  tasks:
+    - name: Write YAML string to a file
+      copy:
+        content: "{{ yaml_string }}"
+        dest: "{{ yaml_file }}"
+
+    - name: Run YAML parsing command 1
+      shell: python -c "import yaml; print(yaml.safe_load(open('{{ yaml_file }}').read()))"
+
+    - name: Run YAML parsing command 2
+      shell: python -c "import yaml; print(yaml.safe_load('{{ yaml_string }}'))"
+
+    - name: Run YAML parsing command 3
+      shell: python -c "import yaml; print(yaml.safe_load(r'''{{ yaml_string }}'''))"
+
+    # More edge cases and unconventional syntax can be added here

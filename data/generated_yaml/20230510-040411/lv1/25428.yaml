@@ -1,0 +1,36 @@
+yaml
+- hosts: all
+  become: true
+  gather_facts: false
+
+  tasks:
+    - name: Install boto AWS SDK
+      pip:
+        name: boto3
+      vars:
+        ansible_python_interpreter: /usr/bin/python3
+
+    - name: Update s3 bucket policy to specify IAM principle
+      s3_bucket:
+        name: my_s3_bucket
+        policy: |
+          {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Sid": "AllowAccessFromIAMUser",
+                "Effect": "Allow",
+                "Principal": {
+                  "AWS": "arn:aws:iam::123456789012:user/my-iam-user"
+                },
+                "Action": [
+                  "s3:GetBucketLocation",
+                  "s3:ListBucket"
+                ],
+                "Resource": [
+                  "arn:aws:s3:::my_s3_bucket",
+                  "arn:aws:s3:::my_s3_bucket/*"
+                ]
+              }
+            ]
+          }

@@ -1,0 +1,13 @@
+yaml
+- hosts: <your-host-name>
+  become: true # make sure to have root-level privileges
+  tasks:
+    - name: Create LUKS on /dev/sda3
+      command: cryptsetup luksFormat /dev/sda3
+      ignore_errors: yes # ignore any errors, as we check the output in the next task
+      register: luks_output # register the output of the previous task
+
+    - name: Handle LUKS creation failure
+      fail:
+        msg: "{{ luks_output.stderr }}"
+      when: "'Failed to open key file.' in luks_output.stderr" # check if the failure message is present in the output

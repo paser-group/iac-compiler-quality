@@ -1,0 +1,31 @@
+
+- name: Test inventory parsing
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    inventory_file: inventory.yaml
+
+  tasks:
+
+    - name: Check if file is valid yaml syntax
+      shell: yamlint {{ inventory_file }}
+      register: yamlint_output
+      ignore_errors: true
+      failed_when: false
+      
+    - name: Fail if invalid yaml syntax found
+      fail:
+        msg: "Invalid syntax found in the inventory file"
+      when: yamlint_output.rc != 0
+
+    - name: Test inventory parsing with ansible-inventory
+      shell: ansible-inventory -i {{ inventory_file }} --list
+      register: ansible_inventory_output
+      ignore_errors: true
+      failed_when: false
+
+    - name: Fail if parsing errors found
+      fail:
+        msg: "Parsing errors found in the inventory"
+      when: ansible_inventory_output.rc != 0

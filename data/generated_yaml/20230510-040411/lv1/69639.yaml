@@ -1,0 +1,56 @@
+yaml
+---
+- name: Deploy application using Helm
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Install Helm
+      apt:
+        name: "{{ packages }}"
+        state: present
+      vars:
+        packages:
+          - curl
+          - apt-transport-https
+          - gnupg
+          - lsb-release
+
+    - name: Add Helm stable repository
+      apt_key:
+        url: https://baltocdn.com/helm/signing.asc
+        state: present
+
+    - name: Add Helm repository to the system
+      apt_repository:
+        repo: deb https://baltocdn.com/helm/stable/debian/ all main
+        state: present
+
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
+    - name: Install python3-pip package
+      apt:
+        name: python3-pip
+        state: present
+
+    - name: Install Kubernetes Python client and PyYaml modules
+      pip:
+        name: "{{ packages }}"
+      vars:
+        packages:
+          - kubernetes
+          - PyYaml
+
+    - name: Deploy application using Helm
+      helm:
+        name: "{{ app_name }}"
+        chart_ref: "{{ chart_ref }}"
+        version: "{{ version }}"
+        namespace: "{{ namespace }}"
+      vars:
+        app_name: myapp
+        chart_ref: mychart
+        version: "{{ version }}"
+        namespace: default      

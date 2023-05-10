@@ -1,0 +1,35 @@
+yaml
+---
+- name: Configure ELB
+  hosts: localhost
+  connection: local
+  gather_facts: no
+  vars:
+    elb_name: my-elb
+    instance_ids:
+      - i-0123456789abcdef
+      - i-0123456789abcdeg
+    region: us-east-1
+  tasks:
+    - name: Create ELB
+      ec2_elb_lb:
+        name: "{{ elb_name }}"
+        state: present
+        region: "{{ region }}"
+      register: elb
+
+    - name: Register Instances with ELB
+      ec2_elb:
+        instance_id: "{{ instance_ids }}"
+        elb_name: "{{ elb_name }}"
+        state: present
+        region: "{{ region }}"
+      when: elb is changed
+
+    - name: Deregister Instances from ELB
+      ec2_elb:
+        instance_id: "{{ instance_ids }}"
+        elb_name: "{{ elb_name }}"
+        state: absent
+        region: "{{ region }}"
+      when: elb is changed and elb.status is defined and elb.status.state == 'unknown'

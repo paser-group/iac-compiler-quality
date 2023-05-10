@@ -1,0 +1,98 @@
+
+---
+- name: Create VPC and Subnets
+  hosts: localhost
+  vars:
+    vpc_name: "test-vpc"
+    subnet_names:
+      - "test-subnet-1"
+      - "test-subnet-2"
+    internet_gateway: "igw"
+    route_table: "rtb"
+    vpc_cidr: "10.0.0.0/16"
+    subnet_cidrs:
+      - "10.0.1.0/24"
+      - "10.0.2.0/24"
+  tasks:
+    - name: Create VPC
+      ec2_vpc:
+        state: "present"
+        region: "us-east-1"
+        cidr_block: "{{vpc_cidr}}"
+        resource_tags:
+          Name: "{{vpc_name}}"
+      register: vpc_id
+
+    - name: Create subnets
+      ec2_vpc_subnet:
+        state: "present"
+        region: "us-east-1"
+        vpc_id: "{{vpc_id.vpc.id}}"
+        cidr: "{{item}}"
+        map_public: yes
+        az: "{{loop.index}}"
+        resource_tags:
+          Name: "{{subnet_names[loop.index0]}}"
+        wait: "{{loop.index == 1}}"
+      with_items: "{{subnet_cidrs}}"
+      register: subnet_ids
+
+    - name: Create Internet Gateway
+      ec2_vpc_igw:
+        state: "present"
+        region: "us-east-1"
+        vpc_id: "{{vpc_id.vpc.id}}"
+        resource_tags:
+          Name: "{{internet_gateway}}"
+      register: igw_id
+
+    - name: Create Route Table
+      ec2_vpc_route_table:
+        state: "present"
+        region: "us-east-1"
+        vpc_id: "{{vpc_id.vpc.id}}"
+        resource_tags:
+          Name: "{{route_table}}"
+      register: route_table_id
+
+    - name: Attach Internet Gateway to VPC
+      ec2_vpc_igw:
+        state: "attached"
+        region: "us-east-1"
+        vpc_id: "{{vpc_id.vpc.id}}"
+        internet_gateway_id: "{{igw_id.gateway_id}}"
+        wait: yes
+
+    - name: Associate subnets with Route Table
+      ec2_vpc_route_table:
+        state: "associated"
+        region: "us-east-1"
+        vpc_id: "{{vpc_id.vpc.id}}"
+        subnet_ids:
+          - "{{subnet_ids.results[0].subnet.id}}"
+        route_table_id: "{{route_table_id.route_table.id}}"
+        wait: yes
+
+    - name: Associate subnets with another Route Table
+      ec2_vpc_route_table:
+        state: "associated"
+        region: "us-east-1"
+        vpc_id: "{{vpc_id.vpc.id}}"
+        subnet_ids:
+          - "{{subnet_ids.results[1].subnet.id}}"
+        route_table_id: "{{route_table_id.route_table.id}}"
+        wait: no
+
+    - name: Create the same subnet twice
+      ec2_vpc_subnet:
+        state: "present"
+        region: "us-east-1"
+        vpc_id: "{{vpc_id.vpc.id}}"
+        cidr: "{{subnet_cidrs[0]}}"
+        map_public: no
+        az: "us-east-1a"
+        resource_tags:
+          Name: "test-subnet-1"
+      register: subnet_exist_err
+      ignore_errors: yes
+      changed_when: false

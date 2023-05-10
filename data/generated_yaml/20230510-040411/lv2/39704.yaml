@@ -1,0 +1,61 @@
+
+- name: Test dnf error with unconventional syntax
+  hosts: all
+  tasks:
+
+  - name: Install package
+    dnf:
+      name: "{{ item }}"
+      state: present
+    with_items:
+      - "pkg1"
+      - "{{item}}"
+    when: item != "pkg1"
+
+  - name: Install package with unexpected input
+    dnf:
+      name: "{{ item }}"
+      state: present
+    with_items:
+      - pkg2
+      - [pkg3, pkg, 4]
+      - '{pkg5}'
+      - >
+        {% if true -%}
+        pkg6
+        {% else -%}
+        pkg7
+        {% endif %}
+
+  - name: Uninstall nonexistent package
+    dnf:
+      name: pkg_does_not_exist
+      state: absent
+    ignore_errors: true
+
+  - name: Uninstall package with invalid input
+    dnf:
+      name: "{{ undefined_var }}"
+      state: absent
+    ignore_errors: true
+
+  - name: Update package
+    dnf:
+      name: pkg1
+      state: latest
+
+  - name: Update nonexistent package
+    dnf:
+      name: pkg_does_not_exist
+      state: latest
+    ignore_errors: true
+
+  - name: Update package with unexpected input
+    dnf:
+      name: >
+        {% if true -%}
+        pkg8
+        {% else -%}
+        pkg9
+        {% endif %}
+      state: latest

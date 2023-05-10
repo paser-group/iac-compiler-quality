@@ -1,0 +1,24 @@
+
+- name: Get current AWS API version
+  hosts: localhost
+  gather_facts: False
+  tasks:
+    - name: Retrieve current AWS API version
+      uri:
+        url: "https://ec2.amazonaws.com/?Action=DescribeRegions"
+        return_content: yes
+      register: api_result
+    
+    - name: Extract API version from response
+      set_fact:
+        current_api_version: "{{ api_result.content | regex_findall('(?<=<xmlns:ec2>)[^<]+') }}"
+    
+- name: Compare API versions
+  hosts: localhost
+  gather_facts: False
+  tasks:
+    - name: Check if specified API version matches current version
+      assert:
+        that:
+          - ec2_api_version == current_api_version
+        msg: "EC2 API version specified in the code does not match the current API version. Update the code to use the latest API version."

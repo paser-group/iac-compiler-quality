@@ -1,0 +1,21 @@
+yaml
+- hosts: all
+  become: true
+
+  tasks:
+    - name: Ensure apt cache is up to date
+      apt:
+        update_cache: yes
+
+    - name: Fix apt-mark usage in apt module
+      command: sed -i '/apt_pkg.mark.*auto-installed/s/^/#/' /usr/lib/python3/dist-packages/ansible/modules/packaging/os/apt.py
+      register: fix_apt_mark_output
+      changed_when: fix_apt_mark_output.stdout != ""
+
+    - name: Restart services affected by change
+      service:
+        name: "{{ item }}"
+        state: restarted
+      with_items:
+        - apache2
+        - nginx

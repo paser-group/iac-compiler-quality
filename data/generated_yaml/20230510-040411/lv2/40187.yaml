@@ -1,0 +1,32 @@
+
+- name: Test playbook for GitHub issue #1234
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: Configure EAPI connection in eos_config
+      eos_config:
+        lines:
+          - eapi connection enable
+          - eapi connection persistent
+      register: eos_config_result
+
+    - name: Test task that should fail after a configuration error
+      eos_command:
+        commands:
+          - show ip interface brief | invalid_command
+      ignore_errors: yes
+      register: eos_command_result
+
+    - name: Ensure that task fails after a configuration error
+      fail:
+        msg: "Task did not fail after a configuration error!"
+      when: eos_command_result.rc == 0
+
+    - name: Print eos_config output
+      debug:
+        var: eos_config_result
+
+    - name: Print eos_command output
+      debug:
+        var: eos_command_result

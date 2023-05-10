@@ -1,0 +1,26 @@
+yaml
+- name: Check Minio Bucket
+  hosts: localhost
+  vars:
+    s3_bucket: "{{ YOUR_S3_BUCKET }}"
+    s3_access_key: "{{ YOUR_S3_ACCESS_KEY }}"
+    s3_secret_key: "{{ YOUR_S3_SECRET_KEY }}"
+  gather_facts: false
+  tasks:
+    - name: Install Minio client
+      command: curl https://dl.minio.io/client/mc/release/linux-amd64/mc -o /usr/local/bin/mc && chmod +x /usr/local/bin/mc
+      become: true
+    - name: Verify Minio settings
+      command: >
+        mc ls --json {{ s3_access_key }} {{ s3_secret_key }} {{ s3_bucket }} > /tmp/minio_bucket_check.log
+      become: true
+      ignore_errors: true
+    - name: Print Minio bucket details
+      debug:
+        var: ansible_local.minio_bucket_check.mc.stdout_lines
+      become: true
+    - name: Set Minio bucket versioning
+      command: >
+        mc version --quiet {{ s3_access_key }} {{ s3_secret_key }} {{ s3_bucket }} enable
+      become: true
+      ignore_errors: true

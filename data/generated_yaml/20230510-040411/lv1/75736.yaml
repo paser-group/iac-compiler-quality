@@ -1,0 +1,35 @@
+yaml
+---
+- name: Fix sudo password error issue
+  hosts: server
+  become: yes
+  vars:
+    sudo_password: "{{ vault_sudo_password }}"
+  tasks:
+    - name: Update sudoers file
+      copy:
+        dest: /etc/sudoers.d/custom
+        mode: "0440"
+        content: |
+          %sudo ALL=(ALL) NOPASSWD: ALL
+
+    - name: Test sudo access
+      command: /bin/echo hello
+      become: yes
+      become_method: su
+      become_user: root
+      register: result
+      ignore_errors: yes
+
+    - name: Set sudo password
+      expect:
+        command: /bin/su - root -c /bin/true
+        responses:
+          Password.*: "{{ sudo_password }}"
+      when: result.rc != 0
+
+    - name: Test sudo access again
+      command: /bin/echo hello
+      become: yes
+      become_method: su
+      become_user: root

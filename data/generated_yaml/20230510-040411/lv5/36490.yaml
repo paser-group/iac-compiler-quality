@@ -1,0 +1,22 @@
+
+- hosts: all
+  become: true
+  tasks:
+    - name: "Define iptables rule with tcp_flags"
+      iptables:
+        chain: OUTPUT
+        protocol: tcp
+        tcp_flags: SYN,ACK,SOURCE
+        jump: DROP
+      tags: iptables
+
+    - name: "Check if rule is applied"
+      command: "iptables -S | grep -- '-A OUTPUT -p tcp -m tcp --tcp-flags SYN,ACK,SOURCE -j DROP'"
+      changed_when: false
+      register: output
+
+    - name: "Debug output"
+      debug:
+        var: output.stdout_lines
+      when: output.stdout_lines | count > 0
+      tags: debug

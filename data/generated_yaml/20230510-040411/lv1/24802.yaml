@@ -1,0 +1,56 @@
+
+---
+- name: Create EC2 and RDS instances with PostgreSQL
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    region: us-east-1
+    instance_type: t2.micro
+    ami: ami-0c55b159cbfafe1f0
+    key_pair_name: my-key
+    security_group_name: my-security-group
+    db_subnet_group: my-db-subnet-group
+    db_name: my-db-name
+    db_password: my-db-password
+    db_user: my-db-user
+    db_instance_class: db.t2.micro
+
+  tasks:
+
+    - name: Create EC2 instance
+      ec2:
+        region: "{{ region }}"
+        key_name: "{{ key_pair_name }}"
+        instance_type: "{{ instance_type }}"
+        image: "{{ ami }}"
+        wait: yes
+        count: 1
+        instance_tags:
+          Name: my-instance
+        security_group: "{{ security_group_name }}"
+      register: ec2_instance
+
+    - name: Create RDS instance
+      rds:
+        region: "{{ region }}"
+        command: create
+        engine: postgres
+        instance_name: my-db-instance
+        password: "{{ db_password }}"
+        user: "{{ db_user }}"
+        db_name: "{{ db_name }}"
+        instance_class: "{{ db_instance_class }}"
+        subnets: "{{ db_subnet_group }}"
+      register: rds_instance
+
+    - name: Set EC2 instance and RDS instances as host variables
+      add_host:
+        name: "{{ item.private_ip }}"
+        groups: my_hosts
+        ansible_user: ec2-user
+      with_items: "{{ ec2_instance.instances }}"
+
+    - name: Print instance info
+      debug:
+        msg: "Instance IPs: {{ groups['my_hosts'] }} RDS Endpoint: {{ rds_instance.instance.endpoint }}"

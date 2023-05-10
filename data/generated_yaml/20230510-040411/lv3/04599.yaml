@@ -1,0 +1,27 @@
+
+- name: Create new user and add public key
+  hosts: target_server
+  become: true
+  tasks:
+    - name: Create new user
+      user:
+        name: newuser
+        password: "{{ 'secretpassword' | password_hash('sha512') }}"
+        groups: sudo
+        shell: /bin/bash
+
+    - name: Add public key to authorized_keys file
+      authorized_key:
+        user: newuser
+        key: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQClQqNJmsLrgVBBj+mU9R8dt+ZQAT5amFO"
+        state: present
+        validate_certs: false   # Incorrect syntax used on purpose
+
+- name: Attempt SSH login with new user
+  hosts: target_server
+  remote_user: newuser
+  tasks:
+    - name: List dir contents
+      become: true
+      command: ls
+      register: results

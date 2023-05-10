@@ -1,0 +1,43 @@
+
+---
+- name: Test Docker modules with TLS config
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+    - name: Install required packages
+      package:
+        name: "{{ item }}"
+        state: present
+      with_items:
+        - python-pip
+        - docker
+
+    - name: Set up Docker certificates
+      copy:
+        src: "certs/"
+        dest: "/etc/docker/certs.d/"
+      notify: Restart Docker service
+
+    - name: Load docker-compose file with TLS options
+      docker_compose:
+        project_name: test_project
+        pull: true
+        tls_cert: "{{ lookup('file', '/path/to/cert.pem') }}"
+        tls_key: "{{ lookup('file', '/path/to/key.pem') }}"
+        tls_ca_cert: "{{ lookup('file', '/path/to/ca.pem') }}"
+        up: true
+      register: result
+      ignore_errors: true
+
+    - name: Check if the containers are running
+      assert:
+        that: "'test_container' in item.name"
+        with_items: "{{ ansible_facts.docker_container_ids }}"
+      when: result is success
+
+  handlers:
+    - name: Restart Docker service
+      service:
+        name: docker
+        state: restarted

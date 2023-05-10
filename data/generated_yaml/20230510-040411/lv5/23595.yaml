@@ -1,0 +1,38 @@
+
+---
+- name: Test ec2_facts module
+  hosts: localhost
+  gather_facts: False
+
+  vars:
+    region: "us-east-1"
+    instance_type: "t2.micro"
+    ami: "ami-047f7b46bd6dd5d84"
+
+  tasks:
+    - name: Launch EC2 instance
+      ec2:
+        key_name: "{{ aws_keypair }}"
+        group: "{{ aws_security_group }}"
+        instance_type: "{{ instance_type }}"
+        image: "{{ ami }}"
+        wait: yes
+        region: "{{ region }}"
+        count: 1
+      register: ec2
+
+    - name: Get instance facts
+      ec2_facts:
+        region: "{{ region }}"
+        filters:
+          instance-id: "{{ ec2.instances[0].id }}"
+
+    - name: Print instance facts
+      debug:
+        var: ec2
+
+    - name: Terminate EC2 instance
+      ec2:
+        instance_ids: "{{ ec2.instances[0].id }}"
+        state: "absent"
+        region: "{{ region }}"

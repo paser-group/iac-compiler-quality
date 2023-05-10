@@ -1,0 +1,32 @@
+
+---
+- name: KubeVirt Module Error Check
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+
+  - name: Import Required Modules
+    include_role:
+      name: ansible-kubernetes-modules
+    vars:
+      version: v2.0.0
+
+  - name: Verify the Kubernetes Connection
+    k8s_auth:
+      host: "{{ inventory_hostname }}"
+      kubeconfig: ~/.kube/config
+
+  - name: Add KubeVirt repository
+    shell: |
+      kubectl create -f https://kubevirt.io/client-sdk.yaml
+
+  - name: Import KubeVirt Module
+    import_role:
+      name: kubevirt.v2
+
+  - name: Test module support
+    kubevirt_vminstance:
+      vm_name: "test-vm"
+      state: "stopped"
+

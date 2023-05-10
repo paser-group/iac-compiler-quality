@@ -1,0 +1,77 @@
+
+- name: stress test route53_zone
+  hosts: localhost
+  gather_facts: no
+  
+  vars:
+    zone_id: "Z1234567890123"
+    zone_name: "example.com"
+
+  tasks:
+    - name: create private zone
+      route53_zone:
+        name: "{{ zone_name }}"
+        private_zone: true
+        comment: "Test private zone"
+        zone_id: "{{ zone_id }}"
+      register: zone_created
+
+    - name: ensure zone created successfully
+      assert:
+        that:
+          - zone_created is defined
+          - zone_created.changed == true
+
+    - name: try creating zone again
+      route53_zone:
+        name: "{{ zone_name }}"
+        private_zone: true
+        comment: "Test private zone - second attempt"
+        zone_id: "{{ zone_id }}"
+      register: zone_created_second
+
+    - name: zone should not be created again
+      assert:
+        that:
+          - zone_created.second.changed == false
+
+    - name: update TTL
+      route53_zone:
+        name: "{{ zone_name }}"
+        private_zone: true
+        comment: "Test private zone - update TTL"
+        zone_id: "{{ zone_id }}"
+        ttl: 300
+      register: update_ttl
+
+    - name: ensure TTL updated successfully
+      assert:
+        that:
+          - update_ttl.changed == true
+
+    - name: try updating with invalid TTL
+      route53_zone:
+        name: "{{ zone_name }}"
+        private_zone: true
+        comment: "Test private zone - invalid TTL"
+        zone_id: "{{ zone_id }}"
+        ttl: "five minutes"
+      ignore_errors: yes
+
+    - name: ensure invalid TTL didn't update
+      assert:
+        that:
+          - update_ttl.changed == true
+          - "{{ update_ttl.ttl }}" == 300
+
+    - name: delete zone
+      route53_zone:
+        name: "{{ zone_name }}"
+        private_zone: true
+        zone_id: "{{ zone_id }}"
+      register: zone_deleted
+
+    - name: ensure zone deleted successfully
+      assert:
+        that:
+          - zone_deleted.changed == true

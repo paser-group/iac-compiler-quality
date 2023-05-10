@@ -1,0 +1,20 @@
+
+- name: Add host key to known_hosts file
+  known_hosts:
+    name: "{{ inventory_hostname }}"
+    path: "{{ ansible_env.HOME }}/.ssh/known_hosts"
+    key: "{{ hostvars[inventory_hostname]['ansible_ssh_host_key_public'] }}"
+
+- name: Check if ssh directory and known_hosts file exist
+  stat:
+    path: "{{ ansible_env.HOME }}/.ssh/{{ item }}"
+  with_items:
+    - known_hosts
+    - ssh
+  register: ssh_files_exist
+
+- name: Fail if ssh directory or known_hosts file is missing
+  fail:
+    msg: "{{ item.item }} file is missing"
+  when: item.stat.exists == false
+  with_items: "{{ ssh_files_exist.results }}"

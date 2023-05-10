@@ -1,0 +1,47 @@
+
+---
+
+- name: Failed to resolve remote temporary directory on groups Test playbook
+  hosts: "{{groups['all']}}"
+  become: true
+
+  tasks:
+
+  - name: Create remote temporary directory
+    command: "mkdir /tmp/testdir"
+    args:
+      chdir: "/tmp/"
+
+  - name: Remove remote temporary directory` rm -rf` command
+    command: "rm -rf /tmp/testdir"
+    args:
+      chdir: "/tmp/"
+
+  - name: Generate file in remote temporary directory
+    shell: touch /tmp/testdir/test_file.txt
+    args:
+      chdir: "/tmp/"
+
+  - name: Set permissions of remote temporary directory
+    file:
+      path: "/tmp/testdir"
+      mode: "777"
+
+  - name: Copy files to remote temporary directory
+    copy:
+      src: "/local/path/to/file.txt"
+      dest: "/tmp/testdir/"
+
+  - name: Check if remote temporary directory exists
+    stat:
+      path: "/tmp/testdir"
+    register: stat_output
+
+  - name: Print stat output
+    debug:
+      msg: "{{ stat_output }}"
+
+  - name: Fail the Playbook
+    fail:
+      msg: "Playbook failed because remote temporary directory could not be resolved."
+

@@ -1,0 +1,50 @@
+yaml
+---
+- name: Test nxos_vxlan_vtep_vni for idempotence
+  hosts: switch
+  gather_facts: no
+
+  tasks:
+    - name: Create nxos_vxlan_vtep_vni
+      nxos_vxlan_vtep_vni:
+        vni: 10001
+        vtep: loopback0
+        vxlan_source_interface: nve1
+        state: present
+      register: create_result
+
+    - name: Test idempotence with nxos_vxlan_vtep_vni
+      nxos_vxlan_vtep_vni:
+        vni: 10001
+        vtep: loopback0
+        vxlan_source_interface: nve1
+        state: present
+      ignore_errors: yes
+      register: idempotence_result
+
+    - name: Remove nxos_vxlan_vtep_vni
+      nxos_vxlan_vtep_vni:
+        vni: 10001
+        vtep: loopback0
+        vxlan_source_interface: nve1
+        state: absent
+      register: remove_result
+
+    - name: Test remove idempotence with nxos_vxlan_vtep_vni
+      nxos_vxlan_vtep_vni:
+        vni: 10001
+        vtep: loopback0
+        vxlan_source_interface: nve1
+        state: absent
+      ignore_errors: yes
+      register: remove_idempotence_result
+
+    - name: Fail if create idempotence check failed
+      fail:
+        msg: "nxos_vxlan_vtep_vni create task is not idempotent"
+      when: create_result.changed or create_result.failed
+
+    - name: Fail if remove idempotence check failed
+      fail:
+        msg: "nxos_vxlan_vtep_vni remove task is not idempotent"
+      when: remove_result.changed or remove_result.failed or idempotence_result.failed or remove_idempotence_result.changed

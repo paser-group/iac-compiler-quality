@@ -1,0 +1,23 @@
+
+---
+- name: Install VMware tools
+  hosts: all
+  gather_facts: true
+  
+  tasks:
+  - name: Install VMware tools
+    async: 30
+    poll: 0
+    ignore_errors: true
+    become: true
+    command: "/usr/bin/VMwareTools-10.3.5-10430147.tar.gz"
+    
+  - name: Check stdout output for errors
+    shell: echo "{{ item }}"
+    register: vmware_stdout
+    failed_when: "('Error' in vmware_stdout.stdout) or ('exception' in vmware_stdout.stderr)"
+    with_items: "{{ ansible_job_ids }}"
+
+  - name: show failed vmware install task results
+    debug: var=vmware_stdout
+    when: vmware_stdout.failed == true

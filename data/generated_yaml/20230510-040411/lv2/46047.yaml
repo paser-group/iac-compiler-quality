@@ -1,0 +1,33 @@
+
+- name: openssl_pkcs12 error
+  hosts: localhost
+  gather_facts: no
+  vars:
+    pkcs12_output_file: "{{ playbook_dir }}/cert.pkcs12"
+    pkcs12_password_file: "{{ playbook_dir }}/cert_password.txt"
+    
+  tasks:
+    - name: Generate self-signed x509 certificate
+      openssl_certificate:
+        common_name: "test.local"
+        bits: 2048
+        days: 365
+        keyout: "{{ playbook_dir }}/cert.key"
+        out: "{{ playbook_dir }}/cert.crt"
+        force: yes
+    
+    - name: Generate pkcs12 file with password
+      openssl_pkcs12:
+        input_cert: "{{ playbook_dir }}/cert.crt"
+        input_key: "{{ playbook_dir }}/cert.key"
+        output_file: "{{ pkcs12_output_file }}"
+        password: "{{ lookup('file', pkcs12_password_file) }}"
+    
+    - name: Test name must be a byte string error
+      openssl_pkcs12_info:
+        path: 123
+      register: pkcs12_info
+
+    - name: Print pkcs12_info stdout_lines
+      debug:
+        var: pkcs12_info.stdout_lines

@@ -1,0 +1,36 @@
+
+---
+- name: Test and diagnose aws_secret lookup plugin issue
+  hosts: localhost
+  vars:
+    aws_access_key: "<aws_access_key>"
+    aws_secret_key: "<aws_secret_key>"
+    aws_region: "us-west-2"
+    botocore_path: "/usr/local/lib/python3.6/dist-packages/botocore"
+  tasks:
+  - name: Install required dependencies
+    apt:
+       name: python-pip
+       update_cache: yes
+  - name: Install required python libraries
+    pip:
+      name:
+        - 'ansible'
+        - 'awscli'
+  - name: Verify awscli Installation
+    command: aws --version
+  - name: Install botocore from PPA
+    apt:
+       name: python3-botocore
+       state: present
+  - name: Verify botocore Installation
+    command: botocore-versions
+  - name: Test aws_secret lookup plugin
+    debug:
+      var: lookup('aws_secret', 'path/to/secret', region=aws_region)
+    environment:
+      AWS_ACCESS_KEY_ID: "{{ aws_access_key }}"
+      AWS_SECRET_ACCESS_KEY: "{{ aws_secret_key }}"
+      AWS_DEFAULT_REGION: "{{ aws_region }}"
+      BOTOCORE_CONFIG_DIR: "{{ botocore_path }}"
+

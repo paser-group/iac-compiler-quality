@@ -1,0 +1,35 @@
+
+- name: Test playbook for AnsibleUndefinedVariable error
+  hosts: localhost
+  vars:
+    my_var: "{{ some_var | missing_var }}"
+    my_dict: "{{ some_dict | nonexistent_key }}"
+    my_list: "{{ some_list | nonexistent_index }}"
+
+  tasks:
+  - name: Check missing variable
+    fail:
+      msg: "Error: {{ my_var }} is not defined"
+    when: "'missing_var' not in vars"
+
+  - name: Check nonexistent dictionary key
+    fail:
+      msg: "Error: {{ my_dict }} key does not exist"
+    when: "'nonexistent_key' not in some_dict.keys()"
+
+  - name: Check nonexistent list index
+    fail:
+      msg: "Error: {{ my_list }} index does not exist"
+    when: "length(some_list) <= nonexistent_index"
+
+  - name: Include template with valid variables
+    include_vars:
+      file: valid_vars.yml
+
+  - name: Include template with invalid variables
+    include_vars:
+      file: invalid_vars.yml
+
+  - name: Attempt to access invalid variable
+    debug:
+      var: nonexistent_var

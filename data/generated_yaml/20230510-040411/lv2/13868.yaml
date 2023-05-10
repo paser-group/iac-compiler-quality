@@ -1,0 +1,40 @@
+
+---
+- name: Stress test playbook
+  hosts: localhost
+  tasks:
+    - name: Test with_url lookup
+      debug:
+        msg: "{{ lookup('url', 'http://localhost:8080', invalid_argument) }}"
+      vars:
+        invalid_argument: "{{ 'a'*9999999 }}"
+    
+    - name: Test with_file lookup
+      debug:
+        msg: "{{ lookup('file', 'invalid_file.yml', invalid_argument) }}"
+      vars:
+        invalid_argument: "{{ regex_replace('a'*9999999, '.*', '\\1' ~ '\\n') }}"
+      
+    - name: Test with_secret lookup
+      debug:
+        msg: "{{ lookup('aws', 'secret_key=' ~ secret_key, 'access_key=' ~ access_key, region='us-west-1') }}"
+      vars:
+        secret_key: "{{ 'a'*1000000 }}"
+        access_key: "{{ 'a'*1000000 }}"
+      
+    - name: Test with_inventory_hostnames
+      debug:
+        msg: "{{ groups['invalid_group'][0] }}"
+      vars:
+        invalid_group: "{{ 'a'*1000000 }}"
+      
+    - name: Test with_items and loop_control
+      debug:
+        msg: "{{ item }}"
+      with_items:
+        - "{{ range(1, 1000000)|list }}"
+      loop_control:
+        loop_var: false
+        index_var: invalid_index
+      vars:
+        invalid_index: "{{ 'a'*1000000 }}"

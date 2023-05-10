@@ -1,0 +1,86 @@
+
+- name: Test SSH connection
+  hosts: web1
+  vars:
+    ssh_username: user
+    ssh_password: password
+    ssh_private_key: "{{ lookup('file', 'path/to/key.pem') }}"
+    ssh_port: 22
+    ssh_timeout: 30
+
+  tasks:
+  - name: Check SSH availability
+    wait_for:
+      host: "{{ inventory_hostname }}"
+      port: "{{ ssh_port }}"
+      timeout: "{{ ssh_timeout }}"
+    become: true
+
+  - name: Run command with debug output
+    debug:
+      var: ansible_ssh_debug
+    connection: ssh
+
+  - name: Test SSH with password authentication
+    shell: echo success
+    register: ssh_test_password
+    args:
+      ssh_args: "-o PasswordAuthentication=yes -o PubkeyAuthentication=no"
+    failed_when: ssh_test_password.rc != 0
+
+  - name: Test SSH with ssh-agent authentication
+    shell: echo success
+    register: ssh_test_agent
+    environment:
+      SSH_AUTH_SOCK: "{{ lookup('env', 'SSH_AUTH_SOCK') }}"
+      SSH_AGENT_PID: "{{ lookup('env', 'SSH_AGENT_PID') }}"
+    failed_when: ssh_test_agent.rc != 0
+
+  - name: Test SSH with public key authentication
+    shell: echo success
+    register: ssh_test_key
+    vars:
+      ansible_ssh_private_key_file: "{{ ssh_private_key }}"
+    failed_when: ssh_test_key.rc != 0
+
+  - name: Test SSH login with wrong password
+    shell: echo success
+    register: ssh_test_wrong_password
+    args:
+      ssh_args: "-o PasswordAuthentication=yes -o PubkeyAuthentication=no"
+    failed_when: ssh_test_wrong_password.rc == 0
+
+  - name: Test SSH login with wrong private key
+    shell: echo success
+    register: ssh_test_wrong_key
+    vars:
+      ansible_ssh_private_key_file: "path/to/wrong_key.pem"
+    failed_when: ssh_test_wrong_key.rc == 0
+
+  - name: Test SSH login on wrong port
+    shell: echo success
+    register: ssh_test_wrong_port
+    args:
+      ssh_args: "-p 2222"
+    failed_when: ssh_test_wrong_port.rc == 0
+
+  - name: Test SSH connection timeout
+    shell: echo success
+    register: ssh_test_timeout
+    args:
+      ssh_args: "-o ConnectTimeout=1"
+    failed_when: ssh_test_timeout.rc == 0
+
+  - name: Test SSH with wrong syntax
+    shell: echo success
+    register: ssh_test_wrong_syntax
+    args:
+      ssh_args: "--WRONG-SYNTAX"
+    failed_when: ssh_test_wrong_syntax.rc == 0
+
+  - name: Test SSH with wrong input
+    shell: echo success
+    register: ssh_test_wrong_input
+    args:
+      ssh_args: "$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)"
+    failed_when: ssh_test_wrong_input.rc == 0

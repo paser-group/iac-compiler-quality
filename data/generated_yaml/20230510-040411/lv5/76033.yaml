@@ -1,0 +1,54 @@
+
+- name: Test gcp_compute_instance_group_manager module
+  hosts: localhost
+  gather_facts: no
+  tasks:
+    - name: Create an instance group
+      gcp_compute_instance_group_manager:
+        name: test-instance-group
+        size: 1
+        zone: us-central1-a
+        instance_template: test-template
+        state: present
+      register: instance_group
+
+    - name: Fail if instance group is not created
+      fail:
+        msg: "Instance group not created"
+      when: instance_group is not defined
+
+    - name: Delete instance group
+      gcp_compute_instance_group_manager:
+        name: test-instance-group
+        zone: us-central1-a
+        state: absent
+      register: delete_instance_group
+
+    - name: Fail if instance group is not deleted
+      fail:
+        msg: "Instance group not deleted"
+      when: delete_instance_group is not defined
+
+    - name: Update instance group with a new instance template
+      gcp_compute_instance_group_manager:
+        name: test-instance-group
+        zone: us-central1-a
+        instance_template: new-template
+        state: present
+
+    - name: Fail if instance group is not updated
+      fail:
+        msg: "Instance group not updated"
+      when: instance_template_update is not defined
+
+    - name: Scale instance group up and down
+      gcp_compute_instance_group_manager:
+        name: test-instance-group
+        zone: us-central1-a
+        size: 2
+        state: present
+
+    - name: Fail if instance group is not updated
+      fail:
+        msg: "Instance group not scaled"
+      when: instance_group_scale is not defined

@@ -1,0 +1,33 @@
+
+- name: Test the Na_ontap_info module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Test with NoneType object as input
+      na_ontap_info:
+        hostname: null
+        username: null
+        password: null
+        system_id: "{{10/0}}" # Unhandled exception: division by zero
+      register: result
+
+    - name: Test with unconventional syntax
+      na_ontap_info:
+        hostname: "{{10*'a'}}" # Input is too long
+        username: "{{[]}}" # Invalid type
+        password: "{{''|b64enc}}" # Bad filter syntax
+        system_id: "{{4 | random | string(*%$W!}}" # Syntax error
+      register: result
+
+    - name: Test with unexpected inputs
+      na_ontap_info:
+        hostname: "{{item}}"
+        username: "testuser"
+        password: "testpassword"
+        system_id: "testsystem"
+      register: result
+      with_items: 
+        - "http://127.0.0.1:22" # Invalid hostname
+        - 42 # Invalid hostname
+        - "{{lookup('env', 'DATABASE_URL')}}" # Potentially harmful input

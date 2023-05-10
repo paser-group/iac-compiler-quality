@@ -1,0 +1,36 @@
+
+---
+- name: Refresh inventory from EC2 dynamic inventory
+  hosts: localhost
+  gather_facts: no
+  tasks:
+    - name: Ensure the AWS CLI is installed
+      become: yes
+      apt:
+        name: awscli
+        state: present
+
+    - name: Update AWS credentials
+      become: yes
+      become_user: root
+      copy:
+        content: |
+          [default]
+          aws_access_key_id=YOUR_ACCESS_KEY
+          aws_secret_access_key=YOUR_SECRET_KEY
+        dest: /root/.aws/credentials
+        mode: 0600
+
+    - name: Generate dynamic inventory from EC2
+      become: yes
+      command: >
+        bash -c 
+        "ansible-inventory -i /usr/share/ansible/inventory/aws_ec2.yml --list
+        | python -c 'import sys, yaml, json; print json.dumps(yaml.load(sys.stdin.read()))'"
+      register: ec2_dynamic_inventory
+
+    - name: Debug EC2 dynamic inventory output
+      debug: var=ec2_dynamic_inventory
+
+    - name: Refresh inventory from EC2 dynamic inventory
+      meta: refresh_inventory

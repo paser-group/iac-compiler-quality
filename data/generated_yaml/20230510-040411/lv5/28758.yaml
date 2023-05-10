@@ -1,0 +1,26 @@
+
+- name: Create shortcut
+  win_shortcut:
+    src: "{{ shortcut_source }}"
+    dest: "{{ shortcut_dest }}"
+    description: "{{ shortcut_description }}"
+    arguments: "{{ shortcut_arguments }}"
+    icon_path: "{{ shortcut_icon }}"
+    icon_index: "{{ shortcut_icon_index }}"
+    runas_username: "{{ shortcut_runas_username }}"
+    runas_password: "{{ shortcut_runas_password }}"
+  register: shortcut_result
+
+- name: Check shortcut idempotency
+  stat:
+    path: "{{ shortcut_dest }}"
+  register: shortcut_dest_stat
+
+- name: Check shortcut target idempotency
+  win_shell: |
+    $target = (New-Object -COM WScript.Shell).CreateShortcut('{{ shortcut_dest }}').TargetPath
+    if ($target -ne '{{ shortcut_target }}') {
+      Write-Error 'Shortcut target does not match expected value'
+    }
+  register: shortcut_target_stat
+  ignore_errors: yes

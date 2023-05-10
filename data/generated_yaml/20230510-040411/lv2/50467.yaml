@@ -1,0 +1,64 @@
+
+- hosts: docker_swarm_service_host
+  become: true
+  tasks:
+    # Install Docker Swarm
+    - name: Install Docker Swarm
+      apt:
+        name: docker-ce
+        state: present
+
+    # Initialize Docker Swarm
+    - name: Initialize Docker Swarm
+      shell: docker swarm init
+
+    # Create a service with an invalid default value
+    - name: Create service with invalid default
+      docker_swarm_service:
+        name: sample_service
+        image: nginx:latest
+        state: present
+        networks:
+          - overlay
+        replicas: 3
+        endpoint_mode: dnsrr
+        endpoint_create: yes
+        constraints:
+          - node.role == worker
+        labels:
+          - "foo=bar"
+        bad_default: null_boom
+
+    # Create a service with unconventional syntax
+    - name: Create service with unconventional syntax
+      docker_swarm_service:
+        name: sample_service_2
+        image: nginx:latest
+        state: started
+        networks:
+          - overlay
+        replicas: '{{ "3"|int }}'
+        endpoint_mode: '{{ "vip"|default("dnsrr") }}'
+        endpoint_create: '{{ true|truthy }}'
+        constraints:
+          - '{{ "node.role == worker"|replace("worker", "manager") }}'
+        labels:
+          - '{{ ["foo:bar"]|join(",") }}'
+        bad_default: '{{ None }}'
+
+    # Create a service with unexpected inputs
+    - name: Create service with unexpected inputs
+      docker_swarm_service:
+        name: '{{ ["sample_service_3"]|random }}'
+        image: '{{ ["nginx:latest", "httpd:latest"]|random }}'
+        state: '{{ ["present", "absent", "restarted"]|random }}'
+        networks:
+          - '{{ ["overlay", "bridge", "namerd"]|random }}'
+        replicas: '{{ ["3", "4", "5"]|random|int }}'
+        endpoint_mode: '{{ ["vip", "dnsrr", "dnsname"]|random }}'
+        endpoint_create: '{{ [true, false]|random|bool }}'
+        constraints:
+          - '{% if ["worker", "manager"]|random == "worker" %}node.role == worker{% else %}node.role == manager{% endif %}'
+        labels:
+          - '{{ ["foo:bar", "baz:qux"]|random }}'
+        bad_default: '{{ [null, None, "", "undefined"]|random }}'

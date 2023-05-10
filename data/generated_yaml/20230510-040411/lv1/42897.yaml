@@ -1,0 +1,36 @@
+
+---
+- name: Docker modules error with Ansible 2.6 and later with TLS config
+  hosts: all
+  become: true
+  
+  vars:
+    docker_tls: true
+
+  tasks:
+    - name: Install docker-py python module
+      pip:
+        name: docker-py
+        state: present
+      become: true
+
+    - name: Copy docker TLS configuration
+      template:
+        src: tls_config.j2
+        dest: /etc/docker/daemon.json
+      when: docker_tls
+
+    - name: Restart Docker if TLS config changed
+      systemd:
+        name: docker
+        state: restarted
+      when: docker_tls
+
+    - name: Check Docker version
+      docker_version_facts:
+      register: docker_version
+
+    - name: Stop and remove all Docker containers
+      docker_container:
+        state: absent
+      when: docker_version.major >= 20

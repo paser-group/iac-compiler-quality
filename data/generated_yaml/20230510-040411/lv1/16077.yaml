@@ -1,0 +1,24 @@
+yaml
+- name: Async task fails on 2.1 with WinRMTransportError even when ignore_errors is set to true
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Run the async task
+      async: 3600
+      poll: 0
+      ignore_errors: true
+      win_command: '{{ item }}'
+      register: async_result
+      with_items:
+        - 'command1'
+        - 'command2'
+        - 'command3'
+    - name: Wait for async task to finish
+      async_status:
+        jid: '{{ async_result.ansible_job_id }}'
+      register: job_result
+      until: job_result.finished
+      retries: 30
+      delay: 10
+    - debug:
+        var: async_result

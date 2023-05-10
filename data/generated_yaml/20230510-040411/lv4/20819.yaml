@@ -1,0 +1,54 @@
+
+- name: Test VMware Module for thumbprint attribute bug
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Connect to VMware vCenter or ESXi host
+      vmware_host:
+        hostname: <vcenter/esxi server IP or FQDN>
+        username: <vmware username>
+        password: <vmware password>
+        validate_certs: false
+      register: vmware_hosts
+
+    - name: Create a new virtual machine
+      vmware_guest:
+        hostname: "{{ vmware_hosts.hostname }}"
+        username: "{{ vmware_hosts.username }}"
+        password: "{{ vmware_hosts.password }}"
+        name: test_vm
+        state: poweredoff
+        hardware:
+          memory_mb: 1024
+          num_cpus: 1
+          scsi: '{{ scsi }}'
+        networks:
+          - network_name: <network name>
+            device_type: vmxnet3
+        disks:
+          - size_gb: 20
+            type: thick
+            datastore: <datastore name>
+
+    - name: Assign thumbprint attribute to the virtual machine
+      vmware_guest:
+        hostname: "{{ vmware_hosts.hostname }}"
+        username: "{{ vmware_hosts.username }}"
+        password: "{{ vmware_hosts.password }}"
+        name: test_vm
+        guest_id: "{{ os_type }}"
+        thumbprint: "test_thumbprint"
+      register: thumbprint_result
+      ignore_errors: true
+
+    - name: Power on the virtual machine
+      vmware_guest_powerstate:
+        hostname: "{{ vmware_hosts.hostname }}"
+        username: "{{ vmware_hosts.username }}"
+        password: "{{ vmware_hosts.password }}"
+        name: test_vm
+        state: poweredon
+
+    - name: Check if there was a DuplicateName error
+      debug:
+        msg: "{{ thumbprint_result }}"

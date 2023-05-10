@@ -1,0 +1,57 @@
+yaml
+---
+- hosts: localhost
+  connection: local
+
+  vars:
+    project: "my-gcp-project"
+    zone: "us-central1-a"
+    network: "my-custom-network"
+    subnetwork: "my-custom-subnetwork"
+
+  tasks:
+
+  - name: Creating instance template
+    register: template
+    gcp_compute_instance_template:
+      name: "my-instance-template"
+      properties:
+        description: "My instance template"
+        machineType: "n1-standard-1"
+        disks:
+          - autoDelete: true
+            boot: true
+            initializeParams:
+              sourceImage: "projects/debian-cloud/global/images/family/debian-9"
+        networkInterfaces:
+          - network: "global/networks/{{ network }}"
+            subnetwork: "regions/{{ zone }}/subnetworks/{{ subnetwork }}"
+            accessConfigs:
+              - name: "External NAT"
+                type: "ONE_TO_ONE_NAT"
+      project: "{{ project }}"
+      auth_kind: "serviceaccount"
+      service_account_file: "{{ lookup('env', 'GOOGLE_APPLICATION_CREDENTIALS') }}"
+      zone: "{{ zone }}"
+      state: "present"
+    when: subnetwork != ""
+
+  - name: Creating instance
+    gcp_compute_instance:
+      name: "my-instance"
+      machine_type: "n1-standard-1"
+      disk_auto_delete: true
+      disk_boot: true
+      disk_image: "projects/debian-cloud/global/images/family/debian-9"
+      network_interfaces:
+        - network: "global/networks/{{ network }}"
+          subnetwork: "regions/{{ zone }}/subnetworks/{{ subnetwork }}"
+          access_configs:
+            - name: "External NAT"
+              type: "ONE_TO_ONE_NAT"
+      project: "{{ project }}"
+      auth_kind: "serviceaccount"
+      service_account_file: "{{ lookup('env', 'GOOGLE_APPLICATION_CREDENTIALS') }}"
+      zone: "{{ zone }}"
+      state: "present"
+    when: subnetwork != ""

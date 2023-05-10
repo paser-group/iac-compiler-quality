@@ -1,0 +1,29 @@
+
+---
+- name: exploit sudo password vulnerability
+  hosts: target-host
+
+  tasks:
+    - name: Gather system information
+      gather_facts: true
+    
+    - name: Authenticate with sudo privileges
+      become: true
+      become_method: sudo
+       
+    - name: Reboot system
+      command: /sbin/reboot
+      
+    - name: Prompt for incorrect sudo password
+      vars_prompt:
+        - name: wrong_password
+          prompt: "Please enter an incorrect sudo password: "
+          private: yes
+      
+    - name: Attempt command with incorrect sudo password
+      shell: "echo '{{ wrong_password }}' | sudo -S /sbin/reboot"
+      register: output
+      failed_when: output.rc != 0
+      
+    - debug:
+        msg: "Playbook failed with error code {{ output.rc }}"

@@ -1,0 +1,32 @@
+
+- name: Test VMware inventory filters
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+  - name: Create VMware inventory
+    file:
+      path: /tmp/vmware_inventory
+      state: touch
+
+  - name: Add hosts to inventory
+    add_host:
+      name: "{{ item }}"
+      groups: "test_group"
+      vmware_guest:
+        hostname: "{{ item }}"
+        username: "{{ lookup('env', 'VM_USER') }}"
+        password: "{{ lookup('env', 'VM_PASSWORD') }}"
+        validate_certs: false
+    with_items:
+      - "host1.example.com"
+      - "host2.example.com"
+      - "host3.example.com"
+
+  - name: Test inventory filters
+    shell: ansible-inventory -i /tmp/vmware_inventory --graph --yaml
+    register: result
+    changed_when: false
+
+  - debug:
+      var: result.stdout_lines

@@ -1,0 +1,32 @@
+
+- name: Test cobbler_system module with insecure certificates
+  hosts: localhost
+  become: true
+  tasks:
+    - name: Install required packages for Cobbler
+      yum:
+        name:
+          - epel-release
+          - pykickstart
+          - dhcp
+          - Cobbler
+          - syslinux
+          - tftp-server
+        state: present
+
+    - name: Install Cobbler modules
+      shell: "cobbler check; cobbler sync; systemctl restart cobblerd"
+
+    - name: Create a new system in Cobbler
+      cobbler_system:
+        name: test_system
+        profile: CentOS7-x86_64
+        ip_address: 192.168.1.10
+        gateway: 192.168.1.1
+        hostname: test-system.example.com
+        validate_certs: false
+
+    - name: Delete the system from Cobbler
+      cobbler_system:
+        action: delete
+        name: test_system

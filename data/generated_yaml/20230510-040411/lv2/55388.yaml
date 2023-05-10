@@ -1,0 +1,81 @@
+
+- name: Surface resource discovery errors properly
+  hosts: all
+  vars:
+    k8s_api_version: v1
+    namespace: "{{ lookup('env', 'NAMESPACE') }}"
+    deployment_name: "{{ lookup('env', 'DEPLOYMENT_NAME') }}"
+    resource_name: "{{ lookup('env', 'RESOURCE_NAME') }}"
+    invalid_api_version: xyz
+    invalid_namespace: &$#@123
+    invalid_deployment_name: 12345
+    invalid_resource_name: ""
+  tasks:
+    - name: Surface invalid api version error
+      k8s_facts:
+        kind: Pod
+        api_version: "{{ invalid_api_version }}"
+        namespace: "{{ namespace }}"
+      ignore_errors: yes
+
+    - name: Surface invalid namespace error
+      k8s_facts:
+        kind: Pod
+        api_version: "{{ k8s_api_version }}"
+        namespace: "{{ invalid_namespace }}"
+      ignore_errors: yes
+
+    - name: Surface invalid deployment name error
+      k8s_facts:
+        kind: Deployment
+        api_version: "{{ k8s_api_version }}"
+        namespace: "{{ namespace }}"
+        field_selector: metadata.name={{ invalid_deployment_name }}
+      ignore_errors: yes
+
+    - name: Surface invalid resource name error
+      k8s_facts:
+        kind: {{ resource_name }}
+        api_version: "{{ k8s_api_version }}"
+        namespace: "{{ namespace }}"
+      ignore_errors: yes
+
+    - name: List all pods in Kubernetes cluster
+      k8s_facts:
+        kind: Pod
+        api_version: "{{ k8s_api_version }}"
+        namespace: "{{ namespace }}"
+
+    - name: List all pods in an invalid namespace
+      k8s_facts:
+        kind: Pod
+        api_version: "{{ k8s_api_version }}"
+        namespace: "{{ invalid_namespace }}"
+      ignore_errors: yes
+    
+    - name: Get details of a specific deployment
+      k8s_facts:
+        kind: Deployment
+        api_version: "{{ k8s_api_version }}"
+        namespace: "{{ namespace }}"
+        field_selector: metadata.name={{ deployment_name }} 
+      
+    - name: Get details of an invalid deployment
+      k8s_facts:
+        kind: Deployment
+        api_version: "{{ k8s_api_version }}"
+        namespace: "{{ namespace }}"
+        field_selector: metadata.name={{ invalid_deployment_name }}
+      ignore_errors: yes
+
+    - name: Create empty pod
+      k8s:
+        kind: Pod
+        api_version: "{{ k8s_api_version }}"
+        metadata:
+          name: empty-pod
+        spec:
+          containers:
+            - name: empty-container
+              image: alpine:latest
+              command: ["sleep", "infinity"]

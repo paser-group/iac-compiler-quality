@@ -1,0 +1,97 @@
+
+---
+- name: Fuzzing playbook for route53 module with Python3
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  
+  vars:
+    zone_id: "ZONEIDEXAMPLE"
+  
+  tasks:
+    - name: Connect to Route53 with invalid credentials
+      route53:
+        command: invalid
+        aws_access_key: "first_invalid_key"
+        aws_secret_key: "first_invalid_secret"
+      ignore_errors: yes
+
+    - name: Connect to Route53 with empty credentials
+      route53:
+        command: get_zone_id
+        aws_access_key: ""
+        aws_secret_key: ""
+      ignore_errors: yes
+
+    - name: Connect to Route53 with invalid zone ID format
+      route53:
+        command: get_zone
+        zone: "{{ zone_id }}"
+      ignore_errors: yes
+
+    - name: Connect to Route53 with non-existent zone ID
+      route53:
+        command: get_zone
+        zone_id: "NONEXISTENTZONEIDEXAMPLE"
+      ignore_errors: yes
+      
+    - name: Create record set with invalid TTL value
+      route53:
+        command: change
+        zone: "{{ zone_id }}"
+        record: "invalid.example.com"
+        type: A
+        ttl: "invalid"
+        values: ["10.0.0.1"]
+      ignore_errors: yes
+
+    - name: Create record set with invalid IP Address
+      route53:
+        command: change
+        zone: "{{ zone_id }}"
+        record: "example.com"
+        type: A
+        ttl: 300
+        values: ["invalid"]
+      ignore_errors: yes
+
+    - name: Create record set with invalid record type
+      route53:
+        command: change
+        zone: "{{ zone_id }}"
+        record: "example.com"
+        type: invalid
+        ttl: 300
+        values: ["10.0.0.1"]
+      ignore_errors: yes
+
+    - name: Create record set with multiple records
+      route53:
+        command: change
+        zone: "{{ zone_id }}"
+        record: "example.com"
+        type: A
+        ttl: 300
+        values:
+          - "10.0.0.1"
+          - "10.0.0.2"
+      ignore_errors: yes
+      
+    - name: Create record set with both A and CNAME records
+      route53:
+        command: change
+        zone: "{{ zone_id }}"
+        record: "example.com"
+        type: A
+        ttl: 300
+        values: ["10.0.0.1"]
+        cname_record: "sub.example.com"
+      ignore_errors: yes
+      
+    - name: Delete non-existent record set
+      route53:
+        command: delete
+        zone: "{{ zone_id }}"
+        record: "nonexistent.example.com"
+        type: A
+      ignore_errors: yes

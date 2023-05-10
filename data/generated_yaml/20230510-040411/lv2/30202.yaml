@@ -1,0 +1,37 @@
+yaml
+- name: Create EC2 Instances with Multiple 'default' Groups
+  hosts: localhost
+  gather_facts: no
+  vars:
+    ec2_groups:
+      - name: app
+        description: application server group
+      - name: web
+        description: web server group
+      - name: default
+        description: default security group
+      - name: default
+        description: another default security group
+
+  tasks:
+    - name: Create Security Groups
+      ec2_group:
+        name: "{{ item.name }}"
+        description: "{{ item.description }}"
+        vpc_id: vpc-1234567
+      loop: "{{ ec2_groups }}"
+
+    - name: Launch EC2 Instances
+      ec2:
+        image: ami-1234567
+        key_name: mykey
+        group: "{{ default }}, {{ app }}, {{ web }}"
+        instance_type: t2.micro
+        region: us-east-1
+        count: 2
+      register: ec2
+
+    - name: Print IP Addresses
+      debug:
+        var: item.public_ip_address
+      loop: "{{ ec2.instances }}"

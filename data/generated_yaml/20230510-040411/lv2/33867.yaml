@@ -1,0 +1,59 @@
+
+- name: Test oVirt Host Networks Playbook
+  hosts: localhost
+  connection: local
+  gather_facts: no
+    
+  vars:
+    # Generate a random IP address for testing
+    test_ip: '{{ "{{ " }}lookup("template", "{{(randint(0,255))}}.{{(randint(0,255))}}.{{(randint(0,255))}}.{{(randint(0,255))}}" ){{ "}}" }}'
+    # List of test netmasks
+    test_netmasks: ['255.255.255.255', '255.255.255.252', '255.255.240.0', '255.255.254.255', '255.255.128.0', 'not-a-netmask']
+    # List of test invalid netmasks
+    test_invalid_netmasks: ['192.168.0.0', '10.0.0.0', '172.16.0.0', '172.31.255.255']
+
+  tasks:
+    - name: Test Valid Netmasks
+      debug:
+        msg: "Valid Netmask: {{ item }} -> {{ item | netmask_to_prefix }}"
+      with_items:
+        - "{{ test_netmasks }}"
+
+    - name: Test Invalid Netmasks
+      block:
+        - name: Convert Netmask to Prefix
+          netmask_to_prefix:
+            netmask: "{{ item }}"
+          register: result
+          ignore_errors: true
+          
+        - name: Debug Result
+          debug:
+            msg: "Netmask: {{ item }} -> Prefix: {{ result.prefix }}"
+          when: result is failed
+      with_items:
+        - "{{ test_invalid_netmasks }}"
+
+    - name: Test Invalid Syntax
+      shell: "{{ '0' / 0 }}"
+      ignore_errors: true
+      
+    - name: Test Unexpected Input: Empty Value
+      debug:
+        msg: Empty Value -> {{ '' | netmask_to_prefix }}
+
+    - name: Test Unexpected Input: Non-IP Address
+      debug:
+        msg: Non-IP Address -> {{ 'not-an-ip-address' | netmask_to_prefix }}
+
+    - name: Test Unexpected Input: Invalid IP Address
+      debug:
+        msg: Invalid IP Address -> {{ '300.400.500.600' | netmask_to_prefix }}
+
+    - name: Test Unexpected Input: null Value
+      debug:
+        msg: Null Value -> {{ null | netmask_to_prefix }}
+
+    - name: Test Unexpected Input: Special Characters
+      debug:
+        msg: Special Characters -> {{ '!@#$%^&*' | netmask_to_prefix }}

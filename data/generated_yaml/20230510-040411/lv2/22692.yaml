@@ -1,0 +1,40 @@
+
+- name: Create EC2 spot requests without waiting for instances to start
+  hosts: localhost
+  gather_facts: no
+  vars:
+    instance_type: ''
+    image: ''
+    count: 0
+    wait: false
+  
+  tasks:
+    - name: Set instance type
+      set_fact:
+        instance_type: '{{ instances|random }}'
+  
+    - name: Set image
+      set_fact:
+        image: '{{ images|random }}'
+  
+    - name: Set count
+      set_fact:
+        count: '{{ [1, 2, 5, 10, 100]|random }}'
+  
+    - name: Set wait
+      set_fact:
+        wait: '{{ [true, false]|random }}'
+  
+    - name: Create EC2 spot request
+      ec2_spot_instance_request:
+        spot_price: '{{ spot_price }}'
+        launch_specifications:
+          - image_id: '{{ image }}'
+            instance_type: '{{ instance_type }}'
+            count: '{{ count }}'
+        wait: '{{ wait }}'
+      register: ec2
+  
+    - name: Debug result
+      debug:
+        var: ec2

@@ -1,0 +1,34 @@
+
+---
+- name: VMware Export OVF Failure Playbook
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    vm_name: "{{ 'my-vm-'|random }}" # Unconventional syntax for creating an arbitrary name
+    export_file: "{{ '~/exports/' + vm_name + '.ovf' }}" # Variable concatenation and unconventional variable names
+
+  tasks:
+    - name: Create VM
+      vmware_guest:
+        name: "{{ vm_name }}"
+        disk:
+          - size_gb: 10
+            type: thin
+        hardware:
+          memory_mb: 1024
+          num_cpus: 1
+        validate_certs: no
+      register: vm_create
+
+    - name: Export OVF
+      vmware_export_ovf:
+        vm_ids:
+          - "{{ vm_create.instance.uuid }}"
+        file: "{{ export_file.encode('utf-16') }}" # Unconventional input to generate an error
+      register: ovf_export
+
+    - name: Verify OVF Export
+      assert:
+        that:
+          - "'A bytes-like object is required' in ovf_export.msg" # Unexpected input to verify error message

@@ -1,0 +1,18 @@
+
+- name: Check if the specified systemd unit is active
+  hosts: all
+  vars:
+    unit_name: myunit.service 
+  tasks:
+    - name: Get expected state of the unit
+      shell: "systemd-analyze plot > /tmp/plot.txt && awk '/myunit/ {print $5}' /tmp/plot.txt"
+      register: expected_state
+    - name: Get the actual state of the unit
+      systemd:
+        name: "{{ unit_name }}"
+        state: get
+      register: actual_state
+    - name: Compare actual and expected state 
+      debug:
+        msg: "State of unit {{ unit_name }} is {{ actual_state.state }}. Expected state is {{ expected_state.stdout }}"
+      when: actual_state.state != expected_state.stdout

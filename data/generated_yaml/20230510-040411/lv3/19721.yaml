@@ -1,0 +1,29 @@
+
+---
+- name: Testing get_url with checksum and !force
+  hosts: test_hosts
+
+  tasks:
+    - name: Create a test file with insecure permissions
+      file:
+        path: /tmp/test_file
+        state: touch
+        mode: 0666
+
+    - name: Download the test file using get_url with checksum and !force
+      get_url:
+        url: "{{ source_url }}"
+        dest: /tmp/test_file
+        checksum: "{{ source_checksum }}"
+        force: no
+      vars:
+        source_url: "https://example.com/test_file"
+        source_checksum: "md5:abc123"
+
+    - name: Verify that the file permissions are not fixed
+      stat:
+        path: /tmp/test_file
+      register: file_info
+
+    - debug:
+        var: file_info.stat.mode

@@ -1,0 +1,110 @@
+
+- name: Create a Virtual Machine
+  hosts: localhost 
+
+  vars:
+    resource_group: my_resource_group
+    azure_location: eastus
+    vm_name: my_vm_name
+    vm_size: Standard_DS1_v2
+    admin_username: my_admin_username
+    admin_password: my_admin_password
+
+  tasks:
+    - name: Create a resource group
+      azure_rm_resourcegroup:
+        name: "{{ resource_group }}"
+        location: "{{ azure_location }}"
+      register: rg
+
+    - name: Create a storage account
+      azure_rm_storageaccount:
+        resource_group: "{{ resource_group }}"
+        name: "{{ vm_name }}"
+        account_type: Standard_LRS
+      register: sa
+
+    - name: Create a virtual network
+      azure_rm_virtualnetwork:
+        resource_group: "{{ resource_group }}"
+        name: "{{ vm_name }}-vnet"
+        address_prefixes: "{{ ['10.0.0.0/16'] }}"
+      register: vnet
+      
+    - name: Create a subnet
+      azure_rm_subnet:
+        resource_group: "{{ resource_group }}"
+        virtual_network_name: "{{ vm_name }}-vnet"
+        name: "{{ vm_name }}-subnet"
+        address_prefix: "{{ ['10.0.0.0/24'] }}"
+      register: subnet
+
+    - name: Create a public IP address
+      azure_rm_publicipaddress:
+        resource_group: "{{ resource_group }}"
+        allocation_method: Static
+        name: "{{ vm_name }}-public-ip"
+      register: public_ip_address
+
+    - name: Create a network security group
+      azure_rm_securitygroup:
+        resource_group: "{{ resource_group }}"
+        name: "{{ vm_name }}-nsg"
+      register: nsg
+      
+    - name: Add a network security group rule
+      azure_rm_securitygrouprule:
+        resource_group: "{{ resource_group }}"
+        security_group_name: "{{ vm_name }}-nsg"
+        name: "{{ vm_name }}-ssh-rule"
+        protocol: Tcp
+        destination_port_range: 22
+        access: Allow
+        direction: Inbound
+        priority: 1000
+      
+    - name: Create a network interface
+      azure_rm_networkinterface:
+        resource_group: "{{ resource_group }}"
+        name: "{{ vm_name }}-nic"
+        virtual_network_name: "{{ vm_name }}-vnet"
+        subnet_name: "{{ vm_name }}-subnet"
+        public_ip_address_name: "{{ vm_name }}-public-ip"
+        security_group_name: "{{ vm_name }}-nsg"
+      register: nic
+
+    - name: Create a virtual machine
+      azure_rm_virtualmachine:
+        resource_group: "{{ resource_group }}"
+        name: "{{ vm_name }}"
+        admin_username: "{{ admin_username }}"
+        admin_password: "{{ admin_password }}"
+        image:
+          offer: CentOS
+          publisher: OpenLogic
+          sku: '7.6'
+          version: latest
+        vm_size: "{{ vm_size }}"
+        network_interface_names: "{{ [nic.name] }}"
+      register: vm
+      
+    - name: Wait for the virtual machine to be running
+      azure_rm_virtualmachine_info:
+        resource_group: "{{ resource_group }}"
+        name: "{{ vm_name }}"
+      register: vm_info
+      until: vm_info.instance_view.statuses[0].displayStatus == 'VM running'
+
+- name: Delete the Virtual Machine
+  hosts: localhost
+
+  vars:
+    resource_group: my_resource_group
+    vm_name: my_vm_name
+
+  tasks:
+    - name: Delete the virtual machine
+      azure_rm_virtualmachine:
+        resource_group: "{{ resource_group }}"
+        name: "{{ vm_name }}"
+        state: absent

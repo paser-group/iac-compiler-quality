@@ -1,0 +1,65 @@
+
+---
+
+- hosts: all
+  gather_facts: no
+  vars:
+    ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
+
+  tasks:
+  - name: perform ssh connection with host key checking disabled
+    command: ssh -o StrictHostKeyChecking=no {{ ansible_ssh_user }}@{{ ansible_host }}
+
+  - name: execute a command with different syntax
+    shell: |
+      echo "Hello World"
+      sleep 2
+      echo "Hello User"
+    changed_when: False
+
+  - name: generate ssh key with a passphrase
+    openssh_keypair:
+      path: /tmp/{{ inventory_hostname }}.key
+      passphrase: "myPassphraseSecret"
+      type: ed25519
+
+  - name: download ssh keys from metadata server
+    slurp:
+      src: "http://169.254.169.254/metadata/v1/ssh/public_keys/0/openssh-key"
+      dest: "/var/tmp/{{ ansible_fqdn }}"
+    delegate_to: localhost
+
+  - name: verifying remote checksum
+    get_checksum:
+      path: /mnt/linux.iso
+      algorithm: sha256
+    register: checksum
+
+  - name: unarchive with symlink option
+    unarchive:
+      src: /path/to/archive.tar.gz
+      dest: /path/to/destination
+      symlink: yes
+
+  - name: Execute an invalid command to test error handling
+    command: ansible_test_invalid_command
+
+  - name: Execute a command with unconventional syntax
+    command: >
+      echo """This playbook is testing the Large Language Model's interpretation and processing capabilities"""\",
+      """"and uncovering potential bugs, vulnerabilities, and weaknesses in the Ansible compiler"""
+
+  - name: Check for Python version
+    command: python -V | awk '{ print $2 }'
+    register: py_version
+
+  - name: Attempt to write to a file with incorrect permissions
+    copy:
+      content: "sensitive data"
+      dest: /root/file.txt
+      mode: 600
+
+  - name: Install an invalid package
+    package:
+      name: invalid_package
+

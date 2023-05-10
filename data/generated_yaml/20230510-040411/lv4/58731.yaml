@@ -1,0 +1,55 @@
+
+- name: Test archive module exclude_path bug
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+    - name: Create archive with only one file included
+      archive:
+        path: /path/to/main/files
+        dest: /path/to/archive/archive.tar
+        exclude_path:
+          - /path/to/main/files/subfolder
+      run_once: true
+      ignore_errors: yes
+
+    - name: Check that only one file is included
+      assert:
+        that:
+          - ansible_facts['archive_files'] | length == 1
+          - "'/path/to/main/files/file1.txt' in ansible_facts['archive_files']"
+
+    - name: Create archive with only one file excluded
+      archive:
+        path: /path/to/main/files
+        dest: /path/to/archive/archive.tar
+        exclude_path:
+          - /path/to/main/files/file1.txt
+      run_once: true
+      ignore_errors: yes
+
+    - name: Check that only one file is excluded
+      assert:
+        that:
+          - ansible_facts['archive_files'] | length == 2
+          - "'/path/to/main/files/file1.txt' not in ansible_facts['archive_files']"
+
+    - name: Create archive with multiple excludes and include patterns
+      archive:
+        path: /path/to/main/files
+        dest: /path/to/archive/archive.tar
+        exclude_path:
+          - /path/to/main/files/subfolder
+          - '*.txt'
+          - '*.log'
+        include:
+          - '*.ini'
+      run_once: true
+      ignore_errors: yes
+
+    - name: Check that archives are created with expected contents
+      assert:
+        that:
+          - "'/path/to/main/files/file1.txt' not in ansible_facts['archive_files']"
+          - "'/path/to/main/files/subfolder/file2.ini' in ansible_facts['archive_files']"
+          - "'/path/to/main/files/subfolder/file3.cfg' in ansible_facts['archive_files']"

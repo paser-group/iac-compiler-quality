@@ -1,0 +1,46 @@
+
+- name: ec2.py/ecryptfs home directory generates too long filenames error test
+  hosts: all
+  gather_facts: no
+  
+  tasks:
+    - name: Check if ecryptfs-utils package is installed
+      package:
+        name: ecryptfs-utils
+        state: present
+      
+    - name: Create encrypted directory with long filename
+      file:
+        path: "{{ item }}"
+        state: directory 
+        mode: 0777
+      with_items:
+        - "/tmp/test_long_filename_{{ 'a'*255 }}"
+        - "/tmp/test_long_filename_{{ 'a'*254 }}"
+        - "/tmp/test_long_filename_{{ 'a'*253 }}"
+        - "/tmp/test_long_filename_{{ 'a'*252 }}"
+        - "/tmp/test_long_filename_{{ 'a'*251 }}"
+        - "/tmp/test_long_filename_{{ 'a'*250 }}"
+        - "/tmp/test_long_filename_{{ 'a'*249 }}"
+        - "/tmp/test_long_filename_{{ 'a'*248 }}"
+        - "/tmp/test_long_filename_{{ 'a'*247 }}"
+        - "/tmp/test_long_filename_{{ 'a'*246 }}"
+
+    - name: Verify long filenames were successfully created
+      stat:
+        path: "{{ item }}"
+      with_items:
+        - "/tmp/test_long_filename_{{ 'a'*255 }}"
+        - "/tmp/test_long_filename_{{ 'a'*254 }}"
+        - "/tmp/test_long_filename_{{ 'a'*253 }}"
+        - "/tmp/test_long_filename_{{ 'a'*252 }}"
+        - "/tmp/test_long_filename_{{ 'a'*251 }}"
+        - "/tmp/test_long_filename_{{ 'a'*250 }}"
+        - "/tmp/test_long_filename_{{ 'a'*249 }}"
+        - "/tmp/test_long_filename_{{ 'a'*248 }}"
+        - "/tmp/test_long_filename_{{ 'a'*247 }}"
+        - "/tmp/test_long_filename_{{ 'a'*246 }}"
+      register: files
+
+    - name: Ensure the long filenames are encrypted
+      command: "mount -t ecryptfs /tmp/test_long_filename_{{ 'a'*255 }} /tmp/ecrypted_long_filename -o ecryptfs_cipher=aes,ecryptfs_key_bytes=16"

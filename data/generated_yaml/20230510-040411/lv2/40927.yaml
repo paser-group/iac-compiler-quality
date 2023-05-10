@@ -1,0 +1,41 @@
+
+- hosts: all
+  gather_facts: no
+  vars:
+    - input_var: ""
+    - arr: []
+    - dict_var: {}
+    - file_name: "/tmp/file.txt"
+  tasks:
+    - name: Generate random data
+      set_fact:
+        random_str: "{{ ['foo', 'bar', 'baz'] | random }}"
+        random_int: "{{ [1, 2, 3] | random }}"
+        random_bool: "{{ [true, false] | random }}"
+        unexptected_input: "{{ ['$', '^', '[', '}', ':'] | random }}"
+    - name: Run command with invalid syntax
+      command: "{{ unexptected_input }"
+    - name: Declare an invalid variable
+      set_fact: "{{ var * 2 }}"
+    - name: Use a non-existent filter
+      set_fact: "{{ arr | invalid_filter }}"
+    - name: Call an undefined module
+      undefined_module:
+        param1: "{{ random_str }}"
+        param2: "{{ random_int }}"
+    - name: Write an invalid YAML.
+      copy:
+        dest: "{{ file_name }}"
+        content: |
+          This is invalid YAML
+          Accidentally put unnecessary enter here.
+
+        validate: 'python -c "import yaml;yaml.safe_load(open(\'%(path)s\'))"'
+    - name: Generate syntax errors
+      debug: msg="{{ dict_var. }}"
+    - name: Perform an invalid assert
+      assert:
+        that:
+          - false
+          - (((2 + 3) * (4 / 2)) > 20)
+        fail_msg: "Invalid Assertion"

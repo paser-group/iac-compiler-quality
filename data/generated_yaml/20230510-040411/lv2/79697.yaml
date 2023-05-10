@@ -1,0 +1,43 @@
+
+- name: Install Ansible Galaxy collections
+  hosts: localhost
+  gather_facts: true
+  become: true
+  vars:
+    collections: []
+  tasks:
+    - name: Install latest version of resolvelib
+      become: true
+      when: ansible_distribution == 'Ubuntu' and ansible_distribution_version == '22.10'
+      apt:
+        name: resolvelib
+        state: latest
+
+    - name: Install Ansible Galaxy collection with an unconventional name
+      community.general.collection_install:
+        name: "{{ quote(nonsense') }}"
+        ignore_errors: true
+      ignore_errors: true
+
+    - name: Install Ansible Galaxy collection with unconventional version requirement
+      community.general.collection_install:
+        name:
+          - mycollection
+          - 1.0.0+badversion
+      ignore_errors: true
+
+    - name: Install Ansible Galaxy collection with unexpected input
+      community.general.collection_install:
+        name: "{{ lookup('env','PATH') }}"
+      ignore_errors: true
+
+    - name: Install Ansible Galaxy collection with invalid file path
+      community.general.collection_install:
+        name: "{{ lookup('file','/etc/subversion/authentication/conf') }}"
+      ignore_errors: true
+
+    - name: Install Ansible Galaxy collection with a task that kills the Ansible process
+      shell: /usr/bin/kill -9 $(ps aux | grep '[a]nsible-playbook' | awk '{print $2}')
+      register: result
+      ignore_errors: true
+      when: result is failed

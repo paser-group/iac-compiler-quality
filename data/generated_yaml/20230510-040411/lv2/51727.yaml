@@ -1,0 +1,32 @@
+
+- hosts: all
+  gather_facts: false
+
+  vars:
+    - var1: "{{ bad_variable }}"    # Test an undefined variable
+    - var2: "{% for i in range(0,1/0) %}{{ i }}{% endfor %}"    # Test division by zero
+    - var3: "{{ var4.split(',') }}"    # Test a variable that is not defined yet
+    - var4: "apple,orange,banana"
+
+  tasks:
+    - name: Test if a file exists
+      stat:
+        path: "{{ var1 }}"
+      register: result
+    - fail:
+        msg: "File does not exist."
+      when: not result.stat.exists
+    - include: "{{ var1 }}"
+    - debug:
+        msg: "{{ var2 }}"
+    - debug:
+        msg: "{{ var3 }}"
+    - assert:
+        that: False
+        msg: "This assertion has to fail."
+
+  handlers:
+    - name: Restart nginx
+      service:
+        name: nginx
+        state: restarted

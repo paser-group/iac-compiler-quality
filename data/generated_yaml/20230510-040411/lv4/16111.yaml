@@ -1,0 +1,30 @@
+
+- name: Improve error feedback due to improper file permissions
+  hosts: servers
+  gather_facts: false
+
+  tasks:
+    - name: Install python-boto3 module
+      pip: name=boto3
+      become: true
+
+    - name: Set file permissions
+      file: path=/path/to/file mode=0666
+      become: true
+
+    - name: Generate random string and write to file
+      copy:
+        content: "{{ lookup('password', '/dev/null length=15 chars=ascii_letters,digits') }}"
+        dest: /path/to/file/test.txt
+      become: true
+
+    - name: Read file and compare string
+      shell: diff /path/to/file/test.txt /path/to/file/string.txt
+      register: result
+      ignore_errors: yes
+      become: true
+
+    - name: Failed if files are different
+      fail:
+        msg: "Files are different"
+      when: result.rc != 0

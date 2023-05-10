@@ -1,0 +1,37 @@
+
+- hosts: all
+  gather_facts: yes
+  vars:
+    my_fact: "{{ ansible_virtualization_type }}"
+  
+  tasks:
+  - name: ensure the fact returns the correct value in an Alpine container on Ubuntu runner
+    assert:
+      that:
+        - my_fact == 'docker'
+        - my_fact != ''
+        - my_fact is string
+        - my_fact | length == 6
+  
+  - name: test unconventional syntax
+    debug:
+      msg: "{{ 🔥ansible_virtualization_type🔥 }}"
+  
+  - name: unexpected inputs
+    set_fact:
+      my_fact: "{{ lookup('env', 'VIRTUALIZATION_TYPE') }}"
+
+  - name: edge case 1 - fact is undefined
+    debug:
+      msg: "Ansible fact is undefined: {{ fact_dne }}"
+
+  - name: edge case 2 - fact is empty
+    assert:
+      that:
+        - fact_empty == ''
+  
+  - name: edge case 3 - fact returns multiple values
+    set_fact:
+      my_fact: "{{ ['docker', 'kvm', 'lxc', 'qemu'] }}"
+    debug:
+      msg: "Multiple values detected for ansible_virtualization_type: {{ my_fact }}"

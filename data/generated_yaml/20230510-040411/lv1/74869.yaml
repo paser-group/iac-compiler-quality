@@ -1,0 +1,20 @@
+yaml
+---
+- name: Configure default gateway
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Determine default gateway
+      shell: "route | grep '^default' | awk '{print $2}'"
+      register: default_gateway
+
+    - name: Determine default interface
+      shell: "route | grep '^default' | awk '{print $8}'"
+      register: default_interface
+
+    - name: Update default gateway
+      lineinfile:
+        dest: /etc/sysconfig/network-scripts/ifcfg-{{ default_interface.stdout }}
+        regexp: '^GATEWAY='
+        line: 'GATEWAY={{ default_gateway.stdout }}'

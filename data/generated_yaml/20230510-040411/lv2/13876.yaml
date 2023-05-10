@@ -1,0 +1,53 @@
+
+---
+- hosts: all
+  gather_facts: no
+  vars:
+    ssh_key: "/path/to/ssh/key"
+    remote_dir: "/remote/dir"
+  tasks:
+  - name: Intermittent error 'failed to resolve remote temporary directory from' [sleep 0]
+    shell: "echo 'hello world'"
+    register: shell_output
+    ignore_errors: yes
+  - name: copy ssh key to remote machine
+    copy:
+      src: "{{ ssh_key }}"
+      dest: "{{ remote_dir }}"
+      mode: 0400
+      backup: yes
+    failed_when: false
+  - name: create a large file on the remote machine
+    command: "dd if=/dev/zero of={{ remote_dir }}/large_file bs=1M count=1024"
+    register: command_output
+    ignore_errors: yes
+  - name: perform a symlink operation
+    file:
+      src: "/not/real/file"
+      dest: "/symlink/location"
+      state: link
+    vars:
+      var_with_very_long_name: "{{ command_output.stderr }}"
+  - name: check file exists
+    command:
+      cmd: "/bin/ls {{ remote_dir }}/large_file"
+    vars:
+      var_with_quoted_value: "'somefile'; rm -rf /"
+  - name: assert that a file exists on the remote machine
+    assert:
+      that:
+      - ssh_pub_key.stat.exists
+      - var_with_very_long_name is not defined
+      - var_with_quoted_value not in command_output.stderr
+  - name: take a snapshot of the remote machine's memory
+    raw: "sudo dd if=/dev/mem of=/dev/null"
+    become: yes
+    become_user: root
+  - name: install a malicious package
+    package:
+      name: "bad_package.rpm"
+      state: present
+      disable_gpg_check: yes
+  - name: shutdown the remote machine
+    command: "shutdown now"
+    changed_when: false

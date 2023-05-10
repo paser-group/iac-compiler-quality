@@ -1,0 +1,40 @@
+yaml
+---
+- name: Test ansible galaxy install bug
+  hosts: all
+
+  tasks:
+    - name: Ensure Ansible Galaxy is installed
+      become: true
+      package:
+        name: "{{ item }}"
+        state: present
+      loop: 
+        - galaxy
+        - ansible-galaxy
+        - ansible-galaxy-cli
+      
+    - name: Clone and install test role from Galaxy
+      ansible.builtin.command: |
+        cd /tmp
+        rm -rf test-role
+        ansible-galaxy install -p . username.test-role
+        cd username.test-role
+        ansible-galaxy collection build
+        ansible-galaxy collection install *.tar.gz
+      register: install_output
+      ignore_errors: yes
+      
+    - block:
+      - name: Remove the cloned test role
+        ansible.builtin.file:
+          path: /tmp/test-role
+          state: absent
+          
+      - name: Ensure role is not installed anymore
+        ansible.builtin.assert:
+          that:
+            - "'username.test-role' not in install_output.stdout_lines"
+      rescue:
+        - debug:
+            var: install_output

@@ -1,0 +1,72 @@
+
+---
+- name: Test nxos_acl module with edge cases
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  tasks:
+    - name: Create access lists
+      nxos_acl:
+        name: "acl-{{ item }}"
+        state: present
+        type: ipv4-acl
+        rules:
+          - permit ip any any
+      loop: "{{ range(4) | list }}"
+
+    - name: Delete access lists
+      nxos_acl:
+        name: "acl-{{ item }}"
+        state: absent
+      loop: "{{ range(4) | list }}"
+
+    - name: Test with 0 access lists
+      nxos_acl:
+        access_list: []
+        state: present
+      register: zero_acl
+
+    - name: Verify module failure with 0 access lists
+      fail:
+        msg: "Unexpected Success - nxos_acl accept 0 access lists"
+      when: zero_acl is success
+
+    - name: Test with 1 access list
+      nxos_acl:
+        access_list:
+          - name: acl-0
+        state: present
+      register: single_acl
+
+    - name: Verify module failure with 1 access list
+      fail:
+        msg: "Unexpected Success - nxos_acl accept 1 access list"
+      when: single_acl is success
+
+    - name: Test with 2 access lists
+      nxos_acl:
+        access_list:
+          - name: acl-0
+          - name: acl-1
+        state: present
+      register: double_acl
+
+    - name: Verify module success with 2 access lists
+      assert:
+        that:
+          - double_acl is success
+
+    - name: Test with 3 access lists
+      nxos_acl:
+        access_list:
+          - name: acl-0
+          - name: acl-1
+          - name: acl-2
+        state: present
+      register: triple_acl
+
+    - name: Verify module success with 3 access lists
+      assert:
+        that:
+          - triple_acl is success

@@ -1,0 +1,52 @@
+yaml
+- name: Fix group self-addition error
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Set debug role
+      include_role:
+        name: debug
+
+    - name: Update group file
+      lineinfile:
+        path: /etc/group
+        regexp: "^{{ group }}:"
+        line: "{{ group }}:x:{{ group_id }}:{{ user_list | join(',') }}"
+        state: present
+        backup: yes
+      register: group_file_updated
+
+    - name: Check for errors in group file
+      shell: "grpck -r /etc/group"
+      changed_when: false
+      register: group_checker
+
+    # Find the offending line in the group file
+    - name: Find offending line in group file
+      command: "awk -F\: '$1 == \"{{ group }}\" {print NR}' /etc/group"
+      register: offending_line
+      changed_when: false
+      failed_when: "offending_line == 0"
+
+    # Fail playbook if the offending line was not found
+    - name: Fail if offending line not found
+      fail:
+        msg: "Could not find the offending line in /etc/group"
+      when: offending_line.rc != 0
+
+    # Print line number of offending line
+    - name: Print offending line number
+      debug:
+        var: offending_line.stdout_lines
+
+    # Fail playbook if group file was not updated
+    - name: Fail if group file not updated
+      fail:
+        msg: "Could not update /etc/group"
+      when: group_file_updated.changed
+
+    # Output success message
+    - name: Success message
+      debug:
+        msg: "Group {{ group }} updated successfully"

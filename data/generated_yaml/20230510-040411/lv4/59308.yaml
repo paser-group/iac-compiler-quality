@@ -1,0 +1,36 @@
+yaml
+---
+- name: Test Become Parameter on Windows
+  hosts: windows
+  gather_facts: false
+  tasks:
+    - name: Check Ansible Version
+      win_shell: ansible --version | findstr "ansible"
+      register: ansible_version
+
+    - name: Set Become Flags
+      set_fact:
+        become_flags: "-H -i -u {{ ansible_user }}"
+
+    - name: Test become: yes
+      win_shell: whoami
+      become: yes
+      register: result1
+
+    - name: Test become: true
+      win_shell: whoami
+      become: true
+      register: result2
+
+    - name: Test become: <invalid value>
+      win_shell: whoami
+      become: "invalid-value"
+      register: result3
+
+    - name: Print Results
+      debug:
+        var: item.stdout
+      loop:
+        - "{{ result1 }}"
+        - "{{ result2 }}"
+        - "{{ result3 }}"

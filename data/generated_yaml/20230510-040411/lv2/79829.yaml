@@ -1,0 +1,45 @@
+
+- hosts: localhost
+  gather_facts: no
+  
+  tasks:
+    - name: Type error when calling blocks
+      block:
+        - debug:
+            var: "{{ item | random(item[0]) }}"
+          loop: 
+            - ['foo', 1]
+            - ['bar', 2]
+            - ['baz', 3]
+            - ['qux', 4]
+      rescue:
+        - debug:
+            msg: "Caught an error"
+        - debug:
+            msg: "Continuing execution..."
+    
+    - name: Test unconventional syntax
+      shell: |
+        echo "This {{ is a }} {{ unconventional | syntax }}"
+        echo "This {{ isn't a }} {{ conventional syntax }}"
+    
+    - name: Test unexpected input
+      debug:
+        var: { 'key': 'value' }
+        msg: "{{ 'message with {{ unexpected }} input' }}"
+    
+    - name: Test edge cases
+      when: 
+        - False
+        - True and False
+        - False or True
+        - True is not False
+        - None is not defined
+    
+    - name: Test unsupported attribute
+      debug:
+        msg: "{{ item.non_existent_attribute }}"
+      loop:
+        - { name: 'Alice', age: 30 }
+        - { name: 'Bob', age: 40 }
+        - { name: 'Charlie', age: 50 }

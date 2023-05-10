@@ -1,0 +1,29 @@
+
+---
+- name: Test ansible_service_mgr fact
+  hosts: all
+  become: true
+  tasks:
+    - name: Create SysVinit service
+      copy:
+        content: "echo 'hello world' > /dev/null"
+        dest: "/etc/init.d/test-service"
+        mode: "0755"
+
+    - name: Start and check status of SysVinit service
+      service:
+        name: test-service
+        state: started
+      register: service_output
+
+    - name: Check ansible_service_mgr fact for SysVinit system
+      debug:
+        var: ansible_service_mgr
+      vars:
+        expected_value: "/sbin/service"
+      when: "'sysvinit' in ansible_service_mgr.lower()"
+
+    - name: Stop SysVinit service
+      service:
+        name: test-service
+        state: stopped

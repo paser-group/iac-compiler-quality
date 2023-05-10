@@ -1,0 +1,30 @@
+
+- name: idempotency test for os_server
+  hosts: localhost
+  gather_facts: no
+  vars:
+    port_id: "default"
+  tasks:
+    - name: create server with port-id
+      os_server:
+        state: present
+        name: test-server
+        flavor: m1.small
+        image: cirros
+        key_name: "{{ ansible_user }}_key"
+        network: "{{ item }}"
+        port-id: "{{ port_id }}"
+        security_groups:
+          - test-group
+      with_items:
+        - public
+        - private
+      ignore_errors: true
+
+    - name: check if server exists
+      assert:
+        that:
+          - os_server_facts.instance_name == 'test-server'
+          - os_server_facts.size_total > 0
+          - os_server_facts.interfaces[0].port_id == port_id
+          - os_server_facts.interfaces[0].network_id in lookup('community.general.os_neutron_net', region_name='RegionOne', auth=auth, filters={'name': 'private'})

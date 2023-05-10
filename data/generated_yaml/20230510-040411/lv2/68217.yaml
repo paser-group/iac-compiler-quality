@@ -1,0 +1,54 @@
+
+---
+- name: ec2_group stress test playbook
+  hosts: localhost
+  gather_facts: false
+  vars:
+    vpc1_groups:
+      - web
+      - db
+    vpc2_groups:
+      - web
+      - app
+    invalid_groups:
+      - web-
+      - db-
+  tasks:
+    - name: Create security group in different VPC
+      ec2_group:
+        name: web-vpc1
+        vpc_id: vpc-123456
+        rules:
+          - proto: tcp
+            from_port: 22
+            to_port: 22
+            cidr_ip: 10.0.0.0/16
+      delegate_to: localhost
+
+    - name: Add other VPC security group to ec2_group
+      ec2_group:
+        name: web-vpc2
+        vpc_id: vpc-654321
+        rules:
+          - proto: tcp
+            from_port: 80
+            to_port: 80
+            cidr_ip: 0.0.0.0/0
+        rules_egress:
+          - proto: all
+            cidr_ip: 0.0.0.0/0
+        vpc_destination_group_id: web-vpc1
+        purge_rules: true
+        state: present
+      ignore_errors: yes
+
+    - name: Try to add invalid group name to ec2_group
+      ec2_group:
+        name: "{{ item }}web"
+        vpc_id: vpc-123456
+        rules:
+          - proto: icmp
+            cidr_ip: 10.0.0.0/16
+        state: present
+      with_items: "{{ invalid_groups }}"
+      ignore_errors: yes

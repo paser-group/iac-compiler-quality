@@ -1,0 +1,30 @@
+
+---
+
+- hosts: all
+  vars:
+    - file_path: "/tmp/test_file"
+  tasks:
+    - name: Create test file
+      copy:
+        content: "Test content"
+        dest: "{{ file_path }}"
+      register: copy_result
+
+    - name: Check disk space
+      command: "df -h /"
+      register: disk_space
+
+    - name: Fail if no space available
+      fail:
+        msg: "Disk space not available"
+      when: disk_space.stdout_lines[1] is not match(".*[1-9][0-9]*%.*")
+
+    - name: Remove test file
+      file:
+        path: "{{ file_path }}"
+        state: absent
+      register: remove_result
+
+...
+

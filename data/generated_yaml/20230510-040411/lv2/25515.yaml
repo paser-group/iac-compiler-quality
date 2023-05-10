@@ -1,0 +1,45 @@
+yaml
+---
+- name: Test nxos_vxlan_vtep errors for nxapi and cli transports
+  hosts: switches
+  gather_facts: no
+  
+  tasks:
+    - name: Check if nxos_vxlan_vtep is installed
+      nxos_command:
+        command_string: show feature-set
+      register: feature_set
+   
+    - name: Fail if nxos_vxlan_vtep is not installed
+      fail:
+        msg: "nxos_vxlan_vtep feature is not installed"
+      when: "'nv_overlay' not in feature_set.stdout"
+  
+    - name: Retrieve the VTEP IP address
+      nxos_vxlan_vtep:
+        transport: "{{ item }}"
+        vni: 5000
+        source_interface: Loopback0
+        host: "{{ inventory_hostname }}"
+        username: "{{ ansible_user }}"
+        password: "{{ ansible_password }}"
+        validate_certs: no
+      register: vtep_result
+      with_items:
+        - 'bad_transport'
+        - ''
+        - 'cli'
+        - 'ssh'
+        - 'telnet'
+        - "'; show run'"
+        - ">*'?allowed ip'"
+        
+    - name: Print the VTEP IP address for nxapi transport
+      debug:
+        var: vtep_result.cli_result.nxapi.result.vtep_ip
+      when: "'nxapi' in vtep_result.results | map(attribute='item') | list"
+      
+    - name: Print the VTEP IP address for cli transport
+      debug:
+        var: vtep_result.results[2].vxlan_vtep.result.vtep_ip
+      when: "'cli' in vtep_result.results | map(attribute='item') | list"

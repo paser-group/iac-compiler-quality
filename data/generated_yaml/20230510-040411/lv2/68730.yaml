@@ -1,0 +1,51 @@
+
+- name: Test docker_compose module errors
+  hosts: localhost
+  tasks:
+    - name: Installing pip
+      become: yes
+      apt: name=python3-pip state=latest
+
+    - name: Installing Docker-Compose via pip
+      become: yes
+      pip: name=docker-compose state=latest
+
+    - name: Running docker_compose module with no arguments
+      docker_compose:
+
+    - name: Running docker_compose module with invalid arguments
+      docker_compose:
+        command: invalid
+        project_name: "{{ 1/0 }}"
+
+    - name: Running docker_compose module with undefined variable
+      docker_compose:
+        command: "{{ undefined_variable }}"
+
+    - name: Running docker_compose module with unconventional syntax
+      docker_compose:
+        command: "{{ 'up --restart no' }}"
+
+    - name: Running docker_compose module with unexpected inputs
+      docker_compose:
+        command: "{{ 'up --foo' + attribute_error }}"
+
+    - name: Running docker_compose module with long argument list
+      docker_compose:
+        command: "{{ 'up -d ' + ' '.join([str(i) for i in range(500)])}}"
+
+    - name: Running docker_compose module with complex command
+      docker_compose:
+        command: "{{
+          'up -d --force-recreate ' +
+          '-p foo ' +
+          '-f /path/to/docker-compose.yml ' +
+          '-v /mnt/data:/data ' +
+          '-e VAR1=val1 ' +
+          '--label "com.example.description=Accounting web app" ' +
+          '--label "com.example.department=finance" ' +
+          '--label "com.example.label-with-empty-value" ' +
+          '--shutdown-timeout 120 ' +
+          '--no-color'
+        }}"
+        

@@ -1,0 +1,93 @@
+
+- name: Create multiple default isolated networks for a single account
+  hosts: localhost
+  gather_facts: no
+  tasks:
+    - name: Create cloudstack network offering
+      cs_networkoffering:
+        name: isolated-network
+        displaytext: Isolated Network
+        state: present
+        supportedservices: 'Dhcp'
+        availability: Optional
+        specifyvlan: 1
+        vlanrange: '2001-2010'
+        traffictype: Guest
+        guestiptype: Isolated
+        conservemode: 'false'
+        servicestate: Enabled
+        egressdefaultpolicy: Allow
+        zone: CloudStack Zone
+        async: true
+        poll_async: 50
+
+    - name: Create multiple isolated network offerings named 'Default Isolated Network'
+      cs_networkoffering:
+        name: Default Isolated Network
+        state: present
+        displaytext: Default Isolated Network
+        guestiptype: Isolated
+        traffictype: Guest
+        supportedservices: Dhcp
+        conservemode: 'false'
+        egressdefaultpolicy: Deny
+        zone: CloudStack Zone
+        specifyvlan: 1
+        vlanrange: '2001-2010'
+        isdefault: yes
+        poll_async: 50
+        async: true
+
+    - name: Create an account in CloudStack
+      cs_account:
+        name: Test Account
+        domain: My Domain
+        state: present
+        async: true
+        poll_async: 50
+
+    - name: Create multiple networks with Default Isolated Network offering for Test Account
+      cs_network:
+        name: Network-1
+        displaytext: Network-1
+        state: present
+        networkoffering: Default Isolated Network
+        zone: CloudStack Zone
+        account: Test Account
+        poll_async: 50
+        async: true
+
+    - name: Create another network with Default Isolated Network offering for Test Account
+      cs_network:
+        name: Network-2
+        displaytext: Network-2
+        state: present
+        networkoffering: Default Isolated Network
+        zone: CloudStack Zone
+        account: Test Account
+        poll_async: 50
+        async: true
+
+    - name: Create another network with Default Isolated Network offering for Test Account
+      cs_network:
+        name: Network-3
+        displaytext: Network-3
+        state: present
+        networkoffering: Default Isolated Network
+        zone: CloudStack Zone
+        account: Test Account
+        poll_async: 50
+        async: true
+
+    - name: Execute a CloudStack API command to list multiple default Isolated networks
+      uri:
+        url: "http://localhost:8080/client/api?command=listNetworks&account=test&isdefault=true&domainid=1"
+        method: GET
+        return_content: yes
+      register: multiple_networks
+
+    - name: Ensure that more than 1 default Isolated network is created
+      assert:
+        that: "multiple_networks.json | from_json | count > 1"
+        success_msg: More than 1 default Isolated network is created for the account
+        failed_msg: Multiple default Isolated networks are NOT created for the account

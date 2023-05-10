@@ -1,0 +1,33 @@
+
+# Define the device details
+hosts = {
+    'device1': {'hostname': '192.168.1.1',
+                'username': 'admin',
+                'password': 'password',
+                'device_type': 'cisco_ios'},
+}
+
+# Import Netmiko library
+from netmiko import ConnectHandler
+
+# Define the function to connect to the device and send commands
+def send_command(device, command):
+    with ConnectHandler(**device) as ssh_conn:
+        # Send the command with the necessary privilege level
+        if device['device_type'] == 'cisco_ios':
+            ssh_conn.enable()
+            prompt = ssh_conn.find_prompt()
+            if '>' in prompt:
+                ssh_conn.send_command('enable')
+                ssh_conn.send_command(device['password'])
+            ssh_conn.send_command('terminal length 0')
+            result = ssh_conn.send_command(command, expect_string=r'#')
+        return result
+
+# Define the command to troubleshoot the error
+command = 'show vty line'
+
+# Send the command to all the devices in the 'hosts' dictionary
+for device in hosts.values():
+    result = send_command(device, command)
+    print(result)

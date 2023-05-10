@@ -1,0 +1,28 @@
+yaml
+- name: Create Let's Encrypt SSL Certificate
+  hosts: all
+
+  vars:
+    domain_name: example.com
+    email: admin@example.com
+
+  tasks:
+    - name: Install certbot
+      apt:
+        name: certbot
+        state: latest
+
+    - name: Create SSL certificate
+      command: certbot certonly --standalone -d {{ domain_name }} --email {{ email }} --non-interactive --agree-tos
+
+    - name: Check validity of certificate
+      command: openssl x509 -enddate -noout -in /etc/letsencrypt/live/{{ domain_name }}/fullchain.pem
+      register: cert_expiry
+
+    - name: Calculate remaining certificate validity period
+      set_fact: 
+        cert_remaining_days: "{{ ( cert_expiry.stdout | regex_replace('[\n]','') | from_yaml | to_datetime('%b %d %H:%M:%S %Y %Z') - ansible_date_time.date | to_timedelta('seconds') | int) / 86400 | int }}"
+
+    - name: Report the number of days remaining before certificate expiry
+      debug:
+        msg: "The certificate for {{ domain_name }} will expire in {{ cert_remaining_days }} days."

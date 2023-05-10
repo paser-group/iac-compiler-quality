@@ -1,0 +1,23 @@
+
+- name: Test Service Restart
+  hosts: target_hosts
+  tasks:
+    - name: Start Service
+      service:
+        name: service_name
+        state: started
+    
+    - name: Wait for Service to Restart
+      command: sleep 2 # adjust sleep time based on the service's restart time
+      async: 10
+      poll: 1
+    
+    - name: Check if Service Restarted Successfully
+      shell: service service_name status | grep "Active: active"
+      register: status_output
+      failed_when: "'Active: inactive' in status_output.stdout_lines"
+    
+    - name: Stop Service
+      service:
+        name: service_name
+        state: stopped

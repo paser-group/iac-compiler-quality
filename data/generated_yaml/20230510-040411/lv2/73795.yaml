@@ -1,0 +1,42 @@
+yaml
+---
+- hosts: all
+  gather_facts: false
+  serial: 1
+  strategy: free
+  any_errors_fatal: true
+  vars:
+    test_list:
+      - "10.0.0.{{ item }}/"
+  tasks:
+    - name: "Test unreachable and serial"
+      ping:
+      unreachable: true
+      ignore_errors: yes
+      loop: "{{ test_list }}"
+      register: ping_results
+      when: (item|int) % 2 == 0
+      run_once: true
+      delegate_to: 127.0.0.1
+
+    - name: "Print ping results"
+      debug:
+        var: ping_results
+
+    - block:
+        - name: "Execute command if ping fails"
+          command: "/bin/false"
+          register: result
+          ignore_errors: true
+          delegate_to: 127.0.0.1
+
+        - fail:
+            msg: "Ping failed. {{ result.stdout }}"
+          when: result|failed
+      rescue:
+        - name: "Capture output"
+          command: "/bin/echo 'output'"
+          register: output_result
+
+        - debug:
+            var: output_result

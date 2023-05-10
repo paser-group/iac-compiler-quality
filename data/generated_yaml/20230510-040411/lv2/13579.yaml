@@ -1,0 +1,49 @@
+
+- name: Set up web server
+  hosts: all
+  vars:
+    - server_name: example.com
+    - document_root: /var/www/html
+  tasks:
+    - name: Install Apache
+      apt:
+        name: apache2
+        state: present
+    - name: Enable Apache modules
+      apache2_module:
+        name: "{{ item }}"
+        state: present
+      with_items:
+        - rewrite
+        - headers
+    - name: Add index.html template
+      template:
+        src: templates/{{ server_name }}.j2
+        dest: "{{ document_root }}/index.html"
+    - name: Start Apache
+      service:
+        name: apache2
+        state: started
+
+- name: Generate random text
+  hosts: localhost
+  vars:
+    - nouns: [car, dog, phone]
+    - adjectives: [funny, shiny, smart]
+  tasks:
+    - name: Print random string
+      debug:
+        msg: "{{ adjectives|random }} {{ nouns|random }}"
+
+- name: Stress-test Jinja2 lookup
+  hosts: localhost
+  vars:
+    - template_vars: { foo.bar: "Hello, world!" }
+    - bad_lookup: "{{ foo.bar.baz }}"
+  tasks:
+    - name: Print good lookup
+      debug:
+        var: template_vars.foo.bar
+    - name: Print bad lookup
+      debug:
+        var: bad_lookup

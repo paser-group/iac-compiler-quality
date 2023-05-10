@@ -1,0 +1,30 @@
+yaml
+- name: Test password authentication
+  hosts: all
+  become: yes
+
+  vars:
+    correct_password: "correct_password"
+    incorrect_passwords: ["wrong_password_1", "wrong_password_2", "wrong_password_3"]
+  
+  tasks:
+    - name: Attempt password authentication with the correct password
+      ansible.builtin.shell: echo {{ correct_password }} | sudo -S whoami
+      register: correct_password_test_output
+      ignore_errors: yes
+    
+    - name: Check the output of correct password authentication
+      debug:
+        msg: "Correct password test failed"
+      when: "'Sorry, try again' in correct_password_test_output.stdout"
+    
+    - name: Attempt password authentication with incorrect passwords
+      ansible.builtin.shell: echo {{ item }} | sudo -S whoami
+      register: incorrect_password_test_output
+      ignore_errors: yes
+      loop: "{{ incorrect_passwords }}"
+      
+    - name: Check the output of incorrect password authentication
+      debug:
+        msg: "Incorrect password test passed"
+      when: "'Sorry, try again' not in item.stdout"

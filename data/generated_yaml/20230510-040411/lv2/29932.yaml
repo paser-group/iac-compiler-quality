@@ -1,0 +1,37 @@
+
+- name: Docker pull images failing
+  hosts: all
+  become: true
+  tasks:
+  - name: Remove all Docker images
+    docker_image:
+      name: '*'
+      state: absent
+  - name: Pull Docker image with invalid syntax
+    docker_image:
+      name: '{{ item }}'
+      state: present
+    with_items:
+      - ''
+      - '&&'
+      - '|'
+      - '||'
+  - name: Pull Docker image with invalid registry URL
+    docker_image:
+      name: 'invalid-registry-url:5000/test-image'
+      state: present
+  - name: Pull Docker image from self-signed registry
+    docker_image:
+      name: 'self-signed-registry.com/test-image'
+      state: present
+      insecure_registry: yes
+  - name: Pull Docker image with invalid credentials
+    docker_login:
+      username: 'invalid-username'
+      password: 'invalid-password'
+      registry_url: 'https://index.docker.io/v1/'
+  - name: Pull Docker image with invalid timeout parameters
+    docker_image:
+      name: 'ubuntu'
+      state: present
+      timeout: -1

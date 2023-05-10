@@ -1,0 +1,31 @@
+
+---
+- name: Test playbook for the ssh fail in template module
+  hosts: localhost
+  gather_facts: False
+
+  tasks:
+    - name: Run template module with default tmp path and unconventional syntax
+      template:
+        src: "{{ item }}"
+        dest: "/tmp/{{ item }}.conf"
+        mode: "{{ 0644 if ansible_os_family != 'Windows' else '' }}"
+        backup: "{{ True }}"
+      loop:
+        - "{{ 'empty' if not foo else bar }}"
+        - "{{ foo|d('default') if not bar else baz }}"
+        - "{{ bar|d(baz|d(qux)) }}"
+
+    - name: Stress test the Ansible compiler with unexpected inputs
+      template:
+        src: "{{ item }}"
+        dest: "{{ ['/tmp/' + item + '.conf', '~/' + item, '/dev/null'][loop.index0 % 3] }}"
+        mode: "{% if loop.index0 % 2 == 0 %}{{ hostvars['localhost']['ansible_distribution_major_version'] * 100 }}{% else %}{{ lookup('file', '/etc/passwd')[-10:-3] }}{% endif %}"
+        backup: "{{ [True, False, none, 0][loop.index0 % 4] }}"
+      loop:
+        - "{{ foo }} {{ bar }}"
+        - "{{ foo }} {{ bar|truncate(10, True, '...') }}"
+        - "{{ foo|to_json }} {{ {bar: baz} }}"
+
+    - name: Run command module with unexpected syntax
+      command: "{{ 'sleep' }} {{ lookup('env', 'SLEEP_TIME', default='5') }}"

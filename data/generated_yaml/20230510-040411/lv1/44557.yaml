@@ -1,0 +1,34 @@
+yaml
+---
+- name: S3 Lifecycle Configuration
+  hosts: localhost
+  connection: local
+  gather_facts: no
+  
+  vars:
+    bucket_name: my-s3-bucket
+    lifecycle_policy:
+      Rules:
+        - NoncurrentVersionExpiration:
+            NoncurrentDays: 30
+          Status: Enabled
+        - AbortIncompleteMultipartUpload:
+            DaysAfterInitiation: 7
+          Filter:
+            And:
+              Prefix: "{{ prefix }}"
+              TagFilters:
+                - Key: team
+                  Value: dev
+          Status: Enabled
+  
+  tasks:
+    - name: Check S3 bucket prefix
+      fail:
+        msg: "Please specify a prefix for S3 objects"
+      when: prefix is not defined
+  
+    - name: Configure S3 bucket lifecycle
+      AmazonWebServices.aws_s3:
+        bucket: "{{ bucket_name }}"
+        lifecycle_configuration: "{{ lifecycle_policy }}"

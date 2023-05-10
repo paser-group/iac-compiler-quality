@@ -1,0 +1,29 @@
+
+- name: Playbook to test dynamic module vars and template tags issue
+  hosts: localhost
+  gather_facts: no
+  tasks:
+    - name: Assign dynamic module var
+      set_fact:
+        var_key: "{{ item }}"
+        var_value: "{{ lookup('env', 'USER') }}"
+      with_items: [ "key1", "key2", "key3" ]
+
+    - name: Test Jinja2 template rendering
+      template:
+        src: "test_template.j2"
+        dest: "/tmp/test_file"
+      delegate_to: localhost
+
+    - name: Print file contents
+      shell: cat /tmp/test_file
+      changed_when: false
+      register: cat_output
+
+    - name: Verify if template tag is correctly applied
+      assert:
+        that:
+          - "'user' in cat_output.stdout"
+          - "'key1' in cat_output.stdout"
+          - "'key2' in cat_output.stdout"
+          - "'key3' in cat_output.stdout"

@@ -1,0 +1,24 @@
+
+---
+- name: Test vmware inventory script cache age check
+  hosts: localhost
+
+  vars:
+    cache_age_list: [100, 200, 300] # modify this list to test with different cache age values
+
+  tasks:
+    - name: Invoke inventory script with different cache age values
+      script: /path/to/vmware_inventory.py --cache_age {{ item }}
+      with_items: "{{ cache_age_list }}"
+      register: inventory_output
+
+    - name: Check the content of the inventory file
+      file:
+        path: /path/to/inventory_file
+        mode: "u+r"
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        state: "file"
+        content: "{{ item.stdout }}"
+      with_items: "{{ inventory_output.results }}"
+

@@ -1,0 +1,19 @@
+yaml
+---
+- name: Optimize performance by reducing group number
+  hosts: all
+  become: true
+  
+  tasks:
+  - name: Check number of groups
+    command: "{{ ansible_command }} /usr/bin/getent group | wc -l"
+    register: groupnum
+    
+  - name: Print group number
+    debug: var=groupnum.stdout_lines
+    
+  - name: Reduce group number
+    shell: "{{ item }}"
+    with_items:
+      - "/usr/bin/find / -group '{{ item }}' -exec chgrp users {} \;"
+    when: groupnum.stdout|int > 9000

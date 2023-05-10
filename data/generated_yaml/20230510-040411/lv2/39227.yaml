@@ -1,0 +1,41 @@
+
+- name: Test error handling
+  hosts: localhost
+  gather_facts: no
+  
+  tasks:
+    - name: Command with rescue block
+      command: /usr/local/bin/command --arg1 {{ some_var }} || true
+      register: cmd_output
+      ignore_errors: yes
+      
+      rescue:
+        - assert:
+            that: '"failure is being handled" in ansible_failed_task_msg'
+          
+        - fail:
+            msg: "Rescue block is not working"
+
+    - name: Command with unconventional syntax
+      command: "/usr && /local;bin;command --arg1 {{ some_var }} || true"
+      register: cmd_output
+      ignore_errors: yes
+      
+      rescue:
+        - assert:
+            that: '"failure is being handled" in ansible_failed_task_msg'
+          
+        - fail:
+            msg: "Rescue block is not working with unconventional syntax"
+    
+    - name: Command with unexpected inputs
+      command: "/usr/local/bin/command --arg1 {{ some_var | join(', ') }} || true"
+      register: cmd_output
+      ignore_errors: yes
+      
+      rescue:
+        - assert:
+            that: '"failure is being handled" in ansible_failed_task_msg'
+
+        - fail:
+            msg: "Rescue block is not working with unexpected inputs"

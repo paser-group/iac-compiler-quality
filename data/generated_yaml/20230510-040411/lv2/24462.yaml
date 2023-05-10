@@ -1,0 +1,58 @@
+
+- name: Test playbook for 'become prompt not recognized' regression
+  hosts: all
+  gather_facts: no
+  
+  vars:
+    become_pass: "{{ 'a' * 1024 }}"
+  
+  tasks:
+  - name: Test whether become prompt is recognized
+    command: echo 'testing become prompt'
+    become: yes
+    become_method: su
+    become_user: root
+    ignore_errors: yes
+  
+  - name: Ensure timeout error is triggered by long become password
+    command: echo 'testing become prompt with long password'
+    become: yes
+    become_method: su
+    become_user: root
+    become_password: "{{ become_pass }}"
+    register: result
+    ignore_errors: yes
+    async: 30
+    poll: 10
+  
+  - name: Print result of the task
+    debug:
+      var: result
+
+  - name: Test unconventional syntax
+    become: yes
+    become_method:
+      - su
+      - sudo
+      - pbrun
+    command: echo 'testing unconventional syntax'
+ 
+  - name: Test unexpected input
+    shell: "echo 'testing unexpected input'"
+    become: yes
+    become_method: su
+    become_user: root
+    become_password: "{{ become_pass }}" 
+    environment:
+      - USER='{{ '' }}'
+      - PATH='/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/nonexistent'
+      - MAIL='/var/mail/{{ }}' 
+
+  - name: Check for leftover files in root directory
+    find:
+      paths: '/'
+      patterns: '*.lock'
+      recurse: true
+    become: yes
+    become_method: su
+    become_user: root

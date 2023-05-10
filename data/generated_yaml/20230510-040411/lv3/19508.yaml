@@ -1,0 +1,35 @@
+
+- name: Deploy Container with Network
+  hosts: localhost
+  vars:
+    custom_network: "{{ ansible_managed }}"
+    container_name: "my_container"
+  tasks:
+    - name: Create Custom Network
+      docker_network:
+        name: "{{ custom_network }}"
+        state: present
+        
+    - name: Deploy Container
+      docker_container:
+        name: "{{ container_name }}"
+        image: alpine
+        state: started
+        restart: always
+        networks:
+          - "{{ custom_network }}"  
+          - bridge
+
+    - name: Verify Container Network
+      shell: docker network inspect {{ custom_network }} | grep {{ container_name }}
+      register: container_network
+
+    - name: Verify Container Network Bridge
+      shell: |
+        docker network inspect bridge | grep -q {{ container_name }}
+        echo $?
+      register: container_network_bridge
+
+    - name: Print Results
+      debug:
+        msg: "{{ container_network }}"

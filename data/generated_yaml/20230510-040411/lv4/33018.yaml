@@ -1,0 +1,32 @@
+
+---
+- name: Configure SSH for Bitbucket
+  hosts: localhost
+  gather_facts: no
+  tasks:
+    - name: Ensure ssh directory exists
+      file:
+        path: /home/ubuntu/.ssh
+        mode: '0700'
+        state: directory
+      register: ssh_directory
+
+    - name: Create ssh key
+      shell: ssh-keygen -t rsa -N "" -f /home/ubuntu/.ssh/id_rsa
+      when: ssh_directory.changed
+
+    - name: Add Bitbucket to known_hosts
+      known_hosts:
+        name: bitbucket.org
+        key: "{{ lookup('file', '/home/ubuntu/.ssh/known_hosts') }}"
+        path: /home/ubuntu/.ssh/known_hosts
+        state: present
+      register: known_hosts
+
+    - name: Clone bitbucket repository
+      git:
+        repo: git@bitbucket.org:<username>/<repository>.git
+        dest: /home/ubuntu/repos/<repository>
+        accept_hostkey: yes
+        key_file: /home/ubuntu/.ssh/id_rsa
+      when: known_hosts.changed

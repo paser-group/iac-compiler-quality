@@ -1,0 +1,24 @@
+
+- name: Testcase playbook for DescribeSubnets operation
+  hosts: localhost
+  become: True
+
+  tasks:
+  - name: Check VPC subnets
+    ec2_vpc_subnet_info:
+      region: "{{ lookup('env','AWS_REGION') }}"
+      vpc_id: "{{ lookup('env', 'VPC_ID') }}"
+      state: "{{ item }}"
+    loop:
+      - available
+      - deleted
+      - unknown
+      - ignored
+      - RequestLimitExceeded
+      - invalid
+      - "{{ lookup('env', 'SUBNET_STATE') }}" if "{{ lookup('env', 'SUBNET_STATE') }}" != ""
+    register: subnet_info
+
+  - name: Debug output for subnet_info
+    debug:
+      msg: "{{ subnet_info }}"

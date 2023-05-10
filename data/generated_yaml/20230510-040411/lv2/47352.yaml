@@ -1,0 +1,33 @@
+
+- name: Testing win_domain Idempotency issue
+  hosts: windows
+  tasks:
+    - name: Test Unconventional Syntax
+      win_domain:
+        name: "test.windows.com"
+        state: present
+        domain_admin_user: "\"Administrator\""
+        domain_admin_password: "\"p@ssw@rd\""
+        unattend_path: "C:\\Windows\\Temp\\unattend.xml"
+      ignore_errors: yes
+      register: result1
+
+    - name: Test Edge Cases
+      win_domain:
+        name: "EdgeCaseWindows.com"
+        state: present
+        domain_admin_user: "Domain Admin"
+        domain_admin_password: "domain-password123$" 
+        safe_mode_password: "123456"
+        safe_mode_admin_password: "654321"
+        install_dns: yes
+        install_after_restart: yes
+      when: result1 is failed
+
+    - name: Test Expected Inputs
+      win_domain:
+        name: "test2.contoso.com"
+        state: present
+        domain_admin_user: "DomainUser"
+        domain_admin_password: "Password@321"
+      when: result1 is failed

@@ -1,0 +1,41 @@
+yaml
+- hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create a security group
+      ec2_group:
+        name: security-group-{{ 1 | random }}
+        description: "Test security group"
+        region: "us-west-2"
+        rules:
+          - proto: tcp
+            from_port: 22
+            to_port: 22
+            cidr_ip: 0.0.0.0/0
+
+    - name: Get all existing security groups
+      ec2_group_info:
+
+    - name: Update security group with invalid ELB rule
+      ec2_group:
+        name: "{{ item.group_name }}"
+        rules:
+          - proto: tcp
+            from_port: -1
+            to_port: 65536
+            src_group_name: "{{ item.group_name }}"
+            src_group_owner_id: "invalid-owner-id"
+      with_items: "{{ ec2_group_info.groups }}"
+      ignore_errors: true
+
+    - name: Update security group with valid ELB rule
+      ec2_group:
+        name: "{{ item.group_name }}"
+        rules:
+          - proto: tcp
+            from_port: 80
+            to_port: 80
+            src_group_name: "{{ item.group_name }}"
+            src_group_owner_id: "{{ item.owner_id }}"
+      with_items: "{{ ec2_group_info.groups }}"

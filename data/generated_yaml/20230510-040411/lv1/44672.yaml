@@ -1,0 +1,26 @@
+yaml
+---
+- name: Configure IOS vty with privilege level 0
+  hosts: ios_host
+  gather_facts: no
+  vars:
+    cli_commands:
+      - conf t
+      - line vty 0 15
+      - privilege level 0
+      - exit
+      - exit
+  tasks:
+    - name: Set terminal parameters
+      ios_command:
+        commands:
+          - term len 0
+        provider:
+          host: "{{ inventory_hostname }}"
+          username: "{{ ansible_user }}"
+          password: "{{ ansible_password }}"
+      register: command_output
+    - name: Check error in output
+      fail:
+        msg: "'unable to set terminal parameters' error"
+      when: "command_output.stdout | regex_search('unable to set terminal parameters')"

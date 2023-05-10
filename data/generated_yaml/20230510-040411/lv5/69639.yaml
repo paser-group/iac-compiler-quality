@@ -1,0 +1,42 @@
+
+- name: Install Helm and deploy a chart
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Install Helm
+      become: true
+      apt:
+        name: "{{ item }}"
+      with_items:
+        - wget
+        - gnupg
+        - apt-transport-https
+        - curl
+      environment:
+        http_proxy: "{{ http_proxy }}"
+        https_proxy: "{{ https_proxy }}"
+
+    - name: Add the Helm GPG key
+      become: true
+      command: |
+        curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
+
+    - name: Add the Helm chart repository
+      become: true
+      helm_repository:
+        name: stable
+        repo_url: https://kubernetes-charts.storage.googleapis.com/
+
+    - name: Deploy a chart
+      become: true
+      helm:
+        name: test
+        chart_ref: stable/wordpress
+        state: present
+
+    - name: Wait for the Helm module to become available again
+      become: true
+      wait_for:
+        host: localhost
+        port: 44134
+        timeout: 300

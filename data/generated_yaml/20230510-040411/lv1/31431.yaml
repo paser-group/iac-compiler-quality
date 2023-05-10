@@ -1,0 +1,27 @@
+
+- name: Encrypt a Secret using Ansible Vault
+  hosts: all
+  become: true
+  
+  tasks:
+    - name: Create a Secret File
+      shell: echo "My super secret password" > /tmp/secret.txt
+
+    - name: Encrypt Secret using Ansible Vault
+      block:
+        - name: Encrypt Secret using VaultLib
+          ansible.builtin.vault_encrypt:
+            plaintext: /tmp/secret.txt
+            secret: "{{ vault_secret }}"
+          register: secret
+
+        - name: Write Encrypted Secret to File
+          copy:
+            content: "{{ secret.result }}"
+            dest: /tmp/encrypted_secret.txt
+            mode: '0600'
+          no_log: true
+      rescue:
+        - name: Print Ansible VaultLib Error
+          debug:
+            var: secret

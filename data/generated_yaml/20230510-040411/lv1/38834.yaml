@@ -1,0 +1,25 @@
+
+---
+- name: Update file with lineinfile module
+  hosts: myhost
+  gather_facts: no
+
+  tasks:
+    - name: Add or update a line in a file
+      become: yes
+      lineinfile:
+        path: /path/to/file
+        line: 'new line to add or update'
+        state: present
+        regex: '^#?{{ item }}'
+        backrefs: yes
+      loop:
+        - 'existing line to update'
+        - 'existing line to add'
+      register: edit_result
+
+    - name: "Print selectively failed items from previous task"
+      debug:
+        msg: "{{ item.item }} failed with {{ item.failed }} changes"
+      when: item.failed and item.item.0 is defined
+      loop: "{{ edit_result.results }}"

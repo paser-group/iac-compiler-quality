@@ -1,0 +1,64 @@
+
+- name: Stress test ec2_elb module
+  hosts: localhost
+
+  tasks:
+    - name: Register instance in ELB that has never been registered before
+      ec2_elb:
+        region: "{{ ec2_region | default('us-east-1') }}"
+        state: present
+        name: "{{ elb_name }}"
+        instances: "{{ ec2_instance_id }}"
+
+    - name: Try to register the same instance again - this should fail
+      ec2_elb:
+        region: "{{ ec2_region | default('us-east-1') }}"
+        state: present
+        name: "{{ elb_name }}"
+        instances: "{{ ec2_instance_id }}"
+      ignore_errors: yes
+
+    - name: Register a non-existent instance in ELB - this should fail
+      ec2_elb:
+        region: "{{ ec2_region | default('us-east-1') }}"
+        state: present
+        name: "{{ elb_name }}"
+        instances: "i-1234567890"
+      ignore_errors: yes
+
+    - name: Deregister instance from ELB - this should succeed
+      ec2_elb:
+        region: "{{ ec2_region | default('us-east-1') }}"
+        state: absent
+        name: "{{ elb_name }}"
+        instances: "{{ ec2_instance_id }}"
+
+    - name: Try to deregister the same instance again - this should fail
+      ec2_elb:
+        region: "{{ ec2_region | default('us-east-1') }}"
+        state: absent
+        name: "{{ elb_name }}"
+        instances: "{{ ec2_instance_id }}"
+      ignore_errors: yes
+
+    - name: Deregister a non-existent instance from ELB - this should fail
+      ec2_elb:
+        region: "{{ ec2_region | default('us-east-1') }}"
+        state: absent
+        name: "{{ elb_name }}"
+        instances: "i-1234567890"
+      ignore_errors: yes
+
+    - name: Register multiple instances in ELB - this should succeed
+      ec2_elb:
+        region: "{{ ec2_region | default('us-east-1') }}"
+        state: present
+        name: "{{ elb_name }}"
+        instances: "{{ ec2_instance_ids }}"
+
+    - name: Deregister multiple instances from ELB - this should succeed
+      ec2_elb:
+        region: "{{ ec2_region | default('us-east-1') }}"
+        state: absent
+        name: "{{ elb_name }}"
+        instances: "{{ ec2_instance_ids }}"

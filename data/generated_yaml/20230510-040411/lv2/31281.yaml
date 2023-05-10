@@ -1,0 +1,61 @@
+
+- name: Test Windows Custom Module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    cm_name: "MyCustomModule"
+
+  tasks:
+    - name: Install prerequisites
+      win_chocolatey:
+        name: ['python', 'gcc', 'make', 'pandoc']
+        state: present
+
+    - name: Copy the custom module code
+      win_copy:
+        src: "{{ playbook_dir }}/my_custom_module.py"
+        dest: "C:/Program Files/"
+        remote_src: yes
+
+    - name: Load custom module
+      set_fact:
+        cm_loaded: true
+      when:
+        - ansible_os_family == "Windows"
+        - cm_name in ansible_python_interpreter
+      module_utils:
+        - "C:/Program Files/ansible/module_utils/{{ cm_name }}.py"
+
+    - name: Execute custom module - Invalid Input Type
+      when: cm_loaded == true
+      command:
+        "{{ cm_name }}":
+          input: 123
+      register: invalid_output
+      failed_when: "'type' in invalid_output.stdout"
+    
+    - name: Execute custom module - Invalid Arguments
+      when: cm_loaded == true
+      command:
+        "{{ cm_name }}":
+          args: "arg1,arg2,arg3"
+      register: invalid_arg_output
+      failed_when: "'The optional arguments' in invalid_arg_output.stderr"
+
+    - name: Execute custom module - Invalid Method
+      when: cm_loaded == true
+      command:
+        "{{ cm_name }}":
+          method: "fake_method"
+      register: invalid_method_output
+      failed_when: "'does not exist' in invalid_method_output.stderr"
+          
+    - name: Execute custom module - Invalid Return Value
+      when: cm_loaded == true
+      command:
+        "{{ cm_name }}":
+          input: "valid_input"
+          method: "return_invalid"
+      register: invalid_return_output
+      failed_when: "'not convertible to Ansible' in invalid_return_output.stderr"

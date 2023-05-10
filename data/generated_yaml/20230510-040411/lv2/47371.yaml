@@ -1,0 +1,29 @@
+
+- name: Stress test playbook for SBC reboot
+  hosts: all
+  become: yes
+
+  vars:
+    tz_var: "{{ lookup('env', 'TIMEZONE') | default('UTC') }}"
+    reboot_time: "3:30"
+
+  tasks:
+    - name: Reboot SBC at scheduled time with TZ set
+      command: "/sbin/reboot"
+      when: "ansible_date_time.hour == {{ reboot_time.split(':')[0] }} and ansible_date_time.minute == {{ reboot_time.split(':')[1] }}"
+      environment:
+        TZ: "{{ tz_var }}"
+
+    - name: Reboot SBC at scheduled time with TZ unset
+      command: "/sbin/reboot"
+      when: "ansible_date_time.hour == {{ reboot_time.split(':')[0] }} and ansible_date_time.minute == {{ reboot_time.split(':')[1] }}"
+      
+    - name: Reboot SBC with unconventional syntax
+      command: "/sbin/reboot"
+      tags: [custom_tag]
+      
+    - name: Stress test unconventional input for TZ
+      command: "/bin/true"
+      environment:
+        TZ: "{{ ['UTC-5', 'UTC+5', 'US/Eastern'] | random }}"
+      ignore_errors: yes

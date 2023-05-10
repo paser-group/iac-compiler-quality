@@ -1,0 +1,40 @@
+yaml
+- name: Azure Virtual Machine Creation Playbook
+  hosts: localhost
+  connection: local
+  vars:
+    resource_group: myResourceGroup
+    virtual_network_name: myVirtualNetworkName
+    virtual_subnet_name: myVirtualSubnetName
+  tasks:
+    - name: Create Azure Virtual Machine
+      azure_rm_virtualmachine:
+        resource_group: "{{ resource_group }}"
+        name: "{{ inventory_hostname }}"
+        vm_size: Standard_F2
+        admin_username: azureuser
+        admin_password: P@ssword!
+        image:
+          offer: UbuntuServer
+          publisher: Canonical
+          sku: '16.04-LTS'
+          version: latest
+        network_interface_names:
+          - nic{{ ansible_hostname }}
+        virtual_network_name: "{{ virtual_network_name }}"
+        virtual_subnet_name: "{{ virtual_subnet_name }}"
+        os_disk_name: "{{ inventory_hostname }}-os-disk"
+        os_disk_caching: ReadWrite
+        os_disk_create_option: FromImage
+        data_disks:
+          - name: "{{ inventory_hostname }}-data-disk1"
+            lun: 0
+            disk_size_gb: 10
+            create_option: Empty
+      register: vm
+
+    - name: Check VM State
+      debug: var=vm.state
+      
+    - name: Check VM Network Information
+      debug: var=vm.network_profile.network_interfaces[0].id

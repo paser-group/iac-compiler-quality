@@ -1,0 +1,33 @@
+
+- name: Test Minio S3 Bucket
+  hosts: localhost
+  vars:
+    bucket_name: "testbucket"
+  tasks:
+    - name: Create Bucket
+      s3_bucket:
+        name: "{{ bucket_name }}"
+        region: "us-east-1"
+        mode: "create"
+      register: bucket_response
+    
+    - name: Get Versioning Configuration
+      s3_bucket:
+        bucket: "{{ bucket_name }}"
+        config: "versioning"
+      register: versioning_response
+
+    - name: Debug - Print Versioning Response
+      debug:
+        var: versioning_response
+
+    - name: Delete Bucket
+      s3_bucket:
+        name: "{{ bucket_name }}"
+        mode: "delete"
+    
+    - name: Assert GetBucketVersioning response matches expected format
+      assert:
+        that:
+          - versioning_response | success
+          - versioning_response['s3_versioning']['status'] == 'Enabled' 

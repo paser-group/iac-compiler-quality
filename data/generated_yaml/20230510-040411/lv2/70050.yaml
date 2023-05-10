@@ -1,0 +1,28 @@
+
+---
+- hosts: localhost
+  gather_facts: no
+
+  vars:
+    my_list:
+      - item1
+      - item2
+      - '{{ invalid_variable }}'
+      - item4
+
+  tasks:
+    - name: Loop through my_list and exit if there is a templating error
+      loop: "{{ my_list }}"
+      ignore_errors: yes
+      loop_control:
+        loop_var: my_item
+        label: "{{ my_item }}"
+      block:
+        - name: This task runs for every item in my_list
+          debug:
+            msg: "Processing {{ my_item }}"
+
+        - name: This task runs only if item3 has a templating error
+          debug:
+            msg: "The variable `invalid_variable` caused a templating error"
+          when: my_item == "{{ my_list[2] }}"

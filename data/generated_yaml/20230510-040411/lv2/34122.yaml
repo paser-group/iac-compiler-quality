@@ -1,0 +1,34 @@
+yaml
+- name: Test Azure_rm_storageaccount
+  hosts: localhost
+  gather_facts: no
+  vars:
+    account_sku: "Standard_LRS"
+  
+  tasks:
+    - name: Create a storage account
+      azure_rm_storageaccount:
+        resource_group: "{{ resource_group }}"
+        name: "{{ account_name }}"
+        sku: "{{ account_sku }}"
+        kind: StorageV2
+      register: storageaccount_creation_response
+    
+    - name: Fail with invalid sku name
+      azure_rm_storageaccount:
+        resource_group: "{{ resource_group }}"
+        name: "{{ account_name }}"
+        sku: "{{ invalid_sku }}"
+        kind: StorageV2
+      ignore_errors: yes
+    
+    - name: Pause for 10 seconds
+      pause:
+        seconds: 10
+        
+    - name: Delete the storage account
+      azure_rm_storageaccount:
+        resource_group: "{{ resource_group }}"
+        name: "{{ account_name }}"
+        state: absent
+      register: storageaccount_deletion_response

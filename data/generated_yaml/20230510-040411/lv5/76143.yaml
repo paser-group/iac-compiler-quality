@@ -1,0 +1,27 @@
+
+- name: Test Ansible apt_key module for bugs
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+    - name: Add key from specified keyserver
+      become: yes
+      apt_key:
+        keyserver: example.server.com
+        id: ABCDEF
+        state: present
+
+    - name: Verify if the key was added successfully
+      become: yes
+      shell: "apt-key list | grep ABCDEF"
+      register: key_present
+
+    - name: Fail the playbook if the key was not added successfully
+      debug:
+        msg: "The key was not added successfully"
+      fail:
+        when: "('ABCDEF' not in key_present.stdout)"
+
+    - name: Succeed the playbook if the key was added successfully
+      debug:
+        msg: "The key was added successfully"

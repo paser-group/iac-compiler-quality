@@ -1,0 +1,21 @@
+
+- name: Create a TXT record in Route53
+  route53:
+    command: create
+    zone: "{{ domain }}"
+    record: "{{ subdomain }}.{{ domain }}"
+    type: TXT
+    ttl: "{{ ttl }}"
+    data:
+      - "{{ record_data }}"
+  register: result
+
+- name: Verify the TXT record is created
+  assert:
+    that:
+      - "result.status_code == 200"
+      - "'CreateResourceRecordSetResponse' in result.xml"
+      - "'ChangeInfo' in result.xml.CreateResourceRecordSetResponse"
+      - "'TXT' in result.xml.CreateResourceRecordSetResponse.ChangeInfo.ResourceRecordSet.Type"
+      - "'{{ subdomain }}.{{ domain }}.' in result.xml.CreateResourceRecordSetResponse.ChangeInfo.ResourceRecordSet.Name"
+      - "'{{ record_data }}' in result.xml.CreateResourceRecordSetResponse.ChangeInfo.ResourceRecordSet.ResourceRecords.ResourceRecord.Value"

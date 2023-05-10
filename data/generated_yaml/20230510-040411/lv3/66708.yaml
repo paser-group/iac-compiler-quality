@@ -1,0 +1,27 @@
+
+- name: Create a playbook to recreate ec2.py dynamic inventory issue
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    aws_profile: "non-default-profile"
+  
+  tasks:
+    - name: generating inventory
+      command: "python ec2.py --list --profile {{ aws_profile }}"
+
+  - name: Verify that RDS instances are not accessible with non-default profile
+    hosts: rds-hosts
+    remote_user: ec2-user
+    tasks:
+      - name: Check if current profile is default profile
+        command: "aws rds describe-db-instances --profile {{ aws_profile }} | grep -q Default"
+        register: defaultcheck
+        ignore_errors: yes
+        
+      - name: Fail if current profile is default profile and RDS is accessible
+        fail:
+          msg: "Non-default profile is not used for RDS instances"
+        when: "defaultcheck.rc != 0"
+
+

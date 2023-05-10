@@ -1,0 +1,33 @@
+
+- name: Create CloudWatch Log Group and reproduce permission issue
+  hosts: localhost
+  gather_facts: false
+  
+  vars:
+    retention_days: 60
+
+  tasks:
+    - name: Create IAM policy for Log Group
+      iam_policy:
+        name: cloudwatch_log_policy
+        policy_document:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - logs:*
+              Resource:
+                - arn:aws:logs:{{ ansible_region }}:{{ ansible_user_id }}:log-group:cloudwatch_log_group
+          
+    - name: Create CloudWatch Log Group and enable retention
+      cloudwatchlogs_log_group:
+        name: cloudwatch_log_group
+        retention: "{{ retention_days }}"
+        state: present
+        policy_name: cloudwatch_log_policy
+        aws_access_key: "{{ aws_access_key }}"
+        aws_secret_key: "{{ aws_secret_key }}"
+        region: "{{ ansible_region }}"
+          
+    - name: Access the Log Group to simulate the permission issue
+      shell: aws logs describe-log-groups --log-group-name-prefix "cloudwatch_log_group" --output text

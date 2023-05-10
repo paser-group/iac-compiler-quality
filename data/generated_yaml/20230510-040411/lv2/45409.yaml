@@ -1,0 +1,59 @@
+
+- name: Resizing VMware Disk and Restoring VM with Multiple SCSI Controllers
+
+  hosts: localhost
+
+  vars:
+    vmware_guest_name: "test-vm"
+    vmware_guest_folder: "/vm/"
+    vmware_guest_datastore: "datastore1"
+    vmware_guest_disk1_controller: "SCSI controller 0"
+    vmware_guest_disk2_controller: "SCSI controller 1"
+
+  tasks:
+    - name: Create a VMware Virtual Machine
+      vmware_guest:
+        name: "{{ vmware_guest_name }}"
+        folder: "{{ vmware_guest_folder }}"
+        datastore: "{{ vmware_guest_datastore }}"
+        state: poweredoff
+        hardware:
+          memory_mb: 4096
+          num_cpus: 2
+          new_disk:
+            size_gb: 10
+            controller_type: "SCSI"
+            controller: "{{ vmware_guest_disk1_controller }}"
+            unit_number: 0
+        networks:
+          - name: vmnet8
+            type: static
+            ip: 192.168.200.10
+            netmask: 255.255.255.0
+
+    - name: Add a second disk to the VM using another SCSI controller
+      vmware_guest_disk:
+        name: "{{ vmware_guest_name }}"
+        controller_type: "SCSI"
+        controller: "{{ vmware_guest_disk2_controller }}"
+        size_gb: 5
+        unit_number: 0
+
+    - name: Power on the VM
+      vmware_guest_powerstate:
+        name: "{{ vmware_guest_name }}"
+        state: poweredon
+
+    - name: Resize the disk to 15GB
+      vmware_guest_disk:
+        name: "{{ vmware_guest_name }}"
+        size_gb: 15
+
+    - name: Restore the VM from the snapshot
+      vmware_guest_snapshot:
+        name: "{{ vmware_guest_name }}"
+        state: present
+        snapshot_name: "test_snapshot"
+        vm_powered_state: poweredon
+        wait_for_ip_address: yes
+        validate_certs: no

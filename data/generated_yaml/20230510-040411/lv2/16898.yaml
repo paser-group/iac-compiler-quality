@@ -1,0 +1,59 @@
+
+---
+- name: Test playbook for targeting after local_actions and add_host
+  hosts: localhost
+  gather_facts: false
+  
+  tasks:
+  
+  - name: Create tmp file
+    tempfile:
+      state: file
+    register: temp_file
+    
+  - name: Run local_action
+    local_action:
+      module: shell
+      cmd: 'echo "{{ temp_file.path }}"'
+    register: local_action_result
+    
+  - name: Add host dynamically
+    add_host:
+      name: "{{ inventory_hostname }}"
+      groups: dynamic_group
+    register: add_host_result
+    
+  - name: debug before add_host
+    debug:
+      msg: 'Before {{ inventory_hostname }}'
+    when: local_action_result is defined
+      
+  - name: debug after add_host
+    debug:
+      msg: 'After {{ inventory_hostname }}'
+    when: add_host_result is defined
+      
+  - name: execute commands using dynamic_group
+    delegate_to: "{{ item }}"
+    shell: 'echo "executing on host {{ inventory_hostname }} from {{ item }}"'
+    with_items: "{{ groups['dynamic_group'] }}"
+    when: "'dynamic_group' in groups"
+    
+  - name: remove host from dynamic_group
+    remove_host:
+      name: "{{ inventory_hostname }}"
+      groups: dynamic_group
+  
+  - name: Test unconventional syntax
+    command: echo "The host {{ inventory_hostname }} is {{item}}"
+    with_items:
+      - awk 'BEGIN { print "running awk" }'
+      - sed 's/running/modifying/' <<< 'running sed'
+      - bash -c 'echo "running bash"'
+      
+  - name: Test unexpected input
+    command: echo "The host {{ inventory_hostname }} is {{item}}"
+    with_items:
+      - "{{ nonexistent_variable }}"
+      - "{{ groups['dynamic_group'] | nonexistent_filter }}"
+...

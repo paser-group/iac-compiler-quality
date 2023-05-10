@@ -1,0 +1,20 @@
+
+- name: Check number of virtual CPUs
+  hosts: all
+  gather_facts: True
+  tasks:
+    - name: Verify ansible_processor_vcpus fact
+      set_fact:
+        vcpus: "{{ ansible_processor_vcpus }}"
+      when: ansible_virtualization_role == 'host'
+
+    - name: Verify vcpus value through other means
+      set_fact:
+        vcpus: "{{ shell('cat /proc/cpuinfo | grep -c processor') }}"
+      when: ansible_virtualization_role == 'container'
+
+    - name: Check vcpus value is reasonable
+      assert:
+        that:
+          - vcpus | int > 0
+          - vcpus | int <= 64

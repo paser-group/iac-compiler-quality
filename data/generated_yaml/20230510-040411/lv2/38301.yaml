@@ -1,0 +1,46 @@
+
+- name: Test ios_system idempotency issues
+  hosts: ios_devices
+  gather_facts: no
+
+  tasks:
+    - name: Send several domain commands with different arguments
+      ios_command:
+        commands:
+          - "{{ item.0 }} {{ item.1 }}"
+        wait_for:
+          timeout: 10
+          sleep: 1
+          pattern: "{{ item.1 }}.*#"
+      loop:
+        - [ "domain-command-1", "-a 'arg1' -b 'arg2' -c 'arg3'" ]
+        - [ "domain-command-2", "-x 'arg1' -y 'arg2' -z 'arg3'" ]
+        - [ "domain-command-3", "'arg1' 'arg2'" ]
+        - [ "domain-command-4", "-a 'arg1 arg2 arg3'" ]
+        - [ "domain-command-5", "-a 'arg1' -b 'arg2' -c 'arg3' --foo --bar --baz" ]
+        - [ "domain-command-6", "--help" ]
+
+    - name: Send unconventional commands with unexpected inputs
+      ios_command:
+        commands:
+          - "{{ item }}"
+        wait_for:
+          timeout: 10
+          sleep: 1
+          pattern: "{{ item }}.*#"
+      loop:
+        - "domain-command-7 arg1 arg2 arg3"
+        - "domain-command-8 -a arg1 -b arg2 -c arg3"
+        - "domain-command-9 --foo --bar --baz arg1 arg2 arg3"
+        - "domain-command-10 !@#$%^&*()_+"
+        - "domain-command-11 ; rm -rf /"
+
+    - name: Wait for ios_system changes to apply
+      register: changed
+      wait_for_connection:
+        connect_timeout: 10
+
+    - name: Fail task if ios_system changes were not idempotent
+      fail:
+        msg: "ios_system changes were not idempotent"
+      when: not changed.ansible_changed

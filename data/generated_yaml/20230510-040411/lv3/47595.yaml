@@ -1,0 +1,42 @@
+
+- hosts: localhost
+  gather_facts: no
+
+  vars:
+    region: us-west-1
+    source_image_id: <source image ID>
+    destination_region: us-west-2
+    aws_access_key: "<your access key>"
+    aws_secret_key: "<your secret key>"
+
+  tasks:
+
+    - name: Create an AMI from the EC2 instance with tags
+      ec2_ami:
+        region: "{{region}}"
+        instance_id: "{{inventory_hostname}}"
+        name: "{{inventory_hostname}}_copy"
+        description: "Copied from {{source_image_id}}"
+        tags:
+          - { Name: "tag1", Value: "Test1" }
+          - { Name: "tag2", Value: "Test2" }
+      register: ami
+
+    - name: Copy the AMI with tag equality and wait until complete.
+      ec2_ami_copy:
+        source_region: "{{region}}"
+        source_image_id: "{{ami.image_id}}"
+        region: "{{destination_region}}"
+        name: "{{inventory_hostname}}_copy"
+        wait: yes
+        tag_equality:
+          - { Name: "tag1", Value: "Test1" }
+          - { Name: "tag2", Value: "Test2" }
+
+    - name: Wait for the AMI to be ready for use
+      ec2_ami_wait:
+        region: "{{destination_region}}"
+        image_id: "{{ec2_ami.image_id}}"
+        state: available
+        delay: 30
+        timeout: 60

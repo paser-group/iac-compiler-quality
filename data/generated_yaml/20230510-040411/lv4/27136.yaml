@@ -1,0 +1,20 @@
+yaml
+  - name: Ensure SSH known hosts file exists
+    file:
+      path: "{{ ansible_user_dir }}/.ssh/known_hosts"
+      state: touch
+      mode: 0600
+
+  - name: Check if host is in known_hosts file
+    shell: |
+      ssh-keygen -H -F {{ inventory_hostname }} > /dev/null
+      echo $?
+    register: check_known_hosts
+
+  - name: Add host key to known_hosts file
+    shell: |
+      ssh-keyscan {{ inventory_hostname }} >> "{{ ansible_user_dir }}/.ssh/known_hosts"
+    when: check_known_hosts.stdout == "1"
+
+  - name: Perform network task using SSH
+    shell: ssh {{ inventory_hostname }} echo Connected successfully!

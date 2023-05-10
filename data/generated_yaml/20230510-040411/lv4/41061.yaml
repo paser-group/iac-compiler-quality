@@ -1,0 +1,20 @@
+
+- name: Check the virtualization environment using shell module.
+  hosts: all
+  become: yes
+  gather_facts: yes
+
+  tasks:
+    - name: Run command to check virtualization on DigitalOcean droplets
+      shell: "curl -s http://169.254.169.254/metadata/v1/ | grep -i hypervisor | cut -d ' ' -f 2"
+      register: virtualization_check
+      
+    - name: Print Virtualization environment on DO droplet
+      debug:
+        var: virtualization_check.stdout
+        
+    - name: Check if virtualization_check.stdout has a valid value
+      assert:
+        that:
+          - '"qemu", "vmware", "hyper-v", "virtualbox", "xen", "parallels", "bhyve" | search(virtualization_check.stdout)"'
+          - '"true" in virtualization_check.changed"'

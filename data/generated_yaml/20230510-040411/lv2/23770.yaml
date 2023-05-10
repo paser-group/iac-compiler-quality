@@ -1,0 +1,48 @@
+yaml
+- name: Test playbook for Connection from net_cli waiting prompt
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    device_username: admin
+    device_password: password123
+
+  tasks:
+    - name: Connect to device via net_cli
+      ios_command:
+        provider:
+          host: "10.0.0.1"
+          username: "{{ device_username }}"
+          password: "{{ device_password }}"
+          transport: netcli
+          timeout: 30
+        commands:
+          - show version
+      register: result
+
+    - block:
+        - debug:
+            msg: "Device version is {{ result.stdout }}"
+
+      rescue:
+        - debug:
+            msg: "Failed to connect to device. Retrying."
+
+      always:
+        - pause: seconds=5
+        - debug:
+            msg: "Continuing execution"
+
+    - name: Test error case
+      ios_config:
+        lines:
+          - "interface thisshouldcauseanerror"
+          - "invalidcommand"
+        severity: error
+        provider:
+          host: "10.0.0.1"
+          username: "{{ device_username }}"
+          password: "{{ device_password }}"
+          transport: netcli
+          timeout: 10
+      register: error_result

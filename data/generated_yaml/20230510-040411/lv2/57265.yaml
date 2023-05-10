@@ -1,0 +1,107 @@
+
+- name: Test GCP Container Cluster Module
+  hosts: localhost
+  connection: local
+  vars:
+    project_id: "my-project"
+    cluster_name: "my-cluster"
+    zone: "us-central1-f"
+    # Edge cases and unconventional inputs
+    zone_missing: false
+    invalid_zone_name: "invalid-zone"
+    empty_cluster_name: ""
+    cluster_name_too_long: "{{ 'a' * 51 }}"
+    special_characters_cluster_name: "my-!$%cluster"
+    high_number_node_pools: "{{ 2147483647 }}"
+    # Unexpected input
+    invalid_input: "{{ some_variable }}"
+  tasks:
+    # Test cluster creation with missing zone
+    - name: Test Cluster Creation with Missing Zone
+      gcp_container_cluster:
+        name: "{{ cluster_name }}"
+        project_id: "{{ project_id }}"
+        initial_node_count: 3
+        # Provide missing zone
+        zone: "{{ zone_missing|ternary('', zone) }}"
+      register: result_missing_zone
+      ignore_errors: true
+
+    # Test cluster creation with invalid zone
+    - name: Test Cluster Creation with Invalid Zone
+      gcp_container_cluster:
+        name: "{{ cluster_name }}"
+        project_id: "{{ project_id }}"
+        initial_node_count: 3
+        # Provide invalid zone name
+        zone: "{{ invalid_zone_name }}"
+      register: result_invalid_zone
+      ignore_errors: true
+
+    # Test cluster creation with empty cluster name
+    - name: Test Cluster Creation with Empty Name
+      gcp_container_cluster:
+        name: "{{ empty_cluster_name }}"
+        project_id: "{{ project_id }}"
+        initial_node_count: 3
+        zone: "{{ zone }}"
+      register: result_empty_cluster_name
+      ignore_errors: true
+
+    # Test cluster creation with long cluster name
+    - name: Test Cluster Creation with Long Cluster Name
+      gcp_container_cluster:
+        name: "{{ cluster_name_too_long }}"
+        project_id: "{{ project_id }}"
+        initial_node_count: 3
+        zone: "{{ zone }}"
+      register: result_cluster_name_too_long
+      ignore_errors: true
+
+    # Test cluster creation with special characters in cluster name
+    - name: Test Cluster Creation with Special Characters in Cluster Name
+      gcp_container_cluster:
+        name: "{{ special_characters_cluster_name }}"
+        project_id: "{{ project_id }}"
+        initial_node_count: 3
+        zone: "{{ zone }}"
+      register: result_special_characters_cluster_name
+      ignore_errors: true
+
+    # Test cluster creation with high number of node pools
+    - name: Test Cluster Creation with High Number of Node Pools
+      gcp_container_cluster:
+        name: "{{ cluster_name }}"
+        project_id: "{{ project_id }}"
+        initial_node_count: 3
+        node_pools:
+          - name: node-pool-1
+            initial_node_count: 3
+          - name: node-pool-2
+            initial_node_count: "{{ high_number_node_pools }}"
+        zone: "{{ zone }}"
+      register: result_high_number_node_pools
+      ignore_errors: true
+
+    # Test cluster creation with invalid input
+    - name: Test Cluster Creation with Invalid Input
+      gcp_container_cluster:
+        name: "{{ cluster_name }}"
+        project_id: "{{ invalid_input }}"
+        initial_node_count: 3
+        zone: "{{ zone }}"
+      register: result_invalid_input
+      ignore_errors: true
+
+    # Debugging info
+    - name: Show Debug Information
+      command: echo "{{ item }}"
+      loop:
+        - "Missing Zone Error: {{ result_missing_zone }}"
+        - "Invalid Zone Error: {{ result_invalid_zone }}"
+        - "Empty Cluster Name Error: {{ result_empty_cluster_name }}"
+        - "Cluster Name Too Long Error: {{ result_cluster_name_too_long }}"
+        - "Special Characters Cluster Name Error: {{ result_special_characters_cluster_name }}"
+        - "High Number Node Pools Error: {{ result_high_number_node_pools }}"
+        - "Invalid Input Error: {{ result_invalid_input }}"
+

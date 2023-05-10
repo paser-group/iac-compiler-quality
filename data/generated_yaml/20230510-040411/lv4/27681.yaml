@@ -1,0 +1,21 @@
+
+- name: Check DNS resolution
+  hosts: target_host
+  tasks:
+    - name: Get hostname from DNS
+      dig:
+        +short
+        target_host
+      register: resolved_hostname
+
+    - name: Compare hostname with DNS
+      fail:
+        msg: "Incorrect hostname resolved by DNS."
+      when: resolved_hostname.stdout | lower() != inventory_hostname | lower()
+
+    - name: Add to iptables
+      iptables:
+        chain: INPUT
+        source: "{{ resolved_hostname.stdout_lines[0] }}"
+        destination: "{{ inventory_hostname }}"
+        jump: ACCEPT

@@ -1,0 +1,25 @@
+
+---
+- name: Deploy a Docker Swarm Service with a non-root user
+  hosts: swarm_nodes
+
+  tasks:
+  
+  - name: Verify if non-root user already exits
+    shell: id -u {{ some_non_root_user }}
+    ignore_errors: true
+    register: user_exists
+    changed_when: false
+  
+  - name: Create non-root user if it doesn't exist
+    user:
+      name: "{{ some_non_root_user }}"
+      state: present
+
+  - name: Create a new docker swarm service with non-root user
+    docker_swarm_service:
+      name: "{{ service_name }}"
+      image: "{{ image_url }}"
+      replicas: 3
+      deploy_mode: "{{ mode }}"
+      user: "{{ some_non_root_user }}"

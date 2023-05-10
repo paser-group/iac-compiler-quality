@@ -1,0 +1,88 @@
+yaml
+- hosts: localhost
+  gather_facts: false
+  tasks:
+  - name: Create RDS instance
+    rds_db_instance:
+      instance_name: "{{ lookup('env', 'INSTANCE_NAME') | default('testdb') }}"
+      instance_identifier: "{{ instance_name ~ '_' ~ lookup('pipe', 'random') }}"
+      allocated_storage: "{{ lookup('env', 'ALLOACTED_STORAGE') | default(20) }}GB"
+      storage_type: "{{ lookup('env', 'STORAGE_TYPE') | default('gp2') }}"
+      db_instance_class: "{{ lookup('env', 'INSTANCE_CLASS') | default('db.t2.micro') }}"
+      db_subnet_group_name: "{{ lookup('env', 'SUBNET_GRP_NAME') | default('default') }}"
+      vpc_security_group_ids: "{{ lookup('env', 'SEC_GRP_IDS') | default('sg-1234abcd,sg-5678efgh') }}"
+      availability_zone: "{{ lookup('env', 'AVAILABILITY_ZONE') | default('us-east-1a') }}"
+      engine: "{{ lookup('env', 'ENGINE') | default('mysql') }}"
+      engine_version: "5.7"
+      username: "{{ lookup('env', 'DB_USER') | default('admin') }}"
+      password: "{{ lookup('env', 'DB_PASSWD') }}"
+      db_name: "{{ lookup('env', 'DB_NAME') | default('testdb') }}"
+      performance_insights_enabled: True
+      multi_az: "{{ lookup('env', 'MULTI_AZ') | default(False) }}"
+      state: present
+      tags:
+        name: "{{ instance_name }}"
+        env: "{{ lookup('env', 'ENVIRONMENT')|default('test') }}"
+  - name: Fail the task by passing a string value to performance_insights_enabled
+    rds_db_instance:
+      instance_name: "{{ lookup('env', 'INSTANCE_NAME') | default('testdb') }}"
+      db_instance_class: "{{ lookup('env', 'INSTANCE_CLASS') | default('db.t2.micro') }}"
+      engine: "{{ lookup('env', 'ENGINE') | default('mysql') }}"
+      engine_version: "5.7"
+      username: "{{ lookup('env', 'DB_USER') | default('admin') }}"
+      password: "{{ lookup('env', 'DB_PASSWD') }}"
+      db_name: "{{ lookup('env', 'DB_NAME') | default('testdb') }}"
+      performance_insights_enabled: "True"
+      state: present
+  - name: Attempt to delete the RDS instance
+    rds_db_instance:
+      instance_name: "{{ lookup('env', 'INSTANCE_NAME') | default('testdb') }}"
+      state: absent
+  - name: Pass an unexpected nested dictionary value to performance_insights_enabled
+    rds_db_instance:
+      instance_name: "{{ lookup('env', 'INSTANCE_NAME') | default('testdb') }}"
+      db_instance_class: "{{ lookup('env', 'INSTANCE_CLASS') | default('db.t2.micro') }}"
+      engine: "{{ lookup('env', 'ENGINE') | default('mysql') }}"
+      engine_version: "5.7"
+      username: "{{ lookup('env', 'DB_USER') | default('admin') }}"
+      password: "{{ lookup('env', 'DB_PASSWD') }}"
+      db_name: "{{ lookup('env', 'DB_NAME') | default('testdb') }}"
+      performance_insights_enabled:
+        nested_dict_key1: "value1"
+        nested_dict_key2: "value2"
+      state: present
+  - name: Pass an unexpected list value to performance_insights_enabled
+    rds_db_instance:
+      instance_name: "{{ lookup('env', 'INSTANCE_NAME') | default('testdb') }}"
+      db_instance_class: "{{ lookup('env', 'INSTANCE_CLASS') | default('db.t2.micro') }}"
+      engine: "{{ lookup('env', 'ENGINE') | default('mysql') }}"
+      engine_version: "5.7"
+      username: "{{ lookup('env', 'DB_USER') | default('admin') }}"
+      password: "{{ lookup('env', 'DB_PASSWD') }}"
+      db_name: "{{ lookup('env', 'DB_NAME') | default('testdb') }}"
+      performance_insights_enabled:
+        - value1
+        - value2
+      state: present
+  - name: Pass an empty value to performance_insights_enabled
+    rds_db_instance:
+      instance_name: "{{ lookup('env', 'INSTANCE_NAME') | default('testdb') }}"
+      db_instance_class: "{{ lookup('env', 'INSTANCE_CLASS') | default('db.t2.micro') }}"
+      engine: "{{ lookup('env', 'ENGINE') | default('mysql') }}"
+      engine_version: "5.7"
+      username: "{{ lookup('env', 'DB_USER') | default('admin') }}"
+      password: "{{ lookup('env', 'DB_PASSWD') }}"
+      db_name: "{{ lookup('env', 'DB_NAME') | default('testdb') }}"
+      performance_insights_enabled: ""
+      state: present
+  - name: Pass an unexpected boolean value to performance_insights_enabled
+    rds_db_instance:
+      instance_name: "{{ lookup('env', 'INSTANCE_NAME') | default('testdb') }}"
+      db_instance_class: "{{ lookup('env', 'INSTANCE_CLASS') | default('db.t2.micro') }}"
+      engine: "{{ lookup('env', 'ENGINE') | default('mysql') }}"
+      engine_version: "5.7"
+      username: "{{ lookup('env', 'DB_USER') | default('admin') }}"
+      password: "{{ lookup('env', 'DB_PASSWD') }}"
+      db_name: "{{ lookup('env', 'DB_NAME') | default('testdb') }}"
+      performance_insights_enabled: no
+      state: present

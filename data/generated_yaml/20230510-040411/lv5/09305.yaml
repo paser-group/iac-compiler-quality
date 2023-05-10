@@ -1,0 +1,26 @@
+
+- hosts: all
+  gather_facts: yes
+  tasks:
+    - name: Attempt to install a package that relies on SSH or Rsync
+      block:
+        - name: Ensure SSH or Rsync is absent
+          shell: "which ssh rsync"
+          register: ssh_rsync
+          ignore_errors: true
+          changed_when: false
+        - name: Install package relying on SSH or Rsync
+          package:
+            name: "{{ item }}"
+            state: present
+          loop:
+            - git
+          when: ssh_rsync.rc == 1
+      rescue:
+        - name: Re-attempt package installation after installing dependencies
+          package:
+            name: "{{ item }}"
+            state: present
+          loop:
+            - git
+      register: package_installation_output

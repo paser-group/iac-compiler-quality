@@ -1,0 +1,43 @@
+yaml
+---
+- hosts: all
+  tasks:
+    - name: Check Default Gateway and Interfaces
+      command: "ip route get 1 | awk '{print $5;exit}'"
+      register: default_gateway
+      changed_when: False
+
+    - name: Show Default Gateway
+      debug: var=default_gateway
+
+    - name: Loop Through Available Network Interfaces
+      shell: "ls /sys/class/net | grep -v lo"
+      register: network_interfaces
+      changed_when: False
+
+    - name: Show Available Network Interfaces
+      debug: var=network_interfaces
+
+    - name: Check Default Gateway for Each Interface
+      shell: "ip route | grep default | awk '{print $5}'"
+      with_items: "{{ network_interfaces.stdout_lines }}"
+      register: default_gateways
+      changed_when: false
+
+    - name: Show Default Gateways
+      debug: var=default_gateways
+
+    - name: Raise Error If Default Gateway Not Found for Any Interface
+      fail:
+        msg: "Default Gateway not found for interface {{ item }}"
+      when: item not in default_gateways.stdout_lines
+      with_items: "{{ network_interfaces.stdout_lines }}"
+
+    - name: Perform Network Tests on Each Interface
+      shell: "ping -c2 8.8.8.8"
+      with_items: "{{ network_interfaces.stdout_lines }}"
+      register: ping_test_results
+      changed_when: False
+
+    - name: Show Network Test Results
+      debug: var=ping_test_results

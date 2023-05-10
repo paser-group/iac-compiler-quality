@@ -1,0 +1,26 @@
+
+- hosts: all
+  gather_facts: no
+  tasks:
+  - name: Fetch file with slurp module
+    slurp:
+      src: "{{ item }}"
+    register: file_content
+    with_fileglob: "{{ inventory_dir }}/*"
+  - name: Store contents in file
+    copy:
+      dest: "/tmp/{{ item.path | basename }}"
+      content: "{{ item.content | b64decode }}"
+    when: item.content is defined
+    with_items: "{{ file_content.results }}"
+  - name: Trigger an OOM error
+    command: /usr/bin/yes | /usr/bin/head -n 8388608  # 8GB of data
+    args:
+      chdir: "/tmp"
+    register: command_output
+    ignore_errors: true
+  - name: Cleanup files
+    file:
+      path: "/tmp/{{ item.path | basename }}"
+      state: absent
+    with_items: "{{ file_content.results }}"

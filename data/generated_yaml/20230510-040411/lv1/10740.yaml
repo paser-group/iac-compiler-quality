@@ -1,0 +1,56 @@
+
+---
+- name: Install ansible 1.9.1 from homebrew on OS 10.10.3
+  hosts: all
+  gather_facts: no
+  vars:
+    domain_username: domain\username
+    domain_password: password
+
+  tasks:
+    - name: Install ansible 1.9.1 using homebrew
+      become: yes
+      become_method: sudo
+      homebrew:
+        name: ansible
+        state: latest
+
+    - name: Install pywinrm module
+      become: yes
+      become_method: sudo
+      pip:
+        name: pywinrm
+
+    - name: Configure Kerberos authentication
+      become: yes
+      become_method: sudo
+      vars:
+        kerberos_realm: YOUR_REALM
+        kerberos_service_name: HTTP
+      block:
+        - name: Install Kerberos libraries
+          apt:
+            name: "{{ item }}"
+          with_items:
+            - krb5-user
+            - libkrb5-dev
+            - libffi-dev
+            - python-dev
+            - build-essential
+
+        - name: Generate Kerberos keytab
+          shell: kinit -kt /etc/krb5.keytab host/{{ ansible_fqdn }}@{{ kerberos_realm }}
+
+        - name: Configure Kerberos authentication for WinRM
+          lineinfile:
+            dest: /etc/ansible/hosts
+            regexp: '^#?([^=]*_hosts\s*=.*)$'
+            line: '\1 ansible_winrm_transport=kerberos ansible_winrm_kerberos_hostname={{ inventory_hostname }} ansible_winrm_kerberos_principal=host/{{ ansible_fqdn }}@{{ kerberos_realm }}'
+
+    - name: Test connection to Windows host
+      win_ping:
+      vars:
+        ansible_user: "{{ domain_username }}"
+        ansible_password: "{{ domain_password }}"
+      delegate_to: 127.0.0.1
+

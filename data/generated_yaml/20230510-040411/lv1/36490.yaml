@@ -1,0 +1,27 @@
+yaml
+---
+- name: iptables fix for tcp_flags bug
+  hosts: all
+  become: yes
+
+  tasks:
+
+  - name: flush iptables rules
+    iptables:
+      chain: INPUT
+      flush: yes
+
+  - name: remove all tcp_flags rules
+    iptables:
+      chain: INPUT
+      match: bool
+      bool: "iptables -L INPUT -nv | grep tcp | grep flags | awk '{print $11}' | grep -o FIN,SYN,RST,PSH,ACK,URG | while read line; do iptables -D INPUT -p tcp --tcp-flags ALL $line -j DROP; done"
+      state: absent
+
+  - name: add iptables rule for tcp_flags
+    iptables:
+      chain: INPUT
+      state: present
+      action: drop
+      protocol: tcp
+      tcp_flags: "FIN,SYN,RST,PSH,ACK,URG,!FIN,!SYN,!RST,!PSH,!ACK,!URG"

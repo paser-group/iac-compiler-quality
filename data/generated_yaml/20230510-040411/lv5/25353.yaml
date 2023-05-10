@@ -1,0 +1,32 @@
+
+- name: Enable VMware Tools
+  vmware_tools:
+    vm_id: "{{ vm_id }}"
+    state: present
+
+- name: Wait for VM to shut down
+  vmware_guest_status_info:
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_username }}"
+    password: "{{ vcenter_password }}"
+    validate_certs: false
+    name: "{{ vm_name }}"
+    power_state: poweredOff
+  register: status_info
+  
+- name: Reboot VM
+  vmware_guest:
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_username }}"
+    password: "{{ vcenter_password }}"
+    validate_certs: false
+    name: "{{ vm_name }}"
+    vm_id: "{{ vm_id }}"
+    power_on_after_creation: true
+    state: restarted
+  ignore_errors: true
+
+- name: Check for errors during reboot
+  failed_when: status_info.json | length > 0
+  debug:
+    msg: "The following errors occurred during reboot: {{ status_info.json }}."

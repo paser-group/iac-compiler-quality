@@ -1,0 +1,29 @@
+
+- name: Get secret from Azure Key Vault
+  hosts: localhost
+  gather_facts: no
+  vars:
+    subscription_id: "<your_subscription_id>"
+    client_id: "<your_client_id>"
+    secret: "<your_client_secret>"
+    tenant: "<your_tenant_id>"
+    keyvault_name: "<your_keyvault_name>"
+    secret_name: "<your_secret_name>"
+  tasks:
+  - name: Authenticate with Azure using a service principal
+    azure_rm_login:
+      client_id: "{{ client_id }}"
+      client_secret: "{{ secret }}"
+      tenant: "{{ tenant }}"
+    register: creds
+  
+  - name: Get secret from Key Vault
+    azure_rm_keyvaultsecret:
+      vault_url: "https://{{ keyvault_name }}.vault.azure.net/"
+      secret_name: "{{ secret_name }}"
+      auth_token: "{{ creds.access_token }}"
+    register: secret
+
+  - name: Print Secret Value
+    debug:
+      msg: "Secret Value: {{ secret.value }}" 

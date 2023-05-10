@@ -1,0 +1,31 @@
+yaml
+---
+- name: Set custom Python traceback formatting
+  hosts: all
+  become: yes
+
+  tasks:
+    - name: Install custom traceback library
+      pip:
+        name: traceback-with-variables
+        state: present
+
+    - name: Set custom traceback format
+      lineinfile:
+        path: /etc/python3.6/sitecustomize.py
+        line: |
+          import traceback_with_variables as twv
+          import sys
+          sys.excepthook = twv.print_exception
+
+      # This line is optional based on your preference or security considerations.
+      # It may require python3-devel package to be installed on the remote hosts.
+      # shell: python3 -m compileall /etc/python3.6/
+
+  handlers:
+    - name: Restart affected services
+      service:
+        name: "{{ item }}"
+        state: restarted
+      with_items:
+        - application_service

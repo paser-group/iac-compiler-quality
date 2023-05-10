@@ -1,0 +1,62 @@
+
+- name: Creating Azure Virtual Machine
+  hosts: localhost
+  connection: local
+  gather_facts: True
+  tasks:
+  - name: Create a Resource Group
+    azure_rm_resourcegroup:
+      name: Test_Ressource_Group
+      location: westeurope
+  - name: Create an Azure Storage Account
+    azure_rm_storageaccount:
+      name: myTestStorageAccount
+      resource_group: Test_Ressource_Group
+      account_tier: Standard
+      account_replication_type: LRS
+  - name: Create Azure Virtual Network
+    azure_rm_virtualnetwork:
+      resource_group: Test_Ressource_Group
+      name: Test_Virtual_Network
+      address_prefixes_cidr:
+        - 10.1.0.0/16
+  - name: Create an Azure Subnet
+    azure_rm_subnet:
+      resource_group: Test_Ressource_Group
+      name: Test_Subnet
+      address_prefix_cidr: "10.1.0.0/24"
+      virtual_network_name: Test_Virtual_Network
+  - name: Create an Azure Network Interface
+    azure_rm_networkinterface:
+      resource_group: Test_Ressource_Group
+      name: Test_Network_Interface
+      virtual_network_name: Test_Virtual_Network
+      subnet_name: Test_Subnet
+      public_ip_allocation_method: Dynamic
+  - name: Create a Virtual Machine
+    azure_rm_virtualmachine:
+      resource_group: Test_Ressource_Group
+      name: TestVM
+      vm_size: Standard_B1s
+      admin_username: user
+      admin_password: "{{ 'myTestPassword' }}"
+      network_interface_names: ["Test_Network_Interface"]
+      os_type: Linux
+      image:
+        offer: UbuntuServer
+        publisher: Canonical
+        sku: "18.04-LTS"
+        version: "latest"
+  - name: Retrieve Info About the VM
+    azure_rm_virtualmachine_info:
+      resource_group: Test_Ressource_Group
+      name: TestVM
+  - name: Delete the VM
+    azure_rm_virtualmachine:
+      resource_group: Test_Ressource_Group
+      name: TestVM
+      state: absent
+  - name: Remove the Resource Group
+    azure_rm_resourcegroup:
+      name: Test_Ressource_Group
+      state: absent

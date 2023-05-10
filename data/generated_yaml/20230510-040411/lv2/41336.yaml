@@ -1,0 +1,30 @@
+
+- name: ansible-galaxy hides scm errors
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    scm_url: "git://github.com/ansible/ansible.git"
+    dest_path: "/tmp/ansible"
+
+  tasks:
+  - name: Clone git repo
+    git:
+      repo: "{{ scm_url }}"
+      dest: "{{ dest_path }}"
+      clone: yes
+      force: "{{ ansible_user_id }}"
+    
+  - name: Execute a command inside the cloned repo - Simulating SCM error
+    command: "cd {{ dest_path }} && git remote"
+    register: result
+    failed_when: "'fatal' not in result.stderr"
+    changed_when: false
+    
+    retries: 5
+    delay: 5
+    
+  - name: Fail the Play depending on the results of the git command execution
+    fail:
+      msg: "Failed to execute command inside the cloned repo - SCM error is hidden"
+    when: result.changed == false

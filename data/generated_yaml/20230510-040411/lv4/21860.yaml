@@ -1,0 +1,34 @@
+yaml
+- name: Test EC2 dynamic inventory
+  hosts: localhost
+  connection: local
+
+  vars:
+    ec2_inventory: "path/to/ec2.py" # Path to the ec2.py inventory script
+
+  tasks:
+    - name: Generate inventory
+      script: "{{ ec2_inventory }} --list"
+
+    - name: Add invalid key-value pair to instances
+      lineinfile:
+        path: /tmp/dynamic_ec2_inventory.json
+        line: '  "invalid_key": "invalid_value",'
+
+    - name: Add invalid metadata to instances
+      lineinfile:
+        path: /tmp/dynamic_ec2_inventory.json
+        regexp: '"metadata": {'
+        line: '    "invalid": "metadata"'
+
+    - name: Remove required metadata field from instances
+      replace:
+        path: /tmp/dynamic_ec2_inventory.json
+        regexp: '"metadata": {[^}]*}'
+        replace: ' '
+
+    - name: Test invalid region
+      script: "{{ ec2_inventory }} --list --region invalid_region"
+
+    - name: Test blocked instance
+      script: "{{ ec2_inventory }} --list --ssh-extra-args='-o ConnectTimeout=5' --host ip_block_list"

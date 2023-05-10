@@ -1,0 +1,30 @@
+
+---
+- name: Create a Docker container with incorrect network configuration
+  hosts: localhost
+  become: true
+  tasks:
+
+  - name: Install Docker
+    yum:
+      name: docker-ce
+      state: present
+
+  - name: Create custom bridge network
+    docker_network:
+      name: my-network
+      driver: bridge
+
+  - name: Create Docker container with incorrect network configuration
+    docker_container:
+      name: my-container
+      image: ubuntu
+      network_mode: bridge
+      networks:
+        - name: my-network
+          ipv4_address: 172.16.0.5 # A random ip address for the network
+
+  - name: Ensure container can reach DNS
+    docker_container_exec:
+      container: my-container
+      command: ping -c 1 8.8.8.8

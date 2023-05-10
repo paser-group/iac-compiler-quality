@@ -1,0 +1,38 @@
+
+# Define a variable to hold the inventory directory path
+# This file should contain all hosts to be tested
+inventory_path: inventory/
+
+# Define variables for file types and sizes used in the fuzzing process
+file_types:
+  - txt
+  - pdf
+file_sizes:
+  - 10KB
+  - 100KB
+
+# Define a task to fetch a file for each host in the inventory
+- name: Fetch file from inventory
+  hosts: "{{ groups['all'] }}"
+  tasks:
+    - name: Fetch file
+      fetch:
+        src: "/tmp/file.{{ item.type }}"
+        dest: "/tmp/file.{{ item.type }}"
+        flat: yes
+        fail_on_missing: no
+        slurp: yes
+      with_items:
+        - { type: "{{ item }}" }
+        loop: "{{ file_types }}"
+
+# Define a task to delete the fetched files
+- name: Delete fetched files
+  hosts: "{{ groups['all'] }}"
+  tasks:
+    - name: Delete file
+      file:
+        path: "/tmp/file.{{ item }}"
+        state: absent
+      with_items:
+        - "{{ file_types }}"

@@ -1,0 +1,28 @@
+yaml
+- hosts: localhost
+  vars:
+    db_name: TestDB
+    rg_name: TestResourceGroup
+    location: eastus
+  tasks:
+  - name: Create Azure SQL Database
+    azure_rm_sqldatabase:
+      resource_group: "{{ rg_name }}"
+      name: "{{ db_name }}"
+      location: "{{ location }}"
+      collation: SQL_Latin1_General_CP1_CI_AS
+    register: azure_rm_sqldatabase_result
+
+  - name: Serialize and deserialize SQL Database object
+    block:
+    - name: serialize SQL Database object
+      set_fact:
+        serialized_db: "{{ azure_rm_sqldatabase_result | to_json }}"
+
+    - name: deserialize SQL Database object
+      set_fact:
+        deserialized_db: "{{ serialized_db | from_json }}"
+
+  - name: Debug deserialized SQL Database object
+    debug:
+      msg: "{{ deserialized_db }}"

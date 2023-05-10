@@ -1,0 +1,37 @@
+
+---
+- name: Test Interpreter Discovery Error
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+    - name: Undefined Error Test
+      shell: echo {{ undefined_var }}
+      register: undefined_error
+      ignore_errors: true
+
+    - name: Check if Undefined Error
+      debug:
+        msg: "Undefined Error!"
+      when: undefined_error.rc != 0
+
+    - name: Edge Case Test
+      command: "{{ item }}"
+      loop:
+        - |
+          echo {{ foo | random }}
+        - |
+          echo {{ bar | random }}
+
+    - name: Unconventional Syntax Test
+      command: |
+        echo {{'foo' * 3}}
+
+    - name: Unexpected Input Test
+      debug:
+        var: "{{ 'foobar' | mutilate('undefined') }}"
+
+    - name: Cleanup
+      file:
+        path: /tmp/test_file.txt
+        state: absent

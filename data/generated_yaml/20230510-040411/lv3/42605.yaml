@@ -1,0 +1,33 @@
+
+- name: Incorrect Padding Error during k8s module operation recreation
+  hosts: localhost
+  tasks:
+    - name: Creating a secret of plaintext data
+      k8s:
+        definition:
+          apiVersion: v1
+          kind: Secret
+          metadata:
+            name: plaintext-secret
+          type: Opaque
+          data:
+            password: cGFzc3dvcmQ=
+        state: present
+      register: plain_secret
+
+    - name: Creating a secret of encrypted data with incorrect padding
+      k8s:
+        definition:
+          apiVersion: v1
+          kind: Secret
+          metadata:
+            name: encrypted-secret
+          type: Opaque
+          data:
+            password: "{{ plain_secret.data.password | b64decode | password_hash('sha256') | b64encode }}"
+        state: present
+      register: encrypted_secret
+
+    - name: Printing the secret
+      debug:
+        var: encrypted_secret

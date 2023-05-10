@@ -1,0 +1,27 @@
+yaml
+- name: Execute async task using PowerShell script
+  hosts: <your_target_host>
+  gather_facts: no
+
+  collections:
+    - <your_powershell_collection>
+
+  tasks:
+    - name: Run PowerShell script asynchronously
+      community.general.win_shell:
+        script: "<your_script_path>"
+        executable: "{{ ps_executable }}"
+        stdin_add_newline: yes
+        async: 60
+        poll: 1
+      register: output
+
+    - name: Wait for async task to complete and check status
+      async_status:
+        jid: "{{ output.ansible_job_id }}"
+      register: job_result
+      until: job_result.finished
+
+    - name: Display script output
+      debug:
+        var: output.stdout_lines

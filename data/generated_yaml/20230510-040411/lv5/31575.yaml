@@ -1,0 +1,40 @@
+
+- name: Test IOS_CONFIG module for reporting failed commands
+  hosts: "{{ host }}"
+  gather_facts: no
+
+  vars:
+    IOS_COMMANDS:
+      - "interface GigabitEthernet1"
+      - "ip address 10.0.0.1 255.255.255.0"
+      - "no shutdown"
+      - "interface GigabitEthernet2"
+      - "ip address 10.0.1.1 255.255.255.0"
+      - "shutdown"
+      - "interface GigabitEthernet3"
+      - "ip address 10.0.2.1 255.255.255.0"
+      - "no shutdown"
+      - "interface GigabitEthernet4"
+      - "ip address 10.0.3.1 255.255.255.0"
+      - "no shutdown"
+      - "exit"
+
+  tasks:
+    - name: Attempting to configure IOS device
+      ios_config:
+        provider: "{{ ios_provider }}"
+        lines:
+          "{{ IOS_COMMANDS }}"
+      register: ios_config_output
+      
+    - name: Fail if commands are not sent properly
+      fail:
+        msg: "IOS commands not sent properly"
+      when: ios_config_output.changed is not defined or ios_config_output.failed
+    - name: Check if commands failed
+      debug:
+        msg: "Failed command sent"
+      when:
+        - item.startswith('shutdown')
+        - item in ios_config_output.cmd
+      with_items: "{{ IOS_COMMANDS }}"

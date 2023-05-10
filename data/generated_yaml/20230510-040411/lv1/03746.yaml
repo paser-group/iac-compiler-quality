@@ -1,0 +1,39 @@
+
+---
+- name: ensure EC2 instance is running with latest AMI
+  hosts: your_host_group
+  become: true
+  vars:
+    instance_name_tag: your_instance_tag_name
+  tasks:
+    - name: get latest AMI id for your region
+      ec2_ami_find:
+        filters:
+          name: "your_ami_name_pattern*"
+          architecture: "x86_64"
+          root-device-type: "ebs"
+          virtualization-type: "hvm"
+          state: available
+        sort:
+          key: "creationDate"
+          reverse: true
+        region: "your_region"
+      register: ami_result
+
+    - name: create EC2 instance (if not exists) or update AMI (if running)
+      ec2:
+        instance_tags:
+          Name: "{{ instance_name_tag }}"
+        key_name: "your_ssh_key_name"
+        instance_type: "your_instance_type"
+        image: "{{ ami_result.results[0].ami_id }}"
+        vpc_subnet_id: "your_subnet_id"
+        region: "your_region"
+        monitoring: true
+        count_tag: "Name={{ instance_name_tag }}"
+        exact_count: 1
+      register: ec2_result
+
+    - name: show if EC2 instance is updated or created
+      debug:
+        var: ec2_result.changed

@@ -1,0 +1,35 @@
+
+- name: Create new route table in VPC
+  hosts: localhost
+  connection: local
+  gather_facts: no
+  vars:
+    region: "{{ aws_region }}"
+    vpc_id: "{{ aws_vpc_id }}"
+    route_table_name: "{{ aws_route_table_name }}"
+    cidr_block: "{{ aws_cidr_block }}"
+  tasks:
+  - name: Check if route table exists
+    ec2_vpc_route_table_info:
+      region: "{{ region }}"
+      filters:
+        tag:Name: "{{ route_table_name }}"
+        vpc-id: "{{ vpc_id }}"
+    register: route_table_info
+  - name: Create new route table if not exist
+    ec2_vpc_route_table:
+      region: "{{ region }}"
+      vpc_id: "{{ vpc_id }}"
+      state: present
+      tags:
+        Name: "{{ route_table_name }}"
+    when: not route_table_info.route_table_id
+  - name: Retag an existing route table
+    ec2_vpc_route_table:
+      state: present
+      region: "{{ region }}"
+      vpc_id: "{{ vpc_id }}"
+      route_table_id: "{{ route_table_info.route_table_id }}"
+      tags:
+        Name: "{{ route_table_name }}"
+    when: route_table_info.route_table_id and route_table_info.tags.Name != route_table_name

@@ -1,0 +1,47 @@
+
+---
+- hosts: all
+  vars:
+    files:
+      - {name: '/root/testfile', mode: '0644', src: '/dev/urandom', state: 'file'}
+      - {name: None, mode: '0644', state: 'file'}
+
+  tasks:
+    - name: "Create files with various attributes"
+      file:
+        path: "{{ item.name }}"
+        mode: "{{ item.mode }}"
+        src: "{{ item.src }}"
+        state: "{{ item.state }}"
+      with_items: "{{ files }}"
+      
+    - name: "Print contents of non-existing file"
+      command: "cat {{ missing_file }}"
+      ignore_errors: yes
+
+    - name: "Register variable with invalid attribute"
+      shell: 'echo "test"'
+      register: invalid_output
+      ignore_errors: yes
+    - name: "Use unregistered variable in Jinja2 template"
+      template:
+        src: test_template.j2
+        dest: /tmp/test_output
+      
+    - name: "Run nonexistent play"
+      include: nonexistent.yml
+      
+    - name: "Execute task with nested item"
+      file: path=/root/testfile state=directory
+      with_items: "{{ files }}"
+      loop_control:
+        loop_var: outer_item
+        index_var: outer_index
+      when: outer_index > 0
+      
+    - name: "Remove file with None name"
+      file:
+        path: "{{ item.name }}"
+        state: absent
+      with_items: "{{ files }}"
+      ignore_errors: yes

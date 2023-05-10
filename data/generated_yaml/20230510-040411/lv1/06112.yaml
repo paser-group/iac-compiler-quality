@@ -1,0 +1,34 @@
+yaml
+- name: Add a TXT record to AWS Route 53
+  hosts: localhost
+  vars:
+    record_name: "{{ domain_name }}"
+    record_value: "{{ txt_record }}"
+    zone_id: "{{ your_zone_id }}"
+    aws_access_key: "{{ your_aws_access_key }}"
+    aws_secret_key: "{{ your_aws_secret_key }}"
+  tasks:
+    - name: Ensure boto3 Python library is installed
+      pip:
+        name: boto3
+        state: present
+    - name: Import required modules
+      ansible.builtin.import_playbook:
+        tasks_from: prepare_route53.yml
+    - name: Create TXT record in Route 53
+      route53_facts:
+        zone: "{{ zone_id }}"
+      register: route53
+    - name: Add or update record in Route 53
+      route53:
+        state: present
+        zone: "{{ zone_id }}"
+        record: "{{ record_name }}"
+        type: TXT
+        ttl: 3600
+        value: "\"{{ record_value }}\""
+        aws_access_key: "{{ aws_access_key }}"
+        aws_secret_key: "{{ aws_secret_key }}"
+      when: "'{{ record_name }}' not in (route53.zone.properties.resource_record_sets | map(attribute='name'))"
+    - name: Delete route53 facts
+      meta: clear_facts

@@ -1,0 +1,46 @@
+
+- name: Test ec2_vpc module with instance ID in route tables
+  hosts: localhost
+  become: true
+
+  vars:
+    instance_id: i-0123456789abcdef0
+    vpc_id: vpc-0123456789abcdef0
+    rtb_id: rtb-0123456789abcdef0
+
+  tasks:
+    - name: Create a VPC with the specified ID
+      ec2_vpc:
+        state: present
+        cidr_block: 10.0.0.0/16
+        resource_tags:
+          Name: "test-vpc"
+        vpc_id: "{{ vpc_id }}"
+
+    - name: Create a subnet in the VPC
+      ec2_subnet:
+        state: present
+        cidr: 10.0.0.0/24
+        resource_tags:
+          Name: "test-subnet"
+        vpc_id: "{{ vpc_id }}"
+
+    - name: Create an internet gateway
+      ec2_vpc_igw:
+        state: present
+        resource_tags:
+          Name: "test-igw"
+        vpc_id: "{{ vpc_id }}"
+
+    - name: Create a route table for the VPC
+      ec2_vpc_route_table:
+        state: present
+        vpc_id: "{{ vpc_id }}"
+        resource_tags:
+          Name: "test-route-table"
+        route_tables:
+          - route_table_id: "{{ rtb_id }}"
+            destination_cidr_block: 0.0.0.0/0
+            gateway_id: "{{ vpc_id }}"
+            instance_id: "{{ instance_id }}"
+            network_interface_id: eni-0123456789abcdef0

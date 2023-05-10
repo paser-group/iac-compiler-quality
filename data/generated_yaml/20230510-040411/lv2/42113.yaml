@@ -1,0 +1,43 @@
+
+- hosts: all
+  gather_facts: no
+  vars:
+    block_content: "{{ lookup('file', '/dev/urandom') | random(seed=inventory_hostname) | string }}"
+    override_value: "{{ lookup('env', 'PATH') }}"
+  
+  tasks:
+  - name: Overriding the default value should persist content in block
+    blockinfile:
+      path: /etc/example.conf
+      content: "# Default content\n{{ block_content }}"
+      marker: "# {mark} AUTO-GENERATED BLOCK"
+    register: result1
+
+  - name: Overriding default value and storing in a variable should persist content in block
+    blockinfile:
+      path: /etc/example.conf
+      content: "# Default content\n{{ override_value }}"
+      marker: "# {mark} AUTO-GENERATED BLOCK"
+      block: |
+        {% set persisted_value = blockinfile_content | regex_search(\"# Default content\\\\n(.*)\", '\\1') %}
+        {{ persisted_value if persisted_value is not none else 'No persisted value found' }}
+    register: result2
+
+  - name: Verify the content exists in block
+    assert:
+      that: "'{{ block_content }}' in result1.content"
+      msg: "Content not found in block"
+
+  - name: Verify the persisted content matches the override value
+    assert:
+      that: "'{{ override_value }}' == result2.block.stdout_lines[0]"
+      msg: "The content mismatched"
+
+  - name: Overriding with unconventional syntax
+    blockinfile:
+      path: /etc/example.conf
+      block: |
+        This syntax is --- !fine. Isn't it?
+        The block should still be written properly.
+      marker: "# {mark} AUTO-GENERATED BLOCK"
+    register: result3

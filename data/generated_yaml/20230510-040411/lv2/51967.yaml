@@ -1,0 +1,36 @@
+
+- name: Update SSL cert on default binding
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Fetch SSL cert
+      win_get_certificate:
+        path: C:\certs\
+        store_location: LocalMachine
+        store_name: My
+        thumbprint: "11aabb22cc33dd44ee55ffaabbccddeeff1122334"
+      register: cert_output
+
+    - name: Apply SSL cert to default binding
+      win_iis_webbinding:
+        name: "*"
+        protocol: https
+        ip: "*"
+        cert_hash: "{{ cert_output.cert_thumbprint }}"
+        cert_store_name: My
+      register: binding_output
+      
+    - name: Update SSL cert on all existing bindings
+      win_iis_webbinding:
+        name: "*"
+        protocol: https
+        ip: "*"
+        cert_hash: "{{ binding_output.new_cert_thumbprint }}"
+        cert_store_name: My
+        state: present
+      when: binding_output.changed
+
+    - name: Display binding information
+      debug:
+        var: binding_output

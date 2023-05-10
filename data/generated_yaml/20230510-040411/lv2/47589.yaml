@@ -1,0 +1,20 @@
+
+- name: Stress test playbook
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Generate 1000 domain sockets with random names
+      command: /bin/echo "{{ range(0, 1000) | map('regex_replace', '^', '/tmp/') | map('regex_replace', '$', '.sock') | list }}" > sockets.txt
+      args:
+        executable: /bin/bash
+      changed_when: false
+
+    - name: Read socket names from file and create a domain socket for each
+      shell: cat sockets.txt | while read sock; do (exec 3<>/dev/$sock); done
+      args:
+        executable: /bin/bash
+
+    - name: Reuse multiple domain sockets in the same playbook run
+      shell: cat sockets.txt | while read sock; do (exec 3<>/dev/$sock; python -c 'import Connection; Connection.reset_history()'); done
+      args:
+        executable: /bin/bash

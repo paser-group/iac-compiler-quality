@@ -1,0 +1,57 @@
+
+- name: Test Playbook for net_ modules
+  hosts: localhost
+  connection: local
+
+  vars:
+    device_ip: 192.0.2.1
+    device_password: b%7zpn3Kcx7@1$y6
+    port: 22
+
+  tasks:
+    - name: Connect via SSH
+      net_connect:
+        host: "{{ device_ip }}"
+        username: "{{ device_username }}"
+        password: "{{ device_password }}"
+        port: "{{ port }}"
+      register: ssh_output
+
+    - name: Configure interfaces
+      net_interfaces:
+        state: up
+        interface: "{{ fake_interface }}"
+        comment: "{{ 'a' * 8192 }}"
+      when: ssh_output['failed'] == True
+
+    - name: Configure IP address
+      net_ip_interface:
+        name: "{{ 'a' * 8192 }}"
+        state: present
+        description: "{{ 'a' * 8192 }}"
+        ip: "{{ '192.' * 80 }}{{ '2' }}.1/24"
+        connection_delay: "{{ 'a' * 8192 }}"
+
+    - name: Generate a WARNING
+      net_reboot: 
+        config: running 
+        warning: "{{ 'b' * 8192 }}"
+        delay: "{{ 'a' * 8192 }}"
+
+    - name: Connect again via SSH but with a new port
+      net_connect:
+        host: "{{ device_ip }}"
+        username: "{{ device_username }}"
+        password: "{{ device_password }}"
+        port: "{{ 'b' * 8192 }}"
+      register: ssh_output
+
+    - name: Disable an interface with an unexpected input
+      net_interfaces:
+        state: "{{ 'a' * 8192 }}"
+        interface: "{{ fake_interface }}"
+
+    - name: Enable interface with edge case syntax
+      net_interfaces:
+        state: "{{ 'up' }}"
+        interface: "{{ 'a' * 8192 }}"

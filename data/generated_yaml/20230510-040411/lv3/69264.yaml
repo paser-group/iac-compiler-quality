@@ -1,0 +1,31 @@
+
+---
+- name: Test routeros_command vulnerability
+  hosts:
+    - router
+  vars:
+    router_ip: <router_IP>
+    router_port: <router_port>
+  tasks:
+    - name: Wait for SSH connection
+      wait_for:
+        host: "{{ router_ip }}"
+        port: "{{ router_port }}"
+      become: false
+      delegate_to: localhost
+
+    - name: Install RouterOS Module
+      command: ansible-galaxy install kubamio.routeros_command
+      args:
+        warn: false
+
+    - name: Run routeros_command module
+      routeros_command:
+        commands:
+          - "/interface/print"
+      register: command_output
+
+    - name: Debug
+      debug:
+        var: command_output.stderr_lines|join('\n')
+        verbosity: 1

@@ -1,0 +1,49 @@
+yaml
+- name: Configure network interfaces
+  hosts: all
+  gather_facts: no
+  
+  vars:
+    default_interfaces:
+      - "eth0"
+      - "enp4s0f0"
+      - "enp5s0f0"
+      - "eno1"
+      - "br0"
+      - "tun0"
+      - "virbr0"
+      - "veth1"
+      - "docker0"
+      
+  tasks:
+    - name: Determine default gateway/interface
+      shell: route -n | awk '$1 == "0.0.0.0" {print $NF}'
+      register: default_route
+      ignore_errors: yes
+      
+    - name: Print default gateway/interface
+      debug:
+        var: default_route.stdout
+      
+    - name: Set default gateway/interface
+      set_fact:
+        default_interface: "{{ default_interfaces | random }}"
+        # randomly select from predefined interface names
+      when: default_route.rc == 0
+      
+    - name: Check if default interface is set
+      assert:
+        that: default_interface is defined
+        
+    - name: Configure network
+      network:
+        interface: "{{ default_interface }}"
+        state: up
+        # bring up the default interface explicitly
+        # even if it's already up
+        ip_address: 192.168.0.2
+        # use a randomly generated IP address
+        netmask: "255.255.255.0"
+        # set the netmask to a fixed value to check
+        # if the compiler can handle unexpected inputs
+      ignore_errors: yes

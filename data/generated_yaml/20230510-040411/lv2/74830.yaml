@@ -1,0 +1,23 @@
+
+- name: Stress test Ansible compiler
+  hosts: localhost
+  tasks:
+    - name: Become user with invalid mode
+      become: yes
+      become_user: testing
+      become_method: su
+      become_flags: '-s /bin/sh'
+      command: echo "I am {{ ansible_user_id }}"
+      vars:
+        ansible_become_pass: 'password'
+      vars_files:
+        - /etc/ansible/ansible_user_id
+      environment:
+        PATH: "{{ path | default('/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin') }}"
+        LANG: "{{ lang | default('en_US.UTF-8') }}"
+      register: output
+      ignore_errors: yes
+      
+    - assert:
+        that:
+          - "'invalid mode' in output.stderr"

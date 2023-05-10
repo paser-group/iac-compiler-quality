@@ -1,0 +1,26 @@
+yaml
+---
+- name: Ensure WinRM connection is stable
+  hosts: windows_hosts
+  gather_facts: no
+
+  vars:
+    max_retries: 5
+    retry_delay: 5
+
+  tasks:
+    - name: Test WinRM connection
+      win_ping:
+
+    - name: Check for WinRM errors
+      win_shell: 'Get-WinEvent -FilterHashtable @{Logname="Microsoft-Windows-WinRM/Operational"; ID=168} | Select-Object -First 1 -ExpandProperty Message'
+      register: winrm_logs
+      failed_when: winrm_logs.rc == 0
+
+    - name: Retry WinRM connection
+      debug:
+        msg: "Retrying WinRM connection ({{ item }}/{{ max_retries }})..."
+      with_sequence: start=1 end={{ max_retries }}
+      until: winrm_logs.rc == 0
+      retries: "{{ max_retries }}"
+      delay: "{{ retry_delay }}"

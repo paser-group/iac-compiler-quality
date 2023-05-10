@@ -1,0 +1,53 @@
+
+---
+- name: Ansible Tower Fuzz Test
+  hosts: localhost
+  vars:
+    username: "{{ item }}"
+    password: "{{ item }}"
+  tasks:
+
+    - name: Attempt login with an invalid username and invalid password
+      tower_authenticate:
+        tower_url: "{{ tower_url }}"
+        username: "invalid_username"
+        password: "invalid_password"
+      register: failed_login
+      ignore_errors: yes
+
+    - name: Attempt login with an invalid username and a valid password
+      tower_authenticate:
+        tower_url: "{{ tower_url }}"
+        username: "invalid_username"
+        password: "{{ password }}"
+      register: failed_username_login
+      when: failed_login is failed
+      ignore_errors: yes
+
+    - name: Attempt login with a valid username and an invalid password
+      tower_authenticate:
+        tower_url: "{{ tower_url }}"
+        username: "{{ username }}"
+        password: "invalid_password"
+      register: failed_password_login
+      when: failed_login is failed
+      ignore_errors: yes
+
+    - name: Authentication Timeout Test
+      tower_authenticate:
+        tower_url: "{{ tower_url }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        timeout: 0
+      register: timeout_login
+      when: failed_login is skipped
+      ignore_errors: yes
+
+    - name: Debug output
+      debug:
+        var: item
+      with_items:
+        - failed_login
+        - failed_username_login
+        - failed_password_login
+        - timeout_login

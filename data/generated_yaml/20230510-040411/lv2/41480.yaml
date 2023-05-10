@@ -1,0 +1,35 @@
+
+---
+- hosts: all
+  tasks:
+    - name: Attempt to create a file in a protected directory
+      file:
+        path: /etc/protected/file.txt
+        state: touch
+        mode: 0000
+      register: file_creation_result
+
+    - name: Assert that the file creation failed with a "Permission Denied" error
+      assert:
+        that:
+          - "'Permission denied' in file_creation_result.stderr"
+
+    - name: Attempt to read a file as a different user
+      shell: "cat /home/otheruser/top_secret.txt"
+      become_user: otheruser
+      register: file_read_result
+
+    - name: Assert that the file read failed with a "Permission Denied" error
+      assert:
+        that:
+          - "'Permission denied' in file_read_result.stderr"
+
+    - name: Attempt to read a non-existent file
+      shell: "cat /path/to/nonexistent/file.txt"
+      ignore_errors: yes
+      register: nonexistent_file_read_result
+
+    - name: Assert that the non-existent file read failed with a "No such file or directory" error
+      assert:
+        that:
+          - "'No such file or directory' in nonexistent_file_read_result.stderr"

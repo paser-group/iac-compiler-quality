@@ -1,0 +1,36 @@
+yaml
+- name: Debug Module and Variable Read Issue
+  hosts: all
+  gather_facts: no
+  
+  vars:
+    var_dict:
+      - key: "{{ item }}"
+        value: "{{ lookup('env', item) }}"
+      - key: ansible_distribution
+        value: "{{ ansible_distribution }}"
+      - key: ansible_distribution_version
+        value: "{{ ansible_distribution_version }}"
+  
+  tasks:
+    - name: Check debug module behavior with variables
+      debug: msg="{{ lookup('var', item.key) }}"
+      loop: "{{ var_dict }}"
+  
+    - name: Check syntax for unreachable statement in when condition
+      debug: msg="This line should not be reached"
+      when: "{{ True }} and {{ False }}"
+  
+    - name: Check syntax for using multiple conditionals in when condition
+      debug: msg="This line should not be reached"
+      when: "{{ True }} and {{ False }} or {{ True }}"
+
+    - name: Check syntax for using invalid filter in set_fact module
+      set_fact:
+        invalid_filter: "{{ 'test_var' }} | invalid_filter"
+        
+    - name: Check syntax for using invalid parameter in delegate_to module
+      file:
+        path: /tmp/test-file
+        state: touch
+      delegate_to: "{{ invalid_parameter }}"

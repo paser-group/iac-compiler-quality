@@ -1,0 +1,82 @@
+
+- name: EC2 VPC Subnet Creation
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    vpc_id: "vpc-12345678"
+    cidr_block: "10.0.1.0/24"
+    az: "us-west-1a"
+
+  tasks:
+    - name: Create VPC Subnet
+      ec2_vpc_subnet:
+        state: present
+        vpc_id: "{{ vpc_id }}"
+        cidr_block: "{{ cidr_block }}"
+        availability_zone: "{{ az }}"
+      register: result
+
+    - name: Debug output
+      debug:
+        msg: "{{ result }}"
+
+    - name: Attempt to create subnet without VPC ID
+      ec2_vpc_subnet:
+        state: present
+        cidr_block: "{{ cidr_block }}"
+        availability_zone: "{{ az }}"
+      register: result_2
+      ignore_errors: yes
+
+    - name: Debug output
+      debug:
+        msg: "{{ result_2 }}"
+
+    - name: Attempt to create subnet without CIDR Block
+      ec2_vpc_subnet:
+        state: present
+        vpc_id: "{{ vpc_id }}"
+        availability_zone: "{{ az }}"
+      register: result_3
+      ignore_errors: yes
+
+    - name: Debug output
+      debug:
+        msg: "{{ result_3 }}"
+
+    - name: Attempt to create subnet with invalid availabilty zone
+      ec2_vpc_subnet:
+        state: present
+        vpc_id: "{{ vpc_id }}"
+        cidr_block: "{{ cidr_block }}"
+        availability_zone: "us-west-1d"
+      register: result_4
+      ignore_errors: yes
+
+    - name: Debug output
+      debug:
+        msg: "{{ result_4 }}"
+
+    - name: Attempt to create duplicate subnet
+      ec2_vpc_subnet:
+        state: present
+        vpc_id: "{{ vpc_id }}"
+        cidr_block: "{{ cidr_block }}"
+        availability_zone: "{{ az }}"
+      register: result_5
+
+    - name: Debug output
+      debug:
+        msg: "{{ result_5 }}"
+
+    - name: Attempt to delete non-existent subnet
+      ec2_vpc_subnet:
+        state: absent
+        subnet_id: "subnet-12345678"
+      register: result_6
+      ignore_errors: yes
+
+    - name: Debug output
+      debug:
+        msg: "{{ result_6 }}"

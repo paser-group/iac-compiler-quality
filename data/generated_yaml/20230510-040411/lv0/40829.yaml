@@ -1,0 +1,21 @@
+yaml
+- name: Retrieve MAC address of tunnel interface on iOS
+  ios_command:
+    commands:
+      - show interface tunnel {{ tunnel_interface_name }}
+  register: tunnel_interface_output
+
+- name: Extract IP address and prefix from interface output
+  set_fact:
+    interface_data: "{{ tunnel_interface_output.stdout_lines[0].split() }}"
+  when: tunnel_interface_output.rc == 0
+
+- name: Extract MAC address from interface output
+  set_fact:
+    mac_address: "{{ tunnel_interface_output.stdout_lines[1].split()[1] }}"
+  when: tunnel_interface_output.rc == 0
+
+- name: Display interface data
+  debug:
+    msg: "Tunnel interface IP: {{ interface_data[1] }}, Prefix: {{ interface_data[3] }}, MAC address: {{ mac_address }}"
+  when: tunnel_interface_output.rc == 0

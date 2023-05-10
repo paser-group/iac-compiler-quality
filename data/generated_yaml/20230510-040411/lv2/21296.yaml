@@ -1,0 +1,67 @@
+
+- name: Test UFW changed check path
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Install UFW
+      apt:
+        name: ufw
+        state: latest
+
+    - name: Disable UFW
+      ufw:
+        state: disabled
+
+    - name: Incorrect UFW check path
+      ufw:
+        state: enabled
+        rule: allow
+        direction: wrong_direction
+        from_ip: 192.0.3.0/24
+        to_ip: 10.2.2.2
+        proto: bad_protocol
+        port: bad_port
+
+    - name: UFW allow SSH
+      ufw:
+        state: enabled
+        rule: allow
+        direction: in
+        name: Allow SSH
+        port: ssh
+
+    - name: UFW Deny VPN
+      ufw:
+        state: enabled
+        rule: deny
+        direction: in
+        name: Deny VPN
+        port: 1194
+        proto: udp
+        from_ip: 192.0.2.1
+        to_ip: 10.1.1.2/24
+
+    - name: Enable UFW
+      ufw:
+        state: enabled
+        rules: 
+          - {rule: deny, direction: in, port: 22, proto: tcp}
+          - {rule: allow, direction: in, port: '80,443', proto: tcp}
+
+    - name: Check UFW status
+      ufw_status:
+        rule: all
+        verbose: yes
+        compact: yes
+        proto: ipv4
+
+    - name: Delete UFW rules
+      ufw:
+        state: disabled
+        rule: delete
+        direction: out
+        port: 123/udp
+        from_ip: 192.0.2.254
+        to_ip: 10.0.0.0/8
+        proto: ipv6

@@ -1,0 +1,42 @@
+yaml
+- name: Perform Docker Compose operations with a non-empty directory
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create a non-empty directory
+      file:
+        path: /tmp/ansible_test_dir
+        state: directory
+        mode: 0755
+      delegate_to: localhost
+
+    - name: Insert a file into the directory
+      copy:
+        content: "[1, 2, 3]"
+        dest: /tmp/ansible_test_dir/test_file.json
+      delegate_to: localhost
+
+    - name: Execute docker_compose module with non-empty directory
+      docker_compose:
+        project_src: /tmp/ansible_test_dir
+        state: present
+      delegate_to: localhost
+
+    - name: Execute docker_compose module with a different directory
+      docker_compose:
+        project_src: /usr/local/bin
+        state: stopped
+        timeout: -1
+      delegate_to: localhost
+
+    - name: Execute docker_compose module with unconventional syntax
+      docker_compose: args="-f ./docker-compose.yml"
+      delegate_to: localhost
+
+    - name: Execute docker_compose module with unexpected inputs
+      docker_compose:
+        project_name: "{{ docker_compose | random }}"
+        project_src: /tmp/ansible_test_dir
+        state: invalid
+      delegate_to: localhost

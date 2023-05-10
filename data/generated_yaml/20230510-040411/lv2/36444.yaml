@@ -1,0 +1,55 @@
+
+---
+- name: Azure Playbook
+  hosts: localhost
+  
+  tasks:
+    
+    - name: Create Azure network interface with no public IP
+      azure_rm_networkinterface:
+        resource_group: "myResourceGroup"
+        name: "myNetworkInterface"
+        tags:
+          environment: "test"
+        virtual_network_name: "myVnet"
+        subnet_name: "mySubnet"
+        enable_ip_forwarding: "no"
+        ip_configurations:
+          - name: "myIpConfiguration"
+            private_ip_allocation_method: "Static"
+            private_ip_address_version: "IPv4"
+            private_ip_address: "10.0.0.4"
+            application_gateway_backend_address_pools: ["myBackendAddressPool"]
+        public_ip_address_id: "null"      #Testing edge case where 'public_ip_address_id' is null
+      
+    - name: Create another Azure network interface with no public IP
+      azure_rm_networkinterface:
+        resource_group: "{{ var }}"
+        name: "{{ null }}"     #Testing edge case where 'name' is null
+        tags:
+          environment: "prod"
+        virtual_network_name: "myVnet"
+        subnet_name: "mySubnet"
+        enable_ip_forwarding: "yes"
+        ip_configurations:
+          - name: "{{ var }}"   #Testing edge case where 'name' is a variable
+            private_ip_allocation_method: "Dynamic"
+            private_ip_address_version: "{{ var }}"   #Testing edge case where 'private_ip_address_version' is a variable
+            private_ip_address: "null"   #Testing edge case where 'private_ip_address' is null
+        public_ip_address_id: ""     #Testing edge case where 'public_ip_address_id' is an empty string
+          
+    - name: Create an Azure network interface with invalid tags
+      azure_rm_networkinterface:
+        resource_group: "myResourceGroup"
+        name: "myNetworkInterface"
+        tags:
+          - invalid_tag   #Testing edge case where tag is not in key:value format
+        virtual_network_name: "myVnet"
+        subnet_name: "mySubnet"
+        enable_ip_forwarding: "yes"
+        ip_configurations:
+          - name: "myIpConfiguration"
+            private_ip_allocation_method: "Static"
+            private_ip_address_version: "{{ var }}"
+            private_ip_address: "10.0.0.2"
+        public_ip_address_id: "{{ var }}"   #Testing edge case where 'public_ip_address_id' is a variable

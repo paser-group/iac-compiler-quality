@@ -1,0 +1,48 @@
+yaml
+---
+- name: Deploy application to Windows Servers via Azure dynamic inventory
+  hosts: all
+  gather_facts: true
+
+  vars:
+    ansible_connection: winrm
+    ansible_winrm_server_cert_validation: ignore
+    ansible_user: admin
+    ansible_password: <your password>
+
+  tasks:
+    - name: Install necessary Windows modules
+      win_reboot:
+        reboot_timeout: 600
+      register: result
+      when: result.rc > 1
+
+    - name: Install chocolatey package manager
+      win_chocolatey:
+        name: chocolatey
+        state: present
+
+    - name: Install Python on Windows Servers
+      win_chocolatey:
+        name: python3
+        state: present
+
+    - name: Install Azure SDK
+      win_chocolatey:
+        name: azure-cli
+        state: present
+
+    - name: Install Azure modules
+      pip:
+        name:
+          - azure
+          - azure-cli-core
+
+    - name: Check Windows Server connectivity via ping
+      win_ping:
+
+    - name: Deploy application to Windows Servers
+      win_copy:
+        src: <path to your application code>
+        dest: <destination path where to deploy code on remote Windows servers>
+

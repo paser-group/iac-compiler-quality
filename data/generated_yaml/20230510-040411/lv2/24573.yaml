@@ -1,0 +1,57 @@
+
+- name: Test IAM User Certificate creation module
+  hosts: localhost
+  gather_facts: False
+
+  vars:
+    aws_access_key: "ACCESS_KEY"
+    aws_secret_key: "SECRET_KEY"
+
+  tasks:
+    - name: create IAM User Certificate
+      iam_cert:
+          state: present
+          user_name: test_user
+          certificate_file: /path/to/cert/file
+          private_key_file: /path/to/ec/private/key.pem
+          aws_access_key: "{{ aws_access_key }}"
+          aws_secret_key: "{{ aws_secret_key }}"
+      register: iam_cert_result
+
+    - name: debug result
+      debug:
+          var: iam_cert_result
+
+    - name: list IAM User Certificates
+      iam_cert_facts:
+          user_name: test_user
+          aws_access_key: "{{ aws_access_key }}"
+          aws_secret_key: "{{ aws_secret_key }}"
+
+# Edge Cases
+    - name: create IAM User Certificate with unconventional syntax
+      iam_cert: user_name=test_user certificate_file=/path/to/cert/file private_key_file=/path/to/ec/private/key.pem awas_access_key="{{ aws_access_key }}" aws_secret_key="{{ aws_secret_key }}" state="present"
+
+    - name: create IAM User Certificate with unexpected input
+      iam_cert:
+          state: present
+          user_name: test_user
+          certificate_file: null
+          private_key_file: /path/to/ec/private/key.pem
+
+# Boto not recognized issue
+    - name: create IAM User Certificate with boto missing
+      shell: rm -f /usr/local/lib/python3.9/site-packages/boto*
+      register: delete_boto
+      changed_when: delete_boto.stdout_lines
+
+    - name: create IAM User Certificate with boto missing
+      iam_cert:
+          state: present
+          user_name: test_user
+          certificate_file: /path/to/cert/file
+          private_key_file: /path/to/ec/private/key.pem
+          aws_access_key: "{{ aws_access_key }}"
+          aws_secret_key: "{{ aws_secret_key }}"
+      when: not delete_boto.changed
+      ignore_errors: yes

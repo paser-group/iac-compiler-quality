@@ -1,0 +1,37 @@
+
+- name: Test playbook for custom module with pipelining
+  hosts: all
+  vars:
+    command: "echo 'Testing command'"
+    pipeline: true
+  tasks:
+    - name: "Test custom module with pipelining"
+      custom_module:
+        command: "{{ command }}"
+        pipeline: "{{ pipeline }}"
+      ignore_errors: true
+      register: module_output
+
+    - name: "Print custom module output"
+      debug:
+        msg: "{{ module_output }}"
+
+    - name: "Execute nested tasks with unexpected input"
+      command: "{{ _my_var | default('default_value') }}"
+      args:
+        chdir: "{{ _my_var2 /*this is an unexpected input*/ }}"
+      ignore_errors: true
+      when: _my_var3 /*expected boolean input*/ in [true, false]
+
+    - name: "Use an unconventional syntax for loop"
+      debug:
+        msg: "{{ item }}"
+      loop: "{{ range(1, 10) }}"
+      loop_control:
+        index_var: "i"
+
+    - name: "Check if ansible_python_interpreter is set"
+      assert:
+        that:
+          - ansible_python_interpreter is defined
+          - ansible_python_interpreter != ''

@@ -1,0 +1,43 @@
+
+- name: NetApp error playbook
+  hosts: all
+
+  vars:
+    na_login_info: 
+      na_server: "{{ playbook_var('na_server') | required }}"
+
+  tasks:
+    - name: Install netapp-lib
+      pip:
+        name: netapp-lib
+        version: "{{ playbook_var('na_version') | required }}"
+
+    - name: Retrieve login credentials
+      set_fact:
+        na_login_info:
+          na_user: "{{ playbook_var('na_user') | required }}"
+          na_password: "{{ playbook_var('na_password') | required }}"
+          na_server: "{{ playbook_var('na_server') | required }}"
+
+    - name: Ensure netapp-lib is installed
+      assert:
+        that:
+          - "'netapp_lib' in ansible_python_interpreter"
+        fail_msg: "Failed to install netapp-lib"
+
+    - name: Get cluster status
+      netapp_e_ontap_cluster:
+        login_info: "{{ na_login_info }}"
+
+    - name: Create new volume
+      netapp_e_ontap_volume:
+        login_info: "{{ na_login_info }}"
+        aggr_name: agg1
+        volume_name: vol1
+        size: 10g
+
+    - name: Delete volume
+      netapp_e_ontap_volume:
+        login_info: "{{ na_login_info }}"
+        state: absent
+        volume_name: "{{ playbook_var('nonexistent_volume') | required }}"

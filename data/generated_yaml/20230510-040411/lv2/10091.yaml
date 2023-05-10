@@ -1,0 +1,38 @@
+
+- name: Test apt_key module with URL cert issue
+  hosts: localhost
+  become: true
+  tasks:
+  - name: Add apt key with invalid URL cert
+    apt_key:
+      url: "https://example.com"
+      validate_certs: False
+    register: result_1
+
+  - name: Print apt key result
+    debug:
+      var: result_1.stdout_lines
+
+  - name: Add apt key with unconventional syntax
+    apt_key:
+      url: "{{lookup('env', 'HOME' + '/.ssh/id_rsa')}}"
+    register: result_2
+
+  - name: Print apt key result
+    debug:
+      var: result_2.stdout_lines
+
+  - name: Add apt key with unexpected input
+    apt_key:
+      url: "{{ item }}"
+    with_items:
+      - "'https://example.com'"
+      - ""
+      - None
+      - {}
+      - []
+    register: result_3
+
+  - name: Print apt key result
+    debug:
+      var: result_3.stdout_lines

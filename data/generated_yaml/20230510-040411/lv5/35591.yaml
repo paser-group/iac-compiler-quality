@@ -1,0 +1,57 @@
+
+- hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    resource_group: "my_resource_group"
+    virtual_network: "my_virtual_network"
+    subnet: "my_subnet"
+    vm_name: "my_vm_name"
+    image_name: "my_managed_image_name"
+
+  tasks:
+    - name: Create VM from managed image
+      azure_rm_virtualmachine:
+        resource_group: "{{ resource_group }}"
+        virtual_network: "{{ virtual_network }}"
+        subnet: "{{ subnet }}"
+        admin_username: "my_admin_username"
+        admin_password: "my_admin_password"
+        name: "{{ vm_name }}"
+        image:
+          offer: "my_managed_image_offer"
+          sku: "my_managed_image_sku"
+          publisher: "my_managed_image_publisher"
+          version: "my_managed_image_version"
+      register: vm_created
+
+    - name: Start VM
+      azure_rm_virtualmachine:
+        resource_group: "{{ resource_group }}"
+        name: "{{ vm_name }}"
+        state: started
+      register: vm_started
+
+    - name: Stop VM
+      azure_rm_virtualmachine:
+        resource_group: "{{ resource_group }}"
+        name: "{{ vm_name }}"
+        state: stopped
+      register: vm_stopped
+
+    - name: Deallocate VM
+      azure_rm_virtualmachine:
+        resource_group: "{{ resource_group }}"
+        name: "{{ vm_name }}"
+        state: deallocated
+      register: vm_deallocated
+
+    - name: Display output
+      debug:
+        var: item.stdout
+      with_items:
+        - vm_created
+        - vm_started
+        - vm_stopped
+        - vm_deallocated

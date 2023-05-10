@@ -1,0 +1,60 @@
+
+- name: Stress Test Playbook
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    inventory_file_path: "/path/to/inventory/file"
+
+  tasks:
+    - name: Execute arbitrary command
+      command: "{{ command_to_execute }}"
+      ignore_errors: true
+
+    - name: Playbook ends without failing
+      debug:
+        msg: "Playbook execution completed successfully."
+
+  pre_tasks:
+    - name: Read inventory file contents
+      slurp:
+        src: "{{ inventory_file_path }}"
+      register: fileContents
+
+    - name: Force an inventory read error
+      set_fact:
+        inventory_data: "{{ fileContents['content'][:-1] }}"
+        
+    - name: Syntax errors (invalid variable)
+      debug: "{{ invalid_variable }}"
+
+    - name: Syntax errors (unclosed quotes)
+      shell: 'echo "hello'
+      
+    - name: Invalid input: non-existent module
+      non_existent_module: "hello"
+
+    - name: Invalid input: module with no arguments
+      ping:
+
+    - name: Invalid input: module with invalid arguments
+      command:
+        arg1: "value1"
+        arg2: "value2"
+        invalid_arg: "value3"
+      
+    - name: Invalid input: module with invalid JSON
+      command:
+        arg1: "{{ ['value1', 'value2'] }}"
+        
+    - name: Invalid input: invalid Jinja2 syntax
+      debug:
+        msg: '{{ invalid_jinja_syntax...'
+
+    - name: Invalid input: Bash command
+      shell: "echo test; { echo oops; exit 1; }"
+      
+    - name: Playbook exits with a failure
+      debug:
+        msg: "Playbook execution failed."
+      failed_when: true

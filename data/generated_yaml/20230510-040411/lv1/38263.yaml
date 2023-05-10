@@ -1,0 +1,54 @@
+yaml
+- name: Configure VMware guest permissions
+  hosts: [your_vmware_hosts]
+  gather_facts: no
+  become: yes
+
+  vars:
+    vm_name: your_vm_name
+    vmware_user: your_vmware_user
+    vmware_password: your_vmware_password
+    vmware_guest_esxi_hostname: your_vmware_guest_esxi_hostname
+    vmware_guest_datacenter: your_vmware_guest_datacenter
+    vmware_guest_cluster: your_vmware_guest_cluster
+
+  tasks:
+    - name: Get the current permissions of the guest VM
+      vmware_guest_info:
+        hostname: "{{ vmware_guest_esxi_hostname }}"
+        username: "{{ vmware_user }}"
+        password: "{{ vmware_password }}"
+        datacenter: "{{ vmware_guest_datacenter }}"
+        cluster: "{{ vmware_guest_cluster }}"
+        guest: "{{ vm_name }}"
+      register: current_permissions
+
+    - name: Check if NoPermission error is present
+      debug:
+        msg: "NoPermission error detected"
+      when: current_permissions.vim.fault.NoPermission is defined and current_permissions.vim.fault.NoPermission == True and ansible_distribution_version is version('2.5.0a1', '>=')
+
+    - name: Modify guest permissions if NoPermission error is present
+      vmware_guest:
+        hostname: "{{ vmware_guest_esxi_hostname }}"
+        username: "{{ vmware_user }}"
+        password: "{{ vmware_password }}"
+        datacenter: "{{ vmware_guest_datacenter }}"
+        cluster: "{{ vmware_guest_cluster }}"
+        state: present
+        name: "{{ vm_name }}"
+        guest_os_type: '{{ current_permissions.guest_config.guest_OS }}'
+        disk:
+          - size_gb: "{{ item.size_gb }}"
+            type: "{{ item.type }}"
+            datastore: "{{ item.datastore }}"
+            mode: "{{ item.mode }}"
+          with_items: "{{ current_permissions.guest_disk }}"
+        hardware:
+          memory_mb: "{{ current_permissions.guest_memory_ram }}"
+          num_cpus: "{{ current_permissions.guest_cpu_count }}"
+          scsi: "{{ current_permissions.guest_device }}"
+          devices:
+            network:
+              "{{ current_permissions.guest_nic }}"
+      when: current_permissions.vim.fault.NoPermission is defined and current_permissions.vim.fault.NoPermission == True and ansible_distribution_version is version('2.5.0a1', '>=')

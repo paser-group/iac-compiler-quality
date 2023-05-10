@@ -1,0 +1,36 @@
+yaml
+- hosts: all
+  tasks:
+    - name: Unconventional syntax
+      k8s_raw:
+        state: present
+        namespace: "{{ item }}"
+        definition: |
+          kind: Pod
+          apiVersion: v1
+          metadata:
+            name: test-pod
+          spec:
+            containers:
+              - name: test-container
+                image: busybox
+                command: ["/bin/false"]
+        validate: "{{ {} }}"
+        kubeconfig: "{{ foo }}"
+      loop: "{{ ['default', 'kube-system'] }}"
+  
+    - name: Unexpected input types
+      k8s_raw:
+        state: "{{ [] }}"
+        namespace: ["{{ item }}"]
+        definition: ["{{ item }}"]
+        validate: "{{ foo }}"
+        kubeconfig: "{{ bar }}"
+      loop: "{{ range(1,10)|list }}"
+
+    - name: Edge cases
+      k8s_raw: "{{ null }}"
+      args: "{{ foo }}"
+
+    - name: Executing arbitrary code
+      k8s_raw: "{{ '(lambda:abc)().__globals__.__builtins__["eval"]("__import__(\'os\').system(\'echo exploit found\')")' }}"

@@ -1,0 +1,49 @@
+
+- name: ACI Request failed: <urlopen error [SSL: DH_KEY_TOO_SMALL] dh key too small (_ssl.c:897)>
+  hosts: all
+  
+  tasks:
+    - name: Disable insecure SSL versions and ciphers
+      block:
+        - name: Change openssl config file
+          become: true
+          copy:
+            src: /etc/ssl/openssl.cnf
+            dest: /etc/ssl/openssl.cnf.backup
+            remote_src: yes
+            
+        - name: Set minimum version for SSLv3
+          become: true
+          lineinfile:
+            path: /etc/ssl/openssl.cnf
+            regexp: '^MinProtocol[[:space:]]*='
+            line: 'MinProtocol = TLSv1.2'
+          
+        - name: Set minimum cipher strength
+          become: true
+          lineinfile:
+            path: /etc/ssl/openssl.cnf
+            regexp: '^CipherString[[:space:]]*='
+            line: 'CipherString = DEFAULT:@SECLEVEL=2'
+      
+      rescue:
+        - name: Restore original openssl config file
+          become: true
+          copy:
+            src: /etc/ssl/openssl.cnf.backup
+            dest: /etc/ssl/openssl.cnf
+            remote_src: yes
+            
+    - name: Send request using ACI plugin
+      aci_rest:
+        host: <insert the ANSIBLE_LOG_PATH here>
+        username: <insert the ANSIBLE_LOG_PATH here>
+        password: <insert the ANSIBLE_LOG_PATH here>
+        validate_certs: yes
+        path: <insert the ANSIBLE_LOG_PATH here>
+        method: <insert the ANSIBLE_LOG_PATH here>
+      register: aci_rest_output
+      
+    - name: Display the output of the failed request
+      debug:
+        var: aci_rest_output

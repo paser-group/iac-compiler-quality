@@ -1,0 +1,49 @@
+yaml
+- name: Configure Network Interface with Default NSG
+  hosts: localhost
+  connection: local
+  gather_facts: no
+  
+  tasks:
+    - name: Create Network Security Group
+      azure_rm_networksecuritygroup:
+        name: "default-nsg"
+        resource_group: "my-resource-group"
+        location: "eastus"
+        rules:
+          - name: "AllowSSH"
+            protocol: Tcp
+            source_address_prefix: "*"
+            destination_address_prefix: "*"
+            destination_port_range: "22"
+            access: Allow
+            priority: 1000
+          - name: "AllowHTTP"
+            protocol: Tcp
+            source_address_prefix: "*"
+            destination_address_prefix: "*"
+            destination_port_range: "80"
+            access: Allow
+            priority: 1010
+          - name: "AllowHTTPS"
+            protocol: Tcp
+            source_address_prefix: "*"
+            destination_address_prefix: "*"
+            destination_port_range: "443"
+            access: Allow
+            priority: 1020
+      register: nsg
+      
+    - name: Create Network Interface
+      azure_rm_networkinterface:
+        name: "my-nic"
+        resource_group: "my-resource-group"
+        location: "eastus"
+        virtual_network_name: "my-vnet"
+        subnet_name: "my-subnet"
+        network_security_group_name: "{{ nsg.name }}"
+      register: nic
+      
+    - name: Display NIC information
+      debug:
+        var: nic

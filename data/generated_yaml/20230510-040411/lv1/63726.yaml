@@ -1,0 +1,24 @@
+
+---
+- name: Meraki Error Handling
+  hosts: all
+  become: true
+
+  vars:
+      api_key: <API_KEY>
+
+  tasks:
+    - name: Create VLAN
+      meraki_vlan:
+        api_key: "{{ api_key }}"
+        organization_id: <ORGANIZATION_ID>
+        network_id: <NETWORK_ID>
+        name: VLAN 100
+        subnet: 192.168.100.0/24
+        appliance_ip: 192.168.0.1
+      register: vlan_created
+
+    - name: Handle 404 Error
+      fail:
+        msg: "VLAN creation failed. Error: {{ vlan_created.api_response.msg }}"
+      when: vlan_created.failed and vlan_created.api_response.status_code == 404

@@ -1,0 +1,29 @@
+yaml
+---
+
+- name: Install beadm python module
+  hosts: all
+  become: true
+  
+  tasks:
+  - name: Install beadm module
+    pip: name=beadm
+  
+  - name: Fix beadm module error
+    block:
+    - name: Get list of snapshots
+      command: beadm list -H
+      register: output
+      
+    - name: Remove existing snapshot names
+      set_fact:
+        snapshot_names: "{{ output.stdout_lines | map('regex_replace', '^([^\\t]+)\\t.*$', '\\1') | list }}"
+
+    - name: Print the list of snapshots
+      debug:
+        var: snapshot_names
+
+    rescue:
+    - name: Display Error Message
+      debug:
+        msg: "beadm module ends with ' AttributeError: 'list' object has no attribute 'split' ' python error"

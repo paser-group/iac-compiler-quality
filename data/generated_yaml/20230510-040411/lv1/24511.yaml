@@ -1,0 +1,38 @@
+
+---
+- name: VMware Snapshot playbook
+  hosts: <inventory>
+  gather_facts: false
+  tasks:
+  - name: Create a snapshot of the guest
+    vmware_guest_snapshot:
+      hostname: <vcenter_hostname>
+      username: <vcenter_username>
+      password: <vcenter_password>
+      validate_certs: false
+      datacenter: <datacenter_name>
+      name: <vm_name>
+      snapshot_name: <snapshot_name>
+    register: snapshot_result
+
+  - name: Check if snapshot already exists
+    vmware_guest_snapshot_facts:
+      hostname: <vcenter_hostname>
+      username: <vcenter_username>
+      password: <vcenter_password>
+      validate_certs: false
+      datacenter: <datacenter_name>
+      name: <vm_name>
+    register: snapshot_facts
+
+  - name: Remove snapshot if it already exists
+    vmware_guest_snapshot:
+      hostname: <vcenter_hostname>
+      username: <vcenter_username>
+      password: <vcenter_password>
+      validate_certs: false
+      datacenter: <datacenter_name>
+      name: <vm_name>
+      state: absent
+      snapshot_name: <snapshot_name>
+    when: snapshot_facts.snapshots | map(attribute='name') | list | count(snapshot_name) > 0

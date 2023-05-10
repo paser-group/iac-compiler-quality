@@ -1,0 +1,40 @@
+yaml
+---
+- name: Example playbook for AWS S3 module error
+  hosts: localhost
+  gather_facts: true
+  vars:
+    aws_profile: "my-profile"
+    bucket_name: "my-bucket"
+  tasks:
+    - name: Install AWS CLI
+      apt:
+        name: awscli
+        state: latest
+
+    - name: Configure AWS credentials
+      block:
+        - name: Set AWS profile
+          lineinfile:
+            path: ~/.aws/config
+            line: |
+              [profile {{ aws_profile }}]
+              region = us-east-1
+
+        - name: Set AWS access key
+          lineinfile:
+            path: ~/.aws/credentials
+            line: |
+              [{{ aws_profile }}]
+              aws_access_key_id = {{ lookup('env', 'AWS_ACCESS_KEY_ID') }}
+              aws_secret_access_key = {{ lookup('env', 'AWS_SECRET_ACCESS_KEY') }}
+
+      when: aws_profile != "default"  # Skip if using default profile
+
+    - name: Upload file to S3 bucket
+      s3:
+        bucket: "{{ bucket_name }}"
+        src: "/path/to/file"
+        dest: "/path/destination/"
+        mode: put
+        region: "{{ aws_region }}"

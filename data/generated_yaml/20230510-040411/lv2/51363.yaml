@@ -1,0 +1,80 @@
+
+- name: Network_cli error 'unable to set terminal parameters' stress test
+  hosts: all
+  gather_facts: no
+  
+  tasks:
+  - name: Invalid device type input
+    network_cli:
+      host: "{{ inventory_hostname }}"
+      device_type: wrong_device_type
+    register: result_1
+    
+  - name: Invalid credential syntax (missing colon)
+    network_cli:
+      host: "{{ inventory_hostname }}"
+      username: "username"
+      password "password"
+    register: result_2
+
+  - name: Invalid credential syntax (extra whitespace)
+    network_cli:
+      host: "{{ inventory_hostname }}"
+      username: " username "
+      password: " password "
+      secret: " privileged "
+    register: result_3
+
+  - name: Invalid command syntax (using invalid flags)
+    network_cli:
+      host: "{{ inventory_hostname }}"
+      command_string: "ip address show -x"
+    register: result_4
+
+  - name: Invalid command syntax (using quotes within quotes)
+    network_cli:
+      host: "{{ inventory_hostname }}"
+      command_string: "ip address show 'eth0' | grep 'inet'"
+    register: result_5
+
+  - name: Invalid configuration syntax (extra space before colon)
+    network_cli:
+      host: "{{ inventory_hostname }}"
+      config: "interface eth0 : no shut"
+    register: result_6
+
+  - name: Invalid configuration syntax (missing colon)
+    network_cli:
+      host: "{{ inventory_hostname }}"
+      config: "interface eth0 no shut"
+    register: result_7
+
+  - name: Invalid configuration syntax (using invalid syntax in config script)
+    network_cli:
+      host: "{{ inventory_hostname }}"
+      config: |
+        interface eth0
+        no shutdwn
+    register: result_8
+
+  - name: Valid syntax
+    network_cli:
+      host: "{{ inventory_hostname }}"
+      device_type: "exos"
+      username: "username"
+      password: "password"
+      command_string: "show version"
+    register: result_9
+
+  - name: Check results for errors
+    assert:
+      that:
+        - result_1 is failed
+        - result_2 is failed
+        - result_3 is failed
+        - result_4 is failed
+        - result_5 is failed
+        - result_6 is failed
+        - result_7 is failed
+        - result_8 is failed
+        - result_9 is succeeded

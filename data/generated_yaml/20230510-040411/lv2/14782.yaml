@@ -1,0 +1,63 @@
+
+- name: Test get_url with various edge cases, unconventional syntax, and unexpected inputs
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+    - name: Test GET request
+      get_url:
+        url: http://example.com/test
+        return_content: yes
+      register: response
+
+    - name: Assert response status code
+      assert:
+        that:
+          - response.status == '200 OK'
+        fail_msg: 'Response status code is {{ response.status }}'
+
+    - name: Test POST request with headers and custom timeout
+      get_url:
+        url: http://example.com/test
+        method: POST
+        headers:
+          Content-Type: application/json
+        timeout: 5
+        validate_certs: no
+        follow_redirects: no
+        user: "{{ ansible_user }}"
+        password: "{{ ansible_password }}"
+        body: '{"key": "value"}'
+      register: response
+
+    - name: Assert response status code
+      assert:
+        that:
+          - response.status == '200 OK'
+        fail_msg: 'Response status code is {{ response.status }}'
+
+    - name: Test invalid URL
+      get_url:
+        url: 'not_a_valid_url'
+        return_content: yes
+      register: response
+      ignore_errors: yes
+
+    - name: Assert failure due to invalid URL
+      assert:
+        that:
+          - response is failed
+        fail_msg: 'get_url task did not fail with invalid URL input'
+
+    - name: Test custom user agent
+      get_url:
+        url: http://example.com/test
+        headers:
+          User-Agent: 'custom_user_agent'
+      register: response
+
+    - name: Assert custom user agent is set
+      assert:
+        that:
+          - response.headers['User-Agent'] == 'custom_user_agent'
+        fail_msg: 'User-Agent header is not set to custom_user_agent'

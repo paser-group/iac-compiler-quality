@@ -1,0 +1,32 @@
+yaml
+---
+- name: Resolve 'unable to elevate privilege to enable mode' issue
+  hosts: all
+  become: yes
+
+  tasks:
+    - name: Set privilege escalation timeout value
+      set_fact:
+        ansible_become_timeout: 300
+
+    - name: Check enable privilege mode
+      ios_command:
+        commands: 'show privilege'
+      register: enable_check
+
+    - name: Enable privilege mode
+      ios_command:
+        commands: 'enable'
+      expect:
+        command:
+          - 'enable'
+        response:
+          - 'Password:'
+      become: yes
+      become_method: enable
+      become_password: your_become_password_here
+      when: enable_check.stdout_lines is not search("15")
+
+    - name: Save running configuration
+      ios_command:
+        commands: 'write memory'

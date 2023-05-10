@@ -1,0 +1,35 @@
+
+---
+- name: Azure VM Facts Test
+  connection: azure
+  gather_facts: no
+
+  vars:
+    azure_client_id: "YOUR_AZURE_CLIENT_ID"
+    azure_secret: "YOUR_AZURE_SECRET"
+    azure_tenant: "YOUR_AZURE_TENANT"
+    azure_subscription_id: "YOUR_AZURE_SUBSCRIPTION_ID"
+    resource_groups: ["RESOURCE-GROUP-NAME"]
+    tags: ["tag1", "tag2"]
+
+  tasks:
+  - name: Retrieve Azure resource facts filtered by type and tags
+    azure_rm_resource_facts:
+      resource_group: "{{ item }}"
+      filter:
+        - type eq 'Microsoft.Compute/virtualMachines'
+        - tag.key eq '{{ tags[0] }}' and tag.value eq '{{ tags[1] }}'
+    with_items: "{{ resource_groups }}"
+    register: resource_facts
+
+  - name: Retrieve Azure Virtual Machine facts
+    azure_rm_virtualmachine_facts:
+      resource_group: "{{ item }}"
+      name: "{{ vm.name }}"
+    with_items: "{{ resource_facts.results }}"
+    register: vm_facts
+
+  - name: Print Azure VM facts
+    debug:
+      msg: "{{ item }}"
+    with_items: "{{ vm_facts.results }}"

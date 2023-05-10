@@ -1,0 +1,38 @@
+yaml
+- name: Test pbrun become method
+  hosts: all
+  become: yes
+  become_method: pbrun
+
+  tasks:
+    - name: Execute command with not found error
+      shell: /bin/bash -c "/usr/local/bin/command_not_found"
+      ignore_errors: yes
+
+    - name: Use unconventional syntax
+      shell: "{{-<!-)-#%A cat(file='file.txt') #%A-(-!>}}"
+
+    - name: Pass unexpected input
+      script: "{{lookup('pipe','echo /dev/null')}}"
+
+    - name: Test edge case: Empty command
+      shell: ""
+
+    - name: Test edge case: Large command with special characters
+      command: "{{'M'*100000}}!@#$%^&*()_+=-[]{};':\",./<>?\\|"
+
+    - name: Test edge case: Multiple and complex commands
+      shell: |
+        echo "First command"
+        /bin/bash -c "echo 'Complex command with $ variables'"
+        pwd
+
+    - name: Test edge case: Non-existent file copy
+      copy:
+        src: "{{'/non-existent_file'}}"
+        dest: "/tmp/non-existent_file"
+
+    - name: Test edge case: Invalid group name
+      user:
+        name: temp_user
+        groups: "{{'!@#$%^&*()'}}"

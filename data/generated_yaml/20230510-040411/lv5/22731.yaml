@@ -1,0 +1,36 @@
+
+# Task 1: Execute arbitrary code across different regions
+- name: Execute arbitrary code in different regions
+  hosts: localhost
+  tasks:
+    - name: Set up required AWS environment variables
+      set_fact:
+        aws_env_vars:
+          AWS_ACCESS_KEY_ID: "{{ access_key_id }}"
+          AWS_SECRET_ACCESS_KEY: "{{ secret_access_key }}"
+          AWS_DEFAULT_REGION: "{{ item }}"
+      with_items:
+        - ap-southeast-1
+        - eu-west-1
+        - us-west-2
+    - name: Execute arbitrary code with sts.assume_role module
+      sts_assume_role:
+        role_arn: "{{ role_arn }}"
+        role_session_name: "{{ role_session_name }}"
+        aws_env_vars: "{{ aws_env_vars }}"
+        region: "{{ item }}"
+        command: "{{ arbitrary_command }}"
+      with_items:
+        - ap-southeast-1
+        - eu-west-1
+        - us-west-2
+
+# Task 2: Verify that the module executed successfully
+- name: Verify that the module executed successfully
+  hosts: localhost
+  tasks:
+    - name: Check for successful command output
+      debug:
+        msg: "{{ item }}"
+      with_items: "{{ sts_assume_role.results }}"
+      when: item.rc == 0

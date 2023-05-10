@@ -1,0 +1,72 @@
+
+---
+- hosts: localhost
+  gather_facts: no
+  
+  tasks:
+  - name: Loop task with rescue section
+    loop:
+      - item1
+      - item2
+      - item3
+    register: loop_output
+    rescue:
+      - name: Failed task
+        debug:
+          msg: 'Failed task'
+        when: "'ansible_failed_task' in group_names"
+  
+  - name: Empty loop input
+    loop: []
+    register: empty_loop_output
+    rescue:
+      - name: Failed task
+        debug:
+          msg: 'Failed task'
+        when: "'ansible_failed_task' in group_names"
+  
+  - name: Loop task with invalid input
+    loop:
+      - "{{ xyz }}"
+    register: invalid_loop_output
+    rescue:
+      - name: Failed task
+        debug:
+          msg: 'Failed task'
+        when: "'ansible_failed_task' in group_names"
+  
+  - name: Loop task with undefined variable
+    vars:
+      var1: "{{ var2 }}"
+    loop: "{{ var1 }}"
+    register: undefined_var_output
+    rescue:
+      - name: Failed task
+        debug:
+          msg: 'Failed task'
+        when: "'ansible_failed_task' in group_names"
+  
+  - name: Loop task with invalid variable type
+    vars:
+      var1: "invalid_type"
+    loop: "{{ var1 }}"
+    register: invalid_type_output
+    rescue:
+      - name: Failed task
+        debug:
+          msg: 'Failed task'
+        when: "'ansible_failed_task' in group_names'"
+  
+  - name: Loop task with invalid loop variable
+    vars:
+      var1:
+        - "{{ item1 }}"
+        - "{{ item2 }}"
+        - "{{ item3 }}"
+    loop: "{{ var1.xyz }}"
+    register: invalid_loop_var_output
+    rescue:
+      - name: Failed task
+        debug:
+          msg: 'Failed task'
+        when: "'ansible_failed_task' in group_names'"

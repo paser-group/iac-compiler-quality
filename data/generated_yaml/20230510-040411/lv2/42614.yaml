@@ -1,0 +1,69 @@
+yaml
+- name: Create a new VM instance with IPv6
+  hosts: localhost
+  gather_facts: false
+  vars:
+    ipv6_addr: "2001:0db8:85a3:0000:0000:8a2e:0370:7334"
+    vm_params:
+      name: "{{ ansible_hostname }}"
+      ipv6: "{{ ipv6_addr }}"
+  tasks:
+    - name: Validate IPv6 Address
+      assert:
+        that: ipv6_addr | ipv6
+      register: ipv6_validation
+
+    - name: Create VM with invalid IPv6 address
+      vmware_guest:
+        hostname: "{{ invalid_hostname }}"
+        username: "{{ invalid_username }}"
+        password: "{{ invalid_password }}"
+        datacenter: "{{ vm_params.invalid_datacenter }}"
+        vm_name: "{{ vm_params.name }}"
+        hardware:
+          memory_mb: "{{ vm_params.invalid_memory }}"
+          num_cpus: "{{ vm_params.invalid_vcpus }}"
+        network_interfaces:
+          ipv6: "{{ vm_params.ipv6 }}{{ invalid_suffix }}"
+      ignore_errors: true
+      register: vm_creation_failure
+
+    - name: Check if VM creation failure message contains IPv6 error
+      assert:
+        that: vm_creation_failure.msg is search("IPv6")
+
+    - name: Create VM with valid IPv6 address and unconventional syntax
+      vmware_guest:
+        hostname: "{{ unconventional_hostname }}"
+        username: "{{ unconventional_username }}"
+        password: "{{ unconventional_password }}"
+        datacenter: "{{ vm_params.unconventional_datacenter }}"
+        vm_name: "{{ vm_params.name }}"
+        hardware:
+          memory_mb: "{{ vm_params.unconventional_memory }}"
+          num_cpus: "{{ vm_params.unconventional_vcpus }}"
+        network_interfaces:
+          ipv6: "{{ ipv6_addr }}"
+          mac: "{{ unconventional_mac_address }}"
+          subnet_mask: "{{ unconventional_subnet_mask }}"
+      ignore_errors: true
+      register: vm_creation_success
+
+    - name: Check if VM creation success message contains IPv6 address
+      assert:
+        that: ipv6_addr in vm_creation_success.msg
+
+    - name: Create multiple VMs with random invalid IPv6 addresses
+      loop: "{{ range(5) | list }}"
+      vmware_guest:
+        hostname: "{{ ansible_hostname }}"
+        username: "{{ ansible_user }}"
+        password: "{{ ansible_password }}"
+        datacenter: "{{ vm_params.datacenter }}"
+        vm_name: "vm{{ loop.index }}"
+        hardware:
+          memory_mb: "{{ vm_params.memory }}"
+          num_cpus: "{{ vm_params.vcpus }}"
+        network_interfaces:
+          ipv6: "{{ random('invalid_ipv6') }}"
+      ignore_errors: true

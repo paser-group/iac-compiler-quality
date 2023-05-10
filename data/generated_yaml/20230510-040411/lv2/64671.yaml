@@ -1,0 +1,56 @@
+yaml
+- name: Test bigip_dns_cache_resolver module
+  hosts: localhost
+  gather_facts: no
+  vars:
+    dns_cache:
+      retry_timeout: "30"
+      mins: 5
+      max_ttl: 145
+      provider:
+        bigip:
+          host: "{{ ansible_host }}"
+          port: "443"
+          user: "{{ ansible_user }}"
+          password: "{{ ansible_password }}"
+          server: "{{ inventory_hostname }}"
+          server_port: "443"
+          
+  tasks:
+    - name: Test correct bigip_dns_cache_resolver module name
+      bigip_dns_cache_resolver:
+        dns_cache: "{{ dns_cache }}"
+      register: result
+      
+    - name: Test wrong module name
+      bigip_dns_resolver:
+        dns_cache: "{{ dns_cache }}"
+      register: result
+      
+    - name: Test unconventional syntax
+      bigip_dns_cache_resolver:
+        dns_cache: "{{ dns_cache }}}"
+      ignore_errors: yes
+      register: result
+      
+    - name: Test unexpected inputs
+      bigip_dns_cache_resolver:
+        dns_cache:
+          retry_timeout: "XXX"
+          mins: XYZ
+          max_ttl: "ABC"
+          provider:
+            bigip:
+              host: "%@^^@&^@"
+              port: "-1"
+              user: "{{ ansible_ssh_user }}"
+              password: "{{ ansible_sudo_pass }}"
+              server: "##INVALID@@@"
+              server_port: "443a"
+      ignore_errors: yes
+      register: result
+      
+    - name: Debugging output
+      debug:
+        var: result
+        

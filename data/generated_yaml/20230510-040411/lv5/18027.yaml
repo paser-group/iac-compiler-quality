@@ -1,0 +1,32 @@
+
+- name: Example Playbook for Error Handling in Loops
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    items:
+      - item1
+      - item2
+      - item3
+
+  tasks:
+    - name: Loop over items and generate an error
+      block:
+        - name: Attempt to read an undefined variable to generate error
+          debug:
+            msg: "{{ item | does_not_exist }}"
+      retries: 2
+      delay: 10
+      until: false
+      register: loop_result
+      ignore_errors: yes
+
+    - name: Handle errors generated within loop
+      block:
+        - name: Print error message
+          debug:
+            msg: "Error occurred in loop: {{ loop_result }}"
+        - name: Terminate the current loop
+          loop_control:
+            continue: false
+      when: loop_result is failed

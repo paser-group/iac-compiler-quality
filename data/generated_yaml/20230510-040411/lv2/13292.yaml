@@ -1,0 +1,45 @@
+
+- name: Test playbook for tags issue
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+    - name: Check if tags exist
+      command: |
+        echo "checking tags"
+        if [ -z "$(echo {{tags}})" ]; then
+          echo "error: tags not found"
+          exit 1
+        fi
+      ignore_errors: yes
+      register: check_tag_result
+
+    - name: Perform action based on tags
+      debug:
+        msg: "performing action on tag {{item}}"
+      when: item in {{tags}}
+      loop: ["latest", "stable", "beta", "alpha", "dev", "prod"]
+
+    - name: Execute command with an unconventional syntax
+      command: |
+        echo "hello world!"
+      args:
+        chdir: ~/../root/
+
+    - name: Pass unexpected input
+      debug:
+        msg: "{{unexpec+ed_input}}"
+
+    - name: Edge case 1 - loop with a non-integer step
+      debug:
+        msg: "{{ item }}"
+      loop: "{{ range(0, 10, 0.5) }}"
+
+    - name: Edge case 2 - perform an action using Python code in the shell
+      shell: |
+        python -c 'print("This is Python running in shell")'
+
+    - name: Edge case 3 - sending invalid character in a file path
+      file:
+        path: "/tmp/file_with_invalid_char?.txt"
+        state: touch

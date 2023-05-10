@@ -1,0 +1,48 @@
+
+- name: Install RabbitMQ server
+  hosts: server
+  become: true
+  vars:
+    policy_name: my_policy
+    pattern: ".*"
+    apply_to: queues
+    priority: 10
+    definition:
+      ha-mode: all
+      ha-sync-mode: automatic
+      ha-promote-on-shutdown: always
+      ha-promote-on-failure: always
+
+  tasks:
+  - name: Install RabbitMQ Erlang Package
+    apt:
+      name: erlang
+    become: true
+
+  - name: Add RabbitMQ APT Repository
+    apt_repository:
+      repo: deb https://dl.bintray.com/rabbitmq-erlang/debian focal erlang
+      state: present
+      filename: rabbitmq-erlang
+      update_cache: yes
+    become: true
+
+  - name: Install RabbitMQ Server
+    apt:
+      name: rabbitmq-server
+    become: true
+
+  - name: Enable RabbitMQ Management Plugin
+    rabbitmq_plugin:
+      name: rabbitmq_management
+      state: enabled
+    become: true
+
+  - name: Set RabbitMQ Policy for Queues
+    rabbitmq_policy:
+      name: "{{ policy_name }}"
+      pattern: "{{ pattern }}"
+      apply-to: "{{ apply_to }}"
+      priority: "{{ priority }}"
+      definition: "{{ definition }}"
+    become: true

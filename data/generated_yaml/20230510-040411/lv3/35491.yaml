@@ -1,0 +1,41 @@
+
+- name: Create VMkernel interface
+  hosts: esxi_hosts
+  gather_facts: no
+
+  pre_tasks:
+    - name: Install necessary packages
+      package:
+        name: "{{ item }}"
+        state: present
+      with_items:
+        - esxi
+        - pyVmomi
+      
+  vars:
+    esxi_hostname: "{{ inventory_hostname }}"
+    esxi_username: "root"
+    esxi_password: "password"
+    esxi_interface_name: "vmk1"
+    esxi_interface_ip: "192.168.0.1"
+    esxi_interface_netmask: "255.255.255.0"
+    esxi_interface_mtu: "1500"
+
+  tasks:
+    - name: Create VMkernel interface
+      vmware_vmkernel:
+        hostname: "{{ esxi_hostname }}"
+        username: "{{ esxi_username }}"
+        password: "{{ esxi_password }}"
+        name: "{{ esxi_interface_name }}"
+        ip_address: "{{ esxi_interface_ip }}"
+        netmask: "{{ esxi_interface_netmask }}"
+        mtu: "{{ esxi_interface_mtu }}"
+      register: vmkernel_output
+
+    - name: Check the output of the vmware_vmkernel module
+      assert:
+        that:
+          - "vmkernel_output is defined"
+          - "vmkernel_output.state == 'present'"
+          - "'changed' in vmkernel_output"

@@ -1,0 +1,29 @@
+
+- name: Test ansible_service_mgr
+  hosts: all
+  gather_facts: true
+  vars:
+    invalid_service_mgr: "fake_svc_mgr"
+    cmd: "{{ (service_mgr == 'systemd') | ternary('systemctl', '{{ invalid_service_mgr }}') }}"
+  tasks:
+  - name: Stop service with invalid service manager
+    service:
+      name: apache2
+      state: stopped
+      service_mgr: "{{ invalid_service_mgr }}"
+      enabled: true
+    ignore_errors: true
+  - name: Start service with invalid service manager
+    service:
+      name: apache2
+      state: started
+      service_mgr: "{{ invalid_service_mgr }}"
+      enabled: true
+    ignore_errors: true
+  - name: Use invalid service manager in command
+    shell: "{{ cmd }} status apache2"
+    register: output
+    ignore_errors: true
+  - name: Print command output
+    debug:
+      var: output

@@ -1,0 +1,18 @@
+
+- name: Attempt to write to a file with a bad file descriptor
+  hosts: localhost
+  tasks:
+    - name: Write to a file
+      file:
+        path: /tmp/test.txt
+        state: touch
+      register: file_descriptor
+
+    - name: Write to a file descriptor beyond the maximum allowed
+      shell: echo "Test content" > /dev/fd/65537
+      register: fd_write
+
+    - name: Report if an error occurred
+      debug:
+        msg: "The error '{{ fd_write.stderr }}' occurred while writing to an invalid file descriptor."
+      when: fd_write.stderr is defined

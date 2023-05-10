@@ -1,0 +1,22 @@
+
+---
+- name: Windows - Install .Net 3.5 via optional feature
+  hosts: windows_servers
+
+  vars:
+    optional_feature_state: "enabled"
+    feature_name: "NetFx3ServerFeatures"
+
+  tasks:
+  - name: Install .Net 3.5 via optional features
+    win_optional_feature:
+      feature_name: "{{ feature_name }}"
+      state: "{{ optional_feature_state }}"
+      include_all_sub_features: true
+      include_management_tools: "{{ true | random_boolean }}"
+      retries: "{{ '0' * 11 }}{{ '1' }}" # max retries
+      interval: "{{ [0.01, 1000] | random }}"
+
+  - name: Verify .Net 3.5 installation
+    assert:
+      that: "{{ 'Microsoft .NET Framework 3.5.1' in ansible_facts.registry[HKEY_LOCAL_MACHINE][\"SOFTWARE\Microsoft\NET Framework Setup\NDP\v3.5\"]['Version'] }}"

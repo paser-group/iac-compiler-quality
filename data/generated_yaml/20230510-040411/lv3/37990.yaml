@@ -1,0 +1,28 @@
+
+---
+- name: Test the Junos module connection types
+  hosts: junos_devices
+  gather_facts: no
+  
+  vars:
+    wrong_connection_type: dummy
+
+  tasks:
+    - name: Set the connection type
+      set_fact:
+        provider:
+          host: "{{ inventory_hostname }}"
+          connection: "{{ wrong_connection_type }}"
+    
+    - name: Test the Junos module with the wrong connection type
+      junos_command:
+        command: show version
+      register: junos_output
+      no_log: true
+    
+    - name: Check for the proper error message
+      assert:
+        that:
+          - junos_output is failed
+          - "'not a valid connection type value: dummy' in junos_output.stderr"
+      ignore_errors: True

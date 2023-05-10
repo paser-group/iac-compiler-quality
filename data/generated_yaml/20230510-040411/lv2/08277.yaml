@@ -1,0 +1,73 @@
+
+- name: Test Playbook for Cron module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Schedule a cron job
+      cron:
+        name: "Test Job"
+        minute: "{{ range(60) | random }}"
+        hour: "{{ range(24) | random }}"
+        job: "echo 'Hello World'"
+      register: result1
+
+    - name: Schedule a cron job with special characters
+      cron:
+        name: "Test & job"
+        minute: "{{ range(60) | random }}"
+        hour: "{{ range(24) | random }}"
+        job: "echo 'Sp€c!@l C4h4ract3rs'"
+      register: result2
+
+    - name: Remove a cron job
+      cron:
+        name: "Test Job"
+        state: absent
+      register: result3
+
+    - name: Schedule a cron job with invalid syntax
+      cron:
+        name: "Test Job"
+        minute: "{{ range(60) | random }}"
+        hour: "{{ range(24) | random }}"
+        job: "{{ range(10) | random }}"
+      register: result4
+
+    - name: Verify cron job exists
+      shell: crontab -l | grep "{{ result1.backup.name }}"
+      register: result5
+
+    - name: Verify cron job with special characters exists
+      shell: crontab -l | grep "Test & job"
+      register: result6
+
+    - name: Verify cron job was removed
+      shell: crontab -l | grep "Test Job"
+      register: result7
+
+    - name: Assert expected failure for invalid job syntax
+      assert:
+        that: "result4 | failed"
+        success_msg: "Cron job failed as expected"
+        fail_msg: "Cron job did not fail as expected"
+
+    - name: Assert correct error message for existing cron job
+      assert:
+        that: "result5 | failed"
+        and: "result5.stderr | search('cron: can\\'t install')" 
+        success_msg: "Correct error message for existing cron job"
+        fail_msg: "Incorrect error message for existing cron job"
+
+    - name: Assert correct error message for job with special characters
+      assert:
+        that: "result6 | failed"
+        and: "result6.stderr | search('cron: can\\'t install')" 
+        success_msg: "Correct error message for job with special characters"
+        fail_msg: "Incorrect error message for job with special characters"
+
+    - name: Assert cron job was removed successfully
+      assert:
+        that: "result7 | success"
+        success_msg: "Cron job was removed successfully"
+        fail_msg: "Cron job was not removed successfully"

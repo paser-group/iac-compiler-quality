@@ -1,0 +1,31 @@
+
+---
+- name: Test become prompt recognition
+  hosts: target_hosts
+  become: "{{ become_enabled | default('yes') }}"
+  become_method: "{{ become_method | default('sudo') }}"
+  gather_facts: no
+  vars:
+    become_prompt_message: "ENTER YOUR PASSWORD:"
+
+  tasks:
+    - name: Set become_prompt
+      become_prompt:
+        name: "{{ become_prompt_message }}"   
+      register: prompt_result
+
+    - name: Test elevated privileges
+      become: yes
+      debug:
+        msg: "Elevated privileges are working"
+      register: elevate_result
+
+    - name: Confirm prompt message is displayed
+      assert:
+        that: prompt_result.msg == become_prompt_message
+
+    - name: Confirm elevated privileges are successful
+      assert:
+        that: elevate_result is success
+
+  ...

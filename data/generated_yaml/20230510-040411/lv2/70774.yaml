@@ -1,0 +1,56 @@
+
+---
+- name: Install packages on EC2 RHEL instance using YUM module
+  hosts: ec2_instance
+
+  tasks:
+    - name: Update cache before installing packages
+      yum:
+        name: "{{ packages }}"
+        state: latest
+      register: update_cache
+
+    - assert:
+        that:
+          - update_cache is defined
+          - update_cache['changed'] is defined
+          - update_cache['failed'] is defined
+          - update_cache['results'] is iterable
+          - update_cache['invocation'] is defined
+          - update_cache['invocation']['module_args'] is defined
+          - update_cache['invocation']['module_args']['name'] is defined
+          - update_cache['invocation']['module_args']['state'] is defined
+      tags:
+        - edge_cases
+
+    - name: Install YUM packages
+      yum:
+        name: "{{ packages }}"
+        state: latest
+        allow_downgrade: yes
+        autoremove: yes
+        clean_requirements_on_remove: yes
+        disable_gpg_check: yes
+        disablerepo: "{{ repo_to_disable }}"
+        enablerepo: "{{ repo_to_enable }}"
+        installroot: "{{ custom_install_location }}"
+        skip_broken: yes
+        update_cache: yes
+      tags:
+        - unexpected_inputs
+
+    - assert:
+        that:
+          - ansible_distribution_release == 'RHEL'
+          - ansible_distribution_major_version | int == 7
+      tags:
+        - unconventional_syntax
+
+  vars:
+    packages:
+      - httpd
+      - mariadb
+      - php
+    repo_to_disable: epel
+    repo_to_enable: rhel-7-server-extras-rpms
+    custom_install_location: /usr/local/custom_location

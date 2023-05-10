@@ -1,0 +1,78 @@
+
+- hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Runtest function error
+      command: >
+        {% raw %}python -c 'import sys; sys.exit(1)' {% endraw %}
+      ignore_errors: true
+
+    - name: Undefined variable
+      debug: var={{ undefined_var }}
+
+    - name: Invalid module argument
+      debug:
+        msg: "{{ 'hello world!' | foo_bar }}"
+
+    - name: Trigger exception
+      fail:
+        msg: >
+          {% raw %} {{ '{{' }} test }} {% endraw %}
+
+    - name: Execute shell with unconventional syntax 
+      shell: "{{ item }}"
+      with_items:
+        - "`echo $HOME`"
+        - "> /dev/null; echo $HOME"
+        - "cat <<< $HOME"
+        - "$({ echo $HOME >&2; false; } | sed 's/^.*: //')")
+
+    - name: Work with invalid yaml
+      set_fact:
+        data: >
+          {% raw %}
+          - name: 'Test'
+            sub: {{ sub }}
+          {% endraw %}
+      vars:
+        sub: !alicebob "This has 'quotes' in it"
+
+    - name: HTTP request with unexpected input
+      uri:
+        url: "{{ 'http://{{' }} undefined_host {{ '}}' }}"
+
+    - name: Run arbitrary code using filter plugin
+      set_fact:
+        secret_message: "{{ 'Hello world'|d({{{ not_existing_variable }}}) }}"
+
+    - name: Syntax error
+      command: |
+        {% raw %} test {{% endraw %}
+
+    - name: Trigger a stack trace
+      command: |
+        {% raw %} {{ lookup('file', '/proc/1/maps') }} {{% endraw %}
+
+    - name: LDAP search with unconventional input
+      ldap_attr:
+        dn: "{{ ldap_url }}"
+        filter: "{% raw %}{{{{" }}inject={{ ldap_query }}{{ '}}' }} {% endraw %}"
+        scope: subtree
+        attrs: ['*']
+      vars:
+        ldap_url: "ldap:///dc=example,dc=com??base?(objectClass=*)"  
+        ldap_query: "*"
+
+    - name: Exception in Python interpreter
+      script: |
+        {% raw %}
+        import subprocess
+        subprocess.check_output("python -c 'import sys; sys.exit(1)'", shell=True)
+        {% endraw %}
+
+    - name: Execute PowerShell script with special characters
+      win_command: "echo 'Test!' >` @ ' % & ) <'"
+
+    - name: Attempt to access an undefined variable
+      set_fact:
+        value: "{{ test_variable }}"

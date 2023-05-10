@@ -1,0 +1,33 @@
+
+---
+- name: Test Docker Container Bug
+  hosts: localhost
+  gather_facts: false
+  
+  tasks:
+    - name: Start Docker Container
+      docker_container:
+        name: test-container
+        image: busybox
+        command: sleep 60
+        detach: true
+      register: container
+      
+    - name: Test bug
+      set_fact:
+        property_dict:
+          name: test-container
+          state: running
+ 
+    - name: Check if dictionary matches
+      set_fact:
+        compared_dict: "{{ container | _compare_dicts(property_dict) }}"
+        
+    - name: Fail if matches are not equal to zero
+      assert:
+        that: compared_dict.matches | length == 0  
+        
+    - name: Stop and remove the Docker container
+      docker_container:
+        name: test-container
+        state: absent

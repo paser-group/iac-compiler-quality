@@ -1,0 +1,60 @@
+
+- name: Testing authorized_key module
+  hosts: localhost
+  vars:
+    invalid_key: "ssh-rsa AAAAsomethinginvalid== user@host"
+    no_key_type: "AAAAB3NzaC1yc2EAAAADAQABAAABAQCxFcSkuHn5MxL7evHjbqGSLpTy6U2I+zr8bFy3FoLlNYdE1CDLZoWxJS9/d"
+    invalid_key_type: "ssh-fakekey AAAAB3NzaC1yc2EAAAADAQABAAABAQCxFcSkuHn5MxL7evHjbqGSLpTy6U2I+zr8bFy3FoLlNYdE1CDLZoWxJS9/d user@host"
+    non_base64_key: "$@#@#$%*$@!#&*()_) ($%)(#$%#$%  <>][poiuytrewqASDFGHJKLMNBVCXZ"
+    empty_line_key: " \n\n\n\n\n "
+    whitespace_key: "                      "
+    long_key: "{%- set ssh_key = 'ssh-rsa ' + 'A'*4049 + ' user@host' -%}\n{{ ssh_key }}"
+  tasks:
+    - name: Test with an invalid key
+      authorized_key:
+        user: testuser
+        state: present
+        key: "{{ invalid_key }}"
+      ignore_errors: yes
+
+    - name: Test without specifying key type
+      authorized_key:
+        user: testuser
+        state: present
+        key: "{{ no_key_type }}"
+      ignore_errors: yes
+
+    - name: Test with an invalid key type
+      authorized_key:
+        user: testuser
+        state: present
+        key: "{{ invalid_key_type }}"
+      ignore_errors: yes
+
+    - name: Test with non-base64 encoded key
+      authorized_key:
+        user: testuser
+        state: present
+        key: "{{ non_base64_key }}"
+      ignore_errors: yes
+
+    - name: Test with empty line as key
+      authorized_key:
+        user: testuser
+        state: present
+        key: "{{ empty_line_key }}"
+      ignore_errors: yes
+
+    - name: Test with whitespace as key
+      authorized_key:
+        user: testuser
+        state: present
+        key: "{{ whitespace_key }}"
+      ignore_errors: yes
+
+    - name: Test with an extremely long key
+      authorized_key:
+        user: testuser
+        state: present
+        key: "{{ long_key }}"
+      ignore_errors: yes

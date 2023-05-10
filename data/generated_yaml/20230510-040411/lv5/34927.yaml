@@ -1,0 +1,31 @@
+
+- name: Test GCE inventory plugin
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    credentials_file: "/path/to/credentials/file.json"
+
+  tasks:
+    - name: Ensure plugin can handle non-existent resource
+      gce_inventory:
+        credentials_file: "{{ credentials_file }}"
+        hostnames:
+          - "nonexistent-resource"
+      register: nonexistent_resource
+
+    - name: Ensure plugin can handle parallel requests
+      gce_inventory:
+        credentials_file: "{{ credentials_file }}"
+        hostnames:
+          - "resource-1"
+          - "resource-2"
+          - "resource-3"
+      register: parallel_requests
+
+    - name: Fail playbook if any task failed
+      fail:
+        msg: "One or more tasks failed"
+      when:
+        - nonexistent_resource.failed
+        - parallel_requests.failed

@@ -1,0 +1,40 @@
+
+- name: Reboot Ubuntu after a long time with debug verbosity 
+  hosts: all
+  vars:
+    reboot_delay: "7200" # 2 hours
+  tasks:
+
+  - name: Show current date and time
+    debug:
+      msg: "{{ ansible_date_time.iso8601 }}"
+
+  - name: Set reboot time to {{ reboot_delay }} seconds from now
+    set_fact:
+      reboot_time: "{{ ansible_date_time.epoch + reboot_delay | int }}"
+
+  - name: Debug statement - reboot time
+    debug:
+      msg: "Reboot time in seconds: {{ reboot_time }}"
+
+  - name: Wait for {{ reboot_delay }} seconds
+    pause:
+      seconds: "{{ reboot_delay }}"
+
+  - name: Reboot the system
+    command: sleep 1 && reboot
+    async: 0
+    poll: 0
+    ignore_errors: true
+
+  - name: Wait for server to go down
+    local_action: wait_for host={{ inventory_hostname }} state=stopped
+
+  - name: Wait for server to come back up
+    wait_for_connection:
+      delay: 10
+      timeout: 300
+
+  - name: Debug statement - Server uptime
+    debug:
+      msg: "Server uptime: {{ ansible_date_time.epoch - reboot_time }}"      

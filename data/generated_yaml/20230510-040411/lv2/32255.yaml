@@ -1,0 +1,61 @@
+
+# Ansible Playbook for stress testing max_fail_percentage issue
+
+- hosts: all
+  vars:
+    sample_var:
+      - "string"
+      - 123
+      - true
+      - false
+      - []
+      - {}
+      - null
+      - "{{ some_var }}"
+      - <<: *some_other_var
+  tasks:
+    - name: Task 1
+      command: "{{ random_command }}"
+      register: cmd_result
+      changed_when: false
+      failed_when: cmd_result.rc != 0 and (failed_counter/cmd_counter) > {{ max_fail_percentage|default(0.6) }}
+      retries: 5
+      delay: 10
+      ignore_errors: true
+          
+    - name: Task 2
+      debug:
+        var: "{{ unknown_var }}"
+      
+    - name: Task 3
+      assert:
+        that:
+          - "string" in sample_var 
+          - "integer" in sample_var
+          - "bool" in sample_var
+          - "[]" in sample_var
+          - "{}" in sample_var
+          - "some_value" not in another_random_var
+        
+    - name: Task 4
+      shell: "{{ some_random_command | default(random_command) }}" 
+      changed_when: "true == 1"
+      
+    - name: Task 5
+      command: "{{ some_known_failure_command }}"
+      register: cmd_result
+      changed_when: false
+      failed_when: true
+      
+    - name: Task 6
+      block:
+        - name: Task 6.1
+          command: "{{ some_command | default('true') }}"
+          ignore_errors: true
+        - name: Task 6.2
+          debug:
+            var: cmd_result.stdout
+      always:
+        - name: Task 6.3
+          debug:
+            msg: "Block is completed regardless of success or failure"

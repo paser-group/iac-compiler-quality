@@ -1,0 +1,70 @@
+yaml
+- name: Test nxos_vlan idempotency bug with mode
+  hosts: switches
+  gather_facts: false
+
+  vars:
+    vlan_id: 10
+    vlan_name: "Test VLAN"
+
+  tasks:
+    # Unconventional syntax: using when statement with multiple operands
+    - name: Create VLAN with mode 'ce' if it doesn't exist
+      nxos_vlan:
+        vlan_id: "{{ vlan_id }}"
+        vlan_name: "{{ vlan_name }}"
+        mode: "ce"
+        state: present
+      when: vlan_id != 20 and vlan_name.endswith("VLAN") and mode in ["ce", "fabricpath"]
+
+    # Unexpected inputs: using invalid values for mode parameter
+    - name: Create VLAN with invalid mode value
+      nxos_vlan:
+        vlan_id: "{{ vlan_id }}"
+        vlan_name: "{{ vlan_name }}"
+        mode: "invalid_value"
+        state: present
+      ignore_errors: yes
+
+    # Edge cases: using the same VLAN twice with different modes within the same playbook
+    - name: Create VLAN with mode 'vlan' and then mode 'fabricpath'
+      nxos_vlan:
+        vlan_id: "{{ vlan_id }}"
+        vlan_name: "{{ vlan_name }}"
+        mode: "vlan"
+        state: present
+
+    - name: Update VLAN with mode 'fabricpath'
+      nxos_vlan:
+        vlan_id: "{{ vlan_id }}"
+        vlan_name: "{{ vlan_name }}"
+        mode: "fabricpath"
+        state: present
+
+    # Edge cases: deleting a nonexistent VLAN
+    - name: Delete nonexistent VLAN
+      nxos_vlan:
+        vlan_id: 99
+        state: absent
+
+    # Unexpected inputs: using an unquoted string for vlan_id
+    - name: Create VLAN with unquoted string as vlan_id
+      nxos_vlan:
+        vlan_id: VLAN10
+        vlan_name: "{{ vlan_name }}"
+        mode: "vlan"
+        state: present
+      ignore_errors: yes
+
+    # Edge cases: adding a VLAN with mode 'vlan' and then deleting it
+    - name: Add VLAN and then delete it
+      nxos_vlan:
+        vlan_id: 50
+        vlan_name: "Temporary VLAN"
+        mode: "vlan"
+        state: present
+
+    - name: Delete the temporary VLAN
+      nxos_vlan:
+        vlan_id: 50
+        state: absent

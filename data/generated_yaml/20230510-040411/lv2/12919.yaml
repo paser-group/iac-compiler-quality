@@ -1,0 +1,48 @@
+
+- name: Test playbook
+  hosts: test_hosts
+  gather_facts: no
+  tasks:
+    - name: Define local variables
+      set_fact:
+        var1: "{{ 10 + 20 }}"
+        var2: "hello ansible"
+        var3: "{{ var2 | upper }}"
+        var4: "{{ var1 | string }} = 30"
+        var5: "{{ 5.0 }}"
+        var6: "{{ var2 | lower | replace('hello', 'hi') }}"
+        var7: "{{ [1, 2] + ['a', 'b'] }}"
+
+    - name: Print variables
+      debug:
+        var: "{{ item }}"
+      loop:
+        - var1
+        - var2
+        - var3
+        - var4
+        - var5
+        - var6
+        - var7
+
+    - name: Check Connection
+      connection: shared
+      become: yes
+      become_method: sudo
+
+    - name: Run multiple commands with a shared connection
+      command:
+        cmd: "{{ item }}"
+      loop:
+        - echo 'Hello world'
+        - whoami
+        - ls /var/log/nginx/
+        - ls /etc/nginx/
+
+    - name: Test unconventional syntax
+      set_fact: "{% if 'a' in 'bcda' %} var1: 'a' {% else %} var1: 'b' {% endif %}"
+
+    - name: Test unexpected inputs
+      yum:
+        name: "{{ item }}"
+      with_items: "{{ ['httpd', 10, 'gcc', 'python3'] }}"

@@ -1,0 +1,52 @@
+
+- name: Create EC2 RDS Postgres instance
+  hosts: localhost
+  gather_facts: no
+  vars:
+    region: "us-west-2"
+    instance_name: "db-instance-{{ ansible_date_time.epoch }}"
+
+  tasks:
+    - name: Create security group
+      ec2_group:
+        name: "{{ instance_name }}-sg"
+        description: "Security group for {{ instance_name }} RDS instance"
+        vpc_id: "vpc-123456"
+        region: "{{ region }}"
+        rules:
+          - proto: tcp
+            from_port: 5432
+            to_port: 5432
+            cidr_ip: 0.0.0.0/0
+
+    - name: Create RDS instance
+      rds:
+        command: create
+        db_instance_identifier: "{{ instance_name }}"
+        allocated_storage: 10
+        engine: postgres
+        engine_version: "9.5.10"
+        db_instance_class: db.t2.micro
+        master_username: "master_user"
+        master_password: "master_password"
+        vpc_security_group_ids: ["{{ instance_name }}-sg"]
+        region: "{{ region }}"
+      register: rds_result
+
+    - name: Check RDS instance status
+      rds:
+        command: status
+        db_instance_identifier: "{{ instance_name }}"
+        region: "{{ region }}"
+      register: status_result
+      ignore_errors: yes
+
+    - name: Fail if RDS creation failed
+      fail:
+        msg: "Failed to create RDS instance. Error: {{ rds_result }}"
+      when: "'failed' in rds_result['status']"
+
+    - name: Fail if RDS status check failed
+      fail:
+        msg: "Failed to check RDS status. Error: {{ status_result }}"
+      when: "'failed' in status_result['status'] and status_result['cmd'] != 'status'"

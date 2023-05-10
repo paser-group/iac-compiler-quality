@@ -1,0 +1,26 @@
+
+- name: Test Connection Settings
+  ping:
+  register: ping_test
+  failed_when: "ansible_python_version.major != '2'"
+
+- name: Change Default Python version to 2.7
+  become: true
+  shell: "emerge =python-2.7"
+  register: python_change_output
+  failed_when: '!= 0'
+
+- name: Test LXD Connection
+  ping:
+  ansible_connection: lxd
+  register: lxd_test
+  failed_when: "ping_test.rc == 0 and ansible_connection != 'lxd'"
+
+- name: Debug Errors
+  debug:
+    msg: "{{ item }}"
+  when: item is defined
+  with_items:
+    - ping_test
+    - python_change_output
+    - lxd_test

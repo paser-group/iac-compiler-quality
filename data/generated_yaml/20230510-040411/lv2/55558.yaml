@@ -1,0 +1,53 @@
+
+- name: WinRM connection test
+  hosts: localhost
+  gather_facts: no
+  environment:
+    http_proxy: 'http://10.10.1.10:3128'
+    https_proxy: 'http://10.10.1.10:3128'
+  tasks:
+    - name: Test WinRM connection with unconventional syntax
+      winrm_command:
+        command: '$(whoami)'
+        host: 'localhost'
+        port: '5985'
+        transport: 'http'
+        realm: 'MYDOMAIN.MYCOMPANY.COM'
+        username: 'domain\user'
+        password: 'password123!@#'
+        allow_unencrypted: 'no'
+        cacert_path: '/etc/ca-certificates/ca-certificates.crt'
+        auth_method: 'Kerberos'
+        kerberos_hostname_override: 'myhost.mydomain.com'
+        transport_timeout: 30
+      delegate_to: localhost
+
+    - name: Test WinRM connection with unexpected input
+      winrm_command:
+        command: '{{ random() }}'
+        host: '{{ lookup("env", "HOSTNAME") }}'
+        realm: '{{ "MYDOMAIN.MYCOMPANY.COM" }}'
+        username: '{{ "domain\\user" }}'
+        password: '{{ lookup("password", "/etc/ansible/.vault_password") }}'
+        transport: '{{ "https" if https_proxy else "http" }}'
+        port: '{{ "5985" if allow_unencrypted else "5986" }}'
+        url: '{{ "wsman" if auth_method == "Basic" else "wsmanfault" }}'
+      register: output
+      delegate_to: localhost
+
+    - name: Test WinRM connection with edge cases
+      winrm_command:
+        command: '{{ 1 / 0 }}'
+        host: '{{ () }}'
+        realm: '{{ None }}'
+        username: '{{ [] }}'
+        password: '{{ {} }}'
+        transport: '{{ "mysql" }}'
+        port: '{{ "80" }}'
+      register: output
+      delegate_to: localhost
+
+    - name: Fail task intentionally
+      debug:
+        msg: 'Task has failed.'
+      failed_when: 'true'

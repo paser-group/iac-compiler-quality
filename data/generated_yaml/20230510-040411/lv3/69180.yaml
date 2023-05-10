@@ -1,0 +1,36 @@
+
+- hosts: localhost
+  become: false
+  tasks:
+    - name: Install dependencies
+      apt:
+        name:
+          - python3
+          - python3-pip
+        state: present
+      register: apt_result
+
+    - name: Generate weak DH key
+      openssl_privatekey:
+        path: /etc/ssl/private/server.key
+        algorithm: rsa
+        size: 512
+        mode: 0600
+        backup: yes
+        force: yes
+      register: key_result
+
+    - name: Generate self-signed SSL certificate
+      openssl_certificate:
+        path: /etc/ssl/certs/server.crt
+        privatekey_path: /etc/ssl/private/server.key
+        provider: selfsigned
+        common_name: "localhost"
+        backup: yes
+      register: cert_result
+
+    - name: Start HTTPS server
+      command: python -m http.server 8000 --bind 127.0.0.1 --certfile /etc/ssl/certs/server.crt --keyfile /etc/ssl/private/server.key --ssl-version TLSv1.2
+      async: true
+      poll: 0
+      register: server_result

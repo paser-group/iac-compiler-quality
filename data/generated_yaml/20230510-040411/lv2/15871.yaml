@@ -1,0 +1,37 @@
+yml
+---
+- hosts: localhost
+  gather_facts: False
+  vars:
+    - openstack_nodes:
+      - name: "Node1"
+        status: "active"
+        internal_ip: "10.0.0.1"
+      - name: "Node2"
+        status: "error"
+      - name: "Node3"
+        status: "error"
+        internal_ip: "10.0.0.3"
+  tasks:
+    - name: List errored nodes without internal_ip
+      debug:
+        msg: "{{ item }}"
+      with_items: "{{ openstack_nodes }}"
+      when: item.status == 'error' and (not item.internal_ip or item.internal_ip == '')
+
+    - name: Define edge case vars
+      set_fact:
+        os_var1: "{{ 1 }}"
+        os_var2: "{ { '2' } }"
+        os_var3: >-
+          {% if 1 < 2 -%}
+          {{ os_var1 * 2 }}
+          {% else -%}
+          {{ os_var2 * 2 }}
+          {% endif %}
+
+    - name: Create resource with edge cases
+      os_ext:
+        param1: "{{ os_var1 }}"
+        param2: "{{ os_var2 }}"
+        param3: "{{ os_var3 }}"     

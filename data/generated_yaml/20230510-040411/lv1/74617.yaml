@@ -1,0 +1,35 @@
+
+- name: Remove -u flag from sudo command
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Update sudoers file
+      lineinfile:
+        path: /etc/sudoers
+        regexp: '^%sudo'
+        line: '%sudo   ALL=(ALL) NOPASSWD:/usr/bin/sudo'
+        validate: 'visudo -cf %s'
+      register: sudoers
+
+    - name: Remove -u flag from sudo command
+      lineinfile:
+        path: /etc/sudoers
+        regexp: '^%sudo'
+        line: '%sudo   ALL=(ALL) NOPASSWD:/bin/su - oracle'
+        validate: 'visudo -cf %s'
+      when: sudoers.changed
+
+    - name: Test sudo command
+      command: "sudo su - oracle"
+      register: result
+      ignore_errors: yes
+      changed_when: false
+
+    - name: Remove -u flag from sudo command
+      lineinfile:
+        path: /etc/sudoers
+        regexp: '^%sudo'
+        line: '%sudo   ALL=(ALL) NOPASSWD:/bin/su oracle'
+        validate: 'visudo -cf %s'
+      when: result.rc == 0

@@ -1,0 +1,21 @@
+yaml
+---
+- name: Fix sudo timeout issue over local connection
+  hosts: all
+  become: yes
+  become_method: sudo
+  gather_facts: yes
+
+  tasks:
+  - name: Update /etc/hosts file with correct hostname
+    lineinfile:
+      path: "/etc/hosts"
+      regexp: "^127.0.0.1"
+      line: "127.0.0.1    {{ ansible_hostname }}"
+      state: present
+    when: ansible_hostname != inventory_hostname
+
+  - name: Restart network service
+    service:
+      name: NetworkManager
+      state: restarted

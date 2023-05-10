@@ -1,0 +1,34 @@
+
+- name: Cron module stress test
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    # Ensure cron daemon is running
+    - name: Ensure cron daemon is running
+      service:
+        name: cron
+        state: started
+
+    # Create invalid cron jobs
+    - name: Create invalid cron jobs
+      cron:
+        name: "Test invalid cron job"
+        job: "*/80 1-25/3 9,13***"
+        state: present
+      ignore_errors: yes
+
+    # Create cron jobs with unconventional syntax
+    - name: Create cron jobs with unconventional syntax
+      cron:
+        name: "Test unconventional syntax"
+        job: "'5 5 * * *' /path/to/script.sh arg1 'arg2 with spaces'"
+        state: present
+
+    # Create cron jobs with unexpected inputs
+    - name: Create cron jobs with unexpected inputs
+      cron:
+        name: "Test unexpected inputs"
+        job: "*/5 * * * * {{ nonexistent_variable | foo }}"
+        state: present
+      ignore_errors: yes

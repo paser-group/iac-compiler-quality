@@ -1,0 +1,32 @@
+
+- name: Test SSL connection with different DH key sizes
+  hosts: localhost
+  gather_facts: no
+  vars:
+    dh_key_sizes:
+      - '1024'
+      - '2048'
+      - '3072'
+      - '4096'
+    test_host: "https://example.com:443"
+  tasks:
+    - name: Test connection with different DH key sizes
+      block:
+        - name: Generate DH key file with current size being tested
+          command: openssl dhparam -out /tmp/dh_param_{{ item }}.pem {{ item }}
+          loop: "{{ dh_key_sizes }}"
+          register: dh_param_file
+
+        - name: Test SSL connection with current DH key size
+          command: openssl s_client -connect {{ test_host }} -DHparam /tmp/dh_param_{{ item.item }}.pem
+          register: ssl_connection
+          ignore_errors: yes
+          loop: "{{ dh_param_file.results }}"
+
+        - name: Print error message if SSL connection failed
+          debug:
+            msg: "{{ item }}"
+          loop: "{{ ssl_connection.results | rejectattr('rc', 'eq', 0) | map(attribute='stderr') | list }}"
+      rescue:
+        - debug:
+            var: item

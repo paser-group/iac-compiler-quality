@@ -1,0 +1,31 @@
+yaml
+---
+- name: Setting LXD config property
+  hosts: all
+  become: yes
+
+  tasks:
+    - name: Check if LXD profile exists
+      shell: lxc profile info {{ lxd_profile }} &> /dev/null || echo "not found"
+      register: lxd_profile_exists
+      ignore_errors: true
+
+    - name: Create LXD profile
+      lxd_profile:
+        name: "{{ lxd_profile }}"
+        config:
+          {{ lxd_property }}: "{{ lxd_value }}"
+      when: lxd_profile_exists.rc != 0
+      register: lxd_profile_create
+
+    - name: Update LXD profile
+      lxd_profile:
+        name: "{{ lxd_profile }}"
+        config:
+          {{ lxd_property }}: "{{ lxd_value }}"
+      when: lxd_profile_exists.rc == 0
+      register: lxd_profile_update
+
+    - name: Display LXD profile status
+      debug:
+        msg: "LXD profile {{ lxd_profile }} {{ 'created' if lxd_profile_create.changed else 'updated' if lxd_profile_update.changed else 'is up to date' }}"

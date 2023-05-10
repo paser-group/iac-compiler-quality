@@ -1,0 +1,75 @@
+yaml
+---
+- name: Test playbook for Role Dependencies with absolute path to external role not resolved
+  hosts: localhost
+
+  tasks:
+    - name: Include an external role using an absolute path
+      include_role:
+        name: /root/myroles/myrole
+      vars:
+        myvar: "{{ lookup('env', 'PATH') }}"
+      when: "'linux' in myvar"
+
+    - name: Include an external role using an environment variable
+      include_role:
+        name: "{{ lookup('env', 'MY_ROLE_PATH') }}"
+      when: lookup('env', 'MY_ROLE_PATH') is defined
+
+    - name: Include an external role with a non-existent path
+      include_role:
+        name: /root/nonexistentrole
+      ignore_errors: true
+
+    - name: Include an external role with a malformed path
+      include_role:
+        name: "%%%"
+      ignore_errors: true
+
+    - name: Include an external role with a dynamic path
+      include_role:
+        name: "{{ my_role }}"
+      vars:
+        my_role: "/root/{{ my_var }}/myrole"
+        my_var: "{{ inventory_hostname_short }}"
+
+    - name: Include an external role with a command substitution in the path
+      include_role:
+        name: "$(echo /root/myroles/myrole)"
+      when: inventory_hostname_short == "localhost"
+
+    - name: Include an external role with a subexpression in the path
+      include_role:
+        name: "/root/myroles/myrole-{{ lookup('pipe', 'echo subexpressions') }}"
+      when: "'linux' in ansible_os_family"
+
+    - name: Include an external role with a variable in the path assigned by a shell command
+      shell: echo /root/myroles/myrole-{{ lookup('pipe', 'cat /root/role_version') }}
+      register: my_role_path
+      changed_when: false
+
+    - name: Include an external role with a variable in the path defined by a remote file
+      include_vars:
+        file: /root/role_vars.yml
+      vars:
+        my_role_file_path: "{{ role_path }}/{{ role_version }}/myrole"
+      when: "'linux' in ansible_distribution"
+
+    - name: Include an external role with a variable in the path assigned by a lookup plugin
+      vars:
+        my_role_path: "{{ lookup('file', '/root/role_path') }}/{{ lookup('file', '/root/role_version') }}/myrole"
+      when: inventory_hostname_short != "localhost"
+    
+    - name: Include an external role with both variables and environment variables in the path
+      include_role:
+        name: "{{ lookup('env', 'EXTERNAL_ROLE_PATH') }}/{{ role_version }}/myrole"
+      vars:
+        role_version: "{{ lookup('env', 'ROLE_VERSION') }}"
+      when: lookup('env', 'ROLE_VERSION') is defined
+
+    - name: Include an external role with an escaped character in the path
+      include_role:
+        name: "/root/myroles/myrole\\{}"
+      vars:
+        mychar: "!"
+      when: "'linux' in ansible_distribution"

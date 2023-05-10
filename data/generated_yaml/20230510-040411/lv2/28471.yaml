@@ -1,0 +1,59 @@
+
+---
+- name: vmware_guest without MAC address gather facts error
+  hosts: localhost
+  connection: local
+
+  vars:
+    # Define input variables
+    guest_name: 'Test VM'
+    datastore: 'datastore1'
+  
+  tasks:
+    - name: Register VM on vCenter Server with no MAC address or IP address 
+      vmware_guest:
+        hostname: "{{ vcenter_server }}"
+        username: "{{ vcenter_user }}"
+        password: "{{ vcenter_pass }}"
+        validate_certs: false
+        name: "{{ guest_name }}"
+        guest_id: "{{ guest_id }}"
+        datacenter: "{{ datacenter }}"
+        datastore: "{{ datastore }}"
+        disk:
+          - size_gb: "{{ disk_size }}"
+            type: "{{ disk_type }}"
+        hardware:
+          memory_mb: "{{ memory_size }}"
+          num_cpus: "{{ num_cpus }}"
+        networks:
+          - name: "{{ network }}"
+            start_connected: "{{ start_connected }}"
+            connected: "{{ connected }}"
+      delegate_to: localhost
+    
+    - name: Gather facts for the VM
+      vmware_guest:
+        hostname: "{{ vcenter_server }}"
+        username: "{{ vcenter_user }}"
+        password: "{{ vcenter_pass }}"
+        validate_certs: false
+        name: "{{ guest_name }}"
+        datacenter: "{{ datacenter }}"
+        folder: "{{ folder }}"
+        ansible_vm_facts: yes
+      register: facts
+    
+    - name: Display VM facts
+      debug:
+        var: facts
+  
+    - name: Power on the VM with a MAC address missing 
+      vmware_guest:
+        hostname: "{{ vcenter_server }}"
+        username: "{{ vcenter_user }}"
+        password: "{{ vcenter_pass }}"
+        validate_certs: false
+        name: "{{ guest_name }}"
+        state: powered_on
+      delegate_to: localhost

@@ -1,0 +1,36 @@
+
+- name: Try to stop/disable unknown services
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Stop a random service
+      service:
+        name: "{{ random() | random(['unknown_service', 'random_service']) }}"
+        state: stopped
+      register: stop_random
+
+    - name: Disable a random service
+      service:
+        name: "{{ random() | random(['unknown_service', 'random_service']) }}"
+        state: stopped
+      register: disable_random
+
+    - name: Ignore errors when stopping/disabling services
+      service:
+        name: "{{ item }}"
+        state: stopped
+      register: fail_stop_disable
+      ignore_errors: true
+      with_items:
+        - "unknown_service"
+        - "{{ random() | random(['unknown_service', 'random_service']) }}"
+      when: item != "random_service"
+
+    - name: Print all results
+      debug:
+        var: item
+      with_items:
+        - "{{ stop_random }}"
+        - "{{ disable_random }}"
+        - "{{ fail_stop_disable }}"

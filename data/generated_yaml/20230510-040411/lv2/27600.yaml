@@ -1,0 +1,65 @@
+
+- name: Stress-testing nxos_vrf_interface module
+  hosts: network_devices
+  gather_facts: false
+  vars:
+    state: "absent"
+    vrf_name: "{{ lookup('env','USER')[:15] }}"
+    interface_name: "Ethernet1/{{ 100 |random }}"
+    description: "test_description_{{ 1000 |random }}"
+    shutdown_val: "{{ [True, False]|random }}"
+    no_shutdown_val: "{{ [True, False]|random }}"
+  tasks:
+    - name: Create VRF
+      nxos_vrf_interface:
+        name: "{{ vrf_name }}"
+        state: present
+    - name: Add interface to VRF
+      nxos_vrf_interface:
+        name: "{{ vrf_name }}"
+        interface: "{{ interface_name }}"
+        description: "{{ description }}"
+      register: res1
+    - name: Check if interface is added to VRF
+      debug:
+        msg: "{{ 'Interface added to VRF' if 'associated_interfaces' in res1.changed else 'Error adding interface to VRF' }}"
+    - name: Check if VRF exists
+      nxos_vrf:
+        name: "{{ vrf_name }}"
+      register: res2
+    - name: Remove interface added to VRF
+      nxos_vrf_interface:
+        name: "{{ vrf_name }}"
+        interface: "{{ interface_name }}"
+        state: "{{ state }}"
+      register: res3
+    - name: Check if interface is removed from VRF
+      debug:
+        msg: "{{ 'Interface removed from VRF' if 'associated_interfaces' in res3.changed else 'Error removing interface from VRF' }}"
+    - name: Shutdown VRF interface
+      nxos_vrf_interface:
+        name: "{{ vrf_name }}"
+        interface: "{{ interface_name }}"
+        shutdown: "{{ shutdown_val }}"
+        state: present
+      register: res4
+    - name: Check if VRF interface is shut down
+      debug:
+        msg: "{{ 'VRF interface shut down' if 'shutdown' in res4.changed else 'Error shutting down VRF interface' }}"
+    - name: Remove non-existent VRF interface
+      nxos_vrf_interface:
+        name: "{{ vrf_name }}"
+        interface: "wrong_interface_name"
+        state: absent
+      register: res5
+    - name: Check if non-existent VRF interface is removed
+      debug:
+        msg: "{{ 'Non-existent VRF interface removed' if res5|succeeded else 'Error removing non-existent VRF interface' }}"
+    - name: Remove VRF
+      nxos_vrf_interface:
+        name: "{{ vrf_name }}"
+        state: absent
+      register: res6
+    - name: Check if VRF is removed
+      debug:
+        msg: "{{ 'VRF removed' if res6|skipped else 'Error removing VRF' }}"

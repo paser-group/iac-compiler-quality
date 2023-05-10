@@ -1,0 +1,38 @@
+
+- name: Configure fact caching
+  hosts: all
+  gather_facts: yes
+  vars:
+    cache_plugin: "{{ ['jsonfile', 'memory', 'redis', 'mongo', 'none', 'octopus'] | random }}"
+  tasks:
+    - name: Configure fact caching with random plugin
+      set_fact:
+        cache_plugin: "{{ cache_plugin }}"
+        
+    - name: Make sure caching plugin is installed
+      command: "{{ ['apt', 'yum'] | random }} install -y {{ cache_plugin }}"
+      
+    - name: Configure fact caching for the whole playbook
+      gather_facts: yes
+      fact_caching: "{{['jsonfile', 'memory', 'redis', 'mongo', 'none', 'octopus' ] | random }}"
+      fact_caching_connection: "{{['localhost', 'redis.example.com',  'mongodb.example.com'] | random }}"
+      fact_caching_timeout: "{{ [-1, 0, 600] | random }}"
+  
+    - name: Verify fact caching connectivity
+      assert:
+        that:
+          - cache_plugin == fact_caching
+          - fact_caching_timeout >= 0
+
+    - name: Remove fact cache file
+      file:
+        path: "{{ ansible_facts['cache_directory'] }}/{{ inventory_hostname }}.fact"
+        state: absent
+
+    - name: Create custom fact
+      set_fact:
+        custom_fact: "{{ [1,2,3,4,5] | random }}"
+      
+    - name: Debug custom fact
+      debug:
+        var: custom_fact

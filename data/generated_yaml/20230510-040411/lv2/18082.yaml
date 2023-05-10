@@ -1,0 +1,34 @@
+
+- name: WinRM certification error playbook
+  hosts: windows
+  gather_facts: no
+
+  vars:
+    remote_host: 172.16.2.10
+    remote_port: 5985
+    remote_username: administrator
+    remote_password: TestPassword
+
+  tasks:
+  - name: Run PowerShell command on remote node through WinRM
+    win_shell: |
+      $url = "http://{{ remote_host }}:{{ remote_port }}/wsman"
+      $sessionOption = New-PSSessionOption -SkipCACheck -SkipCNCheck -SkipRevocationCheck
+      $remoteSession = New-PSSession -ConnectionUri $url -Credential $credentials -SessionOption $sessionOption -Authentication Negotiate
+      Invoke-Command -Session $remoteSession -FilePath "{{ playbook_dir }}/files/Invoke-MyScript.ps1"
+    vars:
+      ansible_connection: winrm
+      ansible_winrm_transport: ntlm
+      ansible_winrm_server_cert_validation: ignore
+      delegate_to: "{{ remote_host }}"
+
+  - name: Check if file exists on remote node
+    win_stat:
+      path: "C:\\Program Files\\MyApp\\log.txt"
+      get_checksum: true
+    vars:
+      remote_user: "{{ remote_username }}"
+      remote_password: "{{ remote_password }}"
+      ansible_connection: winrm
+      ansible_winrm_transport: kerberos
+      delegate_to: "{{ remote_host }}"

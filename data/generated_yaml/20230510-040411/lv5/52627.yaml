@@ -1,0 +1,31 @@
+
+---
+- name: Test Java certificate handling
+  hosts: all
+  tasks:
+  
+    - name: Install Java
+      package:
+        name: openjdk
+        state: present
+        
+    - name: Generate a Java keystore with a self-signed certificate
+      java_cert:
+        src: "/etc/ssl/certs/java.keystore"
+        state: present
+        certificate:
+          src: "/path/to/cert.crt"
+          alias: "my_cert"
+          password: "change_me"
+          
+    - name: Remove a Java certificate by alias
+      java_cert:
+        src: "/etc/ssl/certs/java.keystore"
+        state: absent
+        alias: "my_cert"
+        password: "change_me"
+        
+    - name: Verify the validity of a Java keystore
+      shell: "keytool -list -v -keystore /etc/ssl/certs/java.keystore -storepass change_me"
+      register: keystore_output
+      failed_when: "'Alias name not found' not in keystore_output.stdout"

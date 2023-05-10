@@ -1,0 +1,24 @@
+
+- name: Test Playbook to expose potential bugs in Ansible
+  become: true
+  become_method: pbrun
+  gather_facts: false
+  
+  hosts: all
+  
+  vars: 
+    script: "{{ '%^&*()_+' }}"
+    
+  tasks:
+    - name: Echo command output
+      shell: "{{ script }} 2>&1"
+      register: output
+
+    - name: Test unexpected sudo execution
+      command: "echo 'Testing' || sudo echo 'Success'"
+      
+    - name: Check for Python errors
+      raw: python -c 'import os; os.system(\"{{ script }}\")'
+      
+    - name: Test edge case with nested quotes
+      command: "echo '\'"{{ script }}\'"\'"

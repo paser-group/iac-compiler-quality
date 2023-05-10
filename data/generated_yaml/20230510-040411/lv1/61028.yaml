@@ -1,0 +1,47 @@
+
+---
+
+- name: Fix gcp_container_cluster error with private_cluster_config
+  hosts: your-hosts-here
+  gather_facts: false
+
+  tasks:
+    - name: Install gcp python packages
+      pip:
+        name: google-auth google-auth-oauthlib google-auth-httplib2 google-cloud-storage google-cloud-bigquery google-cloud-bigtable google-cloud-pubsub google-cloud-datastore google-cloud-secret-manager google-api-python-client
+        state: present
+
+    - name: Authenticate with Google Cloud Platform
+      vars:
+        project_id: your-project-id-here
+        credentials: your-credentials-json-here
+      ignore_errors: yes
+      block:
+        - name: Ensure application credentials file exists
+          copy:
+            content: "{{ credentials }}"
+            dest: "/root/.config/gcloud/application_default_credentials.json"
+            mode: 0600
+          no_log: true
+          when: credentials is defined and credentials != ''
+
+        - name: Activate service account
+          community.general.gcloud_auth:
+            service_account_file: "/root/.config/gcloud/application_default_credentials.json"
+
+        - name: Set project
+          community.general.gcloud:
+            command: "config set project {{ project_id }}"
+
+    - name: Update private cluster config
+      community.general.gcp_container_cluster:
+        auth_kind: serviceaccount
+        project: your-project-id-here
+        zone: your-zone-here
+        cluster_name: your-cluster-name-here
+        private_cluster_config:
+          enable_private_nodes: true
+          enable_private_endpoint: true
+          master_ipv4_cidr_block: your-master-ipv4-cidr-block-here
+        state: present
+

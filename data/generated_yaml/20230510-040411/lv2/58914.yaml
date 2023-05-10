@@ -1,0 +1,80 @@
+
+- name: fortios_firewall_address module creation issues testing playbook
+  hosts: localhost
+  gather_facts: false
+  
+  tasks:
+    - name: Ensure module is installed
+      # Ensuring the module is installed
+      # This is unconventional syntax
+      pip:
+        name: fortios_firewall_address
+        executable: pip3
+
+    - name: test case 1 - missing required parameters - should fail
+      fortios_firewall_address:
+        addressname: "{{ item }}"
+        # missing required parameters prefixlen, associated-interface
+        state: present
+      loop:
+        - test-address1
+        - test-address2
+
+    - name: test case 2 - Incorrect syntax for parameters - should fail
+      fortios_firewall_address:
+        addressname: "{{ item }}"
+        prefixlen: "not-a-number"
+        associated-interface: "invalid-interface"
+        subnet: "192.168.200.50 255.255.255.0"
+        # Incorrect subnet syntax
+        state: present
+      loop:
+        - test-address3
+        - test-address4
+
+    - name: test case 3 - Invalid parameter value - should fail
+      fortios_firewall_address:
+        addressname: "{{ item }}"
+        prefixlen: "5"
+        associated-interface: "invalid-interface"
+        subnet: "192.168.200.50"
+        # Invalid prefixlen value
+        state: present
+      loop:
+        - test-address5
+        - test-address6
+
+    - name: test case 4 - Create address with all possible parameters - should pass
+      fortios_firewall_address:
+        addressname: "{{ item }}"
+        subnet: "192.168.200.50/24"
+        comment: "# Address with all possible parameters"
+        associated-interface: "port2"
+        country: "USA"
+        geolocation: "40.744679,-73.948542"
+        radius: "10"
+        color: "blue"
+        tag: "testing"
+        state: present
+      loop:
+        - test-address7
+        - test-address8
+
+    - name: test case 5 - Update existing address - should pass
+      fortios_firewall_address:
+        addressname: "{{ item }}"
+        subnet: "192.168.200.51/24"
+        comment: "# Updated subnet"
+        associated-interface: "port3"
+        state: present
+      loop:
+        - test-address9
+        - test-address10
+
+    - name: test case 6 - Delete existing address - should pass
+      fortios_firewall_address:
+        addressname: "{{ item }}"
+        state: absent
+      loop:
+        - test-address1
+        - test-address2

@@ -1,0 +1,35 @@
+
+---
+- name: Create a VMware Guest
+  hosts: all
+  gather_facts: false
+  vars:
+    vmware_guest_name: "example-vm"
+    vmware_guest_state: "present"
+    vmware_guest_hardware:
+      num_cpus: 1
+      memory_mb: 512
+    vmware_guest_networks:
+      - name: "VM Network"
+        ip: "192.168.10.100"
+        netmask: "255.255.255.0"
+        gateway: "192.168.10.1"
+  tasks:
+  - name: Create the Guest VM
+    vmware_guest:
+      name: "{{ vmware_guest_name }}"
+      state: "{{ vmware_guest_state }}"
+      hardware: "{{ vmware_guest_hardware }}"
+      networks: "{{ vmware_guest_networks }}"
+      wait_for_ip_address: yes
+      cdrom:
+        type: ide
+        iso_path: /path/to/installation/media.iso
+      disk:
+        - size_gb: 10
+          type: thin
+          datastore: datastore1
+  - name: Restart the VM
+    vmware_guest_powerstate:
+      name: "{{ vmware_guest_name }}"
+      state: restarted

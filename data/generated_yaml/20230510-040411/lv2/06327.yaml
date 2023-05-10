@@ -1,0 +1,40 @@
+
+- name: Docker module ports option error test
+  hosts: all
+  gather_facts: no
+
+  tasks:
+  - name: Test unconventional syntax
+    docker_container:
+      name: httpd
+      image: httpd:latest
+      state: started
+      ports: [80, number(8080)]
+    register: container_output
+    failed_when: (container_output.changed == false) or (("ports": "value missing") not in container_output.stderr_lines[0])
+  
+  - name: Test with unusual port numbers
+    docker_container:
+      name: httpd
+      image: httpd:latest
+      state: started
+      ports: [70000, 65536]
+    register: container_output
+    failed_when: (container_output.changed == false) or (("ports": "Invalid port number(s): 70000, 65536") not in container_output.stderr_lines[2]))
+    
+  - name: Test missing ports options
+    docker_container:
+      name: httpd
+      image: httpd:latest
+      state: started
+    register: container_output
+    failed_when: (("ports": "value missing") not in container_output.stderr_lines[0])
+    
+  - name: Test unexpected input type
+    docker_container:
+      name: httpd
+      image: httpd:latest
+      state: started
+      ports: [80, "8080", True]
+    register: container_output
+    failed_when: (container_output.changed == false) or (("ports": "TypeError: ports parameter is an unknown or malformed list type") not in container_output.stderr_lines[0]))

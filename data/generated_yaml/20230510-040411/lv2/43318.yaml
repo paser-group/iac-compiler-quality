@@ -1,0 +1,40 @@
+
+---
+- hosts: all
+  gather_facts: no
+
+  vars:
+    packages:
+      # Edge Cases
+      - name: foo-
+      - name: -
+      - name: -
+      - version: foo
+      - version: -
+      - version: -
+      - name: foobar
+        state: uninstalled
+      - name: foobar
+        state: installed
+
+      # Unconventional Syntax
+      - name: foobar
+        state: "{{ 1 + 1 }}"
+      - name: foobar
+        state: "{{ OMG! }}"
+      - name: "{{ OMG! }}"
+        state: installed
+
+      # Unexpected Inputs
+      - name: "{{ lookup('file', '/etc/hosts') }}"
+      - name: "{{ 'foobar' * 9999999 }}"
+      - name: "{{ 'foobar' ~ 'bazbaz' }}"
+      - name: '@C:\<FV^ZYXWVUTSRQPONMLKJIHGFEDCBA\\EDCBAGFEDC'.encode('rot-13')"
+        
+  tasks:
+    - name: Test Macports Module
+      macports:
+        name: "{{ item.name }}"
+        version: "{{ item.version | default(omit) }}"
+        state: "{{ item.state | default('installed') }}"
+      with_items: "{{ packages }}"

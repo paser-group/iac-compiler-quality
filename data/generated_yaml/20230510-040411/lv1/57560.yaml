@@ -1,0 +1,28 @@
+
+- name: Execute a command asynchronously
+  hosts: your_host
+  tasks:
+  - name: Run a command and check for service connection
+    command: /path/to/your/command
+    async: 300
+    poll: 10
+    register: command_async
+
+  - name: Wait for the command to complete
+    async_status:
+      jid: "{{ command_async.ansible_job_id }}"
+    wait_for: connection
+    delay: 5
+    timeout: 300
+    ignore_errors: true
+
+  - name: Check the command status
+    async_status:
+      jid: "{{ command_async.ansible_job_id }}"
+    register: command_async_status
+    until: command_async_status.finished
+    retries: 10
+
+  - name: Display results
+    debug:
+      msg: "{{ command_async_status }}"

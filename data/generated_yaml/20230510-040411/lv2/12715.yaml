@@ -1,0 +1,52 @@
+yaml
+---
+- name: Test playbook for accessing default variables for other hosts
+  hosts: all
+  gather_facts: no
+
+  vars:
+    default_variable: "{{ hostvars['localhost']['ansible_default_ipv4']['address'] }}"
+    invalid_default_variable: "{{ hostvars['unknown_host']['ansible_default_ipv4']['address'] }}"
+    default_variable_nested: "{{ hostvars[inventory_hostname]['hostvars']['localhost']['ansible_default_ipv4']['address'] }}"
+    invalid_default_variable_nested: "{{ hostvars[inventory_hostname]['hostvars']['unknown_host']['ansible_default_ipv4']['address'] }}"
+    invalid_default_variable_jinja_syntax: "{{ hostvars['{{ inventory_hostname }}']['ansible_default_ipv4']['address'] }}"
+    invalid_default_variable_python_syntax: "{{ hostvars[inventory_hostname].get('unknown_key', 'default') }}"
+
+  tasks:
+    - name: Print default variable for localhost
+      debug:
+        var: default_variable
+
+    - name: Assign default variable to another host
+      set_fact:
+        other_host_variable: "{{ hostvars['other_host']['ansible_default_ipv4']['address'] }}"
+      vars:
+        other_host: "{{ groups['all'] | difference([inventory_hostname]) | first }}"
+
+    - name: Print default variable for other host
+      debug:
+        var: other_host_variable
+
+    - name: Print non-existent default variable for unknown host
+      debug:
+        var: invalid_default_variable
+      ignore_errors: yes
+
+    - name: Print default variable nested for local host
+      debug:
+        var: default_variable_nested
+
+    - name: Print non-existent nested default variable for unknown host
+      debug:
+        var: invalid_default_variable_nested
+      ignore_errors: yes
+
+    - name: Print invalid default variable for unknown host with Jinja syntax error
+      debug:
+        var: invalid_default_variable_jinja_syntax
+      ignore_errors: yes
+
+    - name: Print invalid non-existent key for host with Python syntax error
+      debug:
+        var: invalid_default_variable_python_syntax
+      ignore_errors: yes

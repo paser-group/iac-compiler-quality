@@ -1,0 +1,85 @@
+
+- name: vmware_portgroup idempotency issue playbook
+  hosts: localhost
+  gather_facts: no
+  
+  vars:
+    portgroup_name: "{{ lookup('env', 'VMWARE_PORTGROUP_NAME') | default('default') }}"
+    portgroup_vlan_id: "{{ lookup('env', 'VMWARE_PORTGROUP_VLAN_ID') | default(0) }}"
+
+  tasks:
+    - name: Find existing portgroup
+      vmware_portgroup_find:
+        hostname: "{{ lookup('env', 'VMWARE_HOSTNAME') }}"
+        username: "{{ lookup('env', 'VMWARE_USERNAME') }}"
+        password: "{{ lookup('env', 'VMWARE_PASSWORD') }}"
+        datacenter_name: "{{ lookup('env', 'VMWARE_DATACENTER_NAME') }}"
+        validate_certs: no
+        name: "{{ portgroup_name }}"
+      register: existing_portgroup
+
+    - name: Ensure portgroup existence
+      vmware_portgroup:
+        hostname: "{{ lookup('env', 'VMWARE_HOSTNAME') }}"
+        username: "{{ lookup('env', 'VMWARE_USERNAME') }}"
+        password: "{{ lookup('env', 'VMWARE_PASSWORD') }}"
+        datacenter_name: "{{ lookup('env', 'VMWARE_DATACENTER_NAME') }}"
+        validate_certs: no
+        name: "{{ portgroup_name }}"
+        vlan_id: "{{ portgroup_vlan_id }}"
+        state: present
+        fail_on_spec_change: true
+        extra_config:
+          invalid_config_option: "{{ portgroup_name }}"
+          vmotion_port: "{{ portgroup_name }}"
+
+    # Edge case 1: Set invalid portgroup name
+    - name: Ensure invalid portgroup name existence
+      vmware_portgroup:
+        hostname: "{{ lookup('env', 'VMWARE_HOSTNAME') }}"
+        username: "{{ lookup('env', 'VMWARE_USERNAME') }}"
+        password: "{{ lookup('env', 'VMWARE_PASSWORD') }}"
+        datacenter_name: "{{ lookup('env', 'VMWARE_DATACENTER_NAME') }}"
+        validate_certs: no
+        name: "{{ portgroup_name }}+!@"
+        vlan_id: "{{ portgroup_vlan_id }}"
+        state: present
+        fail_on_spec_change: true
+
+    # Edge case 2: Set invalid VLAN ID
+    - name: Ensure invalid VLAN ID existence
+      vmware_portgroup:
+        hostname: "{{ lookup('env', 'VMWARE_HOSTNAME') }}"
+        username: "{{ lookup('env', 'VMWARE_USERNAME') }}"
+        password: "{{ lookup('env', 'VMWARE_PASSWORD') }}"
+        datacenter_name: "{{ lookup('env', 'VMWARE_DATACENTER_NAME') }}"
+        validate_certs: no
+        name: "{{ portgroup_name }}-invalid-vlan"
+        vlan_id: "invalid-vlan-id"
+        state: present
+        fail_on_spec_change: true
+
+    # Edge case 3: Update VLAN ID
+    - name: Update VLAN ID
+      vmware_portgroup:
+        hostname: "{{ lookup('env', 'VMWARE_HOSTNAME') }}"
+        username: "{{ lookup('env', 'VMWARE_USERNAME') }}"
+        password: "{{ lookup('env', 'VMWARE_PASSWORD') }}"
+        datacenter_name: "{{ lookup('env', 'VMWARE_DATACENTER_NAME') }}"
+        validate_certs: no
+        name: "{{ portgroup_name }}"
+        vlan_id: 1000
+        state: present
+        fail_on_spec_change: true
+
+    # Edge case 4: Remove portgroup
+    - name: Remove portgroup
+      vmware_portgroup:
+        hostname: "{{ lookup('env', 'VMWARE_HOSTNAME') }}"
+        username: "{{ lookup('env', 'VMWARE_USERNAME') }}"
+        password: "{{ lookup('env', 'VMWARE_PASSWORD') }}"
+        datacenter_name: "{{ lookup('env', 'VMWARE_DATACENTER_NAME') }}"
+        validate_certs: no
+        name: "{{ portgroup_name }}"
+        state: absent
+        fail_on_spec_change: true

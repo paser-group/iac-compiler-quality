@@ -1,0 +1,44 @@
+
+- name: Test playbook for ARM conditional check failure
+  hosts: all
+  gather_facts: no
+  
+  tasks:
+    - name: Create a resource group with unusual syntax
+      azure_rm_resourcegroup:
+        name: "{{'test_rg_' + ' '.join(range(10))}}"
+        location: "eastus"
+      
+    - name: Deploy an ARM template with unexpected input
+      azure_rm_deployment:
+        resource_group_name: "{{ resource_group_name }}"
+        template:
+          "$schema": "{{ 'invalid_syntax' }}"
+          contentVersion: "{{ '1.0.0.0' }}"
+          resources:
+            - name: "{{ 'test_vm_' + range(10) }}"
+              type: "{{ 'Microsoft.Compute/virtualMachines' }}"
+              location: "eastus"
+              properties:
+                hardwareProfile:
+                  vmSize: "{{ 'Standard_B1ls' }}"
+                storageProfile:
+                  imageReference:
+                    publisher: 'MicrosoftWindowsServer'
+                    offer: "{{ ['WindowsServer', 'WindowsDatacenter'] | random }}"
+                    sku: '2016-Datacenter'
+                    version: 'latest'
+                osProfile:
+                  computerName: "{{['test_vm_' + ' '.join(range(10))] | random}}"
+                  adminUsername: "{{['root', 'administrator', 'admin'] | random}}"
+                  adminPassword: "{{['admin', 'password', '123456'] | random}}"
+                networkProfile:
+                  networkInterfaces:
+                    - id: "{{ 'invalid_network_id' }}"
+                     
+      register: deployment
+      
+    - name: Fail the playbook during the ARM conditional check
+      fail:
+        msg: "Failed during ARM conditional check."
+      when: "'{{ deployment.changed }}' != 'True'" 

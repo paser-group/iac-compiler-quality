@@ -1,0 +1,42 @@
+
+- name: Stress test for nxos_install_os errors
+  hosts: network_switches
+  gather_facts: no
+  vars:
+    os_image: "{{ ansible_os_family == 'IOS' | ternary('ios_image.bin', 'nxos_image.bin') }}"
+    error_messages:
+      - "{% if transport == 'cli' %}Unable to execute command{% else %}Request to NX-API server failed{% endif %}"
+      - "Insufficient memory available to complete the operation."
+  tasks:
+    - name: Install OS using CLI transport
+      nxos_install_os:
+        os_type: "nxos"
+        os_version: "9.3(1)"
+        src: "bootflash:/{{ os_image }}"
+        provider:
+          host: "{{ inventory_hostname }}"
+          username: "{{ inventory_hostname_short }}"
+          password: "{{ lookup('env', 'ANSIBLE_NETWORK_PASSWORD') }}"
+        transport: cli
+      register: cli_result
+      ignore_errors: yes
+      
+    - name: Install OS using NXAPI transport
+      nxos_install_os:
+        os_type: "nxos"
+        os_version: "9.3(1)"
+        src: "bootflash:/{{ os_image }}"
+        provider:
+          host: "{{ inventory_hostname }}"
+          username: "{{ inventory_hostname_short }}"
+          password: "{{ lookup('env', 'ANSIBLE_NETWORK_PASSWORD') }}"
+        transport: nxapi
+        timeout: 10
+      register: nxapi_result
+      ignore_errors: yes
+
+    - name: Verify error messages
+      fail:
+        msg: "{{ item }}"
+      when: "'{{ item }}' in cli_result.msg or '{{ item }}' in nxapi_result.msg"
+      with_items: "{{ error_messages }}"

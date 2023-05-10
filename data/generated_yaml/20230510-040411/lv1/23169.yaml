@@ -1,0 +1,32 @@
+
+- hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: Run JSON command
+      command: /usr/bin/mycommand --json
+      register: json_output
+      tags: always
+
+    - name: Skip JSON command if output up-to-date
+      command: /usr/bin/mycommand --json
+      when: json_output.changed
+      tags: skip
+
+    - name: Parse JSON output
+      json_query:
+        input: "{{ json_output.stdout }}"
+        query: "myquery"
+      register: parsed_json_output
+      tags: always
+
+  handlers:
+    - name: Handle changes
+      debug:
+        msg: "Changes detected"
+      when: json_output.changed
+
+    - name: Handle no changes
+      debug:
+        msg: "No changes detected"
+      when: not json_output.changed

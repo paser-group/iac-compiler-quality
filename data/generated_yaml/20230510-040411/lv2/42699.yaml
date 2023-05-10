@@ -1,0 +1,39 @@
+
+- name: Test dynamic variables in with_items
+  hosts: all
+  vars:
+    dynamic_var: "{{ range(5) | list }}"
+  tasks:
+    - name: Run command with dynamic variable
+      command: "{{ item }}"
+      with_items: "{{ dynamic_var }}"
+      
+    - name: Include file with dynamic variable
+      include: "{{ item }}"
+      with_items: "{{ dynamic_var }}"
+      
+    - name: Loop with dynamic variable and nested items
+      debug:
+        msg: "{{ item.0.key1 }}, {{ item.1.key2 }}"
+      with_nested:
+        - "{{ dynamic_var }}"
+        - - key1: "{{ item }}"
+            key2: "{{ item }}"
+          
+    - name: Dynamic variable in file path
+      copy:
+        src: "file_{{ item }}.txt"
+        dest: "/tmp/file_{{ item }}.txt"
+      with_items: "{{ dynamic_var | shuffle }}"
+      
+    - name: Conditional check with dynamic variable
+      debug:
+        msg: "Item {{ item }} is odd"
+      when: item is odd
+      with_items: "{{ dynamic_var }}"
+      
+    - name: Pass dynamic variable to role
+      include_role:
+        name: test_role
+        dynamic_var: "{{ item }}"
+      with_items: "{{ dynamic_var }}"

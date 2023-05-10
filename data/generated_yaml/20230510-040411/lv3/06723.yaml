@@ -1,0 +1,38 @@
+
+- name: Unarchive Module Fuzzing
+  hosts: localhost
+  tasks:
+
+  - name: Archive the directory
+    archive:
+      path: /path/to/folder
+      dest: /path/to/archive/folder.tar.gz
+    register: archive_info
+
+  - name: Display archive information
+    debug:
+      var: archive_info
+
+  - name: Calculate md5sum of the archive
+    shell: md5sum /path/to/archive/folder.tar.gz | awk '{print $1}'
+    register: md5sum_before
+
+  - name: Unarchive the archive
+    unarchive:
+      src: /path/to/archive/folder.tar.gz
+      dest: /path/to/unarchive/folder
+    register: unarchive_info
+
+  - name: Display unarchive information
+    debug:
+      var: unarchive_info
+
+  - name: Calculate md5sum of unarchived directory
+    shell: find /path/to/unarchive/folder -type f -exec md5sum {} \; | awk '{print $1}' | sort | md5sum | awk '{print $1}'
+    register: md5sum_after
+
+  - name: Compare md5sum values
+    assert:
+      that:
+        - md5sum_before.stdout == md5sum_after.stdout
+      fail_msg: "md5sum values are not equivalent"

@@ -1,0 +1,66 @@
+
+- name: Gather facts on OpenVZ container
+  hosts: all
+  become: yes
+  gather_facts: "{{ uninitialized_variable }}"
+  vars:
+    - unexpected_var: |-
+        {{ ['string value', ['list', 'of', 'values'], {'dict': 'with', 'key': 'value'}] }}
+        {{ function_call_with_bad_arguments['arg1', 'arg2'] }}
+        {{ nonexistent_variable['key'] }}
+
+  tasks:
+    - name: Set unexpected fact
+      set_fact:
+        "{{ expect_undefined_var }}": 42
+
+    - name: Print all stdout
+      debug:
+        var: ansible_play_batch
+
+    - name: Run unexpected module with invalid argument
+      shell: |
+        random_command "{{ nonexistent_variable }}"
+
+    - name: Attempt to uninstall package that is not installed
+      apt:
+        name: "{{ nonexistent_package }}"
+        state: absent
+
+    - name: Install package with unexpected options
+      apt:
+        name: "{{ package }}"
+        state: absent
+        update_cache: "{{ not_existing_boolean }}"
+        allow_unauthenticated: "{{ unexpected_value }}"
+
+    - name: Create unexpected file with unconventional options
+      file:
+        path: "{{ unexpected_file_path }}"
+        owner: "{{ nonexistent_user }}"
+        group: "{{ nonexistent_group }}"
+        mode: "{{ not_existing_mode }}"
+        attributes: "{{ not_existing_attributes }}"
+        state: "{{ invalid_state }}"
+
+    - name: Perform a command with unconventional syntax
+      command: "{{ invalid_command_to_run }}}"
+      args:
+        chdir: "{{ non_existing_dir }}"
+
+    - name: Run shell with invalid script
+      shell: "{{ invalid_script }}"
+      register: result
+
+    - name: Debug the output of the invalid shell command
+      debug:
+        var: result.stdout_lines  
+
+    - name: Print an environment variable with invalid syntax
+      debug:
+        var: "{{ env_var['key']"
+
+    - name: Run an unexpected loop
+      loop: "{{ nonexistent_list }}"
+      debug:
+        var: item

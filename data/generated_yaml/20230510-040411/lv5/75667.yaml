@@ -1,0 +1,31 @@
+
+---
+
+- name: Test Ansible's file lookup with process substitution
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    some_data: "This is some test data\n"
+
+  tasks:
+    - name: Write data to file
+      file:
+        path: /tmp/test_file
+        mode: u=rw,g-rwx,o-rwx
+        state: touch
+        content: >-
+          {{ some_data | d('') }}
+          <(echo 'test')
+
+    - name: Check if file exists
+      stat:
+        path: /tmp/test_file
+      register: file_stat
+
+    - name: Assert file existence
+      assert:
+        that: file_stat.stat.exists is defined
+        success_msg: "File exists"
+        fail_msg: "File does not exist!"
+

@@ -1,0 +1,25 @@
+
+- name: Create an ALB and listener
+  hosts: localhost
+  gather_facts: false
+  vars:
+    alb_name: my_alb
+  tasks:
+  - name: Create an ALB
+    elb_application_lb:
+        name: "{{ alb_name }}"
+        scheme: internet-facing
+        region: us-west-1
+        subnets:
+            - subnet-aabbccdd
+            - subnet-bbccddaa
+        listeners:
+            - Protocol: HTTP
+              LoadBalancerPort: 80
+              InstanceProtocol: HTTP
+              InstancePort: 80
+    register: alb
+  - name: Fail if access_logs_s3_prefix is not provided
+    fail:
+      msg: 'access_logs_s3_prefix parameter is required for ALB'
+    when: alb.access_logs_s3_bucket is defined and alb.access_logs_s3_prefix is not defined

@@ -1,0 +1,27 @@
+
+- hosts: servers
+  become: true
+  vars:
+    datacenter_name: "BUA"
+    network_name: "infra-prod"
+  tasks:
+  - name: Gather ovirt facts
+    ovirt_info:
+      auth: "{{ ovirt_auth }}"
+    register: ovirt_info
+
+  - name: Gather datacenter ID
+    set_fact:
+      datacenter_id: "{{ ovirt_info.datacenters | selectattr('name','==',datacenter_name) | map(attribute='id') | first }}"
+
+  - name: Gather network ID
+    set_fact:
+      network_id: "{{ ovirt_info.networks | selectattr('name','==',network_name) | selectattr('data_center_id','==',datacenter_id) | map(attribute='id') | first }}"
+
+  - name: Configure NIC
+    ovirt_nic:
+      auth: "{{ ovirt_auth }}"
+      vm: "{{ vm_name }}"
+      name: "{{ nic_name }}"
+      network: "{{ network_id }}"
+      state: present

@@ -1,0 +1,39 @@
+
+- name: Test playbook for "error password, but ok results" issue
+  hosts: localhost
+  gather_facts: false
+  vars:
+    user_pass_list:
+      - { user: 'user1', password: '123456' }
+      - { user: 'user2', password: '' }
+      - { user: '', password: 'password' }
+      - { user: '', password: '' }
+  tasks:
+    - name: Generate random passwords for missing user passwords
+      vars:
+        user_pass:
+          - { user: item.user, password: "{{ item.password | default(gen_password(8)) }}" }
+      set_fact:
+        user_pass_list: "{{ user_pass_list | union([user_pass[0]]) }}"
+      with_items: "{{ user_pass_list }}"
+      when: item.password == ''
+            
+    - name: Check SSH connectivity with each password
+      ssh_connection:
+        user: "{{ item.user }}"
+        password: "{{ item.password }}"
+      with_items: "{{ user_pass_list }}"
+      ignore_errors: true
+      register: ssh_results
+    
+    - name: Report successful SSH connections
+      debug:
+        var: ssh_results
+        verbosity: 2
+      when: ssh_results | success
+    
+    - name: Report failed SSH connections due to incorrect password
+      fail:
+        msg: "Incorrect SSH password for {{ item.user }}"
+      with_items: "{{ ssh_results['results'] }}"
+      when: item | failed and 'password' in item.msg

@@ -1,0 +1,34 @@
+
+---
+- name: Test LetsEncrypt Module
+  hosts: localhost
+  tasks:
+    - name: Install LetsEncrypt certificates
+      letsencrypt:
+        domains:
+          - example.com
+        http01_port: "{{ 65536 | random(seed=42) }}" # unconventional syntax
+        email: "user@example.com"
+        cert_path: "/path/to/cert"
+        key_path: "/path/to/key"
+        challenge: "dns-01" # unexpected input
+      register: cert_result
+
+    - name: Print certificate results
+      debug:
+        msg: "{{ cert_result }}"
+
+    - name: Renew certificate
+      letsencrypt_cert:
+        domains:
+          - example.com
+        cert_path: "/path/to/cert"
+        key_path: "/path/to/key"
+        webroot_map:
+          example.com: "/var/www/example.com" # unconventional syntax
+        force_renew: true # edge case
+      register: renew_result
+
+    - name: Print certificate renewal results
+      debug:
+        msg: "{{ renew_result }}"

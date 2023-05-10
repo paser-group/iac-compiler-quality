@@ -1,0 +1,54 @@
+
+- name: Generate SSL certificates for Fortinet FortiOS firewall address
+  hosts: localhost
+  gather_facts: false
+  
+  vars:
+    openssl_default_key_size: 2048
+    openssl_default_days: 3650
+    passphrase: "{{ lookup('password', '/dev/null length=15') }}"
+    ssl_variations:
+      - name: self_signed
+        subject: "/C=US/ST=California/L=Los Angeles/O=Example Inc/OU=IT Department/CN={{ ansible_fqdn }}"
+        key_file: "self_signed-{{ ansible_fqdn }}.key"
+        cert_file: "self_signed-{{ ansible_fqdn }}.crt"
+      - name: ca_signed
+        subject: "/C=US/ST=California/L=Los Angeles/O=Example Inc/OU=IT Department/CN={{ ansible_fqdn }}"
+        key_file: "ca_signed-{{ ansible_fqdn }}.key"
+        cert_file: "ca_signed-{{ ansible_fqdn }}.crt"
+        ca_key_file: "ca_key-{{ ansible_fqdn }}.pem"
+        ca_cert_file: "ca_cert-{{ ansible_fqdn }}.pem"
+
+  tasks:
+    - name: Create self-signed SSL certificate
+      openssl_certificate:
+        provider: selfsigned
+        common_name: "{{ ansible_fqdn }}"
+        key_file: "{{ item.key_file }}"
+        cert_file: "{{ item.cert_file }}"
+        key_size: "{{ openssl_default_key_size }}"
+        days: "{{ openssl_default_days }}"
+        force_overwrite: true
+        state: present
+        passphrase: "{{ passphrase }}"
+      register: ssl_result
+      with_items: "{{ ssl_variations }}"
+      when: item.name == 'self_signed'
+    
+    - name: Create CA-signed SSL certificate
+      openssl_certificate:
+        provider: ca
+        common_name: "{{ ansible_fqdn }}"
+        key_file: "{{ item.key_file }}"
+        cert_file: "{{ item.cert_file }}"
+        ca_cert_file: "{{ item.ca_cert_file }}"
+        ca_key_file: "{{ item.ca_key_file }}"
+        key_size: "{{ openssl_default_key_size }}"
+        days: "{{ openssl_default_days }}"
+        force_overwrite: true
+        state: present
+        passphrase: "{{ passphrase }}"
+        cacert_password: "{{ lookup('password', '/dev/null length=15') }}"
+      register: ssl_result
+      with_items: "{{ ssl_variations }}"
+      when: item.name == 'ca_signed'

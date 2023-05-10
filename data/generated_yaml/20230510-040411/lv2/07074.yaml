@@ -1,0 +1,50 @@
+
+- hosts: all
+  gather_facts: no
+  tasks:
+    - name: Test invalid path to key
+      authorized_key:
+        user: root
+        key: "/path/to/nonexistent/key"
+        state: present
+      register: result_invalid_path
+    
+    - name: Test invalid state option
+      authorized_key:
+        user: root
+        key: "{{ lookup('file', '/path/to/valid/key.pub') }}"
+        state: not_present
+      register: result_invalid_state
+
+    - name: Test invalid user option
+      authorized_key:
+        user: nonexistent_user
+        key: "{{ lookup('file', '/path/to/valid/key.pub') }}"
+        state: present
+      register: result_invalid_user
+
+    - name: Test multiple keys at once
+      authorized_key:
+        user: root
+        key:
+          - "{{ lookup('file', '/path/to/valid/key1.pub') }}"
+          - "{{ lookup('file', '/path/to/valid/key2.pub') }}"
+        state: present
+      register: result_multiple_keys
+
+    - name: Test absent state
+      authorized_key:
+        user: root
+        key: "{{ lookup('file', '/path/to/valid/key.pub') }}"
+        state: absent
+      register: result_absent_state
+
+    - name: Print results
+      debug:
+        var: item
+      with_items:
+        - result_invalid_path
+        - result_invalid_state
+        - result_invalid_user
+        - result_multiple_keys
+        - result_absent_state

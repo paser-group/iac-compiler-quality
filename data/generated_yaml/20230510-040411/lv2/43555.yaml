@@ -1,0 +1,84 @@
+
+- name: Test playbook for gce_pd and disk snapshots
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    disk_name: test-disk
+    disk_size_gb: 50
+    snapshot_name: my-snapshot
+    source_disk_name: source-disk
+    source_snapshot_name: source-snapshot
+
+  tasks:
+    - name: Create disk from snapshot with incorrect size argument
+      gce_pd:
+        zone: us-west1-a
+        name: "{{ disk_name }}"
+        size_gb: "50GB"
+        snapshot: "{{ snapshot_name }}"
+      register: disk_from_snapshot_incorrect_size_result
+      ignore_errors: true
+
+    - name: Ensure disk from snapshot with incorrect size argument fails
+      assert:
+        that: disk_from_snapshot_incorrect_size_result.failed == true
+
+    - name: Create disk from snapshot with valid arguments
+      gce_pd:
+        zone: us-west1-a
+        name: "{{ disk_name }}"
+        size_gb: "{{ disk_size_gb }}"
+        snapshot: "{{ snapshot_name }}"
+
+    - name: Create disk from incorrect source disk
+      gce_pd:
+        zone: us-west1-a
+        name: "{{ disk_name }}"
+        size_gb: "{{ disk_size_gb }}"
+        source_disk: "{{ source_disk_name }}"
+      register: disk_from_incorrect_source_disk_result
+      ignore_errors: true
+
+    - name: Ensure disk creation from incorrect source disk fails
+      assert:
+        that: disk_from_incorrect_source_disk_result.failed == true
+
+    - name: Create disk from source snapshot with missing source project
+      gce_pd:
+        zone: us-west1-a
+        name: "{{ disk_name }}"
+        size_gb: "{{ disk_size_gb }}"
+        source_snapshot: "{{ source_snapshot_name }}"
+      register: disk_from_missing_source_project_result
+      ignore_errors: true
+
+    - name: Ensure disk creation from missing source project fails
+      assert:
+        that: disk_from_missing_source_project_result.failed == true
+
+    - name: Create disk from source snapshot with incorrect source project
+      gce_pd:
+        zone: us-west1-a
+        name: "{{ disk_name }}"
+        size_gb: "{{ disk_size_gb }}"
+        source_snapshot: "{{ source_snapshot_name }}"
+        source_project: incorrect-project
+      register: disk_from_incorrect_source_project_result
+      ignore_errors: true
+
+    - name: Ensure disk creation from incorrect source project fails
+      assert:
+        that: disk_from_incorrect_source_project_result.failed == true
+
+    - name: Delete disk
+      gce_pd:
+        zone: us-west1-a
+        name: "{{ disk_name }}"
+        state: absent
+       register: delete_disk_result
+       ignore_errors: true
+
+    - name: Ensure disk deletion succeeded
+      assert:
+        that: delete_disk_result.failed == false

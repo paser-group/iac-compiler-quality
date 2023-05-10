@@ -1,0 +1,39 @@
+
+- hosts: all
+  become: yes
+  
+  tasks:
+    - name: Set hostname
+      hostname:
+        name: myhostname
+      register: hostname_result
+      
+    - name: Verify hostname is set correctly
+      assert:
+        that:
+          - "'myhostname' in inventory_hostname"
+          - "'myhostname' in ansible_hostname"
+            
+    - name: Change hostname outside of Ansible
+      shell: hostnamectl set-hostname newhostname
+      changed_when: False
+      
+    - name: Verify changed hostname is detected
+      hostname:
+      register: hostname_result_2
+      changed_when: False
+      failed_when: "'newhostname' not in ansible_hostname"
+      
+    - name: Test on non-Oracle Linux distributions
+      block:
+        - name: Set hostname on Ubuntu
+          ansible.builtin.hostname:
+            name: myhostname
+          register: hostname_u_result
+          when: "'Ubuntu' in ansible_distribution"
+          
+        - name: Set hostname on CentOS
+          ansible.builtin.hostname:
+            name: myhostname
+          register: hostname_c_result
+          when: "'CentOS' in ansible_distribution"

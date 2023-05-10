@@ -1,0 +1,32 @@
+
+---
+- name: Update SSL cert on default web binding
+  hosts: windows_servers
+  vars:
+    cert_path: "C:\path\to\new\cert.pfx"
+    cert_password: "yourP@ssw0rdHere"
+    binding_protocol: "https"
+    binding_port: "443"
+  tasks:
+    - name: Import SSL cert into certificate store
+      win_certificate_store:
+        store_location: "local_machine"
+        path: "{{ cert_path }}"
+        password: "{{ cert_password }}"
+        
+    - name: Get the ID of the default binding
+      win_iis_website_info:
+        site_name: "Default Web Site"
+        lookup_type: "bindings"
+        binding_protocol: "{{ binding_protocol }}"
+        binding_port: "{{ binding_port }}"
+      register: default_binding
+      
+    - name: Update default web binding with new cert
+      win_iis_webbinding:
+        site_name: "Default Web Site"
+        binding_info: "{{ default_binding.value.binding_info }}"
+        cert_hash: "{{ default_binding.value.cert_hash }}"
+        certificate_path: "{{ cert_path }}"
+        certificate_password: "{{ cert_password }}"
+        cert_validation: "ignore"

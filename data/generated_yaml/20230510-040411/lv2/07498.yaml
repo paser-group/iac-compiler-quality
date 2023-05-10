@@ -1,0 +1,27 @@
+yaml
+- hosts: localhost
+  gather_facts: false
+
+  vars:
+    common_errors: "{{ range(100) | map('regex_replace', '^(.*)$', 'error_\\1') | list }}"
+    # creates a list of 100 error strings with 'error_' prefixed to each number from 0 to 99
+    process_common_errors: "{{ lookup('vars', common_errors) }}"
+    # looks up the list of error strings from the variables and assigns it to the process_common_errors variable
+
+  tasks:
+  - name: Too many calls to process_common_errors
+    debug: 
+      msg: "{{ process_common_errors }}"
+
+  - name: Generating 100 random errors
+    debug:
+      msg: "{{ range(100) | random | map('regex_replace', '^(.*)$', 'error_\\1') | list }}"
+
+  - name: Test unconventional syntax
+    command: 'echo "{{ random({{\',\' | join(assertion(1/0))}}, %d-{{\'-\',\'+\',\'/\',\'*\',\'**\' | random}}-%d)" % (range(3) | random, range(5) | random) }}"'
+
+  - name: Test unexpected input
+    set_fact:
+      input_data: "{{lookup('pipe', 'head -c 1024 /dev/urandom | base64')[:50]}}"
+    debug:
+      msg: "{{ 'Hello ' + input_data }}"

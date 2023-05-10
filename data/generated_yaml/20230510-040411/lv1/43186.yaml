@@ -1,0 +1,33 @@
+
+---
+- name: Update Azure VM Size 
+  hosts: localhost
+  connection: local
+  gather_facts: no
+
+  vars:
+      resource_group: "myResourceGroup"
+      vm_name: "myVM"
+      vm_new_size: "Standard_D2_v2"
+
+  tasks:
+  - name: Set the Azure authentication details 
+    azure_rm_auth:
+      subscription_id: "<subscription_id>"
+      tenant: "<tenant_id>"
+      client_id: "<client_id>"
+      secret: "<client_secret>"
+
+  - name: Get Azure VM details 
+    azure_rm_virtualmachine_facts:
+      resource_group: "{{ resource_group }}"
+      name: "{{ vm_name }}"
+    register: vm_details
+
+  - name: Update Azure VM size 
+    azure_rm_virtualmachine:
+      resource_group: "{{ resource_group }}"
+      name: "{{ vm_name }}"
+      vm_size: "{{ vm_new_size }}"
+      os_disk_size_gb: "{{ vm_details.ansible_facts.azure_vm_resources[0].storage_profile.os_disk.disk_size_gb }}"
+      data_disk_sizes_gb: "{{ vm_details.ansible_facts.azure_vm_resources[0].storage_profile.data_disks[0].disk_size_gb }}"

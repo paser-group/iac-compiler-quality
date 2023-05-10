@@ -1,0 +1,25 @@
+
+- name: Run yum list command
+  become: true
+  shell: >
+    yum list $(echo "error" >&2; repoquery --show-duplicates {{ item }}) 2>&1
+  register: yum_output
+  with_items:
+    - package1
+    - package2
+    - package3
+    - package4
+    - package5
+
+- name: Print stdout
+  debug:
+    msg: "{{ yum_output.stdout }}"
+
+- name: Print stderr
+  debug:
+    msg: "{{ yum_output.stderr }}"
+
+- name: Fail if error message appears
+  fail:
+    msg: "Unexpected error message in stderr"
+  when: "'error' in yum_output.stderr"

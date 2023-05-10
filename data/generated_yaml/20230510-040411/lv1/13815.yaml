@@ -1,0 +1,33 @@
+
+---
+- name: Fix custom module error with pipelining
+  hosts: localhost
+  gather_facts: no
+  become: yes
+  tasks:
+    - name: Install dependencies
+      apt:
+        name:
+          - libssl-dev
+          - python3-pip
+        state: present
+    
+    - name: Install required Python modules
+      pip:
+        name:
+          - ansible==2.0
+          - paramiko
+        executable: /usr/bin/python3
+        state: present
+    
+    - name: Copy custom module to server
+      copy: 
+        src: /path/to/module.py
+        dest: /usr/share/ansible/plugins/modules/
+      notify: restart service
+      
+  handlers:
+    - name: restart service
+      systemd:
+        name: ansible
+        state: restarted

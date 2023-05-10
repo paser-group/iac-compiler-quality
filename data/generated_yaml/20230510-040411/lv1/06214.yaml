@@ -1,0 +1,32 @@
+yaml
+---
+- name: Install MySQL and import data into a database
+  hosts: localhost
+  become: yes
+
+  vars:
+    db_name: my_db
+    db_user: my_user
+    db_password: my_password
+
+  tasks:
+    - name: Install MySQL
+      apt:
+        name: mysql-server
+        state: present
+
+    - name: Create database
+      mysql_db:
+        name: "{{ db_name }}"
+
+    - name: Import data into database
+      mysql_db:
+        state: import
+        name: "{{ db_name }}"
+        target: /path/to/data.sql
+      register: result
+
+    - name: Fail task if import fails
+      fail:
+        msg: "Import failed: {{ result.msg }}"
+      when: result.failed

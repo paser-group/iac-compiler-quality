@@ -1,0 +1,47 @@
+
+- name: Test Authentication Error Handling
+  hosts: all
+  gather_facts: no
+  
+  vars:
+    - ssh_user: "{{ lookup('env','USER') }}"
+    - ssh_pass: "{{ lookup('env','PASS') }}"
+    - ssh_key_file: "{{ lookup('env','SSH_KEY_FILE') }}"
+    - ssh_timeout: "{{ lookup('env','SSH_TIMEOUT') | default(10) }}"
+  
+  tasks:
+    - name: Test SSH connection
+      ping:
+      register: ping_result
+      ignore_unreachable: true
+  
+    - name: Move SSH credentials to target nodes
+      copy:
+        content: |
+          #!/bin/bash
+          echo '{{ ssh_pass }}' | sudo -S sh -c 'mkdir -p /root/.ssh'
+          sudo sh -c "echo '{{ ssh_key_file }}' > /root/.ssh/id_rsa"
+          sudo sh -c "echo '{{ ssh_key_file }}.pub' > /root/.ssh/id_rsa.pub"
+          sudo sh -c "chmod 600 /root/.ssh/id_rsa*"
+        dest: /tmp/ssh-credentials.sh
+        mode: 0700
+  
+    - name: Execute SSH credentials script
+      shell: "/tmp/ssh-credentials.sh && rm -f /tmp/ssh-credentials.sh"
+      ignore_errors: yes
+  
+    - name: Test SSH connection with credentials
+      ping:
+      register: ping_result_auth
+      ignore_unreachable: true
+      when: ping_result.unreachable and ansible_failed_result.exception is search('Authentication error')
+  
+    - name: Raise exception if all SSH connections are unreachable
+      fail:
+        msg: "All nodes are unreachable!"
+      when: not (ping_result|default({'unreachable':[]}).unreachable)
+  
+    - name: Raise exception if all SSH connections fail authentication
+      fail:
+        msg: "Authentication failed for all nodes!"
+      when: ping_result.unreachable and not ping_result_auth.unreachable

@@ -1,0 +1,101 @@
+
+---
+- name: Test Ansible URI module with Api Token authentication
+  hosts: localhost
+
+  vars:
+    token: "API_KEY_HERE"
+
+  tasks:
+    # test token in header
+    - name: Test token in header
+      uri:
+        url: "http://example.com/index.html"
+        headers:
+          Authorization: "Bearer {{ token }}"
+      register: token_header
+
+    # test token in basic auth with colon
+    - name: Test token in basic auth with colon
+      uri:
+        url: "http://example.com/index.html"
+        user: "{{ token }}:"
+        password: ""
+      register: token_colon
+
+    # test token in basic auth with space
+    - name: Test token in basic auth with space
+      uri:
+        url: "http://example.com/index.html"
+        user: "{{ token }} "
+        password: ""
+      register: token_space
+
+    # test token in url with query param
+    - name: Test token in URL with query param
+      uri:
+        url: "http://example.com/index.html?token={{ token }}"
+      register: token_query
+
+    # test token in URL with fragment identifier
+    - name: Test token in URL with fragment identifier
+      uri:
+        url: "http://example.com/index.html#token={{ token }}"
+      register: token_fragment
+
+    # test token in header with multiple values
+    - name: Test token in header with multiple values
+      uri:
+        url: "http://example.com/index.html"
+        headers:
+          Authorization: "Bearer {{ token }}"
+          X-Custom-Header: ["Value1", "Value2"]
+      register: token_multi_header
+
+    # test token in header with lowercase key
+    - name: Test token in header with lowercase key
+      uri:
+        url: "http://example.com/index.html"
+        headers:
+          authorization: "Bearer {{ token }}"
+      register: token_lower_header
+
+    # test token in header with uppercase key
+    - name: Test token in header with uppercase key
+      uri:
+        url: "http://example.com/index.html"
+        headers:
+          AUTHORIZATION: "Bearer {{ token }}"
+      register: token_upper_header
+
+    # test token in header with non-alphabetic
+    - name: Test token in header with non-alphabetic
+      uri:
+        url: "http://example.com/index.html"
+        headers:
+          Authorization-2: "Bearer {{ token }}"
+      register: token_non_alpha
+
+    # test token in header with special characters
+    - name: Test token in header with special characters
+      uri:
+        url: "http://example.com/index.html"
+        headers:
+          Authorization: "{}!$%^&*()_-+=[]:;|'\"\\<>,.?/~`"
+      register: token_special
+
+    # test token in header with invalid type
+    - name: Test token in header with invalid type
+      uri:
+        url: "http://example.com/index.html"
+        headers:
+          Authorization: true
+      ignore_errors: yes # allow error to occur
+
+    # test token in header with invalid variable
+    - name: Test token in header with invalid variable
+      uri:
+        url: "http://example.com/index.html"
+        headers:
+          Authorization: "{{ invalid_variable }}"
+      ignore_errors: yes # allow error to occur

@@ -1,0 +1,47 @@
+
+---
+- name: Provision VM on NSX-T in VMC
+  hosts: localhost
+  gather_facts: false
+  
+  vars:
+    vm_name: MyTestVM
+    folder_name: MyVMFolder
+
+  tasks:
+  - name: Check folder permissions
+    stat:
+      path: /{{ folder_name }}
+    register: folder_stat
+  - name: Create folder if it doesn't exist
+    file:
+      path: /{{ folder_name }}
+      state: directory
+    when: not folder_stat.stat.exists
+  - name: Set folder permissions
+    file:
+      path: /{{ folder_name }}
+      mode: "0700"
+  - name: Provision VM
+    vmware_guest:
+      name: "{{ vm_name }}"
+      folder: "{{ folder_name }}"
+      guest_id: debian9_64Guest
+      hardware:
+        memory_mb: 4096
+        num_cpus: 2
+      disk:
+        - size_gb: 20
+          type: thin
+      state: poweredon
+  - name: Verify folder permissions
+    stat:
+      path: /{{ folder_name }}
+    register: folder_permission
+
+  handlers:
+  - name: Remove VM
+    vmware_guest:
+      name: "{{ vm_name }}"
+      state: absent
+    when: folder_permission.stat.mode == '0700'

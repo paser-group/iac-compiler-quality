@@ -1,0 +1,102 @@
+
+- name: Test ansible_default_ipv6.address fact for edge cases and unconventional syntax
+  hosts: all
+  gather_facts: true
+
+  tasks:
+    - name: Test with unconventional syntax
+      debug:
+        var: "{{ ansible_default_ipv6.{address} }}"
+
+    - name: Test with undefined variable
+      debug:
+        var: "{{ ansible_default_ipv6.undefined_variable }}"
+
+    - name: Test with non-existent key
+      debug:
+        var: "{{ ansible_default_ipv6['non_existent_key'] }}"
+
+    - name: Test with unexpected data type
+      debug:
+        var: "{{ ansible_default_ipv6 | to_yaml }}"
+
+    - name: Test with multiple variable expressions
+      debug:
+        var: "{{ ansible_default_ipv6.{address}.{ip} }}"
+
+    - name: Test with null value
+      set_fact:
+        ipv6_address: null
+
+    - name: Test with empty string
+      set_fact:
+        ipv6_address: ""
+
+    - name: Test with malformed IP address
+      set_fact:
+        ipv6_address: "2001:::1"
+
+    - name: Test with invalid IP address
+      set_fact:
+        ipv6_address: "invalid ipv6"
+
+    - name: Test with long IP address
+      set_fact:
+        ipv6_address: "2001:0db8:85a3:0000:0000:8a2e:0370:7334:12345"
+
+    - name: Test with non-string IP address
+      set_fact:
+        ipv6_address: 2001:0db8:85a3:0000:0000:8a2e:0370:7334
+
+    - name: Test with out-of-range octet
+      set_fact:
+        ipv6_address: "2001:0db8:85a3:0000:0000:8a2e:0370:256"
+
+    - name: Test with missing octet
+      set_fact:
+        ipv6_address: "2001:0db8:85a3:0000:0000:8a2e:0370:"
+
+    - name: Test with incomplete octet
+      set_fact:
+        ipv6_address: "2001:0db8:85a3:0000:0000:8a2e:370:7334"
+
+    - name: Test with multiple colons
+      set_fact:
+        ipv6_address: "2001:0b8::85a3:0000:0000:8a2e:0370:7334"
+
+    - name: Test with missing colon before double colon
+      set_fact:
+        ipv6_address: "2001:0b8:85a3::0000:0000:8a2e:0370:7334"
+
+    - name: Test with extra colon after double colon
+      set_fact:
+        ipv6_address: "2001:0b8::85a3:0000:0000:8a2e:0370:7334:"
+
+    - name: Test with extra double colon
+      set_fact:
+        ipv6_address: "2001:0b8:::85a3:0000:0000:8a2e:0370:7334"
+
+    - name: Test with IP address that contains letters
+      set_fact:
+        ipv6_address: "2001:0abg:85a3:0000:0000:8a2e:0370:7334"
+
+    - name: Test with IP address that contains special characters
+      set_fact:
+        ipv6_address: "2001:0db8:85a3:0000:0000:8a2e:0370:abcd!?"
+
+    - name: Test with floating-point IP address
+      set_fact:
+        ipv6_address: 2001:0db8:85a3:0000:0000:8a2e:0370:7.334
+
+    - name: Test with exponential notation IP address
+      set_fact:
+        ipv6_address: 2001:0db8:85a3:0000:0000:8a2e:0.37E1:7334
+
+    - name: Test with hexadecimal notation IP address
+      set_fact:
+        ipv6_address: 0x20010db885a3000000008a2e03707334
+
+    - name: Check the result
+      assert:
+        that:
+          - ipv6_address == ansible_default_ipv6.address

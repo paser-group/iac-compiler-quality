@@ -1,0 +1,46 @@
+
+---
+- name: Stress Testing Playbook for delegate_to issue with changing target
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+  - name: Delegate task to the current host
+    command: whoami
+    delegate_to: "{{ inventory_hostname }}"
+    register: result1
+
+  - name: Delegate task to a different host
+    command: whoami
+    delegate_to: "{{ inventory_hostname == 'localhost' | ternary('127.0.0.2', 'localhost') }}"
+    register: result2
+
+  - name: Delegate task to a group of hosts
+    command: whoami
+    delegate_to: "{{ groups['all'] | difference([inventory_hostname]) | first }}"
+    register: result3
+
+  - name: Delegate task with dynamic target host
+    command: whoami
+    delegate_to: "{{ item }}"
+    with_items:
+      - "{{ groups['all'] | difference([inventory_hostname]) }}"
+    register: result4
+
+  - name: Delegate task within a block
+    block:
+      - name: Delegate task to a different host
+        command: whoami
+        delegate_to: "{{ inventory_hostname == 'localhost' | ternary('127.0.0.2', 'localhost') }}"
+        register: result5
+    delegate_to: "{{ inventory_hostname }}"
+  
+  - name: Debug output
+    debug:
+      var: item.stdout
+    with_items:
+      - "{{ result1 }}"
+      - "{{ result2 }}"
+      - "{{ result3 }}"
+      - "{{ result4.results }}"
+      - "{{ result5.result.stdout }}"

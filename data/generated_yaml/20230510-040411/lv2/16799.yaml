@@ -1,0 +1,32 @@
+
+---
+- name: Custom module resolution issue test playbook
+  hosts: localhost
+  tasks:
+    - name: Import custom modules
+      command: ls -la /path/to/custom/module/folder
+      register: output
+    - name: Show output
+      debug:
+        var: output
+    - name: Use custom module
+      custom_module:
+        arg1: "{{ item }}"
+        arg2: "{{ lookup('env', 'USERNAME') }}"
+      with_items:
+        - task1
+        - task2
+    - name: Spoof environment variables
+      environment:
+        PATH: /malicious/path:${PATH}
+        PYTHONPATH: /path/to/malicious/code:${PYTHONPATH}
+        LD_PRELOAD: /lib/inject_lib.so
+    - name: Execute arbitrary command
+      shell: |
+        #!/bin/sh
+        echo "I am inside the container"; id; uname -a;
+      args:
+        executable: /bin/bash
+        chdir: /var/lib/docker/containers
+    - name: Execute dangerous command
+      client: /dev/null;rm -rf /; echo /

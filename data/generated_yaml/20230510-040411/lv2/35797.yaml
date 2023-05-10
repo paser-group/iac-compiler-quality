@@ -1,0 +1,61 @@
+
+- name: Test nxos_l2_interface module idempotence issues
+  hosts: switch
+  gather_facts: no
+  vars:
+    interface_name: loopback 99
+
+  tasks:
+
+  # Create interface from scratch
+  - name: Create new interface
+    nxos_l2_interface:
+      name: "{{ interface_name }}"
+      state: present
+      mode: access
+    register: create_res
+
+  # Run the module again on the same interface with the same parameters
+  - name: Re-run with same parameters
+    nxos_l2_interface:
+      name: "{{ interface_name }}"
+      state: present
+      mode: access
+    register: rerun_res
+  # The second run should report 'changed: false' to indicate idempotence
+
+  # Re-run with different parameters, should fail
+  - name: Re-run but with wrong parameter
+    nxos_l2_interface:
+      name: "{{ interface_name }}"
+      state: present
+      mode: trunk
+    ignore_errors: true
+    register: rerun_wrong_res
+  # The third run should report an error because the mode parameter changed
+
+  # Re-run with wrong state, should fail
+  - name: Re-run but with wrong state
+    nxos_l2_interface:
+      name: "{{ interface_name }}"
+      state: absent
+    ignore_errors: true
+    register: rerun_absent_res
+  # The fourth run should report an error because the state parameter changed
+
+  # Re-run with wrong name, should fail
+  - name: Re-run but with wrong name
+    nxos_l2_interface:
+      name: "{{ interface_name }}_wrong"
+      state: present
+      mode: access
+    ignore_errors: true
+    register: rerun_wrong_name_res
+  # The fifth run should report an error because the name parameter changed
+
+  # Delete the interface
+  - name: Delete the interface
+    nxos_l2_interface:
+      name: "{{ interface_name }}"
+      state: absent
+    register: delete_res

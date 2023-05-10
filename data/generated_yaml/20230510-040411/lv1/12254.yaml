@@ -1,0 +1,24 @@
+
+- name: Example Playbook
+  hosts: localhost
+  tasks:
+
+    - name: Run a command asynchronously and wait for a condition
+      command: "some_command {{ item }}"
+      async: 60
+      poll: 5
+      register: cmd_output
+      with_items: "{{ my_list }}"
+      loop_control:
+        loop_var: item
+
+    - name: Wait for output to contain a certain string
+      async_status:
+        jid: "{{ item.ansible_job_id }}"
+      register: async_output
+      until: async_output.finished and 'expected_string' in async_output.stdout[item.ansible_loop_idx]
+      retries: 30
+      delay: 10
+      with_items: "{{ cmd_output.results }}"
+      loop_control:
+        loop_var: item

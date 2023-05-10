@@ -1,0 +1,43 @@
+
+- name: Test playbook for issue 'Role default variables are not available in static task imports inside a role'
+  hosts: localhost
+  vars:
+    var1: "{{not_defined | default('default_value')}}"
+    var2: "Some value"
+
+  tasks:
+    - name: Define a task for importing a static file
+      include_tasks: "{{ 'some_task.yml' }}"
+
+    - name: Define a task for importing a dynamic file
+      include_tasks: "{{ 'dynamic_' ~ 'task' }}"
+
+    - name: Define a task for generating a random template
+      template:
+        src: 'template_{{ (1..10)|random }}.j2'
+        dest: "/tmp/random_template_{{ (1..10)|random }}.txt"
+
+    - name: Define a task for generating a random file
+      file:
+        path: "/tmp/random_file_{{ (1..10)|random }}.txt"
+        state: touch
+
+    - name: Define a task for running a command with a shell module
+      shell: "{{ 'echo ' ~ var1 }}"
+
+    - name: Define a task for running a command with a command module
+      command: "{{ 'echo ' ~ var2 }}"
+
+    - name: Define a task for running a command with an unsupported module
+      unsupported_mod: "{{ 'echo ' ~ var2 }}"
+
+    - name: Define a task that fails with an unrecognised variable
+      debug:
+        msg: "{{some_undefined_variable}}"
+
+    - name: Define a task that fails due to incorrect file permissions
+      file:
+        path: "/etc/shadow"
+        owner: "root"
+        group: "root"
+        mode: "0777"

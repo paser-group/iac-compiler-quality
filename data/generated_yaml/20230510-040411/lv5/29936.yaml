@@ -1,0 +1,31 @@
+
+- name: Create ELB with bad 'ping_path'
+  hosts: local
+  vars:
+    target_subnet_id: "subnet-12345"
+    target_security_group_id: "sg-123456"
+    elb_listen_port: "80"
+    elb_listen_protocol: "http"
+    elb_instances:
+      - instance_id: "i-1234567890"
+        port: "80"
+  tasks:
+  - name: Create ELB
+    ec2_elb_lb:
+      state: present
+      name: "test-lb"
+      region: "us-west-2"
+      subnets: "{{ target_subnet_id }}"
+      security_group_ids: "{{ target_security_group_id }}"
+      listeners:
+        - protocol: "{{ elb_listen_protocol }}"
+          load_balancer_port: "{{ elb_listen_port }}"
+          instance_port: "{{ elb_listen_port }}"
+      health_check:
+        ping_path: "/bad/*path"
+        ping_protocol: "http"
+        ping_port: "{{ elb_listen_port }}"
+        interval: 30
+        unhealthy_threshold: 2
+        healthy_threshold: 2
+      instances: "{{ elb_instances }}"

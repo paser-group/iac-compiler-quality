@@ -1,0 +1,26 @@
+yaml
+---
+- name: Install Vault and test Error Handling
+  hosts: all
+  tasks:
+    - name: Install Vault
+      yum:
+        name: vault
+        state: present
+      become: yes
+    
+    - name: Check if Vim is installed
+      shell: |
+        rpm -qa | grep -q vim && echo "present" || echo "not present"
+      register: vim_installed
+    
+    - name: Test Vim error handling in Vault
+      shell: |
+        vault kv get -format="json" secret/myapp/dbpass | jq -r '.data'
+        /bin/vim
+      register: vim_output
+      when: vim_installed.stdout == "not present"
+    
+    - name: Display Vim output
+      debug: 
+        var: vim_output.stdout_lines

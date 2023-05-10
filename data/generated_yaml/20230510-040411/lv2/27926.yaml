@@ -1,0 +1,86 @@
+yaml
+- name: Test nxos_vxlan_vtep_vni module
+  hosts: localhost
+  gather_facts: no
+  vars:
+    vxlan_vni: 10000
+    vxlan_vni_foo: 5000
+    vxlan_vtep_ip: "10.0.0.1"
+
+  tasks:
+    - name: Create VXLAN VTEP interface
+      nxos_vxlan_vtep_vni:
+        vrf: "management"
+        vni: "{{ vxlan_vni }}"
+        vtep_ip: "{{ vxlan_vtep_ip }}"
+        feature_template: "my-template"
+        template_vars:
+          foo: "bar"
+      register: result
+
+    - name: Attempt to create the same VXLAN interface again (should pass idempotence)
+      nxos_vxlan_vtep_vni:
+        vrf: "management"
+        vni: "{{ vxlan_vni }}"
+        vtep_ip: "{{ vxlan_vtep_ip }}"
+        feature_template: "my-template"
+        template_vars:
+          foo: "bar"
+      check_mode: no
+
+    - name: Try to remove the interface with a non-existent VNI
+      nxos_vxlan_vtep_vni:
+        vrf: "management"
+        vni: "{{ vxlan_vni_foo }}"
+        vtep_ip: "{{ vxlan_vtep_ip }}"
+        state: absent
+      
+    - name: Try to remove the interface using raw NX-OS CLI command (should fail)
+      nxos_command:
+        commands:
+          - "no interface vxlan{{ vxlan_vni }}"
+
+    # Edge cases and unconventional syntax
+    - name: Try to create the interface with a bad IP address
+      nxos_vxlan_vtep_vni:
+        vrf: management
+        vni: "{{ vxlan_vni }}"
+        vtep_ip: "10.300.0.1"
+      register: result_ip_error
+      ignore_errors: yes
+
+    - name: Try to create the interface with an invalid VNI
+      nxos_vxlan_vtep_vni:
+        vrf: "management"
+        vni: "foo"
+        vtep_ip: "{{ vxlan_vtep_ip }}"
+      register: result_vni_error
+      ignore_errors: yes
+
+    - name: Try to pass an unsupported parameter to the module
+      nxos_vxlan_vtep_vni:
+        vrf: "management"
+        vni: "{{ vxlan_vni }}"
+        vtep_ip: "{{ vxlan_vtep_ip }}"
+        unsupported_param: "value"
+      register: result_unsupported_params
+      ignore_errors: yes
+
+    # Unexpected inputs
+    - name: Try to pass a list of VNI values (should fail)
+      nxos_vxlan_vtep_vni:
+        vrf: "management"
+        vni: [ "{{ vxlan_vni }}", "20000" ]
+        vtep_ip: "{{ vxlan_vtep_ip }}"
+        state: present
+      register: result_list_input
+      ignore_errors: yes
+
+    - name: Try to pass a boolean value for VNI (should fail)
+      nxos_vxlan_vtep_vni:
+        vrf: "management"
+        vni: yes
+        vtep_ip: "{{ vxlan_vtep_ip }}"
+        state: present
+      register: result_bool_input
+      ignore_errors: yes

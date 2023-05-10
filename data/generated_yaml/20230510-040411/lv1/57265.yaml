@@ -1,0 +1,28 @@
+
+- name: Create a GCP Kubernetes Cluster
+  hosts: localhost
+  tasks:
+    - name: Set GCP Credentials
+      set_fact:
+        service_account_file: "/path/to/service-account-key.json"
+        
+    - name: Create GCP Kubernetes Cluster
+      gcp_container_cluster:
+        name: "my-k8s-cluster"
+        zone: "us-central1-a"
+        project: "my-gcp-project"
+        service_account_file: "{{ service_account_file }}"
+      register: cluster_info
+
+    - name: Update Cluster Configuration with Zone Information
+      set_fact:
+        zone: "{{ cluster_info.zone }}"
+      when: cluster_info.changed
+
+    - name: Recreate Cluster with Updated Zone Information
+      gcp_container_cluster:
+        name: "my-k8s-cluster"
+        zone: "{{ zone }}"
+        project: "my-gcp-project"
+        service_account_file: "{{ service_account_file }}"
+      when: zone != "us-central1-a"

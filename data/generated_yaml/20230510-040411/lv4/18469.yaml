@@ -1,0 +1,75 @@
+
+- name: Configure AWS Lambda Environment
+  hosts: localhost
+  gather_facts: no
+  vars:
+    lambda_role_arn: "arn:aws:iam::1234567890:role/LambdaRole"
+  tasks:
+    - name: Create Temporary Role
+      iam_role:
+        name: "TempRole"
+        policy_document:
+          Statement:
+            - Effect: Allow
+              Action: "*"
+              Resource: "*"
+        state: present
+    
+    - name: Attach Policy to Temporary Role
+      iam_policy:
+        iam_type: role
+        iam_name: "TempRole"
+        policy_name: "TempLambdaPolicy"
+        state: present
+        policy_document: >
+          {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Action": [
+                  "logs:*"
+                ],
+                "Effect": "Allow",
+                "Resource": "arn:aws:logs:*:*:*"
+              },
+              {
+                "Action": [
+                  "ec2:DescribeInstances"
+                ],
+                "Effect": "Allow",
+                "Resource": "*"
+              }
+            ]
+          }
+    
+    - name: Deploy Lambda Function
+      lambda:
+        state: present
+        name: "LambdaFunction"
+        runtime: python3.8
+        handler: "lambda_function.lambda_handler"
+        memory_size: 128
+        timeout: 5
+        source:
+          zip: "{{ lookup('file', 'lambda_function.zip') }}"
+        role: "{{ lambda_role_arn }}"
+    
+    - name: Run Complex Task Using Multiprocessing
+      script:
+        src: "multiprocessing_task.py"
+    
+    - name: Copy File from S3
+      s3:
+        bucket: "test-bucket"
+        object: "test-object"
+        dest: "/tmp/test-object"
+    
+    - name: Check CloudFormation Stack Status
+      cloudformation:
+        stack_name: "test-stack"
+        region: "us-east-1"
+      register: cf_stack_status
+    
+    - name: Print Stack Status
+      debug:
+        msg: "{{ cf_stack_status.stack_status }}"

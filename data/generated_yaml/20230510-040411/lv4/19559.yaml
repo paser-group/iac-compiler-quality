@@ -1,0 +1,36 @@
+
+- name: Test EC2 module
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+    - name: Create EC2 instance
+      ec2:
+        key_name: mykey
+        group: webserver
+        instance_type: t2.micro
+        image: ami-05b68a836861fd067
+        region: us-west-2
+        count: 1
+        instance_tags:
+          Name: "{{ item }}"
+      with_items:
+        - instance1
+        - instance2
+
+    - name: Attach volume
+      ec2_vol:
+        instance: "{{ item.id }}"
+        region: us-west-2
+        device_name: /dev/sdf
+        volume_size: 20
+        volume_type: standard
+        state: attached
+      with_items: "{{ ec2.instances }}"
+
+    - name: Terminate EC2 instances
+      ec2:
+        instance_ids: "{{ item.id }}"
+        state: absent
+        region: us-west-2
+      with_items: "{{ ec2.instances }}"

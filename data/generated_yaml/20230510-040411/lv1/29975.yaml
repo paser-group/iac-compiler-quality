@@ -1,0 +1,49 @@
+
+---
+- hosts: localhost
+  gather_facts: no
+
+  tasks:
+    - name: Install required Python libraries
+      pip:
+        name: boto
+        state: present
+
+    - name: Create IAM credentials
+      iam:
+        iam_type: user
+        name: "{{ iam_username }}"
+        state: present
+        access_key_state: create
+        secret_key_state: create
+      register: iam_user
+
+    - name: Show IAM credentials
+      debug:
+        var: iam_user
+
+    - name: Create IAM groups
+      iam_group:
+        name: "{{ group_name }}"
+        state: present
+      register: iam_group
+
+    - name: Show IAM groups
+      debug:
+        var: iam_group
+
+    - name: Add IAM user to group
+      iam_membership:
+        user: "{{ iam_username }}"
+        group: "{{ group_name }}"
+        state: present
+      register: iam_membership
+
+    - name: Show IAM user membership
+      debug:
+        var: iam_membership
+
+    - name: Generate error
+      debug:
+        msg: "Invalid IAM credentials"
+      failed_when: true

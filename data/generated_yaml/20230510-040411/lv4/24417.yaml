@@ -1,0 +1,33 @@
+
+- name: Test raw jinja2 values loop
+  hosts: localhost
+  gather_facts: no
+  
+  vars:
+    raw_jinja2_var: "{% raw %}{{ item }}{% endraw %}"
+    loop_items:
+      - item1
+      - item2
+      - item3
+
+  tasks:
+    - name: Loop over raw jinja2 variable
+      debug: msg="{{ item }}"
+      loop: "{{ loop_items }}"
+      loop_control:
+        loop_var: item
+
+    - name: Write output to file
+      copy:
+        content: "{{ raw_jinja2_var }}"
+        dest: /tmp/raw_jinja2_test.txt
+
+    - name: Verify output
+      command: cat /tmp/raw_jinja2_test.txt
+      register: raw_jinja2_test_output
+
+    - name: Assert output is correct
+      assert:
+        that:
+          - "{{ raw_jinja2_test_output.stdout_lines == ['{{ item }}']*3 }}"
+        msg: "Error: Incorrect output"

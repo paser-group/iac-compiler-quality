@@ -1,0 +1,74 @@
+yaml
+- name: KubeVirt module error
+  hosts: localhost
+  gather_facts: false
+  
+  tasks:
+  - name: Install KubeVirt support code
+    kubectl:
+      command: create
+      resource:
+        apiVersion: apiserver.config.k8s.io/v1alpha1
+        kind: ModuleConfiguration
+        name: support-code
+        spec:
+          preFilters:
+          - configMapRef:
+              name: support-code
+          module:
+            kind: Go
+            name: support-code
+            contents: |
+              package supportcode
+  
+              import "fmt"
+  
+              func Hello(name string) (string, error) {
+                  message := fmt.Sprintf("Hello, %s!", name)
+                  return message, nil
+              }
+  
+  - name: Import KubeVirt support code
+    kubectl:
+      command: create
+      resource:
+        apiVersion: apiserver.config.k8s.io/v1alpha1
+        kind: ModuleConfiguration
+        name: imported-code
+        spec:
+          preFilters:
+          - module
+            name: support-code
+          module:
+            kind: Go
+            name: main
+            contents: |
+              package main
+  
+              import (
+                  "fmt"
+  
+                  "kubevirt.io/client-go/kubecli"
+                  "kubevirt.io/client-go/restclient"
+                  supportcode "support-code"
+              )
+  
+              func main() {
+                  fmt.Println(supportcode.Hello("world"))
+              }
+  - name: Test KubeVirt support code
+    kubectl:
+      command: create
+      resource:
+        apiVersion: v1
+        kind: Pod
+        metadata:
+          name: kubevirt-test-pod
+        spec:
+          containers:
+          - name: kubectl
+            image: agnops/kubectl
+            command: ["/bin/bash", "-c", "echo 'KubeVirt module error'"]
+            env:
+            - name: KUBECONFIG
+              value: "/root/.kube/config"

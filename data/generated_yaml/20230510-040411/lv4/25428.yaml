@@ -1,0 +1,65 @@
+
+- name: Create an S3 bucket with a specific IAM principle
+  hosts: localhost
+  gather_facts: false
+  vars:
+    s3_bucket_name: my-bucket
+    iam_user_name: my-user
+    region: us-east-1
+  tasks:
+    - name: Create an S3 bucket
+      s3_bucket:
+        name: "{{ s3_bucket_name }}"
+        state: present
+        region: "{{ region }}"
+        aws_access_key: "{{ aws_access_key }}"
+        aws_secret_key: "{{ aws_secret_key }}"
+      register: bucket_create
+
+    - name: Create an IAM user with S3 access
+      iam_user:
+        name: "{{ iam_user_name }}"
+        state: present
+        access_key_state: create
+        groups:
+          - "{{ s3_bucket_name }}"
+        region: "{{ region }}"
+        aws_access_key: "{{ aws_access_key }}"
+        aws_secret_key: "{{ aws_secret_key }}"
+
+    - name: Add a bucket policy with IAM user
+      s3_bucket_policy:
+        bucket: "{{ s3_bucket_name }}"
+        policy: |
+         {
+           "Statement": [
+             {
+               "Action": "s3:*",
+               "Effect": "Allow",
+               "Resource": [
+                 "arn:aws:s3:::{{ s3_bucket_name }}/*",
+                 "arn:aws:s3:::{{ s3_bucket_name }}"
+               ],
+               "Principal": {
+                 "AWS": [
+                   "arn:aws:iam::{{ aws_account_id }}:user/{{ iam_user_name }}"
+                 ]
+               }
+             }
+           ]
+         }
+      region: "{{ region }}"
+      aws_access_key: "{{ aws_access_key }}"
+      aws_secret_key: "{{ aws_secret_key }}"
+
+    - name: Test access to S3 bucket
+      s3:
+        bucket: "{{ s3_bucket_name }}"
+        object: "{{ item }}"
+        mode: get
+        region: "{{ region }}"
+        aws_access_key: "{{ aws_access_key }}"
+        aws_secret_key: "{{ aws_secret_key }}"
+        validate_certs: false
+      with_items:
+        - test.txt

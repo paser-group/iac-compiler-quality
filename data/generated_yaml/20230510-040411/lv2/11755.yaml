@@ -1,0 +1,49 @@
+
+- name: Test AWS profile with S3 module
+  hosts: localhost
+  vars:
+    s3_bucket_name: "{{ 'a' * 64 }}"
+    s3_object_key: "{{ 'b' * 1024 }}"
+  tasks:
+    - name: Ensure S3 bucket exists
+      amazon.aws.aws_s3:
+        bucket: "{{ s3_bucket_name }}"
+        profile: "{{ lookup('env', 'AWS_PROFILE') }}"
+        region: "{{ lookup('env', 'AWS_REGION') }}"
+        mode: create
+      register: s3_bucket_create_result
+
+    - name: Upload S3 object
+      amazon.aws.aws_s3:
+        bucket: "{{ s3_bucket_name }}"
+        profile: "{{ lookup('env', 'AWS_PROFILE') }}"
+        region: "{{ lookup('env', 'AWS_REGION') }}"
+        key: "{{ s3_object_key }}"
+        body: "{{ 'c' * 1024 }}"
+      register: s3_object_create_result
+
+    - name: Download S3 object
+      amazon.aws.aws_s3:
+        bucket: "{{ s3_bucket_name }}"
+        profile: "{{ lookup('env', 'AWS_PROFILE') }}"
+        region: "{{ lookup('env', 'AWS_REGION') }}"
+        key: "{{ s3_object_key }}"
+        mode: 'get'
+      register: s3_object_get_result
+
+    - name: Delete S3 object
+      amazon.aws.aws_s3:
+        bucket: "{{ s3_bucket_name }}"
+        profile: "{{ lookup('env', 'AWS_PROFILE') }}"
+        region: "{{ lookup('env', 'AWS_REGION') }}"
+        key: "{{ s3_object_key }}"
+        mode: delete
+      register: s3_object_delete_result
+
+    - name: Delete S3 bucket
+      amazon.aws.aws_s3:
+        bucket: "{{ s3_bucket_name }}"
+        profile: "{{ lookup('env', 'AWS_PROFILE') }}"
+        region: "{{ lookup('env', 'AWS_REGION') }}"
+        mode: delete
+      register: s3_bucket_delete_result

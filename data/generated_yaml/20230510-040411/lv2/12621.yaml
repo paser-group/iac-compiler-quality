@@ -1,0 +1,45 @@
+
+- name: Test ssh and paramiko error handling
+  hosts: all
+  gather_facts: no
+
+  vars:
+    invalid_ssh_key: 'invalid key'
+
+  tasks:
+    - name: Test SSH connection error
+      block:
+        - name: Fails due to missing inventory file
+          command: echo "No inventory file" > /tmp/inventory.txt
+          register: result
+        - name: Try SSH connection with invalid credentials
+          command: ssh -i "{{ invalid_ssh_key }}" testuser@localhost
+          ignore_errors: yes
+          register: result
+        - name: Print SSH result
+          debug:
+            var: result.stdout
+      rescue:
+        - name: Handle SSH connection error
+          debug:
+            msg: "Failed to connect with SSH"
+
+    - name: Test Paramiko module error
+      block:
+        - name: Try SSH connection with invalid credentials using paramiko
+          no_log: "{{ true }}"
+          python:
+            import paramiko
+            ssh = paramiko.SSHClient()
+            ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            ssh.connect('localhost', username='testuser', password='invalidpassword', timeout=1)
+            ssh.close()
+          ignore_errors: yes
+          register: result
+        - name: Print Paramiko result
+          debug:
+            var: result
+      rescue:
+        - name: Handle Paramiko module error
+          debug:
+            msg: "Failed to connect with Paramiko module"

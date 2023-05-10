@@ -1,0 +1,53 @@
+
+---
+- name: Test ec2_vpc profile parameter issue
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    # Unconventional inputs
+    invalid_profile: "!!!RANDOMPROFILE!!!"
+
+  tasks:
+    # Edge cases
+    - name: Try to create a VPC with an invalid profile
+      ec2_vpc:
+        state: present
+        cidr_block: "10.0.0.0/16"
+        region: "us-west-2"
+        profile: "{{ invalid_profile }}"
+      register: result
+      ignore_errors: yes
+
+    - name: Verify that creating a VPC with an invalid profile fails
+      fail:
+        msg: "Failed to create VPC with invalid profile"
+      when: "'The security token included in the request is invalid' not in result.stderr"
+
+    # Unexpected inputs
+    - name: Try to create a VPC with an empty region
+      ec2_vpc:
+        state: present
+        cidr_block: "10.0.0.0/16"
+        region: ""
+        profile: "default"
+
+    - name: Verify that creating a VPC with an empty region fails
+      fail:
+        msg: "Failed to create VPC with empty region parameter"
+      when: "'An Amazon EC2 region must be specified' not in result.stderr"
+
+    # Unconventional syntax
+    - name: Try to create a VPC with an invalid syntax profile parameter
+      ec2_vpc:
+        state: present
+        cidr_block: "10.0.0.0/16"
+        region: "us-west-2"
+        profile: "{{ invalid_profile # }}"
+      register: result
+      ignore_errors: yes
+
+    - name: Verify that creating a VPC with an invalid syntax profile parameter fails
+      fail:
+        msg: "Failed to create VPC with invalid syntax profile parameter"
+      when: "'Profile/given-profile-name with resulting parameter less than minimum allowed length of 1.' not in result.stderr"

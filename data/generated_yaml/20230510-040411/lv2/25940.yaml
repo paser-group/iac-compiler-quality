@@ -1,0 +1,57 @@
+
+---
+- name: AWS ec2_remote_facts error test playbook
+  hosts: localhost
+  vars:
+    invalid_params:
+      - {"invalid": "parameter"}
+
+  tasks:
+    - name: ec2_remote_facts missing arguments
+      ec2_remote_facts:
+
+    - name: ec2_remote_facts with invalid parameters
+      ec2_remote_facts:
+        region: us-east-1
+        instance_filters: "{{ invalid_params }}"
+
+    - name: ec2_remote_facts with non-existent region
+      ec2_remote_facts:
+        region: unknown-region
+
+    - name: ec2_remote_facts with multiple instance filters
+      ec2_remote_facts:
+        filters:
+          instance-state-name: running
+          "tag:Environment": production
+
+    - name: ec2_remote_facts with complicated instance filters
+      ec2_remote_facts:
+        filters:
+          - "tag:Env=dev and tag:Service=web"
+          - "tag:Env=prod and tag:Service=app"
+
+    - name: ec2_remote_facts with empty instance filters
+      ec2_remote_facts:
+        filters: []
+
+    - name: ec2_remote_facts with unconventional syntax
+      ec2_remote_facts:
+        region: "{{ [ 'us', 'east', '1' ] | join() }}"
+        instance_filters: "{{ invalid_params }}"
+
+    - name: ec2_remote_facts with arbitrary command injection
+      ec2_remote_facts:
+        filters: ["instance-state-name=running; echo 'vulnerable'"]
+
+    - name: ec2_remote_facts with invalid security token
+      ec2_remote_facts:
+        security_token: invalid-token
+
+    - name: ec2_remote_facts with invalid access key
+      ec2_remote_facts:
+        aws_access_key: invalid-token
+
+    - name: ec2_remote_facts with invalid secret key
+      ec2_remote_facts:
+        aws_secret_key: invalid-key

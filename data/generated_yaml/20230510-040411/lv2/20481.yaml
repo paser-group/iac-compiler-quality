@@ -1,0 +1,53 @@
+
+- name: Test playbook for gce_net error on firewall rule update
+  hosts: localhost
+  tasks:
+    - name: Test NoneType object
+      gce_net:
+        name: test-none
+        rules:
+          - action: deny
+            protocol: all
+            source_ranges: none
+            destination_ranges: none
+            priority: 1000
+            direction: ingress
+        state: present
+      register: result_none
+    - name: Test iterable object
+      gce_net:
+        name: test-iterable
+        rules:
+          - action: allow
+            protocol: tcp
+            source_ranges: 192.168.0.1/24
+            destination_ranges: 0.0.0.0/0
+            priority: 2000
+            direction: egress
+        state: present
+      register: result_iterable
+    - name: Test unconventional syntax
+      gce_net:
+        name: test-syntax
+        rules:
+          - action: allow
+            protocol: tcp
+            sourceRanges: 192.168.0.1/24
+            destination_ranges: 0.0.0.0/0
+            priority: 3000
+            direction: ingress
+        state: present
+      register: result_syntax
+    - name: Test unexpected inputs
+      gce_net:
+        name: test-unexpected
+        rules: []
+        state: present
+      register: result_unexpected
+    - name: Debug output
+      debug:
+        var:
+          result_none
+          result_iterable
+          result_syntax
+          result_unexpected

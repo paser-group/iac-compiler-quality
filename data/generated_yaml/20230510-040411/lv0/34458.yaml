@@ -1,0 +1,27 @@
+
+---
+- name: Example playbook
+  hosts: localhost
+  gather_facts: no
+  vars:
+    vpc_id: "vpc-12345678"  # Replace with the ID of your VPC
+
+  tasks:
+    - name: Get VPN Gateways
+      ec2_vpc_vgw_facts:
+        region: "{{ ec2_region }}"
+        filters:
+          vpc-id: "{{ vpc_id }}"
+      register: vgw_results
+      ignore_errors: yes  # Continue even if some gateways have no tags
+
+    - name: Handle errors
+      block:
+        - name: Process tagged gateways
+          debug:
+            var: item.vgw_id
+          with_items: "{{ vgw_results['results'] | selectattr('tags') | list }}"
+      rescue:
+        - name: Handle error
+          debug:
+            msg: "Error getting VPN Gateway list"

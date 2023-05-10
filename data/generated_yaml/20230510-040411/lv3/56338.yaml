@@ -1,0 +1,27 @@
+
+- hosts: all
+  become: true
+  vars:
+    error_message: ""
+  tasks:
+    - name: Include docker_container plugin
+      include_tasks: docker_container.yml
+    
+    - name: Set the container image name
+      set_fact:
+        container_image: "nginx"
+
+    - name: Attempt to run docker_container plugin
+      docker_container:
+        name: "{{ container_image }}"
+      ignore_errors: true
+      register: result
+
+    - name: Store the error message if an import error occurs
+      set_fact:
+        error_message: "{{ result | json_query('failed_task') | first }}"
+
+    - name: Print the error message to the console if there was an import error
+      debug:
+        msg: "Import error found: {{ error_message }}"
+      when: error_message != ""

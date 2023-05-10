@@ -1,0 +1,39 @@
+
+- name: Fix deserialization error when deploying azure_rm_sqldatabase
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+    - name: Upgrade azure-cli on control node
+      shell: az upgrade --yes
+      register: result
+      changed_when: result.stdout.find('This command is in preview.') != -1 or result.stdout.find('installed version is') != -1
+
+    - name: Update azure_rm package
+      pip:
+        name: "azure==4.0.0rc1"
+        extra_args: "--pre"
+      register: result
+
+    - name: Configure azure_rm_sqldatabase
+      azure_rm_sqldatabase:
+        resource_group: "{{ resource_group }}"
+        name: "{{ database_name }}"
+        state: "{{ state }}"
+        collation: "{{ collation }}"
+        tenant_id: "{{ tenant_id }}"
+        subscription_id: "{{ subscription_id }}"
+        login_host: "{{ login_host }}"
+        login_user: "{{ login_user }}"
+        login_password: "{{ login_password }}"
+
+  vars:
+    resource_group: "example-group"
+    database_name: "example-database"
+    state: present
+    collation: "SQL_Latin1_General_CP1_CI_AS"
+    tenant_id: "{{ lookup('env', 'AZURE_TENANT_ID') }}"
+    subscription_id: "{{ lookup('env', 'AZURE_SUBSCRIPTION_ID') }}"
+    login_host: ""
+    login_user: "{{ lookup('env', 'AZURE_USERNAME') }}"
+    login_password: "{{ lookup('env', 'AZURE_PASSWORD') }}"

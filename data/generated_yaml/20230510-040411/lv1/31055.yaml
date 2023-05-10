@@ -1,0 +1,34 @@
+
+---
+- name: Create VPC Network
+  hosts: localhost
+  connection: local
+  gather_facts: no
+
+  vars:
+    aws_region: us-east-1
+    vpc_cidr_block: 10.10.0.0/16
+    subnet_cidr_block: 10.10.1.0/24
+    profile: my_profile
+
+  tasks:
+  - name: Create VPC
+    ec2_vpc_net:
+      name: my_vpc
+      cidr_block: "{{ vpc_cidr_block }}"
+      region: "{{ aws_region }}"
+      profile: "{{ profile }}"
+    register: vpc_info
+
+  - name: Create subnet
+    ec2_subnet:
+      vpc_id: "{{ vpc_info.vpc.id }}"
+      cidr: "{{ subnet_cidr_block }}"
+      region: "{{ aws_region }}"
+      profile: "{{ profile }}"
+      state: present
+    register: subnet_info
+
+  - name: Print subnet info
+    debug:
+      var: subnet_info

@@ -1,0 +1,29 @@
+
+# Define variables
+$vmName = "MyVM"
+$vmHost = "ESXi-01"
+$dvsName = "MyDVS"
+$dvsPortGroup = "MyPortGroup"
+
+# Check if VM exists
+if (Get-VM -Name $vmName -ErrorAction SilentlyContinue) {
+    Write-Host "VM $vmName already exists"
+    break
+}
+
+# Check if DVS exists
+if (Get-VDSwitch -Name $dvsName -ErrorAction SilentlyContinue) {
+    Write-Host "DVS $dvsName already exists"
+}
+else {
+    # Create DVS
+    New-VDSwitch -Name $dvsName -Location $vmHost
+    Write-Host "Created DVS $dvsName"
+}
+
+# Create DVS port group
+New-VDPortGroup -VDSwitch $dvsName -Name $dvsPortGroup
+
+# Create VM
+New-VM -Name $vmName -Location $vmHost -NetworkName $dvsPortGroup
+Write-Host "Created VM $vmName with DVS $dvsName"

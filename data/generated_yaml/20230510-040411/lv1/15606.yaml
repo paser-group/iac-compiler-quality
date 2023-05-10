@@ -1,0 +1,40 @@
+yaml
+---
+- name: Run test-module without errors
+  hosts: localhost
+  gather_facts: False
+  tasks:
+
+    - name: Clone the Hacking repository
+      git:
+        repo: https://github.com/openstack-dev/hacking.git
+        dest: /opt/hacking
+      register: git_clone_result
+
+    - name: Install hacking module dependencies
+      pip:
+        name: "{{ item }}"
+        state: present
+      with_items:
+        - tox
+        - virtualenv
+        - pep8
+        - pyflakes
+      register: hacking_dep_result
+
+    - name: Provide proper permissions
+      file:
+        state: directory
+        path: /opt/hacking/
+        mode: '0755'
+
+    - name: Run test-module
+      shell: |
+        cd /opt/hacking/
+        tox -e py27 python hacking/run_tests.py tests/test_module.py
+      register: run_module_result
+
+    - name: Display results
+      debug:
+        var: run_module_result.stdout_lines
+

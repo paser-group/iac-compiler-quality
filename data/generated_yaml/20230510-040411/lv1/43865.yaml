@@ -1,0 +1,22 @@
+yaml
+---
+- name: Playbook to handle NFS issue on remote hosts
+  hosts: all
+  tasks:
+    - name: Check if NFS shared filesystem is mounted
+      shell: df -h | grep nfs
+      register: nfs_mounted
+      ignore_errors: True
+
+    - name: Handle NFS issue if filesystem is unmounted
+      block:
+        - name: Unmount NFS shared filesystem
+          become: True
+          shell: umount -f /mnt/nfs
+
+        - name: Restart NFS service
+          become: True
+          service:
+            name: nfs
+            state: restarted
+      when: nfs_mounted.rc != 0

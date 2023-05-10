@@ -1,0 +1,79 @@
+
+---
+- name: Test Ansible Compiler on DigitalOcean droplets
+  hosts: droplets
+
+  vars:
+    ansible_virtualization_role: host
+
+  tasks:
+    - name: Ensure ansible_virtualization_role is set to kvm
+      block:
+        - assert:
+            that:
+              - ansible_virtualization_role == 'kvm'
+          rescue:
+            - set_fact:
+                ansible_virtualization_role: kvm
+            - name: Restart libvirtd service
+              command: systemctl restart libvirtd
+      become: yes
+
+    - name: Generate random string
+      set_fact:
+        random_string: "{{ range(99) | list | shuffle | join }}"
+
+    - name: Generate random number
+      set_fact:
+        random_number: "{{ 1021 | random(seed=random_string) }}"
+
+    - name: Install Docker
+      block:
+        - name: Add Docker GPG key
+          apt_key:
+            url: https://download.docker.com/linux/ubuntu/gpg
+            id: 9DC858229FC7DD38854AE2D88D81803C0EBFCD88
+          when: ansible_distribution_release == 'xenial'
+          become: yes
+
+        - name: Add Docker repository
+          apt_repository:
+            repo: "deb [arch=amd64] https://download.docker.com/linux/{{ ansible_distribution|lower }} {{ ansible_distribution_release }} stable"
+            state: present
+          become: yes
+
+        - name: Install Docker CE
+          apt:
+            name: docker-ce
+            state: present
+          become: yes
+
+    - name: Configure network settings
+      block:
+        - name: Disable IPv6
+          command: sysctl -w net.ipv6.conf.all.disable_ipv6=1
+          become: yes
+          when: not ansible_nodename
+
+        - name: Enable IP forwarding
+          sysctl:
+            name: net.ipv4.ip_forward
+            value: 1
+            sysctl_set: yes
+          become: yes
+
+        - name: Set MTU size
+          command: ifconfig eth0 mtu {{ random_number }}
+          become: yes
+
+        - name: Enable IP masquerading
+          iptables:
+            chain: POSTROUTING
+            table: nat
+            jump: MASQUERADE
+            out_interface: eth0
+          become: yes
+
+        - name: Apply network settings
+          shell: echo 'net.ipv4.ip_forward=1' > /etc/sysctl.d/30-ip_forward.conf
+          become: yes

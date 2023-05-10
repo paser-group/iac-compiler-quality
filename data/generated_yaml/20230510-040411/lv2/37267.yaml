@@ -1,0 +1,58 @@
+
+- name: EC2 NoSuchVersion error test playbook
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    region: "us-east-1"
+    elb_name: "test-elb"
+    target_group: "test-target-group"
+    protocol: "HTTP"
+
+  tasks:
+    - name: Launch EC2 instance
+      ec2:
+        key_name: "{{ item }}"
+        instance_type: t2.micro
+        image: ami-0c3a3fbb7faf8beb3
+        wait: true
+      loop:
+        - "ssh_key_1"
+        - "ssh_key_2"
+      register: ec2_instance
+
+    - name: Add EC2 to target group
+      elb_target_group:
+        target_group_name: "{{ target_group }}"
+        target_type: instance
+        port: 80
+        protocol: "{{ protocol }}"
+        vpc_id: "{{ ec2_instance.instances[0].vpc_id }}"
+        register: target_group_result
+
+    - name: Create an application load balancer with target group
+      elb_application_lb:
+        name: "{{ elb_name }}"
+        listeners:
+          - lb_port: 80
+            lb_protocol: "{{ protocol }}"
+            instance_port: 80
+            instance_protocol: "{{ protocol }}"
+        subnets:
+          - subnet-12345678
+        security_groups:
+          - sg-12345678
+        target_groups:
+          - "{{ target_group }}"
+        regions: "{{ region }}"
+        register: elb_result
+
+    - name: Terminate EC2 instance
+      ec2:
+        state: absent
+        instance_ids: "{{ ec2_instance.instances[0].id }}"
+        wait: true
+
+    - name: Debug Result
+      debug:
+        msg: "{{ elb_result }}"

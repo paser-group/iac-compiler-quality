@@ -1,0 +1,32 @@
+
+- name: Encrypt a block device with LUKS
+  hosts: localhost
+  become: true
+  vars:
+    device_path: /dev/sda3
+    key_file_path: /path/to/key/file
+
+  tasks:
+  - name: Check if key file exists
+    stat: 
+      path: "{{ key_file_path }}"
+    register: key_file_stat
+  
+  - name: Create LUKS device
+    command: >
+      cryptsetup luksFormat {{ device_path }} --key-file="{{ key_file_path }}"
+    when: key_file_stat.stat.exists
+  
+  - name: Format the LUKS device with a filesystem
+    file_system:
+      fstype: ext4
+      dev: "{{ device_path }}"
+    when: key_file_stat.stat.exists and device_status.stat.exists
+
+  - name: Mount the encrypted device
+    mount:
+      path: /mnt/encrypted
+      src: "{{ device_path }}"
+      fstype: ext4
+      state: mounted
+    when: key_file_stat.stat.exists and device_status.stat.exists

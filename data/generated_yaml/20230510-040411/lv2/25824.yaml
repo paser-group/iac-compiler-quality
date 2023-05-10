@@ -1,0 +1,54 @@
+
+- name: Test MAKE errors
+  hosts: localhost
+  gather_facts: no
+
+  environment:
+    FOO: "bar"
+    BAR: "{{ FOO | lower | regex_replace('b', 'o') }}"
+
+  vars:
+    foo_list: ['a', 'b', 'c']
+    bar_dict:
+      1: 'One'
+      2: 'Two'
+      3: 'Three'
+
+  pre_tasks:
+    - name: Print FOO and BAR variables
+      debug:
+        var: FOO
+      failed_when: FOO is not defined
+
+    - name: Execute invalid command
+      command: !!!
+      ignore_errors: yes
+
+  tasks:
+    - name: Create temporary directory
+      tempfile:
+        state: directory
+      register: temp_dir
+
+    - name: Test copy module with invalid source path
+      copy:
+        src: /invalid/path/for/source.txt
+        dest: "{{ temp_dir.path }}/destination.txt"
+      ignore_errors: yes
+
+    - name: Test template module with missing variables
+      template:
+        src: "{{ playbook_dir }}/templates/template.j2"
+        dest: "{{ temp_dir.path }}/template.txt"
+      failed_when: "'{{ missing_variable }}' in template"
+
+    - name: Test uri module with unconventional syntax
+      uri:
+        url: "http://{{ hostvars['localhost']['ansible_fqdn'] | default('localhost') }{{ api_path | mandatory }}"
+        method: post
+        body_format: form-urlencoded
+        body:
+          key1: "{{ foo_list[:1] }}"
+          key2: "{{ bar_dict.values()[:2] | join(',') }}"
+      register: api_response
+      ignore_errors: yes

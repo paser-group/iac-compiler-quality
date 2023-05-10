@@ -1,0 +1,34 @@
+
+- name: Testing out-of-memory issue with win_command
+  hosts: windows_servers
+
+  tasks:
+  - name: Run batch file with lots of input parameters
+    win_command: cmd.exe /c test.bat -param1 "a" -param2 "b" -param3 "c" -param4 "d" -param5 "e" -param6 "f" -param7 "g" -param8 "h" -param9 "i" -param10 "j" -param11 "k" -param12 "l" -param13 "m" -param14 "n" -param15 "o" -param16 "p" -param17 "q" -param18 "r" -param19 "s" -param20 "t"
+    args:
+      chdir: C:\scripts
+    ignore_errors: yes
+
+  - name: Run batch file with invalid command-line syntax
+    win_command:  cmd.exe /c test.bat -param1 || exit
+    args:
+      chdir: C:\scripts
+    ignore_errors: yes
+
+  - name: Run batch file with infinite loop
+    win_command:  cmd.exe /c test.bat && cd c:\\ && start test.bat
+    args:
+      chdir: C:\scripts
+    ignore_errors: yes
+
+  - name: Run batch file without enough system memory
+    win_command: cmd.exe /c "test.bat" && set CF=00:00:09 && powershell -Command "'$a=[char[]]('+'*102400);while($true){$a;sleep(1)}'"
+    args:
+      chdir: C:\scripts
+    ignore_errors: yes
+
+  - name: Run batch file with invalid file path
+    win_command: cmd.exe /c C:\test.bat
+    args:
+      chdir: C:\scripts
+    ignore_errors: yes

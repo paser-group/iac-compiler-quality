@@ -1,0 +1,56 @@
+yaml
+---
+- name: Fix GCE Module RSA key format not supported error
+  hosts: webserver
+  gather_facts: no
+
+  tasks:
+  - name: Install Google Cloud SDK
+    apt:
+      name: google-cloud-sdk
+      state: present
+
+  - name: Set environment variables for GCE SDK
+    vars:
+      GOOGLE_APPLICATION_CREDENTIALS: /path/to/credential/file.json
+    no_log: True
+
+  - name: Update ssh-keygen command to use PEM format
+    block:
+    - name: Generate PEM format RSA key
+      shell: ssh-keygen -t rsa -b 2048 -f /path/to/key.pem -m PEM
+      args:
+        creates: /path/to/key.pem
+
+    - name: Overwrite private key file
+      copy:
+        src: /path/to/key.pem
+        dest: /home/user/.ssh/key.pem
+        mode: "0600"
+
+    - name: Remove old public key
+      file:
+        path: /home/user/.ssh/key.pem.pub
+        state: absent
+
+    - name: Generate public key
+      shell: ssh-keygen -y -f /home/user/.ssh/key.pem > /home/user/.ssh/key.pem.pub
+      args:
+        creates: /home/user/.ssh/key.pem.pub
+
+  - name: Use PEM format key for GCE instance
+    gce:
+      instance_names: my-instance
+      zone: us-central1-a
+      project_id: my-project
+      auth_kind: serviceaccount
+      service_account_file: /path/to/credential/file.json
+      image_family: ubuntu-2004-lts
+      machine_type: n1-standard-1
+      tags: http-server
+      metadata:
+        ssh-keys: "{{ lookup('file', '/home/user/.ssh/key.pem.pub') }}"
+    no_log: True
+
+  - name: Ping the instance
+    ping:

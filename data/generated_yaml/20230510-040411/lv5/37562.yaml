@@ -1,0 +1,40 @@
+
+- name: Test basic authentication
+  hosts: all
+  gather_facts: no
+  tasks:
+  - name: Authenticate with username and password
+    uri:
+      url: https://example.com
+      method: GET
+      user: username
+      password: password
+    register: result
+  - name: Check response status code
+    assert:
+      that:
+        - result.status == 200
+
+- name: Test token-based authentication
+  hosts: all
+  gather_facts: no
+  tasks:
+  - name: Get authentication token
+    uri:
+      url: https://example.com/token
+      method: POST
+      body: '{"username": "username", "password": "password"}'
+      headers:
+        Content-Type: application/json
+    register: result
+  - name: Authenticate with token
+    uri:
+      url: https://example.com
+      method: GET
+      headers:
+        Authorization: "Bearer {{ result.json.token }}"
+    register: result
+  - name: Check response status code
+    assert:
+      that:
+        - result.status == 200

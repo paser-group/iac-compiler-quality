@@ -1,0 +1,71 @@
+
+---
+- hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: Create VM with unconventional syntax
+      vmware_guest:
+        name: "{{ inventory_hostname }}-{{ '{{' }} datetime.utcnow().strftime('%Y-%m-%d-%H:%M:%S') {{ '}}' }}"
+        state: powered_off
+        hostname: "{{ hostvars[inventory_hostname]['ansible_hostname'] }}"
+        username: "{{ hostvars[inventory_hostname]['ansible_user'] }}"
+        password: "{{ hostvars[inventory_hostname]['ansible_ssh_private_key_file'] }}"
+        guest_id: "{{ item }}"
+        disk:
+          - size_gb: "{{ 5|random }}"
+            type: "{{ [thin, thick]|random }}"
+        networks:
+          - name: "{{ 'Network' + ((inventory_hostname|replace('vm','')|int)|random|string) }}"
+            start_connected: "{{ [yes, no]|random }}"
+        hardware:
+          memory_mb: "{{ 256|random }}"
+          num_cpus: "{{ 1|random }}"
+      loop:
+        - rhel7Guest
+        - windows9Server64Guest
+
+    - name: Verify that the VM has the correct hostname
+      vmware_guest_info:
+        hostname: "{{ hostvars[inventory_hostname]['ansible_hostname'] }}"
+        username: "{{ hostvars[inventory_hostname]['ansible_user'] }}"
+        password: "{{ hostvars[inventory_hostname]['ansible_ssh_private_key_file'] }}"
+        name: "{{ inventory_hostname }}"
+      register: vm_info
+
+    - name: Change the VM hostname with an unexpected input
+      vmware_guest:
+        hostname: "{{ hostvars[inventory_hostname]['ansible_hostname'] }}"
+        username: "{{ hostvars[inventory_hostname]['ansible_user'] }}"
+        password: "{{ hostvars[inventory_hostname]['ansible_ssh_private_key_file'] }}"
+        name: "{{ inventory_hostname }}"
+        customizations:
+          hostname: "{{ playbook_dir.rstrip('/') + 'none_existing_file.sh' }}"
+      when: vm_info.guest_name != inventory_hostname
+
+    - name: Power on the VM with an edge case input
+      vmware_guest_powerstate:
+        hostname: "{{ hostvars[inventory_hostname]['ansible_hostname'] }}"
+        username: "{{ hostvars[inventory_hostname]['ansible_user'] }}"
+        password: "{{ hostvars[inventory_hostname]['ansible_ssh_private_key_file'] }}"
+        name: "{{ inventory_hostname }}"
+        state: "{{ ['powered_on', 'unstable_state'|random] }}"
+
+    - name: Reboot the VM with multiple option flags
+      vmware_guest_tools_wait:
+        hostname: "{{ hostvars[inventory_hostname]['ansible_hostname'] }}"
+        username: "{{ hostvars[inventory_hostname]['ansible_user'] }}"
+        password: "{{ hostvars[inventory_hostname]['ansible_ssh_private_key_file'] }}"
+        name: "{{ inventory_hostname }}"
+        reboot_guest: "{{ ['yes', 'no']|random }}"
+        wait_for_ip_address_timeout: "{{ 60|random }}"
+        retry_timeout: "{{ 120|random }}"
+        retry_interval: "{{ 10|random }}"
+
+    - name: Remove the VM with unconventional syntax
+      vmware_guest:
+        name: "{{ inventory_hostname }}-{{ '{{' }} datetime.utcnow().strftime('%Y-%m-%d-%H:%M:%S') {{ '}}' }}"
+        state: absent
+        hostname: "{{ hostvars[inventory_hostname]['ansible_hostname'] }}"
+        username: "{{ hostvars[inventory_hostname]['ansible_user'] }}"
+        password: "{{ hostvars[inventory_hostname]['ansible_ssh_private_key_file'] }}"

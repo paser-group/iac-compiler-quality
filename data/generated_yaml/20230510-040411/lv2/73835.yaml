@@ -1,0 +1,30 @@
+
+- name: Test for ansible_private_role_vars feature
+  hosts: localhost
+  vars:
+    # Define an empty dictionary variable (unconventional syntax)
+    parent_role_vars: {}
+
+  # Define a private variable in the parent role
+  vars_private:
+    some_var: "test"
+
+  roles:
+    # Define a parent role that includes two sub-roles
+    - role: parent_role
+      vars:
+        # Define a variable in the parent role
+        parent_var: "parent value"
+        # Define an unconventional variable that references the parent role variables dictionary
+        "{{ parent_role_vars | combine({'subrole_var1': 'value1', 'subrole_var2': 'value2'}) }}"
+
+      # Include the first sub-role
+      include_role:
+        name: sub_role1
+        tasks_from: tasks/main.yml
+
+    # Define the second sub-role
+    - role: sub_role2
+      vars:
+        # Using the 'default' filter to set a variable to the default value of the parent role variable
+        subrole_var1: "{{ parent_var | default('default value') }}"

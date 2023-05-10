@@ -1,0 +1,33 @@
+yaml
+- name: Configure Docker Swarm services
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Set service defaults
+      docker_service:
+        name: "{{ item.name }}"
+        state: present
+        networks:
+          - name: "{{ item.network }}"
+            alias: "{{ item.alias }}"
+        mounts:
+          - src: "{{ item.volume }}"
+            target: "{{ item.mount }}"
+        replicas: "{{ item.replicas }}"
+        update_config:
+          parallelism: "{{ item.parallelism }}"
+          delay: "{{ item.delay }}"
+        restart_policy: "{{ item.restart }}"
+
+      with_items:
+        - name: myservice
+          network: mynetwork
+          alias: myalias
+          volume: /path/to/volume
+          mount: /path/to/mount
+          replicas: 3
+          parallelism: 1
+          delay: 10s
+          restart: on-failure
+

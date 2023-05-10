@@ -1,0 +1,42 @@
+yaml
+---
+- hosts: all
+  gather_facts: false
+  
+  tasks:
+    - name: run multiple tasks asynchronously
+      async: 10
+      poll: 0
+      ignore_errors: true
+      shell: "{{ item }}"
+      with_items:
+        - echo "Task 1"
+        - echo "Task 2"
+        - echo "Task 3"
+        - echo "Task 4"
+        - echo "Task 5"
+    
+    - name: wait for the asynchronously executed tasks to complete
+      async_status:
+        jid: "{{ item.ansible_job_id }}"
+        mode: status
+      register: task_result
+      until: task_result.finished
+      retries: 30
+      delay: 10
+      
+    - name: print the result of the asynchronously executed tasks
+      debug:
+        var: "{{ item }}"
+      with_items: "{{ task_result.results }}"
+      
+    - name: test connection to socket
+      wait_for:
+        host: localhost
+        port: 1234
+        state: started
+      ignore_errors: true
+      
+    - name: run the last task
+      shell: "Task 6"
+      ignore_errors: true

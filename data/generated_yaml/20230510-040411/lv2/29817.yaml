@@ -1,0 +1,38 @@
+
+- name: Command module does not return stderr of postfix check
+  hosts: localhost
+  tasks:
+    - name: Run Postfix check command and return stderr
+      shell: /etc/init.d/postfix check > /dev/null 2>&1 || echo "Postfix is not running"
+      register: postfix_check_output
+
+    - name: Debug output for Postfix check command
+      debug:
+        var: postfix_check_output.stderr_lines
+
+    - name: Run Postfix check command and ignore errors
+      command: /etc/init.d/postfix check
+      register: postfix_check_output
+
+    - name: Debug output for Postfix check command with ignore errors
+      debug:
+        var: postfix_check_output.stderr_lines
+
+    - name: Run Postfix check command and return exit code only
+      command: /etc/init.d/postfix check
+      register: postfix_check_output
+      changed_when: false
+
+    - name: Debug output for Postfix check command with exit code only
+      debug:
+        var: postfix_check_output.rc
+
+    - name: Force failure of Postfix check command
+      command: /bin/false
+      register: postfix_check_output
+      failed_when: postfix_check_output.rc == 0
+
+    - name: Ensure failure of Postfix check command
+      fail:
+        msg: "Postfix is not running"
+      when: postfix_check_output.rc == 0

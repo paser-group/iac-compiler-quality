@@ -1,0 +1,54 @@
+
+- name: ec2_vpc_subnet_facts
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    region_list: # a list of valid and invalid regions
+      - us-east-1
+      - eu-west-1
+      - invalid
+      - ''
+
+  tasks:
+    - name: Test with valid region
+      ec2_vpc_subnet_facts:
+        region: "{{ region_list[0] }}"
+      register: result1
+
+    - name: Test with missing region variable
+      ec2_vpc_subnet_facts:
+      register: result2
+      ignore_errors: yes # we expect this task to fail
+
+    - name: Test with invalid region
+      ec2_vpc_subnet_facts:
+        region: "{{ region_list[2] }}"
+      register: result3
+      ignore_errors: yes # we expect this task to fail
+
+    - name: Test with an empty region
+      ec2_vpc_subnet_facts:
+        region: "{{ region_list[3] }}"
+      register: result4
+      ignore_errors: yes # we expect this task to fail
+
+    - name: Test with unconventional syntax and unexpected input
+      ec2_vpc_subnet_facts:
+        region: "{{ region_list[0] }}"
+        filters:
+          - subnet_id=$$&$(echo 'test')
+          - "subnet_name=>';$(echo 'test')"
+        delimiter: ">"
+      register: result5
+      ignore_errors: yes # we expect this task to fail
+
+    # Do something with the results
+    - debug:
+        var: item
+      with_items:
+        - result1
+        - result2
+        - result3
+        - result4
+        - result5

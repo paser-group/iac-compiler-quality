@@ -1,0 +1,46 @@
+
+- name: Test iptables module tcp_flags bug
+  hosts: all
+  tasks:
+
+  - name: Create an iptables rule
+    iptables:
+      chain: OUTPUT
+      protocol: tcp
+      destination_port: 80
+      tcp_flags: "{{ item }}"
+    with_items:
+      - SYN+ACK
+      - FIN+ACK
+      - URG
+      - ACK
+      - PSH+URG
+      - SYN+FIN
+
+  - name: Remove the iptables rule
+    iptables:
+      chain: OUTPUT
+      protocol: udp
+      destination_port: 8080
+      tcp_flags: "{{ item }}"
+    with_items:
+      - ACK+PSH
+      - RST+URG+ACK
+      - FIN
+      - SYN+RST
+
+  - name: Create an iptables rule with an unconventional syntax
+    iptables:
+      chain: OUTPUT
+      protocol: tcp
+      destination_port: 80
+      tcp_flags: "!SYN" "&ACK" "|FIN"
+  
+  - name: Create an iptables rule with unexpected inputs
+    iptables:
+      chain: OUTPUT
+      protocol: udp
+      destination_port: 1234
+      tcp_flags: "{{ random(1, 10) }}"
+
+

@@ -1,0 +1,33 @@
+
+- name: Check EC2 Subnets Status
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    region: "{{ playbook_extra_vars.region }}"
+    subnets:
+        - subnet-123456
+        - subnet-234567
+        - subnet-345678
+
+  tasks:
+    - name: Describe subnets
+      ec2_vpc_subnet_info:
+        region: "{{ region }}"
+        subnet_id: "{{ subnets }}"
+      register: describe_subnets_result
+      ignore_errors: True
+
+    - name: Pause for 30 Seconds if RequestLimitExceeded error occurs
+      pause:
+        seconds: 30
+      when: describe_subnets_result|failed and describe_subnets_result.stderr.find("RequestLimitExceeded") != -1
+
+    - name: Display Describe Subnets result
+      debug:
+        msg: "{{ describe_subnets_result }}"
+
+    - name: Fail Task if any error occurs
+      fail:
+        msg: Error occurred while describing subnets
+      when: describe_subnets_result|failed

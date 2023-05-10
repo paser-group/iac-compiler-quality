@@ -1,0 +1,86 @@
+
+---
+- hosts: localhost
+  gather_facts: no
+  
+  tasks:
+    # Try to remove nxos_vtp_password module and fail if it is not present
+    - nxos_vtp_password:
+        state: absent
+      register: remove_vtp_pass
+      ignore_errors: yes
+    
+    # If nxos_vtp_password is not present, then it should be idempotent
+    - assert:
+        that:
+          - remove_vtp_pass is changed
+      when: remove_vtp_pass is success
+
+    # Add a new nxos_vtp_password module and try to remove it twice
+    # to check for idempotency
+    - nxos_vtp_password:
+        password: "{{ random_password }}"
+        state: present
+      register: add_vtp_pass1
+     
+    - nxos_vtp_password:
+        password: "{{ random_password }}"
+        state: present
+      register: add_vtp_pass2
+     
+    - nxos_vtp_password:
+        state: absent
+      register: remove_vtp_pass1
+      when: add_vtp_pass1 is success
+     
+    - nxos_vtp_password:
+        state: absent
+      register: remove_vtp_pass2
+      when: add_vtp_pass2 is success
+     
+    - assert:
+        that:
+          - remove_vtp_pass1 is success
+          - remove_vtp_pass1 is not changed
+          - remove_vtp_pass2 is success
+          - remove_vtp_pass2 is not changed
+ 
+    # Use an unconventional syntax by referencing the nxos_vtp_config module
+    - nxos_vtp_password:
+        password: "{{ random_password }}"
+        state: present
+        config: "{{ nxos_vtp_config }}"
+      
+    - nxos_vtp_config:
+        mode: client
+    
+    # Try to remove a module that is not present and force it to throw an error
+    - nxos_vtp_password:
+        password: "{{ random_password }}"
+        state: absent
+        ignore_errors: no
+      register: remove_nonexistent_vtp_pass
+      failed_when: remove_nonexistent_vtp_pass is success
+  
+    # Try to remove a module twice and ignore any errors thrown
+    - nxos_vtp_password:
+        state: absent
+        ignore_errors: yes
+      register: remove_twice_vtp_pass1
+     
+    - nxos_vtp_password:
+        state: absent
+        ignore_errors: yes
+      register: remove_twice_vtp_pass2
+     
+    - assert:
+        that:
+          - remove_twice_vtp_pass1 is success
+          - remove_twice_vtp_pass1 is not changed
+          - remove_twice_vtp_pass2 is success
+          - remove_twice_vtp_pass2 is not changed
+      
+    # Use an unexpected input for the password parameter
+    - nxos_vtp_password:
+        password: ["{{ random_password }}"]
+        state: present

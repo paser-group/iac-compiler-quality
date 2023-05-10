@@ -1,0 +1,32 @@
+
+- hosts: all
+  become: true
+  gather_facts: no
+
+  tasks:
+  - name: Create Managed Disk in Azure
+    azure_rm_managed_disk:
+      resource_group: "{{ resource_group_name }}"
+      name: "{{ managed_disk_name }}"
+      disk_size_gb: "{{ disk_size_gb }}"
+
+  - name: Attach the Disk to a Virtual Machine
+    azure_rm_virtualmachine_disk:
+      resource_group: "{{ resource_group_name }}"
+      name: "{{ vm_name }}"
+      managed_disk_type: "{{ managed_disk_name }}"
+      caching: ReadOnly
+      override_existing_disk: yes
+
+  - name: Install Iometer on the Virtual Machine
+    win_chocolatey:
+      name: iometer
+      state: present
+    when: ansible_os_family == 'Windows'
+
+  - name: Run Iometer and Measure I/O Performance
+    win_shell: iometer.exe "/c /t {{ iometer_test_duration }} /r {{ iometer_results_path }}"
+    args:
+      executable: cmd.exe
+      wait_for_completion: yes
+    when: ansible_os_family == 'Windows'

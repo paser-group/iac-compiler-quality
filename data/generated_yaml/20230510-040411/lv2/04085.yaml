@@ -1,0 +1,74 @@
+yaml
+- name: Generate multiple DNS entries with various edge cases
+  hosts: localhost
+  gather_facts: no
+  
+  vars:
+    domain_name: "example.com"
+    zone_id: "ABCDEFGHIKLMNOP"
+    aws_profile: "default"
+    aws_region: "us-west-2"
+  
+  tasks:
+    - name: create new DNS entry with invalid DNS name
+      route53:
+        command: "create"
+        zone: "{{ zone_id }}"
+        name: "invalid-dns@"
+        type: "A"
+        ttl: 300
+        rrset_values:
+          - "127.0.0.1"
+      register: invalid_dns_entry
+      
+    - name: create new DNS entry with record type specified in mixed case
+      route53:
+        command: "create"
+        zone: "{{ zone_id }}"
+        name: "test1.{{ domain_name }}"
+        Type: "a"
+        ttl: 300
+        rrset_values:
+          - "192.168.1.1"
+      register: mixed_case_dns_entry
+      
+    - name: create new DNS entry with invalid IP address
+      route53:
+        command: "create"
+        zone: "{{ zone_id }}"
+        name: "test2.{{ domain_name }}"
+        Type: "A"
+        ttl: 300
+        rrset_values:
+          - "192.168.1.999"
+      register: invalid_ip_dns_entry
+      
+    - name: create new DNS entry and delete it immediately
+      route53:
+        command: "create"
+        zone: "{{ zone_id }}"
+        name: "test3.{{ domain_name }}"
+        Type: "A"
+        ttl: 300
+        rrset_values:
+          - "192.168.1.1"
+      register: create_dns_entry
+      
+    - name: delete DNS entry created in the last task
+      route53:
+        command: "delete"
+        zone: "{{ zone_id }}"
+        name: "test3.{{ domain_name }}"
+        Type: "A"
+        values: "{{ create_dns_entry.results[0].ansible_facts.route53.resourcerecordsets }}"
+      register: delete_dns_entry
+
+    - debug:
+        msg: "{{ item }}"
+      loop:
+        - "{{ invalid_dns_entry }}"
+        - "{{ mixed_case_dns_entry }}"
+        - "{{ invalid_ip_dns_entry }}"
+        - "{{ create_dns_entry }}"
+        - "{{ delete_dns_entry }}"
+

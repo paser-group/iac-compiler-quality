@@ -1,0 +1,51 @@
+
+---
+- name: Test Playbook - SSH Connection Issue
+  hosts: all
+  vars:
+    ssh_user: "{{ ansible_user }}"
+
+  tasks:
+    - name: Try to connect to remote host with wrong password
+      become: yes
+      remote_user: "{{ ssh_user }}"
+      command: echo "test" > /dev/tcp/{{ inventory_hostname }}/22
+
+    - name: Try to connect with non-standard port
+      become: yes
+      remote_user: "{{ ssh_user }}"
+      command: echo "test" > /dev/tcp/{{ inventory_hostname }}/2222
+
+    - name: Try to connect with non-default key file
+      become: yes
+      remote_user: "{{ ssh_user }}"
+      command: echo "test" > /dev/tcp/{{ inventory_hostname }}/22
+      ssh_key: "/tmp/wrong_key"
+
+    - name: Try to connect with non-existent user
+      become: yes
+      remote_user: "non_existent_user"
+      command: echo "test" > /dev/tcp/{{ inventory_hostname }}/22
+
+    - name: Try to use a wrong ssh version
+      become: yes
+      remote_user: "{{ ssh_user }}"
+      ssh_path: /usr/bin/sshv2
+      command: echo "test" > /dev/tcp/{{ inventory_hostname }}/22
+
+    - name: Try to connect with invalid ssh arguments
+      become: yes
+      remote_user: "{{ ssh_user }}"
+      ssh_args: "-oHostKeyAlgorithms=ssh-dss"
+      command: echo "test" > /dev/tcp/{{ inventory_hostname }}/22
+
+    - name: Try to connect with invalid Ciphers
+      become: yes
+      remote_user: "{{ ssh_user }}"
+      ssh_cipher: "aes256-cbc"
+      command: echo "test" > /dev/tcp/{{ inventory_hostname }}/22
+      
+    - name: Test Connection with random string
+      become: yes
+      remote_user: "{{ ssh_user }}"
+      command: echo "not_a_valid_ssh_string" > /dev/tcp/{{ inventory_hostname }}/22

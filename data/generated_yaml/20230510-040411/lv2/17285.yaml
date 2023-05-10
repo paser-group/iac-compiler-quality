@@ -1,0 +1,36 @@
+
+- name: Kerberos issue - Test Playbook
+  hosts: all
+  become: true
+
+  vars:
+    principal_not_found: "my_principal_not_found"
+    invalid_cache_collection: "my_invalid_cache_collection"
+  
+  tasks:
+
+    # Test when kerberos_client_principal variable is not defined
+    - name: Test case-1 - Principal not found in Kerberos cache
+      command: klist -c {{ invalid_cache_collection }}
+      register: result
+      failed_when: result.rc != 0 and result.stderr.find(principal_not_found) == -1
+
+    # Test when multiple kerberos_clinet_principal variables are defined
+    - name: Test case-2 - Multiple principal defined
+      command: klist
+      register: result
+      vars:
+        kerberos_client_principal: ["my_principal_1", "my_principal_2"]
+      failed_when: result.rc != 0 and result.stderr.find(kerberos_client_principal[0]) == -1 and result.stderr.find(kerberos_client_principal[1]) == -1
+
+    # Test when Kerberos TGT is present but client principal not in cache
+    - name: Test case-3 - Client principal not found in cache but TGT is present
+      command: kinit -f {{ principal_not_found }}
+      register: result
+      failed_when: "not result.stderr.find('Kerberos password for') == -1"
+    
+    # Test when invalid realm name is provided
+    - name: Test case-4 - Principal not found in wrong realm
+      command: kinit -f {{ principal_not_found }}@{{ invalid_cache_collection }}
+      register: result
+      failed_when: "not result.stderr.find('Unknown realm or KDC') == -1"

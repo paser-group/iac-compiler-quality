@@ -1,0 +1,26 @@
+
+---
+- hosts: localhost
+  tasks:
+    - name: Create an application load balancer
+      elb_application_lb:
+        name: my-load-balancer
+        subnets: my-subnet
+        security_groups: my-security-group
+        listeners:
+          - protocol: HTTP
+            port: 80
+            default_action:
+              type: forward
+              target_group_arn: my-target-group
+        conn_type:
+          resource: my-resource
+          client: my-client
+      register: result
+    
+    - name: Assert that the conn_type parameter contains resource and client OR one of the two
+      assert:
+        that:
+          - result.conn_type.resource is defined
+          - result.conn_type.client is defined
+          - (result.conn_type.resource is defined and result.conn_type.client is undefined) or (result.conn_type.resource is undefined and result.conn_type.client is defined)

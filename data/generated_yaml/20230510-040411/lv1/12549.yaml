@@ -1,0 +1,58 @@
+yaml
+- name: Install custom Python version
+  hosts: all
+  become: true
+
+  vars:
+    python_version: "3.9.5"
+    http_proxy: "http://my-proxy-server:8080"
+
+  tasks:
+    - name: Install development tools and libraries
+      package:
+        name:
+          - gcc
+          - make
+          - openssl-devel
+          - libffi-devel
+        state: present
+
+    - name: Download and compile Python from source
+      get_url:
+        url: "https://www.python.org/ftp/python/{{ python_version }}/Python-{{ python_version }}.tgz"
+        dest: "/tmp/Python-{{ python_version }}.tgz"
+        validate_certs: no
+      register: python_tarball
+
+    - name: Extract Python source tarball
+      unarchive:
+        src: "{{ python_tarball.dest }}"
+        dest: "/tmp/python"
+        remote_src: true
+        extra_opts: "--strip-components=1"
+
+    - name: Configure Python build options
+      become: true
+      command: ./configure --enable-optimizations
+
+      args:
+        chdir: "/tmp/python"
+
+    - name: Compile Python from source
+      become: true
+      command: make altinstall
+
+      args:
+        chdir: "/tmp/python"
+
+    - name: Configure proxy settings for Python
+      become: true
+      lineinfile:
+        dest: "/etc/profile.d/proxy.sh"
+        line: export http_proxy={{ http_proxy }}
+      notify: Restart shell
+
+  handlers:
+    - name: Restart shell
+      become: true
+      command: sudo -Hu vagrant bash -l -c "exec $SHELL -l"

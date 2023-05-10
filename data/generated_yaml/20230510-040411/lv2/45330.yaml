@@ -1,0 +1,84 @@
+
+---
+- hosts: localhost
+  gather_facts: no
+
+  vars:
+    registry_name: "myacrregistry"
+    resource_group_name: "myacrresourcegroup"
+    location: "eastus"
+    server_url: "https://myacrregistry.azurecr.io"
+    admin_user: "myusername"
+    admin_password: "mypassword"
+
+  tasks:
+  - name: Create Resource Group for Azure Container Registry
+    azure_rm_resourcegroup:
+      name: "{{ resource_group_name }}"
+    register: resource_group_result
+
+  - name: Create Azure Container Registry
+    azure_rm_containerregistry:
+      resource_group: "{{ resource_group_name }}"
+      name: "{{ registry_name }}"
+      location: "{{ location }}"
+      admin_user: "{{ admin_user }}"
+      admin_password: "{{ admin_password }}"
+      sku: Premium
+      state: present
+    when: "resource_group_result.changed"
+    register: container_registry_result
+
+  - name: Ensure Container Registry is Idempotent
+    azure_rm_containerregistry:
+      name: "{{ registry_name }}"
+      resource_group: "{{ resource_group_name }}"
+      state: present
+    ignore_errors: yes
+
+  - name: Ensure Container Registry Properties
+    azure_rm_containerregistry_info:
+      registry_name: "{{ registry_name }}"
+      resource_group_name: "{{ resource_group_name }}"
+    register: acr_info_result
+
+  - name: Tag an Unavailable Image
+    azure_rm_containerregistry_tag:
+      name: "{{ server_url }}/invalidimage:latest"
+      repository: "hello-world"
+      resource_group: "{{ resource_group_name }}"
+      force: yes
+    ignore_errors: yes
+
+  - name: Push a New Image
+    azure_rm_containerregistry:
+      cmd: build
+      name: "{{ registry_name }}"
+      resource_group: "{{ resource_group_name }}"
+      image_source_type: repository
+      image_source: "https://github.com/Azure-Samples/acr-build-helloworld-node.git"
+      image_name: "hello-world:{{ inventory_hostname }}"
+      build_timeout: 500
+    when: "not container_registry_result.changed"
+
+  - name: Rename Image
+    azure_rm_containerregistry_tag:
+      name: "{{ server_url }}/hello-world:{{ inventory_hostname }}"
+      repository: "hola-mundo"
+      resource_group: "{{ resource_group_name }}"
+    when: "not container_registry_result.changed"
+
+  - name: Delete an Image using the azure_rm_containerregistry_image module
+    azure_rm_containerregistry_image:
+      registry_login_server: "{{ server_url }}"
+      name: "{{ server_url }}/hola-mundo:{{ inventory_hostname }}"
+      state: absent
+    ignore_errors: yes
+
+  - name: Delete an Image using the azure_rm_containerregistry_tag module
+    azure_rm_containerregistry_tag:
+      name: "{{ server_url }}/hola-mundo:{{ inventory_hostname }}"
+      repository: "hola-mundo"
+      resource_group: "{{ resource_group_name }}"
+      state: absent
+    when: "not container_registry_result.changed"

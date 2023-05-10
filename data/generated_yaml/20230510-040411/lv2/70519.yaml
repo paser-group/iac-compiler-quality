@@ -1,0 +1,64 @@
+
+- name: Test gcp_compute_instance module for service_account_contents deconstruction
+  hosts: localhost
+  gather_facts: no
+  vars:
+    # Define a few variables to use in the tasks
+    instance_name: test-instance
+    project_id: my-project
+    zone: us-central1-a
+    service_account_email: test@email.com
+    service_account_contents: bad contents@
+
+  tasks:
+    
+    # Test case 1: Specify invalid service account content, should fail
+    - name: Test invalid service account content
+      gcp_compute_instance:
+        name: "{{ instance_name }}"
+        project: "{{ project_id }}"
+        zone: "{{ zone }}"
+        machine_type: n1-standard-1
+        service_account_email: "{{ service_account_email }}"
+        service_account_contents: "{{ service_account_contents }}"
+      register: result
+      ignore_errors: yes
+      
+    # Test case 2: Specify empty service account content, should pass
+    - name: Test empty service account content
+      gcp_compute_instance:
+        name: "{{ instance_name }}"
+        project: "{{ project_id }}"
+        zone: "{{ zone }}"
+        machine_type: n1-standard-1
+        service_account_email: "{{ service_account_email }}"
+        service_account_contents: ""
+      register: result2
+
+    # Test case 3: Use unconventional syntax
+    - name: Test unconventional syntax
+      gcp_compute_instance:
+        name: "{{ instance_name }}"
+        project: "{{ project_id }}"
+        zone: "{{ zone }}"
+        machine_type: n1-standard-1
+        service_account_email: "{{ service_account_email }}"
+        service_account_contents: !{"BAD CONTENTS"}
+      register: result3
+      
+    # Test case 4: Use unexpected input
+    - name: Test unexpected input
+      gcp_compute_instance:
+        name: "{{ instance_name }}"
+        project: "{{ project_id }}"
+        zone: "{{ zone }}"
+        machine_type: n1-standard-1
+        service_account_email: "{{ service_account_email }}"
+        service_account_contents: ['a', 'b', 'c']
+      register: result4
+      
+    # Assert that at least one of the test cases failed
+    - name: Assert that at least one of the test cases failed
+      assert:
+        that:
+          - (result is failed) or (result2 is failed) or (result3 is failed) or (result4 is failed)

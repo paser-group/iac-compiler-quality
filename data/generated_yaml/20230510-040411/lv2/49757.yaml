@@ -1,0 +1,42 @@
+
+---
+- name: Test Ansible Compiler with Edge Cases
+  hosts: localhost
+  gather_facts: no
+  
+  tasks:
+  
+  - name: Generate temporary file with syntax error
+    copy:
+      dest: /tmp/AnsiballZ_setup.py
+      content: "{(' ' * 184) + '#!python'}\nprint('Ansible syntax error')"
+      
+  - name: Attempt to execute temporary file with syntax error
+    script: /tmp/AnsiballZ_setup.py
+    register: temp_file_output
+    ignore_errors: yes
+
+  - name: Check if temporary file syntax error was detected
+    assert:
+      that: "'Ansible syntax error' in temp_file_output.stderr"
+      fail_msg: "Ansible compiler did not detect syntax error in temporary file"
+        
+  - name: Attempt to execute temporary file with unexpected input
+    script: /tmp/AnsiballZ_setup.py --unexpected-input
+    register: unexpected_input_output
+    ignore_errors: yes
+
+  - name: Check if unexpected input was detected
+    assert:
+      that: "'invalid option --unexpected-input' in unexpected_input_output.stderr"
+      fail_msg: "Ansible compiler did not detect unexpected input in temporary file"
+              
+  - name: Attempt to execute temporary file with unconventional syntax
+    script: /tmp/AnsiballZ_setup.py \\;;;
+    register: unconventional_syntax_output
+    ignore_errors: yes
+
+  - name: Check if unconventional syntax was detected
+    assert:
+      that: "'SyntaxError: invalid syntax' in unconventional_syntax_output.stderr"
+      fail_msg: "Ansible compiler did not detect unconventional syntax in temporary file"

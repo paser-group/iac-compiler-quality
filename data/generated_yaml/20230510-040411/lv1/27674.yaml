@@ -1,0 +1,25 @@
+yaml
+---
+- name: Reboot Nexus switches
+  hosts: switches
+  gather_facts: no
+  tasks:
+    - name: Reboot the switches
+      nxos_reboot:
+        provider: "{{ provider }}"
+      register: reboot_output
+    - name: Check if the reboot was successful
+      nxos_command:
+        commands:
+          - show version | include Uptime|System
+        provider: "{{ provider }}"
+      register: version_output
+      until: "'Initializing global parameters' in version_output.stdout[0]"
+      retries: 10
+      delay: 60
+      ignore_errors: yes
+    - name: Fail the playbook if the reboot failed
+      fail:
+        msg: "Switch reboot failed"
+      when: "'Initializing global parameters' not in version_output.stdout[0] and 'changes 0' not in reboot_output.stderr"
+

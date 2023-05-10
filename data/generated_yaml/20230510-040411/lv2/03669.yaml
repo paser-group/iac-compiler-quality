@@ -1,0 +1,53 @@
+
+- name: Ansible playbook for lvol module int casting error
+  hosts: localhost
+  vars:
+    lvol_name: "{{ ['test-lvol-123', 'test-!@#$%^&*()-_=+[]{}\|;:\'",.<>/?`~\'', ''] | random }}"
+    int_var: "0.53"
+    invalid_path: "{{ ['"', "'", 'my""file', 'my\'file', 'path " with spaces', 'path\' with spaces'] | random }}" 
+  tasks:
+    - name: Create logical volume
+      lvol:
+        vg: "{{ lvol_name }}"
+        name: "{{ lvol_name }}"
+        size: "{{ int_var }}"
+      ignore_errors: yes
+
+    - name: Check logical volume is created
+      command: lvdisplay {{ lvol_name }}
+      ignore_errors: yes
+
+    - name: Remove logical volume
+      lvol:
+        vg: "{{ lvol_name }}"
+        name: "{{ lvol_name }}"
+        state: absent
+      register: remove_lvol
+      ignore_errors: yes
+
+    - name: Check logical volume is removed
+      command: lvdisplay {{ lvol_name }}
+      ignore_errors: yes
+
+    - name: Create logical volume with invalid path
+      lvol:
+        vg: "{{ invalid_path }}"
+        name: "{{ invalid_path }}"
+        size: "{{ int_var }}"
+      ignore_errors: yes
+
+    - name: Check logical volume with invalid path exists
+      command: lvdisplay {{ invalid_path }}
+      ignore_errors: yes
+
+    - name: Remove logical volume with invalid path
+      lvol:
+        vg: "{{ invalid_path }}"
+        name: "{{ invalid_path }}"
+        state: absent
+      register: remove_invalid_lvol
+      ignore_errors: yes
+
+    - name: Check logical volume with invalid path is removed
+      command: lvdisplay {{ invalid_path }}
+      ignore_errors: yes

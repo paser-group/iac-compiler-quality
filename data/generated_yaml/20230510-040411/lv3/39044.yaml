@@ -1,0 +1,30 @@
+
+- hosts: localhost
+  become: yes
+  gather_facts: no
+  
+  tasks:
+  - name: create a new directory and navigate to it
+    file:
+      path: /opt/newdirectory
+      state: directory
+          
+  - name: clone a GitHub repository with some Ansible roles and tasks
+    git:
+      repo: https://github.com/sample-repo.git
+      dest: /opt/newdirectory/sample-repo
+
+  - name: run ansible-galaxy list with missing search directories
+    command: ansible-galaxy list
+      
+    register: output
+    ignore_errors: yes
+      
+  - name: catch and log the error 
+    fail:
+      msg: "The ansible-galaxy command did not complete successfully."
+    when: "'FAILED!' in output.stderr"
+      
+  - name: notify the user of the error
+    debug:
+      var: output.stderr

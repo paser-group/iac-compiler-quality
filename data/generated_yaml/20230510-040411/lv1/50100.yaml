@@ -1,0 +1,27 @@
+yaml
+---
+- name: Example playbook for openstack plugin error in ansible-inventory 
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Debug openstack plugin error
+      command: ansible-inventory --list -i /path/to/inventory.ini
+      register: inventory_output
+
+    - name: Remove non-parsable error text
+      lineinfile:
+        path: /path/to/ansible.cfg
+        regexp: 'deprecation_warnings=False' 
+        line: 'deprecation_warnings=False'
+        backup: yes
+        state: present
+      when: "'The configuration file loaded' not in inventory_output.stdout_lines[0]"
+
+    - name: Check updated ansible.cfg is used for inventory
+      command: ansible-inventory --version
+      register: version_output
+
+    - name: Debug version after configuring ansible.cfg
+      debug: 
+        var: version_output.stdout_lines

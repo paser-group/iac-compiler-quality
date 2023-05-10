@@ -1,0 +1,31 @@
+yaml
+---
+- name: Install and Configure ansible-galaxy
+  hosts: all
+  become: yes
+  gather_facts: yes
+  tasks:
+    - name: Install ansible-galaxy
+      command: pip install ansible-galaxy
+      args:
+        creates: "/usr/local/bin/ansible-galaxy"
+      register: pip_install
+
+    - name: Configure ansible-galaxy
+      lineinfile:
+        path: /etc/ansible/ansible.cfg
+        line: "timeout = 60"
+      register: configure_galaxy
+      when: pip_install.changed
+
+    - name: Verify ansible-galaxy configuration
+      command: ansible-galaxy -h 2>&1 >/dev/null | grep 'timeout=60'
+      ignore_errors: yes
+      failed_when: false
+      register: verify_galaxy
+      when: configure_galaxy.changed
+
+    - name: Debug ansible-galaxy settings
+      debug:
+        var: ansible_galaxy_timeout
+      when: verify_galaxy|success

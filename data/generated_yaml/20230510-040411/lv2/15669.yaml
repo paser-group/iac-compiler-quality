@@ -1,0 +1,48 @@
+yaml
+---
+- name: WinRM Transport Kerberos authentication error
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Test WinRM Connectivity with Kerberos Authentication
+      win_ping:
+        transport: kerberos
+        timeout_sec: 30
+      register: winrm_ping
+
+    - name: Fail if WinRM Ping Fails
+      fail:
+        msg: "WinRM Ping Failed"
+      when: not winrm_ping.ping
+
+    - name: Test Domain Controller Connectivity
+      win_ping:
+        transport: kerberos
+        timeout_sec: 30
+        name: "{{ ansible_domain_controller }}"
+
+    - name: Fail if Domain Controller Ping Fails
+      fail:
+        msg: "Domain Controller Ping Failed"
+      when: not winrm_ping.ping
+
+    - name: Create Kerberos Ticket
+      win_command: kinit -k
+
+    - name: Test Successful Kerberos Authentication
+      win_shell: whoami
+      register: kerberos_result
+
+    - name: Fail if Kerberos Authentication Fails
+      fail:
+        msg: "Kerberos Authentication Failed"
+      when: "not 'DOMAIN\\' in kerberos_result.stdout"
+
+    - name: Test Windows Logs for Authentication Failure
+      win_shell: Get-WinEvent -LogName 'Security' -FilterXPath "*[System[(EventID=4625) and TimeCreated[timediff(@SystemTime) <= 86400000]]]"
+      register: windows_logs
+
+    - name: Check if Authentication Failure is Logged as Success
+      fail:
+        msg: "Kerberos Authentication Logged as Success in Windows Logs"
+      when: "'Kerberos' in windows_logs.stdout and 'Success' in windows_logs.stdout"

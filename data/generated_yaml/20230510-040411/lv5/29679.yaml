@@ -1,0 +1,28 @@
+
+- name: Assume an IAM role
+  sts_assume_role:
+    role_arn: "{{ role_arn }}"
+    duration_seconds: "{{ duration_seconds }}"
+    role_session_name: "{{ role_session_name }}"
+  register: assumed_role
+
+- name: Update IAM username
+  aws_iam_user:
+    name: "{{ iam_username }}"
+    state: present
+    access_key: "{{ assumed_role.sts_creds.access_key }}"
+    secret_key: "{{ assumed_role.sts_creds.secret_key }}"
+    security_token: "{{ assumed_role.sts_creds.session_token }}"
+    new_username: "{{ new_username }}"
+
+- name: Verify updated IAM username
+  aws_iam_user_facts:
+    name: "{{ iam_username }}"
+    access_key: "{{ assumed_role.sts_creds.access_key }}"
+    secret_key: "{{ assumed_role.sts_creds.secret_key }}"
+    security_token: "{{ assumed_role.sts_creds.session_token }}"
+  register: iam_user_facts
+
+- assert:
+    that:
+    - "{{ iam_username }} == {{ new_username }}"

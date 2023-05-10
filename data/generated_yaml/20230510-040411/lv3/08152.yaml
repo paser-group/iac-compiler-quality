@@ -1,0 +1,40 @@
+yaml
+---
+
+- name: Netscaler module auth and JSON decode errors test playbook
+  hosts: localhost
+  gather_facts: False
+  tasks:
+
+    - name: Attempt authentication using incorrect credentials
+      netscaler_service:
+        hostname: "{{ inventory_hostname }}"
+        username: "username"
+        password: "password"
+        protocol: "https"
+        action: "authenticate"
+      register: auth_result
+      ignore_errors: true
+
+    - name: Print authentication result
+      debug:
+        msg: "{{ auth_result }}"
+
+    - name: Create JSON file with decode error
+      copy:
+        content: "{'key': 'value'}"
+        dest: /tmp/jsonfile.json
+
+    - name: Attempt to decode JSON file
+      vars:
+        json_file: /tmp/jsonfile.json
+      set_fact:
+        decoded_json: "{{ lookup('file', json_file) }}"
+      register: decode_result
+      ignore_errors: true
+
+    - name: Print JSON decode result
+      debug:
+        msg: "{{ decode_result }}"
+
+...

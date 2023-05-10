@@ -1,0 +1,59 @@
+yml
+---
+- hosts: localhost
+  connection: local
+  gather_facts: false
+  
+  tasks:
+    - name: Create EC2 instance with unconventional syntax
+      ec2_instance:
+        group: "{{ 'my-group' }}"
+        key_name: "{{['my-key', 'my-other-key'] | random}}"
+        count: "{{[1,2,3] | random}}"
+        instance_ids: "{{['i-abc123', 'i-def456'] | random}}"
+        wait: "{{ item | default(false) }}"
+        instance_tags: ["{{ item }}"]
+        region: "{{ ['us-west-1', 'us-east-2'] | random }}"
+        image_id: "ami-123456"
+        instance_type: "{{ ['t2.micro', 't2.nano'] | random }}"
+        network_interfaces:
+          - device_index: "{{[0,1,2] | random}}"
+            network_interface_id: "{{ ['eni-123456', 'eni-789012'] | random}}"
+            delete_on_termination: "{{[True, False] | random}}"
+            associate_public_ip_address: "{{ item | default(False)}}"
+            subnet_id: "{{ ['subnet-123456', 'subnet-789012'] | random}}"
+            description: "{{ ['test', 'unconventional-syntax'] | random }}"
+        state: present
+      loop: "{{ [True, False] }}"
+      register: ec2_instance
+
+    - name: Trigger timeout error
+      ec2_instance:
+        group: "{{ 'my-group' }}"
+        key_name: "{{['my-key', 'my-other-key'] | random}}"
+        count: "{{[1,2,3] | random}}"
+        instance_tags: "{{['tag1', 'tag2'] | random}}"
+        region: "{{ ['us-west-1', 'us-east-2'] | random }}"
+        image_id: "ami-123456"
+        instance_type: "{{['t2.micro', 't2.nano'] | random }}"
+        network_interfaces: "{{ item }}"
+        state: "{{ 'creating' }}"
+      loop:
+        - "{}"
+        - "{{['device_index': 1]}}"
+        - "{{['device_index': 1, 'subnet_id': 'subnet-123456']}}"
+        - "{{['device_index': 1, 'network_interface_id': 'eni-789012']}}"
+        - "{{['device_index': 1, 'delete_on_termination': 'True']}}"
+        - "{{['device_index': 1, 'associate_public_ip_address': 'True']}}"
+        - "{{['device_index': 1, 'delete_on_termination': 'True', 'subnet_id': 'subnet-123456', 'associate_public_ip_address': 'True']}}"
+        - "{{['device_index': 1, 'delete_on_termination': 'True', 'subnet_id': 'subnet-123456', 'network_interface_id': 'eni-789012', 'associate_public_ip_address': 'True']}}"
+      register: ec2_timeout
+
+    - name: Fail if EC2 instance timed out
+      assert:
+        that:
+          - 'ec2_timeout | failed'
+
+    - name: Debug output
+      debug:
+        var: ec2_instance

@@ -1,0 +1,41 @@
+
+- hosts: localhost
+  vars:
+    healthy_threshhold: "{{ 2 }}"
+    unhealthy_threshhold: "{{ 3 }}"
+    # edge cases
+    test_value_1: "{{ 0 }}"
+    test_value_2: "{{ 32768 }}"
+    # unconventional syntax
+    test_value_3: "{{ 2 ** (2 + 2 + 2) }}"
+    test_value_4: "{% if (2 + 3) <= 5 %}5{% else %}10{% endif %}"
+    # unexpected inputs
+    test_value_5: "{{ '2' }}"
+    test_value_6: "{{ ('2' + '3') | int }}"
+  
+  tasks:
+    - name: Execute gcp_healthcheck module with invalid thresholds
+      gcp_healthcheck:
+        project: test_project
+        healthy_threshhold: "{{ test_value_1 }}"
+        unhealthy_threshhold: "{{ test_value_2 }}"
+      register: result_1
+      ignore_errors: true
+      
+    - name: Execute gcp_healthcheck module with unconventional syntax
+      gcp_healthcheck:
+        project: test_project
+        healthy_threshhold: "{{ test_value_3 }}"
+        unhealthy_threshhold: "{{ test_value_4 }}"
+      register: result_2
+      ignore_errors: true
+      
+    - name: Execute gcp_healthcheck module with unexpected input
+      gcp_healthcheck:
+        project: "{{ test_value_5 }}"
+        healthy_threshhold: "{{ test_value_6 }}"
+        unhealthy_threshhold: "{{ test_value_5 }}"
+      register: result_3
+      ignore_errors: true
+      
+    # Additional tasks can be tailored to stress test the Ansible compiler

@@ -1,0 +1,32 @@
+yaml
+- name: Fix V2 bug: Can't pickle <type 'module'>
+  hosts: all
+  become: true
+  tasks:
+    - name: Install missing Python module dependencies
+      pip:
+        name: "{{ item }}"
+      with_items:
+        - dill
+        - cloudpickle
+      when: ansible_python_version < '3.0'
+
+    - name: Patch Python default pickle module
+      blockinfile:
+        path: /usr/lib/python2.7/pickle.py
+        block: |
+          try:
+              from dill import Pickler, Unpickler
+              import cloudpickle
+
+              def my_pickler(file, protocol=None):
+                  return Pickler(file, protocol=protocol)
+
+              def my_unpickler(file):
+                  return cloudpickle.load(file)
+
+              pickle = my_pickler
+              unpickle = my_unpickler
+          except ImportError:
+              pass
+      when: ansible_python_version < '3.0'

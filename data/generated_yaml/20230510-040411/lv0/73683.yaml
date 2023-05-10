@@ -1,0 +1,24 @@
+
+- name: Create directories
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Create directory with correct path
+      file:
+        path: /my/valid/directory
+        state: directory
+      register: result1
+
+    - name: Create directory with incorrect path
+      file:
+        path: /my/invalid/directory/subdirectory
+        state: directory
+      ignore_errors: yes
+      register: result2
+
+    - name: Fail the playbook if directory creation failed
+      fail:
+        msg: "Failed to create directory: {{ item.item.path }}"
+      loop: "{{ [result1, result2] }}"
+      when: item.failed == true

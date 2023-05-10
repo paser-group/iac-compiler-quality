@@ -1,0 +1,49 @@
+
+- name: Create VPC and subnets
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    vpc_name: "myvpc"
+    region: "us-west-2"
+    cidr_block: "10.0.0.0/16"
+
+    subnets:
+      - name: "subnet1"
+        cidr: "10.0.1.0/24"
+        az: "us-west-2a"
+      - name: "subnet2"
+        cidr: "10.0.2.0/24"
+        az: "us-west-2b"
+
+  tasks:
+    - name: Create VPC
+      ec2_vpc:
+        state: present
+        region: "{{ region }}"
+        cidr_block: "{{ cidr_block }}"
+        resource_tags:
+          Name: "{{ vpc_name }}"
+        wait: true
+      register: vpc_result
+
+    - name: Create subnets
+      ec2_vpc_subnet:
+        state: present
+        region: "{{ region }}"
+        vpc_id: "{{ vpc_result.vpc.id }}"
+        cidr: "{{ item.cidr }}"
+        az: "{{ item.az }}"
+        resource_tags:
+          Name: "{{ vpc_name }}-{{ item.name }}"
+      with_items: "{{ subnets }}"
+      register: subnet_result
+
+    - name: Wait for subnets to be created
+      wait_for:
+        host: "{{ subnet_result.results[item].subnet.id }}"
+        port: 22
+        state: started
+        delay: 1
+        timeout: 60
+      with_sequence: start=0 end="{{ (subnets|length)-1 }}"

@@ -1,0 +1,21 @@
+
+- name: Test Win_DSC PSCredential conversion error
+  hosts: windows_hosts
+
+  tasks:
+    - name: Create PSCredential object
+      win_pscredential:
+        username: "{{ username }}"
+        password: "{{ password }}"
+      register: pscredential   
+
+    - name: Test Authentication with PSCredential    
+      win_ping:
+        register: ping
+        become_user: "{{ pscredential.username }}"
+        become_pass: "{{ pscredential.password }}"
+    
+    - name: Check Ping Results
+      when: "'pong' not in ping.stdout"
+      fail: 
+        msg: "Ping was unsuccessful"

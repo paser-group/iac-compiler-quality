@@ -1,0 +1,54 @@
+yaml
+- hosts: example_host
+  gather_facts: false
+
+  tasks:
+  - name: run command as remote user with incorrect syntax
+    command: /bin/sh -c 'echo "hello world'; exit 0'
+    become: true
+    become_user: some_valid_username_not_included_in_the_host's_sudoers_file
+
+  - name: run command using sudo with invalid syntax
+    command: /bin/sh -c 'echo "hello world"; exit 0'
+    become: true
+    become_method: sudo
+    become_user: nonexistent_user
+
+  - name: run command on path not present on remote host
+    command: /usr/bin/thisprogramdoesnotexist
+    ignore_errors: true
+
+  - name: run command that produces large output
+    command: /usr/bin/head -c 1000000000 /dev/urandom
+
+  - name: run task that cannot be executed due to incorrect syntax
+    shell: 'echo "hello world'
+    args:
+      executable: /bin/bash
+
+  - name: run shell on multiple hosts with different number of arguments
+    shell: 'echo {{ item.0 }} {{ item.1 }} {{ item.2 }}'
+    with_items:
+      - [1, 2]
+      - [1, 2, 3, 4]
+
+  - name: run shell script with invalid argument
+    shell: /path/to/script.sh --invalid-option
+
+  - name: run command that produces error message on remote target
+    command: /usr/bin/false
+    register: result
+    failed_when: result.rc == 0
+
+  - name: run command that produces warning message on remote target
+    command: /usr/bin/warning-command
+    no_log: true
+
+  - name: run command with invalid exit code
+    command: /usr/bin/foo-command
+    register: result
+    failed_when: result.rc == 1 or result.rc == 2
+
+  - name: run command with unlimited output
+    command: /usr/bin/head -c 1000000000 /dev/urandom | gzip
+    no_log: true

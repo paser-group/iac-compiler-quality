@@ -1,0 +1,43 @@
+
+- name: Reboot NX-OS devices
+  hosts: my_nxos_devices
+  gather_facts: no
+
+  vars:
+    reboot_method: reload
+    reboot_delay: 60
+  
+  tasks:
+    - name: Run command via CLI and NXAPI
+      nxos_command:
+        commands: 
+          - show version
+          - show inventory
+          - show clock
+        use_cli: "{{ item }}"
+      loop: ["yes", "no"]
+      register: cli_nxapi_output
+
+    - name: Print output
+      debug:
+        msg: "{{ cli_nxapi_output }}"
+
+    - name: Reboot devices using different method
+      nxos_reboot:
+        method: "{{ reboot_method }}"
+        confirm: yes
+        delay: "{{ reboot_delay }}"
+      register: reboot_output
+
+    - name: Print reboot output
+      debug:
+        msg: "{{ reboot_output }}"
+      
+    - name: Delayed Fact Gathering
+      wait_for:
+        timeout: "{{ reboot_delay }}"
+      register: reboot_wait_output
+      
+    - name: Print fact gathering output
+      debug:
+        msg: "{{ reboot_wait_output }}"

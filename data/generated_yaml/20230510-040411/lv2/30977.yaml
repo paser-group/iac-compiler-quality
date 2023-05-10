@@ -1,0 +1,60 @@
+
+- name: Test playbook for Python3 YAML inventory parsing error
+  hosts: all
+  gather_facts: no
+  
+  vars:
+    # Define an inventory file with unconventional syntax
+    inventory: |
+      10.0.0.2:
+        ansible_python_interpreter: /usr/bin/env python3
+        some_var: ['hello', {'test': None, 'eggs': {'spam': {'monty': 'python'}}}, 42]
+      [webservers]
+      10.0.0.3:
+        ansible_python_interpreter: /usr/bin/env python3
+        some_var: "{{ foo | default }}"
+
+    # Define a list of YAML files with unexpected inputs
+    yaml_files:
+      - file1.yml
+      - file2.yml
+      - file3.yml
+
+  tasks:
+    - name: Print inventory
+      debug:
+        var: inventory
+
+    - name: Create a temporary directory
+      tempfile:
+        state: directory
+      register: temp_dir
+
+    - name: Copy YAML files to temp directory
+      copy:
+        src: "{{ item }}"
+        dest: "{{ temp_dir.path }}"
+      with_items: "{{ yaml_files }}"
+
+    - name: Parse YAML files
+      include_vars:
+        dir: "{{ temp_dir.path }}"
+
+    - name: Execute a shell command that requires Python3
+      shell: "python3 -c 'import sys; print(sys.version)'"
+      
+    - name: Execute a shell command with special characters
+      shell: "echo 'Hello $!@ World'"
+
+    - name: Execute a command that will timeout
+      command: /bin/sleep 10
+      async: 5
+      poll: 0
+
+    - name: Execute a command that will fail
+      command: /bin/false
+      ignore_errors: true
+
+    - name: Pause for 5 seconds
+      pause:
+        seconds: 5

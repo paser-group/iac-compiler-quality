@@ -1,0 +1,20 @@
+
+- name: Test Ansible's async behavior for unreachable services
+  hosts: target-host
+  tasks:
+    - name: Ping target host to verify connectivity
+      ping:
+
+    - name: Send HTTP request to a service that is not available
+      uri:
+        url: "http://unreachable_service_url"
+        method: GET
+        async: 30
+        poll: 5
+      async_status:
+        jid: "{{ item }}"
+      register: async_result
+      loop: "{{ query('sequence', '1..10') }}"
+      retries: 3
+      delay: 30
+      until: async_result.finished

@@ -1,0 +1,40 @@
+
+- name: Testing nxos_pim_rp_address
+  nxos_pim_rp_address:
+    address: "invalid_address"
+    interface: "lo0"
+    rp_address: "invalid_rp"
+    multicast_group: "224.0.0.0/24"
+    vrf: "test_vrf"
+    state: present
+  register: pim_result
+
+- name: Asserting error with CliTransport
+  assert:
+    that:
+      - "'Error' in pim_result.stderr_lines"
+  when: ansible_transport == "cli"
+
+- name: Asserting error with NxapiTransport
+  assert:
+    that:
+      - "'Error' in pim_result.json | from_json | json_query('output.errors')"
+  when: ansible_transport == "nxapi"
+
+- name: Fuzz testing with invalid inputs
+  nxos_pim_rp_address:
+    address: "{{ item.address }}"
+    interface: "{{ item.interface }}"
+    rp_address: "{{ item.rp_address }}"
+    multicast_group: "{{ item.multicast_group }}"
+    vrf: "{{ item.vrf }}"
+    state: present
+  with_items:
+    - {address: "invalid_address", interface: "lo0", rp_address: "invalid_rp", multicast_group: "224.0.0.0/24", vrf: "test_vrf"}
+    - {address: "invalid_address", interface: "lo1", rp_address: "invalid_rp", multicast_group: "224.0.0.0/24", vrf: "test_vrf"}
+    - {address: "invalid_address", interface: "eth0", rp_address: "invalid_rp", multicast_group: "224.0.0.0/24", vrf: "test_vrf"}
+  register: fuzz_result
+  
+- name: Debug output for fuzz testing
+  debug:
+    var: fuzz_result

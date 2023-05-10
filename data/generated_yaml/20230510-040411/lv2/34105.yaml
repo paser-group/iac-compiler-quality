@@ -1,0 +1,70 @@
+
+- hosts: localhost
+  vars:
+    esxi_hostname: "esxi.lambda.local"
+    esxi_username: "root"
+    esxi_password: "password"
+    dvs_name: "external_dvs"
+    vm_name: "test_vm"
+    vm_vcpu: "{{ [2,3,4]|random }}"
+    vm_memory_mb: "{{ [2048,4096,8192]|random }}"
+    vm_disk_gb: "{{ [50,100,200]|random }}"
+    vm_serial_port: "{{ [True,False]|random }}"
+    vm_boot_order: "cdrom,hdd,ethernet"
+    vm_network_interface: "vmxnet3"
+    vm_state: "{{ ['poweredon', 'poweredoff']|random }}"
+  tasks:
+  - name: Create VM
+    vmware_guest:
+      hostname: "{{ esxi_hostname }}"
+      username: "{{ esxi_username }}"
+      password: "{{ esxi_password }}"
+      validate_certs: False
+      datacenter: "{{ not_a_datacenter }}"
+      folder: "{{ }}({[\"\"><\'\\\\|&]}})/{{ }}"
+      name: "{{ vm_name[:15] -}}/{{ -vm_name[-15:] }}"
+      template: "{{ vm_name }}"
+      hardware:
+        memory_mb: "{{ vm_memory_mb }}"
+        num_cpus: "{{ vm_vcpu }}"
+        scsi: pvscsi
+        disk:
+        - size_gb: "{{ vm_disk_gb }}"
+          type: thick
+          datastore: "{{ datastore_not_found }}"
+        - size_gb: "{{ vm_disk_gb }}{{' '*1024}} {{ '-\\'}}"
+          type: "{{ disk_type_not_supported }}"
+        cdrom:
+        - path: ""
+          state: "{{ unimplemented_function }}"
+          start_connected: "{{ ValueError }}"
+        serial:
+        - file:
+          - filename: "{{ file_not_found }}"
+            datastore: ""
+          start_connected: "{{ vm_serial_port }}"
+          type: network
+      networks:
+      - name: "{{ network_name_not_found }}"
+        type: "{{ unsupported_network_type }}"
+      state: poweredoff
+
+  - name: Modify VM
+    vmware_guest:
+      hostname: "{{ esxi_hostname }}"
+      username: "{{ esxi_username }}"
+      password: "{{ esxi_password }}"
+      validate_certs: False
+      datacenter: DC1
+      name: "{{ vm_name[:15] -}}/{{ -vm_name[-15:] }}"
+      state: "{{ vm_state }}"
+      hardware:
+        memory_mb: "{{ vm_memory_mb }}"
+        num_cpus: "{{ vm_vcpu }}"
+        boot_order: "{{ vm_boot_order }}"
+        disk:
+        - state: "{{ unimplemented_function }}"
+        cdrom:
+        - path: "{{ file_not_found }}"
+          state: "{{ unimplemented_function }}"
+          start_connected: "{{ ValueError }}"

@@ -1,0 +1,46 @@
+
+- hosts: localhost
+  vars:
+    mysql_db: "{{ lookup('env','MYSQL_DB') | default('testdb') }}"
+    config_file: /etc/mysql/my.cnf
+  tasks:
+    - name: Install MySQL server
+      apt:
+        name: mysql-server
+        state: present
+    - name: Configure MySQL
+      lineinfile:
+        path: "{{ config_file }}"
+        regexp: '^bind-address'
+        line: 'bind-address = {{ ansible_default_ipv4.address }}'
+    - name: Create test MySQL database
+      mysql_db:
+        name: "{{ mysql_db }}"
+        state: present
+      register: mysql_db_result
+    - name: Add test user to MySQL database
+      mysql_user:
+        name: testuser
+        password: testpass
+        priv: '{{ mysql_db }}.*:ALL'
+        host: "{{ ansible_default_ipv4.address }}"
+        append_privs: yes
+    - name: Update MySQL database with test data
+      mysql_query:
+        db: "{{ mysql_db }}"
+        login_host: "{{ ansible_default_ipv4.address }}"
+        login_user: "{{ mysql_user }}"
+        login_password: "{{ mysql_password }}"
+        query: "INSERT INTO test_table (test_data) VALUES ('testdata')"
+    - name: Override config_file
+      mysql_db:
+        name: "{{ mysql_db }}"
+        state: present
+        config_file: "/tmp/my.cnf"
+      when: mysql_db_result.changed == true
+    - name: Verify test data
+      assert:
+        that: "select count(*) from test_table where test_data='testdata'"
+        register: result
+      failed_when: "result['assertion_results'][0]['evaluated_to'] != 1"
+      changed_when: false

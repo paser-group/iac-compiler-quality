@@ -1,0 +1,35 @@
+
+- name: Test eos_banner with unicode
+  hosts: all
+
+  vars:
+    message: "EOS banner with unicode: é ¿ ? #"
+
+  tasks:
+    - name: Create banner file
+      eos_banner:
+        banner: "{{ message }}"
+        state: present
+        idempotent: True
+        unicode: False
+
+    - name: Repeat banner creation
+      eos_banner:
+        banner: "{{ message }}"
+        state: present
+        idempotent: True
+        unicode: True
+
+    - name: Check banner contents
+      shell: cat /etc/eos_banner
+      register: banner
+
+    - name: Compare banner to expected message
+      assert:
+        that:
+          - message in banner.stdout
+
+    - name: Delete banner file
+      eos_banner:
+        banner: "{{ message }}"
+        state: absent

@@ -1,0 +1,28 @@
+
+- name: Test for ovirt_nic errors
+  hosts: [target_host]
+  gather_facts: no
+  
+  vars:
+    dc: BUA
+    new_net: invalid_net
+    old_net: infra-prod
+
+  tasks:
+    - name: Configure ovirt_nic with new network
+      ovirt_nic:
+        data_center: "{{ dc }}"
+        name: nic1
+        network: "{{ new_net }}"
+      ignore_errors: yes
+
+    - name: Check if network exists  
+      ovirt_network_facts:
+        data_center: "{{ dc }}"
+        name: "{{ old_net }}"
+      register: net_facts
+
+    - name: Fail if network does not exist  
+      fail:
+        msg: "Network '{{ old_net }}' was not found in datacenter '{{ dc }}'."
+      when: "'{{ old_net }}' not in {{ net_facts.ovirt_networks | map(attribute='name') | list }}"

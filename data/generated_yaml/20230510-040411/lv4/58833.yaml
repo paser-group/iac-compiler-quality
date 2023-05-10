@@ -1,0 +1,72 @@
+
+- name: Test the S3 lifecycle module
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+  - name: Test the s3_lifecycle with expected parameters
+    s3_lifecycle:
+      prefix: my_bucket/
+      rules:
+        - id: Delete non-current versions more than 365 days old
+          status: Enabled
+          transitions:
+            - days: 365
+              storage_class: GLACIER
+          noncurrent_version_transitions:
+            - noncurrent_days: 365
+              storage_class: GLACIER
+          expiration:
+            days: 3650
+
+  - name: Test the s3_lifecycle module with missing prefix
+    s3_lifecycle:
+      rules:
+        - id: Delete non-current versions more than 365 days old
+          status: Enabled
+
+  - name: Test the s3_lifecycle module with missing rules
+    s3_lifecycle:
+      prefix: my_bucket/
+
+  - name: Test the s3_lifecycle module with incorrect prefix and valid rules
+    s3_lifecycle:
+      prefix: my_bucket
+      rules:
+        - id: Delete non-current versions more than 365 days old
+          status: Enabled
+
+  - name: Test the s3_lifecycle module with correct prefix and invalid rule
+    s3_lifecycle:
+      prefix: my_bucket/
+      rules: []
+
+  - name: Test the s3_lifecycle module with invalid transition date
+    s3_lifecycle:
+      prefix: my_bucket/
+      rules:
+        - id: Delete non-current versions more than 365 days old
+          status: Enabled
+          transitions:
+            - days: invalid
+              storage_class: GLACIER
+          noncurrent_version_transitions:
+            - noncurrent_days: invalid
+              storage_class: GLACIER
+          expiration:
+            days: invalid
+
+  - name: Test the s3_lifecycle module with a file instead of a path
+    s3_lifecycle:
+      prefix: "{{ lookup('file', 'path/to/file') }}"
+      rules:
+        - id: Delete non-current versions more than 365 days old
+          status: Enabled
+          transitions:
+            - days: 365
+              storage_class: GLACIER
+          noncurrent_version_transitions:
+            - noncurrent_days: 365
+              storage_class: GLACIER
+          expiration:
+            days: 3650

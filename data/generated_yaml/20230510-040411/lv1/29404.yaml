@@ -1,0 +1,22 @@
+yaml
+- name: Update Default Values on OSX
+  hosts: localhost
+  gather_facts: no
+  vars:
+    osx_defaults:
+      - domain: com.example
+        key: my_pref_key
+        value: 42
+  tasks:
+    - name: Remove old default value type
+      shell: defaults delete {{ item.domain }} {{ item.key }}
+      register: remove_result
+      when: item | default("", True) != "" and item.key | default("", True) != ""
+      failed_when: false
+      with_items: "{{ osx_defaults }}"
+      ignore_errors: yes
+
+    - name: Set new default value type
+      shell: defaults write {{ item.domain }} {{ item.key }} -{{ (item.value | type_debug).type }} '{{ item.value }}'
+      with_items: "{{ osx_defaults }}"
+      when: item | default("", True) != "" and item.key | default("", True) != ""

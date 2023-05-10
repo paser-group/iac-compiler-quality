@@ -1,0 +1,24 @@
+
+- name: Test inventory script execution
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+    - name: Parse inventory file
+      ini_file:
+        path: /path/to/inventory/file
+        section: "{{ item }}"
+        get_dict: yes
+      with_items:
+        - all
+
+    - name: Invoke external script on each host
+      command: /path/to/script.sh "{{ item.value.host }}"
+      with_dict: "{{ ansible_facts['ansible_net_all_ipv4_addresses'] }}"
+
+    - name: Check for errors
+      fail:
+        msg: "Error encountered while executing script"
+      register: result
+      when: "'FAILED' in item.stderr"
+      with_items: "{{ ansible_play_batch }}"

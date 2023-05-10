@@ -1,0 +1,42 @@
+
+---
+- name: Test Docker Container Error Handling
+  hosts: localhost
+  gather_facts: false
+  
+  vars:
+    container_name: "test-container"
+    image_name: "busybox"
+    retry_interval: 5
+  
+  tasks:
+  
+  - name: Remove Container if Exists
+    docker_container:
+      name: "{{ container_name }}"
+      state: absent
+    ignore_errors: true 
+  
+  - name: Pull Image from Registry
+    docker_image:
+      name: "{{ image_name }}"
+      pull: yes
+    register: docker_image_result
+  
+  - fail:
+      msg: "Failed to Pull Docker Image from Registry: {{ image_name }}"
+    when: docker_image_result.rc != 0
+    
+  - name: Run Container and Fail on Error 500
+    docker_container:
+      name: "{{ container_name }}"
+      image: "{{ image_name }}"
+      state: started
+      retries: 5
+      retry_delay: "{{ retry_interval }}"
+      pull: yes
+    register: docker_container_result
+  
+  - fail:
+      msg: "Failed to Start Docker Container: {{ container_name }}"
+    when: docker_container_result.rc != 0

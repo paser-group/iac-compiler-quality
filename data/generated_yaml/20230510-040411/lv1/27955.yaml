@@ -1,0 +1,23 @@
+yaml
+---
+- name: Ensure default ACL entries are not removed
+  hosts: <target_host>
+  become: true
+
+  tasks:
+    - name: Get current ACL settings
+      acl:
+        path: <file_path>
+        follow: yes
+        get: yes
+      register: acl_settings
+
+    - name: Update ACL settings
+      acl:
+        path: <file_path>
+        recursive: yes
+        entry:
+          - "{{ item }}"
+        state: present
+      with_items: "{{ acl_settings.acl }}"
+      when: not (item.state == 'absent' and item.default == true)

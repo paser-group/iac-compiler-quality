@@ -1,0 +1,100 @@
+yaml
+- name: Test playbook for vmware_guest vim.fault.NoPermission
+  hosts: all
+  gather_facts: no
+  vars:
+    vcenter_hostname: "{{ hostvars['localhost']['vcenter_hostname'] }}"
+    vcenter_username: "{{ hostvars['localhost']['vcenter_username'] }}"
+    vcenter_password: "{{ hostvars['localhost']['vcenter_password'] }}"
+  tasks:
+    - name: Create VM with insufficient permissions (valid user, invalid role)
+      when: "'2.5.0a1' in ansible_version.full"
+      vmware_guest:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        name: "test_vm1"
+        template: "CentOS 8"
+        folder: "/vm/test"
+        state: present
+        disk:
+          - size_gb: 20
+            type: thin
+        datastore: "vsanDatastore"
+        network_interfaces:
+          - network_label: "VM Network"
+            type: "vmxnet3"
+        vm_extra_config:
+          vcpu.hotadd: "yes"
+          mem.hotadd: "no"
+        wait_for_ip_address: no
+      delegate_to: localhost
+      register: create_vm
+
+    - name: Fail task if previous task fails
+      failed_when: create_vm.failed
+
+    - name: Create VM with insufficient permissions (invalid user, valid role)
+      when: "'2.5.0a1' not in ansible_version.full"
+      vmware_guest:
+        hostname: "{{ vcenter_hostname }}"
+        username: "testuser"
+        password: "testpassword"
+        name: "test_vm2"
+        template: "CentOS 8"
+        folder: "/vm/test"
+        state: present
+        disk:
+          - size_gb: 20
+            type: thin
+        datastore: "vsanDatastore"
+        network_interfaces:
+          - network_label: "VM Network"
+            type: "vmxnet3"
+        vm_extra_config:
+          vcpu.hotadd: "yes"
+          mem.hotadd: "no"
+        wait_for_ip_address: no
+      delegate_to: localhost
+      register: create_vm_invalid_user
+
+    - name: Fail task if previous task fails
+      failed_when: create_vm_invalid_user.failed
+
+    - name: Power on VM
+      when: "'2.5.0a1' not in ansible_version.full"
+      vmware_guest:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        name: "test_vm2"
+        state: poweredon
+      delegate_to: localhost
+      register: power_on_vm
+
+    - name: Fail task if previous task fails
+      failed_when: power_on_vm.failed
+
+    - name: Check datastore usage
+      vmware_datastore_facts:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+      delegate_to: localhost
+      register: datastore_facts
+  
+    - name: Fail task if previous task fails
+      failed_when: datastore_facts.failed
+
+    - name: Destroy VMs
+      vmware_guest:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        name: "test_vm*"
+        state: absent
+      delegate_to: localhost
+      register: destroy_vms
+
+    - name: Fail task if previous task fails
+      failed_when: destroy_vms.failed

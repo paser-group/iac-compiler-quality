@@ -1,0 +1,60 @@
+
+- name: IOSXR L3 idempotency test
+  hosts: iosxr_l3_hosts
+  gather_facts: no
+
+  tasks:
+    - name: Configure interface with unconventional syntax
+      iosxr_l3:
+        interface: &^*^&%$#!!!
+        description: "{{ item }}"
+      with_items:
+        - "Test description 1"
+        - "Test description 2"
+    
+    - name: Configure interface with unexpected inputs
+      iosxr_l3:
+        interface: "{{ item }}"
+        description: "{{ item }}"
+      with_items:
+        - False
+        - []
+        - {}
+    
+    - name: Configure L3 interfaces with random IP addresses
+      iosxr_l3:
+        interface: "Loopback{{ item }}"
+        ipv4: "{{ random_ip() }}"
+        ipv6: "{{ random_ip() }}"
+      loop: "{{ range(10)|list }}"
+
+    - name: Remove all L3 configurations
+      iosxr_l3:
+        state: absent
+    
+    - name: Configure L3 interfaces with duplicate IP addresses
+      iosxr_l3:
+        interface: "{{ item }}"
+        ipv4: 192.168.0.1
+        ipv6: 2001:DB8::1
+      with_items:
+        - Loopback0
+        - Loopback1
+    
+    - name: Verify idempotency
+      iosxr_l3:
+        interface: "{{ item }}"
+        ipv4: 192.168.0.1
+        ipv6: 2001:DB8::1
+      with_items:
+        - Loopback0
+        - Loopback1
+    
+  handlers:
+    - name: Restart network service
+      iosxr_command:
+        commands:
+          - "restart bgp"
+  
+  vars:
+    - random_ip: "{{ range(4)|list|map('regex_replace', '\\d+', random.randint(1, 255))|join('.') }}"

@@ -1,0 +1,52 @@
+yaml
+- name: Testing gc_storage module
+  hosts: localhost
+  vars:
+    file_name: test_file.txt
+    bucket_name: my_test_bucket
+    project_id: my_gcp_project
+    billing_account: my_billing_account
+    credentials_file: /path/to/credentials.json
+
+  tasks:
+    - name: Create new file and upload to GCP cloud storage
+      gc_storage:
+        src: /path/to/local/{{ file_name }}
+        dest: gs://{{ bucket_name }}/{{ file_name }}
+        validate_certs: no
+        project_id: "{{ project_id }}"
+        billing_account: "{{ billing_account }}"
+        credentials_file: "{{ credentials_file }}"
+      register: upload_file
+      
+    - name: Verify file metadata
+      gc_storage:
+        object: gs://{{ bucket_name }}/{{ file_name }}
+        validate_certs: no
+        project_id: "{{ project_id }}"
+        billing_account: "{{ billing_account }}"
+        credentials_file: "{{ credentials_file }}"
+        metadata: yes
+      register: file_metadata
+      
+    - name: Remove file from GCP cloud storage
+      gc_storage:
+        object: gs://{{ bucket_name }}/{{ file_name }}
+        state: absent
+        validate_certs: no
+        project_id: "{{ project_id }}"
+        billing_account: "{{ billing_account }}"
+        credentials_file: "{{ credentials_file }}"
+      register: remove_file
+      
+    - name: Print Upload Status
+      debug:
+        var: upload_file
+      
+    - name: Print File Metadata
+      debug:
+        var: file_metadata
+      
+    - name: Print Remove Status
+      debug:
+        var: remove_file

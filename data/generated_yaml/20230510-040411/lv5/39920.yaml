@@ -1,0 +1,79 @@
+yaml
+---
+- name: Test the Junos Config module
+  hosts: junos_device
+  gather_facts: no
+
+  vars:
+    junos_password: "mypassword"
+    junos_config_snippets:
+      - "set interfaces ge-0/0/0 unit 0 family inet address 10.1.1.1/24"
+      - "set security policies from-zone trust to-zone untrust policy allow_all match source-address any destination-address any application any permit"
+      - "set routing-options static route 0.0.0.0/0 next-hop 192.168.1.1"
+
+  tasks:
+    - name: Install Junos PyEZ Python Library
+      pip:
+        name: junos-eznc
+        state: present
+
+    - name: Establish connection to the Junos device
+      junos_netconf:
+        host: "{{ inventory_hostname }}"
+        user: "root"
+        passwd: "{{ junos_password }}"
+        gathering_facts: no
+      register: conn
+
+    - name: Validate the Junos configuration syntax
+      junos_config:
+        host: "{{ inventory_hostname }}"
+        user: "root"
+        passwd: "{{ junos_password }}"
+        format: set
+        config: "{{ junos_config_snippets[0] }}"
+        diff: True
+
+    - name: Test if different types of configurations are supported.
+      junos_config:
+        host: "{{ inventory_hostname }}"
+        user: "root"
+        passwd: "{{ junos_password }}"
+        format: set
+        config: "{{ junos_config_snippets[1] }}"
+        diff: True
+
+    - name: Test if the Junos Config module can rollback changes
+      junos_config:
+        host: "{{ inventory_hostname }}"
+        user: "root"
+        passwd: "{{ junos_password }}"
+        rollback: yes
+        diff: True
+
+    - name: Test if the Junos Config module can delete configurations
+      junos_config:
+        host: "{{ inventory_hostname }}"
+        user: "root"
+        passwd: "{{ junos_password }}"
+        format: set
+        config: "delete interfaces ge-0/0/0 unit 0 family inet address 10.1.1.1/24"
+        diff: True
+
+    - name: Test Junos Config module with security policies configuration
+      junos_config:
+        host: "{{ inventory_hostname }}"
+        user: "root"
+        passwd: "{{ junos_password }}"
+        format: set
+        config: "{{ junos_config_snippets[2] }}"
+        diff: True
+
+    - name: Test Junos Config module with interface configuration
+      junos_config:
+        host: "{{ inventory_hostname }}"
+        user: "root"
+        passwd: "{{ junos_password }}"
+        format: set
+        config: "{{ junos_config_snippets[0] }}"
+        diff: True

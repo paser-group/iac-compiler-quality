@@ -1,0 +1,54 @@
+
+- name: Rackspace SSL error Playbook
+  hosts: all
+  gather_facts: no
+  
+  vars:
+    rackspace_url: "https://example.com"
+    ssl_verify_mode: "{{ 'none' if rackspace_url.startswith('https') else 'verify_peer' }}"
+    rackspace_user: "username"
+    rackspace_pass: "password"
+  
+  tasks:
+  
+    - name: Install Python SSL dependencies
+      yum:
+        name:
+          - openssl-devel
+          - libffi-devel
+        state: latest
+      become: yes
+  
+    - name: Download rackspace installer
+      get_url:
+        url: "{{ rackspace_url }}/installer.rpm"
+        dest: "/tmp/installer.rpm"
+        validate_certs: false
+        force_basic_auth: no
+  
+    - name: Install rackspace agent
+      yum:
+        name: "/tmp/installer.rpm"
+        state: latest
+      become: yes
+  
+    - name: Update Rackspace agent configuration
+      lineinfile:
+        path: "/etc/rackspace.conf"
+        regexp: '^#?ipv6 enabled'
+        line: "ipv6 enabled = yes"
+        state: present
+  
+    - name: Configure Rackspace agent
+      command: "/sbin/raxmon-config --configure --user={{ rackspace_user }} --pass={{ rackspace_pass }}" 
+      become: yes
+      register: rackspace_config_output
+  
+    - name: Verify Rackspace agent connection
+      command: "/usr/bin/raxmon-ctl ping"
+      become: yes
+      register: rackspace_ping_output
+  
+    - name: Debug output
+      debug:
+        msg: "{{ rackspace_ping_output.stdout }}"

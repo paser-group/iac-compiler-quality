@@ -1,0 +1,43 @@
+
+- hosts: all
+  vars:
+    db_name: "{{ lookup('env', 'DB_NAME') }}"
+    db_user: "{{ lookup('env', 'DB_USER') }}"
+    db_password: "{{ lookup('env', 'DB_PASSWORD') }}"
+  tasks:
+    - name: Install PostgreSQL client
+      apt:
+        name: postgresql-client
+        state: present
+    
+    - name: Create new role
+      become: yes
+      become_user: postgres
+      postgresql_role:
+        db: "{{ db_name }}"
+        name: 'test_user'
+        state: present
+    
+    - name: Set role privileges to NoneType
+      become: yes
+      become_user: postgres
+      postgresql_privs:
+        database: "{{ db_name }}"
+        object_type: all_in_schema
+        objs: public
+        privs: "{{ none_type }}"
+        role: test_user
+    
+    - name: Get role privileges
+      become: yes
+      become_user: postgres
+      postgresql_privs_info:
+        database: "{{ db_name }}"
+        object_type: all_in_schema
+        objs: public
+        role: test_user
+      register: result
+    
+    - name: Display privileges
+      debug:
+        var: result

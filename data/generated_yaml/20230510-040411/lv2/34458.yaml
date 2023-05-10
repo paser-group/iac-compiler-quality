@@ -1,0 +1,40 @@
+yaml
+- name: Test ec2_vpc_vgw_facts module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    vpc_id: "vpc-1234567890abcdef"
+    invalid_vgw_id: "vgw-ABCDEFGHIJKLMN"
+  
+  tasks:
+    - name: Query for VGWs with no tags
+      ec2_vpc_vgw_facts:
+        region: us-west-2
+        filters:
+          tag-key: "notags"
+      register: vgw_with_no_tags
+
+    - name: Query for invalid VGW
+      ec2_vpc_vgw_facts:
+        region: us-west-2
+        vgw_id: "{{ invalid_vgw_id }}"
+      register: invalid_vgw
+
+    - name: Query for a valid VPC with multiple VGWs
+      ec2_vpc_vgw_facts: 
+        region: us-west-2
+        vpc_id: "{{ vpc_id }}"
+      register: multiple_vgw
+
+    - name: Display the VGW with no tags
+      debug: 
+        var: vgw_with_no_tags
+
+    - name: Display an invalid VGW
+      debug: 
+        var: invalid_vgw
+
+    - name: Display VGW from a specific VPC
+      debug: 
+        var: multiple_vgw.vgws[0].vgw_id

@@ -1,0 +1,15 @@
+yaml
+- name: Update ansible_default_ipv4.broadcast to use broadcast address
+  hosts: all
+  become: yes
+
+  tasks:
+  - name: Get broadcast address from default IPv4 address
+    shell: echo "{{ ansible_default_ipv4.address }}" | awk -F '.' '{print $1"."$2"."$3".255"}'
+    register: broadcast
+
+  - name: Update ansible_default_ipv4.broadcast
+    lineinfile:
+      path: /etc/ansible/facts.d/network.fact
+      regexp: "ansible_default_ipv4.broadcast.*"
+      line: "ansible_default_ipv4.broadcast={{ broadcast.stdout }}"

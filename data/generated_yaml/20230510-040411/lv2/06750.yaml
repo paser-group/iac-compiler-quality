@@ -1,0 +1,56 @@
+yaml
+- name: Test ansible git module
+  hosts: localhost
+  gather_facts: no
+  tasks:
+    - name: Clone repository with invalid submodule path
+      git:
+        repo: https://github.com/invalid/repo.git
+        dest: /opt/myrepo
+        submodule: invalid/path
+      register: invalid_submodule
+
+    - name: Clone repository with incorrect credentials
+      git:
+        repo: https://github.com/valid/repo.git
+        dest: /opt/myrepo
+        user: invaliduser
+        password: invalidpass
+      register: invalid_creds
+
+    - name: Clone repository with invalid key
+      git:
+        repo: https://github.com/valid/repo.git
+        dest: /opt/myrepo
+        key_file: /tmp/invalid_key.pem
+      register: invalid_key
+
+    - name: Clone repo with error handling
+      git:
+        repo: https://github.com/valid/repo.git
+        dest: /opt/myrepo
+      register: cmd_output
+      ignore_errors: yes
+      no_log: "{{ git is skipped }}"
+
+    - name: Update submodules
+      git:
+        repo: /opt/myrepo
+        dest: /opt/myrepo_updated
+        recursive: yes
+      register: submodules_updated
+
+    - name: Debug git errors
+      debug:
+        var: item.stderr
+      with_items:
+        - "{{ invalid_submodule }}"
+        - "{{ invalid_creds }}"
+        - "{{ invalid_key }}"
+        - "{{ cmd_output.stderr }}"
+
+    - name: Check submodules update status
+      assert:
+        that:
+          - submodules_updated.changed == False
+          - submodules_updated.msg == 'Failed to init/update submodules'

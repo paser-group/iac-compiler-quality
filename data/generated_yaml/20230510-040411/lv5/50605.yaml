@@ -1,0 +1,51 @@
+
+- hosts: localhost
+  gather_facts: no
+  connection: local
+
+  vars:
+    vmware_folder: "/vm"
+    vmware_dc: "DC1"
+    vmware_cluster: "Cluster1"
+
+  tasks:
+    - name: Ensure compatibility between VMC and NSX-T
+      vmware_cluster_compute_resource:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        cluster_name: "{{ vmware_cluster }}"
+        nsx_enabled: yes
+
+    - name: Set folder permissions for provisioning virtual machines
+      vmware_folder:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        folder: "{{ vmware_folder }}"
+        datacenter_name: "{{ vmware_dc }}"
+        state: present
+        permission:
+          - entity_type: 'group'
+            principal: 'Everyone'
+            role: 'Admin'
+            propagate: yes
+
+    - name: Test provisioning process
+      vmware_guest:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        folder: "{{ vmware_folder }}"
+        datacenter: "{{ vmware_dc }}"
+        cluster: "{{ vmware_cluster }}"
+        name: "test-vm"
+        state: "{{ state }}"
+        hardware:
+          num_cpus: "{{ num_cpus }}"
+          memory_mb: "{{ memory_mb }}"
+        scsi: "{{ scsi }}"
+        network_interfaces: "{{ network_interfaces }}"
+        cdrom_image: "{{ cdrom_image }}"
+        wait_for_ip_address: "{{ wait_for_ip_address }}"
+        validate_certs: no

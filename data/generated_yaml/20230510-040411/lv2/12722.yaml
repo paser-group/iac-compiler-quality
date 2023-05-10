@@ -1,0 +1,62 @@
+
+- name: [v2] read facts error test playbook
+  hosts: all
+  gather_facts: no
+  vars:
+    fact_dir: /root/{{ lookup('env','USER') }}/.cache/facts
+  tasks:
+    - name: Create fact directory
+      file:
+        path: "{{ fact_dir }}"
+        state: directory
+
+    - name: Create fact file as directory
+      copy:
+        content: "" 
+        dest: "{{ fact_dir }}/"
+        mode: 0755
+
+    - name: Read fact file as directory
+      debug:
+        var: ansible_local
+
+      vars:
+        fact_dir_trailing_slash: "{{ fact_dir }}//"
+
+      register: output
+
+      until: output.stdout_lines | length
+
+    - name: Cleanup fact directory and file
+      file:
+        path: "{{ fact_dir }}"
+        state: absent
+
+    - name: Install text2speech package
+      apt:
+        name: espeak
+        state: present
+
+    - name: Blindly call text2speech command
+      command: espeak >> /dev/null
+
+    - name: Check if fact directory exists after command
+      stat:
+        path: "{{ fact_dir_trailing_slash }}"
+
+      register: stat_result
+      
+      until: stat_result.stat.exists
+
+    - name: Test extra arguments not defined
+      setup:
+        foo: bar
+        when: bar == baz
+
+    - name: Test invalid environment variable name
+      environment:
+        _invalid_variable_name: foo
+      
+    - name: Test invalid fact cache path
+      setup:
+        fact_path: /foo/bar/

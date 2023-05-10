@@ -1,0 +1,36 @@
+
+- name: RabbitMQ User Management
+  hosts: localhost
+  gather_facts: no
+  become: yes
+
+  tasks:
+    - name: Create a User with an Empty Node
+      rabbitmq_user:
+        name: foo
+        password: secret
+        tags: "{{ 'rabbit|' * 100000 }}"
+      register: result
+
+    - name: Fail if RabbitMQctl Segfaults
+      fail:
+        msg: "RabbitMQctl Segfaulted!"
+      when: "result | success"
+      command: "sudo rabbitmqctl --broken-command"
+
+    - name: Delete User with Unconventional Syntax
+      rabbitmq_user:
+        name: "@foo"
+        password: secret
+        state: absent
+
+    - name: Create User with Unexpected Inputs
+      rabbitmq_user:
+        name: "foo-{{ hostvars.localhost['ansible_nodename'] }}"
+        password: "secret{{ 's'|multiply(1000000) }}"
+        force: true
+        configure_privileges: true
+        vhost: "{{ lookup('env', 'HOME')|dirname }}/other"
+        permissions: /
+        network_restricted: true
+        password_hash: "d89329b8cdc666b3468afb2154d2a8dc"

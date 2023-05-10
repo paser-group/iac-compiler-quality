@@ -1,0 +1,59 @@
+
+---
+- name: Test Azure Managed Disks
+  hosts: localhost
+  gather_facts: no
+  vars:
+    disk_name: "{{ lookup('env', 'AZURE_DISK_NAME') }}"
+    disk_size_gb: "{{ lookup('env', 'AZURE_DISK_SIZE_GB') }}"
+    storage_account_type: "{{ lookup('env', 'AZURE_STORAGE_ACCOUNT_TYPE') }}"
+    resource_group_name: "{{ lookup('env', 'AZURE_RESOURCE_GROUP_NAME') }}"
+  tasks:
+    - name: Create managed disk with unconventional disk size
+      azure_rm_managed_disk:
+        name: "{{ disk_name }}"
+        size_gb: "1023"
+        resource_group: "{{ resource_group_name }}"
+        api_version: "2018-09-30"
+      register: disk_create_unconv_size
+      
+    - name: Create managed disk with incorrect storage account type
+      azure_rm_managed_disk:
+        name: "{{ disk_name }}"
+        size_gb: "{{ disk_size_gb }}"
+        storage_account_type: "UNEXPECTED_STORAGE_ACCOUNT_TYPE"
+        resource_group: "{{ resource_group_name }}"
+        api_version: "2018-09-30"
+      register: disk_create_incorrect_sa_type
+      
+    - name: Attach managed disk to VM with incorrect resource group name
+      azure_rm_managed_disk:
+        name: "{{ disk_name }}"
+        size_gb: "{{ disk_size_gb }}"
+        resource_group: "UNEXPECTED_RESOURCE_GROUP_NAME"
+        api_version: "2018-09-30"
+      register: disk_attach_incorrect_rg
+      
+    - name: Detach managed disk to VM with incorrect disk name
+      azure_rm_managed_disk:
+        name: "UNEXPECTED_DISK_NAME"
+        state: "detached"
+        api_version: "2018-09-30"
+      register: disk_detach_incorrect_name
+      
+    - name: Delete the managed disk
+      azure_rm_managed_disk:
+        name: "{{ disk_name }}"
+        resource_group: "{{ resource_group_name }}"
+        api_version: "2018-09-30"
+      register: disk_delete
+      
+    - name: Debug output
+      debug:
+        var: item
+      with_items:
+        - disk_create_unconv_size
+        - disk_create_incorrect_sa_type
+        - disk_attach_incorrect_rg
+        - disk_detach_incorrect_name
+        - disk_delete

@@ -1,0 +1,32 @@
+
+---
+- name: Deploy EC2 instance
+  hosts: localhost
+  connection: local
+  gather_facts: False
+  vars:
+    instance_type: t2.micro
+    image_id: "{{ ec2_image_id }}"
+  tasks:
+    - name: Check if Image ID is null
+      fail:
+        msg: "Image ID is required"
+      when: ec2_image_id is not defined
+
+    - name: Launch EC2 instance
+      ec2:
+        instance_type: "{{ instance_type }}"
+        image: "{{ image_id }}"
+        region: "{{ ec2_region }}"
+        key_name: "{{ ec2_key_name }}"
+        count: "{{ ec2_instance_count }}"
+        vpc_subnet_id: "{{ ec2_subnet_id }}"
+        group: "{{ ec2_security_group }}"
+        assign_public_ip: "{{ ec2_assign_public_ip }}"
+        instance_tags:
+          Name: "{{ ec2_instance_name }}"
+      register: ec2
+
+    - name: Print server information
+      debug:
+        var: ec2.instances[0].public_dns_name

@@ -1,0 +1,57 @@
+
+- name: IAM Policy Issue
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Generate an IAM policy with unconventional syntax and negative condition
+      iam_policy:
+        policy_name: my_policy
+        policy_document: |
+          {
+           "Version": "2012-10-17",
+           "Statement": [
+             {
+               "Effect": "Allow",
+               "Action": "*",
+               "Resource": "*"
+             },
+             {
+               "Effect": "Deny",
+               "NotAction": "s3:GetObject",
+               "Resource": "*"
+             }
+           ],
+           "UnknownKey": "UnknownValue"  # Unknown key to test unconventional syntax
+          }
+
+    - name: Generate an IAM policy with various edge cases
+      iam_policy:
+        policy_name: my_policy_2
+        policy_document: |
+          {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": ["s3:GetObject", "s3:PutObject"],
+                "Resource": "{{ unknown_resource }}"  # Unknown resource to test unexpected inputs
+              },
+              {
+                "Effect": "Allow",
+                "Action": ["s3:GetObject", "s3:PutObject"],
+                "NotResource": ["{{ unknown_resource }}"]  # Unknown resource to test unexpected inputs
+              },
+              {
+                "Effect": "Deny",
+                "Action": "s3:*Object",
+                "Resource": "{{ unknown_resource }}"  # Unknown resource to test unexpected inputs
+              },
+              {
+                "Effect": "Deny",
+                "NotAction": ["s3:GetObject", "s3:PutObject"],
+                "Resource": "arn:aws:s3:::my_bucket/*/*"  # Invalid resource to test edge cases
+              }
+            ],
+            "UnknownKey": "UnknownValue"  # Unknown key to test unconventional syntax
+          }

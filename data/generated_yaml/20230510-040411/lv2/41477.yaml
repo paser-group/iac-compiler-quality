@@ -1,0 +1,64 @@
+yaml
+---
+- name: Sample Playbook to test Ansible nxos modules
+  hosts: localhost
+  connection: local
+  gather_facts: no
+  
+  tasks:
+    - nxos_command:
+        commands: show running-config | include "{{ item }}"
+      with_items:
+        - aaa
+        - ^aaa
+        - aaa$
+        - "^aaa$"
+        - "?aaa"
+        - "aaa|bbb"
+        - "'aaa'"
+        - '"aaa"'
+        - "{{ var }}"
+        - "{{ var | b64decode | regex_replace('123','777') }}"
+      register: output
+
+    - debug:
+        var: item.stdout_lines
+      with_items:
+        - "{{ output.results }}"
+      when: item.stdout != ''
+    
+    - nxos_command:
+        commands: ['show run | i aaa || bbb']
+      register: output_error
+
+    - debug:
+        var: output_error
+    
+    - nxos_command:
+        commands: show running-config | include "{{ item }}"
+      with_items:
+        - tab	space
+        - aaa\\ bbb
+        - "aaa'; sh some_malicious_command #"
+        - "cat /etc/password"
+        - "'aaa' | some_non_existent_filter"
+        - "lookup('non_existent_variable')"
+      ignore_errors: yes
+      register: output_bad_inputs
+
+    - debug:
+        var: item.stderr_lines
+      with_items:
+        - "{{ output_bad_inputs.results }}"
+
+    - nxos_config:
+        lines: "{{ [ 'aaa', 'bbb' ] }}"
+        before: "{{ lookup('pipe', 'echo ''interface Ethernet1/1''') }}"
+      notify:
+        - restart interface
+         
+  handlers:
+    - name: restart interface
+      nxos_command:
+        commands: ["reload"]
+

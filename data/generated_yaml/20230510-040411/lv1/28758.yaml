@@ -1,0 +1,31 @@
+
+- name: Ensure idempotency for win_shortcut
+  hosts: all
+  become: true
+  vars:
+    shortcut_name: MyShortcut
+    shortcut_description: This is a shortcut
+    shortcut_path: C:\Program Files\MyApp\MyApp.exe
+    shortcut_arguments: -arg1 val1 -arg2 val2
+    shortcut_icon_path: C:\Program Files\MyApp\MyApp.ico
+    shortcut_directory: C:\ProgramData\Microsoft\Windows\Start Menu\Programs\MyApp
+  tasks:
+    - name: Generate shortcut
+      win_shortcut:
+        name: "{{ shortcut_name }}"
+        description: "{{ shortcut_description }}"
+        src: "{{ shortcut_path }}"
+        arguments: "{{ shortcut_arguments }}"
+        icon_path: "{{ shortcut_icon_path }}"
+        directory: "{{ shortcut_directory }}"
+      register: result
+      changed_when: result.changed
+    - name: Ensure idempotency
+      win_shortcut:
+        name: "{{ shortcut_name }}"
+        description: "{{ shortcut_description }}"
+        src: "{{ shortcut_path }}"
+        arguments: "{{ shortcut_arguments }}"
+        icon_path: "{{ shortcut_icon_path }}"
+        directory: "{{ shortcut_directory }}"
+      when: result.changed == false

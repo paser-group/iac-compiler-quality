@@ -1,0 +1,56 @@
+
+- hosts: haproxy-servers
+  gather_facts: false
+  tasks:
+    - name: Install HAProxy
+      apt:
+        name: haproxy
+        state: present
+
+    - name: Configure Settings
+      haproxy:
+        state: present
+        frontend:
+          - name: 'example-http'
+            bind: '0.0.0.0:80'
+            default_backend: 'example-http-server'
+            mode: http
+            options:
+              - forwardfor
+          - name: 'example-https'
+            bind: '0.0.0.0:443'
+            default_backend: 'example-https-server'
+            mode: tcp
+            options:
+              - ssl-hello-chk
+              - tcplog
+        backend:
+          - name: 'example-http-server'
+            balance: roundrobin
+            mode: http
+            option:
+              - httpchk GET / HTTP/1.1\\r\\nHost:\\ example.com
+            retry-on: '408 502 503 504'
+            retries: 3
+            server:
+              - name: 'web-01'
+                address: '192.168.1.10:80'
+                cookie: 'example-server-cookie'
+                backup: true
+                check: true
+                weight: 5
+                disabled: "{{ hostvars[groups['backup-servers'][0]]['haproxy-server-disabled'] | default(false) }}"
+                state: "{{ hostvars[groups['backup-servers'][0]]['haproxy-server-state'] }}"
+                tags: "{{ ['example-server', 'web'] }}"
+        listen:
+          - name: stats
+            bind: 0.0.0.0:1936
+            mode: http
+            stats:
+              uri: /
+              credentials: "{{ secret }}"
+              realm: Haproxy Statistics
+              refresh: 5
+              auth: 'digest'
+
+      delegate_to: "{{ groups['delegate-servers'][0] }}"

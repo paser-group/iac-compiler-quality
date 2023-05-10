@@ -1,0 +1,27 @@
+
+- name: Docker version check
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+    - name: Check for Docker version
+      shell: docker -v 2>/dev/null | cut -d ' ' -f3 | cut -d ',' -f1 | cut -d '-' -f1
+      ignore_errors: yes
+      register: docker_version
+
+    - name: Print the Docker version
+      debug:
+        var: docker_version.stdout_lines[0]
+
+    - name: Fail if version is not "19.03.0"
+      fail:
+        msg: "The required version of Docker is 19.03.0, but the installed version is {{ docker_version.stdout_lines[0] }}"
+      when: docker_version.stdout_lines[0] != "19.03.0"
+
+    - name: Install Docker 19.03.0
+      become: yes
+      shell: |
+        curl -fsSL https://download.docker.com/linux/static/stable/x86_64/docker-19.03.0.tgz | \
+        tar -xzC /tmp && \
+        rm -f /usr/bin/docker* && \
+        mv /tmp/docker/* /usr/bin/

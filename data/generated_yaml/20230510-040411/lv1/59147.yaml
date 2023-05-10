@@ -1,0 +1,45 @@
+yaml
+---
+- name: Configure GCP Inventory Plugin
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    gcp_project_id: "my-project-id"
+    gcp_credentials_file_path: "/path/to/gcp/credentials.json"
+    gcp_service_account_email: "my-service-account-email@my-project-id.iam.gserviceaccount.com"
+
+  tasks:
+    - name: Ensure GCP credentials file exists
+      stat:
+        path: "{{ gcp_credentials_file_path }}"
+      register: gcp_credentials_file_stat
+      failed_when: gcp_credentials_file_stat.stat.exists != true
+
+    - name: Set GCP credentials environment variable
+      environment:
+        GOOGLE_APPLICATION_CREDENTIALS: "{{ gcp_credentials_file_path }}"
+      when:
+        - gcp_credentials_file_stat.stat.exists == true
+
+    - name: Ensure service account email is set in GCP inventory plugin
+      lineinfile:
+        path: /etc/ansible/hosts
+        regexp: '^gcp_service_account_email='
+        line: "gcp_service_account_email={{ gcp_service_account_email }}"
+        backup: yes
+      when: gcp_service_account_email is defined
+
+    - name: Run GCP inventory plugin
+      gcp_compute_inventory:
+        auth_kind: serviceaccount
+        project: "{{ gcp_project_id }}"
+        hostnames:
+          - labels.name
+        filters:
+          - zone:(us-central1-a)
+      register: gcp_inventory_result
+
+    - name: Debug GCP inventory plugin output
+      debug:
+        var: gcp_inventory_result

@@ -1,0 +1,70 @@
+
+- name: Test rescue and always blocks functionality
+  hosts: localhost
+  gather_facts: False
+  tasks:
+    - name: Set fact one
+      set_fact:
+          var_one: "value_one"
+      run_once: true
+
+    - name: Set fact two
+      set_fact:
+          var_two: "value_two"
+      when: var_one is defined
+
+    # Test edge case 1 of rescue block
+    - name: Task with rescue block that raises an error
+      debug:
+        msg: "Task with rescue block"
+      run_once: true
+      rescue:
+        - name: Rescue task with command module
+          command: /bin/false
+
+    # Test edge case 2 of rescue block
+    - name: Task with rescue block that fails without raising an error
+      debug:
+        msg: "Task with rescue block that fails"
+      run_once: true
+      rescue:
+        - name: Rescue task with debug module
+          debug:
+            msg: "Rescued from task"
+        - name: Rescue task with command module
+          command: /bin/false
+
+    # Test edge case 3 of rescue block
+    - name: Task with rescue block that fails with a delegate_to directive
+      debug:
+        msg: "Task with rescue and delegate_to"
+      run_once: true
+      delegate_to: localhost
+      rescue:
+        - name: Rescue task with debug module
+          debug:
+            msg: "Rescued from task"
+        - name: Rescue task with command module
+          command: /bin/false
+
+    # Test edge case 1 of always block
+    - name: Task with always block that always runs
+      debug:
+        msg: "Task with always block"
+      run_once: true
+      always:
+        - name: Always task with debug module
+          debug:
+            msg: "Always runs"
+     
+    # Test edge case 2 of always block
+    - name: Task with always block that runs even if the task fails without raising an error
+      debug:
+        msg: "Task with always block that fails"
+      run_once: true
+      always:
+        - name: Always task with debug module
+          debug: 
+            msg: "Always runs no matter what"
+        - name: Always task with command module
+          command: /usr/bin/false

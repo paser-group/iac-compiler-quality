@@ -1,0 +1,81 @@
+yaml
+- name: Test nxos_vtp_version issue
+  hosts: all
+  gather_facts: false
+
+  vars:
+    - vtp_password: "{{ lookup('env', 'VTP_PASSWORD') }}"
+    - invalid_version: "vtpv4.5"
+    - valid_version_with_extra_data: "{{ ('vtpv3.3'*5)|truncate(15, True) }}"
+    - special_chars_in_vtp_password: "{{ lookup('file', 'random_chars.txt')|replace('\n','\\\\\\\\n') }}"
+    - host_not_reachable: "10.10.200.1"
+    - invalid_vtp_password: "invalid_password"
+
+  tasks:
+    - name: Test nxos_vtp_version with valid version
+      nxos_vtp_version:
+        host: "{{ inventory_hostname }}"
+        username: admin
+        password: "{{ vtp_password }}"
+        validate_certs: false
+      register: result_valid_version
+
+    - name: Test nxos_vtp_version with invalid version
+      nxos_vtp_version:
+        host: "{{ inventory_hostname }}"
+        version: "{{ invalid_version }}"
+        username: admin
+        password: "{{ vtp_password }}"
+        validate_certs: false
+      register: result_invalid_version
+
+    - name: Test nxos_vtp_version with valid version and extra data
+      nxos_vtp_version:
+        host: "{{ inventory_hostname }}"
+        version: "{{ valid_version_with_extra_data }}"
+        username: admin
+        password: "{{ vtp_password }}"
+        validate_certs: false
+      register: result_valid_version_with_extra_data
+
+    - name: Test nxos_vtp_version with special characters in the vtp password
+      nxos_vtp_version:
+        host: "{{ inventory_hostname }}"
+        username: admin
+        password: "{{ special_chars_in_vtp_password }}"
+        validate_certs: false
+      register: result_special_chars_in_vtp_password
+
+    - name: Test nxos_vtp_version with unreachable host
+      nxos_vtp_version:
+        host: "{{ host_not_reachable }}"
+        username: admin
+        password: "{{ vtp_password }}"
+        validate_certs: false
+      register: result_unreachable_host
+
+    - name: Test nxos_vtp_version with invalid vtp password
+      nxos_vtp_version:
+        host: "{{ inventory_hostname }}"
+        username: admin
+        password: "{{ invalid_vtp_password }}"
+        validate_certs: false
+      register: result_invalid_vtp_password
+
+    - debug:
+        var: result_valid_version
+          
+    - debug:
+        var: result_invalid_version
+          
+    - debug:
+        var: result_valid_version_with_extra_data
+          
+    - debug:
+        var: result_special_chars_in_vtp_password
+          
+    - debug:
+        var: result_unreachable_host
+          
+    - debug:
+        var: result_invalid_vtp_password

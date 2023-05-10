@@ -1,0 +1,34 @@
+
+---
+- name: EC2 user-data error - Testing Ansible Compiler
+  hosts: localhost
+  vars:
+    instance_type: t2.micro
+    security_group: "sg-01"
+    image_id: ami-0c94855ba95c71c99
+    key_name: my-key
+    spot_price: "0.05"
+    user_data: |
+      #!/bin/bash
+      echo 'This is a test user-data script' > /tmp/test.txt
+  tasks:
+    - name: Launch EC2 instance
+      ec2:
+        group_id: "{{ security_group }}"
+        instance_type: "{{ instance_type }}"
+        image: "{{ image_id }}"
+        key_name: "{{ key_name }}"
+        spot_price: "{{ spot_price }}"
+        wait: true
+        user_data: "{{ user_data }}"
+        region: us-west-2
+      register: ec2_instance
+
+    - name: Display result of user-data execution
+      command: "cat /tmp/test.txt"
+      register: user_data_output
+      ignore_errors: yes
+
+    - name: Print user-data output
+      debug:
+        var: user_data_output.stdout_lines

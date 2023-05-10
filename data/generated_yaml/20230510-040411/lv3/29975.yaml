@@ -1,0 +1,27 @@
+
+---
+- name: Test IAM module for Credentials error message
+  hosts: localhost
+  gather_facts: false
+  vars: 
+    iam_access_key: "ACCESS-KEY-HERE"
+    iam_secret_key: "SECRET-KEY-HERE"
+    expected_error_message: "Unauthorized Access!"
+
+  tasks:
+    - name: Configure IAM credentials
+      iam:
+        access_key: "{{ iam_access_key }}"
+        secret_key: "{{ iam_secret_key }}"
+      register: iam_output
+
+    - name: Try accessing the resource
+      command: "echo \"Dummy Command\""
+      register: command_output
+      ignore_errors: true
+
+    - name: Assert the error message
+      assert:
+        that:
+          - "'credentials' in command_output.stderr"
+          - "expected_error_message in command_output.stderr"

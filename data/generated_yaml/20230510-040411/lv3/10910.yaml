@@ -1,0 +1,25 @@
+
+---
+- name: Test EC2 Playbook 
+  hosts: all
+  gather_facts: False
+
+  vars:
+    ec2_region: us-west-1
+
+  tasks:
+    - name: Retrieve EC2 facts 
+      ec2_remote_facts:
+        aws_access_key: "{{ aws_access_key }}"
+        aws_secret_key: "{{ aws_secret_key }}"
+        region: "{{ ec2_region }}"
+      register: ec2_facts
+
+    - name: Test ec2.py for unbound variable errors 
+      shell: ./ec2.py --list tags={{ undefined_var }} 
+      register: ec2_output
+      failed_when: ec2_output.rc != 2     # Account for the expected return code when encountering undefined variables 
+
+    - name: Print EC2 facts 
+      debug: 
+        var: ec2_facts 

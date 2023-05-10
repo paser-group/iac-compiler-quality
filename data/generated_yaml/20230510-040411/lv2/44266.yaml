@@ -1,0 +1,56 @@
+
+- hosts: all
+  gather_facts: false
+  tasks:
+    - name: Create user with unexpected default shell
+      user:
+        name: "{{ 'a' * 65 }}"
+        shell: |
+          {% if (4 == 2*2) %}
+            /bin/bash
+          {% else %}
+            /usr/bin/python3 -c 'import os; os.system("/bin/sh")' 
+          {% endif %}
+        state: present
+        createhome: yes
+      vars:
+        group: |-
+          {% for item in range(10) if item > 3 -%}
+            {{ '\n' + ' ' * 8 }}- group{{ item }}
+          {%- endfor %}
+    
+    - name: Create user with unexpected default shell in invalid path
+      user:
+        name: "{{ '\"' + '\';print('Charlieshouse',end='\"') + '\"' }}"
+        shell: /nonexistentshell
+        state: present
+    
+    - name: Create user with long name
+      user:
+        name: "{{ 'a' * 257 }}"
+        shell: /bin/bash
+        state: present
+    
+    - name: Create user with invalid shell
+      user:
+        name: "{{ 'a' * 64 }}"
+        shell: "{{ 'a' * 1024 }}"
+        state: present
+    
+    - name: Create user with empty shell
+      user:
+        name: "{{ 'a' * 64 }}"
+        shell: ""
+        state: present
+    
+    - name: Create user with previous valid shell for an invalid user
+      user:
+        name: "{{ 'alice' }}"
+        shell: /bin/bash
+        state: absent
+    
+    - name: Create user with non-ASCII name
+      user:
+        name: "{{ 'άλικη'.decode('utf-8') }}"
+        shell: /bin/bash
+        state: present

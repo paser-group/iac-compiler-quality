@@ -1,0 +1,24 @@
+
+- name: Install package with dnf
+  hosts: all
+  become: yes
+  tasks:
+    - name: Install package
+      dnf:
+        name: mypackage
+        state: present
+
+    - name: Check for RPM scriptlet errors
+      shell: dnf info mypackage | grep "Scriptlet Errors"
+      register: result
+      failed_when: result.stdout != ""
+
+      # If there are any RPM scriptlet errors, fail the playbook 
+      # and print out the error message
+      block:
+        - name: Print error message
+          debug:
+            var: result.stdout_lines
+        - name: Fail build
+          fail:
+            msg: "Package installation failed due to RPM scriptlet errors"

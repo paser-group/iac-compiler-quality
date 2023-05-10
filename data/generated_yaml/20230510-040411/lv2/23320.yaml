@@ -1,0 +1,38 @@
+
+- name: Stress testing WinRM
+  hosts: windows
+  gather_facts: no
+  vars:
+    timeout: 10  # set a timeout of 10 seconds
+
+  tasks:
+    - name: Test 1 - Sending a large file
+      win_copy:
+        src: /dev/zero
+        dest: C:\large_file
+        timeout_sec: "{{ timeout }}"
+        
+    - name: Test 2 - Running a long-running command
+      win_command:
+        cmd: "ping -t 127.0.0.1"
+        timeout_sec: "{{ timeout }}"
+        
+    - name: Test 3 - Running multiple commands in parallel
+      async: 5
+      poll: 0
+      win_command:
+        cmd: "{{ item }}"
+        timeout_sec: "{{ timeout }}"
+      with_items:
+        - "ping -n 10000 127.0.0.1"
+        - "echo hi"
+        - "dir C:\\Windows\\System32"
+        
+    - name: Test 4 - Sending multiple large files in parallel
+      async: 10
+      poll: 0
+      win_copy:
+        src: /dev/zero
+        dest: "C:\large_file_{{ item }}"
+        timeout_sec: "{{ timeout }}"
+      with_sequence: start=1 end=5

@@ -1,0 +1,45 @@
+yaml
+- name: Create and manage AIX WPAR
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: Install AIX WPAR packages
+      become: yes
+      apt:
+        name: wpar
+        state: present
+
+    - name: Delete AIX WPAR
+      become: yes
+      shell: >
+        if [ -n "{{ wpar_name }}" ]; then
+          chroot=/usr/sbin/chroot
+          sys_chroot=/usr/sbin/sys_chroot
+          export CHROOT=/var/adm/ras/jcr/forbidden/chroot/etc/security
+          if [ -f /etc/security/job_attributes_$wpar_name ]; then
+            $sys_chroot / /usr/sbin/rmchroot $wpar_name
+          fi
+          if [ -d /var/adm/ras/jcr/forbidden/chroot/$wpar_name ]; then
+            $chroot /var/adm/ras/jcr/forbidden/chroot /usr/sbin/wpardestroy $wpar_name
+          fi
+        fi
+      register: delete_wpar_result
+
+    - name: Create AIX WPAR
+      become: yes
+      shell: >
+        if [ -n "{{ wpar_name }}" ]; then
+          ls /usr/bin/wparutil > /dev/null && WPARUTIL=1 || WPARUTIL=0
+          ls /usr/lib/wpar/* > /dev/null && SHARELIBS=1 || SHARELIBS=0
+          if [[ $WPARUTIL -eq 1 && $SHARELIBS -eq 1 ]]; then
+            /usr/sbin/mksysb -m -e /var/adm/ras/jcr/forbidden/chroot/installp_bundle -d /tmp/rootvg.mksysb $wpar_name
+            if [ -f /tmp/rootvg.mksysb.$$ ]; then
+              /usr/sbin/wparcreate -c -d /tmp/rootvg.mksysb.$$ -m \
+                  -n $(hostname -s)_${wpar_name} $(hostname -s) >/dev/null
+              rm -f /tmp/rootvg.mksysb.*
+              echo $wpar_name
+            fi
+          fi
+        fi
+      register: create_wpar_result

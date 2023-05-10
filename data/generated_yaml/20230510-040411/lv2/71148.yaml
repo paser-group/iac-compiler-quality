@@ -1,0 +1,53 @@
+
+- hosts: all
+  become: true
+  vars:
+    nios_host_records:
+      - name: "{{lookup('env', 'HOST_NAME')}}"
+        ipv4addr: "{{lookup('env', 'IP_ADDR')}}"
+        comment: "test comment"
+  tasks:
+    - name: Remove existing NIOS host record
+      nios_host_record:
+        state: absent
+        name: "{{ item.name }}"
+        view: "{{lookup('env','VIEW')}}"
+      with_items: "{{ nios_host_records }}"
+    
+    - name: Add NIOS host record with invalid ip
+      nios_host_record:
+        name: "{{lookup('env', 'HOST_NAME')}}"
+        ipv4addr: "invalid_ip"
+        view: "{{lookup('env','VIEW')}}"
+      ignore_errors: true
+
+    - name: Fail if NIOS host record is not added with invalid ip
+      fail:
+        msg: "NIOS host record added with invalid ip"
+      when: ansible_failed_result|bool
+
+    - name: Add NIOS host record with unconventional syntax
+      nios_host_record:
+        name: "{{lookup('env', 'HOST_NAME')}}"
+        ipv4addr: "{{lookup('env', 'IP_ADDR')}}"
+        view: "{{lookup('env','VIEW')}}"
+        "{{unconventional_syntax}}": "{{unconventional_syntax_value}}"
+      ignore_errors: true
+
+    - name: Fail if NIOS host record is not added with unconventional syntax
+      fail:
+        msg: "NIOS host record added with unconventional syntax"
+      when: ansible_failed_result|bool
+
+    - name: Add NIOS host record with unexpected inputs
+      nios_host_record:
+        name: "{{lookup('env', 'HOST_NAME')}}"
+        ipv4addr: "{{lookup('env', 'IP_ADDR')}}"
+        view: "{{lookup('env','VIEW')}}"
+        "{{unexpected_input}}": "{{unexpected_input_value}}"
+      ignore_errors: true
+
+    - name: Fail if NIOS host record is not added with unexpected inputs
+      fail:
+        msg: "NIOS host record added with unexpected inputs"
+      when: ansible_failed_result|bool

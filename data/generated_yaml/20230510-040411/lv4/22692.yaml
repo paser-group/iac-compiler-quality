@@ -1,0 +1,51 @@
+
+- name: Create EC2 Spot Request
+  ec2:
+    key_name: mykeypair
+    instance_type: t2.micro
+    image: ami-0c55b159cbfafe1f0
+    wait: true
+    spot_price: '0.05'
+    region: us-west-2
+    count: 1
+    state: present
+    instance_initiated_shutdown_behavior: terminate
+    security_group_ids:
+       - "{{ security_group_id }}"
+    subnet_id: "{{ subnet_id }}"
+    assign_public_ip: true
+    tags:
+      Name: "{{ instance_name }}"
+
+- name: Set maximum wait time for instance start
+  set_fact:
+    max_wait_time: 300
+
+- name: Wait for instance to start
+  wait_for:
+    host: "{{ec2.instance.public_dns_name}}"
+    port: 22
+    delay: 5
+    timeout: "{{max_wait_time}}"
+  register: instance_started
+
+- name: Stop instance on EC2 failure
+  ec2_instance_facts:
+    filters:
+      "tag:Name": "{{ instance_name }}"
+    aws_access_key: "{{ aws_access_key }}"
+    aws_secret_key: "{{ aws_secret_key }}"
+  register: stopped_instance
+  ignore_errors: yes
+
+- name: Debug failed instance creation
+  debug:
+    msg: "Instance {{ instance_name }} failed to create with spot request {{ec2.spot_instance_request_id}}, status {{ec2.spot_instance_request.state}}, terminate_on_failure {{ ec2.terminate_on_failure }}"
+  when: stopped_instance.results | length == 1
+
+- name: Terminate instance on playbook failure
+  ec2:
+    exact_count: 1
+    state: absent
+    instance_ids: "{{ ec2.instance_id }}"
+  ignore_errors: yes

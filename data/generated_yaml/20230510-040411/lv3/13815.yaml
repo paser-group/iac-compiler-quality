@@ -1,0 +1,21 @@
+yaml
+---
+- hosts: all
+  tasks:
+  - name: pipelining error module
+    command: custom_module_name arg1 arg2 | cat
+    register: custom_module_output
+    become: true
+    become_method: sudo
+    become_user: root
+    vars:
+      ansible_ssh_user: "{{ remote_become_user }}"
+    vars_files:
+      - vault.yml
+    notify:
+      - send slack notification
+  handlers:
+    - name: send slack notification
+      slack:
+        api_key: "{{ slack_api_key }}"
+        msg: "The task failed with {{ custom_module_output.stdout }}"

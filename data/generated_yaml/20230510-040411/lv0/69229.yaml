@@ -1,0 +1,21 @@
+
+CREATE FUNCTION postgresql_set()
+RETURNS void
+AS $$
+DECLARE
+    ts_name text;
+    ts_location text;
+BEGIN
+    SELECT spcname, pg_tablespace_location(oid) INTO ts_name, ts_location
+    FROM pg_tablespace WHERE spcname = 'default';
+
+    -- Convert value of default_tablespace to uppercase
+    ts_name := UPPER(ts_name);
+
+    -- Update pg_database with new default_tablespace value
+    UPDATE pg_database SET dattablespace = ts_location WHERE datname = current_database();
+
+    -- Update pg_tablespace with new tablespace name
+    UPDATE pg_tablespace SET spcname = ts_name WHERE oid = pg_database.dattablespace;
+END;
+$$ LANGUAGE plpgsql;

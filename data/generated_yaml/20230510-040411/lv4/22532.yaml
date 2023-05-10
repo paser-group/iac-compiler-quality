@@ -1,0 +1,32 @@
+
+- name: Test esg_asg module for operation in progress error
+  hosts: localhost
+  vars:
+    input_variations:
+      - input1
+      - input2
+      - input3
+      - input4
+  tasks:
+    - name: Testing esg_asg module with input variables
+      block:
+        - name: Run esg_asg module with input variable
+          esg_asg:
+            input: "{{ item }}"
+          register: result
+          ignore_errors: yes
+          loop: "{{ input_variations }}"
+
+        - name: Printing error message if encountered
+          debug:
+            var: result.msg
+          when: "'operation in progress' in result.msg"
+
+      rescue:
+        - fail:
+            msg: "esg_asg module failed due to operation in progress error"
+
+    - name: Check for Operation in Progress error
+      fail:
+        msg: "esg_asg module failed due to operation in progress error"
+      when: "'operation in progress' in result.msg"

@@ -1,0 +1,29 @@
+yaml
+---
+- name: Fix Fatal error with RouterOS Module
+  hosts: all
+  become: yes
+
+  vars:
+    - routeros_user: admin
+    - routeros_password: secret123
+
+  tasks:
+    - name: Upgrade RouterOS Module
+      pip:
+        name: routeros-api
+        state: latest
+
+    - name: Check RouterOS status
+      routeros_command:
+        commands:
+          - /system/resource/print
+      register: routeros_status
+
+    - name: Restart RouterOS service
+      routeros_command:
+        commands:
+          - /system/routerboard/print
+          - set enabled=no
+          - set enabled=yes
+      when: routeros_status.stdout_lines | length > 0

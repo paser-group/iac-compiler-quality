@@ -1,0 +1,33 @@
+
+- hosts: localhost
+  vars:
+    project_id: "my-project"
+    zone: "us-central1-a"
+    cluster_name: "private-cluster"
+    private_cluster_config:
+      enable_private_endpoint: true
+      enable_private_nodes: true
+      master_ipv4_cidr_block: "172.16.0.64/28"
+  tasks:
+    - name: Verify the provided inputs using Ansible assert module
+      assert:
+        that:
+          - project_id is defined
+          - zone is defined
+          - cluster_name is defined
+        success_msg: "All required inputs are defined"
+        fail_msg: "Some required input is not defined"
+    - name: Generate a Kubernetes configuration file using the provided private cluster config details
+      template:
+        src: templates/kubeconfig.j2
+        dest: ~/kubeconfig
+        vars:
+          cluster_name: "{{ cluster_name }}"
+          private_cluster_config: "{{ private_cluster_config }}"
+      register: kubeconfig_file
+    - name: Check if any errors were encountered for the Kubernetes configuration file
+      assert:
+        that: "kubeconfig_file is defined"
+        success_msg: "The Kubernetes configuration file was generated successfully."
+        fail_msg: "The Kubernetes configuration file generation failed."
+

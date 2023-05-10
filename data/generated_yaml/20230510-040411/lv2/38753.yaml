@@ -1,0 +1,56 @@
+yaml
+- name: Test playbook for nxos_igmp_interface issue
+  hosts: localhost
+  gather_facts: no
+  tasks:
+    - name: Define oif_source as string instead of list
+      nxos_igmp_interface:
+        oif_source: "127.0.0.1"
+        interface: "{{ interface }}"
+      register: oif_source_string
+      ignore_errors: yes
+    
+    - name: Define oif_prefix as integer instead of list
+      nxos_igmp_interface:
+        oif_prefix: 10
+        interface: "{{ interface }}"
+      register: oif_prefix_integer
+      ignore_errors: yes
+      
+    - name: Define both oif_source and oif_prefix as maps instead of lists
+      nxos_igmp_interface:
+        oif_source:
+          source1: "{{ ansible_default_ipv4 }}"
+          source2: "{{ ansible_default_ipv6 }}"
+        oif_prefix:
+          prefix1: 24
+          prefix2: 48
+        interface: "{{ interface }}"
+      register: oif_map
+      ignore_errors: yes
+    
+    - name: Define both oif_source and oif_prefix as lists with mixed types
+      nxos_igmp_interface:
+        oif_source:
+          - "{{ ansible_default_ipv4 }}"
+          - 127.0.0.1
+        oif_prefix:
+          - 24
+          - "48"
+        interface: "{{ interface }}"
+      register: oif_mixed
+      ignore_errors: yes
+      
+    - name: Define an impossible value for oif_prefix
+      nxos_igmp_interface:
+        oif_prefix: "-10"
+        interface: "{{ interface }}"
+      ignore_errors: yes
+      
+    - name: Define an unsupported value for interface
+      nxos_igmp_interface:
+        oif_source: "{{ ansible_default_ipv4 }}"
+        oif_prefix: 24
+        interface: "loopback1"
+      ignore_errors: yes
+      

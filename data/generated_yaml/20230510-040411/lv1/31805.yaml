@@ -1,0 +1,57 @@
+
+---
+- hosts: all
+  gather_facts: false
+  tasks:
+    - name: Update ansible version to latest
+      yum:
+        name: ansible
+        state: latest
+
+- name: Overriding callback_plugins path
+  hosts: all
+  gather_facts: false
+  tasks:
+    - file:
+        state: directory
+        path: /etc/ansible/callback_plugins/
+
+    - copy:
+        content: |
+          #!/usr/bin/env python
+          from __future__ import absolute_import, division, print_function
+          __metaclass__ = type
+
+          import json
+          import os
+          import sys
+
+          from ansible.callbacks import callback_loader
+          from ansible.plugins.callback import CallbackBase
+
+          class CallbackModule(CallbackBase):
+              CALLBACK_VERSION = 2.0
+              CALLBACK_TYPE = 'stdout'
+              CALLBACK_NAME = 'debug_json'
+              CALLBACK_NEEDS_WHITELIST = False
+
+              def __init__(self):
+                  super(CallbackModule, self).__init__()
+                  self.display = callback_loader.get('minimal', task=None)
+
+              def v2_runner_on_ok(self, result, **kwargs):
+                  if not hasattr(self.display, '_display'):
+                      return
+
+                  self.display._display(json.dumps(result._result, indent=4))
+          if __name__ == '__main__':
+              if sys.version_info[:3] < (2, 6, 0):
+                  sys.stderr.write("Python 2.6.0+ required\n")
+                  sys.exit(-1)
+
+              CallbackModule()
+        dest: '/etc/ansible/callback_plugins/debug_json.py'
+        mode: 0755
+
+    - name: Run Ansible Shell Command
+      shell: ansible -m ping all

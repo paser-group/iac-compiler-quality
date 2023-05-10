@@ -1,0 +1,45 @@
+
+- name: Test file I/O operations
+  hosts: localhost
+  become: yes
+
+  tasks:
+  - name: Create a temporary file
+    tempfile:
+      state: file
+    register: tmpfile
+
+  - name: Open the file and write to it
+    shell: echo "test" > {{ tmpfile.path }}
+    register: write_file
+
+  - name: Read from the file
+    shell: cat {{ tmpfile.path }}
+    register: read_file
+
+  - name: Close the file
+    shell: close {{ tmpfile.path }}
+    register: close_file
+
+  - name: Get file facts
+    stat:
+      path: "{{ tmpfile.path }}"
+    register: file_stats
+
+  - name: Generate a random file name
+    uuid:
+      registration: generated_uuid
+
+  - name: Test invalid file descriptor
+    shell: cat /dev/null > /dev/full
+    register: invalid_file
+
+  - name: Debug the output
+    debug:
+    - var: tmpfile
+    - var: write_file
+    - var: read_file
+    - var: close_file
+    - var: file_stats
+    - var: generated_uuid
+    - var: invalid_file

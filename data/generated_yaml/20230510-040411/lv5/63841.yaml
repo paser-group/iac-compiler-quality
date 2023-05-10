@@ -1,0 +1,33 @@
+
+- name: Test win_robocopy error handling
+  hosts: win_server
+  tasks:
+    - name: Copy file using win_robocopy
+      win_robocopy:
+        src: /path/to/src
+        dest: /path/to/dest
+      register: result
+      ignore_errors: true
+
+    - name: Report win_robocopy errors
+      debug:
+        msg: "{{ item.msg }}"
+      with_items: "{{ result | rejectattr('failed', 'eq', false) | list }}"
+
+- name: Test general error handling
+  hosts: all
+  tasks:
+    - name: Cause error in module
+      debug:
+        var: inventory_hostname
+        foo: bar
+      ignore_errors: true
+
+    - name: Cause error in playbook
+      fail:
+        msg: "This task intentionally causes a failure"
+      ignore_errors: true
+
+    - name: Report errors
+      debug:
+        var: ansible_failed_task

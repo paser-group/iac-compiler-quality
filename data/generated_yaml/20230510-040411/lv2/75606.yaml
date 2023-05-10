@@ -1,0 +1,34 @@
+
+- name: Test known_hosts failure
+  hosts: all
+  gather_facts: no
+
+  vars:
+    ssh_dir: "/path/to/nonexistent/dir"
+
+  tasks:
+    - name: Create directory if missing
+      file:
+        path: "{{ ssh_dir }}"
+        state: directory
+      when: not ssh_dir|exists
+
+    - name: Create empty ssh/config file
+      file:
+        path: "{{ ssh_dir }}/config"
+        state: touch
+
+    - name: Generate ssh keypair
+      command: /usr/bin/ssh-keygen -t rsa -f /tmp/id_rsa -q -N ""
+      args:
+        creates: /tmp/id_rsa
+
+    - name: Add local host key entry to known_hosts
+      command: |
+        /usr/bin/ssh-keyscan -H localhost > "{{ ssh_dir }}/known_hosts"
+      when: not "{{ ssh_dir }}/known_hosts"|exists
+
+    - name: Remove ssh directory
+      file:
+        path: "{{ ssh_dir }}"
+        state: absent

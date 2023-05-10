@@ -1,0 +1,30 @@
+
+---
+- name: Replicate incorrect disk sizes issue
+  hosts: localhost
+  vars:
+    arbitrary_disk_size: 1000
+  tasks:
+  - name: Gather facts about the device
+    setup:
+
+  - name: Calculate actual disk size
+    shell: df -h /dev/sda1 | awk 'NR==2{print $2}'
+    register: actual_disk_size
+
+  - name: Print actual disk size
+    debug: var=actual_disk_size.stdout
+
+  - name: Set arbitrary disk size to simulate reported incorrect sizes
+    set_fact:
+      ansible_mounts:
+        - device: /dev/sda1
+          fstype: ext4
+          opts: rw,relatime
+          size_total: "{{ arbitrary_disk_size }}GB"
+          size_available: "{{ arbitrary_disk_size }}GB"
+          mount: /
+
+
+  - name: Print overwritten disk size information
+    debug: var=ansible_mounts

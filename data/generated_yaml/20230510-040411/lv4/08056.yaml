@@ -1,0 +1,21 @@
+
+---
+- name: Docker Version Check
+  hosts: all
+  become: true
+  gather_facts: true
+
+  tasks:
+  - name: Check Docker API versions on client and server
+    shell: docker version --format '{{.Server.Version}} {{.Client.Version}}'
+    register: docker_versions
+  - debug:
+      var: docker_versions
+
+  - name: Install correct version of Docker
+    when: ('1.10' not in docker_versions.stdout and '1.12' not in docker_versions.stdout)
+    yum:
+      name: docker-ce-{{item}}
+      state: present
+    with_items:
+      - "1.12.6-1.el7.centos"

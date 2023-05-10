@@ -1,0 +1,37 @@
+yaml
+- hosts: all
+  become: true
+  tasks:
+    - name: Install required system packages
+      package:
+        name: "{{ item }}"
+        state: present
+      with_items:
+        - python3
+        - python3-pip
+        - gcc
+        - make
+        - openssl-devel
+        - libffi-devel
+        - python3-devel
+
+    - name: Install Ansible Galaxy via pip
+      pip:
+        name: ansible-galaxy
+        state: present
+
+    - name: Configure OpenSSL to use version 1.1.x
+      block:
+        - name: Install OpenSSL 1.1.x
+          yum:
+            name:
+              - openssl11
+              - openssl11-devel
+            state: latest
+            enablerepo: epel
+        - name: Enable 1.1.x OpenSSL libs
+          lineinfile:
+            path: /etc/ld.so.conf.d/openssl11.conf
+            line: /usr/local/lib64
+        - name: Load new OpenSSL configuration
+          command: ldconfig

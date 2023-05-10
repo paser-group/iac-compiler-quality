@@ -1,0 +1,29 @@
+
+- hosts: my_servers
+  gather_facts: false
+  vars:
+    ansible_ssh_extra_args: "-o ControlPath=~/.ssh/controlmasters/%C"
+    ansible_remote_tmp: /tmp
+  tasks:
+    - name: Create temporary directory on remote server
+      become: true
+      file:
+        path: "{{ ansible_remote_tmp }}/ansible-tmp-{{ ansible_date_time.epoch }}"
+        state: directory
+        mode: 0755
+      register: temp_dir
+      check_mode: false
+    - name: Copy files to remote temporary directory
+      become: true
+      copy:
+        src: my_files/
+        dest: "{{ temp_dir.path }}"
+      when: temp_dir.changed
+    - name: Do something with the files
+      become: true
+      # your task here
+    - name: Remove remote temporary directory
+      become: true
+      file:
+        path: "{{ temp_dir.path }}"
+        state: absent

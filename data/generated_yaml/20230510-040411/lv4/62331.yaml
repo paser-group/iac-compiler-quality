@@ -1,0 +1,46 @@
+
+- name: Test Playbook
+  hosts: localhost
+  vars:
+    region: "us-east-1"
+    instance_type: "t2.micro"
+    image: "ami-0c94855ba95c71c99" # Amazon Linux 2 AMI
+    key_name: "<your_key_name>"
+    security_groups: "<your_security_group>"
+    subnet_id: "<your_subnet_id>"
+    non_existent_ip: "192.0.2.0" # An IP that does not exist
+    existing_ip: "<your_existing_ip>" # An IP that exists
+
+  tasks:
+    - name: Launch new EC2 instance
+      ec2:
+        region: "{{ region }}"
+        key_name: "{{ key_name }}"
+        image: "{{ image }}"
+        instance_type: "{{ instance_type }}"
+        network_subnet_id: "{{ subnet_id }}"
+        assign_public_ip: yes
+        security_group_ids: "{{ security_groups }}"
+        instance_tags:
+          Name: test_instance
+
+    - name: Attempt to delete a non-existent IP with ec2_eip
+      ec2_eip:
+        region: "{{ region }}"
+        public_ip: "{{ non_existent_ip }}"
+        state: absent
+      ignore_errors: yes
+
+    - name: Attempt to delete an existing IP with ec2_eip
+      ec2_eip:
+        region: "{{ region }}"
+        public_ip: "{{ existing_ip }}"
+        state: absent
+
+    - name: Terminate EC2 instance
+      ec2:
+        region: "{{ region }}"
+        instance_ids: "{{ item.id }}"
+        state: absen
+      loop: "{{ ec2.instances }}"
+      when: item.tags.Name == 'test_instance'

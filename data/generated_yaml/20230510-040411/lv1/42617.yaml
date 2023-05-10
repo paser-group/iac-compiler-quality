@@ -1,0 +1,44 @@
+yaml
+---
+- name: Install Zabbix agent and configure host
+  hosts: zabbix-servers
+  become: true
+
+  vars:
+    zabbix_server: 192.168.1.100
+    zabbix_api_user: admin
+    zabbix_api_pass: secret
+
+  tasks:
+    - name: Install Zabbix agent
+      apt:
+        name: zabbix-agent
+        state: present
+
+    - name: Add Zabbix host
+      zabbix_host:
+        server_url: http://{{ zabbix_server }}/api_jsonrpc.php
+        login_user: "{{ zabbix_api_user }}"
+        login_password: "{{ zabbix_api_pass }}"
+        name: "{{ inventory_hostname }}"
+        dns: "{{ inventory_hostname }}"
+        groups:
+          - Linux servers
+        status: {{ hostvars[inventory_hostname]['ansible_facts']['enp0s8']['ipv4']['address'] }}
+        delay: 30
+
+    - name: Update Zabbix agent configuration
+      template:
+        src: zabbix_agentd.conf.j2
+        dest: /etc/zabbix/zabbix_agentd.conf
+        owner: root
+        group: root
+        mode: '0644'
+      notify:
+        - restart zabbix-agent
+
+  handlers:
+    - name: Restart Zabbix agent
+      service:
+        name: zabbix-agent
+        state: restarted

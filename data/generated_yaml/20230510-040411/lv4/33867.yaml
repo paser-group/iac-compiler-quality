@@ -1,0 +1,28 @@
+
+---
+- name: Ansible Compiler Bug Test Playbook
+  hosts: local
+
+  vars:
+    valid_netmask: "255.255.255.0"
+
+  tasks:
+    - name: Define subnet based on a valid netmask
+      set_fact:
+        subnet: "{{ ansible_default_ipv4.network | ipaddr('prefix', valid_netmask) }}"
+      
+    - name: Generate ValueError by providing an incorrect netmask
+      set_fact:
+        subnet_with_invalid_netmask: "{{ ansible_default_ipv4.network | ipaddr('prefix', '255.255.24.0') }}"
+      ignore_errors: yes
+      
+    - name: Error handling
+      block:
+        - name: Do something with subnet
+          debug:
+            var: subnet
+      rescue:
+        - name: Error handling for ValueError
+          debug:
+            msg: "An error occurred: {{ ansible_failed_result }}"
+

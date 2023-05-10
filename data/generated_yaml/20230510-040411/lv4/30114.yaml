@@ -1,0 +1,34 @@
+
+---
+- hosts: localhost
+  connection: local
+  tasks:
+    - name: create iam role
+      iam_role:
+        name: "ansible_iam_role"
+        assume_role_policy_document: '{"Version": "2012-10-17","Statement": {"Effect": "Allow","Principal": {"Service": "ec2.amazonaws.com"},"Action": "sts:AssumeRole"}}'
+        state: present
+      register: role
+
+    - name: create iam policy for s3 readonly access
+      iam_policy:
+        name: "ansible_s3_readonly_policy"
+        policy_document: '{"Version": "2012-10-17","Statement": [{"Effect": "Allow","Action": ["s3:Get*","s3:List*"],"Resource": "*"}]}'
+        state: present
+      register: policy
+
+    - name: attach policy to role
+      iam_role_policy:
+        iam_role: "{{ role.role.name }}"
+        policy_name: "{{ policy.policy.name }}"
+        state: present
+
+    - name: Verify that the policy works as expected by listing s3 buckets
+      aws_s3_bucket:
+        state: list
+      delegate_to: localhost
+      register: s3_buckets
+      
+    - name: debug s3 buckets
+      debug:
+        var: s3_buckets

@@ -1,0 +1,47 @@
+
+#Playbook snippet 1
+- name: Create a private GKE cluster
+  hosts: localhost
+  become: true
+  vars:
+    project_id: my-gcp-project
+    zone: us-west1-a
+    cluster_name: my-gke-cluster
+    machine_type: n1-standard-2
+    num_nodes: 3
+  tasks:
+  - name: Creating a GKE cluster with private IP
+    gcp_container_cluster:
+      project_id: "{{ project_id }}"
+      name: "{{ cluster_name }}"
+      zone: "{{ zone }}"
+      network: default
+      subnetwork: default
+      ip_allocation_policy:
+        use_private_ip_google_access: true
+      node_pools:
+      - name: default-pool
+        config:
+          machine_type: "{{ machine_type }}"
+          preemptible: false
+          disk_size_gb: 100
+          image_type: COS
+          labels:
+            name: app-cluster
+        initial_node_count: "{{ num_nodes }}"
+      auth_kind: serviceaccount
+      state: present
+    register: cluster
+
+#Playbook snippet 2
+- name: Deleting the GKE cluster
+  hosts: localhost
+  become: true
+  vars:
+    cluster_name: my-gke-cluster
+  tasks:
+    - name: Delete a GKE cluster with private IP
+      gcp_container_cluster:
+        name: "{{ cluster_name }}"
+        state: absent
+        auth_kind: serviceaccount

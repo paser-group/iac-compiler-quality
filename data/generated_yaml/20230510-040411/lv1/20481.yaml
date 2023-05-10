@@ -1,0 +1,42 @@
+
+---
+- name: Update gce_net firewall rule
+  hosts: your_host
+  become: true
+
+  vars:
+    firewall_name: your_firewall_name
+    firewall_rule_name: your_firewall_rule_name
+    firewall_protocol: your_firewall_protocol
+    firewall_source: your_firewall_source
+    firewall_network: your_firewall_network
+    firewall_action: allow
+    firewall_priority: your_firewall_priority
+
+  tasks:
+  - name: Gather gce_net firewall rule facts 
+    gcp_compute_firewall_info:
+      filter: "name={{ firewall_name }} rules.name={{ firewall_rule_name }}"
+      auth_kind: serviceaccount
+      service_account_file: /path/to/your/service-account-file.json
+      project: your_project_id
+      register: firewall_rule_info
+
+  - name: Update gce_net firewall rule
+    gcp_compute_firewall:
+      name: "{{ firewall_name }}"
+      allowed:
+      - IPProtocol: "{{ firewall_protocol }}"
+      sourceRanges:
+      - "{{ firewall_source }}"
+      sourceTags: []
+      targetTags: []
+      network: "{{ firewall_network }}"
+      direction: INGRESS
+      priority: "{{ firewall_priority }}"
+      enabled: true
+      project: your_project_id
+      auth_kind: serviceaccount
+      service_account_file: /path/to/your/service-account-file.json
+      state: present
+    when: firewall_rule_info.firewall_rule is not none and firewall_rule_info.firewall_rule.allowed is not none

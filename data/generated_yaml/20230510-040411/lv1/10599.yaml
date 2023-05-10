@@ -1,0 +1,48 @@
+yaml
+---
+- name: Fix fireball bug
+  hosts: all
+  become: yes
+
+  tasks:
+    - name: Check if Python 3 is installed
+      raw: test -e /usr/bin/python3
+      register: python_check
+      changed_when: false
+      
+    - name: Install Python 3
+      apt:
+        name: python3
+        state: present
+      when: python_check.rc != 0
+      
+    - name: Get sudo privileges
+      become_method: sudo
+      
+    - name: Set appropriate permission for modules
+      file:
+        path: /usr/lib/python3/dist-packages/ansible/modules
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: Ensure user is authenticated
+      command: whoami
+      register: user
+      changed_when: false
+      
+    - name: Ensure user has sudo permissions
+      command: sudo whoami
+      register: sudo_check
+      changed_when: false
+      ignore_errors: yes
+      
+    - block:
+        - name: Execute ansible module
+          command: ansible some-module params
+          become: yes
+      when: user.stdout != 'root' and sudo_check.rc == 0 
+      rescue:
+        - name: Print error message
+          debug:
+            msg: 'Authentication or permission failiure. Check if user has sudo rights'

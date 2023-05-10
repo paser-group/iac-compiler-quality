@@ -1,0 +1,41 @@
+
+---
+- name: Test different versions of docker-py
+  hosts: localhost
+  tasks:
+    - name: Install docker-py 1.10.6
+      pip:
+        name: docker-py==1.10.6
+        state: present
+    - name: Start container
+      docker_container:
+        name: test_container
+        image: alpine
+    - name: Check docker-py version
+      command: docker exec test_container pip show docker-py
+      register: output
+      until: "'Version: 1.10.6' in output.stdout"
+      retries: 5
+      delay: 5
+    - name: Uninstall docker-py 1.10.6
+      pip:
+        name: docker-py==1.10.6
+        state: absent
+    - name: Install docker-py 2.7.0
+      pip:
+        name: docker-py==2.7.0
+        state: present
+    - name: Start container
+      docker_container:
+        name: test_container
+        image: alpine
+    - name: Check docker-py version
+      command: docker exec test_container pip show docker-py
+      register: output
+      until: "'Version: 2.7.0' in output.stdout"
+      retries: 5
+      delay: 5
+    - name: Uninstall docker-py 2.7.0
+      pip:
+        name: docker-py==2.7.0
+        state: absent

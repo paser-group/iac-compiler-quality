@@ -1,0 +1,36 @@
+yaml
+---
+- name: Execute long-running command via WinRM
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Set the maximum timeout for WinRM
+      winrm_config:
+        max_timeoutms: 1800000 # 30 minutes
+      register: winrm_config_output
+
+    - name: Execute long running command
+      win_command: "{{ long_running_command }}"
+      async: 600 # 10 minutes
+      poll: 0
+      register: command_output
+      when: winrm_config_output.changed
+
+    - name: Wait for the command to finish
+      async_status:
+        jid: "{{ command_output.ansible_job_id }}"
+        mode: wait
+        timeout: 300
+      register: job_result
+      ignore_errors: true
+      when: winrm_config_output.changed
+
+    - name: Print the command output
+      debug:
+        var: command_output.stdout_lines
+      when: winrm_config_output.changed and job_result.finished
+
+    - name: Print any errors or exceptions in the job result
+      debug:
+        var: job_result.results[0].exception
+      when: job_result.failed and winrm_config_output.changed

@@ -1,0 +1,58 @@
+yaml
+- name: Test playbook for win_firewall_rule module
+  hosts: localhost
+  gather_facts: no
+  
+  tasks:
+    - name: Create a firewall rule with empty name - edge case
+      win_firewall_rule:
+        name: ''
+        direction: inbound
+        action: allow
+        profile: public
+        state: present
+    
+    - name: Add an invalid protocol argument - unexpected input
+      win_firewall_rule:
+        name: 'Allow SSH'
+        protocol: invalid
+        remote_port: 22
+        direction: inbound
+        action: allow
+        profile: private
+        state: present
+        
+    - name: Add too many port ranges - edge case
+      win_firewall_rule:
+        name: 'Allow HTTP and HTTPS ports'
+        local_port:
+          - 1-65535
+          - 1-65535
+        protocol: tcp
+        remote_port:
+          - 80
+          - 443
+        direction: inbound
+        action: allow
+        state: present
+        
+    - name: Add unconventional syntax for rule name - unconventional syntax
+      win_firewall_rule:
+        name: '!@#$%^&*()_+{}:"<>?|\][=-`~,./'
+        direction: outbound
+        action: allow
+        profile: domain
+        state: present
+    
+    - name: Update a non-existent rule - unexpected input
+      win_firewall_rule:
+        name: 'Non-existent rule'
+        direction: outbound
+        action: block
+        profile: any
+        state: present
+        
+    - name: Remove an existing rule - edge case
+      win_firewall_rule:
+        name: 'Remove this rule'
+        state: absent

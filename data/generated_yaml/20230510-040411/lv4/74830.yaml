@@ -1,0 +1,53 @@
+
+- name: Test privilege escalation and file permission handling
+  hosts: target-machines
+  become: yes
+
+  tasks:
+  - name: Create a file with read, write and execute permissions
+    file:
+      path: "/usr/local/bin/test-file"
+      state: touch
+      mode: "rwx"
+
+  - name: Modify the file as the root user
+    copy:
+      src: "/root/file-copy.txt"
+      dest: "/usr/local/bin/test-file"
+      owner: root
+      group: root
+      mode: "rw-"
+
+  - name: Become an unprivileged user and modify the file
+    become_user: test-user
+    copy:
+      src: "/home/test-user/file-copy.txt"
+      dest: "/usr/local/bin/test-file"
+      owner: test-user
+      group: test-user
+
+  - name: Assert the file permissions are correct in privileged mode
+    assert:
+      that:
+        - (ansible_file_type == 'file')
+        - (ansible_file_mode == 0o755)
+
+  - name: Assert the file permissions are correct in unprivileged mode
+    become_user: test-user
+    assert:
+      that:
+        - (ansible_file_type == 'file')
+        - (ansible_file_mode == 0o644)
+
+  - name: Attempt to add execute permissions in unprivileged mode
+    become_user: test-user
+    file:
+      path: "/usr/local/bin/test-file"
+      mode: "+a"
+
+  - name: Assert the file permissions are unchanged after the previous step
+    become_user: test-user
+    assert:
+      that:
+        - (ansible_file_type == 'file')
+        - (ansible_file_mode == 0o644)

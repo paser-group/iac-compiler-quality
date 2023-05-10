@@ -1,0 +1,54 @@
+
+- name: Stress-testing playbook for async_status failure in powershell collection role
+  hosts: localhost
+  tasks:
+    # Test chaining of failed tasks
+    - fail:
+        msg: "This task has failed"
+      register: failed_task
+    - debug:
+        msg: "This task should not execute"
+      when: failed_task.failed == true
+
+    # Test async_status with invalid syntax
+    - name: Test async_status with invalid syntax
+      command: "{{ item }}"
+      async: 30
+      poll: 5
+      async_status: "{{[1,2]}}"
+      with_items:
+        - 'echo "test"'
+        - 'invalid_command'
+        - 'echo "test2"'
+
+    # Test async_status with unexpected inputs
+    - name: Test async_status with unexpected inputs
+      shell: "{{ item }}"
+      async: 30
+      poll: 5
+      async_status: "{{True}}"
+      with_items:
+        - 'echo "test"'
+        - 'Write-Host "test"'
+
+    # Test async_status with unconventional syntax
+    - name: Test async_status with unconventional syntax
+      command: "{{ item }}"
+      register: result
+      async: 30
+      poll: 5
+      async_status: "{{'{{ result }}'}}"
+      with_items:
+        - 'echo "test"'
+        - 'echo {{"'"}}test{{"'"}}"'
+
+    # Test async_status with empty tasks
+    - name: Test async_status with empty tasks
+      async_status: 1
+
+    # Test async_status with invalid arguments
+    - name: Test async_status with invalid arguments
+      command: "echo 'test'"
+      async: 30
+      poll: 5
+      async_status: 123

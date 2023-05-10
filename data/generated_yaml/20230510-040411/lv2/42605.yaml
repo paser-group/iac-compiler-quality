@@ -1,0 +1,91 @@
+yaml
+---
+- name: Test incorrect padding error during k8s module operation
+  hosts: localhost
+  gather_facts: no
+  vars:
+    invalid_padding: "wrong_padding"
+    secret_token: "super_secret"
+  tasks:
+  - name: Deploy k8s deployment with invalid secrets encoding
+    k8s:
+      api_version: "apps/v1"
+      kind: "Deployment"
+      namespace: "default"
+      name: "my-deployment"
+      spec:
+        replicas: 1
+        selector:
+          matchLabels:
+            app: "my-app"
+        template:
+          metadata:
+            labels:
+              app: "my-app"
+          spec:
+            containers:
+              - name: my-app-container
+                image: myimage:latest
+                env:
+                - name: SECRET_TOKEN
+                  valueFrom:
+                    secretKeyRef:
+                      name: my-secrets
+                      key: "{{ invalid_padding }}"
+                ports:
+                  - containerPort: 8000
+    ignore_errors: yes
+
+  - name: Deploy k8s deployment with a secret token without use of valueFrom
+    k8s:
+      api_version: "apps/v1"
+      kind: "Deployment"
+      namespace: "default"
+      name: "my-deployment-2"
+      spec:
+        replicas: 1
+        selector:
+          matchLabels:
+            app: "my-app-2"
+        template:
+          metadata:
+            labels:
+              app: "my-app-2"
+          spec:
+            containers:
+              - name: my-app-container-2
+                image: myimage:latest
+                env:
+                - name: SECRET_TOKEN
+                  value: "{{ secret_token }}"
+                ports:
+                  - containerPort: 8000
+
+  - name: Deploy k8s deployment with invalid syntax for key
+    k8s:
+      api_version: "apps/v1"
+      kind: "Deployment"
+      namespace: "default"
+      name: "my-deployment-3"
+      spec:
+        replicas: 1
+        selector:
+          matchLabels:
+            app: "my-app-3"
+        template:
+          metadata:
+            labels:
+              app: "my-app-3"
+          spec:
+            containers:
+              - name: my-app-container-3
+                image: myimage:latest
+                env:
+                - name: SECRET_TOKEN
+                  valueFrom:
+                    secretKeyRef:
+                      name: my-secrets
+                      "{{ invalid_padding }}": "super_secret"
+                ports:
+                  - containerPort: 8000
+    ignore_errors: yes

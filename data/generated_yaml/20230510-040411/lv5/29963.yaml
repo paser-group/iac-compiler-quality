@@ -1,0 +1,45 @@
+
+---
+- hosts: target_machine
+  become: yes
+  tasks:
+    - name: Create a new user
+      user:
+        name: test_user
+        state: present
+        createhome: no
+        user_fullname: Test User
+        shell: /bin/bash
+        password: "{{ 'newPassword' | password_hash('sha512') }}"
+        group: test_group
+        generate_ssh_key: yes
+        ssh_key_bits: 2048
+        ssh_key_file: /home/test_user/.ssh/id_rsa.pub
+        ssh_key_comment: test_key_comment
+        ssh_key_passphrase: key_passphrase
+        update_password: always
+        user_uid: 1234
+        user_gid: 1234
+        comment: test_comment
+        append: yes
+        createhome: yes
+        move_home: yes
+        home: /home/test_user
+        non_unique: no
+        skeleton: /path/to/skeleton
+        ssh_key_algorithm: ssh-rsa
+        ssh_key_type: rsa
+        ssh_key_size: 4096
+      become_method: sudo
+
+    - name: Verify that the user was not created
+      stat:
+        path: "/home/test_user"
+      register: test_user_info
+      failed_when: test_user_info.stat.exists
+
+    - name: Remove the user
+      user:
+        name: test_user
+        state: absent
+      become_method: sudo

@@ -1,0 +1,78 @@
+
+---
+- name: test playbook for acl module
+  hosts: localhost
+  gather_facts: no
+  vars:
+    user: testuser
+    group: testgroup
+    path: /tmp/testfile.txt
+    perm: rwxrwxrwx
+    
+  tasks:
+    
+  - name: Remove all default entries
+    acl:
+      path: "{{ path }}"
+      state: absent
+      entities:
+        - '{{ user }}:{{ group }}'
+        - '{{ user }}'
+        - '{{ group }}'
+        - 'everyone'
+      default: yes
+
+  - name: Add a new ACL entry
+    acl:
+      path: "{{ path }}"
+      entity: '{{ user }}:{{ group }}'
+      perm: rw
+      type: mask
+      state: present
+
+  - name: Invalid entity format
+    acl:
+      path: "{{ path }}"
+      entity: 'invalid-entity-format'
+      perm: r
+      state: present
+
+  - name: Invalid permission format
+    acl:
+      path: "{{ path }}"
+      entity: '{{ user }}:{{ group }}'
+      perm: invalid-permission-format
+      state: present
+
+  - name: File not found
+    acl:
+      path: /tmp/non-existent-file
+      entity: '{{ user }}:{{ group }}'
+      perm: r
+      state: present
+
+  - name: Using multiple entity types
+    acl:
+      path: "{{ path }}"
+      entities:
+        - '{{ user }}:{{ group }}'
+        - '{{ user }}'
+        - '{{ group }}'
+        - 'everyone'
+        - 'unix-group:testgroup2'
+      perm: r
+      state: present
+      type: mask
+
+  - name: Setting permission in octal format
+    acl:
+      path: "{{ path }}"
+      entity: '{{ user }}:{{ group }}'
+      perm: '0440'
+      state: present
+
+  - name: Removing all entries from a non-existent file
+    acl:
+      path: /tmp/non-existent-file
+      state: absent
+      default: yes

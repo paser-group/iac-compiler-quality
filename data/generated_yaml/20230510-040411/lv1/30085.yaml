@@ -1,0 +1,41 @@
+yaml
+- name: Create a launch configuration
+  hosts: localhost
+  gather_facts: false
+  vars:
+    region: us-west-1
+    lc_name: my-launch-config
+    ami_id: ami-1234567890
+  tasks:
+  - name: Check if default VPC exists
+    ec2_vpc_net_facts:
+      region: "{{ region }}"
+      filters:
+        tag:Name: "default"
+    register: vpc_info
+  - name: Create default VPC if it doesn't exist
+    ec2_vpc:
+      region: "{{ region }}"
+      state: present
+      cidr_block: 10.0.0.0/16
+      tags:
+        Name: "default"
+    when: vpc_info.vpcs is not defined
+  - name: Create a launch configuration
+    ec2_lc:
+      region: "{{ region }}"
+      name: "{{ lc_name }}"
+      image_id: "{{ ami_id }}"
+      instance_type: t2.micro
+      key_name: my-key-pair
+      security_groups: my-security-group
+      user_data: |
+        #!/bin/bash
+        echo "Hello, world!"
+      spot_price: 0.05
+      block_device_mappings:
+      - device_name: /dev/sda1
+        ebs:
+          volume_size: 8
+          volume_type: gp2
+      assign_public_ip: true

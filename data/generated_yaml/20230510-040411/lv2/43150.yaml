@@ -1,0 +1,54 @@
+
+- name: Issue 1234 - Pywintypes OpenSCManager Access Denied
+  hosts: all
+  vars:
+    executable_path: '/bin/ls'
+    service_name: 'TestService'
+  tasks:
+    - name: Try to start the {{ service_name }} service
+      win_service:
+        name: "{{ service_name }}"
+        state: started
+      register: service_result
+      ignore_errors: yes
+
+    - name: Install the {{ service_name }} service
+      win_service:
+        name: "{{ service_name }}"
+        executable: "{{ executable_path }}"
+        state: present
+      when: inventory_hostname == "localhost"
+
+    - name: Try to open the SC Manager
+      win_service:
+        name: "{{ service_name }}"
+        executable: "{{ executable_path }}"
+        state: started
+      register: sc_result
+      ignore_errors: yes
+
+    - name: Open the SC Manager with invalid credentials
+      win_service:
+        name: "{{ service_name }}"
+        executable: "{{ executable_path }}"
+        state: started
+        username: "invalidusername"
+        password: "invalidpassword"
+      ignore_errors: yes
+
+    - name: Stop the {{ service_name }} service
+      win_service:
+        name: "{{ service_name }}"
+        state: stopped
+      register: stop_result
+      ignore_errors: yes
+
+    - name: Uninstall the {{ service_name }} service
+      win_service:
+        name: "{{ service_name }}"
+        state: absent
+      when: inventory_hostname == "localhost"
+
+    - name: Display Ansible debug message
+      debug:
+        var: ansible_facts

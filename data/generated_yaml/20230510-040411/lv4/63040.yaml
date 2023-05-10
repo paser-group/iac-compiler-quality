@@ -1,0 +1,28 @@
+
+- name: Testing deadlock in na_ontap_gather_facts
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: Add a new thread to the lock
+      ansible.builtin.shell:
+        cmd: "/bin/sleep 5"
+        async: 5
+        poll: 0
+      register: async_cmd
+
+    - name: Do some work
+      ansible.builtin.debug:
+        msg: "Doing regular work here"
+
+    - name: Try to obtain the lock again
+      ansible.builtin.shell:
+        cmd: "/bin/sleep 5"
+        async: 5
+        poll: 0
+      register: async_cmd2
+
+    - name: Release the lock
+      ansible.builtin.debug:
+        msg: "Lock released"
+

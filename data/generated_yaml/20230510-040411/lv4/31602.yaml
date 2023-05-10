@@ -1,0 +1,49 @@
+yaml
+- name: Deploy application on Kubernetes
+  hosts: localhost
+  become: true
+  vars:
+    namespace: my-app-namespace
+    manifest_file: ./invalid-manifest.yaml
+
+  tasks:
+    - name: Create namespace
+      kubernetes.core.v1.namespace:
+        name: "{{ namespace }}"
+        state: present
+
+    - name: Apply deployment
+      kubernetes.core.v1beta1.deployment:
+        name: my-app
+        namespace: "{{ namespace }}"
+        spec:
+          replicas: 1
+          template:
+            metadata:
+              labels:
+                app: my-app
+            spec:
+              containers:
+              - name: my-app-container
+                image: nginx:latest
+                ports:
+                - containerPort: 80
+
+    - name: Apply invalid manifest
+      kubernetes.core.v1.pod:
+        name: invalid-pod
+        namespace: "{{ namespace }}"
+        manifest: "{{ lookup('file', manifest_file) }}"
+        state: present
+      register: pod_result
+      ignore_errors: true
+
+    - name: Verify error handling
+      fail:
+        msg: "Kubernetes module failed to handle HTTP 422 response"
+      when: pod_result.changed and '422' not in pod_result.msg
+
+    - name: Remove namespace
+      kubernetes.core.v1.namespace:
+        name: "{{ namespace }}"
+        state: absent

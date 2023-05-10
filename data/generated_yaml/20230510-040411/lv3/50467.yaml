@@ -1,0 +1,26 @@
+
+- hosts: localhost
+  become: true
+
+  tasks:
+  - name: Create swarm service with incorrect default value
+    docker_swarm:
+      state: present
+      name: bad_service
+      image: nginx:{{ bad_version | default("latest") }}
+      replicas: 1
+      ports:
+        - "80:80"
+      networks:
+        - name: web_net
+      env:
+        NODE_ENV: "production"
+    vars:
+      bad_version: "incorrect_version"
+
+  - name: Verify bad service is crashed
+    command: docker service ps -f desired-state=running bad_service
+    register: bad_service_result
+    failed_when: >-
+      "No such service" not in bad_service_result.stdout and
+      "0/1" not in bad_service_result.stdout

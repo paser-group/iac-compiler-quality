@@ -1,0 +1,33 @@
+
+---
+- name: CloudFormation Update Stack
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    stack_name: <your_existing_stack_name>
+
+  tasks:
+  - name: Set Region Environment Variable
+    set_fact:
+      AWS_REGION: <your_aws_region>
+
+  - name: Upload CloudFormation Template to S3
+    aws_s3:
+      bucket: <your_s3_bucket>
+      object: <your_cf_template_s3_key>
+      src: <path_to_your_cf_template_file>
+
+  - name: Validate CloudFormation Template
+    cloudformation:
+      state: validate
+      region: "{{ AWS_REGION }}"
+      template_url: "https://{{ <your_s3_bucket> }}.s3.amazonaws.com/{{ <your_cf_template_s3_key> }}"
+
+  - name: Update CloudFormation Stack
+    cloudformation:
+      state: update
+      stack_name: "{{ stack_name }}"
+      region: "{{ AWS_REGION }}"
+      disable_rollback: true
+      template_url: "https://{{ <your_s3_bucket> }}.s3.amazonaws.com/{{ <your_cf_template_s3_key> }}"

@@ -1,0 +1,27 @@
+
+---
+- hosts: localhost
+  tasks:
+    - name: Define variables
+      vars:
+        resource_group_name: "dummy"
+        vm_name: "dummy"
+        
+    - name: Get Azure VM facts
+      azure_rm_virtualmachine_facts:
+        resource_group: "{{ resource_group_name }}"
+        name: "{{ vm_name }}"
+      register: vm_fact
+
+    - name: Check if 'virtual_machine' fact is present
+      assert:
+        that:
+          - vm_fact.virtual_machines is defined
+          - vm_fact.virtual_machines | length > 0
+        msg: "No virtual machine was found in the specified resource group."
+
+    - name: Check if VM is running
+      assert:
+        that:
+          - vm_fact.virtual_machines[0].power_state.display_status == 'VM running'
+        msg: "Virtual machine is not in a running state."

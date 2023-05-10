@@ -1,0 +1,30 @@
+
+- name: Test JSON validation of custom facts
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Retrieve all facts
+      setup:
+        gather_subset: all
+
+    - name: Generate Invalid JSON response for custom fact
+      blockinfile:
+        path: /etc/ansible/facts.d/custom.fact
+        block: |
+          {
+            "name": "invalid json fact",
+            "value": 12345
+          }
+
+    - name: Retrieve custom facts
+      setup:
+        gather_subset: custom
+
+    - name: Assert JSON validation error and message
+      assert:
+        that:
+          - "'Expecting property name'"
+          - "'Failed to parse fact content'"
+          - "'Invalid data in fact file'"
+        in:
+          - ansible_facts['discovered_interpreter_python']

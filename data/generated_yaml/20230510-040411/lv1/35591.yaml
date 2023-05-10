@@ -1,0 +1,30 @@
+yaml
+- name: Start or Stop Azure VM using Managed Image
+  hosts: localhost
+  connection: local
+  
+  vars:
+    resource_group: <resource_group_name>
+    vm_name: <vm_name>
+    managed_image: <managed_image_name>
+    vm_state: <vm_state>
+
+  tasks:
+  - name: Get the managed image details
+    azure_rm_managed_disk_info:
+      resource_group: "{{ resource_group }}"
+      name: "{{ managed_image }}"
+    register: managed_image_details
+
+  - name: Start or Stop the Azure VM
+    azure_rm_virtualmachine:
+      resource_group: "{{ resource_group }}"
+      name: "{{ vm_name }}"
+      vm_size: "{{ managed_image_details.disk_info.os_disk.os_type[0] }}_{{ managed_image_details.disk_info.os_disk.disk_size_gb }}"
+      admin_username: <admin_username>
+      admin_password: <admin_password>
+      state: "{{ vm_state }}"
+      image:
+        id: "{{ managed_image_details.id }}"
+    delegate_to: localhost
+

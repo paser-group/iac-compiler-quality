@@ -1,0 +1,45 @@
+
+- name: npm module behavior
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    folder: "/tmp/ansible_test"
+
+  tasks:
+  - name: Create test folder
+    file:
+      dest: "{{ folder }}"
+      state: directory
+    register: folder_created
+
+  - name: Update npm module
+    command: >
+      npm install --prefix {{ folder }} npm@latest
+    register: module_updated
+    ignore_errors: true
+
+  - name: Download package.json
+    get_url:
+      url: "{{ item }}"
+      dest: "{{ folder }}"
+    with_items:
+    - "https://raw.githubusercontent.com/npm/cli/latest/package.json"
+    - "https://raw.githubusercontent.com/npm/cli/v6.14.11/package.json"
+
+  - name: Test npm module behavior
+    command: >
+      npm run test --prefix {{ folder }}
+    register: test_result
+    ignore_errors: true
+
+  - name: Cleanup test folder
+    file:
+      dest: "{{ folder }}"
+      state: absent
+    register: folder_removed
+    ignore_errors: true
+
+  - name: Report test results
+    debug:
+      msg: "{{ test_result }}"

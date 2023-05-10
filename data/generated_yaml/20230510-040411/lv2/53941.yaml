@@ -1,0 +1,104 @@
+
+- name: Test docker_swarm_service with private registry
+  hosts: localhost
+  vars:
+    registry: "https://myprivateregistry.com"
+    username: "my_username"
+    password: "my_password"
+    image: "my/image:latest"
+    invalid_registry: "https:/invalid-registry.net"
+    invalid_username: ":invalid_username@"
+    invalid_password: "!invalid:password@"
+    invalid_image: "my/image:invalid"
+    invalid_protocol: "ftp://myprivateregistry.com/my/image:latest"
+    invalid_url: "htp:/myprivateregistry.com/my/image:latest"
+    invalid_cert: "https://invalid_cert.com/my/image:latest"
+  tasks:
+    - name: Create a service with a private registry
+      docker_swarm_service:
+        name: my_service
+        image: "{{ registry }}/{{ image }}"
+        registry_username: "{{ username }}"
+        registry_password: "{{ password }}"
+      register: result
+    - name: Assert that the service was created successfully
+      assert:
+        that: "'created' in result and result.created == 1"
+    - name: Attempt to create a service with an invalid registry
+      docker_swarm_service:
+        name: invalid_registry_service
+        image: "{{ invalid_registry }}/{{ image }}"
+        registry_username: "{{ username }}"
+        registry_password: "{{ password }}"
+      register: invalid_registry_result
+      ignore_errors: yes
+    - name: Assert that service creation with invalid registry failed
+      assert:
+        that: "'failed' in invalid_registry_result and 'authentication required' in invalid_registry_result['msg']"
+    - name: Attempt to create a service with an invalid username
+      docker_swarm_service:
+        name: invalid_username_service
+        image: "{{ registry }}/{{ image }}"
+        registry_username: "{{ invalid_username }}"
+        registry_password: "{{ password }}"
+      register: invalid_username_result
+      ignore_errors: yes
+    - name: Assert that service creation with invalid username failed
+      assert:
+        that: "'failed' in invalid_username_result and 'authentication required' in invalid_username_result['msg']"
+    - name: Attempt to create a service with an invalid password
+      docker_swarm_service:
+        name: invalid_password_service
+        image: "{{ registry }}/{{ image }}"
+        registry_username: "{{ username }}"
+        registry_password: "{{ invalid_password }}"
+      register: invalid_password_result
+      ignore_errors: yes
+    - name: Assert that service creation with invalid password failed
+      assert:
+        that: "'failed' in invalid_password_result and 'authentication required' in invalid_password_result['msg']"
+    - name: Attempt to create a service with an invalid image
+      docker_swarm_service:
+        name: invalid_image_service
+        image: "{{ registry }}/{{ invalid_image }}"
+        registry_username: "{{ username }}"
+        registry_password: "{{ password }}"
+      register: invalid_image_result
+      ignore_errors: yes
+    - name: Assert that service creation with invalid image failed
+      assert:
+        that: "'failed' in invalid_image_result and 'pull access denied' in invalid_image_result['msg']"
+    - name: Attempt to create a service with an invalid protocol
+      docker_swarm_service:
+        name: invalid_protocol_service
+        image: "{{ invalid_protocol }}"
+        registry_username: "{{ username }}"
+        registry_password: "{{ password }}"
+      register: invalid_protocol_result
+      ignore_errors: yes
+    - name: Assert that service creation with invalid protocol failed
+      assert:
+        that: "'failed' in invalid_protocol_result and 'Unsupported scheme' in invalid_protocol_result['msg']"
+    - name: Attempt to create a service with an invalid URL
+      docker_swarm_service:
+        name: invalid_url_service
+        image: "{{ invalid_url }}"
+        registry_username: "{{ username }}"
+        registry_password: "{{ password }}"
+      register: invalid_url_result
+      ignore_errors: yes
+    - name: Assert that service creation with invalid URL failed
+      assert:
+        that: "'failed' in invalid_url_result and 'No connection adapters were found for' in invalid_url_result['msg']"
+    - name: Attempt to create a service with an invalid certificate
+      docker_swarm_service:
+        name: invalid_cert_service
+        image: "{{ invalid_cert }}"
+        registry_username: "{{ username }}"
+        registry_password: "{{ password }}"
+        insecure_registry: yes
+      register: invalid_cert_result
+      ignore_errors: yes
+    - name: Assert that service creation with invalid certificate failed
+      assert:
+        that: "'failed' in invalid_cert_result and 'certificate verify failed' in invalid_cert_result['msg']"

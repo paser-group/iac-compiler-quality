@@ -1,0 +1,104 @@
+
+---
+- name: MySQL privilege playbook
+  hosts: localhost
+  become: true
+
+  vars:
+    db_name: "{{ 'database_1' }}"
+    user_name: "{{ 'user_1' }}"
+    password: "{{ 'p@ssw0rd!' }}"
+
+  tasks:
+    - name: Install MySQL server
+      apt:
+        name: mysql-server
+        update_cache: yes
+
+    - name: Ensure MySQL is running
+      service:
+        name: mysql
+        state: started
+
+    - name: Create database that doesn't exist
+      mysql_db:
+        name: "{{ db_name }}"
+        state: present
+      ignore_errors: yes
+
+    - name: Create user that doesn't exist
+      mysql_user:
+        name: "{{ user_name }}"
+        password: "{{ password }}"
+        priv: "{{ db_name }}.*:ALL,GRANT"
+      ignore_errors: yes
+
+    - name: Add privileges to user
+      mysql_user:
+        name: "{{ user_name }}"
+        password: "{{ password }}"
+        priv: "{{ db_name }}.*:SELECT,USAGE,EXECUTE,INSERT,UPDATE,DELETE:DENY"
+        state: present
+        append_privs: yes
+      ignore_errors: yes
+
+    - name: Revoke existing privileges
+      mysql_user:
+        name: "{{ user_name }}"
+        password: "{{ password }}"
+        priv: "{{ db_name }}.*:ALL"
+        state: present
+      ignore_errors: yes
+
+    - name: Add invalid privilege
+      mysql_user:
+        name: "{{ user_name }}"
+        password: "{{ password }}"
+        priv: "{{ db_name }}.invalid_priv:*"
+        state: present
+      ignore_errors: yes
+
+    - name: Add privilege with invalid syntax
+      mysql_user:
+        name: "{{ user_name }}"
+        password: "{{ password }}"
+        priv: "{{ db_name }}.*::SELECT,USAGE,EXECUTE,INSERT,UPDATE,DELETE"
+        state: present
+      ignore_errors: yes
+
+    - name: Add privilege with special characters
+      mysql_user:
+        name: "{{ user_name }}"
+        password: "{{ password }}"
+        priv: "{{ db_name }}.*:@$%^&*()-+=[]{}|/\\`~,.<>?"
+        state: present
+      ignore_errors: yes
+
+    - name: Add privilege with nonexistent user
+      mysql_user:
+        name: "{{ 'nonexistent_user' }}"
+        password: "{{ password }}"
+        priv: "{{ db_name }}.*:SELECT,USAGE,EXECUTE,INSERT,UPDATE,DELETE"
+        state: present
+      ignore_errors: yes
+
+    - name: Add privilege to nonexistent database
+      mysql_user:
+        name: "{{ user_name }}"
+        password: "{{ password }}"
+        priv: "{{ 'nonexistent_db' }}.*:SELECT,USAGE,EXECUTE,INSERT,UPDATE,DELETE"
+        state: present
+      ignore_errors: yes
+
+    - name: Remove user from database
+      mysql_user:
+        name: "{{ user_name }}"
+        password: "{{ password }}"
+        state: absent
+      ignore_errors: yes
+
+    - name: Remove database
+      mysql_db:
+        name: "{{ db_name }}"
+        state: absent
+      ignore_errors: yes

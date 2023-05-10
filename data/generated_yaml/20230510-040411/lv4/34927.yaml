@@ -1,0 +1,31 @@
+yaml
+- name: Generate GCE VM instances list
+  hosts: localhost
+  gather_facts: no
+  tasks:
+  - name: Create a reference to the GCP auth file
+    set_fact:
+      cred_file: "../../tf_config/creds/gcloud.json"
+
+  - name: Generate Instance List
+    gcp_compute_instance:
+      auth_kind: serviceaccount
+      service_account_file: "{{ cred_file }}"
+      project: <your-gcp-project-id>
+    become: no
+    register: gce_instance_list
+
+- name: Create custom inventory
+  hosts: <your-ansible-inventory-host>
+  vars:
+    my_instances: "{{ gce_instance_list.instances }}"
+  tasks:
+  - name: group by zones
+    group_by:
+      key: "{{ item.zone }}"
+    with_items: "{{ my_instances }}"
+
+  - name: group by labels
+    group_by:
+      key: "{{ item.labels }}"
+    with_items: "{{ my_instances }}"

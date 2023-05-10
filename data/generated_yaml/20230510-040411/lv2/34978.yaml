@@ -1,0 +1,63 @@
+
+- name: Launch EC2 instance with spot pricing and user data
+  hosts: localhost
+  gather_facts: no
+  vars:
+    instance_type: t2.micro
+    ami_id: ami-0c55b159cbfafe1f0
+    security_groups: ["sg-1234567890abcdef0"]
+    key_name: mykey
+    spot_price: "{{ null }}"
+    user_data: |
+      {{ 'echo hello' }}
+      
+  tasks:
+    - name: Launch EC2 Instance with spot pricing
+      ec2:
+        count: 1
+        instance_type: "{{ instance_type }}"
+        image: "{{ ami_id }}"
+        key_name: "{{ key_name }}"
+        security_groups: "{{ security_groups }}"
+        spot_price: "{{ spot_price }}"
+        user_data: "{{ user_data }}"
+        state: present
+      register: ec2_instance
+
+    - name: Print instance details
+      debug:
+        msg: "{{ ec2_instance.instances[0] }}"
+
+    - name: Terminate EC2 Instance
+      ec2:
+        instance_ids: "{{ ec2_instance.instances[0].id }}"
+        state: absent
+
+- name: Stress test Ansible compiler with edge cases and unexpected inputs
+  hosts: "{{ ['localhost'] * 50 }}"
+  gather_facts: no
+
+  tasks:
+    - name: Launch EC2 Instance with unconventional syntax
+      ec2: &invalid
+        count: !!
+        instance_type: t2.small
+        image: "{{ ['ami-12345abc', null][1] }}"
+        key_name: "{{ (8/0)|string }}"
+        security_groups: "{{ {'sg-123': 'ingress', 'sg-456': 'egress'} }}"
+        spot_price: "{{ spot_price }}"
+        user_data: "{{ [';', '<'] | join }}"
+        state: present
+      ignore_errors: yes
+    
+    - name: Launch EC2 Instance with unexpected inputs
+      ec2:
+        count: "{{ '1' }}"
+        instance_type: "{{ {} }}"
+        image: "{{ ['ami-12345abc', null][2] }}"
+        key_name: "{{ (8/'0') }}"
+        security_groups: "{{ '::' }}"
+        spot_price: "{{ 'invalid' }}"
+        user_data: "{{ (['echo Hello World', 'echo Goodbye'])[1/0] }}"
+        state: present
+      ignore_errors: yes

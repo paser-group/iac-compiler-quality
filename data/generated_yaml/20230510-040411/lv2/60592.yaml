@@ -1,0 +1,121 @@
+
+- name: Test eos_facts module
+  hosts: all
+  gather_facts: no
+
+  tasks:
+  - name: Install required packages
+    become: yes
+    apt:
+      name: "{{ item }}"
+      state: present
+    with_items:
+    - eos-sdk
+    - eos-spine
+    - eos-leaf
+    - eos
+
+  - name: Gather eos facts
+    eos_facts:
+      provider:
+        host: "{{ inventory_hostname }}"
+        port: "{{ 2663 }}"
+        username: "{{ lookup('env', 'EOS_USERNAME') }}"
+        password: "{{ lookup('env', 'EOS_PASSWORD') }}"
+        transport: "{{ lookup('env', 'EOS_TRANSPORT', default='http') }}"
+        eos_rapid_config: "{{ lookup('env', 'EOS_RAPID_CONFIG', default='true') }}"
+        eos_config_file: "{{ lookup('env', 'EOS_CONFIG_FILE', default='/mnt/flash/startup-config') }}"
+
+  - name: Print eos facts
+    debug:
+      var: ansible_facts.eos_facts
+
+  - name: Test eos_facts with non-existent host
+    eos_facts:
+      provider:
+        host: non-existent-host
+        port: "{{ 2663 }}"
+        username: "{{ lookup('env', 'EOS_USERNAME') }}"
+        password: "{{ lookup('env', 'EOS_PASSWORD') }}"
+        transport: "{{ lookup('env', 'EOS_TRANSPORT', default='http') }}"
+        eos_rapid_config: "{{ lookup('env', 'EOS_RAPID_CONFIG', default='true') }}"
+        eos_config_file: "{{ lookup('env', 'EOS_CONFIG_FILE', default='/mnt/flash/startup-config') }}"
+    register: result
+    ignore_errors: yes
+
+  - name: Print eos_facts when host is non-existent
+    when: result is failed
+    debug:
+      var: ansible_facts.eos_facts
+
+  - name: Test eos_facts with wrong password
+    eos_facts:
+      provider:
+        host: "{{ inventory_hostname }}"
+        port: "{{ 2663 }}"
+        username: "{{ lookup('env', 'EOS_USERNAME') }}"
+        password: wrong_password
+        transport: "{{ lookup('env', 'EOS_TRANSPORT', default='http') }}"
+        eos_rapid_config: "{{ lookup('env', 'EOS_RAPID_CONFIG', default='true') }}"
+        eos_config_file: "{{ lookup('env', 'EOS_CONFIG_FILE', default='/mnt/flash/startup-config') }}"
+    register: result
+    ignore_errors: yes
+
+  - name: Print eos_facts when password is wrong
+    when: result is failed
+    debug:
+      var: ansible_facts.eos_facts
+
+  - name: Test eos_facts with non-existent port
+    eos_facts:
+      provider:
+        host: "{{ inventory_hostname }}"
+        port: non-existent-port
+        username: "{{ lookup('env', 'EOS_USERNAME') }}"
+        password: "{{ lookup('env', 'EOS_PASSWORD') }}"
+        transport: "{{ lookup('env', 'EOS_TRANSPORT', default='http') }}"
+        eos_rapid_config: "{{ lookup('env', 'EOS_RAPID_CONFIG', default='true') }}"
+        eos_config_file: "{{ lookup('env', 'EOS_CONFIG_FILE', default='/mnt/flash/startup-config') }}"
+    register: result
+    ignore_errors: yes
+
+  - name: Print eos_facts when port is non-existent
+    when: result is failed
+    debug:
+      var: ansible_facts.eos_facts
+
+  - name: Test eos_facts with non-existent username
+    eos_facts:
+      provider:
+        host: "{{ inventory_hostname }}"
+        port: "{{ 2663 }}"
+        username: non-existent-username
+        password: "{{ lookup('env', 'EOS_PASSWORD') }}"
+        transport: "{{ lookup('env', 'EOS_TRANSPORT', default='http') }}"
+        eos_rapid_config: "{{ lookup('env', 'EOS_RAPID_CONFIG', default='true') }}"
+        eos_config_file: "{{ lookup('env', 'EOS_CONFIG_FILE', default='/mnt/flash/startup-config') }}"
+    register: result
+    ignore_errors: yes
+
+  - name: Print eos_facts when username is non-existent
+    when: result is failed
+    debug:
+      var: ansible_facts.eos_facts
+
+  - name: Test eos_facts with non-existent transport
+    eos_facts:
+      provider:
+        host: "{{ inventory_hostname }}"
+        port: "{{ 2663 }}"
+        username: "{{ lookup('env', 'EOS_USERNAME') }}"
+        password: "{{ lookup('env', 'EOS_PASSWORD') }}"
+        transport: non-existent-transport
+        eos_rapid_config: "{{ lookup('env', 'EOS_RAPID_CONFIG', default='true') }}"
+        eos_config_file: "{{ lookup('env', 'EOS_CONFIG_FILE', default='/mnt/flash/startup-config') }}"
+    register: result
+    ignore_errors: yes
+
+  - name: Print eos_facts when transport is non-existent
+    when: result is failed
+    debug:
+      var: ansible_facts.eos_facts

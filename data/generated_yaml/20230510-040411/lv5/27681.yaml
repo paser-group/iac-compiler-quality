@@ -1,0 +1,22 @@
+
+- name: DNS resolution and iptables mapping
+  hosts: all
+  become: true
+  vars:
+    dns_result: "{{ lookup('dig', 'example.com', wantlist=True) }}"
+  tasks:
+    - name: iptables - add a rule to map DNS result to IP
+      iptables:
+        chain: INPUT
+        protocol: tcp
+        dport: 80
+        jump: ACCEPT
+        comment: "Allow traffic from {{ dns_result }}"
+        # Map the DNS result to host IP
+        source: "{{ dns_result }}"
+      notify: flush iptables
+  handlers:
+    - name: flush iptables
+      service:
+        name: iptables
+        state: restarted

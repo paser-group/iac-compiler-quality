@@ -1,0 +1,32 @@
+
+- hosts: all
+  gather_facts: no
+  become: yes
+
+  tasks:
+    - name: Establish SSH connection
+      ssh_connection:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ ansible_user }}"
+        password: "{{ ansible_password }}"
+        port: "{{ ansible_port }}"
+        ssh_args: "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+
+    - name: Execute privileged command
+      command: "{{ privileged_command }}"
+      register: command_result
+      ignore_errors: yes
+
+    - name: Diagnose SSH errors
+      debug:
+        msg: "{{ ssh_stderr }}"
+      register: ssh_errors
+      failed_when: not ssh_stderr | default("") | regex_search('^$')   # Check that ssh_stderr is not empty
+      when: command_result is failed
+
+    - name: Return diagnostic information
+      fail:
+        msg: "Could not establish SSH connection"
+      failed_when: ssh_errors is failed
+      when: ssh_errors is defined
+

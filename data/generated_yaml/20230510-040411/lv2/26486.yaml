@@ -1,0 +1,56 @@
+yaml
+- hosts: localhost
+  gather_facts: no
+
+  tasks:
+    - name: Create a virtual network with DHCP enabled
+      virt_net:
+        name: mynet
+        state: present
+        dhcp_start: 192.168.122.2
+        dhcp_end: 192.168.122.254
+        subnet: 192.168.122.0
+        netmask: 255.255.255.0
+        pool: 192.168.122.0/24
+        autostart: no
+        state_change_timeout: 45
+      changed_when: False
+
+    - name: Assert virt_net module's idempotency
+      assert:
+        that:
+        - "ansible_facts['previous_task_result']['changed'] == False"
+
+    - name: Create the same virtual network again with DHCP disabled
+      virt_net:
+        name: mynet
+        state: present
+        subnet: 192.168.123.0
+        netmask: 255.255.255.0
+        pool: 192.168.123.0/24
+        autostart: no
+        state_change_timeout: 60
+      changed_when: False
+
+    - name: Assert virt_net module's idempotency again
+      assert:
+        that:
+        - "ansible_facts['previous_task_result']['changed'] == False"
+
+    - name: Override 'pool' parameter with an invalid input
+      virt_net:
+        name: mynet
+        state: present
+        pool: xyz
+      changed_when: False
+
+    - name: Assert virt_net module's idempotency after the invalid input
+      assert:
+        that:
+        - "ansible_facts['previous_task_result']['failed'] == True"
+
+    - name: Remove the virtual network
+      virt_net:
+        name: mynet
+        state: absent
+      changed_when: False

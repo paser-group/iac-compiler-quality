@@ -1,0 +1,37 @@
+
+---
+- name: K8s Scale Issue Playbook
+  hosts: your_kubernetes_cluster # Replace with the name of your kubernetes cluster's host
+  vars:
+    deployment_name: your_deployment_name # Replace with the name of your deployment
+    replicas: your_replicas # Replace with the desired number of replicas for your deployment
+  tasks:
+    - name: Scale the deployment
+      k8s:
+        state: "absent"
+        kind: "Deployment"
+        name: "{{ deployment_name }}"
+      register: scale_deployment_result
+      ignore_errors: yes
+      
+    - name: Wait for the deployment to be deleted
+      k8s_info:
+        kind: Deployment
+        name: "{{ deployment_name }}"
+      register: deployment_deleted
+      until: deployment_deleted.resources | length == 0
+      retries: 12
+      delay: 10
+      
+    - name: Scale the deployment again
+      k8s:
+        state: "present"
+        kind: "Deployment"
+        name: "{{ deployment_name }}"
+        namespace: default
+        replicas: "{{ replicas }}"
+        update_strategy: "RollingUpdate"
+      register: scale_deployment_result
+
+    - debug:
+        var: scale_deployment_result

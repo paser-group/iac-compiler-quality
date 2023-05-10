@@ -1,0 +1,17 @@
+yaml
+---
+- name: AWS S3 versioning error fix
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Get the latest version id
+      shell: aws s3api --endpoint-url=<endpoint-url> list-object-versions --bucket <bucket-name> --prefix <object-key> --query 'Versions[0].VersionId' --output text
+      register: latest_version_id
+  
+    - name: Remove the object
+      aws_s3:
+        bucket: "<bucket-name>"
+        object: "<object-key>"
+        version_id: "{{ latest_version_id.stdout }}"
+        mode: "delete"
+      when: latest_version_id.stdout != "None"

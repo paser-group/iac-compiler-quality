@@ -1,0 +1,35 @@
+
+- name: Delete AWS Security Group
+  hosts: localhost
+
+  vars:
+    aws_region: us-west-2
+    security_group_name: "test-security-group"
+
+  tasks:
+    - name: Create AWS Security Group
+      ec2_group:
+        name: "{{ security_group_name }}"
+        description: "Ansible test security group"
+        region: "{{ aws_region }}"
+        rules:
+          - proto: tcp
+            from_port: 22
+            to_port: 22
+            cidr_ip: 0.0.0.0/0
+      register: security_group
+
+    - name: Delete AWS Security Group
+      ec2_group:
+        name: "{{ security_group_name }}"
+        state: absent
+        region: "{{ aws_region }}"
+      register: security_group_deleted
+
+    - debug:
+        var: security_group_deleted
+
+    - name: Verify if Security Group is deleted
+      assert:
+        that: "'NotFound' in security_group_deleted.stderr"
+

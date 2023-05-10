@@ -1,0 +1,30 @@
+
+- name: Test recursive vars dictionary assignment 
+  hosts: localhost
+  gather_facts: false
+  vars:
+    my_dict:
+      key1: value1
+      key2: "{{ my_dict }}"
+      key3: "{ key1: value1, key2: {{ my_dict }}, key3: {{ my_dict }} }"
+      key4: "{{ lookup('env','PATH') }}"
+
+
+  tasks:
+    - name: Assign vars dictionary to itself, expect recursive loop error
+      set_fact:
+        my_dict: "{{ my_dict }}"
+      ignore_errors: yes
+
+    - name: Testing unconventional syntax
+      debug:
+        msg: "The value of key2 is -> {{ my_dict.key2 }}"
+
+    - name: Testing unexpected inputs
+      debug:
+        msg: "{{ my_dict.key3 }}"
+
+    - name: Determine PATH
+      debug:
+        msg: "{{ my_dict.key4 }}"
+

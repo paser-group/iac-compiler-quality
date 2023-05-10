@@ -1,0 +1,46 @@
+yaml
+- name: Test ios_config idempotency issue/bug
+  hosts: all
+  gather_facts: false
+  connection: local
+
+  tasks:
+    - name: Configure the router with an interface
+      ios_config:
+        lines:
+          - "interface GigabitEthernet1/0"
+          - "ip address 192.168.1.1 255.255.255.0"
+          - "no shut"
+      register: output1
+
+    - name: Ensure ios_config is idempotent with same configuration
+      ios_config:
+        lines:
+          - "interface GigabitEthernet1/0"
+          - "ip address 192.168.1.1 255.255.255.0"
+          - "no shut"
+      register: output2
+
+    - name: Check if ios_config is idempotent
+      debug:
+        var: output2.changed
+
+    - name: Configure router with new IP address to stress test ios_config idempotency
+      ios_config:
+        lines:
+          - "interface GigabitEthernet1/0"
+          - "ip address 192.168.2.1 255.255.255.0"
+          - "no shut"
+      register: output3
+
+    - name: Ensure ios_config is idempotent with new IP address
+      ios_config:
+        lines:
+          - "interface GigabitEthernet1/0"
+          - "ip address 192.168.2.1 255.255.255.0"
+          - "no shut"
+      register: output4
+
+    - name: Check if ios_config is idempotent
+      debug:
+        var: output4.changed

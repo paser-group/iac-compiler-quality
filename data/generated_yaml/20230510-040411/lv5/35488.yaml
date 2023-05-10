@@ -1,0 +1,31 @@
+
+---
+- name: Playbook to troubleshoot SSH connection
+  hosts: localhost
+  vars:
+    switch_ip: "10.0.0.1"
+    switch_username: "admin"
+    switch_password: "password123"
+  tasks:
+  
+  - name: Verifying SSH Connection
+    ping:
+      host: "{{ switch_ip }}"
+      remote_user: "{{ switch_username }}"
+      ssh_args: "-o StrictHostKeyChecking=no"
+      
+  - name: Configuring Hosts          
+    nxos_command:
+      commands:
+      - hostname nxosv
+      - interface Ethernet1/1
+      - ip address 10.0.0.2/24
+    register: output
+    when: output.stdout.find('unreachable') == -1
+    
+  - name: Verifying host reachability
+    wait_for:
+      host: "{{ switch_ip }}"
+      port: 22
+      state: started
+      timeout: 60

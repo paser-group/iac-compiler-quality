@@ -1,0 +1,23 @@
+yaml
+- name: Handling bug in libgcrypt that affects passwordstore plugin
+  hosts: all
+  become: true
+
+  tasks:
+  - name: Ensure libgcrypt is installed
+    apt:
+      name: libgcrypt20
+      state: present
+
+  - name: Update passwordstore plugin
+    shell: 'pass update'
+
+  - name: Check if issue is resolved
+    shell: 'pass git log -p | grep "Fixed bug in libgcrypt"'
+    changed_when: false
+    register: result
+
+  - name: Notify if issue persists
+    debug:
+      msg: "The issue has not been resolved yet"
+    when: result.stdout_lines|length > 0

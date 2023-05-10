@@ -1,0 +1,39 @@
+
+- name: Test F5 BigIP node module server_port issue
+  hosts: all
+  gather_facts: no
+  vars:
+    server_port: "8080| grep $ENV_VAR"
+    invalid_server_port: "8080&& echo 'Hello'"
+  tasks:
+    - name: Add node with invalid server_port value
+      bigip_node:
+        name: "invalid_node"
+        partition: "Common"
+        host: "10.0.0.1"
+        user: "admin"
+        password: "password123"
+        server: "bigip.example.com"
+        server_port: "{{ invalid_server_port }}"
+      register: invalid_node_result
+      ignore_errors: true
+
+    - name: Add node with valid server_port value
+      bigip_node:
+        name: "valid_node"
+        partition: "Common"
+        host: "10.0.0.2"
+        user: "admin"
+        password: "password123"
+        server: "bigip.example.com"
+        server_port: "{{ server_port }}"
+      register: valid_node_result
+
+    - name: Print invalid nodes results
+      debug:
+        var: invalid_node_result
+      when: invalid_node_result|failed
+
+    - name: Print valid nodes results
+      debug:
+        var: valid_node_result

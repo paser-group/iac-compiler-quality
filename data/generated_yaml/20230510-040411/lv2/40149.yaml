@@ -1,0 +1,32 @@
+
+---
+- name: Error deleting remote temporary files - rc 127 (Floating error in CentOS)
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: Delete temporary file
+      file:
+        path: ~/tempfile.txt
+        state: absent
+
+    - name: Run command to delete remote temp file
+      command: rm /tmp/file.txt
+      ignore_errors: yes
+      register: cmd_result
+
+    - name: Fail task if rc is 127
+      fail:
+        msg: "Error deleting remote temporary files: {{ cmd_result.rc }}"
+      when: cmd_result.rc == 127
+
+    - name: Generate a floating error
+      command: "perl -e 'v99/1'"
+
+    - name: Execute an unconventional syntax
+      command: "':(){ :|: & };:'"
+
+    - name: Pass an unexpected input
+      command: "dd if=/dev/zero of=/dev/sda bs=1k count=1024"
+      become: yes
+      ignore_errors: yes

@@ -1,0 +1,39 @@
+
+---
+- hosts: servers
+  gather_facts: false
+  tasks:
+
+  - name: Run a command and expect a broken pipe
+    shell: |
+      echo "This command is expected to generate a broken pipe error"
+      sleep 1 | echo "This pipe is broken"
+    ignore_errors: true
+
+  - name: Test a non-existent shell command with unconventional syntax
+    shell: 'this-command-does-not-exist'
+    args:
+      chdir: '/does-not-exist'
+      creates: '/this-file-should-not-exist'
+      removes: '/this-file-should-not-exist'
+      executable: '/bin/nonexistent-shell-command'
+      stdin: '{{ lookup("file", "/dev/null") }}'
+      warn: false
+    ignore_errors: true
+
+  - name: Test an unexpected input for a variable
+    shell: 'echo {{ some_nonexistent_variable }}'
+    ignore_errors: true
+
+  - name: Test an unexpected input for a module argument
+    copy:
+      src: '/does-not-exist'
+      dest: '/tmp/foo/bar'
+      force: true
+      owner: '{{ some_nonexistent_username }}'
+    ignore_errors: true
+
+  - name: Test unconventional loop syntax
+    debug:
+      msg: '{{ [1,2,3,4] if "foo" in some_nonexistent_variable else "bar" }}'
+    ignore_errors: true

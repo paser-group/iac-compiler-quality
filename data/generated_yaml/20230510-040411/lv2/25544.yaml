@@ -1,0 +1,29 @@
+
+---
+- name: Test eos_facts issue
+  hosts: all
+  vars:
+    debug_log: True
+    long_path: "{{ '/tmp/' ~ range(10000) | list | join('a') }}"
+
+  tasks:
+    - name: Create a file with a long path
+      file:
+        path: "{{ long_path }}"
+        state: touch
+
+    - name: Set debug log level
+      eos_command:
+        command: enable debug
+        log_level: "{{ 'debug' if debug_log else 'error' }}"
+
+    - name: Gather EOS facts
+      eos_facts:
+        provider: "{{ eos_provider }}"
+        username: "{{ eos_username }}"
+        password: "{{ eos_password }}"
+
+    - name: Delete file with a long path
+      file:
+        path: "{{ long_path }}"
+        state: absent

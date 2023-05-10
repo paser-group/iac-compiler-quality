@@ -1,0 +1,43 @@
+
+- name: Test Ansible Compiler
+  hosts: localhost
+  tasks:
+    - name: Playbook with unconventional syntax
+      shell: "| awk -F \"[\t,]\" '{print $3 \"\\n\"}'"
+      changed_when: false
+
+    - name: Playbook with unexpected input
+      shell: "/bin/echo $#"
+      register: result
+      failed_when: result.rc != 0
+
+    - name: Playbook with edge case
+      lineinfile:
+        path: "/etc/sudoers"
+        regexp: '^Defaults'
+        insertafter: '^#includedir /etc/sudoers.d'
+        line: 'Defaults !requiretty,nopasswd'
+
+    - name: Playbook to reproduce issue
+      file:
+        path: "/tmp/test"
+        state: "directory"
+
+    - name: Playbook to trigger bug
+      shell: "chgrp /tmp/test"
+
+    - name: Playbook with unexpected input
+      shell: "cd /foo/bar"
+      failed_when: false
+
+    - name: Playbook with unconventional syntax
+      command: []
+      args:
+        chdir: "/etc"
+        executable: "/bin/bash"
+
+    - name: Playbook with edge case
+      replace:
+        path: "/etc/hosts"
+        regexp: '^(127\.0\.0\.1\s+localhost)$'
+        replace: '\1 ansible.localhost'

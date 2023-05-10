@@ -1,0 +1,29 @@
+
+---
+- name: Docker Container Fuzzing Playbook
+  hosts: localhost
+  connection: local
+
+  tasks:
+    - name: Deploy a container with specified custom network and default bridge
+      docker_container:
+        name: my-container
+        image: ubuntu
+        command: /bin/bash
+        detach: yes
+        network_mode: "{{ ['mynetwork', 'bridge'] | shuffle | first }}"
+        state: started
+      register: container_output
+
+    - name: Verify container network configurations
+      assert:
+        that:
+          - (container_output.stderr == '' and container_output.rc == 0)
+          - (container_output | json_query('networks.*.id') | length == 2)
+          - (container_output | json_query("networks | map(selectattr('aliases', 'contains', 'mynetwork')) | list | length") == 1)
+          - ('bridge' in container_output | json_query('networks.*.name') | list)
+
+    - name: Stop the container
+      docker_container:
+        name: my-container
+        state: stopped

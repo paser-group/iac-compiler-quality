@@ -1,0 +1,35 @@
+yaml
+- name: Create new DNS entries in Route53 without errors
+  hosts: localhost
+  connection: local
+  vars:
+    aws_region: "us-west-2"
+    aws_access_key: "<your access key>"
+    aws_secret_key: "<your secret key>"
+    zone_id: "<your zone id>"
+    domain_name: "example.com"
+    new_dns_records:
+      - { name: "www", type: "A", ttl: 900, value: "192.0.2.1" }
+      - { name: "blog", type: "CNAME", ttl: 900, value: "example.com" }
+
+  tasks:
+    - name: Install boto3 and botocore python dependencies
+      pip:
+        name:
+          - boto3
+          - botocore
+      
+    - name: Create new DNS entries in Route53
+      boto3:
+        region: "{{ aws_region }}"
+        security_token: "{{ aws_access_key }}"
+        secret_key: "{{ aws_secret_key }}"
+        mode: upsert
+        hosted_zone_id: "{{ zone_id }}"
+        zone_name: "{{ domain_name }}"
+        record_name: "{{ item.name }}.{{ domain_name }}"
+        record_type: "{{ item.type }}"
+        record_ttl: "{{ item.ttl }}"
+        record_value: "{{ item.value }}"
+      with_items:
+        - "{{ new_dns_records }}"

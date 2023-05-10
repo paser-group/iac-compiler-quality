@@ -1,0 +1,55 @@
+
+- name: SSH works but Ansible throws unreachable error test playbook
+  hosts: all
+  vars:
+    ssh_port: "{{ hostvars[inventory_hostname]['ansible_ssh_port'] }}"
+  tasks:
+  - name: test SSH connection
+    check_ssh:
+      port: "{{ ssh_port }}"
+      timeout: 10
+    ignore_errors: true
+
+  - name: check connectivity using ping module
+    ping:
+    ignore_errors: true
+
+  - name: test long retry
+    command: /bin/false
+    register: retries_test
+    retries: 20
+    delay: 20
+    until: retries_test is succeeded
+    ignore_errors: true
+
+  - name: test unreachable host
+    ping:
+    delegate_to: 1.2.3.4
+    ignore_errors: true
+
+  - name: test random string as a hostname
+    ping:
+    delegate_to: "{{ 2*2 }}"
+    ignore_errors: true
+
+  - name: test unconventional syntax
+    shell: "ls / | grep 'home'"
+    args:
+      chdir: /tmp # use chdir as args, unconventional syntax
+    ignore_errors: true
+
+  - name: test invalid syntax in yaml block
+    block:
+      - name: task inside block
+        ping:
+      - name: 'syntax in {{ loops mustache }}'
+        ping:
+    rescue:
+      - debug:
+          msg: "Invalid syntax error"
+    ignore_errors: true
+
+  - name: test invalid variable
+    set_fact:
+      var: "{{ 1/0 }}"
+    ignore_errors: true

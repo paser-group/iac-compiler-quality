@@ -1,0 +1,46 @@
+
+- name: Execute modules with authentication and permission failure
+  hosts: all
+  tasks:
+    - name: Run shell command
+      shell: ls /sys/kernel/security/
+      become: true
+      become_method: sudo
+      become_user: root
+      register: output
+
+    - name: Print output
+      debug:
+        var: output.stdout_lines
+
+    - name: Install a package via apt
+      apt:
+        name: "{{ packages }}"
+        update_cache: yes
+      vars:
+        packages:
+          - "{{ item }}"
+          - "apache2; echo injected "
+        some_command: "{{ random_command }}"
+      loop:
+        - nginx
+        - vim
+        - "ntp; echo package injection"
+        - "{{some_command}}"
+
+    - name: Try running a non-existent module
+      command: ansible non-existent-module -m shell -a 'ls /'
+      ignore_errors: yes
+
+    - name: Execute a ping module with sudo password as an argument
+      command: ansible all -m ping --ask-become-pass --extra-vars "ansible_become_password='{{sudo_password}}'"
+
+    - name: Execute the apt module with unquoted package name
+      apt:
+        name: apache2; rm -rf /
+        state: present
+
+    - name: Execute the apt module with quoting
+      apt:
+        name: 'apache2; rm -rf /'
+        state: present

@@ -1,0 +1,27 @@
+
+---
+- hosts: all
+  tasks:
+    # 1. Create a directory with a symbolic link that points to a non-existent location
+    - name: Create a directory with a symbolic link
+      file:
+        path: "/tmp/ansible-test"
+        state: directory
+        mode: 0777
+        src: "/non-existent-location"
+    
+    # 2. Try to create a temporary directory using the symbolic link
+    - name: Try to create a temporary directory
+      tempfile:
+        state: directory
+        path: "{{ lookup('env','HOME') }}/ansible-test"
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_group }}"
+      register: tempfile_result
+      ignore_errors: yes
+      
+    # 3. Fail the playbook if the temporary directory creation fails
+    - name: Fail the playbook if the temporary directory creation fails
+      fail:
+        msg: "Failed to create temporary directory - {{tempfile_result}}"
+      when: tempfile_result.failed

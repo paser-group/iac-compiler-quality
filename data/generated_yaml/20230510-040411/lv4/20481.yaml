@@ -1,0 +1,46 @@
+
+- name: Test firewall rule update
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    gce_service_account_email: "your-email@your-project-id.iam.gserviceaccount.com"
+    gce_project: "your-project-id"
+    gce_cred_kind: "serviceaccount"
+    gce_cred_file: "your-creds.json"
+    firewall_name: "allow-http"
+    source_ranges:
+      - 0.0.0.0/0
+    allowed:
+      - tcp
+    ports:
+      - "80"
+
+  tasks:
+
+    - name: Create firewall rule
+      gce_net: 
+          firewall_name: "{{ firewall_name }}"
+          source_ranges: "{{ source_ranges }}"
+          allowed: "{{ allowed }}"
+          rules_from: "{{ ports }}"
+
+    - name: Update firewall rule
+      firewall:
+        name: "{{ firewall_name }}"
+        source_ranges: "{{ source_ranges }}"
+        protocol: "tcp"
+        ports: "{{ ports }}"
+        action: allow
+    
+    - name: Verify firewall rule update
+      gce_net: 
+          project: "{{ gce_project }}"
+          credentials_file: "{{ gce_cred_file }}"
+          service_account_email: "{{ gce_service_account_email }}"
+          firewall_name: "{{ firewall_name }}"
+      register: query_response
+
+    - name: Print query response
+      debug:
+        var: query_response

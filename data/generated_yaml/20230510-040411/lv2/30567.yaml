@@ -1,0 +1,103 @@
+
+---
+- name: Test Ansible Network Errors
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+  - name: Run command with invalid network
+    command:
+      cmd: "ping nonexistent_host"
+      register: output
+    ignore_errors: yes
+
+  - name: Check registered output contains error pattern
+    debug:
+      var: output.stderr
+    register: count_errors
+    failed_when: count_errors['output'].find('Name or service not known') == -1
+
+  - name: Run command with valid network
+    command: 
+      cmd: "ping 8.8.8.8"
+      register: output
+
+  - name: Check registered output does not contain error pattern
+    debug:
+      var: output.stderr
+    when: count_errors['failed'] == False
+
+  - name: Run command with delay
+    command:
+      cmd: "ping 8.8.8.8 -i 2"
+      register: output_delayed
+
+  - name: Check registered output does not contain error pattern
+    debug:
+      var: output_delayed.stderr
+    when: count_errors['failed'] == False
+
+  - name: Run command with invalid syntax
+    command:
+      cmd: "ping ;"
+      register: output_invalid_syntax
+    ignore_errors: yes
+
+  - name: Check registered output contains syntax error pattern
+    debug:
+      msg: 'Syntax error in command'
+    when: output_invalid_syntax.rc != 0
+
+  - name: Run command with invalid argument
+    command:
+      cmd: "ping -X"
+      register: output_invalid_argument
+    ignore_errors: yes
+
+  - name: Check registered output contains invalid argument pattern
+    debug:
+      msg: 'Invalid argument in command'
+    when: output_invalid_argument.rc != 0
+  
+  - name: Run command with invalid number of arguments
+    command:
+      cmd: "ping 8.8.8.8 8.8.8.8"
+      register: output_invalid_num_arguments
+    ignore_errors: yes
+
+  - name: Check registered output contains invalid number of arguments pattern
+    debug:
+      msg: 'Invalid number of arguments in command'
+    when: output_invalid_num_arguments.rc != 0
+
+  - name: Ensure SSH port is opened
+    wait_for:
+      port: 22
+      state: started
+    ignore_errors: yes
+
+  - name: Run SSH command with a missing public key
+    command:
+      cmd: "ssh -i /path/to/private_key -o StrictHostKeyChecking=no user@192.168.1.1 'echo ping'"
+    register: output_ssh_missing_pk
+    ignore_errors: yes
+
+  - name: Check registered output contains missing public key pattern
+    debug:
+      msg: 'Missing public key'
+    when: output_ssh_missing_pk.rc != 0
+
+  - name: Run SSH command with a prompt in the middle
+    expect:
+      command: ssh user@192.168.1.1
+      responses:
+        'assword.*': 'mypassword'
+        'someprompt.*': 'somevalue'
+        '.*#': 'exit'
+    register: output_ssh_prompt
+    ignore_errors: yes
+
+  - name: Check registered output contains prompt in the middle pattern
+    debug:
+      msg: 'Prompt not found'
+    when: output_ssh_prompt.rc != 0

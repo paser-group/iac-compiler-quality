@@ -1,0 +1,26 @@
+yaml
+---
+- name: Test passwordstore plugin
+  hosts: localhost
+  vars:
+    passwordstore_password: "{{ lookup('vault', 'passwordstore_password') }}"
+  tasks:
+  - name: Install passwordstore plugin
+    apt:
+      name: pass
+      state: present
+  
+  - name: Load passwordstore password
+    set_fact:
+      passwordstore_password: "{{ lookup('vault', 'passwordstore_password') }}"
+  
+  - name: Test passwordstore command
+    shell: >
+      pass version
+      echo '{{ passwordstore_password }}' | pass insert test/username
+      pass test/username
+    register: passwordstore_output
+  
+  - name: Print output from password store plugin
+    debug:
+      var: passwordstore_output.stdout_lines

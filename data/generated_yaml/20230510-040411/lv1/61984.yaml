@@ -1,0 +1,69 @@
+yaml
+---
+- name: Update Azure CLI
+  hosts: all
+  gather_facts: true
+
+  tasks:
+
+  - name: Check if azure-cli needs updating
+    shell: az --version | grep "azure-cli "
+    register: azure_cli_version_output
+    changed_when: False
+
+  - name: Update azure-cli
+    shell: azure-cli upgrade
+    when: azure_cli_version_output.stdout.find('azure-cli') != -1
+
+  - name: Install azure-storage Ansible module
+    pip:
+      name: azure-storage
+      state: present
+
+  - name: Unmount the disk
+    mount:
+      path: /mnt/azure_disk
+      state: unmounted
+      when: ansible_mounts|selectattr('mount','equalto','/mnt/azure_disk')|list|length > 0
+
+  - name: Wait before the unmount is completed
+    pause:
+      seconds: 5
+
+  - name: Update GRUB parameters
+    lineinfile:
+      dest: /etc/default/grub
+      regexp: 'GRUB_CMDLINE_LINUX_DEFAULT'
+      line: 'GRUB_CMDLINE_LINUX_DEFAULT="quiet splash intel_idle.max_cstate=1"'
+    become: true
+
+  - name: Update the grub file
+    command: update-grub
+    become: true
+
+  - name: Reboot the server
+    reboot:
+      pre_reboot_delay: 0
+      post_reboot_pause: 60
+    become: true
+
+  - name: Mount managed disk
+    mount:
+      path: /mnt/azure_disk
+      src: /dev/disk/cloud/azure_disk
+      fstype: ext4
+      opts: defaults
+      state: mounted
+    become: true
+
+  - name: Check if disk is mounted
+    stat:
+      path: /mnt/azure_disk
+    register: disk_status
+
+  - name: Fix the disk permission
+    file:
+      path: /mnt/azure_disk
+      state: directory
+      mode: "0777"
+    when: disk_status.stat.exists

@@ -1,0 +1,71 @@
+
+- name: CloudWatch event rule test playbook
+  hosts: localhost
+
+  gather_facts: no
+
+  tasks:
+
+    - name: Testing unconventional module argument ordering
+      cloudwatchevent_rule:
+        region: us-east-1
+        account_id: 123456789012
+        state: present
+        event_pattern: '{"source": ["aws.ec2"], "detail-type": ["EC2 Instance State-change Notification"], "detail": {"state": ["terminated"]}}'
+        description: sample description
+      register: cw_rule_output
+
+    - name: Testing unconventional syntax with variable interpolation
+      cloudwatchevent_rule:
+        region: "{{ item.region }}"
+        account_id: "{{ item.account_id }}"
+        state: present
+        event_pattern: >
+          {
+            "source": ["aws.ec2"],
+            "detail-type": ["EC2 Instance State-change Notification"],
+            "detail": {
+              "state": [
+                "{{ item.state }}"
+              ]
+            }
+          }
+        description: "{{ item.description }}"
+      with_items:
+        - region: us-east-1
+          account_id: 123456789012
+          state: "terminated"
+          description: sample description
+        - region: us-west-2
+          account_id: 345678901234
+          state: "running"
+          description: another sample description
+          name: invalild field
+      register: cw_rule_output
+
+    - name: Testing unexpected module input
+      cloudwatchevent_rule:
+        region: us-east-1
+        account_id: 123456789012
+        state: present
+        event_pattern: Invalid event pattern syntax
+        description: sample description
+      register: cw_rule_output
+
+    - name: Testing unsupported module parameters
+      cloudwatchevent_rule:
+        region: us-east-1
+        account_id: 123456789012
+        state: present
+        unsupported_param: invalid input
+      register: cw_rule_output
+
+    - name: Testing edge case arugment values
+      cloudwatchevent_rule:
+        region: ""
+        account_id: 1
+        state: absent
+        description: ['string', 'list']
+        event_pattern: "{'source': ['aws.ec2'], 'detail-type': ['EC2 Instance State-change Notification']
+
+

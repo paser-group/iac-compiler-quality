@@ -1,0 +1,49 @@
+
+---
+- name: Test playbook for using empty inventory group
+  hosts: all
+
+  tasks:
+  - name: Create empty inventory group
+    add_host:
+      name: "{{ item }}"
+      groups: "{{ groups['empty'] | default([]) }}"
+    with_items: "{{ groups['empty'] | default([]) }}"
+
+  - name: Use empty inventory group
+    debug:
+      msg: "This task should not be reached"
+    when: "'empty' in groups"
+
+  - name: Use nonexistent inventory group
+    debug:
+      msg: "This task should not be reached"
+    when: "'does_not_exist' in groups"
+
+  - name: Try to access variable from empty inventory group
+    debug:
+      msg: "This task should not be reached"
+    vars:
+      - item: "{{ groups['empty'][0] }}"
+
+  - name: Use empty inventory group in loop
+    debug:
+      msg: "{{ item }}"
+    loop: "{{ groups['empty'] | default([]) }}"
+
+  - name: Wait for nonexistent host
+    wait_for:
+      host: "nonexistent_host.example.com"
+      port: 22
+      timeout: 10
+
+  - name: Use empty inventory group with delegate_to
+    debug:
+      msg: "This task should not be reached"
+    delegate_to: "{{ groups['empty'][0] }}"
+
+  - name: Use empty inventory group with run_once
+    debug:
+      msg: "This task should not be reached"
+    run_once: true
+    when: "'empty' in groups"

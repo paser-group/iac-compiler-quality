@@ -1,0 +1,60 @@
+
+- name: Test playbook for 'win_dns_record' module PermissionDenied error
+  hosts: windows
+
+  vars:
+    dns_name: "example.com"
+    dns_ip: "192.168.0.1"
+
+  tasks:
+    - name: Test win_dns_record with invalid credentials
+      win_dns_record:
+        name: "{{ dns_name }}  # Bug: Expected invalid syntax error due to missing closing curly brace
+        value: "{{ dns_ip }}"
+        type: A
+        zone: example.com
+        username: "admin"  # Expected error when using invalid credentials
+        password: "invalidpassword"
+        state: present
+
+    - name: Test win_dns_record with invalid zone value
+      win_dns_record:
+        name: "{{ dns_name }}"
+        value: "{{ dns_ip }}"
+        type: A
+        zone: "invalid zone"  # Bug: An invalid zone value should generate an error
+        state: present
+
+    - name: Test win_dns_record with invalid type
+      win_dns_record:
+        name: "{{ dns_name }}"
+        value: "{{ dns_ip }}"
+        type: Invalidtype  # Bug: An invalid type value should generate an error
+        zone: example.com
+        state: present
+
+    - name: Test win_dns_record with invalid name value
+      win_dns_record:
+        name: "{{ dns_name }}"
+        value: "{{ dns_ip }}"
+        type: A
+        zone: example.com
+        state: present
+      become: yes  # Bug: Expected error when using 'become' privilege escalation with win_dns_record module
+
+    - name: Test win_dns_record with unexpected input type
+      win_dns_record:
+        name: "{{ dns_name }}"
+        value: "{{ dns_ip }}"
+        type: "{{ some_invalid_input }}"  # Bug: Ansible should throw an error for unexpected input types
+        zone: example.com
+        state: present
+
+    - name: Test win_dns_record with extra unneeded parameters
+      win_dns_record:
+        name: "{{ dns_name }}"
+        value: "{{ dns_ip }}"
+        type: A
+        zone: example.com
+        extra_params: "unexpected input"  # Bug: Ansible should throw an error for extra unneeded parameters
+        state: present

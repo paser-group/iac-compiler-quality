@@ -1,0 +1,74 @@
+
+- name: Test iptables module edge cases
+  hosts: localhost
+  gather_facts: false
+  
+  tasks:
+  
+  # Edge case 1: Create a rule with multiple ports
+  - name: Test multiple ports
+    iptables:
+      table: nat
+      chain: OUTPUT
+      protocol: tcp
+      destination_port: "{{ range(100, 103) | join(',') }}"
+      jump: ACCEPT
+  
+  # Edge case 2: Add a rule with an empty option
+  - name: Test empty option
+    iptables:
+      table: nat
+      chain: OUTPUT
+      protocol: tcp
+      destination_port: 80
+      options: ""
+      jump: ACCEPT
+  
+  # Edge case 3: Create a rule with a non-existent option
+  - name: Test non-existent option
+    iptables:
+      table: nat
+      chain: OUTPUT
+      protocol: tcp
+      destination_port: 8080
+      options: "-m non_existent_option"
+      jump: ACCEPT
+  
+  # Edge case 4: Add a rule with an empty jump
+  - name: Test empty jump
+    iptables:
+      table: nat
+      chain: OUTPUT
+      protocol: tcp
+      destination_port: 443
+      jump: ""
+      
+  # Edge case 5: Create a rule with an incorrect destination address format
+  - name: Test incorrect destination IP format
+    iptables:
+      table: nat
+      chain: PREROUTING
+      protocol: tcp
+      destination: "192.168.1"
+      destination_port: 22
+      jump: DNAT
+      
+  # Edge case 6: Remove a non-existent rule
+  - name: Test removing non-existent rule
+    iptables:
+      table: nat
+      chain: OUTPUT
+      protocol: tcp
+      destination_port: "{{ range(200, 203) | join(',') }}"
+      jump: DROP
+      state: absent
+      
+  # Edge case 7: Test invalid value type for state option
+  - name: Test invalid state option
+    iptables:
+      table: nat
+      chain: PREROUTING
+      protocol: tcp
+      destination_port: 8080
+      state: "invalid_state"
+      jump: DNAT

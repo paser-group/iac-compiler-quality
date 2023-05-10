@@ -1,0 +1,56 @@
+
+- name: Test ansible_default_ipv4 issue
+  hosts: localhost
+  
+  tasks:
+     
+     # Edge Cases 
+     
+    - name: Print current ansible_default_ipv4
+      ansible.builtin.debug:
+        var: ansible_default_ipv4
+    
+    - name: Convert IP to a number
+      set_fact:
+        ipv4_int: "{{ ansible_default_ipv4.split('.') | map('int') | list | reverse | reduce(lambda acc, x: acc + (256 ** x[0] * x[1]), 0) }}"
+      
+    - name: Print number for ipv4 address
+      ansible.builtin.debug:
+        var: ipv4_int
+      
+    - name: Reverse lookup
+      set_fact:
+        ipv4_hostnames: "{{ ipv4_int | ipaddr('') }}"
+        
+    - name: Print hostnames for ipv4 address
+      ansible.builtin.debug:
+        var: ipv4_hostnames
+      
+    # Unconventional Syntax
+    
+    - name: Use ternary operator to get subnet mask
+      set_fact:
+        subnet_mask: "{{ '255.255.255.0' if ipv4_int | ipaddr('netmask') == '255.255.255.0' else '255.255.0.0' }}"
+        
+    - name: Print subnet_mask
+      ansible.builtin.debug:
+        var: subnet_mask
+      
+    # Unexpected Inputs
+      
+    - name: Test with invalid ipv4 address
+      set_fact:
+        invalid_ipv4: "{{ '256.256.256.256' | ipaddr('int') }}"
+      ignore_errors: yes
+      
+    - name: Print invalid_ipv4
+      ansible.builtin.debug:
+        var: invalid_ipv4
+      
+    - name: Test unable to convert ipv4 to hostname
+      set_fact:
+        invalid_hostnames: "{{ 'ThisIsNotAValidIPv4Address' | ipaddr('') }}"
+      
+    - name: Print invalid_hostnames
+      ansible.builtin.debug:
+        var: invalid_hostnames

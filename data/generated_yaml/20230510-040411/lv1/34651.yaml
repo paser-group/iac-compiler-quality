@@ -1,0 +1,25 @@
+yaml
+---
+- name: Fix DNS resolver order on Windows clients
+  hosts: windows_client
+  become: true
+  
+  vars:
+    dns_servers:
+      - 192.0.2.1
+      - 192.0.2.2
+      - 192.0.2.3
+
+  tasks:
+    - name: Retrieve current DNS servers configuration
+      win_dns_client:
+        state: query
+
+      register: current_dns
+
+    - name: Set new DNS servers configuration
+      win_dns_client:
+        state: present
+        search_domains: "{{ current_dns.search_domains }}"
+        connection_specific_suffix: "{{ current_dns.connection_specific_suffix }}"
+        dns_servers: "{{ dns_servers }}"

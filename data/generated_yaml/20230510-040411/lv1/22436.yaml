@@ -1,0 +1,20 @@
+yaml
+---
+- name: Ansible crash when file containing iso8859-15 with diff option
+  hosts: localhost
+  vars:
+    file_path: /path/to/file.txt
+    diff_file_path: /path/to/diff_file.txt
+  
+  tasks:
+    - name: Check if file contains iso8859-15 encoding
+      shell: file -i {{ file_path }}
+      register: file_encoding
+      
+    - name: Convert file to utf-8 if it contains iso8859-15 encoding
+      shell: iconv -f iso8859-15 -t utf-8 {{ file_path }} > {{ file_path }}.tmp && mv {{ file_path }}.tmp {{ file_path }}
+      when: "'iso-8859-15' in file_encoding.stdout"
+    
+    - name: Create diff file with utf-8 encoding
+      shell: diff -u --label {{ file_path }} --label {{ diff_file_path }} {{ file_path }} {{ diff_file_path }} > {{ file_path }}.diff
+      when: "'utf-8' in file_encoding.stdout"

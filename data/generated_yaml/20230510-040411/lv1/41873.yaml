@@ -1,0 +1,27 @@
+yaml
+---
+- name: Update Letsencrypt Certificates
+  hosts: all
+  become: true
+  vars:
+    # Define the path to the letsencrypt module if necessary
+    # letsencrypt_path: /path/to/letsencrypt
+    
+  tasks:
+    - name: Check existing certificates
+      shell: "{{ letsencrypt_path }}/letsencrypt-auto certificates"
+      register: cert_info
+      changed_when: false
+
+    - name: Renew expired certificates
+      shell: "{{ letsencrypt_path }}/letsencrypt-auto renew --agree-tos"
+      when: cert_info.stdout.find('Expires') != -1 and cert_info.stdout.find('0 days') != -1
+      changed_when: true
+
+    - name: Restart related service
+      # Replace with your specific service/systemctl command to restart your server
+      service:
+        name: httpd
+        state: restarted
+      when: cert_info.stdout.find('Certificates renewed') != -1
+

@@ -1,0 +1,62 @@
+
+- name: Create or Update Auto Scaling Policy
+  vars:
+    auto_scaling_policy:
+      name: my_auto_scaling_policy
+      launch_config: my_launch_config
+      min_size: 2
+      max_size: 10
+      desired_capacity: 5
+
+  tasks:
+    - name: Retrieve current group and instance facts
+      ec2_group_facts:
+        filters:
+          tag:my_tag
+      register: ec2_group
+
+    - name: Retrieve current target group facts
+      elb_target_group_facts:
+        target_group_names: my_target_group
+      register: elb_targets
+      
+    - name: Retrieve instance info
+      ec2_instance_info:
+        filters:
+          "tag:my_tag": True
+      register: ec2_instance
+
+    
+    - name: Check if the auto scaling policy exists
+      ec2_scaling_policy:
+        name: "{{ auto_scaling_policy.name }}"
+        region: "{{ ansible_ec2_metadata.region }}"
+        state: query
+      register: scaling_policy_result
+
+    - name: Create the auto scaling policy if it does not exist
+      ec2_scaling_policy:
+        name: "{{ auto_scaling_policy.name }}"
+        region: "{{ ansible_ec2_metadata.region }}"
+        launch_config: "{{ auto_scaling_policy.launch_config }}"
+        group: "{{ ec2_group.groups[0].group_name }}"
+        min_size: "{{ auto_scaling_policy.min_size }}"
+        max_size: "{{ auto_scaling_policy.max_size }}"
+        desired_capacity: "{{ auto_scaling_policy.desired_capacity }}"
+      when: scaling_policy_result['policy'] is not defined
+
+    - name: Update the auto scaling policy if it exists and changes are required
+      ec2_scaling_policy:
+        name: "{{ auto_scaling_policy.name }}"
+        region: "{{ ansible_ec2_metadata.region }}"
+        launch_config: "{{ auto_scaling_policy.launch_config }}"
+        group: "{{ ec2_group.groups[0].group_name }}"
+        min_size: "{{ auto_scaling_policy.min_size }}"
+        max_size: "{{ auto_scaling_policy.max_size }}"
+        desired_capacity: "{{ auto_scaling_policy.desired_capacity }}"
+      when: 
+        - scaling_policy_result['policy'] is defined
+        - scaling_policy_result['policy'].launch_config_name != auto_scaling_policy.launch_config
+        - scaling_policy_result['policy'].min_size != auto_scaling_policy.min_size
+        - scaling_policy_result['policy'].max_size != auto_scaling_policy.max_size
+        - scaling_policy_result['policy'].desired_capacity != auto_scaling_policy.desired_capacity

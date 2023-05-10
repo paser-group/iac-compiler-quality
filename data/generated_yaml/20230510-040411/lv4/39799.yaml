@@ -1,0 +1,40 @@
+
+- name: Create network security group and associate it with NIC
+  hosts: localhost
+  become: true
+  vars:
+    resource_group: "my-resource-group"
+    nic_name: "my-nic"
+  tasks:
+    - name: Create NSG
+      azure_rm_securitygroup:
+        resource_group: "{{ resource_group }}"
+        name: "my-nsg"
+        rules:
+          - name: "Allow-SSH"
+            protocol: Tcp
+            destination_port_range: "22"
+            access: Allow
+            direction: Inbound
+        tags:
+          Environment: Test
+      register: nsg
+
+    - name: Check if NSG creation was successful
+      fail:
+        msg: "Network security group creation failed"
+      when: nsg.failed == true
+
+    - name: Associate NSG with NIC
+      azure_rm_networkinterface:
+        resource_group: "{{ resource_group }}"
+        name: "{{ nic_name }}"
+        enable_accelerated_networking: yes
+        virtual_network_name: "my-virtual-network"
+        security_group:
+          id: "{{ nsg.id }}"
+          
+    - name: Check if NIC association was successful
+      fail:
+        msg: "Network interface card association failed"
+      when: nic.failed == true

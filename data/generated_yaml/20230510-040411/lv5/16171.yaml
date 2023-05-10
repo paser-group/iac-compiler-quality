@@ -1,0 +1,37 @@
+
+- name: Create and test ELB HTTPS listener
+  hosts: localhost
+  gather_facts: no
+  
+  vars:
+    cert_path: "/path/to/certificate"
+    key_path: "/path/to/key"
+
+  tasks:
+    - name: Create ELB
+      ec2_elb_lb:
+        name: my-elb
+        state: present
+    
+    - name: Create HTTPS listener
+      ec2_elb_lb_listener:
+        load_balancer_name: my-elb
+        state: present
+        protocol: HTTPS
+        load_balancer_port: 443
+        instance_port: 80
+        ssl_certificate_id: "{{ cert_id }}"
+
+    - name: Test HTTPS listener
+      uri:
+        url: https://my-elb.amazonaws.com
+        validate_certs: false
+      register: https_response
+
+    - name: Check status code
+      assert:
+        that: https_response.status == 200
+      
+    - name: Check expected response
+      assert:
+        that: https_response.body == "Hello World"

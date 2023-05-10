@@ -1,0 +1,11 @@
+
+- name: Check Docker container network configuration
+  docker_container_info:
+    state: running
+  register: docker_containers
+
+- name: Ensure that no container is using the default bridge network
+  fail:
+    msg: "Container {{ item.Names }} is connected to the default bridge network"
+  when: '"bridge" == item.NetworkSettings.Networks.keys() | list | to_json'
+  with_items: "{{ docker_containers['ansible_facts']['containers'] }}"

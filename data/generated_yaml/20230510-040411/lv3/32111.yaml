@@ -1,0 +1,39 @@
+
+---
+- hosts: network_device
+  gather_facts: no
+  tasks:
+    - name: Configure non-default vrfs
+      eos_command:
+        commands:
+          - "configure terminal"
+          - "no vrf definition default"
+          - "vrf definition vrf1"
+        provider:
+          host: "{{ inventory_hostname }}"
+          username: "{{ username }}"
+          password: "{{ password }}"
+      ignore_errors: yes
+      register: vrf_config
+
+    - name: Check if non-default vrfs are configured
+      eos_command:
+        commands:
+          - "show vrf"
+        provider:
+          host: "{{ inventory_hostname }}"
+          username: "{{ username }}"
+          password: "{{ password }}"
+      ignore_errors: yes
+      register: vrf_output
+
+    - name: Reconfigure default vrf
+      eos_command:
+        commands:
+          - "configure terminal"
+          - "vrf definition default"
+        provider:
+          host: "{{ inventory_hostname }}"
+          username: "{{ username }}"
+          password: "{{ password }}"
+      when: vrf_config is failed

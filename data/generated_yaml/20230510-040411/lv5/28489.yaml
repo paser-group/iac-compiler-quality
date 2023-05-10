@@ -1,0 +1,30 @@
+
+---
+- name: Ansible Playbook to Test GCP Healthcheck
+  hosts: localhost
+ 
+  gather_facts: no
+ 
+  tasks:
+    
+    - name: Creating a GCP health check
+      gcp_healthcheck:
+        name: my-health-check-1
+        healthy_threshold: "{{ item['healthy_threshold'] }}"
+        unhealthy_threshold: "{{ item['unhealthy_threshold'] }}"
+      with_items:
+        - { healthy_threshold: 2, unhealthy_threshold: 3 }
+        - { healthy_threshold: 3, unhealthy_threshold: 2 }
+        - { healthy_threshold: 1, unhealthy_threshold: 4 }
+
+      register: register_health
+
+    - name: Verifying the results
+      assert:
+        that:
+          - "{{ register_health.results[0].healthy_threshold == 2 }}"
+          - "{{ register_health.results[0].unhealthy_threshold == 3 }}"
+
+    - name: Debugging
+      debug:
+        var: register_health

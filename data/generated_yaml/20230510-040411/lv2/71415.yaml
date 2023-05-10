@@ -1,0 +1,39 @@
+
+---
+- name: Test playbook for hostname mismatch
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Set hostname
+      hostname:
+        name: "{{ item }}"
+      with_items:
+        - "{{ ansible_hostname }}"
+        - "{{ ansible_fqdn }}"
+        - "{{ inventory_hostname }}"
+        - "{{ inventory_hostname_short }}"
+        - "invalid_hostname_with_@_symbol.com" # unconventional syntax
+        - "verylonghostnameverylonghostnameverylonghostname" # edge case for hostname length
+        - "" # unexpected input
+
+    - name: Wait for inventory update
+      wait_for:
+        timeout: 10
+        host: "{{ inventory_hostname }}"
+        port: 22
+
+    - name: Ping host
+      ping:
+        data: "{{ item }}"
+      with_items:
+        - "{{ ansible_hostname }}"
+        - "{{ ansible_fqdn }}"
+        - "{{ inventory_hostname }}"
+        - "{{ inventory_hostname_short }}"
+        - "invalid_hostname_with_@_symbol.com" # unconventional syntax
+        - "verylonghostnameverylonghostnameverylonghostname" # edge case for hostname length
+        - "" # unexpected input
+
+    - name: Echo hostname
+      debug:
+        var: inventory_hostname

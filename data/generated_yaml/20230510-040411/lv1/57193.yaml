@@ -1,0 +1,27 @@
+yaml
+---
+- name: Install .NET 3.5 on Windows with win_optional_feature
+  hosts: all
+  gather_facts: yes
+
+  tasks:
+    - name: Enable the .NET 3.5 feature
+      win_optional_feature:
+        feature_name: NetFx3
+        state: present
+
+    - name: Reboot the target machine to complete installation
+      win_reboot:
+        wait_for_reboot: yes
+        reboot_timeout: 300
+
+    - name: Verify that .NET 3.5 was successfully installed
+      win_shell: |
+        Get-WindowsFeature | Where-Object {$_.DisplayName -eq "NET Framework 3.5 Features"} | Where-Object {$_.Installed -eq $True}
+      changed_when: false
+      register: net35
+
+    - name: Fail the playbook if .NET 3.5 was not installed successfully
+      fail:
+        msg: "Failed to install .NET 3.5 through win_optional_feature"
+      when: net35 | failed

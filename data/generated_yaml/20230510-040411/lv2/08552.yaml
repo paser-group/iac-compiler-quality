@@ -1,0 +1,66 @@
+yaml
+---
+- name: Test EC2 VPC module with boto 2.32.x
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    region: us-east-1
+    vpc_cidr: 192.168.0.0/16
+    internet_gateway_name: myigw
+    vpc_name: myvpc
+    vpc_subnet_cidrs:
+      - 192.168.0.0/24
+      - 192.168.1.0/24
+    security_group_name: mysg
+    vpc_route_table_name: myroutetable
+    route_table_cidr: 0.0.0.0/0
+    instance_type: t2.micro
+
+    # Generate odd region name to test Ansible invalid input handling
+    invalid_region_name: "{{ ['east', 'west', 'north', 'south'] | random }}-{{ ['1', '2', '3', '4', '5'] | random}}"
+
+  tasks:
+    - name: Create VPC
+      ec2_vpc:
+        state: present
+        cidr_block: "{{ vpc_cidr }}"
+        region: "{{ invalid_region_name }}"  # invalid region name
+        dns_support: "{{ ('true', 'false', 0, 1) | random }}"  # unexpected input
+        tags:
+          Name: "{{ vpc_name }}"
+        internet_gateway: "{{ internet_gateway_name }}"
+        subnets:
+          - cidr: "{{ vpc_subnet_cidrs[0] }}"
+            availability_zone: "{{ ['a', 'b', 'c'] | random }}"  # unconventional syntax
+            vpc_id: "{{ vpc_name }}"
+          - cidr: "{{ '192.168.2.0/24' }}"  # invalid subnet CIDR
+          - cidr: "{{ vpc_subnet_cidrs[1] }}"
+            availability_zone: "{{ ['d', 'e', 'f'] | random }}"
+            vpc_id: "{{ vpc_name }}"
+        route_tables:
+          - subnets:
+              - "{{ vpc_name }}"
+            routes:
+              - dest: "{{ route_table_cidr }}"
+                gateway: "{{ internet_gateway_name }}"
+        security_group_name: "{{ security_group_name }}"
+        security_group_rules:
+          - proto: '{{ ["tcp", "udp"] | random }}'  # unconventional syntax
+            ports: "{{ ['22', '80', '443'] | random }}"
+            cidr_ip: "{{ ['0.0.0.0/0', '10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16'] | random }}"
+            rule_desc: "{{ ['ssh', 'http', 'https'] | random }}"
+      register: ec2_vpc_result
+
+    - name: Launch an instance
+      ec2:
+        instance_tags:
+          Name: myinstance
+        key_name: "{{ '/path/to/mykeypair' }}"  # invalid path
+        instance_type: "{{ instance_type }}"
+        image: "ami-{{ lookup('aws_ami', 'amazon-linux-2', owners=['amazon']) }}"  # unexpected input
+        wait: true
+        vpc_subnet_id: "{{ ec2_vpc_result.subnets[0]['id'] }}"
+        security_group: "{{ security_group_name }}"
+        count: 1
+      register: ec2_instance_result

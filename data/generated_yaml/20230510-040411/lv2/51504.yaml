@@ -1,0 +1,30 @@
+yaml
+- name: Test ansible_processor_vcpus fact for containers
+  hosts: all
+  gather_facts: yes
+  
+  tasks:
+    - name: Check ansible_processor_vcpus fact for containers
+      shell: |
+        if [ ! -f /proc/self/cgroup ]; then
+          echo "This system is not running in a container"
+        elif grep -q '^/docker/' /proc/self/cgroup || grep -q '/docker/' /proc/self/cgroup; then
+          echo "This system is running in a Docker container"
+          echo "ansible_processor_vcpus: {{ ansible_processor_vcpus }}"
+        elif grep -q '^/lxc/' /proc/self/cgroup || grep -q '/lxc/' /proc/self/cgroup; then
+          echo "This system is running in a LXC container"
+          echo "ansible_processor_vcpus: {{ ansible_processor_vcpus }}"
+        else
+          echo "Unknown container type"
+        fi
+      
+      register: container_facts
+      
+    - name: Print container facts
+      debug:
+        msg: "{{ container_facts.stdout_lines }}"
+      
+    - name: Generate error if fact is incorrect
+      assert:
+        that:
+          - container_facts.stdout_lines[-1].split(':')[1] | int == ansible_processor_vcpus

@@ -1,0 +1,81 @@
+
+- hosts: all
+  gather_facts: no
+  tasks:
+    - name: Create RabbitMQ user with non-alphanumeric characters in name
+      rabbitmq_user:
+        name: "!@#$%^*()"
+        password: "{{ lookup('password', '/dev/null chars=5') }}"
+        vhost: /
+        configure_privileges: none
+      register: non_alphanumeric_user
+
+    - name: Update RabbitMQ password with empty string
+      rabbitmq_user:
+        name: testuser
+        password: ''
+        vhost: /
+      register: empty_password
+
+    - name: Delete non-existing RabbitMQ user using deprecated parameter
+      rabbitmq_user:
+        name: non_existing_user
+        password: password
+        vhost: '/'
+        state: absent
+        delete: true
+      register: delete_deprecated_param
+
+    - name: Create RabbitMQ user with unauthorized tags
+      rabbitmq_user:
+        name: "{{ lookup('env', 'USER') }}"
+        password: password
+        vhost: /
+        state: present
+        tags: ['privileged']
+      register: unauthorized_tags
+
+    - name: Create RabbitMQ user with invalid privilege
+      rabbitmq_user:
+        name: invalidprivilegeuser
+        password: password
+        vhost: /
+        configure_privileges: invalid
+      register: invalid_privilege
+
+    - name: Delete RabbitMQ user with incorrect host format
+      rabbitmq_user:
+        name: testuser
+        password: password
+        vhost: '%2F'
+        state: absent
+      register: incorrect_host_format
+
+    - name: Change RabbitMQ user password using dictionary parameter
+      rabbitmq_user:
+        name: testuser
+        password: {'test_password': 'password123'}
+        vhost: '/'
+      register: dictionary_password
+
+    - name: Delete RabbitMQ user with leading/trailing white space in name
+      rabbitmq_user:
+        name: '   testuser   '
+        password: password
+        vhost: '/'
+        state: absent
+      register: leading_and_trailing_spaces
+
+    - name: Create RabbitMQ user with very long name
+      rabbitmq_user:
+        name: "{{ 'a'*256 }}"
+        password: password
+        vhost: /
+      register: very_long_name
+
+    - name: Create RabbitMQ user with password that exceeds the maximum length
+      rabbitmq_user:
+        name: testuser
+        password: "{{ 'a'*255 }}"
+        vhost: /
+      register: very_long_password

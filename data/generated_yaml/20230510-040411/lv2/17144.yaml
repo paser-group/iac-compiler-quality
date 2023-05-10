@@ -1,0 +1,28 @@
+yaml
+- name: Test nested include task errors
+  hosts: localhost
+  vars:
+    items:
+      - foo
+      - bar
+  tasks:
+    - name: Include tasks file
+      include_tasks: "{{ item }}.yml"
+      with_items: "{{ items }}"
+      loop_control:
+        loop_var: task_item
+      vars:
+        subitem: "sub{{ task_item }}"
+        loop_var: loop2_item
+        {% raw %}# Edge case: nested vars in include_tasks {% endraw %}
+        nested_var: "{{ '{{' }} task_item {{ '}}' }}"
+      loop:
+        - { name: "first", task: "{{ task_item }}" }
+        - { name: "second", task: "{{ subitem }}" }
+        {% raw %}# Edge case: loop within loop control {% endraw %}
+        - loop:
+          - { name: "third", task: "{{ loop2_item }}" }
+        - block:
+            - when: "false"
+              include_tasks: "{{ subitem }}.yml"
+      any_errors_fatal: true

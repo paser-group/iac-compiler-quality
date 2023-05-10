@@ -1,0 +1,43 @@
+
+---
+- name: Debug stdout callback
+  hosts: localhost
+  gather_facts: no
+  
+  tasks:
+    - name: Execute a command and print debug info
+      command: "echo 'one\n\rtwo'"       
+      register: command_output
+      changed_when: false
+      
+    - name: Display command output with debug callback
+      debug: 
+        var: command_output.stdout_lines
+      vars:
+        ansible_debug_callback: "debug"
+        
+    - name: Display command output without wrap
+      debug:
+        msg: "{{ command_output.stdout | replace('\n', '') }}"
+      vars:
+        ansible_debug_callback: "default"
+
+    - name: Display wrapped command output
+      debug:
+        msg: "{{ command_output.stdout }}"
+      vars:
+        ansible_debug_callback: "full"
+
+    - name: Display wrapped command output with timestamps
+      no_log: "{{ item }}"
+      debug:
+        msg: "{{ command_output.stdout }}"
+      with_items: "{{ query('file', '/proc/uptime').split()[0] }}"
+      vars:
+        ansible_debug_callback: "{{ item }}"
+        
+    - name: Display line-separated command output
+      debug:
+        msg: "{{ command_output.stdout_lines | join('\n') }}"
+      vars:
+        ansible_debug_callback: "skippy"

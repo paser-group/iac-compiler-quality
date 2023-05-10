@@ -1,0 +1,41 @@
+
+- name: Test aws_s3 module
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    s3_bucket_name: "test_bucket"
+    object_key: "test_object"
+    version_id: None
+
+  tasks:
+  
+  - name: Create a non-existent S3 bucket
+    iam_uri: >
+            aws s3api create-bucket
+              --bucket "{{ s3_bucket_name }}"
+              --region us-east-1
+    delegate_to: localhost
+
+  - name: Upload an object to the S3 bucket with versioning enabled
+    s3:
+      bucket: "{{ s3_bucket_name }}"
+      object: "{{ object_key }}"
+      src: "/path/to/file"
+      etag: "{{ etag.stdout }}"
+      version: true
+    delegate_to: localhost
+
+  - name: Fetch S3 object
+    s3:
+      bucket: "{{ s3_bucket_name }}"
+      object: "{{ object_key }}"
+      version_id: "{{ version_id }}"
+    ignore_errors: yes
+    delegate_to: localhost
+
+  - name: Test S3 object version exists
+    fail:
+      msg: "S3 object version cannot be found"
+    when: "version_id is not none and not result.object_version_exists"
+    delegate_to: localhost

@@ -1,0 +1,55 @@
+yaml
+---
+
+- name: Test playbook for sysctl module
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    invalid_syntax: "tb.queue_maxlen=10000@#Invalid syntax"
+    invalid_value: ["vm.swappiness = 60", "fs.file-max = not_a_number", "invalid_key = 1000"]
+
+  tasks:
+    
+    - name: Install sysctl package
+      package:
+        name: sysctl
+        state: present
+
+    - name: Generate invalid syntax error in sysctl.conf
+      lineinfile:
+        path: /etc/sysctl.conf
+        line: "{{ invalid_syntax }}"
+        state: present
+      ignore_errors: yes
+
+    - name: Set invalid values in sysctl.conf
+      lineinfile:
+        path: /etc/sysctl.conf
+        line: "{{ item }}"
+        state: present
+      loop: "{{ invalid_value }}"
+      ignore_errors: yes
+
+    - name: Reload the sysctl configuration
+      sysctl:
+        name: "*"
+        state: present
+        reload: yes
+
+    - name: Check if sysctl errors are present in dmesg output
+      shell:
+        cmd: "dmesg | grep sysctl | tail"
+        warn: no
+      register: dmesg_output
+
+    - name: Fail the playbook if sysctl errors are present
+      fail:
+        msg: "Sysctl errors were found in dmesg output: {{ dmesg_output.stdout }}"
+      when: dmesg_output.stdout_lines | length > 0
+
+    - name: Remove the changes to sysctl.conf
+      file:
+        path: /etc/sysctl.conf
+        state: absent
+

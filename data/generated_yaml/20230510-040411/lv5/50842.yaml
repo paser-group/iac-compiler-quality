@@ -1,0 +1,24 @@
+
+- hosts: example
+  tasks:
+    - shell: command_that_generates_error
+      register: result
+      ignore_errors: true
+
+    - name: rescue section to test meta clear_host_errors feature
+      block:
+        - debug: msg="An error has occurred"
+        - meta: clear_host_errors
+        - debug: msg="Host errors should be cleared"
+      rescue:
+        - debug: msg="Host errors not cleared in rescue section"
+
+    # Additional tests for the meta clear_host_errors feature
+    - name: Test that meta clear_host_errors clears errors outside of rescue section
+      block:
+        - shell: command_that_generates_error
+          register: result2
+          ignore_errors: true
+        - meta: clear_host_errors
+        - fail: msg="Host errors not cleared outside of rescue section"
+          when: result2.rc != 0

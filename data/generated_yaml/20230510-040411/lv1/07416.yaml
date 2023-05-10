@@ -1,0 +1,33 @@
+yaml
+---
+- name: Update url using uri module
+  hosts: localhost
+  tasks:
+    - name: PATCH request to update content
+      uri:
+        url: "http://example.com/some_api"
+        method: PATCH
+        status_code: 200
+        body_format: json
+        body:
+          message: "New content"
+      register: patch_response
+      ignore_errors: yes
+      
+    - name: Debug if status is 304
+      debug:
+        msg: "status: {{ patch_response.status }}"
+      when: patch_response.status == 304
+      
+    - name: Retry request if status is 304
+      uri:
+        url: "http://example.com/some_api"
+        method: PATCH
+        status_code: 200
+        body_format: json
+        body:
+          message: "New content"
+      register: patch_response
+      retries: 5
+      delay: 10
+      until: patch_response.status == 200

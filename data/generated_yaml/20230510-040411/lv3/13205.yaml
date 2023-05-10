@@ -1,0 +1,31 @@
+
+---
+- hosts: all
+  gather_facts: no
+  tasks:
+    - name: Asynchronous Task
+      async: 60
+      poll: 10
+      shell: sleep 20
+    - name: Check mode task
+      debug:
+      check_mode: yes
+      async: 60
+      poll: 10
+      shell: sleep 20
+  handlers:
+    - name: async_error
+      debug:
+        msg: "Encountered an async error!"
+  post_tasks:
+    - name: Cleanup Task
+      async_status:
+        jid: "{{ item.ansible_job_id }}"
+      register: async_result
+      until: async_result.finished
+      retries: 30
+      delay: 10
+      ignore_errors: yes
+      loop: "{{ ansible_jobs }}"
+      when: async_result.rc != 0
+      notify: async_error

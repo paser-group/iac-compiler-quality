@@ -1,0 +1,43 @@
+yaml
+- name: Configure Windows hosts
+  hosts: windows_hosts
+
+  vars:
+    ansible_user: administrator
+    ansible_password: '{{ vaulted_password }}'
+    ansible_connection: winrm
+    ansible_winrm_server_cert_validation: ignore
+
+  tasks:
+  - name: Install basic Windows features
+    win_feature:
+      name:
+        - NetFx3
+        - NetFx4
+      state: present
+
+  - name: Verify connectivity to Windows hosts
+    win_ping:
+
+  - name: Install and start WinRM service
+    win_service:
+      name: WinRM
+      start_mode: auto
+      state: started
+
+  - name: Configure WinRM listener on port 5985
+    win_shell: winrm quickconfig -transport:http
+
+  - name: Configure WinRM listener on port 5986
+    win_shell: winrm quickconfig -transport:https
+
+  - name: Enable WinRM firewall rule
+    win_firewall_rule:
+      name: Windows Remote Management (HTTP-In)
+      enabled: yes
+
+  - name: Execute a PowerShell command and check if it works
+    win_command: powershell.exe -c 'Get-Service'
+
+  - name: List active connections on remote server
+    win_command: netstat -ano

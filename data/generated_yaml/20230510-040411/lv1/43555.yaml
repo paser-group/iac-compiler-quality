@@ -1,0 +1,38 @@
+yaml
+- name: Create GCP PD disk from snapshot and attach to instance
+  hosts: localhost
+  gather_facts: false
+  vars:
+    project_id: "{{ lookup('env', 'GCP_PROJECT_ID') }}"
+    auth_kind: "{{ lookup('env', 'GCP_AUTH_KIND') }}"
+    service_account_file: "{{ lookup('env', 'GCP_SERVICE_ACCOUNT_FILE') }}"
+    snapshot_name: "your_snapshot_name"
+    snapshot_zone: "your_snapshot_zone"
+    disk_name: "your_disk_name"
+    disk_size_gb: "your_disk_size"  # in GB
+    instance_name: "your_instance_name"
+    instance_zone: "your_instance_zone"
+  tasks:
+    - name: "Create disk from snapshot"
+      gcp_compute_disk:
+        project: "{{ project_id }}"
+        auth_kind: "{{ auth_kind }}"
+        service_account_file: "{{ service_account_file }}"
+        name: "{{ disk_name }}"
+        source_snapshot: projects/{{ project_id }}/global/snapshots/{{ snapshot_name }}
+        size_gb: "{{ disk_size_gb }}"
+        zone: "{{ snapshot_zone }}"
+        state: present
+      register: disk
+
+    - name: "Attach disk to instance"
+      gcp_compute_instance_disk_attachment:
+        project: "{{ project_id }}"
+        auth_kind: "{{ auth_kind }}"
+        service_account_file: "{{ service_account_file }}"
+        instance: "{{ instance_name }}"
+        zone: "{{ instance_zone }}"
+        disk: "{{ disk_name }}"
+        auto_delete: false
+        boot: false
+        state: present

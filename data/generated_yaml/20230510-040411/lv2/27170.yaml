@@ -1,0 +1,48 @@
+
+- name: Attempting to set ipv6 interface
+  hosts: all
+  gather_facts: false
+  
+  tasks:
+    - name: Set ipv6 interface with an invalid IP address
+      nxos_ip_interface:
+        interface: Loopback0
+        ipv6_address: 192.0.2.256/64
+      register: result
+      ignore_errors: true
+      
+    - name: Set ipv6 interface with a valid IP address
+      nxos_ip_interface:
+        interface: Loopback0
+        ipv6_address: 2001:DB8::1/64
+      register: result
+            
+    - name: Set ipv6 interface with an invalid interface name
+      nxos_ip_interface:
+        interface: loopback
+        ipv6_address: 2001:DB8::1/64
+      register: result
+      ignore_errors: true
+            
+    - name: Remove ipv6 interface
+      nxos_ip_interface:
+        interface: Loopback0
+        delete: true
+      register: result  
+      
+    - name: Set ipv6 interface with an unconventional syntax
+      nxos_ip_interface:
+        interface: Loopback0
+        ipv6_address: "{{ '2001:DB8::1/64' }}"
+      register: result
+      
+    - name: Set ipv6 interface with unexpected inputs
+      nxos_ip_interface:
+        interface: "{{ 'Loopback' + item }}"
+        ipv6_address: "{{ '2001:DB8::' + item }}/64"
+      register: result
+      loop: "{{ range(10) | list }}"
+      
+    - name: Debug output
+      debug:
+        var: result

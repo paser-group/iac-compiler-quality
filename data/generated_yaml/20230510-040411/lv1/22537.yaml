@@ -1,0 +1,22 @@
+
+- hosts: localhost
+  vars:
+    ec2_region: us-east-1
+    ec2_asg_name: example-asg
+    elb_name: example-elb
+  tasks:
+    - name: Wait for ELB instances to be healthy
+      wait_for: 
+        host: '{{ item.public_ip }}'
+        port: 22
+        delay: 5
+        timeout: 300
+        state: started
+      loop: "{{ query('ec2_instance_info', region=ec2_region, filters=[{'Name': 'tag:Name', 'Values': [ec2_asg_name]}], instance_filters=[{'Name': 'instance-state-name', 'Values': ['running']}, {'Name': 'tag:Name', 'Values': [ec2_asg_name]}])['instances'] }}"
+
+    - name: Execute integration tests
+      command: /path/to/integration/test
+      args:
+        chdir: /path/to/integration/test/directory
+        creates: /path/to/integration/test/output
+

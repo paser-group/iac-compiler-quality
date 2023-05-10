@@ -1,0 +1,55 @@
+hcl
+# Create a security group in a VPC
+resource "aws_security_group" "vpc_sg" {
+  name_prefix = "vpc_sg"
+  vpc_id      = aws_vpc.main_vpc.id
+
+  ingress {
+    from_port = 80
+    to_port   = 80
+    protocol  = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+# Create another VPC and a security group in it
+resource "aws_vpc" "secondary_vpc" {
+  cidr_block = "10.0.2.0/24"
+}
+
+resource "aws_security_group" "second_vpc_sg" {
+  name_prefix = "second_vpc_sg"
+  vpc_id      = aws_vpc.secondary_vpc.id
+
+  ingress {
+    from_port = 443
+    to_port   = 443
+    protocol  = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+# Creating an EC2 instance in the main VPC
+resource "aws_instance" "main_vpc_ec2" {
+  ami           = "ami-0c55b159cbfafe1f0"
+  instance_type = "t2.micro"
+  subnet_id     = aws_subnet.vpc_subnet.id
+  key_name      = aws_key_pair.main_key.key_name
+ 
+  vpc_security_group_ids = [
+    aws_security_group.vpc_sg.id,
+    aws_security_group.second_vpc_sg.id, # Referencing security group from another VPC
+  ]
+}
+
+# Create a subnet for the main VPC
+resource "aws_subnet" "vpc_subnet" {
+  vpc_id     = aws_vpc.main_vpc.id
+  cidr_block = "10.0.1.0/24"
+}
+
+# Create a key pair for the EC2 instance
+resource "aws_key_pair" "main_key" {
+  key_name   = "main_key"
+  public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQC7...fllu6/u27Q== john@example.com"
+}

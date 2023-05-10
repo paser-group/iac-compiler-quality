@@ -1,0 +1,45 @@
+yaml
+# Define a Linode host group and set the access token parameter
+- name: Set up Linode inventory
+  hosts: localhost
+  connection: local
+  tasks:
+    - name: Set up Linode group
+      add_host:
+        name: "{{ item.label }}"
+        ansible_host: "{{ item.ipv4 }}"
+        ansible_user: linode
+        ansible_become: yes
+        ansible_become_method: sudo
+        group: linode
+      with_linode:
+        - tag: web-server
+      register: linode_inventory
+
+    - name: Set access_token variable
+      set_fact:
+        access_token: "{{ linode_api_token | mandatory }}"
+
+# Attempt to parse the access_token in a task
+- name: Test access_token parsing
+  hosts: linode
+  become: true
+  tasks:
+    - name: Check access_token
+      debug:
+        var: access_token
+
+# Test for invalid data types or unexpected characters in the parameter
+- name: Test access_token vulnerabilities
+  hosts: localhost
+  connection: local
+  tasks:
+    - name: Try invalid data types
+      set_fact:
+        access_token: 12345
+      ignore_errors: true
+
+    - name: Try unexpected characters
+      set_fact:
+        access_token: "invalid#$%"
+      ignore_errors: true

@@ -1,0 +1,30 @@
+
+- name: Test Cyrillic characters in filenames
+  hosts: localhost
+  tasks:
+    - name: Create directory with Cyrillic-named files
+      file:
+        path: "/tmp/ansible-cyrillic-test"
+        state: directory
+    - name: Create Cyrillic-named files
+      file:
+        path: "/tmp/ansible-cyrillic-test/{{ item }}"
+        state: touch
+      with_items:
+        - "файл.txt"
+        - "папка/файл2.txt"
+    - name: Archive files with Cyrillic names
+      archive:
+        path: "/tmp/ansible-cyrillic-test"
+        dest: "/tmp/ansible-cyrillic-test.tar.gz"
+      ignore_errors: yes
+    - name: Extract archive and verify filenames
+      unarchive:
+        src: "/tmp/ansible-cyrillic-test.tar.gz"
+        dest: "/tmp/ansible-cyrillic-test-unarchived"
+      register: result
+    - name: Check filenames in extracted archive
+      assert:
+        that:
+          - "файл.txt" in result['files']
+          - "папка/файл2.txt" in result['files']

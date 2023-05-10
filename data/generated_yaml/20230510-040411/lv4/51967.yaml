@@ -1,0 +1,29 @@
+yaml
+- hosts: web_servers
+  tasks:
+    - name: Configure new SSL certificate for default web binding
+      win_iis_webbinding:
+        name: /
+        ssl_cert: C:\path\to\new\cert.pfx
+        ssl_password: "{{ vaulted_ssl_password }}"
+      register: result
+
+    - name: Verify new SSL certificate has been correctly installed
+      assert:
+        that:
+          - result is defined
+          - result.status == "changed"
+          - result.config.sslFlags == "3"
+
+    - name: Remove new SSL certificate from default web binding
+      win_iis_webbinding:
+        name: /
+        ssl_cert: ""
+        ssl_password: ""
+
+    - name: Verify original SSL certificate has been restored
+      assert:
+        that:
+          - result is defined
+          - result.status == "changed"
+          - result.config.sslFlags == "1"

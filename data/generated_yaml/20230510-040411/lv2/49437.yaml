@@ -1,0 +1,48 @@
+yaml
+- hosts: localhost
+  vars:
+    credentials:
+      - name: '{{ lookup("env", "CREDENTIALS_NAME") | default("credential") }}'
+        type: '{{ lookup("env", "CREDENTIALS_TYPE") | default("ssh") }}'
+        username: 'user'
+        password: 'password'
+        ssh_key_data: 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDv...'
+  tasks:
+    - name: create credentials
+      tower_credentials:
+        name: '{{ item.name }}'
+        type: '{{ item.type }}'
+        username: '{{ item.username }}'
+        password: '{{ item.password }}'
+        ssh_key_data: '{{ item.ssh_key_data }}'
+      loop: '{{ credentials }}'
+      register: result
+
+    - name: idempotently update ssh credentials
+      tower_credentials:
+        name: '{{ item.name }}'
+        type: '{{ item.type }}'
+        username: '{{ item.username }}'
+        password: '{{ item.password }}'
+        ssh_key_data: '{{ item.ssh_key_data }}'
+      loop: '{{ credentials }}'
+      when: item.type == 'ssh'
+      register: result
+
+    - name: delete credentials
+      tower_credentials:
+        name: '{{ item.name }}'
+        state: absent
+      loop: '{{ credentials }}'
+      register: result
+
+    - name: expect changed result when creating with same name
+      tower_credentials:
+        name: '{{ item.name }}'
+        type: '{{ item.type }}'
+        username: '{{ item.username }}'
+        password: '{{ item.password }}'
+        ssh_key_data: '{{ item.ssh_key_data }}'
+      loop: '{{ credentials }}'
+      register: result
+      failed_when: "'concurrent task limit reached' not in result.msg"

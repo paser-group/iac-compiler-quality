@@ -1,0 +1,36 @@
+
+- name: Test Proxmox module LXC error handling
+  vars:
+    proxmox_url: "https://proxmox.com"
+    proxmox_user: "myusername"
+    proxmox_password: "mypassword"
+    lxc_name: "mylxc"
+
+  tasks:
+  - name: Send POST request to Proxmox module LXC
+    uri:
+      url: "{{ proxmox_url }}"
+      method: POST
+      body_format: json
+      body:
+        action: "create"
+        vmid: "{{ lxc_name }}"
+        ostemplate: "ubuntu-20.04"
+        storage: "local"
+        password: "{{ proxmox_password }}"
+        username: "{{ proxmox_user }}"
+    register: proxmox_response
+
+  - name: Extract error data from Proxmox response
+    set_fact:
+      error_data: "{{ proxmox_response.json }}"
+
+  - name: Fail if server returns error data
+    fail:
+      msg: "Proxmox module LXC returned error: {{ error_data }}"
+    when: "'errors' in error_data"
+
+  - name: Debug response data
+    debug:
+      var: error_data
+      verbosity: 2

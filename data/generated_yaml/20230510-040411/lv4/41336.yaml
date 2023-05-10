@@ -1,0 +1,39 @@
+
+---
+- hosts: localhost
+  gather_facts: no
+  tasks:
+  - name: Ensure dependency names are unique across roles
+    assert:
+      that:
+        - "{{ item.split('/')[-1] }}" not in ansible_facts.roles_deps_names | default([]) 
+      fail_msg: "Duplicate dependency found: {{ item }}"
+    loop: "{{ ansible_facts.collective_roles_deps | default([]) }}"
+
+  - name: Fail if roles depend on mixed version control systems
+    fail:
+      msg: "Roles in this playbook cannot have dependencies declared using different version control systems"
+    when: "'git' in item and 'hg' in item"  
+    loop: "{{ ansible_facts.collective_roles_deps | default([]) }}"
+
+  - name: Check that dynamic variables are not null
+    assert:
+      that:
+        - some_var is defined
+        - some_var is not none
+      fail_msg: "Variable some_var is undefined"
+    vars:
+      some_var: "{{ hostvars[inventory_hostname]['some_var'] | default(None) }}"  
+
+  - name: Create dir in temp folder
+    file:
+      path: "/tmp/mydir"
+      state: directory
+
+  - name: Simulate concurrent file modification for race conditions
+    lineinfile:
+      path: "/tmp/myfile"
+      line: "This is line #{{ item }}"
+      create: yes
+      insertafter: EOF
+    loop: "{{ range(5) | list }}"

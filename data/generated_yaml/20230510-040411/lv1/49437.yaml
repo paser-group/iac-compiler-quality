@@ -1,0 +1,31 @@
+yaml
+---
+- name: Tower Credentials Idempotency
+  hosts: servers
+
+  tasks:
+  - name: Create new credential
+    tower_credential:
+      name: MyNewCredential
+      type: machine
+      username: myusername
+      password: mypassword
+      url: https://mytowerinstance.com
+    register: new_cred
+
+  - name: Update existing credential
+    tower_credential:
+      name: MyNewCredential
+      type: machine
+      username: myupdatedusername
+      password: myupdatedpassword
+      url: https://mytowerinstance.com
+      state: present
+    when: new_cred.changed
+
+  - name: Check that credential is idempotent
+    assert:
+      that:
+        - new_cred.ansible_facts['tower_credential']['username'] == 'myupdatedusername'
+        - new_cred.ansible_facts['tower_credential']['url'] == 'https://mytowerinstance.com'
+        - new_cred.ansible_facts['tower_credential']['state'] == 'present'

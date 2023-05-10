@@ -1,0 +1,46 @@
+yaml
+- name: EC2 VPC Subnet Creation
+  hosts: localhost
+  gather_facts: no
+  vars:
+    region: "{{ lookup('env', 'AWS_REGION') }}"
+    vpc_cidr_block: "172.31.0.0/16"
+    azs: "{{ ['us-west-1a', 'us-west-1b', 'us-west-1c'] }}"
+    subnet_cidr_blocks:
+      - "172.31.1.0/24"
+      - "172.31.2.0/24"
+      - "172.31.3.0/24"
+  tasks:
+    - name: Create VPC
+      ec2_vpc_net:
+        name: "sample-vpc"
+        cidr_block: "{{ vpc_cidr_block }}"
+        region: "{{ region }}"
+        state: present
+      register: vpc_creation_result
+    - name: Ensure VPC is created successfully
+      assert:
+        that:
+          - vpc_creation_result is not failed
+          - vpc_creation_result.changed is defined
+          - vpc_creation_result.changed
+        success_msg: "VPC {{ vpc_cidr_block }} created successfully."
+        fail_msg: "VPC {{ vpc_cidr_block }} creation failed."
+    - name: Create subnets
+      ec2_vpc_subnet:
+        vpc_id: "{{ vpc_creation_result.vpc.id }}"
+        cidr: "{{ item }}"
+        az: "{{ azs[loop.index0 % (length(azs))] }}"
+        region: "{{ region }}"
+        state: present
+      with_items: "{{ subnet_cidr_blocks }}"
+      register: subnet_creation_result
+    - name: Ensure subnets are created successfully
+      assert:
+        that:
+          - subnet_creation_result is not failed
+          - subnet_creation_result.changed is defined
+          - subnet_creation_result.changed
+        success_msg: "Subnet {{ item.item[0] }} created successfully."
+        fail_msg: "Subnet {{ item.item[0] }} creation failed."
+      with_items: "{{ subnet_creation_result.results }}"

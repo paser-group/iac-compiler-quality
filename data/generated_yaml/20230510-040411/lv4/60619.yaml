@@ -1,0 +1,31 @@
+
+- name: Test azure_rm deployment module for full error details
+  hosts: localhost
+  tasks:
+    - name: Deploy a resource group
+      azure_rm_resourcegroup:
+        name: testrg
+        location: eastus
+      register: rg_result
+
+    - name: Deploy invalid template
+      azure_rm_deployment:
+        resource_group: testrg
+        name: invaliddeployment
+        template:
+          parameters:
+            vmssName:
+              value: myvmss
+          resources:
+            - name: a
+              type: testtype
+              apiVersion: "2017-10-10"
+              location: "[resourceGroup().location]"
+          contentVersion: "1.0.0.0"
+        register: dp_result
+        ignore_errors: true
+
+    - name: Fail the task if deployment did not fail
+      fail:
+        msg: "The azure_rm_deployment failed to expose full error details"
+      when: "'error' not in dp_result or 'details' not in dp_result['error']"

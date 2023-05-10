@@ -1,0 +1,48 @@
+
+- hosts: localhost
+  vars:
+    cipher_whitelist:
+      - aes128-gcm@openssh.com
+      - aes256-gcm@openssh.com
+      - aes128-ctr
+      - aes192-ctr
+      - aes256-ctr
+      - arcfour256
+      - arcfour128
+      - aes128-cbc
+      - 3des-cbc
+      - blowfish-cbc
+    invalid_cipher:
+      - BLOWFISH-CBC
+      - AES-128-GCM
+      - AES-128-CBC
+      - 3DESS-CBC
+
+  tasks:
+    - name: Generating valid cipher list
+      set_fact:
+        valid_cipher_list: "{{ cipher_whitelist | join(',') }}"
+
+    - name: Validating cipher whitelist
+      assert:
+        that:
+          - valid_cipher_list == "aes128-gcm@openssh.com,aes256-gcm@openssh.com,aes128-ctr,aes192-ctr,aes256-ctr,arcfour256,arcfour128,aes128-cbc,3des-cbc,blowfish-cbc"
+        success_msg: "Cipher whitelist is valid"
+        fail_msg: "Invalid cipher whitelist detected: {{ cipher_whitelist }}"
+
+    - name: Generating invalid cipher list
+      set_fact:
+        invalid_cipher_list: "{{ invalid_cipher | join(',') }}"
+
+    - name: Verifying the appearance of cipher not in whitelist
+      command: ssh user@host -c {{ invalid_cipher_list }}
+      ignore_errors: yes
+      register: cipher_output
+
+    - name: Checking cipher output for whitelist error
+      assert:
+        that:
+          - "'the cipher' in cipher_output.stderr"
+          - "'is not in the allowed set' in cipher_output.stderr"
+        success_msg: "Whitelist error detected"
+        fail_msg: "Whitelist error not detected"

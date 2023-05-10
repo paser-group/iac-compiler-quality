@@ -1,0 +1,34 @@
+
+---
+- hosts: server
+  vars:
+    snow_username: "{{ lookup('env', 'SNOW_USERNAME') }}"
+    snow_password: "{{ lookup('env', 'SNOW_PASSWORD') }}"
+    snow_instance: "{{ lookup('env', 'SNOW_INSTANCE') }}"
+  tasks:
+  - name: Install required packages
+    yum:
+      name:
+      - python-pip
+      - python-devel
+      - gcc
+      - openssl-devel
+      - libffi-devel
+      state: latest
+  - name: Install required Python libraries
+    pip:
+      name:
+      - pysnow
+      state: latest
+  - name: Check if the service account has valid authentication with ADFS
+    uri:
+      url: "{{ snow_instance }}/{{ snow_username }}"
+      method: GET
+      validate_certs: False
+      headers:
+        Cookie: "{{ lookup('env', 'SSO_COOKIE') }}"
+      return_content: yes
+    register: authentication_result
+  - name: Debugging authentication result
+    debug:
+      var: authentication_result

@@ -1,0 +1,46 @@
+
+---
+- hosts: all
+  tasks:
+  - name: create access key and secret key
+    ec2_access_key:
+      access_key: "{{ aws_access_key }}"
+      secret_key: "{{ aws_secret_key }}"
+    register: ec2_keys
+
+  - name: check instance compute zone permissions
+    ec2:
+      region: "{{ ec2_region }}"
+      instance_ids: "{{ ec2_instance_ids }}"
+      vpc_subnet_id: "{{ ec2_subnet_id }}"
+      zone_id: "{{ ec2_zone_id }}"
+      aws_access_key: "{{ ec2_keys.access_key }}"
+      aws_secret_key: "{{ ec2_keys.secret_key }}"
+    register: ec2_instances
+
+  - name: stopping compute zone resources
+    ec2:
+      instance_ids: "{{ ec2_instances.instances }}"
+      zone_id: "{{ ec2_instances.vpc_subnet_az }}"
+      aws_access_key: "{{ ec2_keys.access_key }}"
+      aws_secret_key: "{{ ec2_keys.secret_key }}"
+      state: stopped
+      wait: true
+
+  - name: start compute zone resources
+    ec2:
+      instance_ids: "{{ ec2_instances.instances }}"
+      zone_id: "{{ ec2_instances.vpc_subnet_az }}"
+      aws_access_key: "{{ ec2_keys.access_key }}"
+      aws_secret_key: "{{ ec2_keys.secret_key }}"
+      state: running
+      wait: true
+      
+  - name: delete compute zone resources 
+    ec2:
+      instance_ids: "{{ ec2_instances.instances }}"
+      zone_id: "{{ ec2_instances.vpc_subnet_az }}"
+      aws_access_key: "{{ ec2_keys.access_key }}"
+      aws_secret_key: "{{ ec2_keys.secret_key }}"
+      state: terminated
+      wait: yes

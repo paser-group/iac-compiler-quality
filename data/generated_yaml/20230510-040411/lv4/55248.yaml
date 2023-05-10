@@ -1,0 +1,35 @@
+
+- name: Assign permissions on VMware object
+  hosts: localhost
+  gather_facts: false
+  vars:
+    vmware_username: "<vCenter_username>"
+    vmware_password: "<vCenter_password>"
+    vmware_hostname: "<vCenter_hostname>"
+    dvs_name: "<DVS_name>"
+    folder_name: "<Folder_name>"
+    user_name: "<User_name>"
+    role_name: "<Role_name>"
+  tasks:
+  - name: Assign permissions to DVS object folder
+    vmware_vcenter_dvs_facts:
+      hostname: "{{ vmware_hostname }}"
+      username: "{{ vmware_username }}"
+      password: "{{ vmware_password }}"
+      validate_certs: no
+      dvs_name: "{{ dvs_name }}"
+    register: dvs_facts
+    delegate_to: localhost
+
+  - name: Assign role permission to user on folder
+    vmware_vcenter_folder_permission:
+      hostname: "{{ vmware_hostname }}"
+      username: "{{ vmware_username }}"
+      password: "{{ vmware_password }}"
+      validate_certs: no
+      folder_name: "{{ folder_name }}"
+      role_name: "{{ role_name }}"
+      user_name: "{{ user_name }}"
+      propagate: true
+    delegate_to: localhost
+    when: dvs_facts.dvs.value.summary.config.dvsConfigInfo.distributedVirtualSwitch.productInfo.vendor == "VMware"

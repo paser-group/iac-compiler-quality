@@ -1,0 +1,22 @@
+
+---
+- name: Fix atfork import warning
+  hosts: all
+  gather_facts: true
+
+  tasks:
+  - name: Check system_warnings setting
+    command: grep "system_warnings" /etc/ansible/ansible.cfg
+    register: grep_check
+
+  - name: Update system_warnings setting
+    lineinfile:
+      path: /etc/ansible/ansible.cfg
+      regexp: "^#?system_warnings"
+      line: "system_warnings = False"
+      state: present
+    when: grep_check.stdout.find("system_warnings = False") == -1
+
+  - name: Restart Ansible service
+    service: name=ansible state=restarted
+    when: ansible_distribution == 'Ubuntu'

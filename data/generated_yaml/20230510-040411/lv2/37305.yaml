@@ -1,0 +1,48 @@
+
+---
+- name: net_vlan Bug Test Playbook
+  hosts: localhost
+  gather_facts: no
+  
+  vars:
+    vlans:
+      - vlan_id: 100
+        vlan_name: "data"
+        vlan_ports: [1, 2, 5]
+      - vlan_id: 200
+        vlan_name: "voice"
+        vlan_ports: [3, 4, 5]
+      - vlan_id: 300
+        vlan_name: "mgt"
+        vlan_ports: [7, 8, 9]
+  
+  tasks:
+    - name: Test net_vlan module with invalid key
+      net_vlan:
+        invalid_key: "{{ vlans }}"
+      register: output
+      ignore_errors: yes
+  
+    - name: Test net_vlan module with invalid value
+      net_vlan:
+        vlan_id: "invalid"
+      register: output
+      ignore_errors: yes
+  
+    - name: Test net_vlan module with empty dictionary
+      net_vlan: {}
+      register: output
+      ignore_errors: yes
+  
+    - name: Test net_vlan module with nested dictionary
+      net_vlan:
+        vlans: {item}
+      with_items: "{{ vlans }}"
+      register: output
+      ignore_errors: yes
+  
+    - name: Test net_vlan module with nested dictionary having invalid key
+      net_vlan:
+        vlans: { vlan_port: "{{ vlans | map(attribute='vlan_ports') | list }}" }
+      register: output
+      ignore_errors: yes

@@ -1,0 +1,66 @@
+
+---
+- name: Create GCE Instance
+  hosts: localhost
+  gather_facts: no
+  vars:
+    project_id: "your_project_id"
+    zone: "us-central1-a"
+    network_name: "non-default-network"
+    service_account_email: "your_service_account_email"
+
+  tasks:
+
+  - name: create instance template
+    gce_instance_template:
+      auth_kind: serviceaccount
+      project_id: "{{ project_id }}"
+      service_account_file: "/path/to/service-account.json"
+      name: "example-template"
+      machine_type: "f1-micro"
+      source_image: 'projects/debian-cloud/global/images/family/debian-9'
+      network_interfaces:
+      - network: "{{ network_name }}"
+        subnetwork: "{{ network_name }}-subnetwork"
+        access_configs:
+        - name: External NAT
+          nat_ip: auto
+          type: ONE_TO_ONE_NAT
+      disk_size: "10"
+      disk_type: "pd-standard"
+      metadata:
+        startup-script: echo hello
+      description: "example GCE instance template"
+      zone: "{{ zone }}"
+      register: template
+
+  - name: create instance from template
+    gce:
+      auth_kind: serviceaccount
+      project_id: "{{ project_id }}"
+      service_account_file: "/path/to/service-account.json"
+      name: "example-instance"
+      instance_template: "{{ template }}"
+      zone: "{{ zone }}"
+      metadata:
+        startup-script: echo hello
+      description: "example GCE instance"
+      network_interfaces:
+      - network: "{{ network_name }}"
+        subnetwork: "{{ network_name}}-subnetwork"
+        access_configs:
+        - name: External NAT
+          nat_ip: auto
+          type: ONE_TO_ONE_NAT
+      register: gce
+
+  - name: cleanup GCE resources
+    gce:
+      auth_kind: serviceaccount
+      project_id: "{{ project_id }}"
+      service_account_file: "/path/to/service-account.json"
+      name: "{{ item.name }}"
+      zone: "{{ zone }}"
+      state: "{{ item.state }}"
+    with_items: "{{ [template, gce] }}"
+    when: item.changed

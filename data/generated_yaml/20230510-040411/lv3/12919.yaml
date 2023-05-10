@@ -1,0 +1,33 @@
+
+- name: Example Playbook to expose connection sharing errors
+  hosts: 
+    - host1 
+    - host2 
+    - host3 
+  vars: 
+    remote_host: "10.0.0.3" 
+  gather_facts: False 
+  tasks: 
+    - name: SSH connection to remote host
+      become: True 
+      block:
+        - name: Copy SSH key from remote_host to localhost 
+          fetch: 
+            src: "/home/ubuntu/.ssh/id_rsa.pub" 
+            dest: "/tmp/{{ inventory_hostname }}-id_rsa.pub" 
+            flat: yes
+            fail_on_missing: yes 
+            delegate_to: "{{remote_host}}" 
+          register: copy_output 
+          
+        - name: Install SSH key to remote_host
+          authorized_key: 
+            user: "{{ remote_user }}" 
+            key: "{{ lookup('file', '/tmp/{{ inventory_hostname }}-id_rsa.pub') }}" 
+          become: True  
+          register: authorized_key_output 
+          delegate_to: "{{remote_host}}" 
+
+      connection: "ssh"
+      vars:
+        ansible_ssh_common_args: "-o StrictHostKeyChecking=no"

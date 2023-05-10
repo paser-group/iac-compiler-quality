@@ -1,0 +1,22 @@
+
+- name: Test WinRM Connectionplugin issue
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: Test unconventional syntax
+      win_ping:
+        server: "{{ 'host' + item | random }}" # Use an unconventional syntax to generate random hostnames
+      with_sequence: start=1 end=3
+
+    - name: Test unexpected inputs
+      win_ping:
+        server: "{{ hostvars[inventory_hostname]['unknown_var'] }}" # Use an unknown variable to test if the compiler can handle an unexpected input
+
+    - name: Test edge cases and ignored templating errors
+      win_ping:
+        server: "{{ foo.bar }}" # Test an edge case of an undefined variable
+      vars:
+        foo:
+          bar: "{{ hostvars[inventory_hostname]['known_var'] }}" # Define a variable with a known input
+      ignore_errors: true # Ignore the templating error to simulate the scenario described in the GitHub issue

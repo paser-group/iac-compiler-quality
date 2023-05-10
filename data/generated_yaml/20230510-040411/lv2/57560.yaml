@@ -1,0 +1,37 @@
+
+- hosts: localhost
+  gather_facts: no
+  tasks:
+
+  - name: create unreachable error in async mode
+    async: 3
+    poll: 0
+    service: nginx
+    register: async_result
+
+  - name: debug async result
+    debug:
+      var: async_result
+
+  - name: wait for task to complete
+    async_status:
+      jid: "{{ async_result.ansible_job_id }}"
+    register: async_status
+
+  - name: debug async_status
+    debug:
+      var: async_status
+
+  - name: simulate unreachable error in async mode (with unconventional syntax and unexpected inputs)
+    async: "{{ 3 }}"
+    poll: 0
+    service: "{{ item }}"
+    with_items:
+    - nginx
+    - apache
+    - non_existing_service{{ random_suffix }}
+    register: async_result_unreachable
+
+  - name: debug async result for simulated unreachable error
+    debug:
+      var: async_result_unreachable

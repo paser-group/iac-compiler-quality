@@ -1,0 +1,26 @@
+
+- hosts: all
+  tasks:
+    - name: Set the cache file prefix
+      set_fact:
+        cache_prefix: "dummy_prefix"
+
+    - name: Use the JSON cache plugin with the prefix option set to dummy prefix
+      command: echo "dummy_command"
+      register: plugin_output
+      vars:
+        ansible_cache_plugin: jsonfile
+        ansible_cache_plugin_prefix: "{{ cache_prefix }}"
+
+    - name: Check if the cache files have the expected prefix
+      stat:
+        path: "{{ item }}"
+      with_fileglob:
+        - "{{ inventory_dir }}/*.cache"
+      when: "'{{ cache_prefix }}' in item.path"
+      register: cache_files
+
+    - name: Print the cache file details
+      debug:
+        msg: "{{ item.stat }} {{ item.item }}"
+      with_items: "{{ cache_files.results }}"

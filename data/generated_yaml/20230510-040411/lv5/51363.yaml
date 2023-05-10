@@ -1,0 +1,34 @@
+
+# Define a list of EXOS devices
+exos_devices:
+  - name: exos_device_1
+    host: 192.168.1.1
+    username: user1
+    password: pass1
+  - name: exos_device_2
+    host: 192.168.1.2
+    username: user2
+    password: pass2
+
+# Set the network_cli connection plugin as the default connection plugin for EXOS devices
+defaults:
+  ansible_connection: network_cli
+  ansible_network_os: exos
+
+# Use ios_command module to execute a command that sets terminal parameters
+- name: Test set terminal parameters
+  ios_command:
+    commands:
+    - terminal length 0
+    provider:
+      host: "{{ item.host }}"
+      username: "{{ item.username }}"
+      password: "{{ item.password }}"
+  register: output
+  loop: "{{ exos_devices }}"
+
+# Store the output in a variable and check if it contains an error message related to terminal parameters
+- name: Check for errors in output
+  assert:
+    that:
+      - '"unable to set terminal parameters" not in output.results.*.stdout[0]'

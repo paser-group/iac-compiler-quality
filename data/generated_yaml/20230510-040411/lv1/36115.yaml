@@ -1,0 +1,54 @@
+yaml
+---
+- name: Example playbook for elb_application_lb issue
+  hosts: localhost
+  gather_facts: no
+  tasks:
+  - name: Install required python packages
+    pip:
+      name:
+        - boto3
+        - botocore
+      state: present
+  - name: Create elb application load balancer
+    community.aws.elastic_load_balancer_app:
+      state: present
+      name: my_application_lb
+      security_groups:
+        - sg-xxxxxxxx
+      subnets:
+        - subnet-xxxxxxxx
+      listeners:
+        - Protocol: HTTP
+          Port: 80
+          DefaultActions:
+            - Type: forward
+              TargetGroupArn: arn:aws:elasticloadbalancing:region:0123456789:targetgroup/my-targets/5461f7fbdf9da23d 
+      connection_type: client
+      client_region: "{{ region }}"
+    vars:
+      region: us-east-1
+  - name: Register EC2 instance with target group
+    community.aws.elb_target_group:
+      state: present
+      name: my-targets
+      health_check_interval_seconds: 300
+      port: 80
+      protocol: HTTP
+      vpc_id: vpc-xxxxxxxx
+      targets:
+        - Id: "{{ instance_id }}"
+          Port: 80
+  - name: Deregister EC2 instance from target group
+    community.aws.elb_target_group:
+      state: absent
+      name: my-targets
+      targets:
+        - Id: "{{ instance_id }}"
+          Port: 80
+  - name: Delete elb application load balancer
+    community.aws.elastic_load_balancer_app:
+      state: absent
+      name: my_application_lb
+      connection_type: client
+      client_region: "{{ region }}"

@@ -1,0 +1,60 @@
+
+---
+- name: Test fact gathering on ARM architecture
+  hosts: all
+  become: true
+  tasks:
+    - name: Test fact gathering for CPU count
+      command: uname -m
+      register: uname_output
+      changed_when: false
+
+    - name: Debug uname output
+      debug:
+        var: uname_output.stdout
+
+    - name: Generate a list of CPUs
+      set_fact:
+        cpus: "{{ range(1, 32) | list }}"
+
+    - name: Pause for 5 seconds
+      pause:
+        seconds: 5
+
+    - name: Update fact cache
+      setup:
+
+    - name: Debug CPU count
+      debug:
+        var: ansible_processor_count
+
+    - name: Update fact cache
+      setup:
+        filter: "ansible_*processor*"
+
+    - name: Debug CPU count after cache update
+      debug:
+        var: ansible_processor_count
+
+    - name: Generate a list of CPUs using YAML syntax
+      set_fact:
+        cpus: >
+          {% for i in range(1, 16) %}- cpu{{i}}\n{% endfor %}
+
+    - name: Pause for 2 seconds
+      pause:
+        seconds: 2
+
+    - name: Print CPU list
+      debug:
+        var: cpus
+
+    - name: Register output of custom module
+      my_custom_module:
+        arg1: "{{ uname_output.stdout }}"
+        arg2: "{{ ansible_processor_count }}"
+      register: custom_module_output
+
+    - name: Debug custom module output
+      debug:
+        var: custom_module_output

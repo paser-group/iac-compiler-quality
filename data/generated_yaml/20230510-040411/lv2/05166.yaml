@@ -1,0 +1,51 @@
+
+- name: Test with_items loops with prefix in apt and yum modules
+  hosts: all
+  become: true
+  
+  vars:
+    prefixes:
+      - '-o DPkg::options::=--force-confnew'
+      - '-e option=test'
+  
+  tasks:
+    - name: Test with_items in apt module with prefix
+      apt:
+        name: "{{ item }}"
+        state: present
+        with_items:
+          - "apache2"
+          - "mysql-server"
+        prefix: "{{ item }}"
+      loop: "{{ prefixes }}"
+    
+    - name: Test with_items in yum module with prefix
+      yum:
+        name: "{{ item }}"
+        state: installed
+        with_items:
+          - "httpd"
+          - "mysql-server"
+        prefix: "{{ item }}"
+      loop: "{{ prefixes }}"
+    
+    - name: Test with_items using unconventional syntax in apt module
+      apt:
+        name: "{{ item }}"
+        state: present
+        with_items: ["apache2", "mysql-server"]
+        prefix: "-o Dpkg::options==--force-confnew"
+    
+    - name: Test with_items using unexpected input in apt module
+      apt:
+        name: "{{ item }}"
+        state: present
+        with_items: "apache2,mysql-server"
+        prefix: "-o DPkg::options::=--force-confnew"
+    
+    - name: Test with_items using an empty list in apt module
+      apt:
+        name: "{{ item }}"
+        state: present
+        with_items: []
+        prefix: "-o DPkg::options::=--force-confnew"

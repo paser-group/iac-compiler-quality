@@ -1,0 +1,30 @@
+yaml
+---
+- hosts: all
+  vars:
+    sensitive_content: !vault |
+      $ANSIBLE_VAULT;1.1;AES256
+      62316335316530646666346539326564346663616239353933653836303938323365396435333133
+      6437386566356664663535366334343430306265333030640a393231626136326237373766366537
+      63326465633465316365333531313764316363323662323162326661626237663034643330656165
+      3837623563343261630a653634383166656664626137653437656235363535633338656563346531
+      6566
+    invalid_symlink: "{{ ansible_env.HOME + '/invalid_symlink' }}"
+    valid_symlink: "{{ ansible_env.HOME + '/valid_symlink' }}"
+    nonexistent_path: "{{ ansible_env.HOME + '/nonexistent_path' }}"
+  tasks:
+  - name: Create invalid symlink
+    file:
+      src: "{{ nonexistent_path }}"
+      dest: "{{ invalid_symlink }}"
+      state: link
+    ignore_errors: yes
+  - name: Create valid symlink
+    file:
+      src: "{{ invalid_symlink }}"
+      dest: "{{ valid_symlink }}"
+      state: link
+  - name: Verify symlink target
+    stat:
+      path: "{{ valid_symlink }}"
+    failed_when: false

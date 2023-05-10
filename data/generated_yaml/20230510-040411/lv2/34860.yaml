@@ -1,0 +1,84 @@
+
+- name: Test playbook for cron module backup error
+  hosts: localhost
+  
+  tasks:
+  - name: Ensure cron is installed
+    package:
+      name: cron
+      state: present
+
+  - name: Create test cron job
+    cron:
+      name: Test job
+      minute: "*/2"
+      job: echo "Test job ran" > /tmp/test_job_output
+      state: present
+      backup: true
+      backup_dir: "/tmp/test_job_backup_dir/"
+      backup_format: "%y-%m-%d"
+      backup_copy: yes
+      user: root
+      minute_invalid: "abc"
+      hour: "*"
+      day: 31
+      month: "JAN,FEB,MAR"
+      weekday: "Sun"
+      cron_file: /etc/cron.d/test_job
+
+  - name: Remove test cron job
+    cron:
+      name: Test job
+      state: absent
+
+  - name: Test invalid backup_dir
+    cron:
+      name: Test job
+      minute: "*/2"
+      job: echo "Test job ran" > /tmp/test_job_output
+      state: present
+      backup: true
+      backup_dir: "/////"
+      backup_format: "%y-%m-%d"
+      backup_copy: yes
+      user: root
+      cron_file: /etc/cron.d/test_job
+
+  - name: Test invalid backup_format
+    cron:
+      name: Test job
+      minute: "*/2"
+      job: echo "Test job ran" > /tmp/test_job_output
+      state: present
+      backup: true
+      backup_dir: /tmp/test_job_backup_dir/
+      backup_format: "%%%%%%%"
+      backup_copy: yes
+      user: root
+      cron_file: /etc/cron.d/test_job
+
+  - name: Test invalid backup_copy
+    cron:
+      name: Test job
+      minute: "*/2"
+      job: echo "Test job ran" > /tmp/test_job_output
+      state: present
+      backup: true
+      backup_dir: /tmp/test_job_backup_dir/
+      backup_format: "%y-%m-%d"
+      backup_copy: invalid_value
+      user: root
+      cron_file: /etc/cron.d/test_job
+
+  - name: Test invalid minute value
+    cron:
+      name: Test job
+      minute: "abc"
+      job: echo "Test job ran" > /tmp/test_job_output
+      state: present
+      backup: true
+      backup_dir: /tmp/test_job_backup_dir/
+      backup_format: "%y-%m-%d"
+      backup_copy: yes
+      user: root
+      cron_file: /etc/cron.d/test_job

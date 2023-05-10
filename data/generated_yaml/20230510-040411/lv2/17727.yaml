@@ -1,0 +1,36 @@
+yaml
+- name: Test Ansible Azure dynamic inventory script -- azure_rm.py
+  hosts: localhost
+  gather_facts: False
+
+  vars:
+    invalid_input: "'; rm -rf /'"
+
+  tasks:
+    - name: Create Azure credentials
+      azure_rm_login:
+        client_id: "<insert_client_id>"
+        client_secret: "<insert_client_secret>"
+        tenant: "<insert_tenant_id>"
+      register: azure_auth
+
+    - name: Test azure_rm.py dynamic inventory script
+      azure_rm:
+        subscription_id: "{{ azure_auth.subscription_id }}"
+        auth_source: cli
+        inventory_hostname: "{{ ansible_host }}"
+        state: present
+        host: "{{ inventory_hostname }}"
+      register: azure_inventory
+
+    - name: Test Azure dynamic inventory with invalid input
+      azure_rm:
+        subscription_id: "{{ invalid_input }}"
+        host: "{{ inventory_hostname }}"
+      register: azure_invalid_input
+
+    - name: Test Azure dynamic inventory with incorrect syntax
+      azure_rm:
+        subsciption_id: "{{ azure_auth.subscription_id }}"
+        host "{{ inventory_hostname }}"
+      register: azure_invalid_syntax

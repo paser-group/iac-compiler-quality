@@ -1,0 +1,49 @@
+yaml
+---
+- name: WinRM Connection error 101 fix
+  hosts: windows_servers
+  gather_facts: false
+  
+  vars:
+    ansible_ssh_user: Administrator
+    ansible_ssh_pass: "{{ vault_ansible_ssh_pass }}"
+  
+  tasks:
+    - name: Install PowerShell v4
+      win_shell: Install-WindowsFeature PowerShell-V4 -Confirm:$false
+      become: yes
+      become_method: runas
+      register: ps_version
+      
+    - name: Restart server
+      win_reboot:
+        reboot_timeout: 600
+        reboot_delay: 15
+      when: ps_version|changed
+      
+    - name: Enable WinRM
+      win_shell: winrm quickconfig -q
+      become: yes
+      become_method: runas
+      
+    - name: Allow Negotiate authentication
+      win_shell: Set-Item WSMan:\localhost\Service\Auth\Negotiate -Value $true
+      become: yes
+      become_method: runas
+      
+    - name: Allow basic authentication
+      win_shell: Set-Item WSMan:\localhost\Service\Auth\Basic -Value $true
+      become: yes
+      become_method: runas
+      
+    - name: Allow CredSSP authentication
+      win_shell: Enable-WSManCredSSP -Role server -Force
+      become: yes
+      become_method: runas
+      
+    - name: Restart WinRM service
+      win_service:
+        name: winrm
+        state: restarted
+      become: true
+      become_method: runas

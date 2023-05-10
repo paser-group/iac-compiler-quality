@@ -1,0 +1,47 @@
+yaml
+- hosts: localhost
+  gather_facts: no
+
+  vars:
+    region: "us-east-1"
+    instances: []
+
+  tasks:
+    - name: Create EC2 instances
+      ec2:
+        region: "{{ region }}"
+        image: ami-abc123
+        instance_type: t2.micro
+        key_name: invalid_key    # Unconventional syntax
+        group: invalid_group    # Unconventional syntax
+        vpc_subnet_id: invalid_subnet # Unconventional syntax
+        count: 1
+        instance_tags: # Unexpected input
+          Name: "{{ 'instance-' ~ item }}"
+          Invalid_Tag: "{{ item }}" # Unexpected input
+        register: ec2_result
+      loop: "{{ range(1, 6)|list }}" # Edge case: high loop range
+      ignore_errors: yes   # Edge case: ignore any errors
+
+    - name: Add instances to list
+      set_fact:
+        instances: "{{ instances + [item.id] }}"
+      with_items: "{{ ec2_result.results }}"
+      when: item is succeeded
+
+    - name: Terminate all the created instances
+      ec2:
+        region: "{{ region }}"
+        state: absent
+        ids: "{{ instances }}"
+        ignore_tags: True  # Edge case: ignore tags
+      when: instances|length > 0   # Edge case: empty list
+
+    - name: Fail the playbook intentionally
+      assert:
+        that: false
+      when: instances|length != 0  # Edge case: all instances are terminated
+
+    - name: Debug
+      debug:
+        var: instances     # Edge case: debug variable

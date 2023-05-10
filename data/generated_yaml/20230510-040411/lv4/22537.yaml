@@ -1,0 +1,109 @@
+
+---
+- name: Test ec2_asg ELB health checks
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    region: "us-east-1"
+    ami_id: "ami-0c94855ba95c71c99"
+
+  tasks:
+    - name: Create EC2 instance
+      ec2:
+        region: "{{ region }}"
+        key_name: "mykeypair"
+        instance_type: "t2.micro"
+        image: "{{ ami_id }}"
+        wait: yes
+        count: 1
+        instance_tags:
+          Name: "testing-elb-asg"
+      register: ec2_instance
+
+    - name: Create ELB
+      ec2_elb_lb:
+        name: "testing-elb-asg"
+        region: "{{ region }}"
+        listeners:
+          - protocol: 'HTTP'
+            load_balancer_port: '80'
+            instance_protocol: 'HTTP'
+            instance_port: '80'
+        zones:
+          - "{{ region }}a"
+        health_check:
+          target: "TCP:80"
+          interval: "10"
+          timeout: "5"
+          unhealthy_threshold: "2"
+          healthy_threshold: "2"
+          expected_codes: "200"
+        state: present
+      register: elb
+
+    - name: Register instance with ELB
+      ec2_elb:
+        state: "present"
+        region: "{{ region }}"
+        name: "testing-elb-asg"
+        instances: ["{{ ec2_instance.instances[0].id }}"]
+      register: elb_registration
+
+    - name: Create ASG
+      ec2_asg:
+        region: "{{ region }}"
+        name: "{{ elb.name }}"
+        availability_zones: "{{ region }}a"
+        launch_config_name: "testing-elb-asg-lc"
+        min_size: 1
+        max_size: 1
+        health_check_period: 300
+        health_check_type: "ELB"
+        wait_for_instances: true
+        state: present
+      register: asg
+
+    - name: Change ASG desired capacity and wait for ELB instances to be healthy
+      ec2_asg:
+        region: "{{ region }}"
+        name: "{{ asg.name }}"
+        health_check_grace_period: 300
+        desired_capacity: 2
+        wait_for_instances: "healthy"
+        wait_timeout: 600
+        state: present
+
+    - name: Terminate EC2 instance and wait for ELB instances to be healthy
+      ec2:
+        region: "{{ region }}"
+        instance_ids: "{{ ec2_instance.instances[0].id }}"
+        state: "absent"
+      register: termination
+
+    - name: Wait for ELB instances to be healthy
+      wait_for:
+        host: "{{ elb.dns_name }}"
+        port: 80
+        delay: 10
+        timeout: 600
+      register: elb_health
+
+    - name: Delete EC2 instance
+      ec2:
+        region: "{{ region }}"
+        instance_ids: "{{ ec2_instance.instances[0].id }}"
+        state: "absent"
+
+    - name: Delete ELB
+      ec2_elb_lb:
+        name: "{{ elb.name }}"
+        region: "{{ region }}"
+        state: absent
+
+    - name: Delete ASG
+      ec2_asg:
+        region: "{{ region }}"
+        name: "{{ asg.name }}"
+        state: absent

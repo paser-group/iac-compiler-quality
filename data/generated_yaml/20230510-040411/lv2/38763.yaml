@@ -1,0 +1,61 @@
+
+- name: Test playbook for ansible role scope issue
+  hosts: localhost
+  gather_facts: false
+  
+  vars:
+    global_var: "I'm a global variable."
+  
+  tasks:
+    - name: Role-level variable with same name as global variable
+      include_role:
+        name: example_role
+      vars:
+        global_var: "I'm a role-level variable with the same name as global variable."
+    
+    - name: Task-level variable with same name as global variable
+      debug:
+        var: global_var
+      vars:
+        global_var: "I'm a task-level variable with the same name as global variable."
+      
+    - name: Role-scope variable
+      include_role:
+        name: example_role
+      vars:
+        my_var: "I'm a role-scope variable."
+      register: role_scope_var
+      
+    - name: Debug role-scope variable
+      debug:
+        msg: "{{ role_scope_var.my_var }}"
+      
+    - name: Undefined variable
+      debug:
+        var: undefined_var
+      
+    - name: Nested variable with undefined variable
+      debug:
+        msg: "{{ nested_var.undefined_var }}"
+      vars:
+        nested_var:
+          key1: "value1"
+          key2: "{{ undefined_var }}"
+          
+    - name: Inline Python
+      debug:
+        msg: "{{ range(10) | map('string') | list | join(',') }}"
+      
+    - name: Variable concatenation
+      debug:
+        msg: "{{ 'Ansible ' + 'rocks!' }}"
+      
+    - name: SSH to localhost with password
+      expect:
+        command: ssh localhost
+        responses:
+          Password: "password\n"
+      vars_prompt:
+        - name: "password"
+          prompt: "Enter the SSH password for localhost"
+          private: true

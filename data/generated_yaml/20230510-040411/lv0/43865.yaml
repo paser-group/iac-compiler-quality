@@ -1,0 +1,21 @@
+
+- hosts: all
+  become: true
+  tasks:
+    - name: Check if NFS is mounted
+      shell: mountpoint -q /mnt/nfs
+      register: nfs_mounted
+      ignore_errors: true
+
+    - name: Unmount NFS if it's not mounted
+      mount:
+        path: /mnt/nfs
+        state: unmounted
+      when: nfs_mounted.rc != 0
+
+    - name: Remount NFS
+      mount:
+        path: /mnt/nfs
+        src: nfs:/exported/path
+        state: mounted
+      when: nfs_mounted.rc == 0

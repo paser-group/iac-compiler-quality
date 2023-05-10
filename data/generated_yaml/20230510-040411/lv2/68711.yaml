@@ -1,0 +1,39 @@
+
+- name: Test Route53 boto error with IAM Role and AWS config
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    region: "{{ lookup('env','AWS_REGION') }}"
+    accountId: "{{ lookup('env','AWS_ACCOUNT_ID') }}"
+  
+  tasks:
+    - name: Install boto library
+      pip:
+        name: boto3
+        state: present
+
+    - name: Set AWS credentials and region
+      set_fact:
+        aws_access_key: "{{ lookup('env','AWS_ACCESS_KEY_ID') }}"
+        aws_secret_key: "{{ lookup('env','AWS_SECRET_ACCESS_KEY') }}"
+        aws_session_token: "{{ lookup('env', 'AWS_SESSION_TOKEN', default='') }}"
+        region: "{{ region | default('us-east-1') }}"
+      when: lookup('env','AWS_ACCESS_KEY_ID') is defined
+
+    - name: Create Route53 Hosted Zone
+      ec2_route53:
+        state: present
+        zone: 
+          name: "test-zone-{{ accountId }}.com"
+        wait: yes
+      register: result
+
+    - name: Print Route53 Hosted Zone details
+      debug:
+        var: result
+
+    - name: Remove Route53 Hosted Zone
+      ec2_route53:
+        state: absent
+        zone_id: "{{ result.zone_id }}"

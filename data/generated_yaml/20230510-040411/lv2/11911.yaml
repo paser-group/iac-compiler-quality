@@ -1,0 +1,64 @@
+
+- name: Test playbook for SSH port variable
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    ssh_password: '123:456:789'
+
+  tasks:
+    # Testing with a colon in the password variable
+    - name: Try to SSH into remote host with password containing a colon
+      expect:
+        command: ssh user@{{ ansible_host }} -p {{ ssh_port }} -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa
+        responses:
+          'Password: ': '{{ ssh_password }}'
+
+    # Testing with an undefined variable
+    - name: Try to SSH into remote host with undefined SSH port variable
+      expect:
+        command: ssh user@{{ ansible_host }} -p {{ non_existent_port_variable }} -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa
+        responses:
+          'Password: ': '{{ ssh_password }}'
+
+    # Testing with an invalid value for SSH port variable
+    - name: Try to SSH into remote host with invalid SSH port value
+      expect:
+        command: ssh user@{{ ansible_host }} -p abc123 -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa
+        responses:
+          'Password: ': '{{ ssh_password }}'
+
+    # Testing with an empty password variable
+    - name: Try to SSH into remote host with empty password variable
+      expect:
+        command: ssh user@{{ ansible_host }} -p {{ ssh_port }} -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa
+        responses:
+          'Password: ': ''
+
+    # Testing with a null password variable
+    - name: Try to SSH into remote host with null password variable
+      expect:
+        command: ssh user@{{ ansible_host }} -p {{ ssh_port }} -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa
+        responses:
+          'Password: ': null
+
+    # Testing with a negative SSH port value
+    - name: Try to SSH into remote host with negative SSH port value
+      expect:
+        command: ssh user@{{ ansible_host }} -p -22 -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa
+        responses:
+          'Password: ': '{{ ssh_password }}'
+
+    # Testing with a non-integer SSH port value
+    - name: Try to SSH into remote host with non-integer SSH port value
+      expect:
+        command: ssh user@{{ ansible_host }} -p 22.5 -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa
+        responses:
+          'Password: ': '{{ ssh_password }}'
+
+    # Testing with an undefined host variable
+    - name: Try to SSH into undefined host
+      expect:
+        command: ssh user@{{ non_existent_host }} -p {{ ssh_port }} -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa
+        responses:
+          'Password: ': '{{ ssh_password }}'

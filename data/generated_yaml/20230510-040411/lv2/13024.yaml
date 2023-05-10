@@ -1,0 +1,31 @@
+
+- name: Configure proxy settings with certificate errors
+  hosts: all
+  vars:
+    proxy_address: "PROXY_ADDRESS_HERE"
+    proxy_port: "PROXY_PORT_HERE"
+    proxy_username: "PROXY_USERNAME"
+    proxy_password: "PROXY_PASSWORD"
+  environment:
+    http_proxy: "{{ proxy_address }}:{{ proxy_port }}"
+    https_proxy: "{{ proxy_address }}:{{ proxy_port }}"
+    no_proxy: 127.0.0.1,localhost
+    SSL_CERT_FILE: /etc/ssl/certs/ca-certificates.crt
+  tasks:
+    - name: Ensure proxy certificate errors are ignored
+      set_fact: |
+        copy_errors = ["unable to get certificate",
+                        "certificate verify failed"]
+        if ansible_failed_result.msg is not none and any(msg in ansible_failed_result.msg for msg in copy_errors):
+          ansible_failed_result.msg = None
+      failed_when: False
+    - name: Test proxy connection
+      uri:
+        url: https://mytestpage.com
+        method: GET
+        return_content: yes
+        validate_certs: False
+      register: result
+      until: result.status == 200
+      retries: 5
+      delay: 10

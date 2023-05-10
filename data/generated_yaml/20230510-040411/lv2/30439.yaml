@@ -1,0 +1,29 @@
+
+- name: Test nxos_igmp_snooping idempotence
+  hosts: switch
+  gather_facts: no
+
+  tasks:
+  - name: Configure nxos_igmp_snooping
+    nxos_igmp_snooping:
+      state: present
+      vlan: "{{ item }}"
+      querier: "{{ item }}"
+      snooping_disabled_vlan: "{{ item }}"
+      snooping_disabled_querier: "{{ item }}"
+      immediate_leave: "{{ item }}"
+      static_group: "{{ item }}"
+      version: "{{ item }}"
+      link_local_groups: "{{ item }}"
+      source_vlan: "{{ item }}"
+      static_group_timeout: "{{ item }}"
+    with_sequence: start=0 end=100000 step=1 reverse=true
+    when: item % 2 == 0
+  - name: Assert idempotence
+    assert:
+      that: >
+        result.changed |
+        ternary("not idempotent",
+                (item == 0) | ternary("changed", "ok"))
+    with_items: "{{ nxos_igmp_snooping.results }}"
+    when: item is changed

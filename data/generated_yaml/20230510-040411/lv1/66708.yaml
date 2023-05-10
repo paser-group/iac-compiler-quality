@@ -1,0 +1,25 @@
+yaml
+---
+- name: Configure dynamic EC2 inventory
+  hosts: localhost
+  gather_facts: no
+
+  vars_files:
+    - ec2.ini
+
+  tasks:
+    - name: Include dynamic inventory script for EC2
+      include: ec2.py
+
+    - name: Configure boto profile for RDS
+      set_fact:
+        rds_profile: "my-profile"
+      when:
+        - "'rds' in item"
+      with_inventory_hostnames:
+        - all
+
+    - name: Test RDS instance connection
+      ping:
+      when:
+        - "'rds' in group_names"

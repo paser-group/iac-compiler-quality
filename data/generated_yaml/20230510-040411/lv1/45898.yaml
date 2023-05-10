@@ -1,0 +1,32 @@
+yaml
+---
+- name: Run commands on Bastion and remote server
+  become: true
+  hosts: bastion
+
+  tasks:
+    - name: Ping remote server
+      ping:
+      delegate_to: "{{ inventory_hostname }}"
+
+    - name: Run commands on remote server
+      command: echo "Hello, world!"
+      delegate_to: "{{ inventory_hostname }}"
+
+  vars:
+    ansible_ssh_common_args: "-o ProxyCommand='ssh -W %h:%p <BASTION-USERNAME>@<BASTION-IP>'"
+
+- name: Run commands on remote server
+  become: true
+  hosts: remote_server
+  vars:
+    ansible_ssh_common_args: "-o ProxyCommand='ssh -W %h:%p <BASTION-USERNAME>@<BASTION-IP>'"
+
+  tasks:
+    - name: Ping bastion server
+      ping:
+      delegate_to: "{{ inventory_hostname }}"
+
+    - name: Run commands on bastion server
+      command: echo "Hello, world!"
+      delegate_to: "{{ inventory_hostname }}"

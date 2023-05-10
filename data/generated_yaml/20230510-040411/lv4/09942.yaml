@@ -1,0 +1,18 @@
+
+- name: Check disk size
+  hosts: localhost
+  tasks:
+    - name: Get disk size
+      command: lsblk --noheadings --bytes --output SIZE /dev/sda
+      register: disk_size_output
+
+    - name: Print output
+      debug:
+        var: disk_size_output.stdout_lines
+
+    - name: Check Ansible output
+      assert:
+        that:
+          - "'Disk size: ' in output"
+          - "((disk_size_output.stdout_lines[0]|replace('Disk size: ','')|int == ansible_mounts[0].size_total)|(disk_size_output.stdout_lines[0]|replace('Disk size: ','')|int == ansible_mounts[0].size_total/2)) and ((disk_size_output.stdout_lines[0]|replace('Disk size: ','')|int == ansible_mounts[0].size_total)|(disk_size_output.stdout_lines[0]|replace('Disk size: ','')|int == ansible_mounts[0].size_total*2))"
+        msg: "Disk sizes do not match"

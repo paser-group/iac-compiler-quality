@@ -1,0 +1,22 @@
+
+- name: Check command availability and execute necessary commands
+  hosts: ios_devices
+  gather_facts: no
+  vars:
+    domain_commands:
+    - "ip domain-name example.com"
+    - "ip domain-lookup"
+    - "ip dhcp excluded-address 10.1.1.1 10.1.1.10"
+    - "ip dhcp pool example-pool"
+  tasks:
+    - name: Check if command exists
+      ios_command:
+        commands:
+        - "show running-config | include '{{ item }}'"
+      with_items: "{{ domain_commands }}"
+      register: domain_command_status
+    - name: Execute necessary commands
+      ios_config:
+        lines: "{{ item }}"
+      with_items: "{{ domain_commands }}"
+      when: "'configured' not in domain_command_status.results[item.index].stdout_lines[0]"

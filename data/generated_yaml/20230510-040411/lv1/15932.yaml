@@ -1,0 +1,23 @@
+
+- name: Update EC2 ENI security groups
+  hosts: localhost
+  gather_facts: no
+  vars:
+    eni_id: <YOUR_ENI_ID>
+    security_group_names:
+      - <YOUR_SECURITY_GROUP_1>
+      - <YOUR_SECURITY_GROUP_2>
+
+  tasks:
+    - name: Get security group IDs from names
+      ec2_group_info:
+        filters:
+          "group-name": "{{ item }}"
+      register: sg_ids
+      with_items: "{{ security_group_names }}"
+    
+    - name: Update ENI security groups
+      ec2_eni:
+        id: "{{ eni_id }}"
+        state: present
+        security_group_ids: "{{ sg_ids.results | map(attribute='security_groups') | list }}"

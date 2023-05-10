@@ -1,0 +1,27 @@
+
+import netrc
+import requests
+
+# Read GitHub credentials from the user's netrc file
+try:
+    netrc_data = netrc.netrc()
+    github_login, _, github_password = netrc_data.authenticators("api.github.com")
+except netrc.NetrcParseError:
+    print("Error parsing ~/.netrc file")
+    github_login = input("Enter your GitHub username: ")
+    github_password = input("Enter your GitHub password: ")
+    netrc_data.hosts["api.github.com"] = (github_login, None, github_password)
+    netrc_data.save()
+
+# Make a request to the GitHub API
+response = requests.get("https://api.github.com/user", auth=(github_login, github_password))
+
+# Handle HTTP Error 401
+if response.status_code == 401:
+    print("Authentication failed. Please check your GitHub credentials.")
+    github_login = input("Enter your GitHub username: ")
+    github_password = input("Enter your GitHub password: ")
+    response = requests.get("https://api.github.com/user", auth=(github_login, github_password))
+    
+# Print the response content
+print(response.content)

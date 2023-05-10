@@ -1,0 +1,30 @@
+
+- name: Create Docker container with custom home directory
+  hosts: localhost
+  gather_facts: False
+  
+  tasks:
+    - name: Create custom home directory
+      file:
+        path: /custom_home
+        state: directory
+        
+    - name: Create Docker container
+      docker_container:
+        name: test_container
+        image: some_image
+        volumes:
+          - /custom_home:/home
+        state: started
+        pull: true
+        
+    - name: Check if container is created
+      command:
+        cmd: "docker ps -a | grep test_container"
+        register: output
+        check_mode: no
+        
+    - name: Assert that the container is created
+      debug:
+        msg: "Container is created"
+      when: output.stdout is search("test_container")

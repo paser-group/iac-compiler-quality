@@ -1,0 +1,42 @@
+
+- name: Test Scoped Blocks with default variables
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    my_var: "hello"
+    my_list: ["a", "{{ my_var }}"]
+
+  pre_tasks:
+    - debug:
+        msg: "{{ my_list }}"
+
+  tasks:
+    - name: Test 1 - Scoped Block within Role
+      include_roles:
+        name: my_test_role
+      vars:
+        test_var: "{{ my_list }}"
+
+    - name: Test 2 - Scoped Block within Role - unconventional syntax
+      include_roles:
+        name: my_test_role2
+      vars:
+        test_var: "{{ my_list | difference(['a']) }}"
+
+    - name: Test 3 - Scoped Block within Role - unexpected input
+      include_roles:
+        name: my_test_role3
+      vars:
+        my_list2: ["{{'Hello'}}"]
+        test_var: "{{ my_list2 }}"
+
+    - name: Test 4 - Scoped Block outside of Role
+      set_fact:
+        my_var: "{{ my_list | join('') }}"
+      until: "{{ my_var == 'helloa' }}"
+
+    - name: Test 5 - Scoped Block outside of Role - edge case
+      when: "{{ 'a' in my_list }}"
+      debug:
+        msg: "Found 'a' in my_list"

@@ -1,0 +1,66 @@
+
+- name: Fuzz testing for lineinfile module
+  hosts: localhost
+
+  vars:
+    files: ['/test/file1', '/test/file2']
+    bad_paths: ['', '/', '/../../file']
+
+  tasks:
+    - name: Create directories for test files
+      file:
+        path: "/test"
+        state: directory
+      register: test_dir
+
+    - name: Test directory created
+      assert:
+        that:
+          - test_dir is defined
+          - test_dir.stat.isdir
+
+    - name: Generate test files
+      file:
+        path: "{{ item }}"
+        state: touch
+        mode: 0777
+      with_items: "{{ files }}"
+      register: test_file
+
+    - name: Test files created
+      assert:
+        that:
+          - test_file is defined
+          - test_file|length == 2
+          - test_file|map(attribute='changed')|list == [True, True]
+
+    - name: Try to add a line to a non-existing file
+      lineinfile:
+        dest: /test/does_not_exist/missing_file
+        line: "test line"
+      ignore_errors: true
+
+    - name: Try to add a line to a file with a missing directory path
+      lineinfile:
+        dest: "{{ bad_path }}/test_file"
+        line: "test line"
+      with_items: "{{ bad_paths }}"
+      ignore_errors: true
+
+    - name: Add lines to test files
+      lineinfile:
+        dest: "{{ item }}"
+        line: "test line"
+      with_items: "{{ files }}"
+
+    - name: Verify lines added to test files
+      shell: "grep -r 'test line' /test"
+      register: grep_results
+      changed_when: false
+      failed_when: (grep_results.stdout_lines | length) < 2
+
+    - name: Clean up test files
+      file:
+        path: "{{ item }}"
+        state: absent
+      with_items: "{{ files }}"

@@ -1,0 +1,36 @@
+
+- hosts: all
+  become: yes
+  
+  vars:
+    my_secret: "SensitiveData123!"
+  
+  tasks:
+    - name: Encrypt a secret using a non-existent vault password file
+      ansible.builtin.copy: content="{{ my_secret }}" dest=/tmp/secret
+      vars:
+        ansible_become_password_file: /tmp/non-existent-password.txt
+      register: encrypted_secret
+      ignore_errors: yes
+      
+    - name: Generate a valid vault password file and encrypt a secret
+      ansible.builtin.copy: content="MyStrongPassword" dest=/tmp/password.txt
+      no_log: true
+      
+    - name: Encrypt a secret with invalid vault format
+      ansible.builtin.copy: content="{{ my_secret }}" dest=/tmp/secret
+      vars:
+        ansible_vault_password_file: /tmp/password.txt
+      register: encrypted_secret_bad_format
+      environment:
+        ANSIBLE_VAULT_FORMAT_ERRORS: "false"
+  
+    - name: Print encrypted secret
+      debug:
+        var: encrypted_secret.content
+      when: encrypted_secret|success
+  
+    - name: Print error message from the invalid vault format
+      debug:
+        msg: "{{ encrypted_secret_bad_format.stderr }}"
+      when: encrypted_secret_bad_format|failed

@@ -1,0 +1,38 @@
+
+---
+- name: Stress test Ansible: Synchronize module
+  hosts: localhost
+  vars:
+    src_files: /tmp/src_files/
+    dest_files: /tmp/dest_files/
+    sync_options: rsync_opts="--ignore-existing"
+  tasks:
+  - name: Sync over rsync with unreachable host option
+    synchronize:
+      src: '{{ src_files }}/'
+      dest: '{{ dest_files }}/'
+      rsync_options: '--rsh="ssh -o StrictHostKeyChecking=no -o ProxyCommand=\"ssh -W %h:%p unreachable.example.com\""'
+    register: result
+    ignore_errors: true
+  - name: Debug results
+    debug:
+      msg: "{{ result }}"
+  - name: Sync without option
+    synchronize:
+      src: '{{ src_files }}/'
+      dest: '{{ dest_files }}/'
+    register: result2
+    ignore_errors: true
+  - name: Debug results
+    debug:
+      msg: "{{ result2 }}"
+  - name: Sync with invalid options syntax
+    synchronize:
+      src: '{{ src_files }}/'
+      dest_dir: '{{ dest_files }}/'
+      options: invalid_option
+    register: result3
+    ignore_errors: true
+  - name: Debug results
+    debug:
+      msg: "{{ result3 }}"

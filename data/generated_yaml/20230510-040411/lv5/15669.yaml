@@ -1,0 +1,39 @@
+
+- name: Test WinRMTransport Kerberos authentication
+  hosts: windows_hosts
+  tasks:
+  - name: Execute command over WinRM
+    win_command: net start wuauserv
+    register: cmd_output
+
+  - name: Get Kerberos ticket
+    kerberos_ticket:
+      domain_user: DOMAIN\user
+      domain_user_password: "password"
+      domain_controller: "dc.example.com"
+      spn: HTTP/target.example.com
+    register: krb_ticket
+
+  - name: Access remote server using WinRMTransport
+    win_command: net start wuauserv
+    become: true
+    become_method: winrm
+    become_user: DOMAIN\user
+    become_password: "{{ krb_ticket.krb5_ccache_path}}"
+    delegate_to: "{{ inventory_hostname }}"
+    register: win_output
+    ignore_errors: true
+
+  - name: Check Windows Event log for authentication error
+    debug:
+      var: item.message
+    loop: "{{ lookup('eventlog', 'Application', 'Security', start=-1h') }}"
+    failed_when:
+      - "item.source == 'kerberos' and 'KRB_AP_ERR_MODIFIED' in item.message"
+
+  - name: Handle authentication errors using exception handling
+    block:
+      - win_command: net start wuauserv
+      rescue:
+        - debug:
+            msg: "WinRMTransport Kerberos authentication failed: {{ ansible_failed_result }}"

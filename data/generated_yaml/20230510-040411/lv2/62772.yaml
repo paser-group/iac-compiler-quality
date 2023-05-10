@@ -1,0 +1,70 @@
+yaml
+- name: Stress testing Ansible compiler for NoneType Error in vmware_vmkernel_facts
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Generate random value for host_list
+      set_fact:
+        host_list: "{{ range(10)|list|random }}"
+        invalid_value: "{{ range(3)|list|random }}"
+        
+    - name: Fetch vm_kernel_facts for invalid host list
+      vmware_vmkernel_facts:
+        hostname: "{{ invalid_value }}"
+        username: "{{ invalid_value }}"
+        password: "{{ invalid_value }}"
+        validate_certs: false
+      register: invalid_host_facts
+      ignore_errors: true
+
+    - name: Verify None Type error in vmware_vmkernel_facts
+      debug:
+        msg: "{{ invalid_host_facts | json_query('results[0].msg') }}"
+      ignore_errors: true
+
+    - name: Fetch vm_kernel_facts for valid host list with random_type input
+      vmware_vmkernel_facts:
+        hostname: "{{ hostvars[groups['all'][host_list]]['ansible_default_ipv4']['address'] }}"
+        username: "{{ invalid_value }}"
+        password: "{{ invalid_value }}"
+        validate_certs: false
+        random_type: "{{ range(3)|list|random }}"
+      register: random_fact
+      ignore_errors: true
+
+    - name: Verify None Type error in vmware_vmkernel_facts with random type input
+      debug:
+        msg: "{{ random_fact | json_query('results[0].msg') }}"
+      ignore_errors: true
+
+    - name: Verify invalid random_type error in vmware_vmkernel_facts
+      set_fact:
+        random_type: "{{ ['wrong_type', 4, '9'] | random}}"
+      vmware_vmkernel_facts:
+        hostname: "{{ hostvars[groups['all'][host_list]]['ansible_default_ipv4']['address'] }}"
+        username: "{{ invalid_value }}"
+        password: "{{ invalid_value }}"
+        validate_certs: false
+        random_type: "{{ random_type }}"
+      register: invalid_random_type
+      ignore_errors: true
+
+    - name: Verify None Type error in vmware_vmkernel_facts with invalid random type input
+      debug:
+        msg: "{{ invalid_random_type | json_query('results[0].msg') }}"
+      ignore_errors: true
+
+    - name: Fetch vm_kernel_facts for valid host list with systemd parameter
+      vmware_vmkernel_facts:
+        hostname: "{{ hostvars[groups['all'][host_list]]['ansible_default_ipv4']['address'] }}"
+        username: "{{ invalid_value }}"
+        password: "{{ invalid_value }}"
+        validate_certs: false
+        systemd: "{{ range(3)|list|random }}"
+      register: systemd_fact
+      ignore_errors: true
+
+    - name: Verify None Type error in vmware_vmkernel_facts with systemd parameter
+      debug:
+        msg: "{{ systemd_fact | json_query('results[0].msg') }}"
+      ignore_errors: true

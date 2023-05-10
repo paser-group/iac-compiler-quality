@@ -1,0 +1,61 @@
+
+- name: Test win_regedit idempotency issue
+  hosts: localhost
+  gather_facts: no
+  vars:
+    key_path: 'HKEY_CURRENT_USER\SOFTWARE\TestRegKey'
+
+  tasks:
+    - name: Create registry key
+      win_regedit:
+        path: '{{ key_path }}'
+        state: present
+        value_type: string
+        value: Test
+      register: reg_result
+
+    - name: Validate registry key creation - invalid state
+      assert:
+        that:
+          - reg_result is not failed
+          - reg_result.changed is true
+      failed_when: false
+
+    - name: Create registry key with unconventional syntax
+      win_regedit: >
+        path: {{ key_path }}\@Unconventional
+        data_type: binary
+        data: 0x0,0x1,0x2,0x3
+      register: reg_unconventional_result
+
+    - name: Validate unconventional registry key creation
+      assert:
+        that:
+          - reg_unconventional_result is not failed
+          - reg_unconventional_result.changed is true
+      failed_when: false
+
+    - name: Delete registry key with unexpected input
+      win_regedit:
+        data_type: 12
+        path: '{{ key_path }}\NotExistKey'
+        state: absent
+      register: reg_delete_unexpected_result
+
+    - name: Validate unexpected registry key deletion
+      assert:
+        that:
+          - reg_delete_unexpected_result is not failed
+      failed_when: false
+
+    - name: Delete registry key with edge case input
+      win_regedit:
+        path: '{{ key_path }}\{{ "-" * 259 }}' # 256 char path + 3 for key
+        state: absent
+      register: reg_delete_edge_case_result
+
+    - name: Validate edge case registry key deletion
+      assert:
+        that:
+          - reg_delete_edge_case_result is not failed
+      failed_when: false

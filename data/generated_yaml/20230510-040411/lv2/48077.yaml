@@ -1,0 +1,100 @@
+yaml
+---
+- hosts: all
+  vars:
+    retentionInDays: 30
+  tasks:
+    - name: Ensure log group exists
+      cloudwatchlogs_log_group:
+        name: "/var/log/messages"
+        state: present
+        retentionInDays: "{{ retentionInDays }}"
+      register: result
+
+    - name: Fail if retentionInDays is not set
+      fail:
+        msg: "retentionInDays is not set"
+      when: "'retentionInDays' not in result.changed_vars"
+
+    - name: Set retentionInDays to an invalid value
+      cloudwatchlogs_log_group:
+        name: "/var/log/messages"
+        state: present
+        retentionInDays: -1
+      register: result
+
+    - name: Fail if retentionInDays is set to an invalid value
+      fail:
+        msg: "retentionInDays is set to an invalid value"
+      when: "'retentionInDays' in result.changed_vars and result.changed_vars.retentionInDays == -1"
+
+    - name: Set retentionInDays to a non-integer value
+      cloudwatchlogs_log_group:
+        name: "/var/log/messages"
+        state: present
+        retentionInDays: "thirty"
+      register: result
+
+    - name: Fail if retentionInDays is set to a non-integer value
+      fail:
+        msg: "retentionInDays is set to a non-integer value"
+      when: "'retentionInDays' in result.changed_vars and result.changed_vars.retentionInDays == 'thirty'"
+
+    - name: Remove retentionInDays parameter
+      cloudwatchlogs_log_group:
+        name: "/var/log/messages"
+        state: present
+      register: result
+
+    - name: Fail if retentionInDays parameter is not removed
+      fail:
+        msg: "retentionInDays parameter is not removed"
+      when: "'retentionInDays' in result.changed_vars"
+
+    - name: Set retentionInDays to a float value
+      cloudwatchlogs_log_group:
+        name: "/var/log/messages"
+        state: present
+        retentionInDays: 30.5
+      register: result
+
+    - name: Fail if retentionInDays is set to a float value
+      fail:
+        msg: "retentionInDays is set to a float value"
+      when: "'retentionInDays' in result.changed_vars and result.changed_vars.retentionInDays == 30.5"
+
+    - name: Pass in an empty value for retentionInDays
+      cloudwatchlogs_log_group:
+        name: "/var/log/messages"
+        state: present
+        retentionInDays: ""
+      register: result
+
+    - name: Fail if an empty value for retentionInDays does not raise an error
+      fail:
+        msg: "An empty value for retentionInDays did not raise an error"
+      when: "'retentionInDays' in result.changed_vars"
+
+    - name: Set retentionInDays to a very large value
+      cloudwatchlogs_log_group:
+        name: "/var/log/messages"
+        state: present
+        retentionInDays: 1000000000000
+      register: result
+
+    - name: Fail if retentionInDays is set to a very large value
+      fail:
+        msg: "retentionInDays is set to a very large value"
+      when: "'retentionInDays' in result.changed_vars and result.changed_vars.retentionInDays == 1000000000000"
+
+    - name: Ensure log group does not exist
+      cloudwatchlogs_log_group:
+        name: "/var/log/missinglogs"
+        state: absent
+        retentionInDays: "{{ retentionInDays }}"
+      register: result
+
+    - name: Fail if retentionInDays is set when log group does not exist
+      fail:
+        msg: "retentionInDays is set when log group does not exist"
+      when: "'retentionInDays' in result.changed_vars"

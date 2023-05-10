@@ -1,0 +1,52 @@
+
+---
+- name: ec2_ami_copy edge cases playbook
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+    - name: Copying EC2 AMI with given tag_equality and wait
+      ec2_ami_copy:
+        source_region: "{{ source_region | default('us-east-1') }}"
+        name: "{{ ami_name | default('test-ami') }}"
+        description: "{{ ami_description | default('test description') }}"
+        destination_region: "{{ destination_region | default('us-west-2') }}"
+        tag_equality:
+          tag_name: "{{ tag_name | default('test-tag') }}"
+          tag_value: "{{ tag_value | default('test-value') }}"
+        wait: "{{ wait_time | default('300') }}"
+      register: result
+
+    - name: Printing ec2_ami_copy result
+      debug:
+        var: result
+
+    - name: Copying EC2 AMI without wait and invalid syntax
+      ec2_ami_copy:
+        source_region: "{{ source_region123 | default('us-east-1') }}"
+        name: "{{ ami_name | default('test-ami') }}"
+        description: ["{{ ami_description | default('test description') }}"]
+        destination_region: "{{ destination_region }} {{ invalid_syntax }}"
+        tag_equality:
+          tag_name: []
+          tag_value: "{{ tag_value }}"
+        wait: "{{ wait_time123 | default('1200') }}"
+      register: result_invalid
+
+    - name: Printing ec2_ami_copy result with invalid syntax
+      debug:
+        var: result_invalid
+
+    - name: Copying EC2 AMI with missing destination region and invalid tag_name
+      ec2_ami_copy:
+        source_region: "us-east-1"
+        name: "{{ ami_name | default('test-ami') }}"
+        description: "{{ ami_description | default('test description') }}" 
+        tag_equality:
+          tag_name: 123
+        wait: "{{ wait_time | default('1800') }}"
+      register: result_missing
+
+    - name: Printing ec2_ami_copy result with missing destination region and invalid tag_name
+      debug:
+        var: result_missing

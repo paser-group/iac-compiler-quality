@@ -1,0 +1,62 @@
+
+- name: Configure Cipher Whitelist in Vault
+  block:
+    - name: Add Weak Ciphers to Cipher Whitelist
+      command: >
+        vault write sys/config/cipher-suite-parameters
+        allowed_ciphers="AES256-GCM-SHA384,AES128-GCM-SHA256,AES256-SHA256,AES128-SHA256,3DES-SHA1"
+  rescue:
+    - name: Vault Write Failed when adding Weak Ciphers to Cipher Whitelist
+      debug:
+        msg: "Vault write failed for Cipher Whitelist with weak ciphers"
+
+- name: Attempt to read a Vault secrets file with a whitelisted cipher
+  block:
+    - name: Vault Read with Whitelisted Cipher
+      command: >
+        vault read -tls-skip-verify -format=json
+        secret/sqlcreds
+        cipher_suite=AES256-GCM-SHA384
+
+  rescue:
+    - name: Vault Read Failed due to Cipher Whitelist
+      debug:
+        msg: "Vault read failed due to cipher whitelist error"
+
+- name: Attempt to read a vault secrets file with a non-whitelisted cipher
+  block:
+    - name: Vault Read with Non-Whitelisted Cipher
+      command: >
+        vault read -tls-skip-verify -format=json
+        secret/sqlcreds
+        cipher_suite=CHACHA20-POLY1305
+
+  ignore_errors: true
+
+- name: Verify Vault Read with Non-Whitelisted Cipher Fails
+  assert:
+    that: "'Vault read failed due to cipher whitelist error' in results.stderr"
+
+
+In the above code, we first configure the cipher whitelist with several weak or known vulnerable ciphers, and we verify that the command failed in case the write operation fails.
+
+Then we attempt to read a Vault secret file using a cipher that is whitelisted, and we verify that the operation failed as expected because the cipher is not whitelisted.
+
+Next, we attempt to read the same secrets file using a cipher that is not whitelisted. By ignoring errors, we allow the command to execute even though it used a non-whitelisted cipher.
+
+Finally, we verify that the assertion 'Vault read failed due to cipher whitelist error' is true. If the assertion fails, it means that the playbook executed without raising an error, which indicates a vulnerability in the cipher whitelist feature.
+
+
+Subtask 2: 
+
+The above Ansible Playbook introduces several code snippets that aim to expose vulnerabilities in the cipher whitelist feature of Vault.
+
+The first snippet configures the cipher whitelist feature with a list of weak ciphers, which we know to be vulnerable. The purpose is to ensure that the cipher whitelist feature is not configured with weak or outdated ciphers, to ensure the integrity and confidentiality of the secrets stored with Vault.
+
+The second snippet reads a secrets file with a cipher that is whitelisted. If the cipher is not whitelisted, the playbook should raise an error. This snippet aims to ensure that the whitelist feature is working correctly, and doesn't allow unauthorized ciphers to access sensitive information.
+
+The third snippet reads a secrets file with a cipher not in the whitelist and ignores the error that occurs. The purpose is to ensure that a non-whitelisted cipher can access sensitive information, and this vulnerability can be used to expose the secrets stored in Vault.
+
+Finally, the fourth snippet verifies that an error occurs when using a non-whitelisted cipher to read a secrets file. This assertion is used to validate that the playbook worked as expected and to identify vulnerabilities in the cipher whitelist feature.
+
+In conclusion, the above Ansible Playbook is an effective way of uncovering potential bugs in the Vault cipher whitelist feature of the Ansible compiler. The code snippets introduced in this playbook can be used to identify vulnerabilities, and contribute to the development of stronger and more secure software projects.

@@ -1,0 +1,31 @@
+
+- name: Mount NFS storage
+  hosts: all
+  become: true
+  vars:
+    mount_point: /mnt/nfs
+    nfs_server: <nfs-server-address>
+    nfs_share: <nfs-share>
+  tasks:
+    - name: Install NFS package
+      apt:
+        name: nfs-common
+        state: present
+
+    - name: Create mount point
+      file:
+        path: "{{ mount_point }}"
+        state: directory
+
+    - name: Mount NFS share
+      mount:
+        name: "{{ nfs_share }}"
+        src: "{{ nfs_server }}:/{{ nfs_share }}"
+        fstype: nfs
+        state: mounted
+        opts: defaults
+
+    - name: Make mount persist
+      lineinfile:
+        path: /etc/fstab
+        line: "{{ nfs_server }}:/{{ nfs_share }}    {{ mount_point }}   nfs     defaults 0 0"

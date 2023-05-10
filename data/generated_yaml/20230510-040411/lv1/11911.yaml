@@ -1,0 +1,33 @@
+
+- name: Configure SSH
+  hosts: all
+  vars_prompt:
+    - name: ssh_user
+      prompt: "Enter the SSH username"
+      private: no
+    - name: ssh_password
+      prompt: "Enter the SSH password"
+      private: yes
+  tasks:
+    - name: Set ssh port variable
+      set_fact:
+        ssh_port: 22
+    - name: Check if colon in password variable
+      when: ": " in ssh_password
+      debug:
+        msg: "The SSH password contains a colon, which may cause issues with the port variable"
+    - name: SSH port configuration
+      hosts: localhost
+      connection: local
+      become: false
+      gather_facts: false
+      vars:
+        ansible_port: "{{ ssh_port }}"
+        ansible_user: "{{ ssh_user }}"
+        ansible_password: "{{ ssh_password }}"
+      tasks:
+        - name: Test SSH Connection
+          wait_for:
+            host: "{{ inventory_hostname }}"
+            port: "{{ ssh_port }}"
+          ignore_errors: true

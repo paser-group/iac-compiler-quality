@@ -1,0 +1,29 @@
+
+- name: Generate SSH key-pair
+  hosts: localhost
+  become: yes
+  become_user: root
+
+  tasks:
+    - name: Create SSH key pair
+      shell: ssh-keygen -t rsa -f /root/test_key -N ""
+  
+- name: Test SSH key-pair missmatch
+  hosts: localhost
+  vars:
+    target_host: "{{ inventory_hostname }}"
+    ssh_key: "/root/test_key"
+    ssh_pub_key: "{{ ssh_key }}.pub"
+  
+  tasks:
+    - name: Disable strict host key checking
+      command: ssh -T -oStrictHostKeyChecking=no {{ target_host }}
+
+    - name: Try to connect with incorrect key
+      command: ssh -i "/path/to/incorrect/key" -oStrictHostKeyChecking=no {{ target_host }} echo "Connected using invalid key"
+      register: incorrect_key_output
+      ignore_errors: yes
+
+    - name: Generate error message
+      debug:
+        var: incorrect_key_output.stderr

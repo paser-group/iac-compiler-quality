@@ -1,0 +1,33 @@
+
+- name: Test ec2_win_password with key_data argument
+  hosts: all
+  gather_facts: no
+  
+  tasks:
+  - name: Create temporary file
+    tempfile:
+      state: file
+    register: temp_file
+
+  - name: Write unicode string to the temporary file
+    copy:
+      dest: "{{ temp_file.path }}"
+      content: "{{ '\u1234' }}"
+      
+  - name: Launch EC2 instance
+    ec2:
+      key_name: mykeypair
+      instance_type: t2.micro
+      region: us-east-1
+      image: ami-0c94855ba95c71c99
+      wait: true
+      instance_tags:
+        Name: ec2-instance
+      count: 1
+      vpc_subnet_id: subnet-0f218c5b96e4e6c3f
+      associate_public_ip_address: true
+      key_data: "{{ lookup('file', temp_file.path) }}"
+
+  - name: Debug output of key_data
+    debug:
+      var: key_data

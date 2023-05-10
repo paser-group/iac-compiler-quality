@@ -1,0 +1,61 @@
+
+---
+- name: Azure resource deployment
+  hosts: localhost
+  connection: local
+  gather_facts: no
+
+  vars:
+    resource_group_name: "{{ 'invalid_resource_group_name_{0}'.format(ansible_date_time.epoch) }}"
+    location: "West US"
+    storage_account_name: "myvmstorg{{lookup('pipe', 'date +%s%N')}}"
+    vm_name: "{{ 'invalid_vm_{0}'.format(ansible_date_time.microsecond) }}"
+    vm_size: "Standard_DS1_v2"
+    admin_username: "azureuser"
+    admin_password: "myS3cr3tP@ssw0rd"
+
+  tasks:
+  - name: create resource group
+    azure_rm_resourcegroup:
+      name: "{{ resource_group_name }}"
+      location: "{{ location }}"
+    register: rg_result
+
+  - name: create storage account
+    azure_rm_storageaccount:
+      resource_group: "{{ resource_group_name }}"
+      name: "{{ storage_account_name }}"
+      kind: "Storage"
+      storage_account_type: "Standard_LRS"
+    register: sa_result
+    when: rg_result is succeeded
+
+  - name: create virtual machine
+    azure_rm_virtualmachine:
+      resource_group: "{{ resource_group_name }}"
+      name: "{{ vm_name }}"
+      os_type: Linux
+      image:
+        offer: CoreOS
+        publisher: CoreOS
+        sku: Stable
+        version: latest
+      storage_account_name: "{{ sa_result.name }}"
+      admin_username: "{{ admin_username }}"
+      admin_password: "{{ admin_password }}"
+      network_interface_names: "{{ vm_name }}-nic"
+      vm_size: "{{ vm_size }}"
+      unmanaged_disk_vhd_uri: "/vhds/{{ vm_name }}.vhd"
+      managed_disks:
+        storage_account_type: "Premium_LRS"
+      tags:
+        environment: "testing"
+    register: vm_result
+    when: sa_result is succeeded
+
+  - name: delete virtual machine
+    azure_rm_virtualmachine:
+      resource_group: "{{ resource_group_name }}"
+      name: "{{ vm_name }}"
+      state: absent
+    when: vm_result is succeeded

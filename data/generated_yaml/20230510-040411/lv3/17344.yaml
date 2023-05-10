@@ -1,0 +1,59 @@
+
+---
+- name: Test Openstack dynamic inventory
+  hosts: localhost
+  gather_facts: no
+  vars:
+    openstack_auth_url: "http://openstack.local/v3"
+    openstack_username: "myuser"
+    openstack_password: "mypassword"
+    openstack_project_name: "myproject"
+    openstack_domain_name: "mydomain"
+    openstack_server_groups:
+      - group1
+      - group2
+  tasks:
+    - name: Test list-servers
+      os_server_facts:
+        cloud: mycloud
+      register: server_facts
+
+    - name: Print server names
+      debug:
+        var: item.name
+      loop: "{{ server_facts.instances }}"
+
+    - name: Test inaccessible inventory
+      os_server_facts:
+        cloud: mycloud
+        auth:
+          auth_url: "http://wrong-url/v3"
+          username: "{{ openstack_username }}"
+          password: "{{ openstack_password }}"
+          project_name: "{{ openstack_project_name }}"
+          project_domain_name: "{{ openstack_domain_name }}"
+      register: server_facts2
+      failed_when: False
+
+    - name: Test incorrect credentials
+      os_server_facts:
+        cloud: mycloud
+        auth:
+          auth_url: "{{ openstack_auth_url }}"
+          username: "wrong-username"
+          password: "wrong-password"
+          project_name: "{{ openstack_project_name }}"
+          project_domain_name: "{{ openstack_domain_name }}"
+      register: server_facts3
+      failed_when: False
+
+    - name: Test unexpected inventory data
+      set_fact:
+        server_facts4:
+          instances:
+            - name: server1
+              flavor: 2
+              groups:
+                - "{{ openstack_server_groups }}"
+                - 123
+      failed_when: False

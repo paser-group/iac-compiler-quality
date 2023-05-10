@@ -1,0 +1,37 @@
+
+---
+- name: Terminate EC2 instances
+  hosts: localhost
+  gather_facts: false
+  vars:
+    key_name: my_keypair
+    security_group: my_security_group
+    region: us-east-1
+    instance_ids:
+      - i-0123456789abcdef0
+  tasks:
+    - name: Terminate EC2 instances
+      ec2_instance:
+        instance_ids: "{{ instance_ids }}"
+        key_name: "{{ key_name }}"
+        security_group: "{{ security_group }}"
+        region: "{{ region }}"
+        state: absent
+      register: ec2
+    - name: Print EC2 details
+      debug:
+        var: ec2
+    - name: Connection Test
+      hosts: "{{ instance_ids }}"
+      tasks:
+        - name: Wait for SSH to come up
+          wait_for:
+            port: 22
+            delay: 10
+            timeout: 480
+        - name: Run Command on EC2
+          shell: ls /
+          register: command_output
+        - name: Show Command Output
+          debug:
+            var: command_output

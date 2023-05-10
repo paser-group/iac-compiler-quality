@@ -1,0 +1,36 @@
+
+- name: Test SSH Host Key Checking
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Update known_hosts file
+      lineinfile:
+        path: ~/.ssh/known_hosts
+        line: "{{ hostvars[item]['ansible_host_key_rsa_public'] }} {{ hostvars[item]['ansible_host_key_type'] }} {{ hostvars[item]['ansible_host_key_rsa_public'] }}"
+      with_items: "{{ ansible_play_hosts }}"
+      when: hostvars[item].ansible_host_key_rsa_public is defined
+
+    - name: Allow SSH Password Authentication
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: "^PasswordAuthentication"
+        line: "PasswordAuthentication yes"
+        state: present
+        backup: yes
+      delegate_to: localhost
+
+    - name: Restart SSH Service
+      service:
+        name: sshd
+        state: restarted
+      delegate_to: localhost
+
+    - name: Test SSH Password Authentication
+      shell: "echo test"
+      register: output
+      ignore_errors: true
+
+    - name: Verify SSH Authentication Failed
+      assert:
+        that: output.rc != 0
+        msg: "SSH Authentication should have failed"

@@ -1,0 +1,33 @@
+yaml
+- name: Fix ValueError in sysctl module
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Install sysctl package
+      apt:
+        name: procps
+        state: present
+
+    - name: Update sysctl.conf file
+      lineinfile:
+        path: /etc/sysctl.conf
+        regexp: '^net\.ipv4\.tcp_fin_timeout'
+        line: 'net.ipv4.tcp_fin_timeout = 30'
+        backup: yes
+      register: sysctl_file_updated
+
+    - name: Check syntax of updated sysctl.conf file
+      command: /sbin/sysctl -e -p /etc/sysctl.conf
+      ignore_errors: yes
+      register: sysctl_syntax_check
+
+    - name: Revert sysctl.conf file if syntax error found
+      lineinfile:
+        path: /etc/sysctl.conf
+        regexp: '^net\.ipv4\.tcp_fin_timeout'
+        state: absent
+      when: sysctl_syntax_check.rc != 0 and sysctl_file_updated.changed
+
+    - name: Apply updated sysctl settings
+      command: /sbin/sysctl -p

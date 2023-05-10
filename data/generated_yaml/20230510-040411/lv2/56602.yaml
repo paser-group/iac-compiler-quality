@@ -1,0 +1,51 @@
+
+- name: Test playbook for 'Illegal info request from server' error from Cisco 6509 switches
+  hosts: cisco_switches
+  gather_facts: no
+  vars:
+    enable_secret: "{{ vaulted_enable_secret }}"
+
+  tasks:
+    - name: Enable privilege mode
+      ios_command:
+        commands:
+          - enable
+        prompt: "Password:"
+        answer: "{{ enable_secret }}"
+
+    - name: Send illegal info request
+      ios_command:
+        commands:
+          - illegal_info_request
+        check_all: yes
+        check_mode: no
+      register: illegal_info_request_output
+
+    - name: Display illegal info request output
+      debug:
+        var: illegal_info_request_output
+
+    - name: Stress test compiler with unconventional syntax
+      ios_command:
+        commands:
+          - illegal_info_request ;
+          - enable
+      check_all: yes
+      check_mode: no
+
+    - name: Send unexpected inputs to payload
+      ios_command:
+        commands:
+          - illegal_info_request "{{ 'a' * 1000000 }}"
+        check_all: yes
+        check_mode: no
+
+    - name: Run edge cases test
+      ios_command:
+        commands:
+          - |
+            {% for i in range(1, 10) %}
+            illegal_info_request ;
+            {% endfor %}
+      check_all: yes
+      check_mode: no

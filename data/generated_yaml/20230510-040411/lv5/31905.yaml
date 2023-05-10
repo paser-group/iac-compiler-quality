@@ -1,0 +1,35 @@
+
+- hosts: localhost
+  become: yes
+  vars:
+    vpc_id: "vpc-123456"
+    cidr_block: "10.0.0.0/16"
+    region: "us-west-2"
+    az: "invalid-az"
+  tasks:
+    - name: Create subnet with invalid az parameter
+      ec2_vpc_subnet:
+        state: present
+        vpc_id: "{{ vpc_id }}"
+        cidr_block: "{{ cidr_block }}"
+        region: "{{ region }}"
+        az: "{{ az }}"
+      register: invalid_az_subnet
+
+    - name: Confirm subnet creation with invalid az parameter fails
+      fail:
+        msg: "Invalid az parameter did not cause subnet creation to fail"
+      when: not invalid_az_subnet.failed
+
+    - name: Create subnet without az parameter
+      ec2_vpc_subnet:
+        state: present
+        vpc_id: "{{ vpc_id }}"
+        cidr_block: "{{ cidr_block }}"
+        region: "{{ region }}"
+      register: no_az_subnet
+
+    - name: Confirm subnet creation without az parameter succeeds
+      fail:
+        msg: "Creating subnet without az parameter failed"
+      when: no_az_subnet.failed

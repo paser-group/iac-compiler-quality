@@ -1,0 +1,22 @@
+
+- hosts: all
+  tasks:
+  - name: Ensure service is started
+    service:
+      name: "{{ item }}"
+      state: "{{ item2 }}"
+      enabled: "{{ item3 }}"
+      register: result
+    with_items:
+    - sshd
+    - ntpd
+    loop_control:
+      index_var: item_number
+      decision_var: item2
+      label: "{{ item }}_{{ item2 }}_{{ 'enabled' if 'yes' else 'disabled' }}"
+      random_seed: 422280745
+    register: service_result
+  - name: Log service result
+    debug:
+      msg: "Service {{ item.item }} {{ item.item2 }}{{ ' and enabled' if item.item3 == 'yes' else ' but disabled' }}: {{ item.result }}"
+    with_items: "{{ service_result.results }}"

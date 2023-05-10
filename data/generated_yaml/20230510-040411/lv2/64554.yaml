@@ -1,0 +1,50 @@
+
+- name: Read CSV file with red dot issue
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    csv_file: "/tmp/file.csv"
+
+  tasks:
+    - name: Add red dot to csv file
+      lineinfile:
+        path: "{{ csv_file }}"
+        line: "name,age,gender."
+        state: present
+
+    - name: Read csv file with red dot issue
+      read_csv:
+        path: "{{ csv_file }}"
+        delimiter: ","
+        strip: true
+        header_row: true
+      register: result
+
+    - name: Display csv file with red dot issue
+      debug:
+        var: result
+
+    - name: Replace empty values with default
+      vars:
+        default_age: 20
+        default_gender: "unknown"
+      set_fact:
+        result: "{{ result | default([]) | map('combine', { 'age': default_age, 'gender': default_gender }) | list }}"
+
+    - name: Write modified csv file
+      copy:
+        content: "{{ result | to_nice_json }}"
+        dest: "{{ csv_file }}"
+
+    - name: Read modified csv file
+      read_csv:
+        path: "{{ csv_file }}"
+        delimiter: ","
+        strip: true
+        header_row: true
+      register: modified_result
+
+    - name: Display modified csv file
+      debug:
+        var: modified_result

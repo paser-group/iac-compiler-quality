@@ -1,0 +1,30 @@
+
+- name: Update ansible.cfg with slack callback plugin
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Update ansible.cfg file
+      lineinfile:
+        path: /etc/ansible/ansible.cfg
+        regexp: '^# callback_plugins.*'
+        line: 'callback_plugins = /usr/share/ansible/plugins/callback:/path/to/my/callback_plugins'
+        backup: yes
+      when: not ansible_check_mode
+
+- name: Verify slack callback plugin
+  hosts: all
+  become: false
+
+  tasks:
+    - name: Test slack callback plugin
+      command: ansible-playbook playbook.yml 2>&1 | tee >(grep slack)
+      register: result
+      changed_when: false
+      ignore_errors: yes
+
+    - name: Print slack callback plugin output
+      debug:
+        var: result.stdout_lines
+      when: result.stderr_lines is defined and result.stderr_lines | search("_callback_plugin_security_error') and result.stderr_lines | search('404 Client Error")
+

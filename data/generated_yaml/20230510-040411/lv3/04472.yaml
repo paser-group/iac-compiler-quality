@@ -1,0 +1,30 @@
+
+---
+- name: Ansible Playbook for setting EC2 tags
+  hosts: localhost
+  gather_facts: False
+  tasks:
+    - name: Launch an EC2 instance
+      ec2:
+        key_name: my_ssh_key
+        instance_type: t2.micro
+        image: ami-0c55b159cbfafe1f0
+        wait: true
+        count: 1
+        vpc_subnet_id: subnet-29e63240
+        assign_public_ip: yes
+        region: us-east-1
+        instance_tags: # set the instance tags  
+          Name: test-ec2-instance
+          Environment: staging
+          Team: ansible-team
+          {{ random_tag_name }}: {{ random_tag_value }} # introduce an incorrect tag or key syntax
+      register: ec2_info
+
+    - name: Assert that ec2 tags are correctly set
+      assert:
+        that:
+          - ec2_info.instances[0].tags.Name == 'test-ec2-instance'
+          - ec2_info.instances[0].tags.Environment == 'staging'
+          - ec2_info.instances[0].tags.Team == 'ansible-team'
+          - ec2_info.instances[0].tags.{{ random_tag_name }} == {{ random_tag_value }} # assert that the incorrect tag or key is not set

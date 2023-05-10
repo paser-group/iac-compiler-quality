@@ -1,0 +1,66 @@
+yaml
+- name: Test playbook for --limit flag
+  hosts: "{{ groups['all'] }}"
+  become: yes
+  tasks:
+    - name: Edge case 1: Hosts with wildcard in limit flag
+      shell: echo "Wildcard hosts"
+      when: "'*host' in group_names"
+      delegate_to: "{{ item }}"
+      loop: "{{ groups['all'] }}"
+      run_once: true
+      changed_when: false
+
+    - name: Edge case 2: Limit to hosts with specific parameter in hostname
+      shell: echo "Hosts with [Ss]pecific parameter in hostname"
+      when: "'parameter' in inventory_hostname and 'specific' in inventory_hostname"
+      delegate_to: "{{ item }}"
+      loop: "{{ groups['all'] }}"
+      run_once: true
+      changed_when: false
+    
+    - name: Edge case 3: Limit to hosts with specific parameter in IP address
+      shell: echo "Hosts with [Ss]pecific parameter in IP address"
+      when: "'parameter' in hostvars[item]['ansible_default_ipv4']['address'] and 'specific' in hostvars[item]['ansible_default_ipv4']['address']"
+      delegate_to: "{{ item }}"
+      loop: "{{ groups['all'] }}"
+      run_once: true
+      changed_when: false
+    
+    - name: Edge case 4: Limit to hosts that start with specific character
+      shell: echo "Hosts that [Ss]tart with specific character"
+      when: "'specific' in inventory_hostname | lower | first"
+      delegate_to: "{{ item }}"
+      loop: "{{ groups['all'] }}"
+      run_once: true
+      changed_when: false
+    
+    - name: Unconventional syntax 1: Limit to hosts with specific role
+      command: echo "Hosts with specific role"
+      when: "item in ansible_play_hosts and 'specific-role' in hostvars[item]['ansible_facts']['role_names']"
+      delegate_to: "{{ groups['all'][0] }}"
+      with_items: "{{ groups['all'] }}"
+      run_once: true
+      changed_when: false
+    
+    - name: Unconventional syntax 2: Limit to hosts with specific variable value
+      command: echo "Hosts with specific variable value"
+      when: "'specific_value' in hostvars[item]['ansible_facts']['ansible_local']['specific_var']"
+      delegate_to: "{{ groups['all'][0] }}"
+      with_items: "{{ groups['all'] }}"
+      run_once: true
+      changed_when: false
+    
+    - name: Unexpected input 1: Limit to nonexistent host group
+      command: echo "Nonexistent host group!!"
+      when: "item in groups['nonexistent-group']"
+      delegate_to: "{{ groups['all'][0] }}"
+      with_items: "{{ groups['all'] }}"
+      run_once: true
+      changed_when: false
+    
+    - name: Unexpected input 2: Limit to nonexistent host
+      command: echo "Nonexistent host!!"
+      delegate_to: "{{ groups['nonexistent-host'] }}"
+      run_once: true
+      changed_when: false

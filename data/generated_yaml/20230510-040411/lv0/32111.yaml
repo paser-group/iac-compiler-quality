@@ -1,0 +1,30 @@
+
+import pyeapi
+
+# Connect to the device
+node = pyeapi.connect_to('device')
+
+# Configure the default vrf
+node.api('eos').vlans.create('default')
+
+# Check if an interface exists in the default vrf
+default_intf = node.api('eos').interfaces.get('Ethernet1')
+if default_intf['vrf'] == 'default':
+    print('Interface is already in the default vrf')
+else:
+    print('Interface is not in the default vrf')
+    
+    # Enable the interface in the default vrf
+    default_intf['vrf'] = 'default'
+    node.api('eos').interfaces.set(default_intf)
+    
+    # Configure a non-default vrf
+    node.api('eos').vrfs.create('my_vrf')
+    non_default_intf = node.api('eos').interfaces.get('Ethernet2')
+    non_default_intf['vrf'] = 'my_vrf'
+    
+    # Try to enable the non-default vrf
+    try:
+        node.api('eos').vrfs.get('my_vrf')
+    except pyeapi.eapilib.CommandError:
+        print('Cannot enable non-default vrf while default vrf is configured')

@@ -1,0 +1,43 @@
+
+- name: Stress test for RequestLimitExceeded error in DescribeVpcEndpoints
+  hosts: localhost
+  gather_facts: no
+  vars:
+    endpoint_ids: ["end-123", "end-456"]
+    region: "us-west-2"
+    custom_filter: "tag:Name=*"
+    custom_limit: 1000
+  tasks:
+    - name: DescribeVpcEndpoints with unconventional filter syntax
+      ec2_vpc_endpoint_info:
+        filters: "{{ {custom_filter: 'dev-group-1'} }}"
+        region: "{{ region }}"
+        limit: "{{ custom_limit }}"
+      register: endpoints_info
+    - debug:
+        var: endpoints_info
+
+    - name: Unrecognized parameters
+      ec2_vpc_endpoint_info:
+        filters: "{{ {custom_filter: 'dev-group-1'} }}"
+        region: "{{ region }}"
+        limit: "{{ custom_limit }}"
+        sort_order: "desc"
+        dry_run: true
+        dry_run_eligible: false
+        wait_for_completion: true
+      register: endpoints_info_unrecognized
+      ignore_errors: true
+    - debug:
+        var: endpoints_info_unrecognized
+
+    - name: RequestLimitExceeded error
+      ec2_vpc_endpoint_info:
+        filters: "{{ {custom_filter: 'dev-group-1'} }}"
+        region: "{{ region }}"
+        limit: "{{ custom_limit }}"
+        endpoint_ids: "{{ endpoint_ids }}"
+      register: endpoints_info_request_limit
+      ignore_errors: true
+    - debug:
+        var: endpoints_info_request_limit

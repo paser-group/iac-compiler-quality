@@ -1,0 +1,37 @@
+yaml
+---
+- hosts: localhost
+  gather_facts: no
+  vars:
+    max_recursion_depth: 1000000
+    nested_list: [[[1],2],[3,4],[5,6,[7,[8,9],[10,11]]]]
+  tasks:
+    - name: Set maximum recursion depth
+      set_fact:
+        sys_recursion_limit: "{{ max_recursion_depth }}"
+      become: true
+
+    - name: Create a deep nested list using with_items loop
+      set_fact:
+        my_list: "{{ my_list | default([]) + [ item | repeat(50) ] }}"
+      with_items: "{{ range(10) | list }}"
+
+    - name: Create a deep nested dict using with_items loop
+      set_fact:
+        my_dict: "{% set d = dict() %}{% for i in range(100) %}{% set d = d ~ { 'key' ~ i: d } %}{% endfor %}{{ d }}"
+    
+    - name: Execute a recursive task and raise maximum recursion error
+      include_tasks: "{{ item }}"
+      with_items:
+        - tasks/nested_execution.yml
+        - tasks/recursion_error.yml
+
+    - name: Print deep nested list
+      debug:
+        var: my_list
+        verbosity: 2
+
+    - name: Print deep nested dict
+      debug:
+        var: my_dict
+        verbosity: 2

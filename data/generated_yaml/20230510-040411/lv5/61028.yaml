@@ -1,0 +1,53 @@
+
+- hosts: localhost
+  connection: local
+  vars:
+    gcp_project: my-gcp-project
+    gcp_region: us-central1
+    gcp_zone: us-central1-a
+    cluster_name: my-cluster
+    network_name: my-network
+    subnetwork_name: my-subnetwork
+    authorized_cidrs: "192.168.0.0/16,10.0.0.0/8"
+    unauthorized_cidr: "172.16.0.0/12"
+  tasks:
+  - name: Create GCP Container Cluster
+    gcp_container_cluster:
+      name: "{{ cluster_name }}"
+      zone: "{{ gcp_zone }}"
+      network: "{{ network_name }}"
+      subnetwork: "{{ subnetwork_name }}"
+      master_ipv4_cidr_block: "172.16.0.0/28"
+      private_cluster_config:
+        enable_private_endpoint: true
+        enable_private_nodes: true
+        master_ipv4_cidr_block: "172.16.0.0/28"
+        private_endpoint: ""
+        public_endpoint: ""
+        peering_name: ""
+        master_global_access_config:
+          enabled: false
+      initial_node_count: 1
+      node_config:
+        machine_type: "n1-standard-2"
+        disk_size_gb: 100
+        preemptible: false
+      auth:
+        service_account_file: "/path/to/credentials.json"
+    register: cluster
+
+  - name: Verify unauthorized access is blocked
+    uri:
+      url: "https://{{hostvars['cluster']['endpoint']}}"
+      method: GET
+      return_content: yes
+      status_code: 401
+      force_basic_auth: yes
+      user: "admin"
+      password: "{{cluster['master_auth']['password']}}"
+    failed_when: false
+    register: result
+
+  - name: Print result
+    debug:
+      var: result

@@ -1,0 +1,38 @@
+
+- name: Test certificate errors from proxies
+  hosts: localhost
+  tasks:
+    - name: Run curl with invalid certs
+      shell: "curl https://{{ inventory_hostname }} --proxy https://proxy.example.com --cacert /etc/ssl/somestuff.crt"
+      register: curl_output
+      ignore_errors: true
+
+    - name: Check the output for certificate error messages
+      debug:
+        msg: "{{ item }}"
+      with_items: "{{ curl_output.stdout_lines }}"
+      when: item is search('curl: (\\d)+.*CA certificate')
+
+    - name: Test certificate errors with wrong proxy
+      curl:
+        url: "https://{{ inventory_hostname }}"
+        proxy: https://badproxy.example.com
+        insecure: true
+      register: curl_output
+      ignore_errors: true
+
+    - name: Check the output for certificate error messages
+      debug:
+        msg: "{{ item }}"
+      with_items: "{{ curl_output.stderr_lines }}"
+      when: item is search('ssl|tls')
+
+    - name: Verify expected syntax errors
+      fail:
+        msg: "Syntax error due to invalid indent" 
+      when: "{{ random_variable }}" == ""
+
+    - name: Verify Ansible processing capabilities
+      set_fact:
+        "{{ ansible_hostname }}_supported_python_versions: {{ python_version }}"
+      when: python_version is version('2.7.5', operator='==')

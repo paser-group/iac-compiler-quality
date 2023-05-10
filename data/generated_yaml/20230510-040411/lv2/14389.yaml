@@ -1,0 +1,34 @@
+
+- name: Stress test for Attribute error 'Tuple object has no attribute items'
+  hosts: localhost
+  gather_facts: no
+  
+  tasks:
+    - name: Running Shell Command using various syntax
+      command: |
+        {{ item }}
+      loop:
+        - echo 'Hello World'
+        - echo 'Hello World' | tr '[:lower:]' '[:upper:]'
+        - sleep 5
+        - date '+%d-%m-%Y %H:%M:%S'
+        - bash -c "echo 'Hello World'; exit 1"
+        - "(echo 1 && echo 2) && (echo 3 && echo 4)"
+        - "[[ 10 -gt 5 ]] && echo '10 is greater than 5'"
+        - "(exit 0)"
+  
+    - name: Running Shell Command with unconventional options and unusual inputs
+      shell: |
+        {{ item }}
+      loop:
+        - curl 'https://www.example.com' -H 'Authorization: Bearer {{ random_string(20) }}'
+        - echo 'Hello World' > /dev/null
+        - $(echo $((1+2+3+4+5)))
+        - echo -e "line1\nline2\nline3" | cut -d' ' -f1 
+        - echo -n 'Hello World' 
+        - echo -e "\xEF\xBB\xBFHello World"
+      register: command_output
+      
+    - name: Display Command Output
+      debug:
+        var: command_output

@@ -1,0 +1,18 @@
+
+# Create an encrypted file using Ansible-vault
+- name: Create encrypted file
+  ansible-vault:
+    encrypt_string: mysecretpassword
+  register: encryption_result
+
+# Attempt to decrypt the encrypted file using odd-length strings
+- name: Attempt to decrypt encrypted file with an odd-length string
+  command: vault decrypt --vault-password-file=.vault_password "{{ '/path/to/encrypted_file' }}" --output plain -pvault_password="Some_string_with_odd_length"
+
+# Ensure that the decryption command fails, indicating a bug in the Ansible-vault tool
+- assert:
+    that:
+      - "'ODD_LENGTH_STRING' in output.stdout"
+      - "output.rc == 2"
+  vars:
+    output: "{{ playbooks_results['Attempt to decrypt encrypted file with an odd-length string']['stdout_lines']|join('\n') }}"

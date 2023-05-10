@@ -1,0 +1,45 @@
+
+- name: Create EC2 instance with invalid parameters
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    region: us-west-2
+    ec2_tag_name: test-instance
+    ec2_image_id: ami-0c55b159cbfafe1f0
+    resource_name: test-resource
+
+  tasks:
+    - name: Create EC2 instance with invalid parameters
+      ec2:
+        region: "{{ region }}"
+        key_name: "{{ ec2_key }}"
+        instance_tags:
+          Name: "{{ ec2_tag_name }}"
+        instance_type: "{{ ec2_instance_type }}"
+        image: "{{ ec2_image_id }}"
+        wait: true
+        state: "present"
+        count: 1
+        count_tag:
+          Name: "{{ ec2_tag_name }}"
+        vpc_subnet_id: "{{ ec2_subnet_id }}"
+        assign_public_ip: true
+        monitoring: true
+        security_group: "{{ ec2_security_group }}"
+        network_interface:
+          device_index: 0
+          delete_on_termination: true
+          description: "Interface for {{ ec2_tag_name }}"
+          subnet_id: "{{ ec2_subnet_id }}"
+          groups: "{{ ec2_security_group }}"
+          associate_public_ip_address: true
+          status: "in-use"
+          resource: "{{ resource_name }}" # This is missing the client parameter
+      register: ec2_instance
+
+    - name: Fail if EC2 instance creation fails
+      fail:
+        msg: "EC2 instance creation failed"
+      when: ec2_instance is failed

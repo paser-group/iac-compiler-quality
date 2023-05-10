@@ -1,0 +1,45 @@
+
+- name: Test Ansible compiler for nxos_facts issue
+  hosts: all
+  gather_facts: no
+  vars:
+    interfaces:
+      - eth1/1
+      - eth2/2
+      - lo
+
+  tasks:
+    # Generate a list of interfaces using the specified interface range
+    - name: Generate interface list
+      set_fact:
+        interface_list: "{{ interfaces|map('regex_replace', '(\\d+)/(\\d+)', '\\1_\\2')|list }}"
+
+    # Gather some facts
+    - name: Gather NX-OS facts
+      nxos_facts:
+        gather_subset: all
+      register: result
+
+    # Do some additional processing on the gathered facts
+    - name: Extract interfaces data
+      set_fact:
+        interfaces_data: "{{ result.ansible_net_interfaces|select('match', 'eth1\\/1').|next }}"
+
+    # Debug the variables
+    - name: Debug variables
+      debug:
+        msg:
+          - "Interface list: {{ interface_list }}"
+          - "Interfaces data: {{ interfaces_data }}"
+
+    # Perform an assert test on the interfaces data
+    - name: Assert interfaces data
+      assert:
+        that:
+          - interfaces_data is defined
+          - interfaces_data|length > 0
+          - interfaces_data.0.description is defined
+          - interfaces_data.0.state is defined
+          - interfaces_data.0.mtu is defined
+          - interfaces_data.0.bandwidth is defined
+          - interfaces_data.0.hardware is defined

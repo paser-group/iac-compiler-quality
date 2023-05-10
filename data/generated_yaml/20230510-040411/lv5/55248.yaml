@@ -1,0 +1,45 @@
+
+- name: Fuzz test for vmware_object_role_permission module
+  hosts: localhost
+  vars:
+    vcenter_hostname: "vcenter.test.local"
+    username: "{{ lookup('env', 'VCENTER_USERNAME') }}"
+    password: "{{ lookup('env', 'VCENTER_PASSWORD') }}"
+    datacenter_name: "Test Datacenter"
+    cluster_name: "Test Cluster"
+
+  tasks:
+    - name: Create a new VM for testing
+      vmware_guest:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        datacenter: "{{ datacenter_name }}"
+        cluster: "{{ cluster_name }}"
+        name: "Test VM"
+        state: "present"
+        guest_id: "centos7_64Guest"
+        hardware:
+          memory_mb: 2048
+          num_cpus: 2
+          scsi: paravirtual
+
+    - name: Verify that the VM is running and accessible by SSH
+      wait_for_connection:
+        timeout: 60
+
+    - name: Install pyshark library
+      become: true
+      yum:
+        name: "python-pyshark"
+        state: present
+
+    - name: Fuzz test for vmware_object_role_permission
+      become: true
+      shell: |
+        python test-script.py
+      register: test_output
+
+    - name: Check if the output contains any unexpected results
+      debug:
+        var: test_output.stdout_lines

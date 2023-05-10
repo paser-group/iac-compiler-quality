@@ -1,0 +1,35 @@
+
+- name: Create a Virtual Network and Peering
+  hosts: localhost
+  gather_facts: no
+  vars:
+    resource_group: "myResourceGroup"
+    location: "eastus"
+    vnet_name: "myVnet"
+    vnet_address_prefixes: "10.0.0.0/16"
+    peering_name: "myPeering"
+    remote_vnet_name: "remoteVnet"
+    remote_resource_id: "/subscriptions/1234/resourceGroups/remoteResourceGroup/providers/Microsoft.Network/virtualNetworks/remoteVnet"
+
+  tasks:
+    - name: Create a Virtual Network
+      azure_rm_virtualnetwork:
+        resource_group: "{{ resource_group }}"
+        name: "{{ vnet_name }}"
+        address_prefixes: "{{ vnet_address_prefixes }}"
+        location: "{{ location }}"
+        state: present
+      register: vnet
+
+    - name: Create a Virtual Network Peering
+      azure_rm_virtualnetworkpeering:
+        resource_group: "{{ resource_group }}"
+        virtual_network_name: "{{ vnet_name }}"
+        name: "{{ peering_name }}"
+        remote_virtual_network_id: "{{ remote_resource_id }}"
+        allow_virtual_network_access: true
+        allow_forwarded_traffic: false
+        allow_gateway_transit: false
+        use_remote_gateways: false
+        state: present
+      register: peering
