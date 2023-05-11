@@ -1,6 +1,7 @@
 from datasets import Dataset
 import datasets
 import subprocess
+import os
 
 
 # internal imports
@@ -9,29 +10,86 @@ from compiler_fuzzing.utils.files import valid_path
 from compiler_fuzzing.utils import (
     display,
     files,
+    strings
 )
 
-def subprocess_ansible(sample_data, yaml_base_path, inventory_path):
+def subprocess_ansible(sample_data, yaml_base_path, inventory_path, docker_path, private_key):
     level = sample_data["level"]
     issue_id = sample_data["ID"]
     playbook_path = f"{yaml_base_path}/lv{level}/{issue_id}.yaml"
+    project_root_path = os.getcwd()
     if not valid_path(playbook_path):
         return 0
     output = ""
     try:
-        # Check the syntax of the playbook
-        ansible_command = ["ansible-playbook", playbook_path, "-i", inventory_path]
-
-        output = subprocess.run(
-            ansible_command,
+        # Create New Docker Environment
+        os.chdir(docker_path)
+        docker_stop_command = ["docker", "compose", "stop"]
+        docker_stop_log = subprocess.run(
+            docker_stop_command,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True
         )
         
+        docker_up_command = ["docker", "compose", "up", "-d", "--force-recreate"]
+        
+        docker_up_log = subprocess.run(
+            docker_up_command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
+        )
+        
+        docker_ps = ["docker", "ps"]
+        docker_networks = ["docker", "network", "list"]
+        
+        docker_ps_log = subprocess.run(
+            docker_ps,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
+        )
+        
+        docker_networks_log = subprocess.run(
+            docker_networks,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
+        )
+        
+        record_case(
+            success=True,
+            tag="docker",
+            **{
+                "stop log": f"std err: {docker_stop_log.stderr}, std out: {docker_stop_log.stdout}",
+                "up log": f"std err: {docker_up_log.stderr}, std out: {docker_up_log.stdout}", 
+                "containers created": f"std err: {docker_ps_log.stderr}, std out: {docker_ps_log.stdout}",
+                "network created": f"std err: {docker_networks_log.stderr}, std out: {docker_networks_log.stdout}",
+                "timestamp": strings.now()
+            }
+        )
+        
+        display.red("-"*100)
         display.green(
-            "Ansible has run successfully: ", 
-            playbook_path
+            f"Docker environment created successfully: \ndocker ps: \nstd err:\n {docker_ps_log.stderr} \nstd out:\n {docker_ps_log.stdout}\ndocker network list:\nstd err: {docker_networks_log.stderr}, std out: {docker_networks_log.stdout}"
+        )
+        
+        # Run the playbook
+        os.chdir(project_root_path)
+        ansible_command = ["ansible-playbook", playbook_path, "-i", inventory_path, "--private-key", private_key]
+        
+        output = subprocess.run(
+            ansible_command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            timeout=600,
+            text=True
+        )
+        
+        display.red("-"*100)
+        display.green(
+            f"Ansible has run successfully: {playbook_path}"
         )
         record_case(
             success=True,
@@ -40,7 +98,8 @@ def subprocess_ansible(sample_data, yaml_base_path, inventory_path):
                 "issue id": sample_data["ID"],
                 "issue title": sample_data["TITLE"], 
                 "issue prompt": sample_data["prompt"],
-                "issue Output": output
+                "issue Output": f"std err: {output.stderr}, std out: {output.stdout}",
+                "timestamp": strings.now()
             }
         )
         
@@ -53,7 +112,8 @@ def subprocess_ansible(sample_data, yaml_base_path, inventory_path):
                 "issue id": sample_data["ID"],
                 "issue title": sample_data["TITLE"], 
                 "reason": f"{e}", 
-                "issue prompt": sample_data["prompt"]
+                "issue prompt": sample_data["prompt"],
+                "timestamp": strings.now()
             }
         )
         return output if output == "" else output.stdout
@@ -76,12 +136,14 @@ def run_ansible(args, config):
     datasets.disable_caching()
     ds = Dataset.from_csv(file_path)
     inventory = config["inventory_file"]
+    docker_path = config["docker_dir"]
+    private_key = config["private_key"]
     
     def mapper_fn(sample):
         if sample["syntax"] == 0:
             ansible_output = None
         else:
-            ansible_output = subprocess_ansible(sample, base_path, inventory)
+            ansible_output = subprocess_ansible(sample, base_path, inventory, docker_path, private_key)
         
         sample.update({
             'output' : ansible_output
