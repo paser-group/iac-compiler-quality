@@ -3,7 +3,6 @@ FROM ubuntu:latest
 
 # set root password
 RUN echo "root:bdi_lab!" | chpasswd
-RUN 
 
 # update
 RUN apt update && apt upgrade -y
