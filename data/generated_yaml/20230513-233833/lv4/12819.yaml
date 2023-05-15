@@ -1,0 +1,40 @@
+yaml
+- name: Test delegate_to module
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Test basic use of delegate_to
+      command: whoami
+      delegate_to: node1
+      register: result1
+      ignore_errors: true # we ignore errors because we aren't interested in the result of this task, only the delegated host name
+
+    - name: Test if delegate_to is selecting the correct node
+      debug:
+        msg: "Delegated host is {{ ansible_ssh_host }}"
+      delegate_to: node1
+      run_once: true # we only need to run on one node to verify that the delegated node is correct
+      when: result1.delegate_to == 'node1' # ensure that the previous task really delegated to node1
+      register: result2
+
+    - name: Test delegate_to with dynamic inventory
+      ec2_instance_ids:
+        filters:
+          "tag:Name": "my-instance"
+          "instance-state-name": "running"
+      delegate_to: localhost
+      register: result3
+      
+    - name: Test to see if dynamic inventory delegated correctly
+      debug:
+        msg: "Delegated host is {{ item.public_ip }}"
+      delegate_to: "{{ item.public_ip }}"
+      with_items: "{{ result3.results }}"
+      ignore_errors: true # we ignore errors because we aren't interested in the result of this task, only the delegated host name
+      register: result4
+      
+    - name: Confirm that delegated dynamic inventory node is correct
+      assert:
+        that:
+          - item.delegate_to.public_ip == item.ansible_host # compare the public IP of the delegated node to the ansible_host variable of the delegated node
+        loop: "{{ result4.results }}" # loop over every item in the result4 dictionary

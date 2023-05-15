@@ -1,0 +1,51 @@
+yaml
+---
+- name: Testing ACL module behavior
+  hosts: node1
+  become: yes
+
+  tasks:
+    - name: Ensure default ACLs are set
+      acl:
+        path: /tmp/test-dir
+        etype: default
+        perms: rwx
+      register: result
+
+    - name: Add user ACL
+      acl:
+        path: /tmp/test-dir
+        entity: user:test
+        etype: allow
+        perms: rwx
+        state: present
+      when: result is changed
+
+    - name: Modify user ACL
+      acl:
+        path: /tmp/test-dir
+        entity: user:test
+        etype: allow
+        perms: "---"
+        state: present
+
+    - name: Remove user ACL
+      acl:
+        path: /tmp/test-dir
+        entity: user:test
+        etype: allow
+        state: absent
+
+    - name: Add group ACL
+      acl:
+        path: /tmp/test-dir
+        entity: group:test
+        etype: allow
+        perms: rwx
+        state: present
+        
+    - name: Remove default ACL
+      acl:
+        path: /tmp/test-dir
+        etype: default
+        state: absent

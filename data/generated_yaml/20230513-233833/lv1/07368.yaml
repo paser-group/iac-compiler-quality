@@ -1,0 +1,46 @@
+yaml
+- name: Update ec2_vpc module route_tables
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Install Boto3
+      pip:
+        name: boto3
+
+    - name: Create VPC
+      ec2_vpc_net:
+        assign_generated_ipv6_cidr_block: no
+        cidr_block: "{{ vpc_cidr_block }}"
+        region: "{{ region }}"
+        resource_tags:
+          Name: "{{ vpc_name }}"
+      register: vpc
+
+    - name: Create Route Table
+      ec2_vpc_route_table:
+        vpc_id: "{{ vpc.id }}"
+        resource_tags:
+          Name: "{{ route_table_name }}"
+      register: route_table
+
+    - name: Associate Subnet with Route Table
+      ec2_vpc_subnet:
+        vpc_id: "{{ vpc.id }}"
+        cidr_block: "{{ subnet_cidr_block }}"
+        map_public: "{{ map_public }}"
+        route_table_id: "{{ route_table.id }}"
+        resource_tags:
+          Name: "{{ subnet_name }}"
+      register: subnet
+
+    - name: Add Route to Route Table
+      ec2_vpc_route_table:
+        vpc_id: "{{ vpc.id }}"
+        dest: "{{ route_destination }}"
+        gateway_id: "{{ instance_id }}"
+        route_table_id: "{{ route_table.id }}"
+      register: route
+
+    - name: Print Results
+      debug:
+        var: route_table

@@ -1,0 +1,70 @@
+
+---
+- name: Test playbook for jinja parsing errors in shell tasks
+  hosts: all
+
+  vars:
+    cmd: "/bin/echo Hello"
+
+  tasks:
+    - name: Shell task with invalid quotes
+      shell: "{{ cmd }}"
+      args:
+        executable: "bash -c"
+        chdir: /tmp
+        creates: '{{ invalid_quotes" }}'
+      register: shell_output_invalid_quotes
+      ignore_errors: yes
+
+    - name: Shell task with unexpected command
+      shell: "{{ cmd }}"
+      args:
+        executable: "nonexistent-command"
+      register: shell_output_unexpected_cmd
+      ignore_errors: yes
+
+    - name: Shell task with unconventional variable syntax
+      shell: "echo ${{ cmd }}"
+      args:
+        executable: "bash -c"
+      register: shell_output_unconventional_var_syntax
+      ignore_errors: yes
+
+    - name: Shell task with invalid pipe syntax
+      shell: "ls -l |& wc -l"
+      args:
+        executable: "bash -c"
+      register: shell_output_invalid_pipe_syntax
+      ignore_errors: yes
+
+    - name: Shell task with unconventional command substitution
+      shell: "$(echo {{ cmd }})"
+      args:
+        executable: "bash -c"
+      register: shell_output_unconventional_cmd_substitution
+      ignore_errors: yes
+
+    - name: Shell task with malformed command substitution
+      shell: "$()"
+      args:
+        executable: "bash -c"
+      register: shell_output_malformed_cmd_substitution
+      ignore_errors: yes
+  
+    - debug:
+        msg: "Shell output with invalid quotes: {{ shell_output_invalid_quotes }}"
+  
+    - debug:
+        msg: "Shell output with unexpected command: {{ shell_output_unexpected_cmd }}"
+  
+    - debug:
+        msg: "Shell output with unconventional variable syntax: {{ shell_output_unconventional_var_syntax }}"
+
+    - debug:
+        msg: "Shell output with invalid pipe syntax: {{ shell_output_invalid_pipe_syntax }}"
+
+    - debug:
+        msg: "Shell output with unconventional command substitution: {{ shell_output_unconventional_cmd_substitution }}"
+  
+    - debug:
+        msg: "Shell output with malformed command substitution: {{ shell_output_malformed_cmd_substitution }}"

@@ -1,0 +1,36 @@
+
+---
+- name: Vsphere guest async issue playbook
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Create a virtual machine with vSphere_guest module asynchronously
+      vsphere_guest:
+        vcenter_hostname: "{{ vcenter_hostname }}"
+        vcenter_username: "{{ vcenter_username }}"
+        vcenter_password: "{{ vcenter_password }}"
+        guest: "{{ guest_name }}"
+        state: poweredon
+        wait_for_ip_address: yes
+        networks:
+          - label: "{{ network_label }}"
+            ip: "{{ new_ip_address }}"
+        cdrom:
+          type: none
+          iso_path: "{{ iso_path }}"
+        datastore: "{{ datastore_name }}"
+        folder: "{{ folder_name }}"
+        async: yes
+        poll_interval: 1
+      register: async_result
+
+    - name: Wait for VM creation to finish
+      async_status:
+        jid: "{{ async_result.ansible_job_id }}"
+        mode: status
+      delay: 5
+      register: async_result
+      until: "'completed' in async_result.task_result.msg"
+
+    - name: Debug
+      debug: var=async_result

@@ -1,0 +1,33 @@
+
+- name: Test WinRM Connection
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: Test WinRM Connection
+      win_ping:
+      delegate_to: "{{ inventory_hostname }}"
+
+   - name: Install Telnet Client
+     win_command: choco install telnet -y
+     register: telnet_install
+     ignore_errors: true
+
+   - name: Telnet to localhost
+     win_command: telnet localhost 5985
+     register: telnet_output
+     ignore_errors: true
+
+  - name: Print telnet output
+    debug:
+      var: telnet_output.stdout_lines
+
+  - name: Remove Telnet Client
+    win_command: choco uninstall telnet -y
+    notify: reboot
+
+  handlers:
+    - name: Reboot
+      win_reboot:
+        timeout: 5
+        msg: Rebooting to complete Telnet installation

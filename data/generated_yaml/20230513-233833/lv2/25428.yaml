@@ -1,0 +1,52 @@
+
+- name: Test s3 module and IAM principle in bucket policy
+  hosts: all
+  vars:
+    s3_bucket_name: my-bucket
+    policy_document: |
+      {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Sid": "AllowS3GetObject",
+            "Effect": "Allow",
+            "Principal": {
+              "AWS": [
+                "arn:aws:iam::123456789012:user/Alice",
+                "arn:aws:iam::123456789012:root"
+              ]
+            },
+            "Action": [
+              "s3:GetObject"
+            ],
+            "Resource": [
+              "arn:aws:s3:::my-bucket/*"
+            ]
+          }
+        ]
+      }
+
+  tasks:
+    - name: Create S3 bucket
+      s3_bucket:
+        name: "{{ s3_bucket_name }}"
+        state: present
+    
+    - name: Create a file in the S3 bucket
+      s3:
+        bucket: "{{ s3_bucket_name }}"
+        object: /testfile.txt
+        mode: put
+        content: This is a test file.
+
+    - name: Set bucket policy with IAM principal
+      s3_bucket_policy:
+        bucket: "{{ s3_bucket_name }}"
+        policy: "{{ policy_document }}"
+    
+    - name: Test IAM principle access
+      become: true
+      become_user: alice
+      shell: |
+        aws s3 ls "s3://{{ s3_bucket_name }}"
+        exit 0

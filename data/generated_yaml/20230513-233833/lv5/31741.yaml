@@ -1,0 +1,47 @@
+
+- name: Create Virtual Environment
+  hosts: all
+  remote_user: root
+  become: true
+  vars:
+    venv_path: /opt/venv
+  tasks:
+    - name: Install python3-venv on remote servers
+      apt:
+        name: python3-venv
+        state: present
+      become: true
+    - name: Create virtual environment
+      shell: python3 -m venv {{ venv_path }}
+      args:
+        creates: "{{ venv_path }}"
+      become: true
+
+- name: Install Dependencies
+  hosts: all
+  remote_user: root
+  become: true
+  vars:
+    venv_path: /opt/venv
+  tasks:
+    - name: Activate virtual environment
+      ansible.builtin.activate:
+        virtualenv: "{{ venv_path }}/bin"
+    - name: Install cryptography
+      pip:
+        name: cryptography
+        virtualenv: "{{ venv_path }}"
+        state: present
+
+- name: Test Installation
+  hosts: all
+  remote_user: root
+  become: true
+  vars:
+    venv_path: /opt/venv
+  tasks:
+    - name: Activate virtual environment
+      ansible.builtin.activate:
+        virtualenv: "{{ venv_path }}/bin"
+    - name: Check cryptography installation
+      command: python -c "import cryptography"

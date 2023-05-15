@@ -1,0 +1,40 @@
+
+---
+- hosts: all
+  gather_facts: no
+
+  tasks:
+  
+  # Unexpected input - using an IP address instead of 'localhost'
+  - name: Execute a local action on node1
+    local_action:
+      module: command
+      cmd: sudo apt-get update
+    delegate_to: '10.1.1.1'
+
+  # Unconventional syntax - using a dynamic inventory with shell command
+  - name: Execute a URI module on all nodes
+    uri:
+      url: http://{{ item }}/status
+      method: GET
+      return_content: true
+    with_items: '{% for host in groups["all"] %}{{ hostvars[host].ansible_default_ipv4.address }} {% endfor %}'
+
+  # Edge case - using an invalid protocol
+  - name: Execute a URI module with invalid protocol
+    uri:
+      url: ftp://localhost/tmp/file.txt
+      return_content: true
+
+  # Unexpected input - using an invalid URL format
+  - name: Execute a URI module with invalid URL format
+    uri:
+      url: test.com
+      method: GET
+      return_content: true
+
+  # Edge case - using an empty URL
+  - name: Execute a URI module with empty URL
+    uri:
+      method: GET
+      return_content: true

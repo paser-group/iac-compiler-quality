@@ -1,0 +1,47 @@
+yaml
+- name: Test async_status + until + with_items issue
+  hosts: all
+  tasks:
+    - name: Test with_items containing dictionary
+      debug:
+        msg: "{{ item.key }}: {{ item.value }}"
+      with_items:
+        - { key: 'one', value: 1 }
+        - { key: 'two', value: 2 }
+        - { key: 'three', value: 3 }
+
+    - name: Test with_items containing list of dictionaries
+      debug:
+        msg: "{{ item.key }}: {{ item.value }}"
+      with_items:
+        - [ { key: 'four', value: 4 }, { key: 'five', value: 5 } ]
+        - [ { key: 'six', value: 6 }, { key: 'seven', value: 7 } ]
+        
+    - name: Test async with until
+      async_status:
+        jid: "{{ item.0 }}"
+      with_items:
+        - [ '1', '2', '3' ]
+      register: as_res
+      async: 60
+      until: as_res.finished
+
+    - name: Test until with_items
+      debug:
+        msg: "{{ item }}"
+      with_items:
+        - [ 'foo', 'bar', 'baz' ]
+      when: item != 'baz'
+      until: item == 'baz'
+        
+    - name: Test complex expressions in until
+      debug:
+        msg: "{{ item }}"
+      with_items:
+        - [ '1', '2', '3' ]
+      until: (item|int + 1) > 3
+
+    - name: Test with_items with non-iterable
+      debug:
+        msg: "{{ item }}"
+      with_items: "{{ hostvars['node1']['foo'] }}"

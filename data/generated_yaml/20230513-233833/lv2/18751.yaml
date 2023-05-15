@@ -1,0 +1,53 @@
+
+---
+- name: Incorrect fact_caching edge case testing
+  hosts: all
+
+  gather_facts: no
+
+  tasks:
+    - name: Test with invalid fact_caching option
+      setup:
+        gather_subset:
+          - "!all"
+        delegate_to: localhost
+      vars:
+        fact_caching_less: '{"type": "dummy", "path": "/dummy/path/"}'
+        fact_caching_more: '{"type": "memory"}'
+      register: result
+      ignore_errors: yes
+
+    - name: Test with incorrect fact_caching options dictionary
+      setup:
+        gather_subset:
+          - "!all"
+        delegate_to: localhost
+      vars:
+        fact_caching_dict: '{"type": "redis", "host": "127.0.0.1", "port": "6379", "password": "password"}'
+        fact_caching_dict_invalid: '{"type": "redis", "host": "127.0.0.1", "port": "6379", "password": "password", "extra_param": "1"}'
+      register: result
+      ignore_errors: yes
+
+    - name: Test with non-string fact_caching options
+      setup:
+        gather_subset:
+          - "!all"
+        delegate_to: localhost
+      vars:
+        fact_caching_int: 1
+        fact_caching_bool: no
+      register: result
+      ignore_errors: yes
+
+    - name: Test with undefined fact_caching option
+      setup:
+        gather_subset:
+          - "!all"
+        delegate_to: localhost
+      vars:
+        fact_caching_undef: "{{ undefined_var }}"
+      register: result
+      ignore_errors: yes
+
+    - debug:
+        var: result

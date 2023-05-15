@@ -1,0 +1,51 @@
+
+- hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Install pip
+      become: true
+      apt:
+        name: python-pip
+        state: latest
+
+    - name: Install Ansible via pip
+      become: true
+      pip:
+        name: ansible
+        state: latest
+
+    - name: Install boto
+      become: true
+      pip:
+        name: boto
+        state: latest
+
+    - name: Ensure python executable is found
+      become: true
+      command: "hash python || {{ ansible_pkg_mgr }} install -y python"
+
+    - name: Clone Ansible repository
+      become: true
+      git:
+        repo: "https://github.com/ansible/ansible.git"
+        dest: "/opt/ansible"
+        version: "{{ ansible_version }}"
+
+    - name: Set EC2 inventory environment variables
+      become: true
+      lineinfile:
+        insertafter: EOF
+        line: "export AWS_ACCESS_KEY_ID={{ aws_access_key_id }}"
+        path: /home/{{ ansible_user }}/ec2.ini
+
+    - become: true
+      lineinfile:
+        insertafter: EOF
+        line: "export AWS_SECRET_ACCESS_KEY={{ aws_secret_access_key }}"
+        path: /home/{{ ansible_user }}/ec2.ini
+
+
+    - name: Run playbook
+      become: true
+      command: "ansible-playbook -i /opt/ansible/contrib/inventory/ec2.py playbook.yml"

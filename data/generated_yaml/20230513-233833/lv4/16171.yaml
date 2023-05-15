@@ -1,0 +1,34 @@
+
+- name: create elb with https listener
+  hosts: localhost
+  gather_facts: no
+  vars:
+    elb_name: my-elb
+    tg_name: my-tg
+  tasks:
+    - name: create elb
+      elb_application_lb:
+        name: "{{ elb_name }}"
+        scheme: internet-facing
+        ip_address_type: ipv4
+        listeners:
+          - protocol: HTTPS
+            port: 443
+            ssl_policy: ELBSecurityPolicy-TLS-1-2-2017-01
+        subnets:
+          - subnet-11111111
+        security_groups:
+          - sg-11111111
+        tags:
+          Name: "{{ elb_name }}"
+      register: elb
+
+    - name: create target group
+      elb_target_group:
+        name: "{{ tg_name }}"
+        port: 80
+        protocol: HTTP
+        vpc_id: vpc-11111111
+        health_check_port: "80"
+        health_check_protocol: HTTP
+      register: tg

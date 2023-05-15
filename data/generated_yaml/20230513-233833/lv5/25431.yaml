@@ -1,0 +1,81 @@
+
+- name: Test copy module consistency
+  hosts: all
+  tasks:
+    - name: Define source files
+      vars:
+        files:
+          "/tmp/file1":
+            content: "file1"
+            mode: "0644"
+          "/tmp/file2":
+            content: "file2"
+            mode: "0755"
+      block:
+        - name: Copy source files
+          copy:
+            src: "{{ item.key }}"
+            dest: "/tmp/"
+            force: yes
+            backup: yes
+          with_dict: "{{ files }}"
+        - name: Verify file1
+          assert:
+            that: item.stat.path == "/tmp/file1"
+          with_items:
+            - "{{ ansible_play_hosts_all }}"
+        - name: Verify file2
+          assert:
+            that: item.stat.path == "/tmp/file2"
+          with_items:
+            - "{{ ansible_play_hosts_all }}"
+      rescue:
+        - name: Cleanup
+          file:
+            path: "/tmp/*"
+            state: absent
+        - name: Fail
+          fail:
+            msg: "Failed to copy source files"
+    - name: Modify source files
+      block:
+        - name: Update file1 content
+          copy:
+            src: "/dev/null"
+            dest: "/tmp/file1"
+        - name: Update file2 content
+          copy:
+            src: "/dev/zero"
+            dest: "/tmp/file2"
+      rescue:
+        - name: Fail
+          fail:
+            msg: "Failed to modify source files"
+    - name: Copy modified files
+      block:
+        - name: Copy source files
+          copy:
+            src: "{{ item.key }}"
+            dest: "/tmp/"
+            force: yes
+            backup: yes
+          with_dict: "{{ files }}"
+        - name: Verify file1 after modification
+          assert:
+            that: item.stat.path == "/tmp/file1"
+          with_items:
+            - "{{ ansible_play_hosts_all }}"
+        - name: Verify file2 after modification
+          assert:
+            that: item.stat.path == "/tmp/file2"
+          with_items:
+            - "{{ ansible_play_hosts_all }}"
+      rescue:
+        - name: Cleanup
+          file:
+            path: "/tmp/*"
+            state: absent
+        - name: Fail
+          fail:
+            msg: "Failed to copy modified files"
+

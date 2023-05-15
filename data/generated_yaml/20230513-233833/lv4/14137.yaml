@@ -1,0 +1,26 @@
+
+---
+- name: Check user home directory ownership bug
+  hosts: all
+  gather_facts: true
+  vars:
+    username: testuser
+    home_dir: /home/testuser
+    gid: 1001
+  tasks:
+  - name: Check current home directory ownership
+    stat:
+      path: "{{ home_dir }}"
+    register: before_ownership
+  - name: Create User
+    user:
+      name: "{{ username }}"
+      home: "{{ home_dir }}"
+      group: "{{ gid }}"
+  - name: Check new home directory ownership
+    stat:
+      path: "{{ home_dir }}"
+    register: after_ownership
+  - name: Check for change in home directory ownership
+    assert:
+      that: before_ownership.stat.uid != after_ownership.stat.uid

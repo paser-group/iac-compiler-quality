@@ -1,0 +1,41 @@
+
+- hosts: all
+  become: true
+  tasks:
+    - name: Check if CloudFormation stack exists
+      cloudformation_facts:
+        stack_name: my-stack
+      register: stack_facts
+      ignore_errors: yes
+      
+    - name: Check if stack has errors
+      assert:
+        that: stack_facts is defined and stack_facts.stack_outputs is defined
+        fail_msg: "Stack output not defined"
+        success_msg: "Stack output defined"
+      
+    - name: Update the stack
+      cloudformation:
+        stack_name: my-stack
+        state: update
+        template_body: |
+          {
+            "Resources": {
+              "EC2Instance": {
+                "Type": "AWS::EC2::Instance",
+                "Properties": {
+                  "ImageId": "ami-0c55b159cbfafe1f0",
+                  "InstanceType": "t2.micro",
+                  "KeyName": "my-key",
+                  "SubnetId": "subnet-123abc",
+                  "SecurityGroupIds": ["sg-456def"],
+                  "UserData": "echo 'Hello_world!'"
+                }
+              }
+            }
+          }
+        parameters:
+          NetworkSubnetId: subnet-123abc
+          SecurityGroupId: sg-456def
+        tags:
+          Name: my-stack

@@ -1,0 +1,62 @@
+
+- hosts: all
+  gather_facts: no
+  tasks:
+    - name: Install RabbitMQ server
+      apt:
+        name: rabbitmq-server
+        state: present
+
+    - name: Set RabbitMQ policy with invalid priority type
+      rabbitmq_policy:
+        name: test_policy
+        pattern: ""
+        priority: "invalid_priority"
+      register: invalid_priority_type
+
+    - name: Assert RabbitMQ policy priority type error
+      fail:
+        msg: "{{ invalid_priority_type.msg }}"
+      when: invalid_priority_type.failed == false
+
+    - name: Set RabbitMQ policy with negative priority
+      rabbitmq_policy:
+        name: test_policy
+        pattern: ""
+        priority: -1
+      register: negative_priority
+
+    - name: Assert RabbitMQ policy negative priority error
+      fail:
+        msg: "{{ negative_priority.msg }}"
+      when: negative_priority.failed == false
+
+    - name: Set RabbitMQ policy with priority greater than 255
+      rabbitmq_policy:
+        name: test_policy
+        pattern: ""
+        priority: 256
+      register: greater_than_255_priority
+
+    - name: Assert RabbitMQ policy priority greater than 255 error
+      fail:
+        msg: "{{ greater_than_255_priority.msg }}"
+      when: greater_than_255_priority.failed == false
+
+    - name: Set RabbitMQ policy with unconventional syntax
+      rabbitmq_policy: name=test_policy pattern="" priority=2 priority_units="invalid_units"
+      register: unconventional_syntax
+
+    - name: Assert RabbitMQ policy unconventional syntax error
+      fail:
+        msg: "{{ unconventional_syntax.msg }}"
+      when: unconventional_syntax.failed == false
+
+    - name: Set RabbitMQ policy with unexpected input type
+      rabbitmq_policy: name=test_policy pattern="" priority=2 priority_units="{{ lookup('pipe', 'echo hello') }}"
+      register: unexpected_input
+
+    - name: Assert RabbitMQ policy unexpected input type error
+      fail:
+        msg: "{{ unexpected_input.msg }}"
+      when: unexpected_input.failed == false

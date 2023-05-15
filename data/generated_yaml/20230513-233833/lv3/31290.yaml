@@ -1,0 +1,27 @@
+
+- name: Test yaml inventory plugin error
+  hosts: all
+  gather_facts: no
+
+  vars:
+    config_data: "invalid_yaml"
+
+  tasks:
+    - name: Create temporary configuration file
+      copy:
+        content: "{{ config_data }}"
+        dest: /tmp/config.yaml
+
+    - name: Test YAML inventory plugin
+      hosts: local
+      connection: local
+      become: false
+      vars:
+        ansible_inventory_plugins: yaml
+        ansible_host_file: /tmp/config.yaml
+      tasks:
+        - debug:
+            var: inventory_hostnames
+        - name: Fail on error
+          fail:
+            msg: "Failed to parse inventory file with the yaml plugin"

@@ -1,0 +1,32 @@
+
+---
+- name: Test vmware_guest module with disk options
+  hosts: all
+  gather_facts: no
+  vars:
+    template_name: my-template
+    disk_options:
+      - size_gb: 10
+      - size_gb: 20
+        eagerly_scrub: true
+  tasks:
+    - name: Create VM from template with disk options
+      vmware_guest:
+        hostname: "{{ inventory_hostname }}"
+        username: your_username
+        password: your_password
+        validate_certs: no
+        folder: my_folder
+        name: my_vm
+        template: "{{ template_name }}"
+        disk:
+          - "{{ item }}"
+        hardware:
+          memory_mb: 4096
+          num_cpus: 2
+        networks:
+          - name: "VM Network"
+            ip: "192.168.1.{{ 100 + play_hosts.index(inventory_hostname) }}"
+            netmask: "255.255.255.0"
+            gateway: "192.168.1.1"
+      with_items: "{{ disk_options }}"

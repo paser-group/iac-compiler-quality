@@ -1,0 +1,61 @@
+
+- name: Test extra-vars syntax edge cases
+  hosts: all
+  gather_facts: false
+
+  vars:
+    extra_vars_file: "{{ playbook_dir }}/extra_vars.txt"
+
+  tasks:
+    - name: Test with missing @ prefix
+      command: echo "test_var=123" > extra_vars.txt
+      ignore_errors: true
+      register: missing_prefix_result
+      vars:
+        ansible_extra_vars: "@{{ extra_vars_file }}"
+      changed_when: false
+
+    - name: Assert failure with missing @ prefix
+      assert:
+        that: "'extra_vars' is undefined"
+      when: missing_prefix_result.rc == 0
+
+    - name: Test with empty file
+      copy:
+        content: ''
+        dest: "{{ extra_vars_file }}"
+      register: empty_file_result
+      vars:
+        ansible_extra_vars: "@{{ extra_vars_file }}"
+      changed_when: false
+
+    - name: Assert failure with empty file
+      assert:
+        that: "'extra_vars' is undefined"
+      when: empty_file_result.rc == 0
+
+    - name: Test with non-existent file
+      file:
+        state: absent
+        path: "{{ extra_vars_file }}"
+      register: non_existent_file_result
+      vars:
+        ansible_extra_vars: "@{{ extra_vars_file }}"
+      changed_when: false
+
+    - name: Assert failure with non-existent file
+      assert:
+        that: "'extra_vars' is undefined"
+      when: non_existent_file_result.rc == 0
+
+    - name: Test with space as file name
+      command: echo "test_var=123" > " "
+      register: space_file_result
+      vars:
+        ansible_extra_vars: '@" "'
+      changed_when: false
+
+    - name: Assert failure with space as file name
+      assert:
+        that: "'extra_vars' is undefined"
+      when: space_file_result.rc == 0

@@ -1,0 +1,32 @@
+
+---
+- name: Discovering Ansible compiler bugs related to VLAN interfaces
+  hosts: all
+  become: true
+  gather_facts: false
+
+  tasks:
+  - name: Install Python netaddr module
+    apt:
+      name: python3-netaddr
+      state: present
+
+  - name: Define VLAN interface with ID 10
+    interfaces:
+      name: vlan10
+      auto: yes
+      iface_type: vlan
+      vlan_id: "10"
+      state: present
+
+  - name: Assign six interfaces to the VLAN
+    interfaces:
+      name: "{{ 'eth0 eth1 eth2 eth3 eth4 eth5' }}"
+      parent: vlan10
+      state: present
+
+  - name: Try to assign a seventh interface to the VLAN (expected to fail due to the index error)
+    interfaces:
+      name: eth6
+      parent: vlan10
+      state: present

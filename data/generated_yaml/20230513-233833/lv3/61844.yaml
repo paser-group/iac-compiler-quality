@@ -1,0 +1,28 @@
+
+--- 
+- name: IOSXR L3 idempotence testing
+  hosts: iosxr
+  gather_facts: no
+
+  tasks:
+  - name: Configure Layer 3 routing
+    iosxr_config:
+      lines:
+      - router ospf 1
+      - network 192.0.2.0/24 area 0
+    register: result
+    check_mode: no
+
+  - name: Test idempotency of Layer 3 routing operations
+    assert:
+      that:
+        - result.changed == false
+    fail_msg: "Routing configuration is not idempotent"
+    changed_when: false
+    check_mode: no
+
+  handlers:
+  - name: restart OSPF
+    iosxr_command:
+      commands:
+      - "clear ip ospf 1 process"

@@ -1,0 +1,18 @@
+
+- name: Gather facts about EC2 instances in the ASG with error redirection
+  ec2_asg_facts:
+    name: "{{ ASG_name }}"
+  register: ec2_asg_fact_output
+  ignore_errors: true
+  args:
+    aws_access_key: "{{ AWS_ACCESS_KEY }}"
+    aws_secret_key: "{{ AWS_SECRET_KEY }}"
+    region: "{{ AWS_REGION }}"
+  no_log: "{{ sensitive_data_no_log }}" # Variable to mask sensitive data in output logs
+
+- name: Debug ASG error messages
+  debug:
+    msg: "{{ item }}"
+  with_items: "{{ ec2_asg_fact_output.stdout_lines }}"
+  when: item is search('botocore.errorfactory.TargetGroupNotFoundException')
+  no_log: "{{ sensitive_data_no_log }}" # Variable to mask sensitive data in output logs

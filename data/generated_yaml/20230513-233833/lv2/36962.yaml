@@ -1,0 +1,59 @@
+
+- name: Fix string/binary encoding issue in pull.py
+  hosts: all
+  vars:
+    file_path: "/tmp/test.txt"
+    test_string: "Hello, World!"
+    test_binary: b'Hello, World!'
+  tasks:
+    - name: Create test file with string content
+      copy:
+        content: "{{ test_string }}"
+        dest: "{{ file_path }}"
+      register: test_file_content
+
+    - name: Create test file with binary content
+      copy:
+        content: "{{ test_binary }}"
+        dest: "{{ file_path }}"
+      register: test_file_binary_content
+
+    - name: Verify test file contents
+      assert:
+        that:
+          - test_file_content.content == test_string
+          - test_file_binary_content.content == test_binary
+
+    - name: Remove test file
+      file:
+        path: "{{ file_path }}"
+        state: absent
+
+    - name: Test unconventional syntax
+      shell: |
+        echo "This is an unconventional syntax test"
+        echo ${{ test_string ~ '!' }}
+
+    - name: Test unexpected input
+      set_fact:
+        invalid_var: "{{ test_string + nonexistent_var }}"
+
+    - name: Test edge case - empty file creation
+      copy:
+        content: ""
+        dest: "{{ file_path }}"
+
+    - name: Test edge case - empty binary file creation
+      copy:
+        content: b''
+        dest: "{{ file_path }}"
+
+    - name: Test edge case - file creation with special characters
+      copy:
+        content: "!#$%&'()*+, -./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~"
+        dest: "{{ file_path }}"
+
+    - name: Test edge case - file creation with Unicode characters
+      copy:
+        content: "日本語"
+        dest: "{{ file_path }}"

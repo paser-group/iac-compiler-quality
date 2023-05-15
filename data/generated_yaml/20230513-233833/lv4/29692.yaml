@@ -1,0 +1,28 @@
+
+- name: Launch EC2 instance without image ID
+  hosts: localhost
+  gather_facts: no
+  
+  tasks:
+    - name: Launching EC2 instance
+      ec2:
+        region: us-east-1
+        group_id: sg-xxxxx
+        key_name: mykey
+        instance_type: t2.micro
+        subnet_id: subnet-xxxxxx
+        count: 1
+        assign_public_ip: true
+        instance_tags:
+          Name: MyInstance
+      register: ec2_launch_output
+
+    - name: Write output to log file
+      lineinfile:
+        path: /var/log/ansible.log
+        line: '{{ ec2_launch_output }}'
+
+    - name: Notify system admins
+      command: echo "Ansible compilation failed"
+      when: ec2_launch_output is not None and ec2_launch_output.rc != 0
+      notify: alert_administrators

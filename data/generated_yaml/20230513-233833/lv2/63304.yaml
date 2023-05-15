@@ -1,0 +1,58 @@
+yaml
+- name: Stress test playbook
+  hosts: all
+  become: true
+  tasks:
+    - name: Assign unquoted value to server
+      set_fact:
+        server: 10.1.1.1
+        server1: 10.1.1.2
+        server2: 10.1.1.3
+
+    - name: Assign variables with spaces to server
+      set_fact:
+        server: "10.1.1.1 "
+        server1: "  10.1.1.2"
+        server2: "  10.1.1.3"
+
+    - name: Use invalid variable name for server
+      shell: echo "Invalid variable for '--server' parameter"
+      environment:
+        - server_ip: 10.1.1.1
+
+    - name: Add invalid parameter
+      shell: echo "Invalid parameter for the command"
+      command: "ansible-pull --server 10.1.1.1 --invalidparameter"
+
+    - name: Use wildcard character in server value
+      command: "ansible-pull --server '*.*.*.*'"
+
+    - name: Use variable inside server argument
+      shell: echo "Using a variable for server argument"
+      command: "ansible-pull --server {{ hostvars['localhost']['server_ip'] }}"
+
+    - name: Use command with escaped double quotes
+      ansible.builtin.command:
+        cmd: 'ansible-pull --server "\\"10.1.1.1\\""'
+
+    - name: Use command with single quotes
+      ansible.builtin.command:
+        cmd: "ansible-pull --server '10.1.1.1'"
+
+    - name: Use multiline command
+      ansible.builtin.command: |
+        ansible-pull \
+        --server 10.1.1.1
+
+    - name: Use multiline shell command
+      ansible.builtin.command: |
+        sh | xargs echo "Ansible pull command executed with: "
+        ansible-pull --server 10.1.1.1
+
+    - name: Use inline comment in command
+      ansible.builtin.command:
+        cmd: "ansible-pull --server 10.1.1.1 # Comment"
+
+    - name: Use different separators
+      ansible.builtin.command:
+        cmd: "ansible-pull --server=10.1.1.1"

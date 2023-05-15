@@ -1,0 +1,53 @@
+
+---
+- hosts: all
+  become: true
+
+  vars:
+    resource_group: "test-rg"
+    deployment_name: "testdeploy"
+    template_path: "/users/user1/deployment-template.json"
+
+  tasks:
+  - name: Create Azure Resource Group
+    azure_rm_resourcegroup:
+      name: "{{ resource_group }}"
+      location: "eastus"
+      tags:
+        environment: "test"
+  - name: Deploy Azure resources
+    azure_rm_deployment:
+      resource_group_name: "{{ resource_group }}"
+      deployment_name: "{{ deployment_name }}"
+      template: "{{ lookup('file', template_path) }}"
+      parameters:
+        vmName:
+          value: "testvm"
+        location:
+          value: "eastus"
+      wait_for_deployment: true
+      wait_for_deployment_timeout: 600
+      poll_interval: 10
+    register: output
+  - name: Capture Output
+    debug:
+      var: output
+  - name: Cause 503 Error
+    shell: echo "Some error occurred" && exit 1
+    ignore_errors: yes
+  - name: Deploy once more
+    azure_rm_deployment:
+      resource_group_name: "{{ resource_group }}"
+      deployment_name: "{{ deployment_name }}"
+      template: "{{ lookup('file', template_path) }}"
+      parameters:
+        vmName:
+          value: "testvm"
+        location:
+          value: "eastus"
+      wait_for_deployment: true
+      wait_for_deployment_timeout: 600
+      poll_interval: 10
+  - name: Capture Output
+    debug:
+      var: output

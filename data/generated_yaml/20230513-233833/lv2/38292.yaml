@@ -1,0 +1,128 @@
+
+- hosts: all
+  gather_facts: no
+
+  vars:
+    uri_username: "{{ lookup('env','BASIC_AUTH_USERNAME') }}"
+    uri_password: "{{ lookup('env','BASIC_AUTH_PASSWORD') }}"
+    uri_timeout: "{{ lookup('env','BASIC_AUTH_TIMEOUT') | default(5) }}"
+    uri_follow_redirects: "{{ lookup('env','BASIC_AUTH_FOLLOW_REDIRECTS') | default(false) }}"
+    uri_return_content: "{{ lookup('env','BASIC_AUTH_RETURN_CONTENT') | default(false) }}"
+    uri_headers:
+      Content-Type: "application/json"
+
+  tasks:
+  - name: Test basic authentication with empty username
+    uri:
+      url: "http://10.1.1.1/api/v1/resource"
+      user: ""
+      password: "{{ uri_password }}"
+      force_basic_auth: yes
+      timeout: "{{ uri_timeout }}"
+      follow_redirects: "{{ uri_follow_redirects }}"
+      return_content: "{{ uri_return_content }}"
+      headers: "{{ uri_headers }}"
+    register: result_empty_username
+    ignore_errors: yes
+
+  - name: Test basic authentication with empty password
+    uri:
+      url: "http://10.1.1.1/api/v1/resource"
+      user: "{{ uri_username }}"
+      password: ""
+      force_basic_auth: yes
+      timeout: "{{ uri_timeout }}"
+      follow_redirects: "{{ uri_follow_redirects }}"
+      return_content: "{{ uri_return_content }}"
+      headers: "{{ uri_headers }}"
+    register: result_empty_password
+    ignore_errors: yes
+
+  - name: Test basic authentication with null username
+    uri:
+      url: "http://10.1.1.1/api/v1/resource"
+      user: null
+      password: "{{ uri_password }}"
+      force_basic_auth: yes
+      timeout: "{{ uri_timeout }}"
+      follow_redirects: "{{ uri_follow_redirects }}"
+      return_content: "{{ uri_return_content }}"
+      headers: "{{ uri_headers }}"
+    register: result_null_username
+    ignore_errors: yes
+
+  - name: Test basic authentication with null password
+    uri:
+      url: "http://10.1.1.1/api/v1/resource"
+      user: "{{ uri_username }}"
+      password: null
+      force_basic_auth: yes
+      timeout: "{{ uri_timeout }}"
+      follow_redirects: "{{ uri_follow_redirects }}"
+      return_content: "{{ uri_return_content }}"
+      headers: "{{ uri_headers }}"
+    register: result_null_password
+    ignore_errors: yes
+
+  - name: Test basic authentication with missing username
+    uri:
+      url: "http://10.1.1.1/api/v1/resource"
+      password: "{{ uri_password }}"
+      force_basic_auth: yes
+      timeout: "{{ uri_timeout }}"
+      follow_redirects: "{{ uri_follow_redirects }}"
+      return_content: "{{ uri_return_content }}"
+      headers: "{{ uri_headers }}"
+    register: result_missing_username
+    ignore_errors: yes
+
+  - name: Test basic authentication with missing password
+    uri:
+      url: "http://10.1.1.1/api/v1/resource"
+      user: "{{ uri_username }}"
+      force_basic_auth: yes
+      timeout: "{{ uri_timeout }}"
+      follow_redirects: "{{ uri_follow_redirects }}"
+      return_content: "{{ uri_return_content }}"
+      headers: "{{ uri_headers }}"
+    register: result_missing_password
+    ignore_errors: yes
+
+  - name: Test basic authentication with incorrect username
+    uri:
+      url: "http://10.1.1.1/api/v1/resource"
+      user: "{{ uri_username }}_invalid"
+      password: "{{ uri_password }}"
+      force_basic_auth: yes
+      timeout: "{{ uri_timeout }}"
+      follow_redirects: "{{ uri_follow_redirects }}"
+      return_content: "{{ uri_return_content }}"
+      headers: "{{ uri_headers }}"
+    register: result_incorrect_username
+    ignore_errors: yes
+
+  - name: Test basic authentication with incorrect password
+    uri:
+      url: "http://10.1.1.1/api/v1/resource"
+      user: "{{ uri_username }}"
+      password: "{{ uri_password }}_invalid"
+      force_basic_auth: yes
+      timeout: "{{ uri_timeout }}"
+      follow_redirects: "{{ uri_follow_redirects }}"
+      return_content: "{{ uri_return_content }}"
+      headers: "{{ uri_headers }}"
+    register: result_incorrect_password
+    ignore_errors: yes
+
+  - name: Fail when basic authentication returns non-401 status code
+    fail:
+      msg: "Authentication failed - unexpected response code"
+    when:
+      - result_empty_username.status != 401
+      - result_empty_password.status != 401
+      - result_null_username.status != 401
+      - result_null_password.status != 401
+      - result_missing_username.status != 401
+      - result_missing_password.status != 401
+      - result_incorrect_username.status != 401
+      - result_incorrect_password.status != 401

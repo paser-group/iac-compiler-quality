@@ -1,0 +1,55 @@
+
+---
+- name: Perform k8s operations
+  hosts: all
+  gather_facts: False
+
+  tasks:
+    - name: Create a k8s resource
+      k8s:
+        definition:
+          apiVersion: networking.k8s.io/v1
+          kind: NetworkPolicy
+          metadata:
+            name: test-policy
+          spec:
+            policyTypes:
+            - Egress
+            egress:
+            - {}
+      register: test1
+      ignore_errors: True
+
+    - name: Update the k8s resource
+      k8s:
+        definition:
+          apiVersion: networking.k8s.io/v1
+          kind: NetworkPolicy
+          metadata:
+            name: test-policy
+          spec:
+            policyTypes:
+            - Egress
+            egress:
+            - {}
+      register: test2
+      ignore_errors: True
+
+    - name: Delete the k8s resource
+      k8s:
+        definition:
+          apiVersion: networking.k8s.io/v1
+          kind: NetworkPolicy
+          metadata:
+            name: test-policy
+        state: absent
+      register: test3
+      ignore_errors: True
+      
+    - fail:
+        msg: "An error occurred while performing the k8s operation: {{ item.stdout }}"
+      when: item.rc != 0
+      loop:
+        - "{{ test1 }}"
+        - "{{ test2 }}"
+        - "{{ test3 }}"

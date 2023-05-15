@@ -1,0 +1,50 @@
+yaml
+- hosts: windows_servers
+  tasks:
+    - name: Get list of services
+      win_service:
+        state: query
+      register: service_list
+    - name: Output service list to file
+      copy:
+        content: "{{ service_list.stdout | to_nice_yaml }}"
+        dest: "/tmp/service_list.yml"
+    - name: Attempt to start non-existent service
+      win_service:
+        name: NonExistentService
+        state: started
+      ignore_errors: yes
+      register: service_start
+    - name: Modify service start-up type
+      win_service_config:
+        name: BITS
+        startup_mode: automatic
+      register: service_config
+    - name: Verify service configuration change
+      win_service:
+        name: BITS
+        state: started
+      register: service_status
+      failed_when: service_status.state != 'running'
+    - name: Stop running service
+      win_service:
+        name: BITS
+        state: stopped
+      register: service_stop
+    - name: Verify service stoppage
+      win_service:
+        name: BITS
+        state: stopped
+      register: service_status
+      failed_when: service_status.state != 'stopped'
+    - name: Start stopped service
+      win_service:
+        name: BITS
+        state: started
+      register: service_start
+    - name: Verify service start
+      win_service:
+        name: BITS
+        state: started
+      register: service_status
+      failed_when: service_status.state != 'running'

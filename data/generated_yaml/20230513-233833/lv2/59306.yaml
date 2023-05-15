@@ -1,0 +1,66 @@
+
+- name: Stress Test Ansible Compiler for Unwanted Errors in Async Local Tasks
+  hosts: all
+
+  tasks:
+  - name: Run Multiple Async Tasks Locally
+    async: 5
+    poll: 0
+    become: yes
+    command: |
+      apt-get update
+      apt-get install -y python-dev
+      pip install ansible
+    register: result
+
+  - name: Print Results
+    debug:
+      var: result.stdout_lines
+
+  - name: Check for Errors
+    fail:
+      msg: "Error Detected in Async Tasks"
+    when: "'failure' in result.stdout_lines"
+
+  - name: Stop Services on All Nodes
+    service:
+      name: nginx
+      state: stopped
+      become: yes
+
+  - name: Install Packages on Specific Node
+    apt:
+      name: apache2
+      state: present
+      become: yes
+    when: inventory_hostname == 'node1'
+
+  - name: Execute Bash Script with Arguments
+    command: /path/to/script.sh arg1 arg2
+    args:
+      chdir: /path/to/directory
+
+  - name: Send File to All Nodes
+    copy:
+      src: /path/to/file
+      dest: /tmp
+    run_once: true
+
+  - name: Create User with Password
+    user:
+      name: username
+      password: "password"
+    become: yes
+
+  - name: Remove User with Existing Files
+    user:
+      name: username
+      remove: yes
+      force: yes
+    become: yes
+
+  - name: Execute Shell Command with Environment Variables
+    shell: echo $MY_ENV_VAR
+    environment:
+      MY_ENV_VAR: "my_value"
+    become: yes

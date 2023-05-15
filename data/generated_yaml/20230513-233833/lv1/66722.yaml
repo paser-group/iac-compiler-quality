@@ -1,0 +1,25 @@
+yaml
+---
+- name: Execute script asynchronously using PowerShell
+  hosts: all
+
+  tasks:
+    - name: Execute PowerShell script asynchronously
+      community.general.win_powershell:
+        script_path: /path/to/script.ps1
+        async: yes
+        poll_interval: 5
+        timeout: 3600
+      register: script_result
+
+    - name: Wait for script to finish
+      async_status:
+        jid: "{{ script_result.ansible_job_id }}"
+      register: script_status
+      until: script_status.finished
+      retries: 5
+      delay: 30
+
+    - name: Display script output
+      debug:
+        var: script_result.stdout_lines

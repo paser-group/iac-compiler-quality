@@ -1,0 +1,30 @@
+
+- name: ios_* paramiko connection issues
+  hosts: all
+  gather_facts: no
+
+  tasks:
+  - name: Check if Python Paramiko is installed
+    stat:
+      path: "{{ ansible_python_interpreter }}/paramiko"
+    register: paramiko_check
+
+  - name: Install Python Paramiko
+    package:
+      name: python-paramiko
+      state: present
+    when: paramiko_check.stat.exists == False
+
+  - name: Configure SSH connection for IOS devices
+    ios_command:
+      provider:
+        host: "{{ inventory_hostname }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        transport: paramiko
+      commands:
+        - configure terminal
+        - ssh key-exchange group dh-group14-sha1
+        - exit
+      authorize: yes
+      auth_pass: "{{ enable_password }}"

@@ -1,0 +1,32 @@
+
+---
+- hosts: all
+  become: true
+  tasks:
+    - name: Install firewalld
+      apt:
+        name: firewalld
+        state: present
+    - name: Enable firewalld
+      service:
+        name: firewalld
+        state: started
+        enabled: true
+    - name: Testing firewalld module
+      firewalld:
+        service: "{{item.service}}"
+        zone: "{{item.zone}}"
+        permanent: "{{item.permanent}}"
+      loop:
+        - { service: ssh, zone: public, permanent: yes }
+        - { service: http, zone: public, permanent: no }
+      register: firewalld_out
+    - name: Verify outputs
+      assert:
+        that:
+          - firewalld_out.results[0].firewalld.enabled.services[0] == 'ssh'
+          - firewalld_out.results[0].firewalld.enabled.zones[0] == 'public'
+          - firewalld_out.results[0].firewalld.permanent == true
+          - firewalld_out.results[1].firewalld.enabled.services[0] == 'http'
+          - firewalld_out.results[1].firewalld.enabled.zones[0] == 'public'
+          - firewalld_out.results[1].firewalld.permanent == false

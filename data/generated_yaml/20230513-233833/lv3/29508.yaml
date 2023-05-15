@@ -1,0 +1,21 @@
+
+---
+- name: Terminate EC2 Instances
+  hosts: localhost
+  gather_facts: no
+  tasks:
+  - name: Gather EC2 Instance IP Addresses
+    ec2_instance_facts:
+      region: us-east-1
+      filters:
+        instance-state-name: running
+      register: ec2_instances
+  - name: Terminate EC2 Instances
+    when: ec2_instances.instances is defined
+    ec2:
+      region: us-east-1
+      instance_ids: "{{ item.id }}"
+      state: absent
+      wait: true
+      wait_timeout: 300
+    loop: "{{ ec2_instances.instances }}"

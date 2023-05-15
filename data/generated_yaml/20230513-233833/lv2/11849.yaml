@@ -1,0 +1,43 @@
+
+---
+- name: Test raw module edge cases
+  hosts: node1
+  gather_facts: false
+  tasks:
+    - name: Set incorrect env var using raw module
+      raw: |
+        export TEST_VAR={{ 123 + 456 }}
+        echo $TEST_VAR
+      register: result
+
+    - name: Print result of the raw command
+      debug:
+        var: result.stdout
+
+    - name: Run raw command with unconventional syntax
+      raw: |
+        &&| $PATH/response
+        !#/bin/bash
+        echo "Unconventional syntax test passed"
+      ignore_errors: true
+
+    - name: Pass unexpected input to raw module
+      raw: |
+        echo "{{ 1 / 0 }}"
+      ignore_errors: true
+      register: div_zero
+
+    - name: Display error message for divison by zero
+      debug:
+        msg: "{{ div_zero.stderr }}"
+
+    - name: Use variables in raw module command
+      vars:
+        test_arg: 'Hello World!'
+      raw: |
+        echo "{{ test_arg }}"
+      register: arg_result
+
+    - name: Print out raw module command result
+      debug:
+        var: arg_result.stdout

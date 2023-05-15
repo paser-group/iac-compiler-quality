@@ -1,0 +1,36 @@
+
+---
+- name: Manage WPAR Partitions on AIX
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: Check if AIX system is supported
+      aix_service:
+        service: chfs
+      ignore_errors: yes
+      changed_when: false
+      failed_when: false
+      register: chfs_available
+
+    - name: Manage WPAR partitions
+      aix_wpar:
+        state: started
+        primary:
+          name: test_wpar_primary
+          hostname: test-wpar-primary.{{ inventory_hostname }}
+          network_interface: en0
+        application_profiles:
+          - name: profile1
+            requirements:
+              cpu: 0.5
+              memory: 1024
+              vprocessors: 2
+            disks:
+              - size: 20
+                mount: /test
+      register: wpar_output
+
+    - name: Debug output
+      debug:
+        msg: "{{ wpar_output }}"

@@ -1,0 +1,26 @@
+
+- name: Test os_security_group_rule module
+  hosts: all
+  gather_facts: false
+  
+  tasks:
+    - name: Create default security group if not present
+      os_security_group:
+        state: present
+        name: default
+      register: sec_group
+
+    - name: Add inbound rule to default security group
+      os_security_group_rule:
+        security_group: "{{ sec_group.sec_group.id }}"
+        direction: ingress
+        protocol: tcp
+        port_range_min: 80
+        port_range_max: 80
+        remote_ip_prefix: 0.0.0.0/0
+      register: sec_group_rule
+
+    - name: Check if rule has been added
+      assert:
+        that:
+          - sec_group_rule.changed == True

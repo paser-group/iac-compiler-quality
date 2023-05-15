@@ -1,0 +1,34 @@
+
+---
+- name: F5 server port Ansible Playbook
+  hosts: f5nodes
+  gather_facts: false
+  connection: local
+
+  tasks:
+
+  - name: Create F5 pool
+    bigip_pool:
+      name: "{{ item.name }}"
+      lb_method: "{{ item.lb_method }}"
+      monitor_type: "{{ item.monitor_type }}"
+      monitor_interval: "{{ item.monitor_interval }}"
+      monitor_timeout: "{{ item.monitor_timeout }}"
+      server: 10.1.1.1
+      user: admin
+      password: "{{ lookup('env', 'F5_PASSWORD') }}"
+      server_port: "{{ item.server_port }}"
+    with_items:
+      - { name: 'pool1', lb_method: 'least-connections-node', monitor_type: 'tcp', monitor_interval: 5, monitor_timeout: 10, server_port: 8081 }
+      - { name: 'pool2', lb_method: 'round-robin', monitor_type: 'http', monitor_interval: 10, monitor_timeout: 12, server_port: '8082/' }
+
+  - name: remove F5 pool
+    bigip_pool:
+      server: 10.1.1.1
+      user: admin
+      password: "{{ lookup('env', 'F5_PASSWORD') }}"
+      name: "{{ item.name }}"
+      state: "{{ item.state }}"
+    with_items:
+      - { name: 'pool1', state: 'absent' }
+      - { name: 'pool2', state: 'absent' }

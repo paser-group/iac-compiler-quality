@@ -1,0 +1,28 @@
+
+---
+- name: Test playbook for potential Ansible compiler bug
+  hosts: all
+  roles:
+    - test_role
+
+- name: Handler failed task
+  block:
+    - name: Set flags to True
+      set_fact:
+        any_errors_fatal: true
+        force_handlers: true
+
+    - name: Deliberately fail
+      command: /bin/false
+      ignore_errors: true  # allow handler to execute if this fails
+
+    - name: Success message
+      debug:
+        msg: "Playbook completed successfully"
+      when: false
+
+  rescue:
+    - name: Failed handler message
+      debug:
+        msg: "handler failed, setting flag"
+      failed_when: true

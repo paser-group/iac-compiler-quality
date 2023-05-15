@@ -1,0 +1,50 @@
+
+- name: Stress Test Playbook for Route53 Zones
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Create a route53_zone with an existing private zone
+      route53_zone:
+        name: example.com
+        private_zone: yes
+        vpc_id: "vpc-1234"
+      ignore_errors: true
+
+    - name: Create a route53_zone with invalid vpc_id
+      route53_zone:
+        name: example.com.invalid
+        private_zone: yes
+        vpc_id: "invalid"
+      ignore_errors: true
+
+    - name: Create a route53_zone with missing private_zone parameter
+      route53_zone:
+        name: example.com.missing_private_zone
+        vpc_id: "vpc-1234"
+      ignore_errors: true
+
+    - name: Create a route53_zone with an invalid parameter
+      route53_zone:
+        name: example.com.invalid_parameter
+        private_zone: yes
+        invalid_parameter: "invalid"
+      ignore_errors: true
+
+    - name: Create a route53_zone with a name that exceeds 63 characters
+      route53_zone:
+        name: example.com.123456789012345678901234567890123456789012345678901234567890123
+        private_zone: yes
+        vpc_id: "vpc-1234"
+      ignore_errors: true
+
+    - name: Remove the created route53_zones
+      route53_zone:
+        state: absent
+        name: "{{ item }}"
+      with_items:
+        - example.com
+        - example.com.invalid
+        - example.com.missing_private_zone
+        - example.com.invalid_parameter
+        - example.com.123456789012345678901234567890123456789012345678901234567890123
+      ignore_errors: true

@@ -1,0 +1,37 @@
+
+---
+- name: nxos_vxlan_vtep errors out for both transports playbook
+  hosts: node1
+  gather_facts: no
+
+  tasks:
+    - name: Disable nxapi and cli transports on node1
+      nxos_vxlan_vtep:
+        vtep_vni: 1234
+        vtep_ip: 10.1.1.1
+        state: absent
+        transport: "{{ item }}"
+      with_items:
+        - nxapi
+        - cli
+    - name: Enable nxapi and cli transports on node2 and node3
+      nxos_vxlan_vtep:
+        vtep_vni: 5678
+        vtep_ip: 10.1.1.2
+        state: present
+        transport: "{{ item }}"
+      delegate_to: "{{ item }}"
+      with_items:
+        - node2
+        - node3
+    - name: Verify vtep configuration status 
+      nxos_vxlan_vtep:
+        vtep_vni: 1234
+        vtep_ip: 10.1.1.1
+        state: present
+        validate: yes
+      register: result
+    - name: Fail the playbook if validation fails
+      fail:
+        msg: "Validation failed: {{ result }}"
+      when: not result.changed

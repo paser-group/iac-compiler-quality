@@ -1,0 +1,61 @@
+
+---
+- name: Fuzz Testing for azure_rm_virtualmachine
+  hosts: node1
+  become: true
+
+  tasks:
+  - name: Check if batches variable is empty
+    azure_rm_virtualmachine:
+      name: "vm1"
+      image:
+        offer: "UbuntuServer"
+        publisher: "Canonical"
+        sku: "14.04.5-LTS"
+        version: "latest"
+      resource_group: "myResourceGroup"
+      vmsize: "Standard_DS2_v2"
+      admin_username: "azureadmin"
+      admin_password: "{{ 'password123' | to_nice_json }}"
+      batches: "{{ vars.batches | default([]) }}"
+    when: (not vars.batches) | default(True)
+
+  - name: Set the number of batches for VM creation
+    set_fact:
+      numOfBatches: "{{ (numOfBatches | default(10)) - 1 }}"
+    when: numOfBatches is defined
+
+  - name: Create virtual machines in batches
+    azure_rm_virtualmachine:
+      name: "{{ item.1 }}"
+      image:
+        offer: "UbuntuServer"
+        publisher: "Canonical"
+        sku: "14.04.5-LTS"
+        version: "latest"
+      resource_group: "{{ item.0 }}"
+      vmsize: "Standard_DS2_v2"
+      admin_username: "azureadmin"
+      admin_password: "{{ 'password123' | to_nice_json }}"
+    loop_control:
+      index_var: index
+    with_indexed_items: "{{ batches[:numOfBatches] }}"
+
+  - name: Create virtual machines with invalid batch size
+    azure_rm_virtualmachine:
+      name: "vm{{ item }}"
+      image:
+        offer: "UbuntuServer"
+        publisher: "Canonical"
+        sku: "14.04.5-LTS"
+        version: "latest"
+      resource_group: "myResourceGroup"
+      vmsize: "Standard_DS2_v2"
+      admin_username: "azureadmin"
+      admin_password: "{{ 'password123' | to_nice_json }}"
+      batches: {{ invalidInput }}
+    loop: '{{ range(10,15) | difference([12]) }}'
+
+  vars:
+    batches: "{{ query('sequence', start=0, end=50, step=10) }}"
+    invalidInput: "{'count':'two'}"

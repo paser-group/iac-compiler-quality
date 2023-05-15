@@ -1,0 +1,30 @@
+yaml
+---
+- hosts: all
+  gather_facts: no
+  tasks:
+    - name: Create target file and add content
+      file:
+        path: /tmp/target
+        state: touch
+        mode: '0664'
+        owner: root
+        group: root
+      lineinfile:
+        path: /tmp/target
+        line: 'This file contains sensitive information'
+    
+    - name: Create softlink to target file
+      file:
+        src: /tmp/target
+        dest: /tmp/link
+
+    - name: Encrypt the softlink using ansible-vault
+      command: ansible-vault encrypt /tmp/link
+
+- hosts: all
+  gather_facts: no
+  tasks:
+    - name: Decrypt the encrypted file
+      command: ansible-vault decrypt /tmp/link
+      no_log: true

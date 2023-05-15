@@ -1,0 +1,31 @@
+
+- hosts: all
+  gather_facts: no 
+  tasks:
+
+  - name: Create Load Balancer with access_logs_s3_prefix
+    elb_application_lb:
+      name: myLB
+      listeners:
+        - protocol: HTTP
+          load_balancer_port: 80
+          instance_protocol: HTTP
+          instance_port: 80
+      access_logs:
+        S3_bucket_name: my-s3-bucket
+        S3_bucket_prefix: "{{ item }}"
+    with_items:
+      - logs/
+      - #$
+      - null
+
+  - name: Verify S3 Bucket for access logs
+    aws_s3:
+      bucket: my-s3-bucket
+      prefix: logs/
+      mode: list
+    register: s3_output
+
+  - name: Debug S3 Output
+    debug:
+      var: s3_output

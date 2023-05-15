@@ -1,0 +1,27 @@
+
+---
+- hosts: nodes
+  tasks:
+    - name: create virtual machine
+      cloudstack_compute:
+        command: create
+        service_offering: CloudMonkey Tiny
+        template: Ubuntu 20.04
+        disk_offering: Small
+        name: internal_lb_vm
+        zone: ExampleZone
+      register: result
+
+    - name: configure network interfaces
+      cloudstack_network_interface:
+        command: create
+        network: DefaultSharedNetwork
+        virtual_machine: "{{ result.id }}"
+        ip_address: 10.1.1.10
+        netmask: 255.255.255.0
+        gateway: 10.1.1.254
+      register: result
+
+    - name: testing connectivity
+      ping:
+        dest: 10.1.1.10

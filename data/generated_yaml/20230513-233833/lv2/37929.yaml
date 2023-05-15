@@ -1,0 +1,52 @@
+
+---
+- name: Test playbook for ansible_failed_task issue
+  hosts: all
+  become: true
+  tasks:
+    - name: Test setting undefined variable inside vars/
+      debug:
+        var: "{{undefined_var}}"
+      vars:
+        undefined_var: "{{undefined_var2}}"
+      vars_files:
+        - vars/test_vars.yml
+      
+    - name: Test setting undefined variable inside defaults/
+      debug:
+        var: "{{undefined_var}}"
+      defaults:
+        undefined_var: "{{undefined_var2}}"
+      
+    - name: Test using undefined variable in failed task inside role
+      include_role:
+        name: test_role
+        tasks_from: failed_task.yml
+          
+    - name: Test using undefined variable in failed task inside playbook
+      include_tasks: failed_task.yml
+
+    - name: Test running arbitrary command inside shell with undefined variable
+      shell: "{{ undefined_var }}"
+      ignore_errors: true
+
+    - name: Test generating random password with invalid length
+      vars:
+        mypass: "{{ password(length=0) }}"
+      debug:
+        var: mypass
+
+    - name: Test converting list to integer
+      vars:
+        mylist: [ "1", "2", "3" ]
+        my_int: "{{ mylist | int }}"
+      debug:
+        var: my_int
+
+    - name: Test using invalid filter
+      vars:
+        myvar: "testing"
+        myfilter: "invalid"
+        myresult: "{{ myvar | myfilter }}"
+      debug:
+        var: myresult

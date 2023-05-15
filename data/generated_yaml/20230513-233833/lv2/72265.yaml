@@ -1,0 +1,33 @@
+
+- name: test ssh connection
+  hosts: all
+  gather_facts: no
+  vars:
+    - ssh_port: "2222"
+    - ssh_keypath: "/path/to/ssh/key"
+    - invalid_keypath: "/path/to/invalid/key"
+    - invalid_port: "222A"
+    - invalid_host: "not.a.valid.hostname"
+  tasks:
+    - name: connect using invalid ssh key
+      shell: ssh -q -o StrictHostKeyChecking=no -i "{{ invalid_keypath }}" -p {{ ssh_port }} user@{{ inventory_hostname }}
+      ignore_errors: yes
+
+    - name: connect using invalid ssh port
+      shell: ssh -q -o StrictHostKeyChecking=no -i {{ ssh_keypath }} -p {{ invalid_port }} user@{{ inventory_hostname }}
+      ignore_errors: yes
+
+    - name: connect using invalid hostname
+      shell: ssh -q -o StrictHostKeyChecking=no -i {{ ssh_keypath }} -p {{ ssh_port }} user@{{ invalid_host }}
+      ignore_errors: yes
+
+    - name: connect using correct ssh details
+      shell: ssh -q -o StrictHostKeyChecking=no -i {{ ssh_keypath }} -p {{ ssh_port }} user@{{ inventory_hostname }}
+      register: result
+      until: result.stdout.find("Welcome") != -1
+      retries: 3
+      delay: 2
+
+    - name: print connection result
+      debug:
+        var: result

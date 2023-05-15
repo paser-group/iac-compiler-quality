@@ -1,4 +1,4 @@
-from compiler_fuzzing.chat_gpt import create_ansible, validate_ansible, run_ansible
+from compiler_fuzzing.chat_gpt import create_ansible, validate_ansible, run_ansible, generate_statistics
 from compiler_fuzzing import arguments, utils, cfg_reader
 
 def main():
@@ -23,6 +23,13 @@ def main():
         
         # run validator
         run_ansible(args, cfg)
+        
+    if args.procedure == 'stat':
+        # read in config data
+        cfg = cfg_reader.primary.load(args.config)
+
+        # run the generator
+        generate_statistics(args, cfg)
     else:
         raise NotImplementedError(utils.strings.clean_multiline(
             """

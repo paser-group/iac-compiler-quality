@@ -1,0 +1,38 @@
+yaml
+- name: Test ansible-galaxy login
+  hosts: all
+  gather_facts: false
+
+  tasks:
+
+  - name: Run ansible-galaxy login with incorrect CERT path
+    command: ansible-galaxy login -c /path/to/invalid/cert
+    ignore_errors: true
+
+  - name: Run ansible-galaxy login with unconventional syntax
+    shell: 'ansible-galaxy login --cert-path=/path/to/cert --username="invalid" --password="password"'
+    register: result
+    failed_when: "'failure' not in result.stdout"
+
+  - name: Run ansible-galaxy login with unexpected inputs
+    expect:
+      command: "ansible-galaxy login"
+      responses:
+        Username*:
+          - "invalid"
+        Password*:
+          - "password"
+      echo: false
+      timeout: 30
+    register: result_exp
+    failed_when: "'failure' not in result_exp.stdout"
+
+  - name: Confirm ansible galaxy has not logged in
+    file:
+      path: "/home/ansible/.ansible_galaxy/token"
+      state: absent
+
+  - name: Check if ansible-galaxy login with correct CERT succeeds
+    command: ansible-galaxy login -c /path/to/certificate
+    register: result_log_in
+    failed_when: "'failure' in result_log_in.stdout"

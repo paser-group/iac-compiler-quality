@@ -1,0 +1,44 @@
+yaml
+---
+- name: Retrieve information about GCP instances
+  hosts: localhost
+  connection: local
+  gather_facts: no
+  tasks:
+    - name: Include necessary variables
+      include_vars: vars.yml
+
+    - name: Authenticate with Google Cloud Platform
+      block:
+        - name: Install required libraries
+          pip:
+            name:
+              - google-auth
+              - google-auth-oauthlib
+              - google-auth-httplib2
+            state: present
+            executable: "{{ ansible_python_interpreter }}"
+
+        - name: Set credentials
+          set_fact:
+            credentials: "{{ lookup('env', 'GCE_CREDENTIALS_FILE') }}"
+
+        - name: Gather facts about GCP instances
+          gcp_compute_instance_facts:
+            auth_kind: serviceaccount
+            project: "{{ gcp_project }}"
+            service_account_file: "{{ credentials }}"
+          register: gcp_instances
+      rescue:
+        - name: Display exception error
+          debug:
+            msg: "Exception Error: {{ ansible_failed_result }}"
+
+- name: Print results
+  hosts: localhost
+  connection: local
+  gather_facts: no
+  tasks:
+    - name: Display GCP instances
+      debug:
+        msg: "{{ gcp_instances }}"

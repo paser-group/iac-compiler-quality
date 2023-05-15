@@ -1,0 +1,27 @@
+
+- name: Get ASG facts
+  ec2_asg_facts:
+    region: us-east-1
+    name: my-autoscaling-group
+  register: asg
+
+- name: Handle AutoScalingReadOnly policy error
+  block:
+    - debug:
+        var: asg
+
+  rescue:
+    - name: Set AWS Access Key and Secret Key
+      set_fact:
+        AWS_ACCESS_KEY_ID: "{{ ansible_user_aws_access_key }}"
+        AWS_SECRET_ACCESS_KEY: "{{ ansible_user_aws_secret_key }}"
+
+    - name: Get ASG facts with AWS IAM user credentials
+      ec2_asg_facts:
+        region: us-east-1
+        name: my-autoscaling-group
+      register: asg
+
+    - name: Debug ASG facts
+      debug:
+        var: asg

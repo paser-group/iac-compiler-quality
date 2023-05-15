@@ -1,0 +1,34 @@
+
+- name: Test API rate limit
+  hosts: all
+  vars:
+    # Define endpoint details
+    endpoint_url: "https://example.com/api/v1/endpoint"
+    endpoint_headers: {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer {{ api_key }}"
+    }
+    payload: {
+      "param1": "value1",
+      "param2": "value2"
+    }
+    request_count: 100 # define the number of API requests to send
+  tasks:
+    - name: Send API requests
+      uri:
+        url: "{{ endpoint_url }}"
+        headers: "{{ endpoint_headers }}"
+        body: "{{ payload }}"
+        method: POST
+        return_content: yes
+      loop: "{{ range(request_count) }}"
+      register: api_response
+      retries: 3 # retries the API request 3 times before failing
+      delay: 5 # delay between each retry request
+
+    - name: Verify API responses
+      assert:
+        that:
+          - api_response.json.param1 == payload.param1
+          - api_response.json.param2 == payload.param2
+      loop: "{{ api_response.results }}"

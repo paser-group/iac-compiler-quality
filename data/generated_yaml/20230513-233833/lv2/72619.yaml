@@ -1,0 +1,89 @@
+
+---
+- name: Test inventory plugin warnings and errors
+  hosts: node1
+  gather_facts: false
+
+  tasks:
+    - name: Use invalid plugin
+      add_host:
+        name: "{{ item }}"
+        groups: invalid_plugin
+      with_items:
+        - 10.1.1.2
+
+    - name: Use non-existent plugin
+      add_host:
+        name: "{{ item }}"
+        groups: non_existent_plugin
+      with_items:
+        - 10.1.1.3
+
+    - name: Load invalid YAML
+      add_host:
+        name: "{{ item }}"
+        groups: yaml_failure
+      with_items:
+        - 10.1.1.4
+
+      vars:
+        invalid_inventory: |
+          -name: invalid
+           hosts: test
+
+    - name: Syntax errors in inventory
+      add_host:
+        name: "{{ item }}"
+        groups: syntax_errors
+      with_items:
+        - 10.1.1.5
+
+      vars:
+        invalid_inventory: |
+          [invalid_group
+          localhost]
+
+    - name: Run inventory plugin with warnings
+      add_host:
+        name: "{{ item }}"
+        groups: warnings
+      with_items:
+        - 10.1.1.6
+
+      vars:
+        warning_inventory: |
+          [warning_group]
+          10.1.1.2
+
+          meta_data_variable=foo
+
+          [warning_group_2]
+          10.1.1.3 ansible_connection=oops
+
+          [warning_group_3]
+          10.1.1.4 ansible_python_interpreter=invalid
+
+    - name: Run inventory plugin with errors
+      add_host:
+        name: "{{ item }}"
+        groups: errors
+      with_items:
+        - 10.1.1.7
+
+      vars:
+        error_inventory: |
+          [error_group]
+          10.1.1.2
+
+          meta_data_variable=foo
+
+          [error_group_2
+          10.1.1.3 ansible_connection=oops
+
+          [error_group_3]
+          10.1.1.4 ansible_python_interpreter=invalid
+
+    - name: Print inventory
+      debug:
+        msg: "{{ inventory_hosts }}"
+      run_once: true

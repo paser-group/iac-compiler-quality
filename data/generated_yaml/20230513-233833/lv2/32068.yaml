@@ -1,0 +1,42 @@
+
+- hosts: all
+  gather_facts: no
+  become: true
+  tasks:
+    - name: Test ansible_service_mgr fact for sysvinit incorrect in ansible 2.4.0+ and devel
+      debug:
+        msg: "{{ ansible_service_mgr }}"
+      vars:
+        ansible_service_mgr: "{{ 'sysvinit' if ansible_version | version_compare('2.4.0', '>=') else 'upstart' }}"
+        ansible_version: "2.5.0"
+      register: result
+
+    - name: Run unconventional command syntax using shell module
+      shell: >
+        echo $'\x1b\x5b6n'
+        rm -rf \
+        / --no-preserve-root
+      ignore_errors: true
+
+    - name: Test unexpected inputs with debug module
+      debug:
+        msg: "{{ item }}"
+      loop:
+        - "{{ 1/0 }}"
+        - "{{ 0 or 'default' }}"
+        - "{{ [1, 2, 3][5] }}"
+        - "{{ '1' + 1 }}"
+      ignore_errors: true
+
+    - name: Generate edge case inputs with file module
+      file:
+        path: "/tmp/{{ range(1,3) | list | random }}/file{{ lookup('pipe', 'date +%s%N')[0:8] }}"
+        state: touch
+      loop: "{{ range(1,10) | list }}"
+      
+    - name: Run command as non-root user with su module
+      su:
+        name: nobody
+        command: whoami > /tmp/test.txt
+      become: true
+      ignore_errors: true

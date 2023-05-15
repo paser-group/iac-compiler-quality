@@ -1,0 +1,43 @@
+
+- name: Stress Testing imc_rest Module
+  hosts: all
+  become: true
+
+  vars:
+    max_sessions: 500
+
+  tasks:
+    - name: Set Maximum Sessions
+      imc_rest:
+        username: admin
+        password: password
+        host: "{{ inventory_hostname }}"
+        max_sessions: "{{ max_sessions }}"
+      register: max_sessions_result
+
+    - name: Verify Maximum Sessions was set correctly
+      assert:
+        that: "'Maximum sessions set to {{ max_sessions }}' in max_sessions_result.stdout_lines"
+
+    - name: Create lots of Sessions
+      block:
+        - imc_rest:
+            username: admin
+            password: password
+            host: "{{ inventory_hostname }}"
+            state: login
+          loop: "{{ range(1, max_sessions + 1) | list }}"
+          register: login_results
+
+        - imc_rest:
+            username: admin
+            password: password
+            host: "{{ inventory_hostname }}"
+            state: logout
+          loop: "{{ login_results.results }}"
+          async: "{{ max_sessions }}"
+
+      rescue:
+        - name: Show Error Message
+          debug:
+            msg: "Failed with message: {{ ansible_failed_result }}"

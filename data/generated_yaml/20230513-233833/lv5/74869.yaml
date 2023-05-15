@@ -1,0 +1,22 @@
+
+- name: Gather network interfaces and routing table
+  gather_facts:
+    network: yes
+
+- name: Parse network information to determine default gateway
+  set_fact:
+    default_gateway: "{{ ansible_facts.default_ipv4.gateway }}"
+  when: ansible_facts.default_ipv4.gateway is defined
+
+- name: Configure default gateway
+  become: yes
+  become_method: sudo
+  network_cli:
+    hostname: "{{ inventory_hostname }}"
+    os_auth:
+      username: "{{ user }}"
+      password: "{{ password }}"
+    connections:
+      cli:
+        command_string:
+          - "ip route add default via {{ default_gateway }}"

@@ -1,0 +1,60 @@
+
+---
+- name: Ansible Compiler Stress Test Playbook
+  hosts: all
+  gather_facts: no
+
+  tasks:
+  - name: Async error with check_mode test
+    command: sleep 5 && echo "Hello world"
+    async: 30
+    poll: 0
+    check_mode: "{{ item }}"
+    loop:
+      - true
+      - false
+      - null
+      - 1
+      - 0
+      - -1
+      - ""
+      - []
+      - {}
+      - "invalid"
+      - "true{{invalid}}"
+      - "{{invalid}}"
+      - '{{invalid}}'
+
+  - name: Unconventional Syntax Test
+    command: |
+      echo "{{lookup('file', 'invalid_file.txt')}}"
+    become: "{{ item }}"
+    loop:
+      - true
+      - false
+      - null
+      - 1
+      - 0
+      - -1
+      - ""
+      - []
+      - {}
+      - "invalid"
+      - "true{{invalid}}"
+      - "{{invalid}}"
+      - '{{invalid}}'
+
+  - name: Unexpected Input Test
+    lineinfile:
+      path: "{{ item }}"
+      line: "test"
+    with_items:
+      - /etc/hosts
+      - /dev/null
+      - /{{invalid}}
+      - /etc/hosts{{invalid}}
+      - '{{invalid}}/etc/hosts'
+      - '{{invalid}}'
+      - '{{item}}/{{invalid}}'
+      - "{{hostvars[inventory_hostname]['ansible_nonexistent_var']}}"
+

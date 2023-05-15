@@ -1,0 +1,53 @@
+
+- hosts: rackspace
+  gather_facts: no
+  
+  vars:
+    rackspace_username: "my_username"
+    rackspace_api_key: "my_api_key"
+  
+  tasks:
+    - name: install required packages
+      yum:
+        name: ["python-netifaces", "pyOpenSSL"]
+        state: present
+    
+    - name: get rackspace dynamic inventory script
+      get_url:
+        url: "https://example.com/rackspace_inventory.py"
+        dest: "/etc/ansible/rackspace_inventory.py"
+      
+    - name: ensure inventory script is executable
+      file:
+        path: "/etc/ansible/rackspace_inventory.py"
+        mode: "u+x"
+    
+    - name: generate rackspace inventory
+      command: "/etc/ansible/rackspace_inventory.py --username {{ rackspace_username }} --api-key {{ rackspace_api_key }}"
+      register: rackspace_inventory_raw
+      
+    - name: parse rackspace inventory
+      set_fact:
+        rackspace_inventory: "{{ rackspace_inventory_raw.stdout | from_json }}"
+        
+    - name: create SSH tunnels to rackspace nodes
+      expect:
+        command: "ssh -N -L {{ item }}:{{ rackspace_inventory[item]['public_ipv4'] }}:22 {{ rackspace_inventory['ssh_host_user'] }}@{{ rackspace_inventory['ssh_host'] }}"
+        responses:
+          "Are you sure you want to continue connecting?": "yes\n"
+          "password:": "{{ rackspace_inventory['ssh_host_password'] }}\n"
+        timeout: 10
+      with_items: "{{ rackspace_inventory.keys() | select('match', 'ip_address_.*') }}"
+      
+    - name: verify SSH tunnels are open
+      wait_for:
+        host: localhost
+        port: "{{ item.split('_')[-1] }}"
+        state: started
+      with_items: "{{ rackspace_inventory.keys() | select('match', 'ip_address_.*') }}"
+  
+  handlers:
+    - name: restart sshd service
+      service:
+        name: sshd
+        state: restarted

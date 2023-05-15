@@ -1,0 +1,25 @@
+
+---
+- name: Test Ansible mysql_db Module
+  hosts: all
+  become: yes
+  vars:
+    mysql_db_name: mydb
+    mysql_extra_conf_file: /etc/mysql/my.cnf
+    mysql_defaults_file: /etc/mysql/debian.cnf
+  tasks:
+    - name: Create MySQL database with defaults-extra-file
+      mysql_db:
+        name: "{{ mysql_db_name }}"
+        state: present
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+        login_user: root
+        login_password: "{{ mysql_root_password }}"
+        conf_file: "{{ mysql_extra_conf_file }}"
+        extra_file: "{{ mysql_defaults_file }}"
+    - name: Verify database exists
+      command: mysqlshow {{ mysql_db_name }}
+      register: mysql_db_show
+    - name: Debug result of mysqlshow command
+      debug:
+        var: mysql_db_show.stdout

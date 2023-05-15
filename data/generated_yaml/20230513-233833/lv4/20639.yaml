@@ -1,0 +1,39 @@
+
+- name: Create multiple virtual machines
+  hosts: all
+  gather_facts: no
+  vars:
+    vm_name_prefix: "vm"
+    datacenter_name: "datacenter"
+    cluster_name: "cluster"
+    datastore_name: "datastore_name"
+    guest_os_family: "linuxGuest"
+    cpus: 2
+    memory_mb: 2048
+  tasks:
+  - name: Create virtual machines
+    vsphere_guest:
+      vcenter_hostname: "{{ vcenter_node }}"
+      username: "{{ vcenter_username }}"
+      password: "{{ vcenter_password }}"
+      guest: "{{ guest_os_family }}"
+      vmware_guest_facts: yes
+      vm_extra_config:
+        vcpu.hotadd: yes
+        mem.hotadd: yes
+      disk:
+        - size_gb: 20
+          type: thin
+          datastore: "{{ datastore_name }}"
+      hardware:
+        memory_mb: "{{ memory_mb }}"
+        num_cpus: "{{ cpus }}"
+      name: "{{ vm_name_prefix }}{{ inventory_hostname }}"
+      folder: "/{{ datacenter_name }}/vm/{{ cluster_name }}"
+    async: 45
+    poll: 60
+    register: async_vm
+    
+  - name: Wait for virtual machine creation to complete
+    async_status:
+      jid: "{{ async_vm.ansible_job_id }}"

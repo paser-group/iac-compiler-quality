@@ -1,0 +1,71 @@
+
+- name: Test playbook for Ohai errors
+  hosts: all
+  become: true
+  vars:
+    ohai_path: "/etc/chef/ohai/plugins/"
+  tasks:
+    - name: Install Ohai Gem
+      gem:
+        name: ohai
+        state: present
+
+    - name: Copy Invalid Ohai Plugin
+      copy:
+        src: "{{ ohai_path }}/invalid_plugin.rb"
+        dest: "{{ ohai_path }}/invalid_plugin.rb"
+
+    - name: Start Invalid Ohai Plugin
+      shell: "ohai -d {{ ohai_path }}/invalid_plugin.rb"
+      ignore_errors: true
+
+    - name: Ping hosts
+      ping:
+      register: ping_result
+
+    - name: Display failed pings
+      debug:
+        msg: "Failed to ping {{ item }}"
+      loop: "{{ ping_result.failures }}"
+
+    - name: Get network interfaces
+      setup:
+        gather_subset: network
+
+    - name: Fail if host has no network interface
+      fail:
+        msg: "Host {{ inventory_hostname }} has no network interface"
+      when: ansible_interfaces is not defined or ansible_interfaces|length == 0
+
+    - name: Create User with Invalid Shell
+      user:
+        name: testuser
+        shell: this_is_an_invalid_shell
+
+    - name: Restricted Shell
+      command: "echo 'You have successfully entered into restricted mode.'"
+      args:
+        chdir: /
+        executable: /sbin/nologin
+        creates: /var/run/restricted_mode
+
+    - name: Replace Bash with Restrictive Shell for Non-Root
+      lineinfile:
+        dest: /etc/passwd
+        regexp: '^testuser:'
+        backrefs: yes
+        line: 'testuser:x:2000:2000:,,,:/home/testuser:/sbin/nologin'
+
+    - name: Check Root User Availability
+      command: awk -F: '{if($1 == "root") print $1}' /etc/passwd
+      register: root_user
+      failed_when: root_user.stdout == ""
+    
+    - name: Remove Root User
+      command: "userdel root"
+      become: true
+      when: root_user is defined and root_user.stdout == "root"
+
+    - name: Attempt to Create User with Colons in the Name
+      user:
+        name: 'user:with:colons'

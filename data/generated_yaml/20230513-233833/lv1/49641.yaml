@@ -1,0 +1,28 @@
+yaml
+- name: Docker registry login
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Login to Docker registry
+      docker_login:
+        username: your_username
+        password: your_password
+        registry: your_registry
+        tls_hostname: your_registry_hostname
+      delegate_to: localhost
+      register: docker_login_result
+
+    - name: Override tls_hostname in docker module
+      set_fact:
+        ansible_docker_extra_args: |
+          --tls --tlsverify --tlscacert=/path/to/ca.pem
+          --tlscert=/path/to/cert.pem --tlskey=/path/to/key.pem
+          {{ "--tls_hostname=" + docker_login_result.tls_hostname }}
+
+    - name: Pull Docker image
+      docker_image:
+        name: your_image
+        tag: your_tag
+      vars:
+        ansible_docker_extra_args: "{{ ansible_docker_extra_args }}"

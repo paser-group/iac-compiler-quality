@@ -1,0 +1,56 @@
+
+---
+- name: Test Paramiko_ssh plugin for ssh attribute error
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Set up temporary ssh directory
+      tempfile:
+        state: directory
+        prefix: ssh
+      register: ssh_dir
+
+    - name: Copy private key to temporary ssh directory
+      copy:
+        src: "/path/to/ssh/private/key"
+        dest: "{{ ssh_dir.path }}/.ssh/id_rsa"
+        mode: "0600"
+
+    - name: Set up ssh config
+      copy:
+        content: |
+          Host *
+            StrictHostKeyChecking no
+            UserKnownHostsFile /dev/null
+        dest: "{{ ssh_dir.path }}/.ssh/config"
+        mode: "0644"
+
+    - name: Test Paramiko_ssh plugin connection to node1
+      hosts: node1
+      connection: paramiko_ssh
+      gather_facts: no
+      tasks:
+        - name: Check for ssh connection on node1
+          ping:
+
+    - name: Test Paramiko_ssh plugin connection to node2
+      hosts: node2
+      connection: paramiko_ssh
+      gather_facts: no
+      tasks:
+        - name: Check for ssh connection on node2
+          ping:
+
+    - name: Test Paramiko_ssh plugin connection to node3
+      hosts: node3
+      connection: paramiko_ssh
+      gather_facts: no
+      tasks:
+        - name: Check for ssh connection on node3
+          ping:
+
+    - name: Remove temporary ssh directory
+      file:
+        state: absent
+        path: "{{ ssh_dir.path }}"

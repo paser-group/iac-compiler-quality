@@ -1,0 +1,29 @@
+
+---
+- name: Test nxos_nxapi module issues
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: Run invalid command
+      nxos_nxapi:
+        command_string: "Invalid_Command"
+      register: result
+
+    - assert:
+        that:
+          - "'invalid command' in result.stdout"
+          - result.rc != 0
+
+    - name: Run unconventional syntax
+      nxos_nxapi:
+        command_string: "{{ 'cisco command | count' }}"
+
+    - name: Run unexpected input
+      nxos_nxapi:
+        command_string: "show clock {{ ' ' * 300 }}"
+
+    - name: Stress test with edge cases
+      nxos_nxapi:
+        command_string: >
+          "{{ 'show' }}"{{ "\\t \\" }}{{ "\\n" }}"{{ 'interface Ethernet1/1' }}"

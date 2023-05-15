@@ -1,0 +1,45 @@
+
+---
+- name: Test playbook
+  hosts: all
+  gather_facts: false
+
+  tasks:
+  - name: Test edge case 1
+    nxos_interface:
+      name: "{{ item }}"
+      state: present
+    loop: "{{ ['eth1', 'eth2', 'eth^%*3'] }}"
+
+  - name: Test edge case 2
+    nxos_banner:
+      banner: "{{ item | regex_replace('\\s',)'') }}"
+    with_items:
+      - "Test\ninput"
+      - "Input 2 with $pecial ch@r#ct3rs!"
+
+  - name: Test unconventional syntax 
+    nxos_action:
+    state: "{{ ['sh', 'run','start' , 'st^%%%op', 'shutdown'] | random }}"
+    command_string: "sh{{'$'}} run in a {{}} sub {{}}"
+
+  - name: Test unexpected input 1
+    nxos_bgp:
+      asn: "{{ '650' }}{{ random('01') }}{{ random('01') }}"
+      router_id: "10.10.10.{{ random('01,02,03') }}{{ random('01,02,03') }}"
+
+  - name: Test unexpected input 2
+    nxos_snmp_contact:
+      contact: "{{ 'This could be a very long input ' }}{{ range(0,50)|list|join('x') }}"
+
+  - name: Test unexpected input 3
+    nxos_static_route:
+      prefix: "{{ '10.10.10.' }}{{ random('0,1,2,3') }}/{{ random('01,02,03') }}"
+      next_hop: "{{ '192.168.' }}{{ random('0,1,2,3') }}.{{ random('01,02,03') }}"
+      name: "{{ random('Name_1','Name_2','Name_3')|regex_replace('\d', 'x') }}"
+
+  - name: Test unexpected input 4
+    nxos_vpc_domain:
+      domain_id: "{{ random('12', '22', '32') + 'A' }}"
+      peer_gateway_ip: "{{ '10.10.10.' }}{{random('1,2,3', length=2)}}"
+      auto_recovery: "{{ ['true', 'false', 'True', 'False', '1', '0'] | random }}"

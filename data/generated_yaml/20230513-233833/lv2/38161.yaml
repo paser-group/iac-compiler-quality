@@ -1,0 +1,50 @@
+
+---
+- name: Test the firewalld module
+  hosts: all
+  become: yes
+
+  tasks:
+  - name: Start firewalld
+    service:
+      name: firewalld
+      state: started
+
+  - name: Add invalid rule
+    firewalld:
+      zone: public
+      state: enabled
+      port: 8080-8081
+      source: invalid_input
+    register: result
+    ignore_errors: true
+
+  - name: Check for error output
+    debug:
+      var: result
+
+  - name: Add a valid rule
+    firewalld:
+      zone: public
+      state: enabled
+      port: 22
+      source: 100.100.100.100
+
+  - name: Stop firewalld
+    service:
+      name: firewalld
+      state: stopped
+    ignore_errors: true
+
+  - name: Add unreachable address as source
+    firewalld:
+      zone: public
+      state: enabled
+      port: 22
+      source: 200.200.200.200
+    register: result2
+    ignore_errors: true
+
+  - name: Check for error output
+    debug:
+      var: result2

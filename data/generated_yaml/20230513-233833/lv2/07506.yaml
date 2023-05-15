@@ -1,0 +1,58 @@
+
+- name: Stress test auto scaling policy
+  hosts: all
+  become: true
+  vars:
+    node_count: "{{ groups['all'] | length }}"
+    invalid_values: ["", "not_an_integer", "0.5", "-1"]
+    group_names: "{{ groups.keys() | list }}"
+  tasks:
+    - name: Set fact with invalid value
+      set_fact:
+        invalid_value: "{{ invalid_values | random }}"
+      run_once: true
+
+    - name: Generate random inventory file
+      hosts:
+        localhost
+      connection: local
+      run_once: true
+      vars:
+        inventory_hosts: "{{ group_names | random | default('default') }}"
+        inventory_value: "{{ invalid_values | random }}"
+      file:
+        path: "{{ inventory_hosts }}.yml"
+        state: touch
+      lineinfile:
+        path: "{{ inventory_hosts }}.yml"
+        line: "{{ inventory_hosts }} ansible_host={{ inventory_value }}"
+        state: present
+
+    - name: Verify the valid node count
+      assert:
+        that:
+          - node_count == groups['all'] | length
+
+    - name: Test invalid input
+      vars:
+        invalid_arg: "{{ invalid_values | random }}"
+      assert:
+        that:
+          - invalid_arg is not defined or invalid_arg | int | default(-1) < 0
+          - invalid_arg is not defined or invalid_arg | int | default(-1) > 100
+
+    - name: Test unexpected input
+      command: "{{ invalid_command | default('echo hello world') }}"
+      register: cmd_output
+      ignore_errors: true
+      no_log: true
+      changed_when: false
+      failed_when: cmd_output is failed or cmd_output.rc != 0
+
+    - name: Test unconventional syntax
+      assert:
+        that:
+          - 'hello' in 'helo'
+          - 'world' in 'wrld'
+          - 1 in []
+          - [1,2,3] | random | default(0) < 0

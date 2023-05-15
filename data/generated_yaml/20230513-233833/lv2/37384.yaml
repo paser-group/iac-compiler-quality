@@ -1,0 +1,64 @@
+
+---
+- hosts: node1
+  gather_facts: no
+
+  tasks:
+    # Attempt to write 'tasks' twice and check if the compiler reports an error.
+    - name: Duplicate tasks
+      tasks:
+        - name: First task
+          debug:
+            msg: "This is the first task."
+        - name: Second task
+          debug:
+            msg: "This is the second task."
+      tasks:
+        - name: Third task
+          debug:
+            msg: "This is the third task."
+
+    # Attempt to use an unconventional syntax for the 'debug' module.
+    - name: Unconventional syntax
+      debug
+        msg: "This is an unconventional syntax."
+
+    # Attempt to pass an unexpected input to the 'debug' module.
+    - name: Unexpected input
+      debug:
+        msg: ["This input should not be a list."]
+
+- hosts: node2
+  gather_facts: no
+
+  tasks:
+    # Attempt to use edge cases and unconventional inputs for the 'file' module.
+    - name: Edge cases for file module
+      file:
+        path: "/tmp/{{ item }}"
+        state: "{{ item }}"
+      with_items:
+        - "{{ [] }}"
+        - "{{ ['file1', 'file2']|join(',') }}"
+        - "{{ {'file1': {'owner': 'user1', 'group': 'group1'}} }}"
+
+- hosts: node3
+  gather_facts: no
+
+  tasks:
+    # Attempt to create a complex pipeline with edge case syntax.
+    - name: Complex pipeline
+      shell: |
+        cat /etc/passwd \
+        | cut -d: -f1 \
+        | sort \
+        | uniq \
+        | wc -l \
+        | tr -d ' '
+
+        # Ensure that the pipeline returns 104 (assuming the Ubuntu image is used).
+      register: cmd_output
+
+    - name: Check pipeline output
+      debug:
+        msg: "The pipeline returned {{ cmd_output.stdout }}."

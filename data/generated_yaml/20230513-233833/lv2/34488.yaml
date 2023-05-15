@@ -1,0 +1,45 @@
+
+---
+- name: Test MySQL DB Module
+  hosts: node1
+  become: yes
+
+  vars:
+    db_name: my_db
+    db_user: my_user
+    db_password: my_password
+    defaults_file: /etc/mysql/my.cnf
+
+  tasks:
+  - name: Install MySQL Client
+    apt:
+      name: mysql-client
+      update_cache: yes
+
+  - name: Create Database
+    mysql_db:
+      name: "{{ db_name }}"
+      state: present
+      login_user: "{{ db_user }}"
+      login_password: "{{ db_password }}"
+      login_unix_socket: /var/run/mysqld/mysqld.sock
+      login_host: localhost
+      extra_flags: --defaults-file={{ defaults_file }}
+
+  - name: Grant Database Privileges
+    mysql_user:
+      name: "{{ db_user }}"
+      password: "{{ db_password }}"
+      priv: "{{ db_name }}.*:ALL"
+      state: present
+      login_unix_socket: /var/run/mysqld/mysqld.sock
+
+  - name: Drop Database
+    mysql_db:
+      name: "{{ db_name }}"
+      state: absent
+      login_user: "{{ db_user }}"
+      login_password: "{{ db_password }}"
+      login_host: localhost
+      extra_flags: --defaults-extra-file={{ defaults_file+'extra' }}
+

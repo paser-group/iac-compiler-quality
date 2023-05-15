@@ -1,0 +1,97 @@
+
+---
+- name: Test ec2_instance module
+  hosts: all
+  tasks:
+    - name: Create an instance with a public IP
+      ec2_instance:
+        key_name: "mykey"
+        region: "us-west-2"
+        image: "ami-0c55b159cbfafe1f0"
+        instance_type: "t2.micro"
+        network_interfaces:
+          - device_index: 0
+            associate_public_ip_address: yes
+            subnet_id: "subnet-xxxxxxx"
+            groups:
+              - "sg-xxxxxxx"
+
+    - name: Test instance with public IP
+      wait_for:
+        timeout: 60
+        host: "{{ item.public_ip }}"
+        port: 22
+        state: started
+      loop: "{{ ec2.instances }}"
+
+    - name: Test instance with private IP
+      wait_for:
+        timeout: 60
+        host: "{{ item.private_ip }}"
+        port: 22
+        state: started
+      loop: "{{ ec2.instances }}"
+
+    - name: Create an instance with a specific private IP
+      ec2_instance:
+        key_name: "mykey"
+        region: "us-west-2"
+        image: "ami-0c55b159cbfafe1f0"
+        instance_type: "t2.micro"
+        network_interfaces:
+          - device_index: 0
+            associate_public_ip_address: no
+            subnet_id: "subnet-xxxxxxx"
+            groups:
+              - "sg-xxxxxxx"
+            private_ip_address: "10.1.1.10"
+
+    - name: Test specific IP instance
+      wait_for:
+        timeout: 60
+        host: "10.1.1.10"
+        port: 22
+        state: started
+    
+    - name: Create an instance with a security group
+      ec2_instance:
+        key_name: "mykey"
+        region: "us-west-2"
+        image: "ami-0c55b159cbfafe1f0"
+        instance_type: "t2.micro"
+        network_interfaces:
+          - device_index: 0
+            associate_public_ip_address: yes
+            subnet_id: "subnet-xxxxxxx"
+            groups:
+              - "sg-xxxxxxx"
+
+    - name: Test instance with security group
+      wait_for:
+        timeout: 60
+        host: "{{ item.public_ip }}"
+        port: 22
+        state: started
+      loop: "{{ ec2.instances }}"
+    
+    - name: Create an instance with a VPC ID
+      ec2_instance:
+        key_name: "mykey"
+        region: "us-west-2"
+        image: "ami-0c55b159cbfafe1f0"
+        instance_type: "t2.micro"
+        network_interfaces:
+          - device_index: 0
+            associate_public_ip_address: yes
+            subnet_id: "subnet-xxxxxxx"
+            groups:
+              - "sg-xxxxxxx"
+        vpc_network_id: "vpc-xxxxxxx"
+
+    - name: Test instance with VPC
+      wait_for:
+        timeout: 60
+        host: "{{ item.public_ip }}"
+        port: 22
+        state: started
+      loop: "{{ ec2.instances }}"

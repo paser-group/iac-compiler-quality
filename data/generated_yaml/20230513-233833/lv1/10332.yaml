@@ -1,0 +1,30 @@
+yaml
+---
+- name: Fix regression issue when parsing arguments
+  hosts: all
+  become: true
+  gather_facts: true
+
+  tasks:
+    - name: Find the affected program
+      find:
+        paths: /usr/local/bin
+        patterns: your_program
+      register: program_path
+      
+    - name: Stop the program
+      systemd:
+        name: your_program
+        state: stopped
+      ignore_errors: true
+      
+    - name: Add argument parsing fix to the program
+      replace:
+        path: "{{ program_path.files[0].path }}"
+        regexp: 'old_argument_parser'
+        replace: 'new_argument_parser'
+        
+    - name: Restart the program
+      systemd:
+        name: your_program
+        state: started

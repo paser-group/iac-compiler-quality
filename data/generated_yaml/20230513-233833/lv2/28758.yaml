@@ -1,0 +1,90 @@
+yaml
+---
+- name: Test win_shortcut idempotency issues
+  hosts: windows
+  gather_facts: false
+
+  tasks:
+    - name: Create a shortcut on the desktop
+      win_shortcut:
+        path: "C:/Users/Administrator/Desktop/Shortcut.lnk"
+        target: "C:/Windows/notepad.exe"
+        arguments: "/A"
+        hotkey: "CTRL+SHIFT+N"
+        icon_file: "C:/Windows/notepad.exe"
+        icon_index: 0
+        run_as: "administrator"
+        description: "Notepad shortcut"
+      register: result
+
+    - name: Assert that the shortcut was created successfully
+      assert:
+        that:
+          - result is not failed
+
+    - name: Attempt to create the same shortcut again
+      win_shortcut:
+        path: "C:/Users/Administrator/Desktop/Shortcut.lnk"
+        target: "C:/Windows/notepad.exe"
+        arguments: "/A"
+        hotkey: "CTRL+SHIFT+N"
+        icon_file: "C:/Windows/notepad.exe"
+        icon_index: 0
+        run_as: "administrator"
+        description: "Notepad shortcut"
+      register: result
+
+    - name: Assert that the shortcut was not created again
+      assert:
+        that:
+          - result is skipped
+
+    - name: Delete the shortcut from the desktop
+      win_shortcut:
+        path: "C:/Users/Administrator/Desktop/Shortcut.lnk"
+        state: "absent"
+      register: result
+
+    - name: Assert that the shortcut was deleted successfully
+      assert:
+        that:
+          - result is not failed
+
+    - name: Attempt to delete the shortcut again
+      win_shortcut:
+        path: "C:/Users/Administrator/Desktop/Shortcut.lnk"
+        state: "absent"
+      register: result
+
+    - name: Assert that the shortcut was not deleted again
+      assert:
+        that:
+          - result is skipped
+
+    - name: Try to create a shortcut with a long path
+      win_shortcut:
+        path: "{{ 'C:/Long/Path/' + 'a'*250 + '.lnk' }}"
+        target: "C:/Windows/notepad.exe"
+        arguments: "/A"
+        hotkey: "CTRL+SHIFT+N"
+        icon_file: "C:/Windows/notepad.exe"
+        icon_index: 0
+        run_as: "administrator"
+        description: "Notepad shortcut with a long path"
+      register: result
+
+    - name: Assert that the long path shortcut was created successfully
+      assert:
+        that:
+          - result is not failed
+
+    - name: Delete the shortcut with a long path
+      win_shortcut:
+        path: "{{ 'C:/Long/Path/' + 'a'*250 + '.lnk' }}"
+        state: "absent"
+      register: result
+
+    - name: Assert that the shortcut with a long path was deleted successfully
+      assert:
+        that:
+          - result is not failed

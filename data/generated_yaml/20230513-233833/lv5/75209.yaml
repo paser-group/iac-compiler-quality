@@ -1,0 +1,74 @@
+
+---
+- name: Test for 'Broken Pipe' error in the Ansible Compiler
+  hosts: all
+  gather_facts: no
+  vars:
+    large_file: "/tmp/largefile"
+    ssh_key: "/path/to/ssh/key"
+  tasks:
+    - name: Transfer large file to all nodes
+      scp:
+        src: "{{ large_file }}"
+        dest: "{{ large_file }}"
+        remote_user: user
+      register: transfer
+
+    - name: Simulate 'Broken Pipe' error
+      expect:
+        command: "ssh -i {{ ssh_key }} user@{{ inventory_hostname }} 'kill -9 `ps -ef | grep scp | grep -v grep | awk '{print $2}'`'"
+        responses:
+          - Question:
+              pattern: "password:"
+              answer: "mypassword"
+      register: error
+
+    - name: Save progress of partially transferred file
+      block:
+        - name: Find transferred files
+          find:
+            paths: "{{ large_file }}"
+            file_type: file
+            hidden: yes
+          register: files
+
+        - name: Save files to be resumed later
+          copy:
+            src: "{{ files.files[0].path }}.part"
+            dest: "{{ files.files[0].path }}.part"
+            remote_src: yes
+          when: files.files | length > 0
+
+    - name: Resume partial transfer
+      block:
+        - name: Find partial files
+          find:
+            paths: "{{ large_file }}"
+            file_type: file
+            hidden: yes
+            patterns: "{{ large_file }}.part"
+          register: partial_files
+
+        - name: Resume partial transfer
+          scp:
+            src: "{{ partial_files.files[0].path }}.part"
+            dest: "{{ large_file }}"
+            remote_user: user
+          when: partial_files.files | length > 0
+
+    - name: Report status of previous transfer
+      block:
+        - name: Find the transferred file
+          find:
+            paths: "{{ large_file }}"
+            file_type: file
+            hidden: yes
+          register: files
+
+        - debug:
+            msg: "{{ files.stdout_lines }}"
+
+    - name: Throw error message when transfer failed
+      fail:
+        msg: "The transfer failed. Please check the server logs to investigate the issue."
+      when: error is defined

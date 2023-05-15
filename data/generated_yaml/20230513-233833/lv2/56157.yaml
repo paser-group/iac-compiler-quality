@@ -1,0 +1,39 @@
+
+- name: Test playbook for nxos_facts issue
+  hosts: all
+  gather_facts: false
+
+  tasks:
+  - name: Get nxos facts with no data in ansible_net_interfaces
+    nxos_facts:
+      provider:
+        host: "{{ item }}"
+        username: admin
+        password: admin
+        transport: ssh
+      save_config: no
+    register: device_facts
+    with_items: "{{ groups['all'] }}"
+    when: "'ansible_net_interfaces' not in device_facts[item].ansible_facts"
+
+  - name: Debug result of nxos_facts when ansible_net_interfaces is empty
+    debug:
+      var: device_facts
+    when: "'ansible_net_interfaces' not in hostvars[item]"
+
+  - name: Try to get nxos facts with invalid provider credentials
+    nxos_facts:
+      provider:
+        host: "{{ item }}"
+        username: invalid_username
+        password: invalid_password
+        transport: ssh
+      save_config: no
+    register: device_facts
+    with_items: "{{ groups['all'] }}"
+    ignore_errors: true
+
+  - name: Debug result of nxos_facts with invalid provider credentials
+    debug:
+      var: device_facts
+    when: "'Transport ssh failed' in hostvars[item]['nxos_facts']['msg']"

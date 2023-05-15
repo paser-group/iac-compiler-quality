@@ -1,0 +1,25 @@
+
+---
+- name: Testing user home directory ownership issue
+  hosts: all
+  become: true
+
+  vars:
+    user_name: "{{ ansible_user }}"
+    user_id: "{{ ansible_user_id }}"
+
+  tasks:
+    - name: Create a test user
+      user:
+        name: test_user
+        password: "{{ 'pass1234' | password_hash('sha512') }}"
+        state: present
+        createhome: true
+        shell: /bin/bash
+      become: true
+
+    - name: Test the user's home directory ownership
+      shell: |
+        sudo chown -R {{ user_name }}:{{ user_id }} /home/test_user/
+        ls -l /home/test_user/
+      become: true

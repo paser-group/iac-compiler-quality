@@ -1,0 +1,88 @@
+
+- name: Kubernetes Module error handling stress test
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Ensure Kubernetes API is valid
+      k8s_facts:
+        kind: Namespace
+        name: default
+      register: namespace_info
+
+    - name: Define a custom error event - 422
+      set_fact:
+        k8s_event:
+          api_version: "v1"
+          kind: "Event"
+          metadata:
+            name: "custom-error-event"
+          involved_object:
+            kind: "Pod"
+            name: "test-pod"
+          reason: "HTTPError 422: Unprocessable Entity"
+          message: "API returned a 422 Unprocessable Entity error"
+          type: "Error"
+          source:
+            component: "{{ inventory_hostname }}"
+            host: "{{ inventory_hostname }}"
+          count: 1
+
+    - name: Attempt to create a Kubernetes deployment with conflicting replicas
+      k8s:
+        state: present
+        definition: |
+          apiVersion: apps/v1
+          kind: Deployment
+          metadata:
+            name: test-deployment
+            labels:
+              app: test
+          spec:
+            replicas: 2
+            selector:
+              matchLabels:
+                app: test
+            template:
+              metadata:
+                labels:
+                  app: test
+              spec:
+                containers:
+                - name: nginx
+                  image: nginx:latest
+        namespace: "default"
+        merge_type: "replace"
+      register: deployment_create_status
+
+    - name: Fail the task, if failed to create the deployment
+      fail:
+        msg: "Failed to create a deployment"
+      when: deployment_create_status.failed 
+
+    - name: Ensure specified replicas are created
+      assert:
+        that:
+        - deployment_create_status.resources[0].spec.replicas == 2
+      fail_msg: "Replica count is incorrect"
+      changed_when: false
+
+    - name: Attempt to scale up deployment
+      k8s_scale:
+        api_version: apps/v1
+        kind: Deployment
+        name: test-deployment
+        namespace: "default"
+        replicas: 3
+      register: scale_up_status
+
+    - name: Generate a 422 error event
+      k8s:
+        definition: "{{ k8s_event }}"
+        state: present
+        namespace: "default"
+
+    - name: Fail the task, if scaling up succeeded
+      fail:
+        msg: "Scaling up should have failed due to a 422 error"
+      when: scale_up_status.changed == true

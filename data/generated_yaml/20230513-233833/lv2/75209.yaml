@@ -1,0 +1,65 @@
+yaml
+---
+- name: Stress test playbook
+  hosts: all
+  gather_facts: false
+
+  tasks:
+  - name: Attempt to open a non-existent file
+    stat:
+      path: "/path/to/nonexistent/file"
+    register: stat_result
+
+  - name: Print debug information on failed file open
+    debug:
+      msg: >
+        Failed to open file with error {{ stat_result.stat.errno }}:
+        {{ stat_result.stat.stderr }}
+
+  - name: Install a non-existent package
+    package:
+      name: nonexisting_package
+      state: latest
+
+  - name: Attempt to start a non-existent service
+    service:
+      name: nonexistent_service
+      state: started
+
+  - name: Execute a malformed command that should fail
+    command: "this_command_does_not_exist"
+
+  - name: Create a large nested directory tree
+    file:
+      path: "/tmp/test_nest/{{ item }}"
+      state: directory
+    with_items:
+      - "{{ range(1,50)|list }}"
+      - "{{ range(1,50)|list }}/{{ range(1,50)|list }}"
+
+  - name: Create a large number of empty files
+    file:
+      path: "/tmp/test_file_{{ item }}"
+      state: touch
+    with_items:
+      - "{{ range(1,10000)|list }}"
+
+  - name: Attempt to copy a non-existent file
+    copy:
+      src: /path/to/nonexistent/file
+      dest: /tmp/
+
+  - name: Create a large file by duplicating an existing one
+    shell: "cat /dev/random | tr -dc '[:alnum:]' | fold -w 1024 | head -n 1000000 > /tmp/large_file.txt"
+
+  - name: Stress test the compiler by using a long variable name
+    shell: "echo 'hello world' > /tmp/{{ 'a'*1000000 }}"
+
+  - name: Execute a command with unconventional syntax
+    shell: "run_with_turned_off_error_handling()"
+
+  - name: Execute a script with unconventional syntax and inputs
+    script: /path/to/script.sh "{{ ['this string contains"%"a percent sign'] }}"
+
+  - name: Execute a script with unconventional syntax and inputs
+    command: !unsafe_command "{{ ['this string contains"%"a percent sign'] }}"

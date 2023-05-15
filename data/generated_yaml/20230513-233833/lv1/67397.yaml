@@ -1,0 +1,23 @@
+
+- name: Playbook to fix Ansible crash on Virtual NXOS
+  hosts: virtual_nxos
+
+  tasks:
+  - name: check if FullLoader is installed
+    stat:
+      path: "/usr/lib/python2.7/site-packages/ansible/plugins/loader.py"
+    register: full_loader_status
+    tags: check_full_loader
+
+  - name: pip install FullLoader
+    pip:
+      name: ansible-fullloader
+    when: full_loader_status.stat.exists == False
+    tags: pip_full_loader
+
+  - name: Check if target server supports the 'ssh' connection method
+    wait_for:
+      host: "{{ inventory_hostname }}"
+      port: 22
+      state: started
+    tags: check_ssh

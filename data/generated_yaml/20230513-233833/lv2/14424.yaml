@@ -1,0 +1,45 @@
+
+- name: Test playbook for any_errors_fatal issue
+  hosts: all
+  gather_facts: false
+
+  vars:
+    includes:
+      - { role: '/"{{ item.target }}"', when: item.required } # unconventional syntax
+      - { include: '/"{{ item.name }}"', when: item.required and item.name } # unconventional syntax
+
+    items:
+      - { name: 'vars.yml', target: '{{ inventory_hostname }}', required: true } # unexpected input
+      - { name: 'setup.yml', target: '{{ inventory_hostname }}', required: true } # unexpected input
+      - { name: 'teardown.yml', target: '{{ inventory_hostname }}', required: true } # unexpected input
+
+    any_errors_fatal: false # edge case
+
+  tasks:
+    - name: Test role
+      include_tasks: '{{ item }}'
+      loop: "{{ includes }}"
+
+    - name: Run tests
+      block:
+        - include_vars: '{{ item.name }}'
+          with_items: "{{ items }}"
+      rescue:
+        - fail: # unexpected input
+            msg: "Failed to run '{{ item.name }}' on '{{ item.target }}'"
+
+    - name: Check for errors
+      block:
+        - name: Check for failed tasks
+          fail:
+            msg: "One or more tasks have failed"
+          when: "'failed' in item.state for item in ansible_play_batch"
+
+      rescue:
+        - name: Handle errors
+          set_fact:
+            errors: true
+
+    - name: Print results
+      debug:
+        msg: "{{ 'Errors found' if errors|default(false) else 'No errors found' }}"

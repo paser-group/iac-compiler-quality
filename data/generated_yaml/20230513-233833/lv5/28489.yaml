@@ -1,0 +1,32 @@
+
+---
+- name: health check playbook
+  hosts: all
+
+  tasks:
+    - name: Install python prerequisites
+      raw: apt-get update && apt-get install -y python-minimal
+
+    - name: Set threshold values
+      set_fact:
+        healthythreshold: "abc"
+        unhealthythreshold: "-10"
+
+    - name: Perform health check with proxy
+      proxy:
+        url: "http://{{ inventory_hostname }}"
+      delegate_to: localhost
+      register: proxyresult
+
+    - name: Perform health check with gcp_healthcheck module
+      gcp_healthcheck: healthy_threshold="{{ healthythreshold }}" unhealthy_threshold="{{ unhealthythreshold }}"
+      delegate_to: localhost
+      register: healthcheckresult
+
+    - name: Validate health check
+      script: |
+         if '{{ healthcheckresult.msg }}' == 'invalid input value'
+             echo "Success! invalid input value detected."
+         else
+             echo "Failure! unable to detect invalid input value."
+         fi

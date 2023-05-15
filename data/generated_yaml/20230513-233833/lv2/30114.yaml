@@ -1,0 +1,43 @@
+yaml
+---
+- name: Testing iam_policy Issue
+  hosts: all
+  become: yes
+  tasks:
+    - name: Create IAM User
+      iam_user:
+        name: "test_user"
+        password: "0123456789_ABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%^&*()_+-=?/.,<>[]{}()~`"
+        state: present
+        access_key_state: create
+
+    - name: Add an IAM Policy with invalid JSON
+      iam_policy:
+        user: "test_user"
+        policy_name: "test_policy"
+        policy_document: "{{ {'Invalid_JSON': '}}' } }"
+        state: present
+
+    - name: Remove the IAM user
+      iam_user:
+        name: "test_user"
+        state: absent
+
+    - name: Change the IAM password using tags and variables
+      iam_user:
+        name: "test_user"
+        password: "{{ lookup('env', 'IAM_PASSWORD') }}"
+        state: present
+      tags:
+        - password
+
+    - name: Create an IAM Group with invalid characters in name
+      iam_group:
+        name: "Test Group $?#@&^%*()_+~`![]{}:;\"'<>,.?-=/|\\"
+        state: present
+
+    - name: Attach the policy to the group that doesn't exist
+      iam_policy:
+        group: "non_existing_group"
+        policy_document: "{{ {'Resource': 'arn:aws:sts:::assumerole/*', 'Action': ['sts:AssumeRole'] } }}"
+        state: attached

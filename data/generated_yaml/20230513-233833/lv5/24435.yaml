@@ -1,0 +1,40 @@
+yaml
+- name: create VM from template and add disk
+  hosts: all
+  vars_prompt:
+    - name: 'template_name'
+      prompt: 'Enter template name:'
+    - name: 'disk_size'
+      prompt: 'Enter disk size (in GB):'
+    - name: 'datastore'
+      prompt: 'Enter datastore name:'
+
+  tasks:
+    - name: create VM
+      vmware_guest:
+        hostname: '{{ inventory_hostname }}'
+        username: '{{ vcenter_username }}'
+        password: '{{ vcenter_password }}'
+        datacenter: '{{ datacenter_name }}'
+        cluster: '{{ cluster_name }}'
+        validate_certs: False
+        name: 'Test_VM'
+        from_template: True
+        template_src: '{{ template_name }}'
+        hardware:
+          memory_mb: 1024
+          num_cpus: 1
+          scsi: paravirtual
+        networks:
+          - network_name: '{{ network_name }}'
+            ip: '{{ inventory_hostname }}'
+            netmask: 255.255.255.0
+            type: static
+        disk:
+          - size_gb: '{{ disk_size }}'
+            datastore: '{{ datastore }}'
+      register: vm
+
+    - name: display result
+      debug:
+        var: vm

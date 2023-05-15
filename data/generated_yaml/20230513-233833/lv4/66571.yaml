@@ -1,0 +1,46 @@
+
+- name: Postgres privilege error playbook
+  hosts: all
+  become: true
+  vars:
+    postgres_user: "webapp"
+    postgres_database: "users"
+    postgres_schema: "public"
+
+  tasks:
+    - name: Install Postgres python module
+      pip:
+        name: psycopg2-binary
+        state: present
+      become: true
+    
+    - name: Create a table
+      postgresql_db:
+        login_host: "localhost"
+        login_user: "{{ postgres_user }}"
+        login_password: "mypassword"
+        name: "{{ postgres_database }}"
+        state: present
+      become: true
+
+    - name: Create schema
+      postgresql_schema:
+        login_host: "localhost"
+        login_user: "{{ postgres_user }}"
+        login_password: "mypassword"
+        db: "{{ postgres_database }}"
+        name: "{{ postgres_schema }}"
+        state: present
+      become: true
+
+    - name: Create privileges
+      postgresql_privs:
+        login_host: "localhost"
+        login_user: "{{ postgres_user }}"
+        login_password: "mypassword"
+        db: "{{ postgres_database }}"
+        schema: "{{ postgres_schema }}"
+        targets: "*.*"
+        privs: "ALL"
+        state: present
+      become: true

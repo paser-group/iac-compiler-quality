@@ -1,0 +1,72 @@
+yaml
+---
+- name: Ansible Fuzzing Playbook for nxos_l2_interface idempotence issue
+  hosts:
+    - node1
+    - node2
+    - node3
+  gather_facts: false
+  tasks:
+
+  # Test 1 - Incorrect extra argument
+  - name: Create Interface Vlan 10
+    nxos_l2_interface:
+      vlan_id: 10
+      state: present
+    register: result
+
+  - name: Create Interface Vlan 20 with incorrect extra argument
+    nxos_l2_interface:
+      vlan_id: 20
+      state: present
+      extra: foo
+    when: result.changed
+
+  # Test 2 - Incorrect interface name
+  - name: Create Interface Vlan with incorrect name
+    nxos_l2_interface:
+      vlan_id: 30
+      state: present
+      interface: eth2
+    ignore_errors: true
+
+  # Test 3 - Remove non-existing interface
+  - name: Remove non-existing Interface Vlan
+    nxos_l2_interface:
+      vlan_id: 40
+      state: absent
+    ignore_errors: true
+
+  # Test 4 - Change existing interface
+  - name: Change Interface Vlan 10
+    nxos_l2_interface:
+      vlan_id: 10
+      state: present
+      mode: access
+      access_vlan: 30
+    register: result
+
+  - name: Change Interface Vlan 10 back to original state
+    nxos_l2_interface:
+      vlan_id: 10
+      state: present
+      mode: access
+      access_vlan: 10
+    when: result.changed
+
+  # Test 5 - Non-standard syntax
+  - name: Create Interface Vlan with non-standard syntax
+    nxos_l2_interface
+      vlan_id=50
+      state=present
+      mode=trunk
+      trunk_vlans=51-55
+      second=foo
+    ignore_errors: true
+
+  # Test 6 - Unexpected input
+  - name: Create Interface Vlan with unexpected input
+    nxos_l2_interface:
+      vlan_id: '!@#$%^'
+      state: present
+    ignore_errors: true

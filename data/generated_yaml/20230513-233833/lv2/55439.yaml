@@ -1,0 +1,33 @@
+
+---
+- name: zabbix_template bug playbook
+  hosts: all
+  vars:
+    - non_ascii_string: "Bonjour, je m'appelle José!"
+    - invalid_export: "{{ non_ascii_string|b64encode }}"
+  tasks:
+    - name: Incorrect export of non-ACSII strings in zabbix_template.
+      zabbix_template:
+        name: "{{ non_ascii_string }}"
+        export: "{{ invalid_export }}"
+      become: true
+      register: result_export
+      ignore_errors: true
+
+    - name: Correct import of non-ACSII strings in zabbix_template.
+      copy:
+        content: "{{ non_ascii_string }}"
+        dest: "/etc/zabbix/templates/{{ non_ascii_string }}.xml"
+      become: true
+      register: result_import
+      ignore_errors: true
+
+    - name: Verify output of non-ACSII strings in the export.
+      debug:
+        var: result_export
+        verbosity: 3
+      
+    - name: Verify output of non-ACSII strings in the import.
+      debug:
+        var: result_import
+        verbosity: 3

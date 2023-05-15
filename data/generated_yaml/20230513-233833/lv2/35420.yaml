@@ -1,0 +1,33 @@
+yaml
+---
+- name: Fuzz testing playbook for AnsibleError: template error while templating string
+  hosts: all
+  gather_facts: false
+  
+  tasks:
+  - name: Define invalid variables dict
+    set_fact:
+      invalid_vars: '{ http2 | not_found_filter: "invalid" }'
+      
+  - name: Test Jinja2 syntax error
+    template:
+      src: "{{ invalid_vars }}"
+      dest: "/tmp/invalid_vars"
+      
+  - name: Test variable undefined error
+    shell: "echo {{ undefined_var }}"
+    
+  - name: Test failed HTTP request
+    uri:
+      url: "https://notarealurl.com/path/to/fake"
+      
+  - name: Test missing argument
+    shell: "something_missing"
+    
+  - name: Test invalid YAML format
+    command: "echo 'invalid_yaml: {''name'':}}'"
+    register: invalid_yaml_output
+    ignore_errors: true
+    
+  - name: Validate playbook syntax
+    meta: flush_handlers

@@ -1,0 +1,36 @@
+
+---
+- name: Test playbook for netapp-lib required error
+  hosts: node1
+  gather_facts: no
+
+  tasks:
+  - name: Install python netapp-lib
+    become: yes
+    apt:
+      name: python-netapp-lib
+      state: present
+
+  - name: Test dictionary keys with unusual syntax
+    become: yes
+    debug:
+      var: "{{ item.object.key }}"
+    with_items:
+      - { object: { '^&*key$%': 'value1' } }
+      - { object: { 'key1': 'value1', 'key2': 2, 'key-3': 'value3' } }
+
+  - name: Test with invalid syntax
+    become: yes
+    command: "{{ item.command }} {{ item.arguments }}"
+    ignore_errors: yes
+    with_items:
+      - { command: 'invalid_command', arguments: '-a -b --c' }
+      - { command: 'echo', arguments: 'hello world' }
+
+  - name: Test with unexpected inputs
+    become: yes
+    command: "{{ item.command }} {{ item.arguments }}"
+    ignore_errors: yes
+    with_items:
+      - { command: 'python', arguments: '-c "import netapp; netapp.function()"'}
+      - { command: 'python', arguments: '-c "import netapp_lib; netapp_lib.function()"'}

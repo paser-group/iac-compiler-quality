@@ -1,0 +1,44 @@
+
+- name: Configure docker_container
+  hosts: all
+  become: true
+  vars:
+    default_ip_address: "192.168.0.1" # replace with your default IP address
+  tasks:
+    - name: Configure docker daemon with default IP
+      become: true
+      block:
+        - name: Check docker daemon.json file exists
+          stat:
+            path: /etc/docker/daemon.json
+          register: daemon_conf
+
+        - name: Add default IP to daemon.json
+          copy:
+            content: |
+              {
+                "default-address-pools" : [
+                  {
+                    "base": "{{ default_ip_address }}",
+                    "size": 24,
+                    "sub" : "mydockerpool"
+                  }
+                ]
+              }
+            dest: /etc/docker/daemon.json
+          when: daemon_conf.stat.exists == False or daemon_conf.stat.exists == True and daemon_conf.stat.isreg == True
+
+        - name: Restart docker service
+          systemd:
+            name: docker
+            state: restarted
+
+      when: "'all' in group_names"
+
+    - name: Configure published ports with the right IP
+      docker_container:
+        name: my_container
+        image: my_image
+        published_ports:
+          - "192.168.0.1:80:80/tcp"
+      when: "'all' in group_names"

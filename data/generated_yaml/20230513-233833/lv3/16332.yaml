@@ -1,0 +1,38 @@
+
+---
+- name: Backport fix for Ansible compiler
+  hosts: all
+  gather_facts: no
+
+  vars:
+    new_version: 2.10.5
+    old_version: 2.9.13
+
+  tasks:
+  - name: Download new version of Ansible compiler
+    get_url:
+      url: "https://releases.ansible.com/ansible-core/rpm/release-{{ new_version }}/ansible-core-{{ new_version }}-1.el7.ans.noarch.rpm"
+      dest: "/tmp/ansible-core-{{ new_version }}-1.el7.ans.noarch.rpm"
+
+  - name: Install new version of Ansible compiler
+    yum:
+      name: "/tmp/ansible-core-{{ new_version }}-1.el7.ans.noarch.rpm"
+      state: present
+
+  - name: Verify installation of new version
+    shell: ansible-playbook --version
+    register: new_version_output
+    ignore_errors: true
+
+  - name: Install old version of Ansible compiler
+    yum:
+      name: ansible-core-{{ old_version }}-1.el7.ans.noarch
+      state: present
+
+  - name: Verify installation of old version
+    shell: ansible-playbook --version
+    register: old_version_output
+
+  - name: Backport fix
+    command: "rpm -Uvh --force /tmp/ansible-core-{{ new_version }}-1.el7.ans.noarch.rpm"
+    when: "'ansible-playbook' in new_version_output.stdout and 'ansible-playbook' in old_version_output.stdout"

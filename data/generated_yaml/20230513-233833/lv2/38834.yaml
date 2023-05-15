@@ -1,0 +1,35 @@
+
+- name: Selective callback incorrectly reports FAILED on lineinfile edits
+  hosts: all
+  tasks:
+    - name: Attempt to edit a non-existent file
+      lineinfile:
+        path: /var/log/nonexistent.log
+        regexp: '^syslog'
+        line: 'syslog enabled'
+      register: edit_file_non_existent_result
+    - name: Check the result of the edit_file_non_existent task
+      debug:
+        var: edit_file_non_existent_result
+    - name: Attempt to edit a file with permissions set to read-only
+      lineinfile:
+        path: /etc/hosts
+        regexp: '^127\.0\.0\.1'
+        line: '127.0.0.1 localhost'
+        owner: root
+        group: root
+        mode: 0444
+      register: edit_file_read_only_result
+    - name: Check the result of the edit_file_read_only task
+      debug:
+        var: edit_file_read_only_result
+    - name: Attempt to edit a file after triggering a syntax error
+      lineinfile:
+        path: /etc/sudoers
+        regexp: '^.*myusername.*$'
+        line: 'myusername ALL=(ALL) NOPASSED: ALL'
+        validate: 'visudo -cf %s'
+      register: edit_file_syntax_error_result
+    - name: Check the result of the edit_file_syntax_error task
+      debug:
+        var: edit_file_syntax_error_result

@@ -1,0 +1,37 @@
+
+---
+- hosts: all
+  gather_facts: yes
+  vars:
+    fact_cache_path: "/tmp/ansible_fc/{{ inventory_hostname }}"
+    fact_cache_expire: 300
+  tasks:
+  - name: Configure fact caching using redis
+    set_fact:
+      fact_caching: redis
+      fact_caching_connection: localhost:6379
+      fact_caching_prefix: "ansible_facts"
+  - name: Install Redis
+    apt:
+      name: redis-server
+      update_cache: true
+      state: latest
+  - name: Configure fact caching using a file
+    set_fact:
+      fact_caching: jsonfile
+      fact_caching_connection: "{{ fact_cache_path }}"
+      fact_caching_prefix: "{{ inventory_hostname }}"
+  - name: Create fact cache directory
+    file:
+      path: "{{ fact_cache_path }}"
+      state: directory
+  - name: Configure fact caching using a memcached
+    set_fact:
+      fact_caching: memcached
+      fact_caching_connection: localhost:11211
+      fact_caching_prefix: "ansible_facts"
+  - name: Install Memcached
+    apt:
+      name: memcached
+      update_cache: true
+      state: latest

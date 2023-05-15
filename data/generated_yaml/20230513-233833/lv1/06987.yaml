@@ -1,0 +1,29 @@
+yaml
+- name: Launch a new EC2 instance
+  hosts: localhost
+  gather_facts: no
+  connection: local
+  vars:
+    ec2_region: us-east-1
+    instance_type: t2.micro
+    security_groups: default
+    ami: ami-0c55b159cbfafe1f0
+    subnet_id: subnet-123456
+    private_ip: 10.0.1.123
+
+  tasks:
+    - name: Launch EC2 instance
+      ec2:
+        count: 1
+        instance_type: "{{ instance_type }}"
+        image: "{{ ami }}"
+        wait: true
+        vpc_subnet_id: "{{ subnet_id }}"
+        private_ip_address: "{{ private_ip }}"
+        group_id: "{{ security_groups }}"
+      register: ec2_instance
+
+    - name: Add the public IP as a host
+      add_host:
+        hostname: "{{ ec2_instance.instances[0].public_ip }}"
+        groups: launched

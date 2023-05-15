@@ -1,0 +1,38 @@
+yaml
+- name: Install Google Cloud SDK and Python dependencies
+  hosts: all
+  become: yes
+
+  tasks:
+    - name: Install Google Cloud SDK
+      raw: curl https://sdk.cloud.google.com | bash
+      args:
+        creates: /home/<your-username>/google-cloud-sdk
+
+    - name: Set up gcloud path
+      shell: /home/<your-username>/google-cloud-sdk/bin/gcloud init
+      args:
+        creates: /home/<your-username>/.config/gcloud
+
+    - name: Install Python dependencies
+      pip:
+        name: google-cloud-pubsub
+        state: present
+
+- name: Test Google Cloud Pub/Sub Module
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+    - name: Test Google Cloud Pub/Sub Module
+      gcpubsub:
+        project: <your-project-name>
+        auth_kind: serviceaccount
+        service_account_file: /path/to/service_account.json
+        topic: test_topic
+        state: present
+      register: pubsub_result
+
+    - name: Print Google Cloud Pub/Sub Result
+      debug:
+        var: pubsub_result

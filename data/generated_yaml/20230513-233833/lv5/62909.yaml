@@ -1,0 +1,20 @@
+
+- name: Find all modules that take a dictionary as an argument and compare the dictionaries 
+  hosts: all
+  gather_facts: no 
+  tasks: 
+    - name: Find all Ansible modules that take a dictionary
+      command: ansible-doc -l
+      register: module_list 
+
+    - name: Parse module_list output and find modules with dict values
+      set_fact:
+        module_list_dict: "{{ module_list.stdout_lines | select('search', 'dict') | list }}"
+   
+    - name: Debug comparing two dictionaries
+      debug:
+        msg: "{{ my_dict1 | to_json == my_dict2 | to_json }}"
+      vars:
+        my_dict1: { "key1": "value1", "key2": "value2" }
+        my_dict2: { "key1": "value1", "key2": "value2" }
+      loop: "{{ module_list_dict }}"

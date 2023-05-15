@@ -1,0 +1,20 @@
+
+---
+- name: Fuzz testing playbook
+  hosts: all
+  gather_facts: false
+
+  tasks:
+
+  - name: Launch ASG with ELB
+    ec2_asg:
+      name: "{{ 'a' * 101 }}" # Test maximum length of ASG name
+      min_size: "{{ ['1', 'a'] | random }}" # Test unexpected input
+      max_size: "{{ '1000' + 'a' * 101 }}" # Test maximum integer value and maximum length of ASG name
+      vpc_zone_identifier: "{{ 'subnet-' + '0' * 12 }}" # Test incorrect subnet format
+      load_balancers: "{{ ['elb-' + 'a' * 61] | random }}" # Test maximum length of ELB name
+      wait_for_elb_capacity: "{{ ['true', 'false'] | random }}" # Test unexpected input
+      region: "{{ ['us-west-2', 'us-east-1'] | random }}" # Test multiple regions
+      availability_zone: "{{ ['us-west-2a', 'us-east-1a'] | random }}" # Test multiple availability zones
+      tags: "{{ {'Name': 'test', 'Environment': 'prod'} }}" # Test adding tags
+

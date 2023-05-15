@@ -1,0 +1,64 @@
+
+- name: Install AWS CLI
+  become: true
+  become_method: sudo
+  apt:
+    name: awscli
+    state: present
+
+- name: Configure AWS Credentials
+  block:
+    - name: Create AWS Directory
+      become: true
+      become_method: sudo
+      file:
+        path: /root/.aws
+        mode: '0700'
+
+    - name: Save AWS Credentials to a Config File
+      become: true
+      become_method: sudo
+      copy:
+        dest: /root/.aws/credentials
+        content: |
+          [default]
+          aws_access_key_id = <your_access_key_id>
+          aws_secret_access_key = <your_secret_access_key>
+
+- name: Create an ELB
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    region: "us-east-1"
+    elb_name: "my-elb"
+
+  tasks:
+    - name: Create security group for ELB
+      ec2_group:
+        name: my-elb-sg
+        description: Security group for the ELB
+        rules:
+          - proto: tcp
+            ports:
+              - "{{ item }}"
+            cidr_ip: 0.0.0.0/0
+        rules_egress:
+          - proto: all
+            cidr_ip: 0.0.0.0/0
+        vpc_id: vpc-abcd1234
+      register: security_group
+
+    - name: Create an ELB
+      ec2_elb_lb:
+        state: present
+        name: "{{ elb_name }}"
+        region: "{{ region }}"
+        security_group: "{{ security_group.group_id }}"
+        availability_zones: "{{ ['us-east-1a', 'us-east-1b'] }}"
+        listeners:
+          - protocol: http
+            load_balancer_port: 80
+            instance_port: 80
+        tags:
+          Name: "{{ elb_name }}"

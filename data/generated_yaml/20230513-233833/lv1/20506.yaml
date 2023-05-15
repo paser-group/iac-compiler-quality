@@ -1,0 +1,31 @@
+
+---
+- name: Update Firewall Rule in GCE Network
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    firewall_rule_name: <ENTER_FIREWALL_RULE_NAME>
+    gce_project_id: <ENTER_GCE_PROJECT_ID>
+    gce_network_name: <ENTER_GCE_NETWORK_NAME>
+
+  tasks:
+    - name: Get Firewall Rule Self-Link
+      gcp_compute_firewall_info:
+        project: "{{ gce_project_id }}"
+        filter: "name={{ firewall_rule_name }}"
+        auth_kind: serviceaccount
+        service_account_file: "/path/to/service_account.json"
+      register: firewall_rule_info
+
+    - name: Update Firewall Rule
+      gcp_compute_firewall:
+        name: "{{ firewall_rule_name }}"
+        network: "{{ gce_network_name }}"
+        allowed:
+          - IPProtocol: udp
+            ports:
+              - 80
+              - 8080
+      when: firewall_rule_info is not defined or firewall_rule_info.matches == 0
+      ignore_errors: true

@@ -1,0 +1,34 @@
+
+---
+- name: Test SSL validation for Slack channel webhook
+  hosts: all
+  vars:
+    webhook_url: "https://hooks.slack.com/services/T12345678/B12345678/XXXXXXXXXXXXXXXXXXXXXXXX"
+  tasks:
+    - name: Generate SSL/TLS certificate and key
+      openssl_certificate:
+        path: "/etc/ssl/certs/ssl-cert-snakeoil.pem"
+        privatekey_path: "/etc/ssl/private/ssl-cert-snakeoil.key"
+        self_signed: yes
+    - name: Send message with self-signed cert
+      slack:
+        token: "{{ webhook_url }}"
+        msg: "Testing SSL validation with self-signed certificate"
+        validate_certs: no
+    - name: Send message with revoked cert
+      slack:
+        token: "{{ webhook_url }}"
+        msg: "Testing SSL validation with revoked certificate"
+        ssl_cert: "/etc/ssl/certs/ssl-cert-snakeoil.pem"
+        ssl_key: "/etc/ssl/private/ssl-cert-snakeoil.key"
+        ssl_verify: True
+        validate_certs: yes
+    - name: Send message with expired cert
+      slack:
+        token: "{{ webhook_url }}"
+        msg: "Testing SSL validation with expired certificate"
+        ssl_cert: "/etc/ssl/certs/ssl-cert-snakeoil.pem"
+        ssl_key: "/etc/ssl/private/ssl-cert-snakeoil.key"
+        ssl_validate: True
+        validate_certs: no
+    # ... add more tasks to test validity, expiration, syntax errors and more edge cases related to the issue ...

@@ -1,0 +1,28 @@
+
+- hosts: all
+  gather_facts: no
+  tasks:
+    - name: Verify iOS device is available
+      wait_for_connection:
+        timeout: 10
+      delegate_to: ios_device
+
+    - name: Configure SSH on iOS device
+      ios_system:
+        command_string: "crypto key generate rsa modulus 2048"
+      delegate_to: ios_device
+
+    - name: Configure iOS device
+      ios_command:
+        commands:
+        - "configure terminal"
+        - "interface vlan 10"
+        #add more commands as required
+        delay: 0.5
+        prompt: "#"
+      delegate_to: ios_device
+      register: ios_output
+
+    - name: Verify configuration
+      assert:
+        that: "'configured' in ios_output.stdout"

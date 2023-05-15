@@ -1,0 +1,43 @@
+
+---
+- name: Test get_url module for password-protected FTP sites
+  hosts: all
+  gather_facts: false
+
+  vars:
+    ftp_user: "user"
+    ftp_pass: "pass"
+
+  tasks:
+    - name: Download file from password-protected FTP site, provide credentials in URL
+      get_url:
+        url: "ftp://{{ftp_user}}:{{ftp_pass}}@ftp.server.com/path/to/file.txt"
+        dest: "/home/user/file.txt"
+      register: result
+      ignore_errors: yes
+
+    - name: Download file from password-protected FTP site, provide credentials as extra headers
+      get_url:
+        url: "ftp://ftp.server.com/path/to/file.txt"
+        dest: "/home/user/file.txt"
+        headers:
+          Authorization: "Basic {{ ftp_user }}:{{ ftp_pass }}"
+      register: result
+      ignore_errors: yes
+
+    - name: Download file from password-protected FTP site, with explicit authentication credentials
+      get_url:
+        url: "ftp://ftp.server.com/path/to/file.txt"
+        dest: "/home/user/file.txt"
+        ftp_username: "{{ ftp_user }}"
+        ftp_password: "{{ ftp_pass }}"
+      register: result
+      ignore_errors: yes
+
+    - name: Download file from FTP site without providing credentials, should fail
+      get_url:
+        url: "ftp://ftp.server.com/path/to/file.txt"
+        dest: "/home/user/file.txt"
+      register: result
+      ignore_errors: yes
+

@@ -1,0 +1,67 @@
+
+- name: Kubernetes module throws errors on all 422 response
+  hosts: all
+  tasks:
+  - name: Create a deployment that returns a 422 error
+    k8s:
+      definition:
+        apiVersion: extensions/v1beta1
+        kind: Deployment
+        metadata:
+          name: test-deployment
+        spec:
+          replicas: 3
+          template:
+            metadata:
+              labels:
+                app: test
+            spec:
+              containers:
+              - name: test-container
+                image: nginx:latest
+                ports:
+                - containerPort: 80
+                  name: nginx
+          selector:
+            matchLabels:
+              app: test
+        status:
+          phase: Running
+      state: present
+    register: deployment_output
+
+  - name: Print output after a 422-error response
+    debug:
+      var: deployment_output
+
+  - name: Re-run the deployment
+    k8s:
+      definition:
+        apiVersion: extensions/v1beta1
+        kind: Deployment
+        metadata:
+          name: test-deployment
+        spec:
+          replicas: 3
+          template:
+            metadata:
+              labels:
+                app: test
+            spec:
+              containers:
+              - name: apache
+                image: httpd:latest
+                ports:
+                - containerPort: 80
+                  name: httpd
+          selector:
+            matchLabels:
+              app: test
+        status:
+          phase: Running
+      state: present
+    register: re_run_output
+
+  - name: Print output after re-running the deployment
+    debug:
+      var: re_run_output

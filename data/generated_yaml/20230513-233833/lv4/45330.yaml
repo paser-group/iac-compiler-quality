@@ -1,0 +1,35 @@
+
+---
+- name: Test idempotence of azure_rm_containerregistry module
+  hosts: all
+  gather_facts: no
+
+  vars:
+    container_registry_name: "testContainerRegistry"
+
+  tasks:
+  - name: Create container registry
+    azure_rm_containerregistry:
+      name: "{{ container_registry_name }}"
+      resource_group: myResourceGroup
+      location: eastus
+      sku: Basic
+    register: create_output
+
+  - debug:
+      var: create_output
+
+  - name: Recreate container registry
+    azure_rm_containerregistry:
+      name: "{{ container_registry_name }}"
+      resource_group: myResourceGroup
+      location: eastus
+      sku: Basic
+    register: recreate_output
+
+  - debug:
+      var: recreate_output
+
+  - name: Assert idempotence
+    assert:
+      that: create_output.stdout == recreate_output.stdout

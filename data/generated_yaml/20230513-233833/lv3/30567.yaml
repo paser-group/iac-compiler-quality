@@ -1,0 +1,77 @@
+
+---
+- name: Recreating network errors outside of buffered response
+  hosts: all
+  gather_facts: no
+  vars:
+    http_port: 8080
+  
+  tasks:
+  - name: Start HTTP Server on node 1
+    shell: python -m SimpleHTTPServer {{ http_port }}
+    args:
+      executable: /bin/bash
+    become: yes
+    become_user: root
+    become_method: sudo
+    delegate_to: node1
+    async: 5
+    poll: 0
+    register: http_proc1
+  
+  - name: Start HTTP Server on node 2
+    shell: python -m SimpleHTTPServer {{ http_port }}
+    args:
+      executable: /bin/bash
+    become: yes
+    become_user: root
+    become_method: sudo
+    delegate_to: node2
+    async: 5
+    poll: 0
+    register: http_proc2
+  
+  - name: Wait for HTTP servers to start on nodes 1 and 2
+    async_status:
+      jid: "{{ http_proc1.ansible_job_id }}"
+      jid_output: "{{ http_proc1 }}"
+      mode: wait
+    register: http_check1
+    until: "{{ http_check1.finished }}"
+  
+  - async_status:
+      jid: "{{ http_proc2.ansible_job_id }}"
+      jid_output: "{{ http_proc2 }}"
+      mode: wait
+    register: http_check2
+    until: "{{ http_check2.finished }}"
+    
+  - name: Download large file from node 1 to node 3
+    get_url:
+      url: "http://10.1.1.1:{{ http_port }}/large-file"
+      dest: "/tmp/large-file"
+    delegate_to: node3
+    async: 5
+    poll: 0
+    register: dl_proc
+  
+  - name: Wait state to expose potential error on Ansible compiler
+    # assuming prompt is a word 'success' that appears in the output
+    wait_for:
+      search_regex: 'success'
+      path: '/tmp/large-file'
+      timeout: 10
+  
+  - name: Stop HTTP Server on node 1
+    shell: 'kill $(lsof -t -i:{{ http_port }})'
+    become: yes
+    become_user: root
+    become_method: sudo
+    delegate_to: node1
+  
+  - name: Stop HTTP Server on node 2
+    shell: 'kill $(lsof -t -i:{{ http_port }})'
+    become: yes
+    become_user: root
+    become_method: sudo
+    delegate_to: node2

@@ -1,0 +1,98 @@
+
+---
+- name: Azure VM Tests
+  hosts: node1
+  gather_facts: false
+  vars:
+    resource_group: "{{ 'myresourcegroup' }}"
+    virtual_network: "{{ 'myvirtualnetwork' }}"
+    subnet_name: "{{ 'mysubnet' }}"
+    vm_name: "{{ 'myvm' }}"
+    image_resource_group: "{{ 'myimageresourcegroup' }}"
+    image_name: "{{ 'myimage' }}"
+  tasks:
+  - name: Create Resource Group
+    azure_rm_resourcegroup:
+      name: "{{ resource_group }}"
+      location: eastus
+    register: rg
+
+  - name: Create Virtual Network
+    azure_rm_virtualnetwork:
+      resource_group: "{{ resource_group }}"
+      name: "{{ virtual_network }}"
+      address_prefixes: "{{ '10.0.0.0/16' }}"
+    register: vnet
+
+  - name: Create Subnet
+    azure_rm_subnet:
+      resource_group: "{{ resource_group }}"
+      virtual_network_name: "{{ virtual_network }}"
+      name: "{{ subnet_name }}"
+      address_prefix: "{{ '10.0.0.0/24' }}"
+    register: subnet
+
+  - name: Create Virtual Machine
+    azure_rm_virtualmachine:
+      resource_group: "{{ resource_group }}"
+      network_interface_names: "{{ vm_name }}_nic"
+      vm_name: "{{ vm_name }}"
+      vm_size: Standard_DS1_v2
+      image:
+        'publisher': 'Canonical'
+        'offer': 'UbuntuServer'
+        'sku': '16.04.0-LTS'
+        'version': 'latest'
+      admin_username: azureuser
+      ssh_password_enabled: false
+      ssh_public_keys:
+        - path: /home/azureuser/.ssh/authorized_keys
+          key_data: "<SSH public key>"
+      os_disk:
+        name: "{{ vm_name }}_os_disk"
+        caching: None
+        create_option: FromImage
+      data_disks:
+        - name: "{{ vm_name }}_data_disk_1"
+          disk_size_gb: 10
+          lun: 0
+          caching: None
+          create_option: Empty
+      state: present
+
+  - name: Stop VM
+    azure_rm_virtualmachine:
+      resource_group: "{{ resource_group }}"
+      name: "{{ vm_name }}"
+      state: stopped
+
+  - name: Start VM
+    azure_rm_virtualmachine:
+      resource_group: "{{ resource_group }}"
+      name: "{{ vm_name }}"
+      state: running
+
+  - name: Destroy VM
+    azure_rm_virtualmachine:
+      resource_group: "{{ resource_group }}"
+      name: "{{ vm_name }}"
+      state: absent
+
+  - name: Delete Subnet
+    azure_rm_subnet:
+      resource_group: "{{ resource_group }}"
+      virtual_network_name: "{{ virtual_network }}"
+      name: "{{ subnet_name }}"
+      state: absent
+
+  - name: Delete Virtual Network
+    azure_rm_virtualnetwork:
+      resource_group: "{{ resource_group }}"
+      name: "{{ virtual_network }}"
+      state: absent
+
+  - name: Delete Resource Group
+    azure_rm_resourcegroup:
+      name: "{{ resource_group }}"
+      state: absent
+

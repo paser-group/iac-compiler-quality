@@ -1,0 +1,40 @@
+yaml
+---
+- name: Playbook to prevent hang when --ask-sudo-pass is not supplied
+  hosts: localhost
+  gather_facts: false
+  
+  tasks:
+    
+    - name: Set become password
+      set_fact:
+        become_pass: "{{ ansible_become_pass | default('') }}"
+
+    - name: Copy local ssh key
+      copy:
+        src: "{{ ansible_env.HOME }}/.ssh/id_rsa.pub"
+        dest: "~/.ssh/authorized_keys"
+        mode: 0600
+      when: ssh_pub_key is defined
+
+    - name: Configure sudoers
+      lineinfile:
+        dest: /etc/sudoers
+        line: "%sudo   ALL=(ALL) NOPASSWD: ALL"
+      when: ansible_user_id == 'root' and not (ansible_sudo or ansible_su)
+
+    - name: Check if become password is set
+      fail:
+        msg: "Please provide the become password by passing '--ask-sudo-pass' as an argument."
+      when: ansible_become_password is not defined and become_pass == ""
+
+    - name: Acquire become password
+      pause:
+        prompt: "Please provide the become password if prompted: "
+      become: true
+      become_method: sudo
+      when: ansible_become_password is not defined and become_pass == ""
+
+    - name: Run a command
+      command: whoami
+      become: true

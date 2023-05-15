@@ -1,0 +1,35 @@
+
+---
+- name: Verify win_chocolatey task when useEnhancedExitCodes is enabled
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Install Chocolatey
+      win_chocolatey:
+        name: chocolatey
+        state: present
+    - name: Set useEnhancedExitCodes to false
+      set_fact:
+        useEnhancedExitCodes: false
+    - name: Run win_chocolatey task with useEnhancedExitCodes set to false
+      win_chocolatey:
+        name: example
+        state: present
+        useEnhancedExitCodes: "{{ useEnhancedExitCodes }}"
+    - name: Set useEnhancedExitCodes to true
+      set_fact:
+        useEnhancedExitCodes: true
+    - name: Run win_chocolatey task with useEnhancedExitCodes set to true
+      win_chocolatey:
+        name: example
+        state: present
+        useEnhancedExitCodes: "{{ useEnhancedExitCodes }}"
+    - name: Verify Chocolatey version
+      win_shell: choco --version | Out-String
+      register: choco_version
+    - assert:
+        that:
+        - choco_version.stdout_lines[0] | version_compare('0.10.12') >= 0
+        - "'ERROR' not in win_chocolately_result.stdout"
+      vars:
+        win_chocolately_result: "{{ win_chocolatey | last }}"

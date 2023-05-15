@@ -1,0 +1,20 @@
+
+- hosts: localhost
+  gather_facts: no
+
+  tasks:
+    - name: Test the yaml inventory plugin with invalid input data
+      command: echo "{{ invalid_input_data }}" > inventory.yaml
+      vars:
+        invalid_input_data: |
+          - unkown_host
+          - invalid_ip: 192.168.0.129
+      register: cmd_result
+
+    - debug:
+        msg: "{{ cmd_result.stdout }}"
+
+    - name: Check if the yaml inventory plugin failed with a non-helpful error
+      assert:
+        that: "cmd_result.stderr.find('valid YAML') != -1 or cmd_result.stderr.find('inventory could not be parsed') != -1"
+        msg: "The yaml inventory plugin did not fail with a non-helpful error message: {{ cmd_result.stderr }}"

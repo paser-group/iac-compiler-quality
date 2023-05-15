@@ -1,0 +1,23 @@
+
+- name: Playbook to simulate hashi_vault error
+  hosts: all
+  become: true
+  vars:
+    vault_kv_path: "secret/path"
+    vault_kv_secret_name: "non_existent_secret"
+  
+  tasks:
+    - name: Retrieve a non-existent secret from hashi_vault
+      block:
+        - name: Get hashi_vault secret
+          shell: echo "{{ vault_kv_path }}/{{ vault_kv_secret_name }}"
+          register: secret_pth
+        - name: Get hashi_vault value
+          hashi_vault:
+            secret: "{{ secret_pth.stdout }}"
+            register: hashi_vault_value
+            ignore_errors: yes
+      rescue:
+        - name: Handle hashi_vault secret not found error
+          debug:
+            msg: "The hashi_vault secret '{{ vault_kv_path }}/{{ vault_kv_secret_name }}' is not found."      

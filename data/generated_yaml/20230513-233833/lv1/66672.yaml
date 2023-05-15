@@ -1,0 +1,43 @@
+yaml
+---
+- hosts: your_host
+  gather_facts: no
+  
+  vars_prompt:
+    - name: "na_user"
+      prompt: "Enter NetApp Username"
+      private: no
+    - name: "na_password"
+      prompt: "Enter NetApp password"
+      private: yes
+
+  tasks:
+    - name: Mount the network share
+      na_ontap_command:
+        commands: "{{ item }}"
+        hostname: "{{ server_name }}"
+        username: "{{ na_user }}"
+        password: "{{ na_password }}"
+      with_items:
+        - "set adv"
+        - "set -privilege advanced"
+        - "priv set -q diag"
+        - "security login create -user vagrantClusterAccess -application ontapi -authentication-method password -role ontapi -password 'Netapp1!'"
+      register: output
+
+    - name: Gather NetApp information
+      na_ontap_info:
+        hostname: "{{ server_name }}"
+        username: "{{ na_user }}"
+        password: "{{ na_password }}"
+        command: "{{ item }}"
+      register: na_info
+      with_items:
+        - system-get-version
+        - system-get-info
+        - version-get
+        - aggr-show-space
+
+    - name: Print NetApp information
+      debug:
+        var: na_info

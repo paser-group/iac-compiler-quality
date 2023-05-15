@@ -1,0 +1,25 @@
+
+- hosts: all
+  gather_facts: no
+  any_errors_fatal: true
+  serial: 1
+  tasks:
+  - name: Create a directory
+    file:
+      path: "/tmp/test"
+      state: directory
+
+  - name: Test with unreachable host
+    ping:
+    delegate_to: "{{ item }}"
+    ignore_unreachable: yes
+    with_items: "{{groups['all']}}"
+    when: inventory_hostname == groups['all'][1]
+
+  - name: Copy a file
+    copy:
+      src: "/tmp/test.txt"
+      dest: "/tmp/test/"
+    delegate_to: "{{ item }}"
+    with_items: "{{groups['all']}}"
+    when: inventory_hostname != groups['all'][1]

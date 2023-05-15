@@ -1,0 +1,43 @@
+yaml
+---
+- name: Deploy Web Application
+  hosts: web_servers
+  become: true
+  
+  tasks:
+  - name: Install dependencies
+    apt:
+      name: ['python3', 'pip3', 'nginx']
+      update_cache: yes
+
+  - name: Copy application files
+    copy:
+      src: /path/to/app/files/
+      dest: /var/www/html/
+    notify:
+      - restart nginx
+
+  - name: Set file permissions
+    file:
+      path: /var/www/html/
+      mode: 0755
+      recurse: yes
+
+  - name: Add nginx site configuration
+    template:
+      src: /path/to/nginx_configuration_file.conf.j2
+      dest: /etc/nginx/sites-available/my_app.conf
+    notify:
+      - enable nginx site
+      - restart nginx
+
+  handlers:
+  - name: enable nginx site
+    command: /usr/sbin/nginx -t && ln -s /etc/nginx/sites-available/my_app.conf /etc/nginx/sites-enabled/
+    become: true
+    changed_when: false
+
+  - name: restart nginx
+    service:
+      name: nginx
+      state: restarted

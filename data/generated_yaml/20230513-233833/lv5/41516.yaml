@@ -1,0 +1,30 @@
+
+- name: Test aws_s3 module error handling
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Create an S3 bucket
+      aws_s3:
+        bucket: my-bucket
+        mode: create
+      register: s3_create_result
+
+    - name: Delete the bucket object
+      aws_s3:
+        bucket: my-bucket
+        object: "{{ item }}"
+        mode: delete
+      loop:
+        - "existing_object"
+      ignore_errors: true
+
+    - name: Upload file to the non-existent path
+      aws_s3:
+        bucket: my-bucket
+        src: /path/to/local/file
+        dest: "non-existent-path/file"
+      register: s3_upload_result
+
+    - name: Assert that file did not upload successfully
+      assert:
+        that: "'Max retries exceeded' in s3_upload_result.msg"

@@ -1,0 +1,69 @@
+
+- name: Test lxd_container module
+  hosts: all
+  become: yes
+  gather_facts: no
+
+  tasks:
+  - name: Install LXD
+    apt:
+      name: lxd
+      state: present
+    register: apt_rc
+    changed_when: apt_rc.changed
+
+  - name: Initialize LXD
+    command: lxd init --auto
+    register: lxd_init_rc
+    changed_when: lxd_init_rc.rc != 0
+
+  - name: Create LXD container
+    community.general.lxd_container:
+      name: test_container
+      state: started
+      source:
+        type: image
+        alias: ubuntu/focal
+      profiles:
+        - default
+      config: 
+        raw.lxc: |
+          lxc.mount.entry = /dev/net/tun dev/net/tun none bind,create=file
+          lxc.cgroup.devices.allow = c 1:3 rwm
+          lxc.cgroup.devices.allow = c 1:5 rwm
+          lxc.cgroup.devices.allow = c 5:1 rwm
+          lxc.cgroup.devices.allow = c 5:0 rwm
+        user.foobar: "{{ lookup('password', '/dev/null chars=ascii_lowercase,digits length=8') }}"
+        user.newfoobar: "{{ 'mysecretpassword' }}"
+      wait_for_ipv4_addresses: yes
+      timeout: 600
+    ignore_errors: yes
+    register: lxd_container_rc
+
+  - name: Test LXD container is created successfully
+    assert:
+      that:
+        - "'LXD container created' in lxd_container_rc.msg"
+    ignore_errors: yes
+
+  - name: Configure LXD container
+    community.general.lxd_container_config:
+      name: test_container
+      config: 
+        user.foobar: "{{ lookup('password', '/dev/null chars=ascii_lowercase,digits length=12') }}"
+        user.newfoobar: "{{ 'mynewsecretpassword' }}"
+    tags: ['tag1','tag2']
+    ignore_errors: yes
+    register: lxd_container_config_rc
+
+  - name: Test LXD container config is applied
+    assert:
+      that:
+        - "'LXD container config applied' in lxd_container_config_rc.msg"
+    ignore_errors: yes
+
+  - name: Delete LXD container
+    community.general.lxd_container:
+      name: test_container
+      state: absent
+    ignore_errors: yes

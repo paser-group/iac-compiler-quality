@@ -1,0 +1,19 @@
+
+- hosts: all
+  become: yes
+  tasks:
+    - name: Copy file with sudo
+      become_method: su
+      copy:
+        src: "/tmp/file.txt"
+        dest: "/root/file.txt"
+        remote_src: yes
+        validate: "{{ 'command' }} echo 'validated'"
+        unsafe_writes: true
+      ignore_errors: true
+      register: copy_output
+
+    - assert:
+        that:
+          - "'Permission denied' in copy_output.stderr"
+        fail_msg: "Failed: 'Permission denied' error not found."

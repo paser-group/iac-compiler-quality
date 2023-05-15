@@ -1,0 +1,67 @@
+
+---
+- name: Test ovirt_network module
+  hosts: node1
+  gather_facts: no
+  tasks:
+    - name: Create a network attached to the Default cluster
+      ovirt_network:
+        auth:
+          url: https://ovirt-engine.example.com/ovirt-engine/api
+          username: admin@internal
+          password: secret
+        name: ovirt-network
+        description: Ovirt Network
+        state: present
+        cluster: Default
+        vlan_id: 1
+        assign_vnic_profile: true
+        vnic_profile_name: ovirt
+        with_template: false
+      register: creation_status
+    # Wait for a few seconds to let the network creation complete
+    - name: Wait for network creation to complete
+      wait_for:
+        timeout: 10
+        host: 127.0.0.1
+        port: 5432
+      when: creation_status.changed
+    - name: Edit the previously created network
+      ovirt_network:
+        auth:
+          url: https://ovirt-engine.example.com/ovirt-engine/api
+          username: admin@internal
+          password: secret
+        name: ovirt-network
+        description: New Ovirt Network
+        state: present
+        cluster: Default
+        vlan_id: 2
+        with_template: false
+        id: "{{ creation_status.ovirt_network.id }}"
+      register: edit_status
+    # Wait for a few seconds to let the network editing complete
+    - name: Wait for network editing to complete
+      wait_for:
+        timeout: 10
+        host: 127.0.0.1
+        port: 5432
+      when: edit_status.changed
+    - name: Delete the network
+      ovirt_network:
+        auth:
+          url: https://ovirt-engine.example.com/ovirt-engine/api
+          username: admin@internal
+          password: secret
+        name: ovirt-network
+        state: absent
+        with_template: false
+        id: "{{ creation_status.ovirt_network.id }}"
+      register: deletion_status
+    # Wait for a few seconds to let the network deletion complete
+    - name: Wait for network deletion to complete
+      wait_for:
+        timeout: 10
+        host: 127.0.0.1
+        port: 5432
+      when: deletion_status.changed

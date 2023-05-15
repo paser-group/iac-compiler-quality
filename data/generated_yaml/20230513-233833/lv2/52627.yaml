@@ -1,0 +1,56 @@
+
+---
+- hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: Generate a self-signed certificate
+      command: >
+        openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /etc/ssl/private/selfsigned.key -out /etc/ssl/certs/selfsigned.crt -subj "/C=US/ST=CA/L=SF/O=Company/OU=IT Department/CN={{ inventory_hostname }}"
+
+    - name: Install Java cert
+      java_cert:
+        alias: example.com
+        certificate: "{{ lookup('file', '/etc/ssl/certs/selfsigned.crt') }}"
+        state: present
+
+    - name: Remove cert file
+      file:
+        path: /etc/ssl/certs/selfsigned.crt
+        state: absent
+
+    - name: Invalid Java cert state
+      java_cert:
+        alias: example.com
+        certificate: "{{ lookup('file', '/etc/ssl/certs/selfsigned.crt') }}"
+        state: invalid
+
+    - name: Nonexistent Java cert alias
+      java_cert:
+        alias: nonexistent
+        certificate: "{{ lookup('file', '/etc/ssl/certs/selfsigned.crt') }}"
+        state: present
+
+    - name: Invalid certificate format
+      java_cert:
+        alias: example.com
+        certificate: "{{ lookup('file', '/etc/ssl/private/selfsigned.key') }}"
+        state: present
+
+    - name: Invalid certificate path
+      java_cert:
+        alias: example.com
+        certificate: "{{ lookup('file', '/etc/nonexistent.crt') }}"
+        state: present
+
+    - name: Invalid certificate state
+      java_cert:
+        alias: example.com
+        certificate: "{{ lookup('file', '/etc/ssl/certs/selfsigned.crt') }}"
+        state: invalid
+
+    - name: Invalid certificate alias
+      java_cert:
+        alias: 1234
+        certificate: "{{ lookup('file', '/etc/ssl/certs/selfsigned.crt') }}"
+        state: present

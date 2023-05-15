@@ -1,0 +1,42 @@
+
+- name: Reboot fails after a long time with Ubuntu when verbosity set to connection debug
+
+  hosts: all
+  vars:
+    - timeout: 3600
+
+  tasks:
+    - name: Set connection verbosity
+      set_fact:
+        ansible_connection: ssh
+        ansible_ssh_extra_args: -vvv
+        ansible_ssh_timeout: "{{ timeout }}"
+
+    - name: Ensure system is up to date
+      apt:
+        update_cache: yes
+      become: yes
+      become_user: root
+
+    - name: Reboot the system
+      command: /sbin/reboot
+      async: 10
+      poll: 0
+      ignore_errors: yes
+
+    - name: Wait for the system to reboot
+      wait_for:
+        host: "{{ inventory_hostname }}"
+        port: 22
+        state: started
+        timeout: "{{ timeout }}"
+
+    - name: Check system uptime
+      command: uptime
+      changed_when: false
+      register: uptime_result
+
+    - name: Assert system has been rebooted
+      assert:
+        that: "'min' not in uptime_result.stdout"
+

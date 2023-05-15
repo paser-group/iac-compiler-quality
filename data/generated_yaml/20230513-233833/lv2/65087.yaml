@@ -1,0 +1,33 @@
+
+---
+- hosts: all
+  gather_facts: no
+  tasks:
+    - name: Ensure string is converted to bytes by default
+      set_fact:
+        my_string: default string
+        my_bytes: "{{ my_string|to_bytes('utf-8') }}"
+    - name: Test UTF-16LE encoded string
+      set_fact:
+        my_string: defau\xfflt str\x00ing
+        my_bytes: "{{ my_string|to_bytes('utf-16le') }}"
+    - name: Test base64 encoded string
+      set_fact:
+        my_string: default string
+        my_bytes: "{{ my_string|b64encode|to_bytes }}"
+    - name: Test hexadecimal encoded string
+      set_fact:
+        my_string: default string
+        my_bytes: "{{ my_string|regex_replace('(.{2})', '\\1 ').split()|map('int')|map('int2byte')|join }}"
+    - name: Test string containing non-ASCII characters
+      set_fact:
+        my_string: "défàùlt strïng"
+        my_bytes: "{{ my_string|to_bytes('utf-8') }}"
+    - name: Test string containing null characters
+      set_fact:
+        my_string: "def\0ault stri\0ng"
+        my_bytes: "{{ my_string|to_bytes('utf-8') }}"
+    - name: Test string containing backslashes
+      set_fact:
+        my_string: "default \\-string-\\"
+        my_bytes: "{{ my_string|to_bytes('utf-8') }}"

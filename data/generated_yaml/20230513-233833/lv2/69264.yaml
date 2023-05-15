@@ -1,0 +1,51 @@
+
+---
+- name: RouterOS Command Error Test
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: RouterOS Command Error Test Task
+      routeros_command:
+        commands:
+          - /system/reboot
+        host: 10.1.1.{{ (inventory_hostname|last|int) + 1 }}
+        username: admin
+        password: "{{ vaulted_password }}"
+        async: 5
+        register: routeros_out
+
+    - name: RouterOS Output Validation
+      debug:
+        var: routeros_out.stdout_lines
+
+    - name: RouterOS Conditional Output Test
+      when: "'Could not connect' in routeros_out.stdout"
+      debug:
+        msg: "Could not connect to router"
+      when: "'incomplete command' in routeros_out.stdout"
+      debug:
+        msg: "Incomplete command entered"
+    - name: RouterOS Parameter Input Test
+      routeros_command:
+        commands:
+          - /ip/address/add address=172.16.0.{{ (inventory_hostname|last|int) + 1}}/24 interface=ether1
+        target: "{{ hostvars['node1']['ansible_host'] }}"
+        username: admin
+        password: "routeros_password!"
+   
+    - name: RouterOS Multiple Commands Test
+      routeros_command:
+        commands:
+          - /system/reboot
+          - /ip/firewall/filter/add chain=input action=drop comment="Block all incoming connections" src-address-list=blacklist
+          - /ip/firewall/mangle/add chain=forward action=mark-packet new-packet-mark=icmp_packet
+        host: "{{ hostvars['node1']['ansible_host'] }}"
+        username: admin
+        password: "{{ vaulted_password }}"
+        async: 5
+        register: routeros_out
+
+    - name: RouterOS Async Output Validation
+      debug:
+        var: routeros_out

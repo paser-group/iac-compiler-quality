@@ -1,0 +1,56 @@
+
+---
+- name: Configure VMware guest
+  hosts: localhost
+  connection: local
+  gather_facts: no
+
+  vars:
+    vcenter_hostname: <vcenter_hostname>
+    vcenter_username: <vcenter_username>
+    vcenter_password: <vcenter_password>
+    guest_name: <guest_name>
+    dvs_name: <dvs_name>
+
+  tasks:
+
+  - name: Extract DVS ID
+    vmware_vm_shell:
+      hostname: "{{ vcenter_hostname }}"
+      username: "{{ vcenter_username }}"
+      password: "{{ vcenter_password }}"
+      vm_id: "{{ guest_name }}"
+      cmd: "esxcli network vswitch dvs vmware vxlan network list"
+      validate_certs: no
+    register: dvs_id_output
+    until: dvs_id_output.stdout != ''
+    retries: 3
+    delay: 10
+
+  - name: Configure VMware guest network adapter
+    vmware_guest_network_interface:
+      hostname: "{{ vcenter_hostname }}"
+      username: "{{ vcenter_username }}"
+      password: "{{ vcenter_password }}"
+      validate_certs: no
+      folder: /
+      name: "{{ guest_name }}"
+      networks:
+        - name: "{{ dvs_name }}"
+          dvs_portgroup_type: earlyBinding
+          dvs_version: 6.5.0
+      state: present
+      hardware: nic
+      hw_device_id: 4000
+      hw_name: VMXNET3 Ethernet Controller
+      hw_label: Network adapter 1
+      scsi_controller: VirtualLsiLogicController
+      scsi_type: paravirtual
+      scsi_bus: 0
+      unit_number: 7
+      mode: 'on'
+      start_connected: 'True'
+      wake_on_lan: 'True'
+      hot_add_remove: 'True'
+      allow_guest_control: 'True'
+    when: dvs_id_output.stdout_lines | regex_search(dvs_name)

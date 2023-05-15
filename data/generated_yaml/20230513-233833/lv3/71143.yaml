@@ -1,0 +1,26 @@
+
+---
+- hosts: all
+  gather_facts: no
+  tasks:
+    - name: Deploy a virtual machine from a template
+      vmware_content_deploy_template:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ ansible_user }}"
+        password: "{{ ansible_ssh_pass }}"
+        validate_certs: no
+        folder: "missing_folder" # This should cause an error
+        template:
+          vm: Debian-10
+          folder: /ansible_test
+        datacenter_name: DC1
+        cluster_name: Cluster1
+        vm_name: "{{ inventory_hostname }}"
+      register: result
+
+    # The following block verifies whether the error occurred during the deployment of the virtual machine
+    - name: check for failed folder directory
+      assert:
+        that:
+          - result['failed'] == True
+          - not result['msg'] | search('FOLDER_NOT_FOUND')

@@ -1,0 +1,39 @@
+
+---
+- name: Test package installation from incorrect repository
+  hosts: all
+  become: true
+  tasks:
+    - name: Create a list of repositories
+      block:
+        - name: Add EPEL repository
+          shell: yum install -y epel-release
+          ignore_errors: true
+        - name: Add incorrect repository with unsigned packages
+          copy:
+            dest: /etc/yum.repos.d/incorrect.repo
+            content: |
+              [incorrect]
+              name=Incorrect Repository
+              baseurl=http://mirror.centos.org/centos-7/7/os/x86_64/
+              enabled=1
+              gpgcheck=0
+              
+    - name: Install packages
+      block:
+        - name: install vim
+          yum:
+            name: vim
+            state: present
+          become: true
+      rescue:
+        - name: Notify failure
+          fail:
+            msg: "Package installation failed"
+
+    - name: Verify package signature
+      block:
+        - name: Import GPG key
+          shell: rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY*
+        - name: Verify package
+          command: rpm -K /var/cache/yum/x86_64/7/incorrect/packages/vim-*rpm

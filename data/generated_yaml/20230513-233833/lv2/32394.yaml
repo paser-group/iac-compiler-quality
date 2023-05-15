@@ -1,0 +1,64 @@
+
+- name: Clear host errors
+  hosts: all
+  gather_facts: yes
+  
+  tasks:
+    - name: Display host facts
+      debug:
+        var: ansible_facts
+
+    - name: Generate a syntax error
+      command: "{{ item }}"
+      with_items:
+        - "ls -la && pwd"
+        - "rm -rf /"
+          
+    - name: Clear host errors
+      clear_host_errors:
+
+    - name: Check if errors cleared
+      debug:
+        var: host_errors
+ 
+    - name: Create a file using stats module with variable
+      file:
+        dest: "/tmp/{{ ansible_facts['hostname'] }}.txt"
+        state: touch
+ 
+    - name: Generate a warning
+      command: "echo 'This is a warning' >&2"
+      ignore_errors: yes
+ 
+    - name: Fail the Playbook with unconventional syntax
+      fail:
+    # no error message specified
+ 
+    - name: Execute a command with an argument containing a special character
+      command: 'echo "This is an argument with a pipe || character"'
+
+    - name: Check network connectivity using ping module
+      ping:
+        data: "This is a message to test connectivity"
+      
+    - name: Connect to a non-existing port
+      wait_for:
+        port: 60000
+      
+    - name: Install a fake package with an invalid URL using apt module
+      apt:
+        name: "https://fake_package.invalid/apt.deb"
+      
+    - name: Assign a variable to an unconventional value
+      set_fact:
+        my_var: "'}{/=<>_-)(*&^%$#@!~`"
+      
+    - name: Pause playbook with a message
+      pause:
+        prompt: "Waiting for input, press any key to continue"
+
+    - name: Send a Slack message with an unconventional message text
+      community.general.slack:
+        token: "{{ lookup('env', 'SLACK_TOKEN') }}"
+        text: "'<@{{ user_name }}>: This is an unconventional message text with special characters ##### ()_+'"
+        channel: "test-channel"

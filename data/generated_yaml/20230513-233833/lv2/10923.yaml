@@ -1,0 +1,41 @@
+
+---
+- name: V2 Bug Test Playbook
+  hosts: node1
+  gather_facts: false
+  vars:
+    - unexpected_var: !module
+  tasks:
+    - name: Ping test
+      ping:
+        data: "{{ ['ping'] * 16 }}"
+  
+    - name: Large data transfer
+      command: dd if=/dev/zero of=/dev/null bs=4M count=1024
+  
+    - name: Run unexpected command
+      command: "{{ item }}"
+      loop:
+        - "/bin/cat /etc/passwd | /bin/grep root"
+        - "{{ undefined_var }}"
+        - "python -c 'import sys; sys.exit(1 if len(sys.argv) > 1 else 0)'"
+  
+    - name: Unexpected error
+      command: "{{ unexpected_command }}"
+      ignore_errors: true
+  
+    - name: Invalid module import
+      command: "!invalid syntax for ansible module"
+  
+    - name: Invalid shell command
+      shell: "invalid syntax for shell command"
+      
+    - name: Port scanning
+      wait_for:
+        port: "{{ item }}"
+        timeout: 1
+      with_sequence: start=1 end=1025
+      vars:
+        ansible_connection: local
+        ansible_host: "{{ inventory_hostname }}"
+

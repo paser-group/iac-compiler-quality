@@ -1,0 +1,23 @@
+yaml
+---
+- name: Verify and Configure nxos_l2_interface
+  hosts: nxos_l2_interface
+  gather_facts: false
+
+  tasks:
+
+  - name: Verify nxos_l2_interface configuration
+    raw: show running-config interface {{ interface_name }}
+    register: result
+    failed_when: result.rc != 0
+
+  - name: Compose nxos_l2_interface configuration
+    set_fact:
+      interface_config: "{{ l2_interface | combine({'name': interface_name}) }}"
+
+  - name: Configure nxos_l2_interface
+    nxos_l2_interface:
+      config: "{{ interface_config }}"
+      state: present
+    register: result
+    when: interface_config != result.config

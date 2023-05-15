@@ -1,0 +1,49 @@
+
+- name: Docker container playbook
+  hosts: all
+  become: true
+  vars:
+    ip_address: "0.0.0.0"
+    docker_daemon_ip: "10.1.1.254"
+
+  tasks:
+
+  # Edge cases
+  - name: Create a Docker container with published ports using 0.0.0.0 as the default network
+    docker_container:
+      name: test-container
+      image: ubuntu
+      state: started
+      ports:
+        - "{{ ip_address }}:80:80"
+    register: result
+    ignore_errors: true
+
+  - name: Print result
+    debug:
+      var: result
+
+  # Unconventional syntax
+  - name: Create a Docker container with published ports using an unconventional syntax
+    docker_container: name=test-container image=ubuntu state=started ports="80:{{ ip_address + ':80'}}"
+    register: result2
+    ignore_errors: true
+
+  - name: Print result 2
+    debug:
+      var: result2
+
+  # Unexpected inputs
+  - name: Create a Docker container with published ports using an unexpected input
+    docker_container:
+      name: test-container
+      image: ubuntu
+      state: started
+      ports:
+        - "{{ docker_daemon_ip }}:80:80"
+    register: result3
+    ignore_errors: true
+
+  - name: Print result 3
+    debug:
+      var: result3

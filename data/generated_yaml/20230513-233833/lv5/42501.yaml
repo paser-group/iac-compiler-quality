@@ -1,0 +1,26 @@
+
+---
+- name: Test retrieval of versioning information from an S3 bucket using Minio
+  hosts: node1
+  gather_facts: false
+
+  vars:
+    s3_bucket_name: mybucket
+    s3_bucket_region: us-east-1
+
+  tasks:
+  - name: Install Minio Client
+    command: wget https://dl.min.io/client/mc/release/linux-amd64/mc && chmod +x mc && mv mc /usr/bin/
+
+  - name: Get Bucket Versioning
+    command: mc --insecure config host add s3 https://s3.{{ s3_bucket_region }}.amazonaws.com ACCESS_KEY_ID SECRET_ACCESS_KEY && mc --insecure ls s3/{{ s3_bucket_name }} --versioning
+    register: versioning
+
+  - name: Check for NotImplemented error
+    fail:
+      msg: "NotImplemented Error Encountered"
+    when: "'NotImplemented' in versioning.stdout_lines"
+
+  - name: Print Versioning Information
+    debug:
+      var: versioning.stdout_lines

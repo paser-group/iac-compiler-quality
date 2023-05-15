@@ -1,0 +1,67 @@
+
+---
+- name: Dynamic inventory - Bug Testing Playbook
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    invalid_hosts: [
+      '45.79.254.10',
+      'akkj123jjakd',
+      '3.2.1.1.4',
+      '$$$$$',
+      'localhost-',
+      '10.251.3.66&wlan0=foo.com',
+      '10.1.1.3/><script>alert(1);</script>'
+    ]
+
+  tasks:
+    # Create a dynamic inventory file with invalid hostnames/IPs
+    - name: Generate dynamic inventory file
+      template:
+        src: "{{ item.src }}"
+        dest: /tmp/inventory
+        mode: 0644
+      with_items:
+        - { src: "templates/dynamic_inventory.tmpl" }
+      vars:
+        invalid_hosts: "{{ invalid_hosts }}"
+
+    # Verify syntax of generated inventory file using ansible-inventory command
+    - name: Verify generated inventory file syntax
+      command: ansible-inventory --list -i /tmp/inventory
+      register: inventory_output
+
+    # Print inventory file output
+    - debug:
+        var: inventory_output.stdout_lines
+
+    # Test if Ansible can reach the invalid hosts
+    - name: Ping invalid hosts
+      ping:
+      delegate_to: "{{ item }}"
+      with_items: "{{ invalid_hosts }}"
+      ignore_errors: true
+
+    # Print output of tasks that failed to reach invalid hosts
+    - debug:
+        var: ansible_failed_result
+
+    # Test if Ansible can reach the valid hosts and execute commands
+    - name: Execute command on valid hosts
+      command: "ls -l"
+      args:
+        chdir: "{{ item }}"
+      delegate_to: "{{ item }}"
+      become: true
+      with_items:
+        - /var/log
+        - /etc
+        - /opt
+
+    # Restart network service on all hosts
+    - name: Restart network service
+      service:
+        name: network
+        state: restarted
+      delegate_to: all

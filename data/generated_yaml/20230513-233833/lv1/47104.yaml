@@ -1,0 +1,28 @@
+yaml
+---
+- name: Update 'follow' file
+  hosts: all
+  become: true
+  
+  tasks:
+    - name: Check file state and permissions
+      stat:
+        path: /path/to/follow/file
+      register: file_state
+
+    - name: Update file only if necessary
+      lineinfile:
+        dest: /path/to/follow/file
+        state: present
+        line: '# Some content here'
+        create: yes
+        backup: yes
+      when: file_state.stat.exists != true or file_state.stat.mode != '0644'
+      notify: restart SomeApp
+
+  handlers:
+    - name: restart SomeApp
+      systemd:
+        name: someapp
+        state: restarted
+      become: true

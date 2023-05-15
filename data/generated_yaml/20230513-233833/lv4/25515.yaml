@@ -1,0 +1,34 @@
+yaml
+- name: Test playbook for nxos_vxlan_vtep module
+  hosts: nxos_switch
+  gather_facts: false
+  connection: local
+  tasks:
+    - name: Create a VTEP loopback interface
+      nxos_vrf:
+        vrf: test_vrf
+        afi: ipv4
+        state: present
+      register: vrf_out
+
+    - name: Ensure VTEP vrf is created
+      debug:
+        msg: "{{ vrf_out.msg }}"
+      failed_when: false
+
+    - name: Configure VTEP
+      nxos_vxlan_vtep:
+        vni: 10000
+        vrf: test_vrf
+        source_interface: loopback0
+        state: present
+        transport: "{{ item }}"
+      with_items:
+        - cli
+        - nxapi
+      register: vtep_out
+
+    - name: Display outputs
+      debug:
+        msg: "{{ vtep_out.msg }}"
+      failed_when: false

@@ -1,0 +1,27 @@
+
+- name: Kerberos Issue Playbook
+  hosts: all
+  become: yes
+
+  vars:
+    client_principal: "CLIENT@EXAMPLE.COM"
+    keytab_path: "/etc/krb5.keytab"
+
+  tasks:
+   - name: Authenticate user
+     kinit:
+      name: "{{ client_principal }}"
+      keytab: "{{ keytab_path }}"
+  
+   - name: View Kerberos ticket cache directory
+     klist:
+
+   - name: Check Kerberos ticket cache for client principal
+     command: "klist | grep -q 'Principal: {{ client_principal }}'"
+     register: klist_result
+     failed_when: klist_result.rc == 1
+
+   - name: Debug Kerberos ticket cache failure
+     debug:
+      msg: "Failed to find the client principal in the Kerberos ticket cache directory"
+     when: klist_result.failed == true

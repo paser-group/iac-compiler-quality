@@ -1,0 +1,23 @@
+yaml
+---
+- name: Collect debug information from Cisco 6509 switches
+  hosts: cisco_switches
+  gather_facts: no
+  tasks:
+  - name: Disable "logging discriminator" configuration
+    ios_config:
+      lines:
+      - "no logging discriminator"
+    ignore_errors: yes
+  - name: Verify connectivity to switch
+    ping:
+  - name: Execute debug commands
+    ios_command:
+      commands:
+      - "terminal length 0"
+      - "terminal width 512"
+      - "show logging | inc Illegal|illegal|ERROR|error"
+    register: debug_output
+  - name: Display debug information
+    debug:
+      var: debug_output.stdout_lines

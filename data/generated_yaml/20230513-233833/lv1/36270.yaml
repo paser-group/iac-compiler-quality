@@ -1,0 +1,26 @@
+yaml
+---
+- name: fix azure_rm_virtualmachine deserialization error
+  hosts: all
+  become: yes # to elevate privileges
+
+  tasks:
+  - name: Remove Python 2 YAML module
+    shell: ansible --version | grep ^ansible | awk '{print $2}' | cut -d. -f1
+    register: ansible_major_version
+    changed_when: False
+
+  - name: Install Python 3 YAML module
+    become: true
+    pip:
+      name: PyYAML
+      executable: python3
+      state: latest
+    when: ansible_major_version.stdout|int >= 2
+
+  - name: Install Python 2 YAML module
+    become: true
+    apt:
+      name: python-yaml
+      state: latest
+    when: ansible_major_version.stdout|int < 2

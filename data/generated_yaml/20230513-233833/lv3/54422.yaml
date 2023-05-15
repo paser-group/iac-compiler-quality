@@ -1,0 +1,23 @@
+yaml
+---
+
+- name: Create GCP service account
+  hosts: all
+  vars:
+    service_account_name: existing-account
+    project_id: my-project
+  tasks:
+  - name: create service account
+    gcp_iam_service_account:
+      name: "{{ service_account_name }}"
+      project: "{{ project_id }}"
+      auth_kind: "serviceaccount"
+      service_account_file: "/path/to/service-account-file.json"
+    register: result
+    ignore_errors: true
+    when: "'Service account already exists' not in result.stderr_lines"
+
+  - name: fail the playbook if service account already exists
+    fail:
+      msg: "GCP Service account '{{ service_account_name }}' already exists"
+    when: "'Service account already exists' in result.stderr_lines"

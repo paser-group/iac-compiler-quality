@@ -1,0 +1,51 @@
+
+---
+- name: Create new Zabbix host
+  hosts: all
+  become: true
+  vars:
+    api_server: http://your.zabbix.server/api_jsonrpc.php
+    api_user: your_zabbix_username
+    api_pass: your_zabbix_password
+  tasks:
+  - name: Install Zabbix API module
+    pip:
+      name: zabbix-api
+  - name: Generate host group in Zabbix
+    zabbix_host_group:
+      server_url: "{{ api_server }}"
+      login_user: "{{ api_user }}"
+      login_password: "{{ api_pass }}"
+      state: present
+      name: "My_Host_Group"
+  - name: Create new host using zabbix_host module
+    zabbix_host:
+      server_url: "{{ api_server }}"
+      login_user: "{{ api_user }}"
+      login_password: "{{ api_pass }}"
+      name: my_new_host
+      description:
+      inventory_mode: automatic
+      inventory:
+        tag1: value1
+        tag2: value2
+      interfaces: "{{ item }}"
+      groups:
+        - My_Host_Group
+      macros:
+        - macro: '{$MACRO1}'
+          value: 'value1'
+        - macro: '{$MACRO2}'
+          value: 'value2'
+      templates:
+        - Template OS Linux
+      status: '1'
+      available: '1'
+      {% if my_number > 10 %}
+      tls_accept: '1'
+      {% else %}
+      tls_accept: '0'
+      {% endif %}
+    with_items:
+      - {type: 'agent', main: '1', ip: '10.1.1.1', port: '10050', useip: '1'}
+  

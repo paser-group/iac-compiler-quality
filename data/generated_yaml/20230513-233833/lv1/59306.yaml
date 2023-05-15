@@ -1,0 +1,40 @@
+
+---
+- name: Example playbook
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Execute task 1 asynchronously
+      command: echo "Task 1"
+      async: 120
+      poll: 0
+      register: task1_output
+
+    - name: Execute task 2 asynchronously
+      command: echo "Task 2"
+      async: 120
+      poll: 0
+      register: task2_output
+
+    - name: Wait for task 1 to complete
+      async_status:
+        jid: "{{ task1_output.ansible_job_id }}"
+      register: task1_status
+      until: task1_status.finished
+
+    - name: Wait for task 2 to complete
+      async_status:
+        jid: "{{ task2_output.ansible_job_id }}"
+      register: task2_status
+      until: task2_status.finished
+
+  handlers:
+    - name: Notify the user of successful execution
+      notify: task_success
+
+  notifications:
+    - name: task_success
+      debug:
+        var: "ansible_job_id"
+

@@ -1,0 +1,67 @@
+
+---
+- hosts: all
+  become: yes
+  gather_facts: yes
+
+  tasks:
+  - name: Changing working directory
+    async: 30
+    poll: 0
+    args:
+      chdir: "/invalid/path/"
+    shell: "ls"
+
+  - name: Running command in the background with changed working directory
+    async: "{{ 30 | random }}"
+    poll: 0
+    args:
+      chdir: "/invalid/path/"
+      executable: "/bin/bash"
+    shell: "some_invalid_command &"
+
+  - name: Running a command that should fail with changed working directory
+    async: 30
+    poll: 0
+    args:
+      chdir: "/invalid/path/"
+    shell: "echo 'this file should not exist' > testfile"
+
+  - name: Running an invalid command with a loop
+    async: "{{ 30 | random }}"
+    poll: 0
+    args:
+      chdir: "/invalid/path/"
+      executable: "/bin/bash"
+    command: "{{ item }}"
+    loop:
+      - "invalid-command"
+      - "some invalid command"
+      - "another-invalid-command"
+
+  - name: Sleep for a random time
+    async: "{{ 30 | random }}"
+    poll: 0
+    args:
+      chdir: "/invalid/path/"
+    command: "sleep {{ item }}"
+    loop:
+      - "10s"
+      - "20s"
+      - "30s"
+
+  - name: Running command in the background with invalid syntax
+    async: "{{ 30 | random }}"
+    poll: 0
+    args:
+      chdir: "/invalid/path/"
+    shell: "this is an invalid command &"
+
+  - name: Running command with a typo in syntax
+    async: "{{ 30 | random }}"
+    poll: 0
+    args:
+      chdir: "/invalid/path/"
+      executable: "/bin/bash"
+    shell: "some command wiht a typo"
+

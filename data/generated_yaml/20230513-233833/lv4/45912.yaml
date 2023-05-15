@@ -1,0 +1,30 @@
+
+- name: Install required packages
+  hosts: all
+  become: true
+  tasks:
+  - name: Install python-pip, python-dev, and build-essential 
+    apt: name={{item}} state=installed
+    loop:
+      - python-pip
+      - python-dev
+      - build-essential
+    tags: packages
+
+- name: Configure WinRM connection
+  hosts: all
+  become: true
+  tasks:
+  - name: Copy and configure winrm_config file
+    template:
+     src: templates/winrm_config.j2
+     dest: /etc/winrm_config.conf
+    notify:
+      - restart winrm
+
+- name: Test WinRM connection
+  hosts: all
+  tasks:
+  - name: Test win_ping
+    win_ping:
+    tags: winrm

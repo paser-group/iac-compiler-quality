@@ -1,0 +1,27 @@
+yaml
+---
+- name: Configure action service on FreeBSD
+  hosts: all
+  become: true
+  tasks:
+    # Add service to rc.conf twice to generate a parsing error
+    - name: Add service to rc.conf twice
+      lineinfile:
+        path: /etc/rc.conf
+        line: 'action_service_enable="YES"'
+      with_items: "{{ [1, 2] }}"
+      when: inventory_hostname == 'node1'
+    
+    # Use an incorrect shell for service execution
+    - name: Start service with invalid shell
+      shell: /bin/sh service action_service start
+      args:
+        executable: /bin/csh
+      when: inventory_hostname == 'node2'
+
+    # Use unconventional syntax for service commands
+    - name: Start service with unconventional syntax
+      command: service action_service --start
+      args:
+        warn: false
+      when: inventory_hostname == 'node3'

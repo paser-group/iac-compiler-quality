@@ -1,0 +1,30 @@
+
+- hosts: all
+  gather_facts: no
+  vars:
+    virtual_network_name: "myVnet"
+    remote_virtual_network_name: "myRemoteVnet"
+    remote_virtual_network_resource_group: "myRemoteResourceGroup"
+    remote_virtual_network_subnet: "myRemoteVnetSubnet"
+  tasks:
+    - name: Retrieve the remote virtual network peering Azure resource ID
+      azure_rm_virtualnetworkpeering_info:
+            name: "myVnet-to-myRemoteVnet"
+            virtual_network_name: "{{ virtual_network_name }}"
+            resource_group: "{{ resource_group }}"
+      register: peering_info
+    - name: Create virtual network peering
+      azure_rm_virtualnetworkpeering:
+        name: "{{ virtual_network_name }}-to-{{ remote_virtual_network_name }}"
+        virtual_network_name: "{{ virtual_network_name }}"
+        remote_virtual_network_resource_group: "{{ remote_virtual_network_resource_group }}"
+        remote_virtual_network_name: "{{ remote_virtual_network_name }}"
+        allow_virtual_network_access: yes
+        allow_forwarded_traffic: no
+        allow_gateway_transit: no
+        use_remote_gateways: no
+        remote_virtual_network_id: "{{ peering_info.ansible_facts.azure_rm_virtualnetworkpeering.id }}"
+        remote_virtual_network_subnet_id: "/subscriptions/subscription_id/resourceGroups/{{ remote_virtual_network_resource_group }}/providers/Microsoft.Network/virtualNetworks/{{ remote_virtual_network_name }}/subnets/{{ remote_virtual_network_subnet }}"
+      loop_control:
+        loop_var: peering_info
+      when: peering_info.ansible_facts.azure_rm_virtualnetworkpeering is defined

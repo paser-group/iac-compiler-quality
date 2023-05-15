@@ -1,0 +1,35 @@
+
+---
+- name: Create ec2_group with cross-VPC group reference
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Ensure ec2_vpc_customer_gateway exists
+      ec2_vpc_customer_gateway:
+        name: my_vpn_gateway
+        bgp_asn: "62743"
+        ip_address: "80.0.2.1"
+        state: present
+
+    - name: Ensure VPC exists
+      ec2_vpc_net:
+        name: my_vpc
+        cidr_block: 10.10.0.0/16
+        region: us-west-2
+        state: present
+
+    - name: Create ec2_group referencing another VPC's group
+      delegate_to: localhost
+      ec2_group:
+        name: "my_group"
+        vpc_id: "vpc-1234abcd"
+        region: us-west-2
+        subnets: []
+        rules:
+          - proto: tcp
+            ports: 80
+            cidr_ip: 10.10.0.0/16
+        rules_egress:
+          - proto: all
+            cidr_ip: 0.0.0.0/0
+        state: present

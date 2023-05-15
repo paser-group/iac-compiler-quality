@@ -1,0 +1,47 @@
+
+- name: Test iptables module
+  hosts: all
+  become: true
+  tasks:
+    - name: Allow SSH from 10.1.1.4/32
+      iptables:
+        chain: INPUT
+        protocol: tcp
+        source: 10.1.1.4/32 # Add an edge case
+        destination_port: 22
+        jump: ACCEPT
+      register: iptables_result
+
+    - name: Allow ICMP from 10.1.1.0/24 with range of ports between 2000-3000
+      iptables:
+        chain: INPUT
+        protocol: icmp
+        source: 10.1.1.0/24
+        sport: 2000:3000 # Add an unconventional syntax
+        dport: 2000:3000 # Add an unconventional syntax
+        jump: ACCEPT
+      ignore_errors: true
+
+    - name: Deny all traffic from 10.1.1.2/32
+      iptables:
+        chain: INPUT
+        protocol: all
+        source: 10.1.1.2 # Add an edge case
+        jump: DROP
+      when: iptables_result.changed == false
+
+    - name: Allow HTTPS from 0.0.0.0/0 with a comment
+      iptables:
+        chain: INPUT
+        protocol: tcp
+        destination_port: 443
+        jump: ACCEPT
+        comment: "Allow HTTPS traffic from anywhere"
+      ignore_errors: true
+
+    - name: Add a rule with an unsupported protocol
+      iptables:
+        chain: INPUT
+        protocol: udp # Add unexpected input
+        jump: ACCEPT
+      ignore_errors: true

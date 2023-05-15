@@ -1,0 +1,31 @@
+
+---
+- name: Command and shell module edge cases
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Test command module issue
+      command: "{{ item.cmd }} {{ item.args }}"
+      with_items:
+        - { cmd: "ls", args: "-1 /tmp | grep file1" }
+        - { cmd: "cat", args: "/etc/passwd" }
+        - { cmd: "echo", args: "{{ inventory_hostname }}{{ groups['all'][0] }}{{ play_hosts }}{{ ansible_play_hosts_all }}{{ ansible_version }}{{ playbook_dir }}" }
+        - { cmd: "echo", args: "{{ lookup('env', 'USER') }}{{lookup('env', 'HOME')}}"}
+        - { cmd: "printf", args: "{{'-'+x+'-'}},", loop: "0 1 2 3"}
+      register: output_cmd
+
+    - name: Test shell module issue
+      shell: "{{ item }}"
+      with_items:
+        - "ls -1 /tmp | grep file1"
+        - "cat /etc/passwd"
+        - "echo {{ inventory_hostname }}{{ groups['all'][0] }}{{ play_hosts }}{{ ansible_play_hosts_all }}{{ ansible_version }}{{ playbook_dir }}"
+        - "echo {{ lookup('env', 'USER') }}{{lookup('env', 'HOME')}}"
+        - "for x in 0 1 2 3; do printf '%s\n' -$x-; done"
+      register: output_shell
+
+    - name: Clean up
+      file:
+        path: /tmp/file1
+        state: absent

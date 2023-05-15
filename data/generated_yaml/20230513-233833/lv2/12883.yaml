@@ -1,0 +1,71 @@
+yaml
+- hosts: localhost
+  connection: local
+  gather_facts: False
+  vars:
+    region: us-west-1
+    cidr_block: 10.0.0.0/16
+    profile: hack
+    access_key: AWSACCESSKEY
+    secret_key: AWSSECRETKEY
+    invalid_access_key: ASWACCESKEY
+    invalid_secret_key: ASWSECRETEKEY
+    invalid_region: ap-northeast-1
+    invalid_cidr_block: 192.168.0.0/24
+    invalid_vpc_id: vpc-123456
+    invalid_security_group_id: sg-123456
+  tasks:
+    - name: Create VPC with specified profile
+      ec2_vpc:
+        state: present
+        vpc_cidr_block: "{{ cidr_block }}"
+        region: "{{ region }}"
+        profile: "{{ profile }}"
+      register: vpc_present_profile
+
+    # Invalid access key
+    - name: Create VPC with invalid credentials
+      ec2_vpc:
+        state: present
+        vpc_cidr_block: "{{ cidr_block }}"
+        region: "{{ region }}"
+        access_key: "{{ invalid_access_key }}"
+        secret_key: "{{ invalid_secret_key }}"
+      register: vpc_present_invalid_credentials
+
+    # Invalid region
+    - name: Create VPC with invalid region
+      ec2_vpc:
+        state: present
+        vpc_cidr_block: "{{ cidr_block }}"
+        region: "{{ invalid_region }}"
+        profile: "{{ profile }}"
+      register: vpc_present_invalid_region
+
+    # Invalid CIDR block
+    - name: Create VPC with invalid CIDR block
+      ec2_vpc:
+        state: present
+        vpc_cidr_block: "{{ invalid_cidr_block }}"
+        region: "{{ region }}"
+        profile: "{{ profile }}"
+      register: vpc_present_invalid_cidr_block
+
+    # Invalid VPC ID
+    - name: Delete non-existing VPC
+      ec2_vpc:
+        state: absent
+        vpc_id: "{{ invalid_vpc_id }}"
+        region: "{{ region }}"
+        profile: "{{ profile }}"
+      register: vpc_absent_invalid_vpc_id
+
+    # Invalid security group ID
+    - name: Create VPC with invalid security group ID
+      ec2_vpc:
+        state: present
+        vpc_cidr_block: "{{ cidr_block }}"
+        region: "{{ region }}"
+        profile: "{{ profile }}"
+        security_group_ids: ["{{ invalid_security_group_id }}"]
+      register: vpc_present_invalid_security_group_id

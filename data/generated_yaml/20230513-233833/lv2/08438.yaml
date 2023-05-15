@@ -1,0 +1,49 @@
+
+- name: Test playbook to find bugs in Ansible compiler
+  hosts: all
+  gather_facts: false
+  become: true
+  
+  tasks:
+
+  - name: Include a task file that doesn't exist
+    include_tasks: non_existent.yml
+
+  - name: Include a role without a main tasks file
+    include_role:
+      name: role_without_main_tasks_file
+
+  - name: Use a non-existent module
+    command: non_existent_module -arg1 arg1_value
+
+  - name: Use an undocumented module argument
+    user:
+      name: test_user
+      password: test_password
+      un_documented_arg: test_value
+
+  - name: Use invalid syntax in a module argument
+    user:
+      name: test_user
+      password: test_password'
+      
+  - name: Use an invalid variable name
+    debug:
+      var: 'invalid_var_#%'
+      
+  - name: Use an invalid host pattern
+    command: echo "testing invalid host pattern"
+    delegate_to: '{{ invalid_host_pattern }}'
+    run_once: true
+
+  - name: Run a task with invalid YAML syntax
+    shell: |
+      echo {{ invalid_yaml_syntax ($ -) && }}
+      
+  - name: Use a broken Jinja2 template
+    lineinfile:
+      path: /etc/sudoers
+      regexp: '^(%admin\s+ALL=(ALL)\s+ALL)$'
+      line: '{{  (["foo", "bar | baz] | random") | join(', ') }} ALL=(ALL:ALL) ALL'
+      insertafter: '\%admin ALL\= \(ALL\) ALL'
+      state: present

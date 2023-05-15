@@ -1,0 +1,76 @@
+
+- name: Test vmware_portgroup idempotecy issue
+  hosts: all
+  become: true
+
+  tasks:
+
+  - name: Create vmware_portgroup
+    vmware_portgroup:
+      hostname: "{{ inventory_hostname }}"
+      username: root
+      password: "{{ vault_password }}"
+      datacenter_name: Test
+      cluster_name: Cluster1
+      dvswitch_name: DvSwitch1
+      portgroup_name: PG_test
+      vlan_id: 100
+      state: present
+
+  - name: Delete vmware_portgroup prior to creation
+    vmware_portgroup:
+      hostname: "{{ inventory_hostname }}"
+      username: root
+      password: "{{ vault_password }}"
+      datacenter_name: Test
+      cluster_name: Cluster1
+      dvswitch_name: DvSwitch1
+      portgroup_name: PG_test
+      state: absent
+
+  - name: Create vmware_portgroup with unconventional syntax and inputs
+    vmware_portgroup:
+      hostname: "{{ inventory_hostname }}"
+      username: root
+      password: "{{ vault_password }}"
+      datacenter_name: Test
+      cluster_name: Cluster1
+      dvswitch_name: |-
+        {% if 1+1 == 2 %}
+          DvSwitch2
+        {% else %}
+          DvSwitch3
+        {% endif %}
+      portgroup_name: PG_test
+      vlan_id: "100,200,YZ"
+      state: present
+
+  - name: Attempt to create existing vmware_portgroup and verify idempotency
+    vmware_portgroup:
+      hostname: "{{ inventory_hostname }}"
+      username: root
+      password: "{{ vault_password }}"
+      datacenter_name: Test
+      cluster_name: Cluster1
+      dvswitch_name: DvSwitch1
+      portgroup_name: PG_test
+      vlan_id: 100
+      state: present
+    register: create_result_pre
+
+  - name: Verify vmware_portgroup idempotency
+    vmware_portgroup:
+      hostname: "{{ inventory_hostname }}"
+      username: root
+      password: "{{ vault_password }}"
+      datacenter_name: Test
+      cluster_name: Cluster1
+      dvswitch_name: DvSwitch1
+      portgroup_name: PG_test
+      vlan_id: 100
+      state: present
+    register: create_result_post
+
+  - name: Print debug information
+    debug:
+      var: create_result_post

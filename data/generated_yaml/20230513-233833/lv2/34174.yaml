@@ -1,0 +1,31 @@
+
+- name: Test aci_rest module
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Test invalid input for aci_rest module
+      aci_rest:
+        host: "{{ hostvars[inventory_hostname].ansible_host }}:{{ 65536 | random }}"
+        username: admin
+        password: password
+        method: get
+        path: /api/node/class/fvTenant.json
+      ignore_errors: true
+
+    - name: Test unconventional syntax for aci_rest module
+      aci_rest:
+        host: "{{ hostvars['node1'].ansible_host }} {{ hostvars['node2'].ansible_host }} {{ hostvars['node3'].ansible_host }}"
+        username: admin
+        password: password
+        method: "{{ 'get' }}"
+        path: "{{ ['/api', 'node', 'class', 'fvTenant.json'] | join('/') }}"
+      ignore_errors: true
+
+    - name: Test unexpected input for aci_rest module
+      aci_rest:
+        host: "{{ hostvars[inventory_hostname].ansible_host }}"
+        username: "{{ [ 'admin', 'root', 'user' ] | random }}"
+        password: password
+        method: "{{ ['get', 'put', 'post', 'delete'] | random }}"
+        path: "{{ ['api', 'node', 'class', 'fv' ~ ['Tenant', 'Context', 'BD', 'EPG'] | random ~ '.json'] | join('/') }}"
+      ignore_errors: true

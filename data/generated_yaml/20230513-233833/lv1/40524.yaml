@@ -1,0 +1,30 @@
+yaml
+# playbook.yml
+
+- name: Install and configure required packages on remote machine.
+  hosts: remote
+  become: true
+
+  tasks:
+  - name: Verify Ansible version
+    assert:
+      that: ansible_version.full | version_compare('2.10', '>=')
+      msg: "Please upgrade your Ansible version to at least 2.10"
+
+  - name: Set required variables for vault
+    set_fact:
+      vault_localhost_sudo: yes
+
+  - name: Execute local action with privilege escalation
+    local_action:
+      module: package
+      name: apache2
+      state: present
+    delegate_to: localhost
+    become: "{{ vault_localhost_sudo }}"
+
+  - name: Ensure apache2 is running
+    service:
+      name: apache2
+      state: started
+      enabled: true

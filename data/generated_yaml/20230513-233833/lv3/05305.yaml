@@ -1,0 +1,38 @@
+
+---
+- name: Register instance in ELB
+  hosts: localhost
+  gather_facts: False
+  
+  vars:
+    elb_name: "test-elb"
+    instance_id: "i-1234567890abcdef"
+
+  tasks:
+  - name: "Register the instance"
+    ec2_elb:
+      state: "present"
+      region: "us-east-1"
+      elb: "{{ elb_name }}"
+      instance_id: "{{ instance_id }}"
+    register: ec2_elb_output
+
+  - name: "Fail safely if any error occurs"
+    fail:
+      msg: "Oops! An error occurred during the play"
+    when: ec2_elb_output is not defined
+
+  - name: "Handle the error"
+    debug:
+      msg: "The registration completed with warnings! {{ ec2_elb_output }}"
+    when: '("WORLD!" in ec2_elb_output.warnings[0])'
+
+  - name: "Handle the error"
+    debug:
+      msg: "The registration completed with errors! {{ ec2_elb_output }}"
+    when: '("FAILURE!" in ec2_elb_output.failures[0].msg)'
+
+  - name: "Handle the success"
+    debug:
+      msg: "The instance {{ instance_id }} has been registered with {{ elb_name }} successfully"
+    when: ec2_elb_output is defined and ec2_elb_output is not None

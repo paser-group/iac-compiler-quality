@@ -1,0 +1,34 @@
+yaml
+---
+- hosts: all
+  become: yes
+  tasks:
+  - name: Stop RabbitMQ service
+    service:
+      name: rabbitmq-server
+      state: stopped
+
+  - name: Delete rabbitmq user
+    shell: rabbitmqctl delete_user rabbitmq_user
+    ignore_errors: yes
+
+  - name: Add rabbitmq user
+    shell: rabbitmqctl add_user rabbitmq_user rabbitmq_password
+    register: rabbitmq_user_result
+
+  - name: Set rabbitmq user permissions
+    shell: rabbitmqctl set_permissions -p / rabbitmq_user "." "." "."
+    when: rabbitmq_user_result is success
+
+  - name: Start RabbitMQ service
+    service:
+      name: rabbitmq-server
+      state: started
+
+  - name: Verify RabbitMQ service is running
+    systemd:
+      name: rabbitmq-server
+      state: started
+
+  - name: Verify rabbitmq user is present
+    shell: rabbitmqctl list_users | grep rabbitmq_user

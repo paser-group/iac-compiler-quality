@@ -1,0 +1,29 @@
+
+- name: Confirm bug in vmware_guest mem_reservation parameter
+  hosts: all
+  become: yes
+  
+  vars:
+    vm_name: test_vm
+    vm_cpu: 2
+    vm_memory_mb: 2048
+
+  tasks:
+    - name: Create a new VM and set mem_reservation to 0
+      vmware_guest:
+        name: "{{ vm_name }}"
+        state: present
+        hardware:
+          memory_mb: "{{ vm_memory_mb }}"
+          num_cpus: "{{ vm_cpu }}"
+          mem_reservation: 0
+      delegate_to: localhost
+
+    - name: Check if VM with zero memory has been created
+      shell: grep -i mem /etc/vmware/*/test_vm.vmx
+      delegate_to: localhost
+      register: check_vm_mem
+
+    - name: Print the result
+      debug:
+        var: check_vm_mem.stdout_lines

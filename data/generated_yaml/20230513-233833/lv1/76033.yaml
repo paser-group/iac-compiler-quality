@@ -1,0 +1,37 @@
+
+---
+- name: Create instance group manager and handle error
+  hosts: localhost
+  connection: local
+  gather_facts: no
+  vars:
+    instance_template_name: my-instance-template
+    instance_group_manager_name: my-instance-group-manager
+    project_id: my-gcp-project
+    region: us-central1
+  tasks:
+  - name: Install google-auth module
+    pip:
+      name: google-auth
+      state: present
+
+  - name: Create instance group manager
+    gcp_compute_instance_group_manager:
+      name: "{{ instance_group_manager_name }}"
+      size: 1
+      base_instance_name: "{{ instance_template_name }}"
+      region: "{{ region }}"
+      project_id: "{{ project_id }}"
+      state: present
+    register: group_manager
+
+  - name: Handle error
+    debug:
+      msg: "{{ group_manager }}"
+
+  - name: Clean up instance group manager
+    gcp_compute_instance_group_manager:
+      name: "{{ instance_group_manager_name }}"
+      region: "{{ region }}"
+      project_id: "{{ project_id }}"
+      state: absent

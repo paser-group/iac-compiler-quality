@@ -1,0 +1,26 @@
+
+---
+- name: Fix script module privilege escalation issues
+  hosts: all
+  become: true
+  tasks:
+    - name: Check SELinux status
+      get_fact:
+        facter: "selinux"
+      register: selinux_status
+
+    - name: Update SELinux status
+      when: selinux_status.facter.selinux.status != 'enabled'
+      shell: "setenforce 1"
+
+    - name: Set correct permissions on script module file
+      file:
+        path: /usr/lib/python2.7/site-packages/ansible/modules/commands/script.py
+        mode: "0755"
+
+    - name: Set correct ownership on script module file
+      file:
+        path: /usr/lib/python2.7/site-packages/ansible/modules/commands/script.py
+        owner: root
+        group: root
+        mode: "0755"

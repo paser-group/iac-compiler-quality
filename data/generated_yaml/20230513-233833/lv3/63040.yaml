@@ -1,0 +1,31 @@
+
+---
+- name: Testing na_ontap_gather_facts deadlock issue
+  hosts: all
+  gather_facts: false
+
+  tasks:
+  - name: Include variables
+    include_vars:
+      file: "{{ inventory_dir }}/group_vars/all.yml"
+
+  - name: Na_ontap_gather_facts task
+    na_ontap_gather_facts:
+      svm: "{{SVM}}"
+      username: "{{USERNAME}}"
+      password: "{{PASSWORD}}"
+    register: netapp_info
+
+  - name: Introduce delay to cause deadlock
+    wait_for:
+      timeout: 60 #in seconds
+      state: stopped
+
+  - name: Loop to repeat na_ontap_gather_facts
+    block:
+      - name: Na_ontap_gather_facts task
+        na_ontap_gather_facts:
+          svm: "{{SVM}}"
+          username: "{{USERNAME}}"
+          password: "{{PASSWORD}}"
+        register: netapp_info

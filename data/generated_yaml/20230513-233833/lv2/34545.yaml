@@ -1,0 +1,54 @@
+yaml
+---
+- name: Test Vault Error Message
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Install Vim if not installed
+      apt:
+        name: vim
+        state: present
+      register: vim_installed
+
+    - name: Vault Login with Non-existent Credential
+      vault:
+        mock_secret: "{{ item }}"
+      with_items:
+        - "MY_SECRET"
+        - "ANOTHER_SECRET"
+        - "THIRD_SECRET"
+        - "{{ ansible_default_ipv4.address }}:8200 non-existent-token"
+      register: vault_login
+
+    - name: Print Vault Login Result
+      debug:
+        var: vault_login.stdout_lines
+
+    - name: Test Edge Cases
+      shell: |
+        echo "test input" | grep -q "input" 
+      register: edge_case
+
+    - name: Print Edge Case Result
+      debug:
+        var: edge_case.stdout_lines
+
+    - name: Test Unconventional Syntax
+      command: |
+        echo "This command has ; and && in it" 
+        echo "This command uses a > and >>"
+      register: unconventional_syntax
+
+    - name: Print Unconventional Syntax Result
+      debug:
+        var: unconventional_syntax.stdout_lines
+
+    - name: Test Unexpected Input
+      set_fact:
+        unexpected_input: "{{ 'not a playbook' | from_yaml }}"
+      ignore_errors: true
+
+    - name: Print Unexpected Input Result
+      debug:
+        var: unexpected_input

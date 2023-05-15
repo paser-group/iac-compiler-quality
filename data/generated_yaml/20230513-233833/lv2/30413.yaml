@@ -1,0 +1,55 @@
+
+- name: concurrence issue with multiple delegation on same delegated host and same file
+  hosts: node1
+  become: yes
+
+  tasks:
+    - name: Add text to a file with lineinfile module
+      lineinfile:
+        path: "/tmp/file.txt"
+        line: "{{ item }}"
+        create: yes
+      with_items:
+        - "Line 1"
+        - "Line 2"
+        - "Line 3"
+  
+    - name: Update a single line with lineinfile module
+      lineinfile:
+        path: "/tmp/file.txt"
+        regexp: "^Line 3$"
+        line: "Line 3 - updated"
+        state: present
+
+    - name: Multiple delegations to the same node with lineinfile module
+      delegate_to: node1
+      lineinfile:
+        path: "/tmp/file.txt"
+        line: "added by delegated host"
+        insertafter: EOF
+
+    - name: Use lineinfile module with a non-existent file
+      lineinfile:
+        path: "/tmp/does_not_exist.txt"
+        line: "This line will never be added"
+  
+    - name: Use non-existent regular expression on lineinfile module
+      lineinfile:
+        path: "/tmp/file.txt"
+        regexp: "This regular expression does not exist"
+        line: "This line will never be added"
+        state: present
+
+    - name: Use lineinfile module to replace a string with an empty variable
+      lineinfile:
+        path: "/tmp/file.txt"
+        regexp: "^Line 1$"
+        line: "{{ empty_var }}"
+        state: present
+  
+    - name: Use lineinfile module to replace a string with a variable that contains a backslash
+      lineinfile:
+        path: "/tmp/file.txt"
+        regexp: "^Line 2$"
+        line: "{{ var_containing_backslash }}"
+        state: present

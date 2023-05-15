@@ -1,0 +1,75 @@
+
+- name: ios_interface issue stress test
+  hosts: all
+  gather_facts: false
+  become: true
+
+  vars:
+    interfaces:
+      - GigabitEthernet1/0
+      - GigabitEthernet2/0
+      - GigabitEthernet3/0
+      - GigabitEthernet4/0
+
+  tasks:
+    - name: Configure interfaces with default settings
+      ios_interface:
+        name: "{{ item }}"
+        state: "{{ ['up', 'down'] | random }}"
+        description: "{{ ['Management interface', 'VoIP interface', 'Data interface', 'Test interface', ''] | random }}"
+        provider:
+          host: "{{ lookup('env', 'IOS_HOST') }}"
+          username: "{{ lookup('env', 'IOS_USERNAME') }}"
+          password: "{{ lookup('env', 'IOS_PASSWORD') }}"
+          authorize: yes
+        wait_for: "{{ ['line protocol is', 'administratively down'] | random }}"
+      loop: "{{ interfaces }}"
+
+    - name: Configure interface with non-existent IP and subnet
+      ios_interface:
+        name: "{{ interfaces | random }}"
+        ipv4:
+          address: 10.100.100.100
+          mask: 255.255.0.0
+        provider:
+          host: "{{ lookup('env', 'IOS_HOST') }}"
+          username: "{{ lookup('env', 'IOS_USERNAME') }}"
+          password: "{{ lookup('env', 'IOS_PASSWORD') }}"
+          authorize: yes
+
+    - name: Configure interface with invalid IP and subnet
+      ios_interface:
+        name: "{{ interfaces | random }}"
+        ipv4:
+          address: jkl.mno.pqr.stu
+          mask: ab.cd.ef.gh
+        provider:
+          host: "{{ lookup('env', 'IOS_HOST') }}"
+          username: "{{ lookup('env', 'IOS_USERNAME') }}"
+          password: "{{ lookup('env', 'IOS_PASSWORD') }}"
+          authorize: yes
+
+    - name: Configure interface with unconventional names
+      ios_interface:
+        name: "{{ ['Ethernet1/10', 'Serial3/1/0', 'Port-Channel2', '', 'GigabitEthernet7/14/2/1/2/10/32/22/15/9'] | random }}"
+        description: "{{ ['Testing interface', 'Network interface', 'Test interface', ''] | random }}"
+        provider:
+          host: "{{ lookup('env', 'IOS_HOST') }}"
+          username: "{{ lookup('env', 'IOS_USERNAME') }}"
+          password: "{{ lookup('env', 'IOS_PASSWORD') }}"
+          authorize: yes
+        state: "{{ ['up', 'down'] | random }}"
+        
+    - name: Configure interface with unexpected input
+      ios_interface:
+        name: "{{ interfaces | random }}"
+        ipv4:
+          address: "{{ lookup('env', 'IP_ADDRESS') | default('10.1.1.1') }}"
+          mask: "{{ lookup('env', 'SUBNET_MASK') | default('32') }}"
+          secondary: "{{ ['yes', 'no', 'maybe'] | random }}"
+        provider:
+          host: "{{ lookup('env', 'IOS_HOST') }}"
+          username: "{{ lookup('env', 'IOS_USERNAME') }}"
+          password: "{{ lookup('env', 'IOS_PASSWORD') }}"
+          authorize: yes
+

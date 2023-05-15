@@ -1,0 +1,59 @@
+
+- name: Azure VM test playbook
+  hosts: all
+  become: true
+  vars:
+    resource_group: "my_resource_group"
+    virtual_network_name: "my_virtual_network"
+    subnet_name: "my_subnet"
+  tasks:
+    - name: Create managed image
+      azure_rm_managed_disk:
+        resource_group: "{{ resource_group }}"
+        name: "my_managed_disk"
+        location: "eastus2"
+        disk_size_gb: 32
+        create_option: "Upload"
+        source_uri: "https://my.blob.core.windows.net/vhds/myimage.vhd"
+      register: managed_disk_result
+
+    - name: Create virtual network and subnet
+      azure_rm_virtualnetwork:
+        resource_group: "{{ resource_group }}"
+        address_prefixes:
+          - "10.0.0.0/16"
+        name: "{{ virtual_network_name }}"
+        state: present
+      register: virtual_network_result
+
+    - name: Create subnet
+      azure_rm_subnet:
+        resource_group: "{{ resource_group }}"
+        name: "{{ subnet_name }}"
+        address_prefix: "10.0.0.0/24"
+        virtual_network_name: "{{ virtual_network_name }}"
+        state: present
+      register: subnet_result
+
+    - name: Create virtual machine
+      azure_rm_virtualmachine:
+        resource_group: "{{ resource_group }}"
+        name: "test_vm"
+        vm_size: "Standard_B1s"
+        admin_username: "user"
+        admin_password: "password"
+        virtual_network_name: "{{ virtual_network_name }}"
+        subnet_name: "{{ subnet_name }}"
+        os_disk_caching: "ReadWrite"
+        managed_disk_type: "Premium_LRS"
+        managed_disk_id: "{{ managed_disk_result.id }}"
+        network_interface_names: "test_vm_nic"
+        storage_container_name: "teststorage"
+        storage_sku: "Standard_LRS"
+        storage_account_name: "teststorage"
+        image:
+          offer: "UbuntuServer"
+          publisher: "Canonical"
+          sku: "16.04-LTS"
+          version: "latest"
+        state: "present"

@@ -1,0 +1,47 @@
+
+  ---
+  - name: Testing for Duplicate Name Issue
+    hosts: vmware_host
+    gather_facts: no
+    vars:
+      datacenter_name: dc1
+      cluster_name: cluster1
+    tasks:
+    - name: Create Datacenter
+      vmware_datacenter:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        validate_certs: false
+        datacenter_name: "{{ datacenter_name }}"
+        state: present
+
+    - name: Mount datastore
+      vmware_datastore_facts:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+      register: datastore_response
+
+    - name: Create Cluster
+      vmware_cluster:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        validate_certs: false
+        cluster_name: "{{ cluster_name }}"
+        datacenter_name: "{{ datacenter_name }}"
+        state: present
+      delegate_to: "{{ datastore_response.datastores[0].hostname }}"
+
+    - name: Add host to cluster with the duplicate name
+      vmware_host:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        validate_certs: false
+        esxi_hostname: "{{ inventory_hostname }}"
+        cluster_name: "{{ cluster_name }}"
+        state: present
+
+  

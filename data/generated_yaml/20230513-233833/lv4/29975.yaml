@@ -1,0 +1,40 @@
+
+---
+- hosts: localhost
+  gather_facts: False
+
+  vars:
+    aws_access_key: <AWS Access Key>
+    aws_secret_key: <AWS Secret Key>
+    iam_role_name: "test-role"
+    policy_name: "test-policy"
+    policy: "{ \"Version\": \"2012-10-17\", \"Statement\": [{ \"Effect\": \"Allow\", \"Action\": \"ec2:*\", \"Resource\": \"*\" }] }"
+
+  tasks:
+    - name: Create an IAM role
+      community.aws.iam_role:
+        name: "{{ iam_role_name }}"
+        state: present
+        policy_name: "{{ policy_name }}"
+        policy_document: "{{ policy }}"
+        aws_access_key: "{{ aws_access_key }}"
+        aws_secret_key: "{{ aws_secret_key }}"
+      register: role_create
+
+    - name: Attempt to create the Role again
+      community.aws.iam_role:
+        name: "{{ iam_role_name }}"
+        state: present
+        policy_name: "{{ policy_name }}"
+        policy_document: "{{ policy }}"
+        aws_access_key: "{{ aws_access_key }}"
+        aws_secret_key: "{{ aws_secret_key }}"
+      ignore_errors: yes
+      register: role_create_fail
+
+    - name: Print the error message
+      debug:
+        msg: "{{ role_create_fail.msg }}"
+
+    # Add additional tasks to verify the error message's usefulness.
+

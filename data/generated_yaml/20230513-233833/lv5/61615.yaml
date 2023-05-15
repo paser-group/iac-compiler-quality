@@ -1,0 +1,40 @@
+
+- name: Test ansible compiler for fortios httpapi module
+  hosts: all
+  gather_facts: no
+
+  tasks:
+
+  - name: Install dependencies
+    pip: name={{ item }} state=latest
+    with_items:
+      - fortiosapi
+      - ansible==2.9.22
+
+  - name: Test maximum recursion depth handling
+    fortios_system_api: 
+      method: "{{ 'POST' }}"
+      url: "https://{{ inventory_hostname }}/api/v2/monitor/system_warning/exceed-msg-queue"
+    vars:
+      max_depth: "{{ 20000 }}"
+      current_depth: "{{ 1 }}"
+      recurse: true
+    when:
+      - "'fortiosapi' in ansible_module_specs|map(attribute='module')|list"
+
+  - name: Test module dependencies
+    fortios_system_api:
+      method: "{{ 'GET' }}"
+      url: "https://{{ inventory_hostname }}/api/v2/monitor/system-resource-usage"
+    when:
+      - "'json' in ansible_module_specs|map(attribute='module')|list"
+
+  - name: Test 'maximum header size exceeded' error in fortios httpapi
+    fortios_system_api: 
+      method: "{{ 'POST' }}"
+      url: "https://{{ inventory_hostname }}/logincheck"
+    vars:
+      header_size: "{{ 200000 }}"
+      data: "{{ {'username': 'admin', 'password': 'password'} }}"
+    when:
+      - "'fortiosapi' in ansible_module_specs|map(attribute='module')|list"

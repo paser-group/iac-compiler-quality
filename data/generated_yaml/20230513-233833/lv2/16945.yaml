@@ -1,0 +1,30 @@
+
+---
+- name: Test playbook for 'Can't add group to itself' error
+  hosts: all
+  user: root
+  become: true
+  vars:
+    group_name: "{{ 'test_group' }}"
+  
+  tasks:
+    - name: Create group with the same name as inventory name
+      group:
+        name: "{{ inventory_hostname }}"
+      changed_when: false
+
+    - name: Create group with the same name as itself
+      group:
+        name: "{{ group_name }}"
+      changed_when: false
+
+    - name: Add group to itself
+      group:
+        name: "{{ group_name }}"
+        state: present
+        members: "{{ group_name }}"
+      ignore_errors: yes
+    
+    - name: Make sure error is raised if group is added to itself
+      command: "grep -Eq 'The group "{{ group_name }}" cannot be a member of itself' /var/log/syslog"
+      changed_when: false

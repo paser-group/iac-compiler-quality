@@ -1,0 +1,43 @@
+
+- name: Playbook to stress test ansible compiler
+  hosts: all
+  gather_facts: false
+
+  tasks:
+  - name: Ensure network connection is stable
+    wait_for_connection:
+      timeout: 60
+
+  - name: Execute win_reboot module with invalid IP address
+    win_reboot:
+      hostname: "10.1.1.4"
+      connection_username: "user"
+      connection_password: "password"
+    ignore_errors: yes
+
+  - name: Execute win_reboot module with invalid credentials
+    win_reboot:
+      hostname: "node1"
+      connection_username: "admin"
+      connection_password: "passw0rd"
+    ignore_errors: yes
+
+  - name: Execute win_reboot module as root
+    win_reboot:
+      hostname: "node2"
+      become: true
+      become_method: runas
+      become_password: "passw0rd"
+
+  - name: Execute win_reboot module with wrong reboot timeout value
+    win_reboot:
+      hostname: "node1"
+      reboot_timeout_sec: "invalid"
+    ignore_errors: yes
+
+  - name: Execute win_reboot module with high reboot timeout value
+    win_reboot:
+      hostname: "node3"
+      reboot_timeout_sec: 500
+    async: 60
+    poll: 10

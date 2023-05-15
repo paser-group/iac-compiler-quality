@@ -1,0 +1,40 @@
+
+- name: Ansible 2.0 file state link bug test
+  hosts: node1
+  gather_facts: false
+  vars:
+    link_source: "/tmp/testfile"
+    link_destination: "/tmp/foobar"
+  tasks:
+    - name: Create a symlink with invalid owner
+      file:
+        src: "{{ link_source }}"
+        dest: "{{ link_destination }}"
+        state: link
+        owner: not_a_user
+      ignore_errors: true
+    - name: Create a symlink with valid owner
+      file:
+        src: "{{ link_source }}"
+        dest: "{{ link_destination }}"
+        state: link
+        owner: root
+      register: symlink_result
+    - name: Assert result of symlink creation
+      assert:
+        that: "'changed' in symlink_result and symlink_result['changed'] is true"
+    - name: Remove symlink with invalid user
+      file:
+        path: "{{ link_destination }}"
+        state: absent
+        owner: not_a_user
+      ignore_errors: true
+    - name: Remove symlink with valid user
+      file:
+        path: "{{ link_destination }}"
+        state: absent
+        owner: root
+      register: symlink_remove_result
+    - name: Assert result of symlink removal
+      assert:
+        that: "'changed' in symlink_remove_result and symlink_remove_result['changed'] is true"

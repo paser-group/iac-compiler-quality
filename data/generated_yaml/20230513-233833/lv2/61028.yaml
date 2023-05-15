@@ -1,0 +1,32 @@
+
+- name: Test for gcp_container_cluster error with private_cluster_config
+  hosts: node1
+  gather_facts: no
+  vars:
+    project_id: "my-project-id"
+    region: "us-central1"
+    zone: "us-central1-a"
+    cluster_name: "my-cluster"
+    master_authorized_networks_config:
+      cidr_blocks:
+        - cidr_block: "10.1.1.0/24"
+    private_cluster_config:
+      enable_private_endpoint: true
+      master_ipv4_cidr_block: 10.0.0.0/28
+  tasks:
+   - name: Create a GCP cluster with private endpoint
+     gcp_container_cluster:
+       name: "{{ cluster_name }}"
+       project: "{{ project_id }}"
+       zone: "{{ zone }}"
+       initial_node_count: 1
+       network: node-net
+       subnetwork: node-subnet
+       master_auth:
+         username: admin
+         password: "{{ lookup('password', '/dev/null') }}"
+       master_authorized_networks_config: "{{ master_authorized_networks_config }}"
+       private_cluster_config: "{{ private_cluster_config }}"
+       auth_kind: serviceaccount
+       service_account_file: /path/to/service_account.json
+       state: present

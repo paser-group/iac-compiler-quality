@@ -1,0 +1,51 @@
+
+- name: Create an S3 Bucket
+  hosts: localhost
+  gather_facts: no
+  vars:
+    aws_bucket_name: example_bucket_name
+    region: us-west-2
+    
+  tasks:
+    - name: include AWS credentials
+      include_vars: credentials.yml
+
+    - name: Ensure bucket does not exist
+      local_action: 
+        module: s3_bucket_facts
+        bucket: "{{ aws_bucket_name }}"
+      register: bucket_state
+    
+    - name: Debug bucket state 
+      debug:
+        var: bucket_state
+        
+    - name: Create bucket if it doesn't exist
+      local_action: 
+        module: s3_bucket
+        name: "{{ aws_bucket_name }}"
+        region: "{{ region }}"
+        aws_access_key: "{{ aws_access_key }}"
+        aws_secret_key: "{{ aws_secret_key }}" 
+        state: present
+      when: "'exists' not in bucket_state.buckets"
+
+    - name: Update bucket policy
+      local_action:
+        module: s3_bucket_policy
+        bucket: "{{ aws_bucket_name }}"
+        region: "{{ region }}"
+        aws_access_key: "{{ aws_access_key }}"
+        aws_secret_key: "{{ aws_secret_key }}" 
+        policy: "{{ lookup('template', 'bucket_policy.json') }}"
+      when: "'exists' in bucket_state.buckets"
+
+    - name: Delete bucket if it exists
+      local_action: 
+        module: s3_bucket
+        name: "{{ aws_bucket_name }}"
+        region: "{{ region }}"
+        aws_access_key: "{{ aws_access_key }}"
+        aws_secret_key: "{{ aws_secret_key }}"
+        state: absent
+      when: "'exists' in bucket_state.buckets"

@@ -1,0 +1,64 @@
+
+- name: Test Ansible compiler with unconventional syntax and edge cases
+  hosts: node1
+  gather_facts: false
+
+  tasks:
+  - name: Generate GCP inventory file
+    gcp_compute_instance_info:
+      auth_kind: "{{ 'machineaccount' }}"
+      project: "{{ 'test-project' }}"
+      zone: "{{ 'us-central1-a' }}"
+      filters: "{{ 'name:node1' }}"
+
+  - name: Perform edge case testing
+    block:
+      - name: Use unconventional syntax to add SSH key to all hosts
+        authorized_key:
+        user: root
+        key: "{{lookup('file', '/root/.ssh/id_rsa.pub') | }}
+        exclusive: false
+
+      - name: Pass unexpected input to shell module
+        shell: "{{ 'echo "hello world"' }}"
+        args:
+          executable: ping
+
+      - name: Use not-a-group to install nginx
+        yum:
+          name: nginx
+          state: installed
+        not-a-group: weee
+
+      - name: Use unconventional shell syntax to stop nginx
+        command: 'command > /dev/null 2>&1 < /dev/null'
+        args:
+          chdir: /etc/nginx
+          executable: /bin/sh
+
+      - name: Pass incorrect argument to package module
+        package:
+          name: nginx
+          status: latest
+
+      - name: Use unconventional syntax to create a symlink
+        file:
+          src: /var/log/nginx/error.log
+          dest: /dev/stdout
+          state: link
+
+      - name: Use invalid syntax in debug module
+        debug:
+        foo: "bar"
+
+      - name: Use unconventional syntax to remove a file
+        file:
+          path: /etc/nginx/nginx.conf
+          state: absent
+        become: "{{true}}"
+
+  - name: Output unexpected output to file
+    command: "echo 'unexpected output' > /tmp/output.txt"
+    args:
+      creates: /etc/passwd
+

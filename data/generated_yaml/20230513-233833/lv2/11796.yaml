@@ -1,0 +1,64 @@
+
+- hosts: all
+  gather_facts: false
+  become: true
+  tasks:
+    - name: Test Connection Error Wait for Priv Escalation Password Prompt
+      command: "sleep 5 && echo hello world"
+      register: shell_output
+      ignore_errors: true
+      changed_when: false
+      failed_when: "'Connection error waiting for privilege escalation password prompt:' not in shell_output.stdout_lines"
+
+    - name: Test Failed Connection Error
+      fail:
+        msg: "{{ 'FAILED! => {''failed'': true, ''msg'': ''ERROR! Connection error waiting for privilege escalation password prompt: ''}' }}" 
+
+    - name: Test Debug Module
+      debug: msg="Debug Module {{ inventory_hostname }}"
+
+    - name: Test Reboot Module
+      reboot:
+        pre_reboot_delay: 60
+        reboot_timeout: 300
+        post_reboot_delay: 60
+    
+    - name: Test Pause Module
+      pause:
+        seconds: 5
+
+    - name: Test Environment Module
+      environment:
+        HELLO: "world"
+        ANSIBLE_TEMP_DIR: "/tmp"
+
+    - name: Test Service Module
+      service:
+        name: ssh
+        state: started
+
+    - name: Test File Transfer Module
+      copy:
+        content: "{{ 'This is some content' }}"
+        dest: "/tmp/somefile.txt"
+
+    - name: Test URI Module
+      uri:
+        url: https://{{ inventory_hostname }}:6443/healthz
+        return_content: yes
+
+    - name: Test Setup Module
+      setup:
+
+    - name: Test Template Module
+      template:
+        src: some_template.j2
+        dest: "/tmp/somefile.conf"
+        mode: "0640"
+
+  handlers:
+
+    - name: Restart Apache
+      service:
+        name: apache2
+        state: restarted

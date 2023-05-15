@@ -1,0 +1,64 @@
+
+- hosts: all
+  become: true
+
+  tasks:
+
+  - name: Set up Let's Encrypt environment using certbot
+    certbot:
+      command: "init"
+      email: "user@example.com"
+      agree_tos: true
+      config_dir: "/etc/letsencrypt"
+      work_dir: "/var/lib/letsencrypt"
+      logs_dir: "/var/log/letsencrypt"
+
+  - name: Generate Let's Encrypt certificate for example.com using http-01 method
+    shell: "curl -L -X GET 'https://acme-staging-v02.api.letsencrypt.org/directory'"
+    register: generate_certificate
+
+  - name: Configure HTTPS server using Apache
+    apache:
+      name: "example.com"
+      state: present
+      ssl: true
+
+  - name: Install Let's Encrypt certificate for example.com
+    certbot_certificate:
+      domains:
+        - "example.com"
+      apache: true
+
+  - name: Extract Not After date of the certificate
+    command: openssl x509 -enddate -noout -in /etc/letsencrypt/live/example.com/cert.pem | sed 's/notAfter=//'
+    register: not_after_date
+
+  - name: Display Not After date of the certificate
+    debug:
+      var: not_after_date.stdout_lines
+
+  - name: Fail if Not After date is not found
+    fail:
+      msg: "Not After date is not found."
+
+  - name: Revoke Let's Encrypt certificate for example.com
+    certbot_certificate:
+      domains:
+        - "example.com"
+      state: absent
+
+  - name: Display output of certificate revocation
+    debug:
+      var: generate_certificate.stdout_lines
+
+  - name: Delete Let's Encrypt certificate and clean up server
+    certbot_certificate:
+      domains:
+        - "example.com"
+      apache: true
+      state: absent
+
+  - name: Remove SSL configuration from Apache
+    apache:
+      name: "example.com"
+      ssl: false

@@ -1,0 +1,56 @@
+yaml
+---
+- name: Test Playbook for Ansible ignoring configuration values
+  hosts: all
+  become: true
+
+  vars:
+    incorrect_path: "/tmp/{{ ansible_date_time.year }}/{{ ansible_date_time.month }}/{{ ansible_date_time.month }}"
+
+  tasks:
+    - name: Create directory at incorrect path
+      file:
+        path: "{{ incorrect_path }}"
+        state: directory
+
+    - name: Set incorrect directory permissions
+      file:
+        path: "{{ incorrect_path }}"
+        owner: "%{{ range(1, 10) | random }}"
+        group: "%{{ range(1, 10) | random }}"
+        mode: "0{{ range(0, 7) | random }}{{ range(0, 7) | random }}"
+
+    - name: Create directory with correct permissions
+      file:
+        path: "/tmp/test"
+        state: directory
+        mode: '0777'
+
+    - name: Create symlink with incorrect permissions
+      file:
+        src: "/tmp/test"
+        dest: "/{{ lookup('env', 'HOME') }}/test_symlink"
+        state: link
+        owner: "%{{ range(1, 10) | random }}"
+        group: "%{{ range(1, 10) | random }}"
+        mode: "0{{ range(0, 7) | random }}{{ range(0, 7) | random }}"
+
+    - name: Create symlink with correct permissions
+      file:
+        src: "/tmp/test"
+        dest: "/{{ lookup('env', 'HOME') }}/test_symlink_correct"
+        state: link
+        owner: "root"
+        group: "root"
+        mode: '0777'
+
+    - name: Set incorrect permissions on file
+      file:
+        path: "/tmp/test_file"
+        state: touch
+
+    - name: Set correct permissions on file
+      file:
+        path: "/tmp/test_file_correct"
+        state: touch
+        mode: '0777'

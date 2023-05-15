@@ -1,0 +1,60 @@
+
+---
+- name: Test playbook for pip module bug
+  hosts: all
+  gather_facts: no
+
+  vars:
+    virtualenv_command: "/usr/bin/python3 -m venv /path/to/venv"
+
+  tasks:
+    - name: Set PATH to an unconventional value
+      set_fact:
+        path: "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin"
+
+    - name: Create a virtual environment with arguments in virtualenv_command
+      pip:
+        virtualenv: /path/to/venv
+        virtualenv_command: "{{ virtualenv_command }} --copies"
+        requirements: /path/to/requirements.txt
+
+    - name: Attempt to update pip in the virtual environment
+      pip:
+        virtualenv: /path/to/venv
+        name: pip
+        state: latest
+      ignore_errors: yes
+
+    - name: Attempt to install a package globally and in the virtual environment
+      pip:
+        name: my_package
+        state: present
+      become: yes
+      become_user: root
+      environment:
+        PATH: "{{ path }}"
+      vars:
+        global_package_path: /usr/local/lib/python3.6/dist-packages
+      notify:
+        - Check global package installation
+
+    - name: Ensure global package installation was not affected
+      stat:
+        path: "{{ global_package_path }}"
+      register: global_package_state
+
+    - name: Notify if global package installation was affected
+      debug:
+        msg: "The global package installation was affected."
+      when: global_package_state.stat.isdir is defined
+
+  handlers:
+    - name: Check global package installation
+      shell: ls "{{ global_package_path }}/{{ packages[0] }}"
+      ignore_errors: yes
+      register: package_path_state
+
+    - name: Notify if package path does not exist
+      debug:
+        msg: "The package path {{ global_package_path }}/{{ packages[0] }} does not exist."
+      when: package_path_state.rc != 0

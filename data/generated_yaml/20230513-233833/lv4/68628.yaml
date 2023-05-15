@@ -1,0 +1,34 @@
+
+- name: Test azure_rm_common.has_tags with tags having colons
+  hosts: localhost
+  gather_facts: no
+  
+  vars:
+    test_tags_list:
+      - {'name':'testtag1', 'value':'testvalue1'}
+      - {'name':'testtag2:key', 'value':'testvalue2'}
+      - {'name':':key:testtag3', 'value':'testvalue3'}
+
+  tasks:
+    - name: Create azure resource with tags having colons
+      azure_rm_virtualmachine:
+        name: vm-test-colon-tags
+        location: eastus2
+        resource_group: AnsibleTesting
+        vm_size: 'Standard_D1_v2'
+        image:
+          offer: Debian
+          publisher: credativ
+          sku: jessie
+          version: 8.20191216
+        admin_username: testadmin
+        admin_password: testPassword1234!
+        tags: "{{ test_tags_list }}"
+
+    - name: Assert tags are same for the azure resource created
+      assert:
+        that:
+          - "'name=testtag1' in tags"
+          - "'name=testtag2:key' in tags"
+          - "'name=:key:testtag3' in tags"
+        msg: "Unexpected tags found"

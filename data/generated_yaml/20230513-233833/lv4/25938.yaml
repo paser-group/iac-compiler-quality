@@ -1,0 +1,25 @@
+
+- name: Playbook for bug discovery in creating EC2 security group
+  hosts: localhost
+  gather_facts: false
+  vars:
+    region: us-east-1
+    vpc_id: vpc-1234567
+    group_name: test-group
+  tasks:
+    - name: create EC2 security group
+      ec2_group:
+        name: "{{ group_name }}"
+        vpc_id: "{{ vpc_id }}"
+        description: test security group
+        rules:
+          - proto: tcp
+            port: invalid-port
+            cidr_ip: 0.0.0.0/0
+        tags:
+          Name: "{{ group_name }}"
+      register: group_out
+    - name: check if group creation failed
+      debug:
+        msg: "Error creating security group"
+      when: group_out.failed

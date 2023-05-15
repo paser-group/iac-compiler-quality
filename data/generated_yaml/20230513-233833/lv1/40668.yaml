@@ -1,0 +1,19 @@
+yaml
+- name: CloudFrontOriginAccessIdentityList error
+  hosts: cloudfront
+  become: true
+
+  tasks:
+
+  - name: Check if CloudFrontOriginAccessIdentityList is empty
+    shell: aws cloudfront list-cloud-front-origin-access-identities --query "CloudFrontOriginAccessIdentityList.Quantity" --output text
+    register: oai_list
+
+  - name: Create CloudFrontOriginAccessIdentity if empty
+    when: oai_list.stdout == "0"
+    shell: aws cloudfront create-cloud-front-origin-access-identity --cloud-front-origin-access-identity-config Comment="{{ comment }}" --query "CloudFrontOriginAccessIdentity.S3CanonicalUserId" --output text
+    register: oai_creation
+
+  - name: Print CloudFrontOriginAccessIdentity
+    debug:
+      msg: "{{ oai_list.stdout }}"

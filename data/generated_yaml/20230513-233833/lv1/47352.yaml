@@ -1,0 +1,45 @@
+yaml
+---
+- name: Fixing idempotency issue with win_domain module
+  hosts: all
+  gather_facts: yes
+  tasks:
+    - name: Checking if domain joined
+      win_domain_membership:
+        state: query
+      register: domain_check
+
+    - name: Quit if already joined
+      debug:
+        msg: "Domain already joined"
+      when: domain_check | success
+
+    - name: Unjoin from the domain
+      win_domain_membership:
+        state: absent
+
+    - name: Join the domain
+      win_domain:
+        dns_domain_name: "domain.com"
+        hostname: "{{ inventory_hostname }}"
+        ou_path: "OU=Computers,OU=Test,DC=domain,DC=com"
+        domain_username: "administrator"
+        domain_password: "password"
+      register: join_domain
+
+    - name: Reboot the machine
+      win_reboot:
+        delay_seconds: 10
+        reboot_timeout: 300
+        force_reboot: yes
+        msg: "Rebooting to apply domain changes"
+      when: join_domain.changed
+
+    - name: Verify machine joined
+      win_domain_membership:
+        state: query
+      register: verify_join
+
+    - debug:
+        msg: "Machine successfully joined domain"
+      when: verify_join.success

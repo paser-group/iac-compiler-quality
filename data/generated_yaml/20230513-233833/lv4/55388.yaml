@@ -1,0 +1,41 @@
+
+- hosts: kubernetes_nodes
+  tasks:
+    - name: Install Kubernetes and Ansible
+      become: true
+      block:
+        - apt:
+            name: "{{ item }}"
+            state: present
+          loop:
+            - kubelet
+            - kubeadm
+            - kubectl
+            - ansible
+      rescue:
+        - debug:
+            msg: "Package {{ item }} not available."
+          loop:
+            - kubelet
+            - kubeadm
+            - kubectl
+            - ansible
+
+    - name: Generate random Kubernetes YAML file
+      become: true
+      shell: python random_k8s_yaml.py
+      register: k8s_yaml_output
+
+    - name: Copy mutated file to Kubernetes master node
+      become: true
+      copy:
+        src: "{{ k8s_yaml_output.stdout }}"
+        dest: "{{ ansible_env.HOME }}/{{ k8s_yaml_output.stdout_lines[0] | basename }}"
+
+    - name: Apply mutated file to Kubernetes cluster
+      become: true
+      command: "kubectl apply -f {{ ansible_env.HOME }}/{{ k8s_yaml_output.stdout_lines[0] | basename }}"
+
+    - name: Verify resource creation
+      become: true
+      command: "kubectl get {{ extracted_resource_kind }}/{{ extracted_resource_name }}"

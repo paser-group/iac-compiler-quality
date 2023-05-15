@@ -1,0 +1,36 @@
+
+- name: Fuzzing Apt module for 403 http errors
+  hosts: all
+  become: yes
+  tasks:
+    - name: Unconventional syntax
+      apt:
+        name: ['apache2', 'mysql-server']
+      state: absent
+
+    - name: Unexpected inputs
+      apt:
+        pkg: '{{ item }}'
+        state: present
+      with_items:
+        - http://10.0.0.1/package.deb'
+        - 'ftp://10.0.0.2/package.deb'
+        - './package.deb'
+        - 'package*.deb'
+        - 'unavailable_package.deb'
+      register: output
+
+    - name: Edge cases
+      apt:
+        pkg: 'my_package.deb'
+        state: present
+        update_cache: '{{ item }}'
+      with_items:
+        - no
+        - yes
+        - 1
+        - 0
+        - -1
+        - false
+        - true
+      ignore_errors: yes

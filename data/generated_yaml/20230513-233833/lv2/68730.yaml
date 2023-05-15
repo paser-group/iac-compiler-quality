@@ -1,0 +1,77 @@
+
+- name: Stress Testing docker_compose module
+  hosts: all
+  gather_facts: no
+  
+  vars:
+    docker_compose_files:
+      - /path/to/docker-compose.yml
+      - "{{ ' ' * 1000000000 }}docker-compose.yml"
+      - /path/to/nonexistent.yml
+      - docker-compose-1.27.4.yml
+
+  tasks:
+    - name: Include non-existent file
+      docker_compose:
+        project_name: myproject1
+        command: up
+        files: "{{ docker_compose_files }}"
+        
+    - name: Provide invalid project_name
+      docker_compose:
+        project_name: "{{ inventory_hostname }}"
+        command: up
+        files: ["docker-compose.yml"]
+        force_stop: true
+        
+    - name: Provide invalid command
+      docker_compose:
+        project_name: myproject3
+        command: start_container
+        files: ["docker-compose.yml"]
+        remove_orphans: no
+        
+    - name: Provide invalid arguments
+      docker_compose:
+        project_name: myproject4
+        command: up
+        files: ["docker-compose.yml"]
+        pull: something
+        
+    - name: Provide invalid file location
+      docker_compose:
+        project_name: myproject5
+        command: down
+        files: /path/to/nonexistent.yml
+        
+    - name: Provide ridiculously long docker-compose filename
+      docker_compose:
+        project_name: myproject6
+        command: up
+        files: "{{ docker_compose_files }}"
+        
+    - name: Pass in None value
+      docker_compose:
+        project_name: myproject7
+        command: up
+        files: none
+        
+    - name: Provide invalid data format
+      docker_compose:
+        project_name: myproject8
+        command: up
+        files: ["docker-compose.yml"]
+        env: "{{ ('' * (2**63-1)) }}"
+        
+    - name: Provide invalid boolean value
+      docker_compose:
+        project_name: myproject9
+        command: up
+        files: ["docker-compose.yml"]
+        force_rm: "something"
+
+  handlers:
+    - name: restart docker service
+      service:
+        name: docker
+        state: restarted

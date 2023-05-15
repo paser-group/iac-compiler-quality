@@ -1,0 +1,37 @@
+
+---
+- name: Error feedback improvements for improper file permissions on ec2.ini and ec2.py
+  hosts: all
+  gather_facts: false
+  vars:
+    ec2_files:
+      - ec2.ini
+      - ec2.py
+  tasks:
+    - name: Set incorrect file permissions for {{ item }}
+      file:
+        path: "{{ item }}"
+        mode: 0777
+      with_items: "{{ ec2_files }}"
+      register: set_perm_result
+    - name: Print the result of incorrect file permission settings
+      debug:
+        var: set_perm_result
+    - name: Attempt to read contents of {{ item }} without appropriate permission
+      command: cat {{ item }}
+      with_items: "{{ ec2_files }}"
+      register: read_files_result
+      changed_when: false
+    - name: Print the result of attempting to read files without appropriate permission
+      debug:
+        var: read_files_result
+    - name: Attempt to delete {{ item }} without appropriate permission
+      file:
+        path: "{{ item }}"
+        state: absent
+      with_items: "{{ ec2_files }}"
+      register: delete_files_result
+      changed_when: false
+    - name: Print the result of attempting to delete files without appropriate permission
+      debug:
+        var: delete_files_result

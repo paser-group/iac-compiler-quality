@@ -1,0 +1,26 @@
+
+- name: Fix Win_DSC PSCredential conversion error for xFailoverCluster xCluster resource
+  hosts: windows_servers
+  
+  tasks:
+  - name: Install xFailoverCluster DSC module
+    win_dsc:
+      resource_name: xFailoverCluster
+      module_name: xFailoverCluster
+      properties:
+        ensure: Present
+    register: out
+
+  - name: Convert Password to SecureString for PSCredential
+    win_shell: \"$pass = ConvertTo-SecureString '{{vault_password}}' -AsPlainText -Force; $credential = New-Object System.Management.Automation.PSCredential ('{{domain_user}}', $pass); Write-Output ($credential | ConvertTo-Json -Compress)\" # Replace with your own domain user and vault password
+    register: ps_output
+    changed_when: false
+
+  - name: Create xFailoverCluster Resource
+    win_dsc:
+      resource_name: xCluster
+      module_name: xFailoverCluster
+      properties:
+        ClusterName: "{{cluster_name}}" # Replace with your own cluster name
+        DomainCredential: "{{ps_output.stdout}}" # Use the converted PSCredential
+    when: out.changed

@@ -1,0 +1,40 @@
+
+# Ansible playbook to test the lxc_container module when creating snapshot clone containers
+---
+- name: Test lxc_container module
+  hosts: all
+  become: true
+  vars:
+    container_name: "test-container"
+    snapshot_name: "test-snapshot"
+    cloned_container_name: "cloned-container"
+  tasks:
+    - name: Create LXC container
+      lxc_container:
+        name: "{{ container_name }}"
+      register: container
+
+    - name: Generate container snapshot
+      lxc_container:
+        name: "{{ container_name }}"
+        snapshot: "{{ snapshot_name }}"
+
+    - name: Clone container from snapshot
+      lxc_container:
+        name: "{{ cloned_container_name }}"
+        state: started
+        snapshot: "{{ snapshot_name }}"
+        clone: true
+
+    - name: Start cloned container
+      shell: lxc-start -n {{ cloned_container_name }} -d
+
+    - name: Delete cloned container
+      lxc_container:
+        name: "{{ cloned_container_name }}"
+        state: absent
+
+    - name: Delete original container
+      lxc_container:
+        name: "{{ container_name }}"
+        state: absent

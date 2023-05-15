@@ -1,0 +1,43 @@
+
+---
+- name: Test wait_for never resolves due to silent fail
+  hosts: all
+  gather_facts: false
+  vars:
+    ipv6_enabled: false
+    domain_name: "example.com"
+
+  tasks:
+  - name: Ping all nodes
+    ping:
+
+  - name: Check if IPv6 is enabled in the OS
+    shell: sysctl -a | grep -w net.ipv6.conf.all.disable_ipv6 | awk '{print $NF}'
+    register: ipv6_check
+
+  - name: Disable IPv6 if it is enabled
+    sysctl:
+      name: net.ipv6.conf.all.disable_ipv6
+      value: 1
+      sysctl_set: yes
+      state: present
+    when: ipv6_check.stdout == "0"
+
+  - name: Ping domain name with IPv6 address (expected failure)
+    wait_for:
+      host: "{{ domain_name }}"
+      port: 53
+      state: started
+      delay: 1
+      timeout: 2
+      active_connection_states:
+      - SYN_SENT
+    ignore_errors: yes
+
+  - name: Enable IPv6 if it was disabled
+    sysctl:
+      name: net.ipv6.conf.all.disable_ipv6
+      value: 0
+      sysctl_set: yes
+      state: present
+    when: ipv6_enabled

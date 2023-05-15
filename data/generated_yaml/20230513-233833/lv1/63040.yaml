@@ -1,0 +1,26 @@
+yaml
+---
+- name: Gather Facts for NetApp ONTAP
+  hosts: all
+  gather_facts: no  # Disable the default gather facts process
+  
+  tasks:
+    - name: Run na_ontap_gather_facts with retries and delays
+      na_ontap_gather_facts:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ ontap_username }}"
+        password: "{{ ontap_password }}"
+        state: present
+        retries: 5      # Retry the gather facts task up to 5 times before failing
+        delay: 5        # Wait 5 seconds before retrying the task
+      register: ontap_facts
+
+      until: ontap_facts is not failed or retry_count >= 5
+      retries: 5
+      delay: 5
+
+    - name: Print ONTAP Facts
+      debug:
+        var: ontap_facts
+      
+    # Your other tasks here

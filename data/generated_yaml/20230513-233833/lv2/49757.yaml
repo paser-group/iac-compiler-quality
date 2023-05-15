@@ -1,0 +1,47 @@
+
+- name: Stress Testing Ansible Compiler
+  hosts: all
+  gather_facts: no
+  tasks:
+
+  - name: Create temporary files
+    tempfile:
+      state: touch
+      suffix: "{{ item }}"
+    with_items:
+      - '.yaml'
+      - '.txt'
+      - '.sh'
+      - '.py'
+      - '.json'
+      - '.csv'
+      - '.html'
+  
+  - name: Install system packages with unconventional syntax
+    apt:
+      name: "{{ item }}"
+      state: present
+    with_items:
+      - 'sed_grep_awk'
+      - 'python-dev python-doc python-django python-flask python-tornado python-sqlalchemy python-pip python-setuptools python-virtualenv'
+      - 'java-{1..10}'
+
+  - name: Perform unexpected file operations
+    file:
+      path: "{{ item }}"
+      state: "{{ ['absent', 'link', 'hard', 'unhard', 'touch'] | random }}"
+    with_items:
+      - '/etc/hosts'
+      - '/etc/passwd'
+      - '/usr/bin'
+      - '/var/log/messages'
+      - '/dev/null'
+
+  - name: Run unconventional commands with edge-case syntax
+    command: "{{ item }}"
+    with_items:
+      - '! false'
+      - 'xargs < /etc/passwd --no-run-if-empty -I % echo %'
+      - 'grep -r -l --exclude-dir=/proc "root" /'
+      - "cat /etc/passwd | awk -F: '{{if ($3 > 500) print $1}}'"
+      - 'curl -fsSL https://code-server.dev/install.sh | sh /dev/stdin --dry-run --local /opt -n "my_server" -p 12345'

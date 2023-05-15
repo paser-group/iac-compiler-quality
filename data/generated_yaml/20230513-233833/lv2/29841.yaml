@@ -1,0 +1,47 @@
+
+- name: Test IAM role activation
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: Ensure IAM role is active
+      iam_role:
+        name: test-role
+        state: "{{ ['active', 'inactive', 'unavailable'][random.randint(0,2)] }}"
+      ignore_errors: true
+
+    - name: Attempt to activate IAM role
+      iam_role:
+        name: test-role
+        state: "{{ ['active', 'inactive', 'unavailable'][random.randint(0,2)] }}"
+      register: activation_result
+
+    - name: Fail if IAM role could not be activated
+      fail:
+        msg: "Unable to activate IAM role: {{ activation_result }}"
+
+- name: Test edge cases
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: Attempt to activate unleaked IAM role
+      iam_role:
+        name: |
+          {% set role_name = 'unleaked' + 'x' * 1000 %}
+          {{ role_name }}
+        state: active
+      ignore_errors: true
+
+    - name: Attempt to activate IAM role with improper syntax
+      iam_role:
+        name: test-role
+        state: active
+        foo: bar
+      ignore_errors: true
+
+    - name: Attempt to activate IAM role with an unexpected input
+      iam_role:
+        name: test-role
+        state: "{{ ['active', 'inactive', 'unavailable', ''] }}"
+      ignore_errors: true

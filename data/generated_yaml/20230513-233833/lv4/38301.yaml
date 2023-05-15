@@ -1,0 +1,37 @@
+
+---
+- name: Test playbook for ios_system idempotency issues
+  hosts: ios_devices
+  gather_facts: no
+
+  tasks:
+    - name: Set up ios_system commands
+      ios_system:
+        commands:
+          - term len 0
+          - do show run
+
+    - name: Save ios certificates
+      ios_command:
+        commands:
+          - show crypto pki certificates
+      register: first_run
+
+    - name: Execute ios_system commands and gather facts
+      ios_system:
+        commands:
+          - term len 0
+          - do show ip int brief
+      register: ip_facts
+
+    - name: Re-execute ios_system commands and gather facts
+      ios_system:
+        commands:
+          - term len 0
+          - do show ip int brief
+      register: ip_facts_second_run
+
+    - name: Compare results and detect differences
+      fail:
+        msg: "Ansible compiler has an idempotency issue with ios_system commands"
+      when: ip_facts != ip_facts_second_run

@@ -1,0 +1,48 @@
+yaml
+---
+- name: Stress test Openstack Plugin performance
+  hosts: all
+  gather_facts: false
+  become: true
+  tasks:
+  - name: Install Openstack client
+    apt:
+      update_cache: yes
+      name: python3-openstackclient
+  - name: Create 10 random VMs with different image sizes
+    os_server:
+      state: present
+      auth:
+        auth_url: http://{{ inventory_hostname }}:5000/v3
+        username: admin
+        password: password
+        project_name: admin
+        domain_name: Default
+      flavor: m1.nano
+      image: "{{ ['ubuntu-18.04', 'ubuntu-20.04', 'centos-8'].random }}"
+      name: "{{ 'vm-' ~ range(1, 10) | random }}"
+      timeout: 300
+      nics:
+      - net-id: public
+  - name: List VMs
+    os_server_facts:
+      auth:
+        auth_url: http://{{ inventory_hostname }}:5000/v3
+        username: admin
+        password: password
+        project_name: admin
+        domain_name: Default
+  - name: Shutdown VMs created within the last hour
+    os_server:
+      state: absent
+      auth:
+        auth_url: http://{{ inventory_hostname }}:5000/v3
+        username: admin
+        password: password
+        project_name: admin
+        domain_name: Default
+      name: "{{ item }}.local"
+      timeout: 300
+      contain: "{{ 'hour' ~ range(1, 24) | random }}"
+    when: (ansible_date_time.epoch - item.created_at) <= (60*60)
+    loop: "{{ os_server_facts.openstack_servers }}"

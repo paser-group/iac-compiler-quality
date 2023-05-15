@@ -1,0 +1,34 @@
+
+---
+- name: Test win_firewall_rule module defaults
+  hosts: windows
+  gather_facts: no
+  vars:
+    - rules:
+      - name: "Allow ICMPv6-In (IPv6)"
+        localip: "any"
+        protocol: "icmpv6"
+        action: "allow"
+      - name: "Allow TCP-8888-In" # No quotes around port number
+        localport: 8888
+        action: "allow"
+      - name: "Block TCP-9999-In" # Unconventional order of fields in rule
+        action: "block"
+        protocol: "tcp"
+        localport: 9999
+      - name: "Allow TCP-5555-Out"
+        localport: 5555
+        direction: "outbound" # Unexpected input
+        action: "allow"
+  tasks:
+    - name: Create firewall rules
+      win_firewall_rule:
+        rule_name: "{{ item.name }}"
+        localIP: "{{ item.localip | default('any') }}"
+        localPort: "{{ item.localport }}"
+        protocol: "{{ item.protocol | default('tcp') }}"
+        direction: "{{ item.direction | default('inbound') }}"
+        enabled: yes
+        action: "{{ item.action }}"
+      with_items:
+        - "{{ rules }}"

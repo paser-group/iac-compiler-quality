@@ -1,0 +1,24 @@
+yaml
+---
+- name: Debug ValueError in sysctl module
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Copy sysctl.conf to remote server
+      copy:
+        src: /path/to/sysctl.conf
+        dest: /etc/sysctl.conf
+        owner: root
+        group: root
+        mode: 0644
+
+    - name: Verify syntax of sysctl.conf
+      command: sysctl -p
+      register: sysctl_output
+      ignore_errors: true
+
+    - name: Debug syntax error in sysctl.conf
+      fail:
+        msg: "{{ sysctl_output.stdout }}"
+      when: sysctl_output.rc != 0

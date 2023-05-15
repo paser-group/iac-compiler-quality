@@ -1,0 +1,71 @@
+
+---
+- name: Ansible Playbook to test python3 lookup csvfile error
+  hosts: all
+  tasks:
+    - name: Install Python3
+      become: yes
+      apt:
+        name: python3
+        state: present
+
+    - name: Create a CSV file with no content
+      tempfile:
+        state: "file"
+        suffix: ".csv"
+      register: empty_csv
+
+    - name: Try fetching the CSV file without an iterator
+      debug:
+        msg: "{{ lookup('csvfile', empty_csv.path) }}"
+
+    - name: Create a CSV file with one line and no headers
+      tempfile:
+        state: "file"
+        suffix: ".csv"
+        owner: "root"
+        group: "root"
+        mode: "0600"
+        content: |
+          foo,bar,baz
+      register: single_line_csv_no_headers
+
+    - name: Try fetching the first column with incorrect iterator argument
+      debug:
+        msg: "{{ lookup('csvfile', single_line_csv_no_headers.path, 0) }}"
+
+    - name: Create a CSV file with one line and only headers
+      tempfile:
+        state: "file"
+        suffix: ".csv"
+        owner: "root"
+        group: "root"
+        mode: "0600"
+        content: |
+          foo,bar,baz
+      register: single_line_csv_headers
+
+    - name: Try fetching the CSV headers with correct iterator argument
+      debug:
+        msg: "{{ lookup('csvfile', single_line_csv_headers.path, headers='yes') }}"
+
+    - name: Create a CSV file with multiple lines and headers
+      tempfile:
+        state: "file"
+        suffix: ".csv"
+        owner: "root"
+        group: "root"
+        mode: "0600"
+        content: |
+          Name,Phone,Email
+          John,555-555-5555,john@example.com
+          Jane,444-444-4444,jane@example.com
+      register: multi_line_csv_headers
+
+    - name: Try fetching the CSV file as a dictionary
+      debug:
+        msg: "{{ lookup('csvfile', multi_line_csv_headers.path, format='dict', headers='yes') }}"
+
+    - name: Try fetching a non-existing CSV file
+      debug:
+        msg: "{{ lookup('csvfile', '/var/non-existing-file.csv') }}"

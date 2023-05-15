@@ -1,0 +1,27 @@
+
+---
+- name: Fix Ascii codec error with string 
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Ensure that utf-8 encoding is used throughout the playbook
+      set_fact:
+        ansible_python_interpreter: /usr/bin/python3
+        LC_ALL: en_US.UTF-8
+        LANG: en_US.UTF-8
+
+    - name: Run command that may result in an Ascii codec error
+      command: some_command_here
+      register: command_output
+      ignore_errors: true
+
+    - name: Check the output of the command for any Ascii codec errors
+      debug:
+        var: command_output.stdout_lines
+
+    - name: Fix the Ascii codec error by converting strings to utf-8
+      lineinfile:
+        path: path/to/file
+        regexp: '^(.*)'
+        line: "\1".encode('utf-8').decode('ascii', 'ignore')

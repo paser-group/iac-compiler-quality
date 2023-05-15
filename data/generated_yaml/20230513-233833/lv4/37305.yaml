@@ -1,0 +1,37 @@
+
+- hosts: all
+  gather_facts: no
+  vars:
+    vlans:
+      - id: 100
+        name: foo
+      - id: 200
+        name: bar
+    aggregate: yes
+  tasks:
+    - name: Validate vlans parameter
+      assert:
+        that:
+          - vlans is defined
+          - vlans is iterable
+          - vlans | length > 0
+          - vlans[0].id is defined
+          - vlans[0].name is defined
+      failed_when: >
+        vlans is not defined
+        or not vlans is iterable
+        or vlans | length == 0
+        or vlans[0].id is not defined
+        or vlans[0].name is not defined
+
+    - name: Print aggregate parameter
+      debug:
+        var: aggregate
+
+    - name: Configure VLANs
+      network.net_vlan:
+        state: present
+        vlan_id: "{{ item.id }}"
+        vlan_name: "{{ item.name }}"
+        aggregate: "{{ aggregate }}"
+      loop: "{{ vlans }}"

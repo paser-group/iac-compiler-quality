@@ -1,0 +1,33 @@
+
+---
+- name: Test playbook for SSH issue
+  hosts: all
+  gather_facts: no
+
+  tasks:
+  - name: Generate unexpected number of prompts during interactive authentication
+    expect:
+      command: ssh user@{{ inventory_hostname }}
+      responses:
+        Password: mypassword
+        "Are you sure you want to continue connecting": yes
+        unknown: UNKNOWN
+    echo: yes
+
+  - name: Test unconventional syntax in interactive authentication
+    expect:
+      command: ssh -o LogLevel=verbose user@{{ inventory_hostname }}
+      responses:
+        Password: mypassword
+        "Are you sure you want to continue connecting": yes
+        UnknownSyntax: UNKNOWN
+    echo: yes
+
+  - name: Generate unexpected inputs in interactive authentication
+    expect:
+      command: ssh -o PreferredAuthentications=keyboard-interactive,password user@{{ inventory_hostname }}
+      responses:
+        Password: wrongpassword
+        "Enter verification code": 1234
+        "Are you sure you want to continue connecting": yes
+    echo: yes

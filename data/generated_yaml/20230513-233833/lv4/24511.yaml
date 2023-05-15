@@ -1,0 +1,48 @@
+
+- hosts: vmware
+  tasks:
+    - name: Take a snapshot of the VM
+      vmware_guest_snapshot:
+        hostname: 10.1.1.1
+        username: user
+        password: pwd
+        datacenter_name: DC1
+        vm_name: test-vm
+        name: ansible-test-snapshot
+      register: snap1
+
+    - name: Take a snapshot of the VM again with the same name
+      vmware_guest_snapshot:
+        hostname: 10.1.1.1
+        username: user
+        password: pwd
+        datacenter_name: DC1
+        vm_name: test-vm
+        name: ansible-test-snapshot
+      register: snap2
+
+    - name: Ensure the module is idempotent
+      fail:
+        msg: "vmware_guest_snapshot is not idempotent"
+      when: snap1.changed != snap2.changed
+
+    - name: Take the snapshot again with the same name
+      vmware_guest_snapshot:
+        hostname: 10.1.1.1
+        username: user
+        password: pwd
+        datacenter_name: DC1
+        vm_name: test-vm
+        name: ansible-test-snapshot
+
+    - name: Delete the snapshots
+      vmware_guest_snapshot:
+        hostname: 10.1.1.1
+        username: user
+        password: pwd
+        datacenter_name: DC1
+        vm_name: test-vm
+        name: "{{ item }}"
+        state: absent
+      loop:
+        - ansible-test-snapshot

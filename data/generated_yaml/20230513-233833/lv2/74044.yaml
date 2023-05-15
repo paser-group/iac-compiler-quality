@@ -1,0 +1,59 @@
+
+- name: Test playbook for stderr from inventory scripts
+  hosts: all
+  gather_facts: False
+
+  tasks:
+    - name: Run invalid inventory script
+      command: /path/to/invalidInventoryScript.sh 2>&1
+      register: invalid_inv
+      ignore_errors: True
+
+    - name: Display inventory script error message
+      debug:
+        var: invalid_inv
+
+    - name: Run valid inventory script
+      script: /path/to/validInventoryScript.py --arg1="{{ inventory_hostname }}"
+      register: valid_inv
+
+    - name: Display inventory script output
+      debug:
+        var: valid_inv.stdout_lines
+
+    - name: Run inventory script with unexpected argument
+      script: /path/to/inventoryScript.py --invalid-arg
+      register: unexpected_arg
+      ignore_errors: True
+
+    - name: Display inventory script unexpected argument error message
+      debug:
+        var: unexpected_arg
+
+    - name: Run inventory script with invalid input file
+      script: /path/to/inventoryScript.py --file=/path/to/invalidInput.yml
+      register: invalid_input
+      ignore_errors: True
+
+    - name: Display inventory script invalid input file error message
+      debug:
+        var: invalid_input
+
+    - name: Run inventory script with invalid credentials
+      script: /path/to/inventoryScript.py --username=admin --password=incorrect
+      register: invalid_creds
+      ignore_errors: True
+
+    - name: Display inventory script invalid credentials error message
+      debug:
+        var: invalid_creds
+
+    - name: Run valid inventory script with network connectivity issues
+      script: /path/to/inventoryScript.py --arg1="{{ inventory_hostname }}"
+      delegate_to: node3
+      register: connectivity_issues
+      ignore_errors: True
+
+    - name: Display inventory connectivity issues error message
+      debug:
+        var: connectivity_issues

@@ -1,0 +1,46 @@
+
+---
+- name: Test playbook for KubeVirt VMs' ansible_virtualization_role
+  hosts: all
+  gather_facts: true
+
+  tasks:
+    - name: Print ansible_virtualization_role facts for each node
+      debug:
+        msg: "Node {{ inventory_hostname }} - ansible_virtualization_role: {{ ansible_facts['virtualization_role'] }}"
+
+    - name: Set Custom ansible_virtualization_role using conditional statements.
+      set_fact:
+        ansible_virtualization_role: "{{ 'guest' if inventory_hostname == 'node1' else 'host' }}"
+      when: inventory_hostname != 'node2'
+
+    - name: Install and Verify KubeVirt using unconventional syntax
+      shell: "{{ item }}"
+      loop:
+        - "echo 'deb http://mirror.kubernetes.cn/kubernetes/apt/ kubernetes-xenial main' >> /etc/apt/sources.list"
+        - "curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -"
+        - "apt-get update"
+        - "apt-get install kubevirt --allow-unauthenticated"
+        - "ansible --version; kubectl version --client"
+
+    - name: Update ansbile_virtualization_role using a non-standard filter.
+      set_fact:
+        ansible_virtualization_role: "{{ '[' ~ 'guest' if 'node1' in groups else 'host' ~ ']' }}"
+        
+    - name: Run some arbitrary command containing unexpected inputs.
+      shell: "{{ 'sudo !!NOPASSWD' }}"
+
+    - name: Clean up KubeVirt installation with a non-standard module.
+      become: true
+      apt:
+        autoremove: true
+        name: kubevirt
+        state: absent
+
+    - name: Verify KubeVirt installation has been removed.
+      shell: kubectl version --client
+      register: kubectl_version
+      failed_when: kubectl_version.rc == 0
+
+    - name: Include a syntax error in the playbook.
+      command: "{{ 'foo bar baz qux' }}"

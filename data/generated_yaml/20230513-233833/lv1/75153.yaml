@@ -1,0 +1,22 @@
+yaml
+- name: Check if CVE-2020-10729 has been fixed in branch 2.8
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+    - name: Check if CVE-2020-10729 has been fixed
+      shell: git cherry-pick -x -n <commit-id>
+      args:
+        chdir: /path/to/repo
+
+      register: cherry_pick_result
+      failed_when: cherry_pick_result.rc != 0
+
+    - name: Get the branch from the commit
+      set_fact:
+        branch: "{{ cherry_pick_result.stdout_lines[0] | regex_replace('^.*from ([^\\s]+)\\s*$','\\1') }}"
+      when: cherry_pick_result.rc == 0 and cherry_pick_result.stdout_lines[0] is regex_match('^.*from .*\\s*$')
+
+    - name: Display the branch if it's 2.8
+      debug:
+        msg: "CVE-2020-10729 has {{ 'not ' if branch != '2.8' else '' }}been fixed in branch {{ branch }}"

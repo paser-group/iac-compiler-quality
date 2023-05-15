@@ -1,0 +1,27 @@
+yaml
+- hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: Generate config file using a template with import errors
+      template:
+        src: template.j2
+        dest: /tmp/config.conf
+        validate: '{{ playbook_dir }}/validate.sh %s'
+
+      # the `validate` option specifies a shell command that will be executed
+      # after rendering the template. We'll use it to check if there are any errors
+
+    - name: Ensure config file is generated successfully
+      assert:
+        that: "/tmp/config.conf is exists"
+    
+    - name: Ensure import errors are detected by Ansible compiler
+      assert:
+        that: "failed_results | length > 0"
+      vars:
+        failed_results: "{{ template_results | rejectattr('failed', '==', False) | list }}"
+
+      # after rendering the template, we'll loop over the results of each task
+      # and look for any failures. If there are any failures, it means that the
+      # Ansible compiler failed to detect the import errors.

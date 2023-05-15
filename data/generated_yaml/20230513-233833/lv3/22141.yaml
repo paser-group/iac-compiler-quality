@@ -1,0 +1,33 @@
+
+---
+- name: Test Access Controls
+  hosts: all
+  tasks:
+    - name: Attempt to read sensitive file
+      shell: "cat /etc/sensitivefile"
+      register: file_contents
+      ignore_errors: True
+    - name: Check if access was denied
+      fail:
+        msg: "Access was not denied, potential vulnerability in access controls."
+      when: file_contents is succeeded
+  
+- name: Test File System Permissions
+  hosts: all
+  tasks:
+    - name: Create test file
+      file:
+        path: /opt/testfile
+        state: touch
+        mode: '0000'
+    - name: Try to modify file using non-root user
+      copy:
+        src: /dev/null
+        dest: /opt/testfile
+      become: False
+      register: file_modified
+      ignore_errors: True
+    - name: Check if modification was denied
+      fail:
+        msg: "Modification was not denied, potential vulnerability in file system permissions."
+      when: file_modified is succeeded

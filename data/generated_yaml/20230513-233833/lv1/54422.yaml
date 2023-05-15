@@ -1,0 +1,28 @@
+
+---
+- name: Create GCP service account
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    gcp_project_id: "your_project_id"
+    gcp_credentials_file: "/path/to/service_account.json"
+    gcp_service_account_email: "example-service-account@your_project_id.iam.gserviceaccount.com"
+    gcp_service_account_display_name: "My Service Account"
+  
+  tasks:
+    - name: Create service account
+      gcp_iam_service_account:
+        name: "{{ gcp_service_account_email }}"
+        display_name: "{{ gcp_service_account_display_name }}"
+        project: "{{ gcp_project_id }}"
+        credentials_file: "{{ gcp_credentials_file }}"
+      register: sa_create_result
+      ignore_errors: yes
+
+    - name: Verify if the service account already exists or not
+      failed_when: sa_create_result.rc == 409 and 'already exists' not in sa_create_result.stderr
+      command: echo "Service account {{ gcp_service_account_email }} already exists"
+      register: account_exists
+      changed_when: false
+      ignore_errors: yes

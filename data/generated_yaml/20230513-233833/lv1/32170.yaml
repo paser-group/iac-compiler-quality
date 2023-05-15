@@ -1,0 +1,26 @@
+
+- name: Update EC2 Auto Scaling Group with fixed 'target_group_arns' parameter
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  
+  tasks:
+    - name: Stop EC2 Instances that belong to Auto Scaling Group
+      ec2_asg:
+        name: "{{ ASG_NAME }}"
+        state: 'standby'
+      register: ec2_asg_result
+
+    - name: Update 'target_group_arns' parameter in EC2 Auto Scaling Group
+      ec2_asg:
+        name: "{{ ASG_NAME }}"
+        target_group_arns:
+          - "{{ TARGET_GROUP_ARN }}"
+        state: 'present'
+      when: ec2_asg_result.changed == true
+
+    - name: Start EC2 Instances that belong to Auto Scaling Group
+      ec2_asg:
+        name: "{{ ASG_NAME }}"
+        state: 'in_service'
+      when: ec2_asg_result.changed == true

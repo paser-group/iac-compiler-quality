@@ -1,0 +1,43 @@
+
+---
+- name: Test Ansible Vault Error
+  hosts: all
+  gather_facts: no
+
+  vars:
+    secret_text: "Sensitive information goes here"
+  
+  tasks:
+    - name: Encrypt sensitive information using Vault
+      ansible.builtin.vars_prompt:
+        prompt: "Enter Vault Password to Encrypt the secret_text variable: "
+        private: yes
+      register: vault_pass
+
+    - name: Create encrypted variable file
+      ansible.builtin.copy:
+        content: "{{ secret_text }}"
+        dest: secrets.txt
+      register: copy_result
+      no_log: true
+
+    - name: Encrypt file using Vault
+      ansible.builtin.command: >
+        ansible-vault encrypt secrets.txt --vault-password-file vault-pass.txt
+      register: encrypt_result
+      no_log: true
+
+    - name: Test if file can be decrypted
+      ansible.builtin.command: >
+        ansible-vault decrypt secrets.txt --vault-password-file vault-pass.txt --output - | cat
+      register: decrypt_result
+      no_log: true
+
+    - name: Print decrypted file contents
+      ansible.builtin.debug: 
+        msg: "{{ decrypt_result.stdout }}"
+
+    - name: Access encrypted variable using hostvars[]
+      ansible.builtin.debug:
+        msg: "The value of secret_text is: {{ hostvars[inventory_hostname]['secret_text'] }}"
+

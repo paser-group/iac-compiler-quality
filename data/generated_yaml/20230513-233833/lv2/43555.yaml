@@ -1,0 +1,45 @@
+
+- name: Test gce_pd Error with Snapshot Disk
+  hosts: node1
+  
+  tasks:
+    - name: Create Snapshot Disk
+      gce_pd:
+        name: "{{ item }}"
+        size_gb: 20
+        source_snapshot: "{{ item }}"
+        mode: create
+      with_items:
+        - snapshot1
+        - snapshot2
+        - snapshot3
+
+    - name: Create Disk from Snapshot with Incorrect Size
+      gce_pd:
+        name: disk1
+        size_gb: "{{ incorrect_input }}"
+        source_snapshot: snapshot1
+        mode: create
+      
+    - name: Create Disk from Invalid Snapshot ID
+      gce_pd:
+        name: disk2
+        size_gb: 20
+        source_snapshot: "{{ invalid_input }}"
+        mode: create
+
+    - name: Delete Disks
+      gce_pd:
+        name: "{{ item }}"
+        mode: delete
+      with_items:
+        - disk1
+        - disk2
+
+    # The following tasks are just to add some unconventional syntax to the Playbook and increase fuzzing coverage.
+    - name: Wait for 5 seconds
+      pause:
+        seconds: "{{ incorrect_input }}"
+      
+    - name: Run a Command on node1 with Unconventional Syntax
+      command: "{{ invalid_input }}" 

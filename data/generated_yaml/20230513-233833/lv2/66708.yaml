@@ -1,0 +1,28 @@
+
+- name: Test ec2.py dynamic inventory
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    region: us-east-1
+    profile: default
+
+  tasks:
+    - name: Install boto library
+      pip:
+        name: boto
+        state: present
+
+    - name: Test Boto profile configuration
+      shell: 'export BOTO_CONFIG=/home/user/.aws/config && echo $(aws rds describe-db-instances --query "DBInstances[].Engine" --profile testing --region us-east-1)'
+      register: rds_output
+      ignore_errors: yes
+
+    - name: Print RDS instances engine
+      debug:
+        var: rds_output
+
+    - name: Test dynamic inventory
+      ec2_instance_facts:
+        region: "{{ region }}"
+        profile_name: "{{ profile }}"

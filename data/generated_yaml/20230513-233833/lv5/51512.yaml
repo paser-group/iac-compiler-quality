@@ -1,0 +1,29 @@
+
+- name: test Win_DSC PSCredential conversion for xFailoverCluster xCluster resource
+  hosts: node1
+  gather_facts: no
+  tasks:
+  - name: generate DSC configuration
+    win_dsc:
+      resource_name: xFailoverCluster
+      module_name: xCluster
+      cluster_name: "Cluster1"
+      cluster_network_name: "Cluster Network 1"
+      depends_on:
+        - win_dsc_file
+        - win_dsc
+      state: "present"
+      ps_credential:
+        user: "username"
+        password: "password"
+      output_path: "C:\Ansible\DSC\Cluster1"
+  - name: verify PSCredential conversion
+    win_shell: |
+      $cred = Get-Credential
+      if ($cred.UserName -ne "username" -or ($cred.GetNetworkCredential().Password | ConvertTo-SecureString).ConvertToPlainstring() -ne "password") {
+        throw "PSCredential conversion error"
+      }
+    register: result
+  - name: assert PSCredential conversion output
+    assert:
+      that: result.rc == 0

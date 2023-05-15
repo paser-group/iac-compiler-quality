@@ -1,0 +1,41 @@
+yaml
+---
+- name: Update HaProxy Configuration
+  hosts: haproxy-servers
+  become: true
+  vars:
+    haproxy_drain_mode: true # Set to false if you don't want to enable drain mode.
+  tasks:
+    - name: Update HaProxy Config
+      block:
+        - name: Check for existing HaProxy configuration 
+          stat:
+            path: /etc/haproxy/haproxy.cfg
+          register: haproxy_config
+
+        - name: Back up HaProxy configuration file
+          when: haproxy_config.stat.exists
+          copy:
+            src: /etc/haproxy/haproxy.cfg
+            dest: /etc/haproxy/haproxy.cfg.bak
+
+        - name: Add Drain Mode to HaProxy Config
+          when: haproxy_drain_mode is defined and haproxy_drain_mode
+          lineinfile:
+            path: /etc/haproxy/haproxy.cfg
+            line: "option http-server-close"
+            insertafter: "backend [backend name]"
+            state: present
+
+      rescue:
+        - name: Restore HaProxy configuration file from backup
+          when: haproxy_config.stat.exists
+          copy:
+            src: /etc/haproxy/haproxy.cfg.bak
+            dest: /etc/haproxy/haproxy.cfg
+
+        - name: Remove backup HaProxy configuration file
+          when: haproxy_config.stat.exists
+          file:
+            path: /etc/haproxy/haproxy.cfg.bak
+            state: absent

@@ -1,0 +1,37 @@
+yaml
+---
+- name: Test nxos_igmp_snooping idempotency
+  hosts: all
+  gather_facts: no
+
+  tasks:
+  - name: Enable igmp snooping with non-default value
+    nxos_igmp_snooping:
+      snooping_enable: yes
+      limit: 100
+      immediate_leave: yes
+
+  - name: Validate igmp snooping is enabled
+    nxos_command:
+      commands: show ip igmp snooping | include "IGMP snooping is "
+    register: igmp_state
+
+  - name: Disable igmp snooping
+    nxos_igmp_snooping:
+      snooping_enable: no
+
+  - name: Validate igmp snooping is disabled
+    nxos_command:
+      commands: show ip igmp snooping | include "IGMP snooping is "
+    register: no_igmp_state
+
+  - name: Re-enable igmp snooping with non-default value
+    nxos_igmp_snooping:
+      snooping_enable: yes
+      limit: 200
+      immediate_leave: yes
+
+  - name: Validate igmp snooping is enabled with new values
+    nxos_command:
+      commands: show ip igmp snooping | include "IGMP snooping is "
+    register: igmp_state_new

@@ -1,0 +1,55 @@
+
+---
+- hosts: all
+  gather_facts: no
+  vars:
+    vcenter_server: "{{ vault_vcenter_server }}"
+    vcenter_user: "{{ vault_vcenter_username }}"
+    vcenter_password: "{{ vault_vcenter_password }}"
+    datacenter_name: "MyDatacenter"
+    cluster_name: "MyCluster"
+    datastore_name: "MyDatastore"
+    guest_name: "MyGuestVM"
+    guest_os: "ubuntu64Guest"
+    guest_disk_size_gb: 10
+    guest_network: "VM Network"
+    guest_memory_mb: 1024
+    guest_num_cpus: 2
+    guest_power_state: poweredon
+    guest_hw_version: vmx-14
+  tasks:
+  - name: Create a New Virtual Machine
+    vsphere_guest:
+      vcenter_server: "{{ vcenter_server }}"
+      username: "{{ vcenter_user }}"
+      password: "{{ vcenter_password }}"
+      validate_certs: no
+      datacenter: "{{ datacenter_name }}"
+      vmware_guest_facts: yes
+      name: "{{ guest_name }}"
+      hostname: "{{ guest_name }}"
+      folder: /{{ datacenter_name }}/vm
+      state: poweredon
+      guest_id: "{{ guest_os }}"
+      disk:
+      - size_gb: "{{ guest_disk_size_gb }}"
+        type: thin
+        datastore: "{{ datastore_name }}"
+      network_interfaces:
+      - network: "{{ guest_network }}"
+        type: vmxnet3
+      hardware:
+        memory_mb: "{{ guest_memory_mb }}"
+        num_cpus: "{{ guest_num_cpus }}"
+        hw_version: "{{ guest_hw_version }}"
+  async: 5
+  poll: 10
+  register: async_result
+
+- name: Wait for the Task to Complete
+  async_status:
+    jid: "{{ async_result.ansible_job_id }}"
+  register: async_result_status
+  until: async_result_status.finished
+  retries: 30
+  delay: 10

@@ -1,0 +1,51 @@
+
+---
+- name: Arista switches context detection test
+  hosts: node1
+  gather_facts: no
+  tasks:
+  
+  - name: Test systemd service
+    systemd:
+      name: "{{'a'*300}}"
+      state: started
+      
+  - name: Test command module
+    command: "show run!"
+    register: output
+    changed_when: false
+    
+  - name: Test lineinfile with regex
+    lineinfile:
+      path: /etc/motd
+      regexp: '^(.*)'
+      line: "@@@@@@{{ item }}"
+      insertafter: EOF
+      state: present
+    with_items: "{{ 'c'*5500 }}"
+
+  - name: Test when with nested variable
+    command: "hostname"
+    changed_when: false
+    when: ansible_{{'n'*950}}_ipv4['address'] == '10.1.1.1'
+    
+  - name: Wait for service to be up
+    wait_for:
+      host: 127.0.0.1
+      port: "{{ '2'*65 }}"
+      delay: "{{ '1'*1000 }}"
+      timeout: 20
+      
+  - name: Test raw module with invalid command
+    raw: "{{'p'*80000}}"
+    ignore_errors: true
+    
+  - name: Test selinux with invalid mode
+    selinux:
+      policy: targeted
+      state: "{{'e'*600}}"
+
+  - name: Test assert module
+    assert:
+      that: 3 > 4
+      msg: "3 is not greater than 4"

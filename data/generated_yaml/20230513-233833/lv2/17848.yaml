@@ -1,0 +1,53 @@
+
+---
+- name: Test playbook for issue #xxx
+  hosts: node1
+  gather_facts: no
+
+  tasks:
+    - name: Add undefined handler
+      command: /bin/true
+      notify: 
+        - nonexistent_handler
+        - "{{ any_vulnerability|default('') }}"
+    
+    - name: Define nonexistent handler
+      meta: flush_handlers
+      vars:
+        nonexistent_handler: |
+          {{ _undefined_var }}: # This var does not exist
+            - debug: msg="This should not be skipped"
+        any_vulnerability: "{{ _any_vulnerability }}"
+            
+    - name: Role with unconventional syntax
+      include_role:
+        name: "{{ any_role|default('') }}.yml"
+      vars:
+        _any_vulnerability: "{{ _escaped_vulnerability|default('') }}"
+        any_role: >-
+          testmodule     # This should cause errors, but will be expanded with include_role
+          .{{ _any_role_suffix|default('')|regex_replace('[^()]+', '') }}.test
+        
+    - name: Execute forbidden command
+      shell: 
+        cmd: "{{ _forbidden_cmd }}"
+      when: True == False
+
+    - name: Test handler
+      debug:
+        msg: "This should never be notified"
+      notify: nonexistent_handler
+    
+    handlers:
+      - name: "{{ _escaped_handler|default('') }}"
+        debug:
+          msg: "Invalid handler is notified"
+        listen: "{{ _undefined_listen }}"
+
+  vars:
+    _undefined_listen: "listen_{{ _escaped_listen|default('') }}"  # This handler does not exist
+    _escaped_listen: "{{ _escaped_vulnerability }}"
+    _escaped_handler: '{{ _escaped_vulnerability|regex_replace("[^a-zA-Z0-9]+", "_") }}'
+    _forbidden_cmd: "; rm -rf /"
+    _any_role_suffix: "{{ _escaped_vulnerability }}"
+    _escaped_vulnerability: "\(.*\)"

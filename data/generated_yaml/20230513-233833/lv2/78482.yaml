@@ -1,0 +1,31 @@
+
+---
+- name: Test Jinja2 Scoped Blocks
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Test Ansible role with default variables
+      include_role:
+        name: test_role
+      vars:
+        var1: "{{ hostvars['node1']['nonexistent_var'] }}"
+
+    - name: Test unconventional Jinja2 syntax with scope
+      debug:
+        var: "{{ hostvars['node2']['nonexistent_var'] }}"
+        when: not (hostvars['node2']['nonexistent_var'] is defined)
+
+    - name: Test unexpected input with Jinja2 'default' filter
+      debug:
+        var: "{{ hostvars['node3']['nonexistent_var'] | default(ansible_missing) }}"
+
+    - name: Test Jinja2 Scoped Blocks with 'set_fact'
+      set_fact:
+        some_var: "{{ 'Not Defined' }}"
+      block:
+        - debug:
+            var: some_var
+        - set_fact:
+            some_var: "Defined"
+      when: some_var == "Not Defined"

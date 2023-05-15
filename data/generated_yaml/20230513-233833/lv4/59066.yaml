@@ -1,0 +1,27 @@
+
+- name: Copy host public key to control node
+  fetch:
+    src: /etc/ssh/ssh_host_rsa_key.pub
+    dest: /tmp/ssh_host_rsa_key.pub
+
+- name: Add host public key to known_hosts
+  known_hosts:
+    path: /root/.ssh/known_hosts
+    name: "{{ hostvars[inventory_hostname]['ansible_hostname'] }}"
+    key: "{{ lookup('file', '/tmp/ssh_host_rsa_key.pub') }}"
+
+- name: Scan host for public key
+  shell: "ssh-keyscan {{ inventory_hostname }}"
+  register: host_key
+
+- name: Add host public key to known_hosts
+  lineinfile:
+    path: /root/.ssh/known_hosts
+    line: "{{ host_key.stdout }}"
+    state: present
+
+- name: Check host connectivity
+  ping:
+  
+- name: Gather facts about host
+  gather_facts:

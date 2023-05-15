@@ -1,0 +1,32 @@
+
+- name: Generate ec2_metric_alarm and fail when period is not provided in seconds
+  hosts: node1
+  gather_facts: no
+  tasks:
+    - name: Create a CloudWatch Alarm
+      ec2_metric_alarm:
+        region: us-west-2
+        state: present
+        metric: "{{ ansible_date_time.year }}"
+        namespace: AWS/EBS
+        dimensions:
+          - name: VolumeId
+            value: vol-123456
+        period: "{{ '5' | random }}"
+        statistic: Average
+        comparison: greater-than-threshold
+        threshold: "{{ 10 | random }}"
+        evaluation_periods: 5
+        alarm_name: "{{ 'test-' + range(1, 10)|random |string }}"
+        description: "{{ 'test-' + range(1, 10)|random |string }}"
+      register: alarm
+
+    - name: Ensure period is in seconds
+      fail:
+        msg: "Period must be provided in seconds"
+      when: "'s' not in alarm.period"
+
+    - name: Fail if alarm creation fails due to AWS API
+      fail:
+        msg: "Unable to create alarm on CloudWatch"
+      when: "'InvalidParameterCombination' in alarm.stderr"

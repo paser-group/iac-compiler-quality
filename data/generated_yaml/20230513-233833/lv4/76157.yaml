@@ -1,0 +1,33 @@
+
+---
+- hosts: all
+  gather_facts: false
+  become: yes
+  vars:
+    tmp_dir: "/tmp/ansible-{{ ansible_date_time.epoch }}"
+    file_content: "Hello World!"
+  tasks:
+    - name: Create temporary directory
+      file:
+        path: "{{ tmp_dir }}"
+        state: directory
+        mode: '0700'
+      register: tmp_dir_result
+
+    - name: Create temporary file
+      ansible.builtin.copy:
+        content: "{{ file_content }}"
+        dest: "{{ tmp_dir }}/hello.txt"
+        mode: '0600'
+      register: tmp_file_result
+
+    - name: Verify sudo user has access to temp file
+      command: "sudo -u {{ ansible_user }} cat {{ tmp_dir }}/hello.txt"
+      register: sudo_result
+      ignore_errors: yes
+
+    - name: Remove temporary directory
+      file:
+        path: "{{ tmp_dir }}"
+        state: absent
+      register: tmp_dir_remove_result

@@ -1,0 +1,33 @@
+
+- name: Validate Ansible Playbook
+  hosts: all
+  gather_facts: no
+
+  tasks:
+  - name: Check syntax and indentation of the playbook
+    shell: ansible-playbook --syntax-check playbook.yml
+    register: validate_syntax
+
+  - name: Fail the playbook when syntax or indentation is incorrect
+    fail:
+      msg: "Syntax or indentation error in playbook"
+    when: not validate_syntax["stdout_lines"] | default([]) | length == 0
+
+  - name: Load variables and validate them
+    include_vars: variables.yml
+    register: vars_loaded
+
+  - name: Fail the playbook when mandatory variables are missing or incorrect
+    fail:
+      msg: "Missing or incorrect variables in playbook"
+    when: vars_loaded | failed or not vars_loaded["ansible_facts"]["mandatory_variable"]
+
+  - name: Test the parsing of YAML files
+    yaml:
+      path: "test.yml"
+    register: yaml_parsed
+
+  - name: Fail the playbook when YAML parsing fails
+    fail:
+      msg: "YAML parsing failed in playbook"
+    when: yaml_parsed | failed

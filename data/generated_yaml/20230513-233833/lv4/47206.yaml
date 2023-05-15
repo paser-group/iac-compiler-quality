@@ -1,0 +1,64 @@
+yaml
+---
+- name: Ansible Playbook for testing tower_role module
+  hosts: all
+  gather_facts: false
+
+  vars:
+    role_name: myrole
+
+  tasks:
+    - name: Create role
+      file:
+        path: "/etc/ansible/roles/{{ role_name }}"
+        state: directory
+        mode: '0755'
+      delegate_to: localhost
+
+    - name: Create role directories
+      file:
+        path: "/etc/ansible/roles/{{ role_name }}/{{ item }}"
+        state: directory
+        mode: '0755'
+      delegate_to: localhost
+      with_items:
+        - tasks
+        - handlers
+        - templates
+        - files
+        - vars
+        - meta
+
+    - name: Create empty role files
+      file:
+        path: "/etc/ansible/roles/{{ role_name }}/{{ item }}/.empty"
+        state: touch
+        mode: '0644'
+      delegate_to: localhost
+      with_items:
+        - tasks/main.yml
+        - handlers/main.yml
+        - templates/main.yml
+        - files/main.yml
+        - vars/main.yml
+        - meta/main.yml
+
+    - name: Create playbook
+      copy:
+        dest: /etc/ansible/playbooks/role.yml
+        content: |
+          ---
+          - hosts: web
+            roles:
+              - {{ role_name }}
+      delegate_to: localhost
+
+    - name: Run tower_role module
+      tower_role:
+        name: "{{ role_name }}"
+        description: "The description of myrole"
+        verbose: true
+        project: "test_project"
+        state: "present"
+        inventory: "test_inventory"
+        playbook: "/etc/ansible/playbooks/role.yml"

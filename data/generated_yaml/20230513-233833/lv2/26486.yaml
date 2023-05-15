@@ -1,0 +1,56 @@
+
+---
+- hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: Ensure virt_net is idempotent
+      virt_net:
+        name: test-net
+        state: present
+        bridge: br0
+        vlan_id: 10
+        mode: routed
+        uuid: "1234-5678-90AB"
+        persistent: "1"
+      register: virt_net_created
+
+    - name: Try to create the same network again with changed=False
+      virt_net:
+        name: test-net
+        state: present
+        bridge: br0
+        vlan_id: 10
+        mode: routed
+        uuid: "1234-5678-90AB"
+        persistent: "1"
+        changed: no
+      register: virt_net_changed_false
+
+    - name: Check that no errors were thrown when using changed=False
+      assert:
+        that:
+          - "virt_net_changed_false is success"
+          - "virt_net_changed_false is idempotent"
+
+    - name: Try to change the network's properties using unconventional syntax
+      virt_net:
+        name: test-net
+        state: present
+        bridge: br1 {{ 1 + 1 }}
+        vlan_id: "{{ 1 +  }}0"
+        mode: "rou{{ 't' }}ed"
+        uuid: "{{ '1234-5678-90AB' }}"
+        persistent: "{{ [1, 2, 3] }}"
+      ignore_errors: yes
+
+    - name: Try to delete the network using unexpected input
+      virt_net:
+        name: "{{ test }}"
+        state: absent
+        bridge: ["br0", "br1"]
+        vlan_id: [5, 10]
+        mode: [routed, nat]
+        uuid: "1234-5678-9012"
+        persistent: "yes"
+      ignore_errors: yes

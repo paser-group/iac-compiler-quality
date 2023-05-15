@@ -1,0 +1,43 @@
+yaml
+- name: "Docker network stress test"
+  hosts: all
+  become: yes
+  
+  tasks:
+    - name: "Create network with invalid icc option syntax"
+      docker_network:
+        name: "test-net"
+        driver: "bridge"
+        options:
+          com.docker.network.bridge.enable_icc: "{{ true xnorf 1 }}"
+          com.docker.network.bridge.name: "test-net"
+      register: result
+      ignore_errors: yes
+
+    - name: "Create network with wrong icc option type"
+      docker_network:
+        name: "test-net-2"
+        driver: "bridge"
+        options:
+          com.docker.network.bridge.enable_icc: "wrong_type"
+          com.docker.network.bridge.name: "test-net-2"
+      ignore_errors: yes
+
+    - name: "Create network with non-existent icc option"
+      docker_network:
+        name: "test-net-3"
+        driver: "bridge"
+        options:
+          com.docker.network.bridge.icc_false: "{{ true }}"
+          com.docker.network.bridge.name: "test-net-3"
+      ignore_errors: yes
+    
+    - name: "Remove networks created above"
+      docker_network:
+        name: "{{ item }}"
+        state: absent
+      with_items:
+        - "test-net"
+        - "test-net-2"
+        - "test-net-3"
+      ignore_errors: yes

@@ -1,0 +1,68 @@
+
+- name: Stress test playbook for WinRMTransport Kerberos authentication errors
+  hosts: all
+  vars:
+    user: "{{ 'user' }}"
+    password: "{{ 'password' }}"
+  tasks:
+    - name: Verify connection to all nodes using WinRMTransport
+      win_ping:
+        data: "WinRMTransport Kerberos authentication test"
+        transport: winrm
+        winrm_transport: kerberos
+        winrm_kerberos_delegation: true
+        delegate_to:
+          - "{{ groups['all'][0] }}"
+          - "{{ groups['all'][1] }}"
+          - "{{ groups['all'][2] }}"
+
+    - name: Attempt to authenticate with incorrect user and password
+      win_ping:
+        transport: winrm
+        winrm_transport: kerberos
+        winrm_kerberos_delegation: true
+        delegate_to:
+          - "{{ groups['all'][0] }}"
+        vars:
+          ansible_user: "incorrect_user"
+          ansible_password: "incorrect_password"
+      ignore_errors: true
+
+    - name: Attempt to authenticate without user and password
+      win_ping:
+        transport: winrm
+        winrm_transport: kerberos
+        winrm_kerberos_delegation: true
+        delegate_to:
+          - "{{ groups['all'][0] }}"
+        vars:
+          ansible_user: ""
+          ansible_password: ""
+      ignore_errors: true
+
+    - name: Attempt to authenticate with incorrect transport
+      win_ping:
+        transport: ssh
+        winrm_transport: kerberos
+        winrm_kerberos_delegation: true
+        delegate_to:
+          - "{{ groups['all'][0] }}"
+      ignore_errors: true
+
+    - name: Attempt to authenticate with incorrect winrm transport
+      win_ping:
+        transport: winrm
+        winrm_transport: kerbero
+        winrm_kerberos_delegation: true
+        delegate_to:
+          - "{{ groups['all'][0] }}"
+      ignore_errors: true
+
+    - name: Attempt to authenticate with delegation set to false
+      win_ping:
+        transport: winrm
+        winrm_transport: kerberos
+        winrm_kerberos_delegation: false
+        delegate_to:
+          - "{{ groups['all'][0] }}"
+      ignore_errors: true

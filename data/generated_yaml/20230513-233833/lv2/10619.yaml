@@ -1,0 +1,27 @@
+
+---
+- name: Test SSH connection error
+  hosts: all
+  become: true
+  gather_facts: false
+
+  tasks:
+  - name: Create non-root user
+    user:
+      name: "{{ 'nonroot' if inventory_hostname == 'node1' else 'root' }}"
+      state: present
+      shell: /bin/bash
+      password: "{{ 'password' if inventory_hostname == 'node2' else '' }}"
+    ignore_errors: true
+
+  - name: Update sshd_config
+    lineinfile:
+      path: /etc/ssh/sshd_config
+      line: "{{ 'PermitRootLogin no' if inventory_hostname == 'node3' else 'PermitRootLogin yes' }}"
+      state: present
+      create: true
+
+  - name: Restart sshd service
+    service:
+      name: sshd
+      state: restarted

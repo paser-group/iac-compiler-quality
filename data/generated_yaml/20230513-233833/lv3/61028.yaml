@@ -1,0 +1,40 @@
+
+---
+- name: Provision GCP Kubernetes container cluster
+  hosts: localhost
+  gather_facts: false
+  vars:
+    project_id: <project-id>
+    credentials_file: </path/to/credentials.json>
+    cluster_name: test-cluster
+    zone: us-central1-a
+    subnetwork: <subnetwork-name>
+    private_cluster: true
+    master_authorized_networks: [192.168.0.0/16]
+    network: node-net
+    node_pools:
+      - name: default-pool
+        machine_type: n1-standard-2
+        initial_node_count: 1
+  tasks:
+  - name: Create Kubernetes Cluster
+    gcp_container_cluster:
+      name: "{{ cluster_name }}"
+      project: "{{ project_id }}"
+      zone: "{{ zone }}"
+      subnetwork: "{{ subnetwork }}"
+      network: "{{ network }}"
+      node_pools: "{{ node_pools }}"
+      private_cluster_config:
+        enable_private_nodes: true
+        master_ipv4_cidr_block: 172.16.0.0/28
+        enable_private_endpoint: true
+        enable_master_authorized_networks: true
+        master_authorized_networks_config:
+          cidr_blocks: "{{ master_authorized_networks }}"
+        operator_service_account: projects/PROJECT_NUMBER/serviceAccounts/NAME@PROJECT_ID.iam.gserviceaccount.com
+      auth_kind: serviceaccount
+      service_account_file: "{{ credentials_file }}"
+    register: cluster_details
+  - debug:
+      var: cluster_details

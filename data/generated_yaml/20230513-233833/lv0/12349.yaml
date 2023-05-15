@@ -1,0 +1,44 @@
+python
+import sys
+
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from StringIO import StringIO
+
+try:
+    from xmlrpclib import SafeTransport, SafeTransport, ServerProxy, Error
+except ImportError:
+    from xmlrpclib import Transport as SafeTransport, SafeTransport, ServerProxy, Fault as Error
+
+class Transport(SafeTransport):
+    def __init__(self, use_datetime=0):
+        SafeTransport.__init__(self, use_datetime)
+        self.verbose = 0
+
+    def request(self, host, handler, request_body, verbose=0):
+        self.verbose = verbose
+        return SafeTransport.request(self, host, handler, request_body)
+
+    def parse_response(self, response):
+        if self.verbose:
+            print "response:", response
+        return SafeTransport.parse_response(self, response)
+
+class Proxy(ServerProxy):
+    def __init__(self, uri, transport=None, encoding=None, verbose=0,
+                 allow_none=0, use_datetime=0, use_builtin_types=0):
+        if transport is None:
+            transport = Transport()
+        ServerProxy.__init__(self, uri, transport, encoding, verbose,
+                             allow_none, use_datetime, use_builtin_types)
+
+    def __call__(self, name, *args):
+        try:
+            return ServerProxy.__call__(self, name, *args)
+        except Error, v:
+            raise Exception(v)
+
+# example usage:
+proxy = Proxy('http://localhost:8000')
+result = proxy.some_method()

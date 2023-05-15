@@ -1,0 +1,49 @@
+
+---
+- name: Test Playbook
+  hosts: all
+  become: true
+  gather_facts: false
+  tasks:
+    - name: "Run command with an escaped {{"
+      command: sh -c "echo \{{{'{{'}}}"
+      register: result1
+      ignore_errors: true
+
+    - name: "Display {{ item }} variable with quotation marks"
+      debug:
+        var: "{{ item }}"
+      with_items:
+        - "Test Message with {{escaped}} double {{quotes}}."
+        - "Test Message with {{single}} 'quotes'."
+
+    - name: "Create a file with {{"
+      copy:
+        dest: "/tmp/test-{{{'{{'}}}"
+        content: |
+          This is a test file with an escaped {{
+      register: result2
+
+    - name: "Toggle between two roles with when statement"
+      include_role:
+        name: "{{ item }}"
+      when: "'role1' in play_hosts and not role1_done or 'role2' in play_hosts and not role2_done"
+      vars:
+        role1_done: "{{ item == 'role1' }}"
+        role2_done: "{{ item == 'role2' }}"
+      with_items:
+        - role1
+        - role2
+
+    - name: "Group variables with item"
+      debug:
+        var: "{{ item }}"
+      loop_control:
+        loop_var: item
+      with_items:
+        - "{variable1: value1, variable2: value2}"
+        - "{variable3: value3, variable4: value4}"
+
+    - name: "Get random numbers"
+      debug:
+        msg: "{{ range(0, 5)|random }}"

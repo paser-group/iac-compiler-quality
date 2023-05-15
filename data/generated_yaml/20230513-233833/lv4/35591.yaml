@@ -1,0 +1,48 @@
+
+---
+- name: Test azure_rm_virtualmachine module
+  hosts: all
+  become: true
+  vars:
+    resource_group: "my_resource_group"
+    location: "eastus"
+    vm_name: "test_vm"
+    image_name: "test_image"
+    vm_size: "Standard_DS1_v2"
+    admin_username: "myadmin"
+    admin_password: "mypassword"
+  
+  tasks:
+
+    - name: Define virtual machine
+      azure_rm_virtualmachine:
+        resource_group: "{{ resource_group }}"
+        name: "{{ vm_name }}"
+        vm_size: "{{ vm_size }}"
+        admin_username: "{{ admin_username }}"
+        admin_password: "{{ admin_password }}"
+        network_interface_names: "{{ vm_name + '_nic' }}"
+        os_disk_name: "{{ vm_name + '_os_disk' }}"
+        image:
+          offer: "UbuntuServer"
+          publisher: "Canonical"
+          sku: "18.04-LTS"
+          version: "{{ image_name }}"
+        location: "{{ location }}"
+      register: vm
+      
+    - name: Turn on virtual machine
+      azure_rm_virtualmachine_start:
+        name: "{{ vm_name }}"
+        resource_group: "{{ resource_group }}"
+
+    - name: Turn off virtual machine
+      azure_rm_virtualmachine_stop:
+        name: "{{ vm_name }}"
+        resource_group: "{{ resource_group }}"
+
+    - name: Remove virtual machine
+      azure_rm_virtualmachine:
+        resource_group: "{{ resource_group }}"
+        name: "{{ vm_name }}"
+        state: absent

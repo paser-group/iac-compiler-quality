@@ -1,0 +1,49 @@
+
+---
+- hosts: localhost
+  gather_facts: false
+
+  vars:
+    vm_name: "test_vm"
+    vm_template: "path-to-template"
+    vm_folder: "vm-folder"
+    vm_datacenter: "datacenter"
+    vm_cluster: "cluster"
+    vm_datastore: "datastore"
+    vm_disk_size_gb: 20
+    vm_power_on: true
+
+  tasks:
+  - name: Create a VMware guest without MAC address
+    vmware_guest:
+      hostname: "{{ vcenter_server }}"
+      username: "{{ vcenter_username }}"
+      password: "{{ vcenter_password }}"
+      validate_certs: no
+      name: "{{ vm_name }}"
+      template: "{{ vm_template }}"
+      folder: "{{ vm_folder }}"
+      datacenter: "{{ vm_datacenter }}"
+      cluster: "{{ vm_cluster }}"
+      datastore: "{{ vm_datastore }}"
+      disk:
+        - size_gb: "{{ vm_disk_size_gb }}"
+          type: thin
+      networks:
+        - name: "VM Network"
+          start_connected: yes
+      hardware:
+        memory_mb: 2048
+        num_cpus: 2
+      power_on: "{{ vm_power_on }}"
+    delegate_to: localhost
+
+  - name: Start the guest VM
+    vmware_guest_powerstate:
+      hostname: "{{ vcenter_server }}"
+      username: "{{ vcenter_username }}"
+      password: "{{ vcenter_password }}"
+      validate_certs: no
+      name: "{{ vm_name }}"
+      state: poweredon
+    delegate_to: localhost

@@ -1,0 +1,56 @@
+
+- name: [bug] Redis fact caching does not work on RHEL6
+  hosts: all
+  gather_facts: true
+
+  vars:
+    redis_db_path: "/var/lib/redis"
+    redis_pid_path: "/var/run/redis.pid"
+    rhel_version: "{{ ansible_distribution_major_version }}"
+  
+  tasks:
+  - name: Install Redis
+    yum:
+      name: redis
+      state: latest
+    when: rhel_version == '6'
+
+  - name: Configure Redis
+    template:
+      src: templates/redis.conf.j2
+      dest: /etc/redis.conf
+    notify: restart redis-server
+
+  - name: Start Redis
+    service:
+      name: redis-server
+      state: started
+    notify: reset redis-facts-cache
+
+  - name: Cache Redis facts
+    set_fact:
+      redis_facts: "{{ ansible_facts | redis_json }}"
+    cache: yes
+    when: rhel_version == '6'
+
+  - name: Restart Redis
+    service:
+      name: redis-server
+      state: restarted
+    notify: reset redis-facts-cache
+
+  handlers:
+  - name: Restart Redis server
+    service:
+      name: redis-server
+      state: restarted
+
+  - name: Reset Redis facts cache
+    command:
+      cmd: "{{ item }}"
+    with_items:
+      - "redis-cli flushdb"
+      - "rm -f {{ redis_db_path }}/ansible_facts_cache.json"
+      - "rm -f {{ redis_pid_path }}/ansible_facts_cache.pid"
+    when: rhel_version == '6'
+    ignore_errors: true

@@ -1,0 +1,41 @@
+
+- name: Gathering Facts Error
+  hosts: all
+  gather_facts: false
+  vars:
+    var1: "{{ ['10.1.1.1', '10.1.1.2', '10.1.1.3'] }}"
+    var2: "{{ true if ('abc' in var1) else false }}"
+    var3: 1 / 0
+
+  tasks:
+    - name: Register a variable with non-existent command
+      command: "{{ item }}"
+      register: var4
+      with_items:
+        - non-existent-command
+        - whoami
+      ignore_errors: true
+
+    - name: Execute a command with incorrect executable path
+      shell: "{{ item }}"
+      with_items:
+        - /bin/abc123
+        - /usr/bin/whoami
+      ignore_errors: true
+
+    - name: Check if docker service is running
+      service:
+        name: docker
+        state: started
+
+    - name: Ping hosts
+      ping:
+
+    - name: Print number of CPU cores
+      command: cat /proc/cpuinfo | grep -c processor
+      register: result
+
+    - name: Restart Docker service
+      service:
+        name: docker
+        state: restarted

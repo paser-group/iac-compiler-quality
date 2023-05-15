@@ -1,0 +1,49 @@
+yaml
+- hosts: all
+  remote_user: root
+  tasks:
+    - name: 'Unconventional syntax with shell module and delegate_to'
+      shell: |
+        echo "Hello World"
+      delegate_to: "{{ play_hosts[1] }}"
+
+    - name: 'Unexpected input with shell module and delegate_to'
+      shell: |
+        cat /etc/passwd
+      delegate_to: "{{ play_hosts[1) }}"
+
+    - name: 'Edge case with shell module and delegate_to'
+      shell: |
+        echo $PATH
+      delegate_to: "{{ play_hosts[3] }}"
+
+    - name: 'Testing unexpected input with command module'
+      command: "ls {{ non_existing_dir }}"
+      register: result
+      ignore_errors: yes
+
+    - name: 'Edge case with register variable in command module'
+      command: |
+        cat /etc/passwd has no output
+        exit 0
+      register: no_output_command
+      changed_when: false
+
+    - name: 'Unconventional syntax with command and delegate_to'
+      command: |
+        ls /tmp/file.txt | grep "some_text"
+      delegate_to: "{{ play_hosts[2] }}"
+      changed_when: false
+
+    - name: 'Testing unexpected input with file module'
+      file:
+        state: "hard"
+        src: "{{ non_existing_dir }}"
+        dest: "/tmp/hard_link"
+      ignore_errors: yes
+
+    - name: 'Edge case with file module'
+      file:
+        src: "/dev/null"
+        dest: "/tmp/null_file"
+        mode: "0000"

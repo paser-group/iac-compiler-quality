@@ -1,0 +1,44 @@
+yaml
+---
+- name: Test docker_compose module crashes with error about a non empty directory
+  hosts: all
+  become: true
+  vars:
+    project_name: myproject
+    expected_error_message: "Cannot remove '/var/lib/docker/volumes/myproject_dbdata/_data' (device or resource busy)"
+
+  tasks:
+    - name: Create non-empty directory inside the container
+      command: "docker exec {{ project_name }}_db mkdir /var/lib/mysql/test && touch /var/lib/mysql/test/file"
+
+    - name: Stop and remove container
+      docker_container:
+        name: "{{ project_name }}_db"
+        state: absent
+      register: output
+      ignore_errors: true
+
+    - name: Remove volume by passing the container name
+      docker_compose:
+        project_name: "{{ project_name }}"
+        state: absent
+        container_name: "{{ project_name }}_db"
+      register: result1
+
+    - name: Assert error message
+      assert:
+        that: "'{{ expected_error_message }}' in result1.stderr"
+        fail_msg: "docker_compose module failed to provide the expected error message"
+
+    - name: Remove volume using the volume name
+      docker_compose:
+        project_name: "{{ project_name }}"
+        state: absent
+        volumes:
+          - "{{ project_name }}_dbdata"
+      register: result2
+
+    - name: Assert no error message
+      assert:
+        that: result2.stderr == ''
+        fail_msg: "docker_compose module provided an unexpected error message"

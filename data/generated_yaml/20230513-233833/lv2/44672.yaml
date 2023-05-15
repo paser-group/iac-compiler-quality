@@ -1,0 +1,55 @@
+yaml
+---
+- name: Test playbook to uncover issues in ios_command
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: Test unconventional syntax
+      ios_command:
+        commands: "show \ \ \ nulle0"
+        provider:
+          host: "{{ inventory_hostname }}"
+          username: admin
+          password: ansible
+      register: output
+      ignore_errors: yes
+
+    - name: Test unexpected input
+      ios_command:
+        commands: "output \n remove file ;"
+        authorize: yes
+        auth_pass: admin
+        provider:
+          host: "{{ inventory_hostname }}"
+          username: admin
+          password: ansible
+
+    - name: Test edge case
+      ios_command:
+        commands: "{{ item }}"
+        provider:
+          host: "{{ inventory_hostname }}"
+          username: admin
+          password: ansible
+      with_items:
+        - "show cdp neighbors {"
+        - "show interfaces { limit"
+        - "show ip sla configuration size {{invalid_var}}"
+      register: output
+      ignore_errors: yes
+
+    - name: Test privilege level 0
+      ios_command:
+        commands: "show running-config"
+        privilege: 0
+        provider:
+          host: "{{ inventory_hostname }}"
+          username: admin
+          password: ansible
+      register: output
+
+    - name: Check for 'unable to set terminal parameters' error in output
+      assert:
+        that:
+          - "'unable to set terminal parameters' not in output.stdout"

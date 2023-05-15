@@ -1,0 +1,25 @@
+
+- name: Stress Testing ansible compiler- Lets Encrypt default values
+  hosts: all
+  become: true
+
+  vars:
+    letsencrypt_sub_agreement: true
+
+  tasks:
+    - name: Create letsencrypt agreement template
+      template:
+        src: letsencrypt_agreement.j2
+        dest: /etc/letsencrypt_agreement.txt
+
+    - name: Install LetsEncrypt certificates
+      command: certbot certonly -d example.com -d www.example.com --agree-tos --email admin@example.com {% if letsencrypt_sub_agreement == true %}--agree-tos -m sub_agreement@example.com{% endif %}
+
+    - name: Create wildcard SSL certificate
+      command: certbot certonly --manual --preferred-challenges dns --email admin@example.com -d '*.example.com' --agree-tos {% if letsencrypt_sub_agreement == true %}--agree-tos -m sub_agreement@example.com{% endif %}
+
+    - name: Perform certificate renewal
+      command: certbot renew
+
+    - name: Manage multiple email accounts
+      command: certbot register -m admin@example.com {% if letsencrypt_sub_agreement == true %}--agree-tos -m sub_agreement@example.com{% endif %}

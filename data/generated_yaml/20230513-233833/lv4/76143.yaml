@@ -1,0 +1,15 @@
+
+- name: Add PPA key to apt keyring
+  apt_key:
+    url: "{{ ppa_key_url }}"
+    state: present
+
+- name: Verify PPA key is in apt keyring
+  raw: "apt-key export {{ ppa_key_id }}"
+  register: key_export
+  failed_when: key_export.rc != 0
+
+- name: Raise an error if PPA key not found in apt keyring
+  fail:
+    msg: "PPA key not added to apt keyring"
+  when: "'-----BEGIN PGP PUBLIC KEY BLOCK-----' not in key_export.stdout"

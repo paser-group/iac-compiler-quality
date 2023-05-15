@@ -1,0 +1,67 @@
+
+---
+- name: Stress test playbook for SBC reboot time
+  hosts: all
+  vars:
+    reboot_time: "02:30:00 AM"
+    timezone: "America/Los_Angeles"
+
+  tasks:
+    - name: Set incorrect timezone
+      set_fact:
+        incorrect_timezone: "{{ timezone + 'wrong' }}"
+        
+    - name: Reboot SBC with incorrect timezone
+      reboot:
+        reboot_time: "{{ reboot_time }}"
+        timezone: "{{ incorrect_timezone }}"
+      register: incorrect_timezone_result
+      
+    - name: Show debug message
+      debug:
+        msg: "{{ incorrect_timezone_result }}"
+      
+    - name: Set unsupported timezone
+      set_fact:
+        unsupported_timezone: "Wrong/Timezone"
+      
+    - name: Reboot SBC with unsupported timezone
+      reboot:
+        reboot_time: "{{ reboot_time }}"
+        timezone: "{{ unsupported_timezone }}"
+      register: unsupported_timezone_result
+      
+    - name: Show debug message
+      debug:
+        msg: "{{ unsupported_timezone_result }}"
+      
+    - name: Set reboot time as invalid format
+      set_fact:
+        invalid_reboot_time: "2:3:0"
+      
+    - name: Try to reboot with invalid format
+      reboot:
+        reboot_time: "{{ invalid_reboot_time }}"
+        timezone: "{{ timezone }}"
+      register: invalid_reboot_time_result
+      
+    - name: Show debug message
+      debug:
+        msg: "{{ invalid_reboot_time_result }}"
+
+    - name: Reboot SBC successfully
+      reboot:
+        reboot_time: "{{ reboot_time }}"
+        timezone: "{{ timezone }}"
+      register: successful_reboot_result
+      
+    - name: Show debug message
+      debug:
+        msg: "{{ successful_reboot_result }}"
+      
+    - name: Use shorthand syntax to reboot SBC
+      reboot: "{{ reboot_time }}"
+      
+    - name: Show debug message
+      debug:
+        msg: "Reboot successful with shorthand syntax"

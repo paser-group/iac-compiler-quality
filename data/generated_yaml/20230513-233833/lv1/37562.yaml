@@ -1,0 +1,33 @@
+
+---
+- name: Configure Foreman Authentication Callback Plugin
+  hosts: all
+  become: true
+  
+  vars:
+    foreman_callback_plugin: 'foreman_callback_plugin.py'
+    
+  tasks:
+    - name: Install python requests package
+      apt:
+        name: python-requests
+        state: present
+        
+    - name: Create Foreman Callback Plugin directory
+      file:
+        path: '/usr/share/ansible/plugins/callback'
+        state: directory
+        mode: '0755'
+        
+    - name: Copy Foreman Callback Plugin
+      copy:
+        src: "{{ foreman_callback_plugin }}"
+        dest: '/usr/share/ansible/plugins/callback/{{ foreman_callback_plugin }}'
+        mode: '0644'
+        
+    - name: Configure Foreman Callback Plugin
+      lineinfile:
+        path: '/etc/ansible/ansible.cfg'
+        state: present
+        regexp: '^#?callback_whitelist.*'
+        line: 'callback_whitelist = foreman'

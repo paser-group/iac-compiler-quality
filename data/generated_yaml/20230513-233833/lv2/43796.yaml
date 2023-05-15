@@ -1,0 +1,67 @@
+
+- name: BigIP_Facts error stress testing playbook
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Install dependencies
+      apt:
+        name: python3, python3-pip
+        state: present
+    - name: Install BIG-IP F5 dependencies
+      pip:
+        name: f5-sdk, bigsuds
+    - name: Retrieve BIG-IP Facts
+      f5networks.f5_modules.bigip_facts:
+        server: "{{ inventory_hostname }}"
+        username: "admin"
+        password: "password"
+        validate_certs: no
+        gather_subset: system-global-properties, virtual-servers
+        fact_path: "/var/tmp/facts"
+      register: bigip_facts
+    - name: Display BIG-IP Facts
+      debug:
+        var: bigip_facts
+    - name: Testing invalid gather subset: non-existing property
+      f5networks.f5_modules.bigip_facts:
+        server: "{{ inventory_hostname }}"
+        username: "admin"
+        password: "password"
+        validate_certs: no
+        gather_subset: non-existing-property
+        fact_path: "/var/tmp/facts"
+      register: invalid_gather_subset_error
+      ignore_errors: yes
+    - name: Display INVALID Gather Subset error message
+      debug:
+        var: invalid_gather_subset_error
+    - name: Testing invalid fact path
+      f5networks.f5_modules.bigip_facts:
+        server: "{{ inventory_hostname }}"
+        username: "admin"
+        password: "password"
+        validate_certs: no
+        gather_subset: system-global-properties, virtual-servers
+        fact_path: "{{ invalid_fact_path }}"
+      vars:
+          invalid_fact_path: "/non-existing-directory/facts"
+      register: invalid_fact_path_error
+      ignore_errors: yes
+    - name: Display INVALID Fact Path error message
+      debug:
+        var: invalid_fact_path_error
+    - name: Testing invalid server IP address
+      f5networks.f5_modules.bigip_facts:
+        server: "{{ invalid_server_address }}"
+        username: "admin"
+        password: "password"
+        validate_certs: no
+        gather_subset: system-global-properties, virtual-servers
+        fact_path: "/var/tmp/facts"
+      vars:
+          invalid_server_address: "10.1.1.4"
+      register: invalid_server_address_error
+      ignore_errors: yes
+    - name: Display INVALID Server IP Address error message
+      debug:
+        var: invalid_server_address_error

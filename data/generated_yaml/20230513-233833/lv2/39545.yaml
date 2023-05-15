@@ -1,0 +1,53 @@
+
+---
+- hosts: all
+  become: true
+  gather_facts: false
+
+  vars:
+    aws_region: us-east-1
+    ec2_image_id: ami-0c55b159cbfafe1f0  # Amazon Linux 2 LTS
+    ec2_instance_type: t2.micro
+    ec2_subnet_id: subnet-12345678
+    ec2_security_group: sg-0987654321
+    keypair_name: my-aws-keypair
+    ec2_tag_specifications: [{'ResourceType': 'instance', 'Tags': [{'Key': 'Name', 'Value': 'my-instance'}]}]
+
+  tasks:
+
+  - name: Create an EC2 instance
+    ec2:
+      aws_access_key: "{{ aws_access_key }}"
+      aws_secret_key: "{{ aws_secret_key }}"
+      region: "{{ aws_region }}"
+      image: "{{ ec2_image_id }}"
+      instance_type: "{{ ec2_instance_type }}"
+      count: "{{ count | default(1) }}"
+      subnet_id: "{{ ec2_subnet_id }}"
+      assign_public_ip: "{{ assign_public_ip | default(true) }}"
+      vpc_subnet_id: "{{ vpc_subnet_id | default(ec2_subnet_id) }}"
+      security_group: "{{ ec2_security_group }}"
+      key_name: "{{ keypair_name }}"
+      tag_specifications: "{{ ec2_tag_specifications }}"
+      wait: "{{ wait | default(true) }}"
+    register: ec2
+
+  - name: Print the instance ID
+    debug:
+      var: ec2.instances[0].id
+
+  - name: Modify user data for the instance
+    ec2_userdata:
+      aws_access_key: "{{ aws_access_key }}"
+      aws_secret_key: "{{ aws_secret_key }}"
+      instance_id: "{{ ec2.instances[0].id }}"
+      user_data: "{{ raw_userdata | b64encode }}"
+    when: not ec2.instances[0].state |= 'stopped'
+    register: instance_userdata
+
+  - name: Shut down the instance
+    ec2:
+      aws_access_key: "{{ aws_access_key }}"
+      aws_secret_key: "{{ aws_secret_key }}"
+      instances: "{{ ec2.instances }}"
+      state: absent

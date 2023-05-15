@@ -1,0 +1,22 @@
+
+- name: Check idempotency of nxos_vlan with mode attribute
+  hosts: network
+  gather_facts: no
+  tasks:
+    - name: Create VLAN 100
+      nxos_vlan:
+        vlan_id: 100
+        name: Production
+        mode: transparent
+        state: present
+      register: vlan_100
+      check_mode: yes
+
+    - name: Check if changes were made
+      debug:
+        var: vlan_100
+
+    - name: Raise an error if changes were applied during a dry run
+      fail:
+        msg: "Changes were made during dry run!"
+      when: vlan_100.changed and ansible_check_mode

@@ -1,0 +1,69 @@
+
+- name: Manage GCP instance group
+  hosts: localhost
+  gather_facts: no
+  vars:
+    project_id: "my-project"
+    zone: "us-central1-a"
+    service_account_file: "path/to/service-account.json"
+  tasks:
+  - name: Authenticate to GCP
+    google.auth:
+      credentials_file: "{{ service_account_file }}"
+
+  - name: Create instance group
+    gcp_compute_instance_group_manager:
+      name: "my-instance-group"
+      size: 3
+      target_pools:
+      - "/compute/v1/projects/{{ project_id }}/regions/{{ zone }}/targetPools/my-target-pool"
+      state: present
+      auth_kind: serviceaccount
+    no_log: true
+    register: result
+
+  - name: Verify instance group created
+    assert:
+      that:
+      - result.instance_group is defined
+      - result.instance_group.selfLink is defined
+      - result.instance_group.size | int == 3
+
+  - name: Modify instance group
+    gcp_compute_instance_group_manager:
+      name: "my-instance-group"
+      size: 2
+      target_pools:
+      - "/compute/v1/projects/{{ project_id }}/regions/{{ zone }}/targetPools/my-target-pool"
+      state: present
+      auth_kind: serviceaccount
+
+  - name: Verify instance group modified
+    gcp_compute_instance_group_manager:
+      name: "my-instance-group"
+      auth_kind: serviceaccount
+    register: result
+
+  - name: Verify instance group size
+    assert:
+      that:
+      - result.instance_group is defined
+      - result.instance_group.selfLink is defined
+      - result.instance_group.size | int == 2
+
+  - name: Delete instance group
+    gcp_compute_instance_group_manager:
+      name: "my-instance-group"
+      state: absent
+      auth_kind: serviceaccount
+
+  - name: Verify instance group deleted
+    gcp_compute_instance_group_manager:
+      name: "my-instance-group"
+      auth_kind: serviceaccount
+    register: result
+
+  - name: Verify instance group not found
+    assert:
+      that: result.failed
+      msg: "Instance group still exists after deletion"

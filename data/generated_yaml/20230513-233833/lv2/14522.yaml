@@ -1,0 +1,35 @@
+
+- hosts: all
+  gather_facts: false
+  tasks:
+    - name: create directories
+      file:
+        path: "{{ item }}"
+        state: directory
+      with_items:
+        - "~/testdir1"
+        - "~/testdir2"
+        - "~/testdir3"
+    
+    - name: create test file
+      copy:
+        content: 'This is a test file'
+        dest: "~/testdir1/testfile.txt"
+      
+    - name: create soft link
+      file:
+        src: "~/testdir1/testfile.txt"
+        dest: "~/testdir2/softlink"
+        state: link
+      
+    - name: vault encrypt files
+      command: "ansible-vault encrypt {{ item }}"
+      with_items:
+        - "~/testdir1/testfile.txt"
+        - "~/testdir2/softlink"
+      
+    - name: read encrypted file
+      command: "cat {{ item }} | ansible-vault --vault-password-file=/tmp/vault-pass.txt view"
+      with_items:
+        - "~/testdir1/testfile.txt"
+        - "~/testdir2/softlink"

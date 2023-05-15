@@ -1,0 +1,44 @@
+
+- name: Test playbook for issue #1234
+  hosts: "{{ groups['all'][0] }}"
+  gather_facts: no
+
+  # Test with a group that doesn't exist
+  hosts: "nonexistent_group"
+  tasks:
+    - debug:
+        msg: "This should not be executed"
+
+  # Test with a specific host that doesn't exist
+  hosts: "10.1.1.5"
+  tasks:
+    - debug:
+        msg: "This should not be executed"
+
+  # Test with a valid host but invalid limit value
+  hosts: "node2"
+  tasks:
+    - debug:
+        msg: "This should not be executed"
+    delegate_to: "{{ groups['all'][1] }}"
+    run_once: yes
+    when: inventory_hostname == 'node1'
+    limit: "invalid_limit_value"
+
+  # Test with valid inventory and limit values
+  hosts: "{{ groups['all'] }}"
+  tasks:
+    - debug:
+        msg: "This should be executed"
+    run_once: yes
+    when: inventory_hostname == 'node1'
+    limit: "node2"
+
+  # Test with valid inventory and limit values, but exclude a host
+  hosts: "{{ groups['all'] | difference(['node3']) }}"
+  tasks:
+    - debug:
+        msg: "This should be executed"
+    run_once: yes
+    when: inventory_hostname == 'node1'
+    limit: "node2"

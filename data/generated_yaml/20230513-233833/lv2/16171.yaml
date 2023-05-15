@@ -1,0 +1,109 @@
+
+- name: Test aws elb https listeners issue
+  hosts: all
+  become: yes
+  
+  tasks:
+  - name: Create ELB with HTTPS listeners
+    elb_application_lb:
+      name: "test elb"
+      state: present
+      listeners:
+        - protocol: tcp
+          port: 80
+          default_action:
+            type: "forward"
+            target_group_arn: arn:aws:elasticloadbalancing:us-west-2:123456789012:targetgroup/test-target-group/710ba2bcf0b84af8
+        - protocol: ssl
+          port: 443
+          ssl_policy: "ELBSecurityPolicy-2016-08"
+          certificate_arn: "arn:aws:iam::123456789012:server-certificate/test-cert"
+          default_action:
+            type: "fixed-response"
+            fixed_response_config:
+              content_type: 'text/plain'
+              message_body: 'Incorrect protocol'
+              status_code: '404'
+      subnet_mappings:
+        - subnet_id: subnet-0123456789abcdef0
+          allocation_id: eipalloc-0123456789abcdef
+        - subnet_id: subnet-0123456789abcdef1
+          allocation_id: eipalloc-0123456789abcdef
+      security_groups:
+        - sg-0123456789abcdef0
+        - sg-0123456789abcdef1
+  
+  - name: Update HTTPS listeners of ELB
+    elb_application_lb:
+      name: "test-elb"
+      listeners:
+        - protocol: tcp
+          port: 80
+          default_action:
+            type: "forward"
+            target_group_arn: arn:aws:elasticloadbalancing:us-west-2:123456789012:targetgroup/test-target-group/710ba2bcf0b84af8
+        - protocol: ssl
+          port: 443
+          ssl_policy: "ELBSecurityPolicy-2016-08"
+          certificate_arn: "arn:aws:iam::123456789012:server-certificate/test-cert"
+          default_action:
+            type: "fixed-response"
+            fixed_response_config:
+              content_type: 'text/plain'
+              message_body: 'Incorrect protocol'
+              status_code: '404'
+      subnet_mappings:
+        - subnet_id: subnet-0123456789abcdef0
+          allocation_id: eipalloc-0123456789abcdef
+        - subnet_id: subnet-0123456789abcdef1
+          allocation_id: eipalloc-0123456789abcdef
+      security_groups:
+        - sg-0123456789abcdef0
+        - sg-0123456789abcdef1
+  
+  - name: Remove HTTPS listeners from ELB
+    elb_application_lb:
+      name: "test-elb"
+      listeners:
+        - protocol: tcp
+          port: 80
+          default_action:
+            type: "forward"
+            target_group_arn: arn:aws:elasticloadbalancing:us-west-2:123456789012:targetgroup/test-target-group/710ba2bcf0b84af8
+      subnet_mappings:
+        - subnet_id: subnet-0123456789abcdef0
+          allocation_id: eipalloc-0123456789abcdef
+        - subnet_id: subnet-0123456789abcdef1
+          allocation_id: eipalloc-0123456789abcdef
+      security_groups:
+        - sg-0123456789abcdef0
+        - sg-0123456789abcdef1
+  
+  - name: Create ELB with invalid SSL policy
+    elb_application_lb:
+      name: "test-elb"
+      state: present
+      listeners:
+        - protocol: ssl
+          port: 443
+          ssl_policy: "invalid"
+          certificate_arn: "arn:aws:iam::123456789012:server-certificate/test-cert"
+          default_action:
+            type: "fixed-response"
+            fixed_response_config:
+              content_type: 'text/plain'
+              message_body: 'Incorrect protocol'
+              status_code: '404'
+      subnet_mappings:
+        - subnet_id: subnet-0123456789abcdef0
+          allocation_id: eipalloc-0123456789abcdef
+        - subnet_id: subnet-0123456789abcdef1
+          allocation_id: eipalloc-0123456789abcdef
+      security_groups:
+        - sg-0123456789abcdef0
+        - sg-0123456789abcdef1
+  
+  - name: Delete non-existent ELB
+    elb_application_lb:
+      name: "non-existent-elb"
+      state: absent

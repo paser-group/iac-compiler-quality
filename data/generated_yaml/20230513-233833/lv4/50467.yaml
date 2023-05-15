@@ -1,0 +1,33 @@
+yaml
+---
+- hosts: all
+  gather_facts: false
+  tasks:
+  - name: Install Docker and Python libraries
+    apt:
+      pkg: ['docker.io', 'python3-pip']
+      update_cache: yes
+      state: present
+    become: true
+
+  - name: Define a Docker Swarm service
+    docker_swarm_service:
+      name: "{{ inventory_hostname }}_service"
+      image: nginx
+      state: present
+      detach: true
+      replicas: 1
+      mode: replicated
+
+  - name: Generate a default configuration for the service
+    docker_service:
+      project_name: "{{ inventory_hostname }}_project"
+      service_name: "{{ inventory_hostname }}_service"
+      state: present
+    register: config
+
+  - name: Check the syntax of the generated configuration file
+    command: sh -c 'docker config inspect {{ inventory_hostname }}_project_{{ inventory_hostname }}_service > /dev/null'
+    register: syntax_check
+    changed_when: false
+    failed_when: syntax_check.rc != 0

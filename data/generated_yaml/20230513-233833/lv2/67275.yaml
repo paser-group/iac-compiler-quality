@@ -1,0 +1,38 @@
+
+---
+- name: Test ec2_win_password and key_data argument
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: Add user data to instance
+      ec2_win_password:
+        instance_id: i-0123456789abcdef
+        password: Passw0rd!
+        key_data: 3=2+1
+        region: us-west-2
+
+    - name: Stop instance
+      ec2:
+        state: stopped
+        instance_ids: i-0123456789abcdef
+        region: us-west-2
+
+    - name: Start instance
+      ec2:
+        state: started
+        instance_ids: i-0123456789abcdef
+        region: us-west-2
+
+    - name: Add user data to instance with unexpected input
+      ec2_win_password:
+        instance_id: i-0123456789abcdef
+        password: ${'a' * 500}
+        key_data: '&& rm -rf /'
+        region: us-west-2
+
+    - name: Delete instance
+      ec2:
+        state: absent
+        instance_ids: i-0123456789abcdef
+        region: us-west-2

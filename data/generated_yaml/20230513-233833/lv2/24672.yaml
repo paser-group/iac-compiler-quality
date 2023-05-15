@@ -1,0 +1,93 @@
+yaml
+---
+- name: Stress test Ansible compiler for v-center connection error
+  hosts: node1
+  become: yes
+  
+  vars:
+    credentials: "{{ lookup('env', 'VCENTER_CREDENTIALS') }}"
+    vcenter: "{{ lookup('env', 'VCENTER_HOST') }}"
+    datacenter: "{{ lookup('env', 'VCENTER_DATACENTER') }}"
+    cluster: "{{ lookup('env', 'VCENTER_CLUSTER') }}"
+  
+  tasks:
+    # Test connectivity to v-center
+    - name: Test connectivity to v-center
+      vmware_connection:
+        hostname: "{{ vcenter }}"
+        username: "{{ credentials.split(':')[0] }}"
+        password: "{{ credentials.split(':')[1] }}"
+        validate_certs: no
+      ignore_errors: yes
+      
+    # Edge case 1 - Missing username
+    - name: Test connectivity with missing username
+      vmware_connection:
+        hostname: "{{ vcenter }}"
+        password: "{{ credentials.split(':')[1] }}"
+        validate_certs: no
+      ignore_errors: yes
+    
+    # Edge case 2 - Missing password
+    - name: Test connectivity with missing password
+      vmware_connection:
+        hostname: "{{ vcenter }}"
+        username: "{{ credentials.split(':')[0] }}"
+        validate_certs: no
+      ignore_errors: yes
+      
+    # Edge case 3 - Invalid datacenter
+    - name: Test connectivity with invalid datacenter
+      vmware_guest:
+        hostname: "{{ vcenter }}"
+        username: "{{ credentials.split(':')[0] }}"
+        password: "{{ credentials.split(':')[1] }}"
+        validate_certs: no
+        name: "test-vm"
+        state: powered_on
+        datacenter: "invalid"
+      ignore_errors: yes
+      
+    # Edge case 4 - Invalid cluster
+    - name: Test connectivity with invalid cluster
+      vmware_guest:
+        hostname: "{{ vcenter }}"
+        username: "{{ credentials.split(':')[0] }}"
+        password: "{{ credentials.split(':')[1] }}"
+        validate_certs: no
+        name: "test-vm"
+        state: powered_on
+        cluster: "invalid"
+      ignore_errors: yes
+      
+    # Edge case 5 - Unconventional syntax
+    - name: Test connectivity with unconventional syntax
+      vmware_guest: hostname="{{ vcenter }}" username="{{ credentials.split(':')[0] }}" password="{{ credentials.split(':')[1] }}" validate_certs=no name="test-vm" state=powered_on cluster="{{ cluster }}"
+      ignore_errors: yes
+      
+    # Unexpected input 1 - Integer for username
+    - name: Test connectivity with integer for username
+      vmware_connection:
+        hostname: "{{ vcenter }}"
+        username: 123456
+        password: "{{ credentials.split(':')[1] }}"
+        validate_certs: no
+      ignore_errors: yes
+    
+    # Unexpected input 2 - String for password
+    - name: Test connectivity with string for password
+      vmware_connection:
+        hostname: "{{ vcenter }}"
+        username: "{{ credentials.split(':')[0] }}"
+        password: "password"
+        validate_certs: no
+      ignore_errors: yes
+      
+    # Unexpected input 3 - Unquoted value for password
+    - name: Test connectivity with unquoted value for password
+      vmware_connection:
+        hostname: "{{ vcenter }}"
+        username: "{{ credentials.split(':')[0] }}"
+        password: password
+        validate_certs: no
+      ignore_errors: yes

@@ -1,0 +1,63 @@
+
+---
+- hosts: all
+  gather_facts: false
+  
+  tasks: 
+    - name: Create a VM without MAC address
+      vmware_guest:
+        hostname: 10.1.1.1
+        username: administrator
+        password: P@ssword
+        datacenter: DC1
+        validate_certs: no
+        name: test_vm
+        guest_id: ubuntu64Guest
+        hardware:
+          memory_mb: 2048
+          num_cpus: 2
+        disk:
+          type: thin
+          size_gb: 20
+          datastore: datastore1
+        network_interfaces:
+          label: "VM Network"
+          start_connected: true
+          allow_guest_control: true
+        state: present
+        customize:
+          network:
+            adapter: eth0
+            mac: ""
+          hardware:
+            cpuHotAddEnabled: True
+            memoryHotAddEnabled: True
+
+    - name: Test gather facts error with invalid datacenter name
+      vmware_guest_facts:
+        hostname: 10.1.1.1
+        username: administrator
+        password: P@ssword
+        datacenter: invalid_dc_name
+        validate_certs: no
+      register: result
+
+    - name: Debug invalid datacenter name gather facts errors
+      debug:
+        var: result
+        verbosity: 2
+    
+
+    - name: Retrieve NIC hardware information of a VM
+      vmware_vm_facts:
+        hostname: 10.1.1.1
+        username: administrator
+        password: P@ssword
+        datacenter: DC1
+        validate_certs: no
+        name: test_vm
+      register: result
+
+    - name: Debug missing MAC address gather facts error
+      debug:
+        var: result["ansible_facts"]["ansible_vm_nic"][0]["macaddress"]

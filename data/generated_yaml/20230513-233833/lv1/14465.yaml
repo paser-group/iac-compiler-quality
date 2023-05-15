@@ -1,0 +1,26 @@
+yaml
+---
+- hosts: your_host_group
+  gather_facts: no
+  vars:
+    temp_dir: "/tmp/ansible"
+  tasks:
+  - name: Ensure remote temporary directory exists
+    vars:
+      remote_temp_dir: "{{ temp_dir }}/ansible-remote"
+    file:
+      path: "{{ remote_temp_dir }}"
+      state: directory
+      mode: '0777'
+    failed_when: not ansible_check_mode
+    register: temp_dir_created
+
+  - name: Show remote temporary directory path
+    debug:
+      msg: "Remote temporary directory path is {{ temp_dir_created.path }}"
+
+  - name: Ensure the remote temporary directory is writeable
+    file:
+      path: "{{ remote_temp_dir }}"
+      mode: '0777'
+    when: temp_dir_created.path is defined and not ansible_check_mode

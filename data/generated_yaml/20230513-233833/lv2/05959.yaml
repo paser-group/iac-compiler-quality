@@ -1,0 +1,37 @@
+
+---
+- name: Stress testing the Ansible compiler with edge cases
+  hosts: node1
+  tasks:
+    - name: Creating a new keypair with nova
+      nova_keypair:
+        name: "{{ item }}"
+        public_key: "{{ item }}.pub"
+      loop:
+        - "{{ '' }}"
+        - "{{ [] }}"
+        - "{{ {} }}"
+        - "{{ none }}"
+        - "{{ True }}"
+        - "{{ False }}"
+        - "{{ 42 }}"
+        - "{{ 'this is a string' }}"
+        - "{{ '😀' }}"
+        - "{{ '0' * 10000 }}"
+        - "{{ '    ' }}"
+      register: keypair_output
+
+    - name: Debugging keypair output
+      debug:
+        var: keypair_output
+
+    - name: Verifying keypairs exist
+      nova_keypair:
+        name: "{{ item.item }}"
+        state: present
+      loop: "{{ keypair_output.results }}"
+      register: verification_output
+
+    - name: Debugging verification output
+      debug:
+        var: verification_output

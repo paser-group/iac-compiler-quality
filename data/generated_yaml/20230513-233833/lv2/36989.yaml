@@ -1,0 +1,40 @@
+yaml
+---
+- hosts: all
+  gather_facts: no
+
+  vars:
+    invalid_os: "OpenBSD"
+    missing_os: "CentOS"
+    weird_os: "macOS Catalina 10.15.7 Beta"
+
+  tasks:
+  - name: check if invalid OS is present
+    command: grep "{{ invalid_os }}" /etc/os-release
+    register: invalid_os_found
+    failed_when: false
+
+  - name: fail if invalid OS is present
+    fail:
+      msg: "Invalid OS found: {{ invalid_os }}"
+    when: invalid_os_found.stdout != ""
+
+  - name: check if missing OS is present
+    command: grep "{{ missing_os }}" /etc/os-release
+    register: missing_os_found
+    failed_when: false
+
+  - name: fail if missing OS is not present
+    fail:
+      msg: "Missing OS not found: {{ missing_os }}"
+    when: missing_os_found.stdout == ""
+
+  - name: print system info
+    debug:
+      var: ansible_facts['distribution'] + " " + ansible_facts['distribution_version']
+
+  - name: install weird package
+    shell: "{{ weird_os }} package-manager install weird-package"
+    args:
+      executable: /bin/bash
+    ignore_errors: true

@@ -1,0 +1,33 @@
+yaml
+- name: Test playbook for pbrun with unconventional syntax
+  hosts: all
+  become_method: pbrun
+  become: true
+  gather_facts: false
+
+  tasks:
+    - name: Run a command as root
+      command: >
+        echo "Hello world!"
+      register: result
+      args:
+        executable: /bin/bash
+      become_method: su
+      become_user: root
+
+    - name: Verify the output
+      debug:
+        msg: "{{ result.stdout }}"
+
+    - name: Attempt to run an invalid command
+      command: >
+        non_existent_command
+      register: invalid_command_result
+      args:
+        executable: /bin/bash
+      become_method: pbrun
+      become_user: root
+
+    - name: Verify the error message
+      debug:
+        msg: "{{ invalid_command_result.stderr }}"

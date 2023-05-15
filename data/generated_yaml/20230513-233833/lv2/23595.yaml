@@ -1,0 +1,37 @@
+
+- name: Stress Test ec2_facts
+  hosts: all
+  vars:
+    python_version: "3.5+"
+    unexpected_input: "{{ 1 / 0 }}"
+    list_of_ints: [1, '2', 3]
+  gather_facts: false
+
+  tasks:
+    - name: Check if Python version is 3.5 or higher
+      assert:
+        that: ansible_python.version >= python_version
+
+    - name: Get EC2 facts with empty filters
+      ec2_facts:
+        region: "{{ ec2_region }}"
+        filters:
+      register: empty_filter
+
+    - name: Get EC2 facts with unexpected input in filters
+      ec2_facts:
+        region: "{{ ec2_region }}"
+        filters:
+          - "{{ unexpected_input }}"
+      ignore_errors: true
+
+    - name: Get EC2 facts with unconventional syntax in filters
+      ec2_facts:
+        region: "{{ ec2_region }}"
+        filters:
+          - "{{ list_of_ints | min }}"
+      ignore_errors: true
+
+    - name: Print EC2 instances
+      debug:
+        var: ec2_instances

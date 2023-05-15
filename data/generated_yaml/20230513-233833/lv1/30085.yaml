@@ -1,0 +1,28 @@
+yaml
+---
+- name: Create an EC2 Launch Configuration
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    
+    - name: Get the VPC ID of the default VPC
+      ec2_vpc_net_facts:
+        filters:
+          "isDefault": true
+      register: default_vpc
+    
+    - name: Fail if there is no default VPC in the region
+      fail:
+        msg: "No default VPC found in {{ inventory_hostname }}"
+      when: "default_vpc.vpcs|length == 0"
+    
+    - name: Create the Launch Configuration
+      ec2_lc:
+        name: "{{ lc_name }}"
+        image_id: "{{ ami_id }}"
+        key_name: "{{ key_name }}"
+        security_groups: "{{ sg_ids }}"
+        instance_type: "{{ instance_type }}"
+        user_data: "{{ user_data }}"
+        region: "{{ ec2_region }}"
+        subnet_id: "{{ default_vpc.vpcs[0].subnets[0].id }}"

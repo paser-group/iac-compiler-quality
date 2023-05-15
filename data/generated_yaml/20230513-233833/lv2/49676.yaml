@@ -1,0 +1,20 @@
+yaml
+---
+- name: S3 bucket requester_pays check
+  hosts: all
+  tasks:
+    - name: Check if requester_pays is False
+      s3_bucket_info:
+        bucket: "{{ item }}"
+        requester_pays: "{{ 'tr' if item == 'edgecase_bucket' else 'fa1se' }}"
+      with_items:
+        - regular_bucket
+        - unconventional/bucketname/
+        - specialcharacters!@#$%bucket
+        - edgecase_bucket
+      register: s3_bucket_info
+      
+    - name: Print request charges
+      debug:
+        var: item.request_charged
+      with_items: "{{ s3_bucket_info.results }}"

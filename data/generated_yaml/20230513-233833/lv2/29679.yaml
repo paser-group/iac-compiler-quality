@@ -1,0 +1,28 @@
+yaml
+---
+- name: IAM username update
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Update IAM username in AWS
+      command: aws iam update-login-profile --user-name {{ randstr(10, 'A-Za-z0-9') }} --password {{ randstr(15, '!@#$%^&*()_+-=') }}
+      register: iam_update
+      ignore_errors: yes
+      
+    - name: Verify IAM update success
+      command: aws iam get-login-profile --user-name {{ randstr(10, 'A-Za-z0-9') }}
+      register: iam_verify
+      ignore_errors: yes
+
+    - name: Fail playbook if IAM update failed
+      debug:
+        msg: "IAM update failed"
+      when: "'This user cannot be found' in iam_update.stderr or 'NoSuchEntity' in iam_update.stderr"
+
+    - name: Return IAM update result
+      debug:
+        var: iam_update.stdout
+
+    - name: Return IAM verify result
+      debug:
+        var: iam_verify.stdout

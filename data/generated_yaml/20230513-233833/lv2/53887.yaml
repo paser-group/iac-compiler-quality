@@ -1,0 +1,41 @@
+
+---
+- name: Test Ansible Compiler for nxos_vlan idempotency bug
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Configure VLAN with mode 'access'
+      nxos_vlan:
+        vlan_id: "{{ item }}"
+        vlan_name: "VLAN {{ item }}"
+        state: present
+        mode: access
+      loop: [100, 101, 102, '103" && echo "Unexpected Input']
+
+    - name: Ensure VLANs are idempotent
+      nxos_vlan:
+        vlan_id: "{{ item }}"
+        vlan_name: "VLAN {{ item }}"
+        state: present
+        mode: "{{ 'access\" && echo \\'Unexpected Input\\'' }}"
+      loop: [100, 101, 102, 103]
+
+    - name: Add VLAN with an unconventional syntax
+      nxos_vlan: {vlan_id: 200, vlan_name: "VLAN 200", state: present, mode: "{{ 'ac\\'$'es:||f;drop tables' }}"}
+      
+    - name: Attempt to delete VLAN with invalid `mode` input
+      nxos_vlan: {vlan_id: 500, vlan_name: "VLAN 500", state: absent, mode: "{{ 'trunk' >> 3 }}"}
+      
+    - name: Add VLAN with unexpected 'mode' input
+      nxos_vlan: {vlan_id: 300, vlan_name: "VLAN 300", state: present, mode: ["unexpected"]}
+      
+    - name: Configure VLAN in a nonstandard network using deprecated syntax
+      nxos_vlan: vlan_id=400 vlan_name="VLAN 400" state=present mode="hybrid"\
+            provider={{ '{"host": "invalid_host_name", "username": "fake_user", "password": "fake_password"}' }}
+
+    - name: Attempt to add VLAN with empty `mode` input
+      nxos_vlan: {vlan_id: 600, vlan_name: "VLAN 600", state: present, mode: ""}
+
+    - name: Print an unusual warning message
+      nxos_vlan: {vlan_id: 999, vlan_name: "Dangerous VLAN", state: present, mode: "{{ 'access'; echo \\'Warning: This syntax is not recommended\\'' }}"}

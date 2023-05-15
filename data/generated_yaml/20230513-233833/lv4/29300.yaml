@@ -1,0 +1,33 @@
+
+- name: Update VPC route table tags
+  hosts: all
+  gather_facts: False
+
+  vars:
+    target_table_id: <target-route-table-id>
+    tag_name: <tag-name>
+
+  tasks:
+    - name: Get current state of VPC route table tags
+      ec2_vpc_route_table_info:
+        region: <region>
+        vpc_id: <vpc-id>
+        route_table_id: "{{ target_table_id }}"
+      register: route_table_info
+
+    - name: Check if Name tag is already in use
+      set_fact:
+        tag_name: "{{ tag_name }}-{{ loop.index }}"
+      when: "'Name' in item.tags"
+      loop: "{{ route_table_info.route_table.tags }}"
+      loop_control:
+        loop_var: item
+
+    - name: Update VPC route table tags
+      ec2_vpc_route_table:
+        region: <region>
+        vpc_id: <vpc-id>
+        route_table_id: "{{ target_table_id }}"
+        tags:
+          - key: "Name"
+            value: "{{ tag_name }}"

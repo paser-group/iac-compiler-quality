@@ -1,0 +1,25 @@
+yaml
+---
+- hosts: all
+  tasks:
+    - name: Remove existing repository key
+      file:
+        path: /etc/pki/rpm-gpg/RPM-GPG-KEY-<incorrect_key>
+        state: absent
+      register: file_deleted
+    - name: Retrieve correct repository key
+      uri:
+        url: https://example.com/correct_key
+        dest: /etc/pki/rpm-gpg/RPM-GPG-KEY-<correct_key>
+    - name: Install correct repository key
+      rpm_key:
+        state: present
+        key: /etc/pki/rpm-gpg/RPM-GPG-KEY-<correct_key>
+    - name: Add RHEL7 repository
+      yum_repository:
+        name: rhel7
+        description: RHEL7 repository
+        baseurl: https://example.com/rhel7
+        gpgcheck: yes
+        gpgkey: /etc/pki/rpm-gpg/RPM-GPG-KEY-<correct_key>
+        enabled: yes

@@ -1,0 +1,20 @@
+
+vars:
+  filter_types:
+    - vpc-id
+    - instance-state-name
+  max_filters: 10
+
+tasks:
+- name: Test ec2.py with random filters
+  command: python /usr/share/ansible/plugins/inventory/aws_ec2.py --list --refresh-cache
+    --filters "{{ item | random }}" --aws-access-key=AKI*******XY --aws-secret-key=Fi********2t
+  loop: "{{ query('sequence', 1, max_filters) | map('random_choice', filter_types) | join(':') }}"
+  register: result
+
+- name: Verify expected output
+  assert:
+    that:
+      - result.stdout_lines | length >= 0
+      - result.stderr == ''
+      - result.rc == 0

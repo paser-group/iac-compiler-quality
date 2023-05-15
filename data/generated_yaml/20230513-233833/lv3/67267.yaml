@@ -1,0 +1,55 @@
+
+# Ansible playbook for testing Open-iSCSI
+
+- hosts: all
+  become: true
+  tasks:
+    - name: Install Open-iSCSI client
+      apt:
+        name: open-iscsi
+        state: present
+
+    - name: Create iSCSI initiator name
+      set_fact:
+        initiator_name: "{{ ansible_hostname }}"
+
+    - name: Create iSCSI target address
+      set_fact:
+        target_address: "10.0.0.1"
+
+    - name: Create iSCSI target port
+      set_fact:
+        target_port: "3260"
+
+    - name: Connect to iSCSI target
+      command: >
+        iscsiadm -m discovery -t st -p "{{ target_address }}:{{ target_port }}"
+        creates=/dev/disk/by-path/ip-{{ target_address }}:{{ target_port }}-iscsi-{{ initiator_name }}
+      register: discovery_output
+
+    - name: Log the iscsiadm discovery output
+      debug:
+        msg: "{{ discovery_output.stdout_lines }}"
+
+    - name: Get the iSCSI session ID
+      set_fact:
+        session_id: "{{ discovery_output.stdout_lines[0] | regex_replace('.*Session\\([^)]+\\): \\(\\d+\\)', '\\1') | int }}"
+
+    - name: Get the iSCSI device name
+      set_fact:
+        device_name: "/dev/disk/by-path/ip-{{ target_address }}:{{ target_port }}-iscsi-{{ initiator_name }}-lun-0"
+
+    - name: Login to iSCSI target
+      command: >
+        iscsiadm -m node --targetname "{{ initiator_name }}:{{ target_address }}:{{ target_port }},0" --login
+      register: login_output
+      ignore_errors: True
+
+    - name: Log the iscsiadm login output
+      debug:
+        msg: "{{ login_output.stdout_lines }}"
+
+    - name: Disconnect from iSCSI target
+      command: >
+        iscsiadm -m node --session {{ session_id }} --logout
+      when: session_id is defined

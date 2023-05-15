@@ -1,0 +1,39 @@
+yaml
+---
+- name: Create EC2 Windows Instance
+  hosts: localhost
+  connection: local
+  gather_facts: no
+  vars:
+    key_name: "my-key"
+    instance_type: "t2.micro"
+  tasks:
+  - name: Launch EC2 Instance
+    ec2:
+      key_name: "{{ key_name }}"
+      instance_type: "{{ instance_type }}"
+      image: "ami-0c94855ba95c71c99"
+      wait: yes
+      count: 1
+      region: "us-west-2"
+      vpc_subnet_id: "subnet-0a4973eddc6695dbe"
+      assign_public_ip: yes
+      instance_tags:
+        Name: "win-instance"
+      user_data: |
+        <powershell>
+        mkdir C:\hello
+        echo "{{ 'ü' }}" >> C:\hello\test.txt 
+        </powershell>
+      state: present
+      register: ec2
+
+  - name: Get Instance Password
+    ec2_password:
+      instance_id: "{{ ec2.instance_ids[0] }}"
+      key_name: "{{ key_name }}"
+    register: password
+
+  - name: Debug Password
+    debug:
+      var: password

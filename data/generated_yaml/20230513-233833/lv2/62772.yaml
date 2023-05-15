@@ -1,0 +1,50 @@
+
+---
+- name: Stress testing for NoneType error in vmware_vmkernel_facts module
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Provide unexpected input to vmware_vmkernel_facts module
+      vmware_vmkernel_facts:
+        hostname: "{{ item }}"
+        username: "{{ item }}"
+        password: "{{ item }}"
+        datacenter: "{{ item }}"
+      with_items:
+        - "{{ ansible_env.HOME }}"
+        - "{{ inventory_hostname }}"
+        - "{{ groups }}"
+        - "{{ hostvars }}"
+        - "{{ vars }}"
+        - "{{ ansible_local }}"
+        - "{{ ansible_facts }}"
+      ignore_errors: yes
+
+    - name: Use unconventional syntax in vmware_vmkernel_facts module
+      vmware_vmkernel_facts:
+        hostname: "{{ item[0] }}"
+        username: "{{ item[1] }}"
+        password: "{{ item[2] }}"
+        datacenter: "{{ item[3] }}"
+      with_cartesian:
+        - [ "{{ ansible_env.HOME }}", "{{ inventory_hostname }}", "{{ groups }}" ]
+        - [ "{{ hostvars }}", "{{ vars }}", "{{ ansible_local }}" ]
+        - [ "{{ ansible_facts }}", None, True ]
+        - [ "{{ ansible_connection }}", "{{ ansible_python_version }}", "{{ ansible_selinux }}", "{{ ansible_host_key_checking }}" ]
+      ignore_errors: yes
+
+    - name: Generate edge case scenario for vmware_vmkernel_facts module
+      vmware_vmkernel_facts:
+        hostname: "{{ ansible_all_ipv4_addresses[1:] | join(':') }}"
+        username: "{{ lookup('env', 'USER') }}"
+        password: "{{ 'hunter2' | regex_replace('(.)', '\\1\\1') }}"
+        datacenter: "{{ lookup('pipe', 'echo "vmware/DC" > which_datacenter') }}"
+      ignore_errors: yes
+
+    - name: Generate NoneType error in vmware_vmkernel_facts module
+      vmware_vmkernel_facts:
+        hostname: "{{ ansible_fqdn }}"
+        username: "{{ lookup('env', 'USER') }}"
+        password: "{{ lookup('env', 'PASSWORD') }}"
+        datacenter: "{{ lookup('env', 'DATACENTER') }}"
+      ignore_errors: yes

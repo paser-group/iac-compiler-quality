@@ -1,0 +1,25 @@
+
+- name: Test http error 401
+  hosts: all
+  tasks:
+    - name: "Create .netrc file"
+      copy:
+        dest: "/home/{{ansible_user}}/.netrc"
+        content: "machine github.com\n login {{github-username}}\n password {{github-password}}"
+        owner: "{{ansible_user}}"
+        group: "{{ansible_user}}"
+        mode: 0600
+    
+    - name: "Test unauthorized server request"
+      uri:
+        url: "{{url}}"
+        validate_certs: no
+        return_content: yes
+        timeout: 10
+      register: result
+      ignore_errors: true
+    
+    - name: "Check if http error 401 is thrown"
+      assert:
+        that:
+          - "'401 Unauthorized' in result.content"

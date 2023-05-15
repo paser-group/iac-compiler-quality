@@ -1,0 +1,70 @@
+
+---
+- hosts: all
+  gather_facts: no
+
+  tasks:
+    # Add an authorized key with a non-existent user
+    - name: Add authorized key for a non-existent user
+      authorized_key:
+        user: example
+        key: "{{ lookup('file', '/path/to/public_key') }}"
+      ignore_errors: true
+
+    # Add an authorized key with an extremely long username
+    - name: Add authorized key for a user with an extremely long name
+      authorized_key:
+        user: "{{ 'a' * 256 }}"
+        key: "{{ lookup('file', '/path/to/public_key') }}"
+      ignore_errors: true
+
+    # Add an authorized key with a nonexistent keyfile
+    - name: Add authorized key with nonexistent key file
+      authorized_key:
+        user: root
+        key: "{{ lookup('file', '/this/path/does/not/exist') }}"
+      ignore_errors: true
+
+    # Add an authorized key with a keyfile that is a directory
+    - name: Add authorized key with a directory-based key file
+      authorized_key:
+        user: root
+        key: "{{ lookup('file', '/path/to/directory/') }}"
+      ignore_errors: true
+
+    # Add an authorized key with an existing key
+    - name: Add same authorized key twice
+      authorized_key:
+        user: root
+        key: "{{ lookup('file', '/path/to/public_key') }}"
+      ignore_errors: true
+      register: result
+
+    # Remove the authorized key added twice
+    - name: Remove authorized key added twice
+      authorized_key:
+        user: root
+        key: "{{ lookup('file', '/path/to/public_key') }}"
+        state: absent
+      when: result is success
+
+    # Add an authorized key with an empty key
+    - name: Add authorized key with empty public key
+      authorized_key:
+        user: root
+        key: ""
+      ignore_errors: true
+
+    # Add an authorized key with an invalid key
+    - name: Add authorized key with invalid public key
+      authorized_key:
+        user: root
+        key: "not a valid public key!"
+      ignore_errors: true
+
+    # Add an authorized key with an overly long key
+    - name: Add authorized key with excessively long public key
+      authorized_key:
+        user: root
+        key: "{{ 'a' * 1000000 }}"
+      ignore_errors: true

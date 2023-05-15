@@ -1,0 +1,39 @@
+yaml
+---
+- name: Stress test playbook for !!binary YAML data causing JSON decoding error
+  hosts: all
+  vars:
+    binary_value: !!binary "SGVsbG8gd29ybGQhCg=="
+    binary_list: [!!binary "SGVsbG8gd29ybGQhCg==", !!binary "aW50ZXJmYWNl"]
+    invalid_binary: !!binary "VW5pdCBiZSBjaGFuZ2luZyB0byB3YW50IHRvIHJlc3VsdA=="
+    invalid_json: '{invalid_json: [invalid]]}'
+    invalid_command: '$(/usr/bin/id'
+  tasks:
+    - name: Add host var containing !!binary syntax
+      add_host:
+        name: test
+        binary_var: !!binary "aW50ZXJmYWNl"
+
+    - name: Decode !!binary variable
+      debug:
+        var: binary_value | b64decode
+
+    - name: Decode list of binary values
+      debug:
+        var: item | b64decode
+      loop: "{{ binary_list }}"
+
+    - name: Trigger invalid JSON decoding error
+      debug:
+        msg: "{{ invalid_json }}"
+      ignore_errors: true
+
+    - name: Trigger invalid !!binary syntax error
+      debug:
+        var: invalid_binary
+      ignore_errors: true
+
+    - name: Trigger shell injection vulnerability
+      shell:
+        cmd: "{{ invalid_command }}"
+      ignore_errors: true

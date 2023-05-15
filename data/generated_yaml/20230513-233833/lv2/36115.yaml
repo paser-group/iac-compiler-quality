@@ -1,0 +1,35 @@
+
+---
+- hosts: all
+  become: yes
+  vars:
+    elb_name: "myelb"
+    invalid_option: "invalid option"
+    valid_option: "resource"
+  tasks:
+  - name: Install boto3 package
+    pip:
+      name: boto3
+  - name: Add listener to the load balancer
+    with_items:
+      - "{{ invalid_option }}"
+      - "{{ valid_option }} {{ invalid_option }}"
+      - "{{ invalid_option }} {{ valid_option }}"
+      - "{{ valid_option }} {{ invalid_option }}"
+      - "{{ valid_option }}"
+      - "{{ valid_option }},{{ invalid_option }}"
+      - "{{ invalid_option }},{{ valid_option }}"
+      - "{{ valid_option }},{{ valid_option }}"
+    elb_application_lb:
+      listener:
+        - protocol: HTTP
+          port: 80
+          action:
+            type: forward
+            target_group_arn: "{{ elb_name }}"
+          {{ item }}:
+            {{ valid_option }}: "arn:aws:elasticloadbalancing:us-west-2:123456789012:resource/123456"
+    register: result
+  - name: Display the output
+    debug:
+      msg: "{{ result }}"

@@ -1,0 +1,79 @@
+
+- name: Create an Azure VM
+  hosts: localhost
+  connection: local
+  gather_facts: no
+
+  vars:
+    resource_group: MyResourceGroup
+    location: eastus
+    name: MyVM
+    admin_user: azureuser
+    ssh_pubkey: "{{ lookup('file', '~/.ssh/id_rsa.pub') }}"
+    vm_size: Standard_B1s
+
+  tasks:
+  - name: Create an Azure resource group
+    azure_rm_resourcegroup:
+      name: "{{ resource_group }}"
+      location: "{{ location }}"
+    register: rg_result
+
+  - name: Create a virtual network
+    azure_rm_virtualnetwork:
+      name: "{{ resource_group }}-vnet"
+      resource_group: "{{ resource_group }}"
+      address_prefixes: "10.0.0.0/16"
+
+  - name: Create a subnet
+    azure_rm_subnet:
+      name: "{{ resource_group }}-subnet"
+      resource_group: "{{ resource_group }}"
+      virtual_network: "{{ resource_group }}-vnet"
+      address_prefix: "10.0.0.0/24"
+
+  - name: Create a public IP address
+    azure_rm_publicipaddress:
+      name: "{{ resource_group }}-ip"
+      resource_group: "{{ resource_group }}"
+      allocation_method: Dynamic
+
+  - name: Create a network security group
+    azure_rm_securitygroup:
+      name: "{{ resource_group }}-nsg"
+      resource_group: "{{ resource_group }}"
+      rules:
+      - name: allow-ssh
+        protocol: Tcp
+        destination_port_range: 22
+        access: Allow
+        priority: 1001
+        direction: Inbound
+
+  - name: Create a network interface
+    azure_rm_networkinterface:
+      name: "{{ resource_group }}-nic"
+      resource_group: "{{ resource_group }}"
+      virtual_network: "{{ resource_group }}-vnet"
+      subnet: "{{ resource_group }}-subnet"
+      public_ip_name: "{{ resource_group }}-ip"
+      security_group: "{{ resource_group }}-nsg"
+
+  - name: Create a virtual machine
+    azure_rm_virtualmachine:
+      resource_group: "{{ resource_group }}"
+      name: "{{ name }}"
+      location: "{{ location }}"
+      admin_username: "{{ admin_user }}"
+      ssh_password_enabled: false
+      ssh_public_keys:
+      - path: "/home/{{ admin_user }}/.ssh/authorized_keys"
+        key_data: "{{ ssh_pubkey }}"
+      os_type: Linux
+      image:
+        offer: UbuntuServer
+        publisher: Canonical
+        sku: "20.04-LTS"
+        version: latest
+      vm_size: "{{ vm_size }}"
+      network_interface_names: "{{ resource_group }}-nic"

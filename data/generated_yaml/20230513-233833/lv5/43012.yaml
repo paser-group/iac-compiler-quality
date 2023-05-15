@@ -1,0 +1,55 @@
+
+---
+- name: Win_DSC Module Test
+  hosts: windows
+  gather_facts: False
+  
+  vars:
+    user: Administrator
+    password: Passw0rd
+    
+  tasks:
+  - name: Ensure WinRM service is available and started
+    win_service:
+      name: winrm
+      start_mode: auto
+      state: started
+    tags:
+      - service
+      
+  - name: Ensure PowerShell remoting enabled
+    win_shell: winrm quickconfig -q
+    register: config_remoting
+    until: '"WinRM is already set up" in config_remoting.stdout'
+    retries: 10
+    delay: 20
+    tags:
+      - service
+      
+  - name: Copy PowerShell script
+    win_copy:
+      src: ./temp/set-win-dsc.ps1
+      dest: C:/
+      force: yes
+    tags:
+      - setup
+      
+  - name: Run PowerShell script to enable Win_DSC
+    win_shell: . C:/set-win-dsc.ps1
+    tags:
+      - setup
+
+  - name: Test Win_DSC module
+    win_dsc:
+      resource_name: MyDSCResource
+      resource_module: MyWinDSCModule
+      configuration_mode: ApplyAndAutoCorrect
+    tags:
+      - dsc
+      
+  - name: Cleanup PowerShell script
+    win_file:
+      path: C:/set-win-dsc.ps1
+      state: absent
+    tags:
+      - cleanup

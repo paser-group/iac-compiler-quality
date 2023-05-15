@@ -1,0 +1,22 @@
+
+- name: Update DNS resolvers on Windows clients 
+  hosts: windows
+  gather_facts: yes
+  tasks:
+
+  - name: Get current DNS resolver order
+    win_dns_client:
+      register: dns
+
+  - name: Set new DNS resolver order
+    win_dns_client:
+      adapter_name: "{{ item.adapter_name }}"
+      suffix_search_list: "{{ item.suffix_search_list }}"
+      dns_servers: "{{ item.dns_servers }}"
+    with_items: "{{ dns.adapters }}"
+    when: item.dns_servers != dns.adapters[item.adapter_name].dns_servers
+
+  - name: Restart DNS client service
+    win_service:
+      name: dnscache
+      state: restarted

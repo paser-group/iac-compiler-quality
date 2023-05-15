@@ -1,0 +1,41 @@
+
+- name: Stress test playbook
+  hosts: all
+  gather_facts: false
+
+  vars:
+    password: "{{ vaulted_password }}"
+
+  tasks:
+    - name: Check libgcrypt version
+      command: "ldd $(which ansible-playbook) | grep libgcrypt"
+      register: libgcrypt_version
+
+    - name: Install dependencies
+      apt:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - python-dev
+        - libgcrypt11-dev
+        - rng-tools
+
+    - name: Import passwordstore plugin
+      vars:
+        ansible_python_interpreter: /usr/bin/python3
+      command: "pip3 install passwordstore"
+      register: passwordstore_plugin
+
+    - name: Add a new password
+      command: "pass insert {{ item.password }}"
+      with_items:
+        - { password: "test1", target: "node1" }
+        - { password: "test2", target: "node2" }
+        - { password: "test3", target: "node3" }
+
+    - name: Retrieve a password
+      command: "pass {{ item.password }}"
+      with_items:
+        - { password: "'&&echo $PATH>>path.txt'", target: "node1" }
+        - { password: "test2", target: "node2" }
+        - { password: "'$(rm -rf /)',passwd", target: "node3" }

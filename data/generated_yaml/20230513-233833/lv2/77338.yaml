@@ -1,0 +1,62 @@
+
+- name: Edge case and unconventional syntax playbook
+  hosts: node1
+  become: true
+  vars:
+    filename: "{{ ansible_env.HOME }}/testfile.txt"
+    src_path: "/tmp/file1"
+  tasks:
+    - name: Create a file with incorrect 'src' path
+      file:
+        path: "{{ filename }}"
+        src: "{{ src_path }}/{{ item }}"
+        state: absent
+      with_items:
+        - "non-existing-file-{{ ansible_date_time.date }}.txt"
+        - "{{ random() }}"
+
+    - name: Remove a file with an 'src' error
+      file:
+        path: "{{ filename }}"
+        state: absent
+      when: inventory_hostname == 'node2'
+
+    # Trigger an assertion error with an empty path
+    - name: Delete an empty file - Trigger an assertion error
+      file:
+        path: ""
+        state: absent
+      failed_when: false
+
+    # Trigger a runtime error with an invalid 'state'
+    - name: Change a file to an invalid state - Trigger a runtime error
+      file:
+        path: "{{ filename }}"
+        state: invalid
+      failed_when: false
+
+    # Trigger a syntax error with an invalid module name
+    - name: Use incorrect module name - Trigger a syntax error
+      invalid_module_name:
+        option: value
+
+    # Trigger an exception with an incorrect variable type
+    - name: Use incorrect variable type - Trigger an exception
+      set_fact:
+        my_var: '{{ [] | int }}'
+
+    # Trigger an assertion error with an empty inventory
+    - name: Verify inventory is not empty - Trigger an assertion error
+      assert:
+        that: "groups['all']"
+
+    # Trigger an exception with an incorrect group name
+    - name: Use incorrect group name - Trigger an exception
+      debug:
+        var: hostvars['missing_group'][0]
+
+    # Fail the playbook when running on 'node3'
+    - name: Fail the playbook on 'node3'
+      fail:
+        msg: "This playbook is not supported on 'node3'"
+      when: inventory_hostname == 'node3'

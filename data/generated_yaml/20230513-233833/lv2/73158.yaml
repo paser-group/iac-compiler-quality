@@ -1,0 +1,68 @@
+
+---
+- name: Test playbook for absent packages with wildcards error
+  hosts: all
+  become: yes
+
+  tasks:
+    # Uncomment this task to test absent packages with a wildcard error
+    # - name: Attempt to remove non-existent packages with wildcard
+    #   apt:
+    #     state: absent
+    #     name: "{{ item }}"
+    #   loop:
+    #     - package*
+    #   ignore_errors: true
+
+    # This task should run without error
+    - name: Ensure package is installed without wildcards
+      apt:
+        state: present
+        name: vim
+
+    # This task should run without error even though package is already installed
+    - name: Attempt to install package with wildcard
+      apt:
+        state: latest
+        name: "package*"
+
+    # This task should uninstall the package without an error since it exists
+    - name: Attempt to remove a package with a version number
+      apt:
+        state: absent
+        name: apache2=2.4.18-2ubuntu3.9
+
+    # This task should not run since the variable is not defined
+    - name: Attempt to use undefined variable
+      debug:
+        msg: "{{ undefined_variable }}"
+        
+    # This task should run without error
+    - name: Attempt to set a fact using an undefined variable
+      set_fact:
+        data: "{{ undefined_var|default('No data available') }}"
+
+    # This task should run even though the command is misspelled
+    - name: Run a misspelled command
+      command: stre
+
+    # This task should run even though the module name is misspelled
+    - name: Use a misspelled module
+      aptt:
+        state: present
+        name: tree
+
+    # This task should run without error
+    - name: Attempt to run a non-existent command
+      command: nonexistent-command -c /path/to/file
+      
+    # This task should run without error
+    - name: Attempt to execute an empty loop
+      debug:
+        msg: "{{ item }}"
+      loop: []
+      
+    # This task should fail since invalid YAML is used within a Jinja expression
+    - name: Test invalid YAML in Jinja expression
+      debug:
+        msg: "{{ {1: 'one', ]}[1] }}"

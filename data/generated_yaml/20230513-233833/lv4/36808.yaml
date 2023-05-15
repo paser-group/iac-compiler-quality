@@ -1,0 +1,47 @@
+
+- hosts: all
+  tasks:
+  - name: Install Python3 on all Docker nodes
+    become: true
+    apt:
+      name: python3
+      state: present
+
+  - name: Install Ansible on all Docker nodes
+    become: true
+    apt:
+      name: ansible
+      state: present
+
+  - name: Create the target directory
+    file:
+      path: /target_directory
+      state: directory
+      mode: 0777
+
+  - name: Upload CSV files to the Docker node
+    copy:
+      src: "{{ item }}"
+      dest: "/target_directory/{{ item }}"
+      mode: 0777
+    with_items:
+      - /path/to/file1.csv
+      - /path/to/file2.csv
+      - /path/to/file3.csv
+
+  - name: Perform CSV lookup operation on each uploaded file
+    shell: python3 -c 'import csv; csv_file = open("/target_directory/{{ item }}"); csv_reader = csv.reader(csv_file); row_count = 0; for row in csv_reader: row_count += 1; print(row_count);'
+    with_items:
+      - file1.csv
+      - file2.csv
+      - file3.csv  
+
+  - name: Gather output files from all Docker nodes
+    fetch:
+      src: "/target_directory/{{ item }}"
+      dest: "{{ inventory_hostname }}_{{ item }}"
+      flat: yes
+    with_items:
+      - file1_out.txt
+      - file2_out.txt
+      - file3_out.txt

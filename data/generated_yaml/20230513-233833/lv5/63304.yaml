@@ -1,0 +1,26 @@
+yaml
+---
+- name: Test handling of --server parameter
+  hosts: all
+  become: true
+  vars:
+    api_prefix:
+      - v1
+      - beta/v2
+
+  tasks:
+  - name: Test curl command on each node.
+    shell: "curl -sS 'http://{{ api_prefix_item }}/{{ inventory_hostname }}:8080/api/v2' > /dev/null 2>&1 || echo Connection failed"
+    register: result
+    with_items:
+      - "{{ api_prefix }}"
+    tags: 
+      - curl_test
+
+  - name: Print results.
+    debug:
+      msg: "{{ inventory_hostname }} {{ item.item }}: {{ item.stdout }}"
+    with_items: "{{ result.results }}"
+    when: item.stdout != ''
+    tags: 
+      - output

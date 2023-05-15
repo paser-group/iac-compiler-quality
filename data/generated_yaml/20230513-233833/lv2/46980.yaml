@@ -1,0 +1,33 @@
+
+- name: Install Python and fix SSH error
+  hosts: all
+  gather_facts: no
+  
+  tasks:
+    - name: Check if Python is installed
+      command: python --version
+      register: python_version
+      ignore_errors: yes
+
+    - name: Install Python if not installed
+      raw: test -e /usr/bin/python || (apt -y update && apt install -y python-minimal)
+      when: "'No such file or directory' in python_version.stderr"
+
+    - name: Fix SSH error
+      block:
+        - name: Copy sshd_config file
+          copy:
+            src: sshd_config
+            dest: /etc/ssh/sshd_config
+            mode: 400
+          become: yes
+
+        - name: Restart SSH service
+          service:
+            name: ssh
+            state: restarted
+          become: yes
+      rescue:
+        - name: Notify failure
+          debug:
+            msg: "The playbook has failed to fix the SSH error."

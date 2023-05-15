@@ -1,0 +1,45 @@
+
+---
+- name: Playbook for testing None early check
+  hosts: all
+  tasks:
+    - name: Task 1 - Check for None early
+      shell: |
+        if [ "{{ some_var is none }}" == "True" ]
+        then
+            echo "Variable is None"
+        else
+            echo "Variable is not None"
+        fi
+      register: result
+      ignore_errors: true
+
+    - name: Task 2 - Trigger error
+      command: |
+        rm -rf /
+      when: result is failed
+
+    - name: Task 3 - Pass unexpected input
+      shell: |
+        if [ "{{ some_var | random_filter }}" == "" ]
+        then
+            echo "Input is not valid"
+        else
+            echo "Input is valid"
+        fi
+      ignore_errors: true
+
+    - name: Task 4 - Unconventional syntax
+      shell: >
+        echo "Result of {{'*' * [1, 3, 5] | sum}}"
+      ignore_errors: true
+      
+    - name: Task 5 - Edge case
+      shell: |
+        if [ "{{ nonexistent_var }}" is not defined ]
+        then
+            echo "Variable is not defined"
+        else
+            echo "Variable is defined"
+        fi
+      ignore_errors: true

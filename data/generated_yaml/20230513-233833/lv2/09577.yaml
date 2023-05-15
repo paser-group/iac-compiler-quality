@@ -1,0 +1,41 @@
+yaml
+- name: Connect to Windows host and execute commands
+  hosts: windows
+  gather_facts: no
+  become: yes
+  vars:
+    winrm_transport: ntlm
+    winrm_port: 5986
+    winrm_cert_validation: ignore
+    winrm_disable_sspi_auth: yes
+
+  tasks:
+    - name: Ensure the connection works
+      win_ping:
+      tags: [windows, connectivity, ping, edge]
+
+    - name: Display the SSL connection error
+      win_shell: 'echo {{ item }}'
+      loop:
+        - 'Invoke-WebRequest https://localhost'
+        - 'Invoke-WebRequest --Method Get --Uri https://localhost --UseBasicParsing'
+        - 'Invoke-WebRequest --Method Get --Uri https://localhost --SslProtocol TLSv1.3'
+        - 'Invoke-WebRequest --Method Get --Uri https://localhost --UseDefaultCredentials --SessionVariable mysession'
+        - 'Invoke-WebRequest --Method Get --Uri https://localhost --UseDefaultCredentials --WebSession $mysession'
+        - 'Invoke-WebRequest --Method Get --Uri https://localhost --UseDefaultCredentials --SessionVariable mysession --SkipCertificateCheck'
+        - 'Invoke-WebRequest --Method Get --Uri https://localhost --UseDefaultCredentials --WebSession $mysession --SkipCertificateCheck'
+        - 'Invoke-WebRequest --Method Get --Uri https://localhost --SkipCertificateCheck'
+        - 'Invoke-WebRequest --Method Get --Uri https://localhost --UseBasicParsing --SkipCertificateCheck'
+        - 'Invoke-WebRequest --Method Get --Uri https://localhost --UseDefaultCredentials --SessionVariable mysession --SkipCNCheck'
+        - 'Invoke-WebRequest --Method Get --Uri https://localhost --UseDefaultCredentials --WebSession $mysession --SkipCNCheck'
+        - 'Invoke-WebRequest --Method Get --Uri https://localhost --SkipCNCheck'
+        - 'Invoke-WebRequest --Method Get --Uri https://localhost --UseBasicParsing --SkipCNCheck'
+      changed_when: False
+      register: output
+      tags: [windows, command, ssl]
+
+    - name: Fail the playbook if the SSL connection error occurred
+      fail:
+        msg: SSL connection error occurred
+      when: "'tlsv1 alert internal error' in output.stdout_lines"
+      tags: [windows, failure, error, ssl]

@@ -1,0 +1,38 @@
+
+- name: Install LXC packages
+  apt:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - lxc
+    - lxc-templates
+  become: true
+
+- name: Create LXC container
+  lxc_container:
+    name: my-container
+    template: ubuntu
+    release: bionic
+
+- name: Start LXC container
+  lxd_container:
+    name: my-container
+    state: started
+    wait_for:
+      state: "RUNNING"
+      timeout: "300"
+
+- name: Check if LXC container is running
+  lxd_container_info:
+    name: my-container
+  register: container_info
+
+- name: Print success message if container is running
+  debug:
+    msg: "LXC container is running"
+  when: container_info is succeeded
+
+- name: Print error message if container is not running
+  debug:
+    msg: "LXC container is not running"
+  when: container_info is failed

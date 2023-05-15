@@ -1,0 +1,41 @@
+yaml
+---
+- name: Stress Test Playbook
+  hosts: node1
+  gather_facts: false
+
+  tasks:
+  
+  # unconvential syntax 
+  - name: 'Run a shell command with commas not separated by quotes'
+    shell: echo hello, world
+
+  # unexpected input
+  - name: 'Pass empty variable to command'
+    command: "echo {{ empty_var }}"
+
+  # edge case
+  - name: 'Shutdown a VM only if it's powered on'
+    vmware_guest:
+      hostname: "{{ vcenter_hostname }}"
+      username: "{{ vcenter_username }}"
+      password: "{{ vcenter_password }}"
+      validate_certs: no
+      datacenter: "{{ datacenter_name }}"
+      name: "{{ vm_name }}"
+      state: poweredoff
+    when: >
+      (lookup('vmware_guest', '{{ vm_name }}', 'guest_power_status', '{{ vcenter_hostname }}') == 'poweredOn')
+
+  # unconventional loop syntax
+  - name: 'Loop with range and step count of -1'
+    debug:
+      msg: "{{ item }}"
+    loop: "{{ range(5, -1, -1)|list }}"
+
+  # unconventional condition
+  - name: 'Run a task only if an undefined variable is not defined'
+    debug: 
+      msg: 'This task should run'
+    when: '!undefined_var is defined'
+  

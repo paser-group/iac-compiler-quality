@@ -1,0 +1,32 @@
+
+---
+- name: MacPorts upgrade issue stress test
+  hosts: all
+
+  tasks:
+    - name: Set variable with unconventional syntax
+      set_fact:
+        macports: {{
+          (item > 0) | ternary({
+            'version': "2.1{{ item }}",
+            'package': "macports-2.1{{ item }}"
+          }, "default")
+        }}
+      with_sequence: start=0 end=5
+
+    - name: Install randomly generated MacPorts package
+      when: macports.package != "default"
+      command: /opt/{{ macports.package }}/update
+
+    - name: Check if MacPorts upgrade is required
+      command: macports selfupdate
+      register: macports_output
+
+    - name: Check if output contains "Nothing to upgrade"
+      debug:
+        msg: "MacPorts has nothing to upgrade."
+      when: macports_output.stdout.find("Nothing to upgrade") != -1
+
+    - name: Upgrade outdated ports
+      command: macports upgrade outdated
+      changed_when: "'The following ports will be upgraded' in macports_output.stdout"

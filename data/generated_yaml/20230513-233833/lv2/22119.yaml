@@ -1,0 +1,39 @@
+
+---
+- hosts: all
+  gather_facts: false
+  vars:
+    vault_addr: "http://localhost:8200"
+    vault_token: "myroot"
+
+  tasks:
+    - name: Set up a Vault token
+      set_fact:
+        token: "{{ lookup('env', 'VAULT_TOKEN') | default(vault_token) }}"
+
+    - name: Create Vault secrets
+      vault_secret:
+        path: "secret/{{ item }}"
+        key: "value"
+        value: "{{ item }}"
+        token: "{{ token }}"
+      with_items:
+        - "foo"
+        - "bar"
+        - "baz"
+
+    - name: Get Vault secrets
+      debug:
+        var: "vault_secret_{{ item }}"
+      with_items:
+        - "foo"
+        - "bar"
+        - "baz"
+        - "missing_secret"
+      ignore_errors: true
+      register: result
+
+    - name: Check for errors
+      debug:
+        var: result
+      failed_when: "'Fatal' in result.stdout"

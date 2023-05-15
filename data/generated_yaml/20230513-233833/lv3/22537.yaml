@@ -1,0 +1,63 @@
+
+---
+- name: Test ec2_asg module for ELB health check consistency
+  hosts: all
+  become: true
+  vars:
+    asg_name: "test_asg"
+    elb_name: "test_elb"
+  tasks:
+  - name: Create a new launch configuration
+    local_action:
+      module: ec2_lc
+      name: test_lc
+      image_id: ami-0c94855ba95c71c99
+      instance_type: t2.micro
+      key_name: ansible
+      security_groups: ["{{ security_grps.stdout }}"]
+      user_data: "#!/bin/bash\nsudo su\napt-get update\napt-get install -y nginx\n"
+  - name: Create a new auto scaling group
+    local_action:
+      module: ec2_asg
+      name: "{{ asg_name }}"
+      launch_config_name: test_lc
+      region: "{{ region }}"
+      availability_zones: "{{ AZs }}"
+      desired_capacity: 1
+      min_size: 1
+      max_size: 1
+      target_group_arns: "{{ target_group_arns }}"
+      health_check_type: elb
+      health_check_period: 120
+      wait_for_instances: true
+      elb_names: "{{ elb_name }}"
+  - name: Wait for ELB instances to be healthy
+    local_action:
+      module: wait_for
+      host: "{{ elb_name }}"
+      port: 80
+      delay: 10
+      timeout: 180
+      state: started
+  - name: Verify ASG and ELB connections
+    local_action:
+      module: ec2_asg_facts
+      name: "{{ asg_name }}"
+    register: ec2_asg_facts
+  - name: Verify ASG Status
+    debug:
+      msg: "{{ ec2_asg_facts.ansible_facts.autoscaling_group.metadata }}"
+  - name: Verify ELB Status
+    local_action:
+      module: elb_instance_info
+      aws_access_key: "{{ aws_access_key }}"
+      aws_secret_key: "{{ aws_secret_key }}"
+      region: "{{ region }}"
+      instance_id: "{{ ec2_asg_facts.ansible_facts.autoscaling_group.metadata.InstanceIds[0] }}"
+    register: elb_instance_info
+  - name: Terminate Instances and destroy Auto-Scaling Group
+    local_action:
+      module: ec2_asg
+      state: absent
+      name: "{{ asg_name }}"
+      region: "{{ region }}"

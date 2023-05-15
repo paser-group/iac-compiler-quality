@@ -1,0 +1,18 @@
+yaml
+---
+- hosts: servers
+  become: true
+  tasks:
+    - name: Install the Kubernetes client on the servers
+      apt:
+        name: kubernetes-client
+        state: present
+      when: ansible_os_family == "Debian"
+    - name: Check for resource discovery errors in Kubernetes cluster
+      command: kubectl get events | grep -i error
+      register: error_output
+      ignore_errors: true
+    - name: Fail the playbook if errors are found
+      fail:
+        msg: "Resource discovery errors found in the Kubernetes cluster: {{ error_output.stdout }}"
+      when: error_output.stdout_lines|length > 0

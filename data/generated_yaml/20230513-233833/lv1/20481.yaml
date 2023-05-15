@@ -1,0 +1,42 @@
+yaml
+- name: Update Firewall Rule on GCP Compute Engine Network
+  hosts: localhost
+  gather_facts: no
+  
+  vars:
+    firewall_rule_name: <firewall-rule-name>    # replace with the name of the firewall rule that needs to be updated
+    network_name: <gcp-network-name>           # replace with the name of the GCP compute engine network
+    
+  tasks:
+  
+  - name: Get the Network URL
+    uri:
+      url: "https://www.googleapis.com/compute/v1/projects/{{ gcp_project_id }}/global/networks/{{ network_name }}"
+      headers:
+        Authorization: "Bearer {{ gce_net_token }}"
+    register: network_details
+    
+  - name: Get the Firewall Rule URL
+    uri:
+      url: "{{ network_details.json['selfLink'] }}/global/firewalls/{{ firewall_rule_name }}"
+      headers:
+        Authorization: "Bearer {{ gce_net_token }}"
+    register: firewall_rule_details
+    
+  - name: Update the Firewall Rule
+    uri:
+      url: "{{ firewall_rule_details.json['selfLink'] }}"
+      method: PATCH
+      headers:
+        Authorization: "Bearer {{ gce_net_token }}"
+      body:
+        allowed: []
+        description: ""
+        name: "{{ firewall_rule_name }}"
+        network: "{{ network_details.json['selfLink'] }}"
+        priority: "{{ firewall_rule_details.json['priority'] }}"
+        direction: "{{ firewall_rule_details.json['direction'] }}"
+        sourceRanges: []
+        targetTags: []
+        sourceTags: []
+    status_code: 200

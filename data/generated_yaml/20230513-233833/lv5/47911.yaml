@@ -1,0 +1,22 @@
+
+- name: Install batctl package
+  apt:
+    name: batctl
+    state: present
+
+- name: Configure BATMAN-ADV protocol
+  lineinfile:
+    dest: /etc/network/interfaces
+    regexp: '^iface (bat.*)'
+    line: '  pre-up ip link set dev {{ item }} address {{ hostvars[item].mac }}'
+  with_items: "{{ groups['all'] }}"
+
+- name: Create mesh network
+  command: batctl mesh if add {{ hostvars[inventory_hostname].ansible_default_ipv4.interface }}
+  register: mesh_output
+  changed_when: "'unavailable' not in mesh_output.stderr"
+
+- name: Ping all nodes
+  ping:
+    dest: "{{ item }}"
+  with_items: "{{ groups['all'] }}"

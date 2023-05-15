@@ -1,0 +1,29 @@
+
+---
+- name: Test if os_security_group_rule can add a rule in default security group
+  hosts: all
+  vars:
+    security_group: default
+    rule_port: 80
+    rule_protocol: tcp
+    rule_remote_ip: 0.0.0.0/0
+  tasks:
+    - name: Create a security group rule and add it to the default group
+      os_security_group_rule:
+        security_group: "{{ security_group }}"
+        direction: ingress
+        port_range_min: "{{ rule_port }}"
+        port_range_max: "{{ rule_port }}"
+        protocol: "{{ rule_protocol }}"
+        remote_ip_prefix: "{{ rule_remote_ip }}"
+      register: os_security_group_rule_result
+
+    - name: Verify if the rule was added successfully
+      fail:
+        msg: Unable to add security group rule to default security group
+      when: os_security_group_rule_result.changed == False
+
+    - name: Print a message indicating the success or failure of the rule addition
+      debug:
+        msg: Security group rule added to the default security group
+      when: os_security_group_rule_result.changed == True

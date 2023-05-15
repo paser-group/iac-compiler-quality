@@ -1,0 +1,30 @@
+yaml
+- name: Install required packages for creating symbolic links and modifying file permissions
+  apt:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - symlink
+    - acl
+
+- name: Create symbolic link with incorrect permissions
+  file:
+    src: /var/log/syslog
+    dest: /tmp/syslog
+    state: link
+    mode: a=rwx # Set incorrect mode
+
+- name: Attempt to create directory using symbolic link
+  file:
+    path: /tmp/syslog/new_dir
+    state: directory
+
+- name: Verify if new directory was created or not
+  stat:
+    path: /tmp/syslog/new_dir
+  register: dir_creation
+
+- name: Print the status of directory creation
+  debug:
+    msg: |
+      Directory successfully created: {{ dir_creation.stat.isdir }}

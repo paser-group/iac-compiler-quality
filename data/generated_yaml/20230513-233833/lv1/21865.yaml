@@ -1,0 +1,31 @@
+yaml
+---
+- name: Configure ELB with ec2_elb_lb
+  hosts: servers
+  become: true
+  tasks:
+    - name: Create ELB if it does not exist
+      ec2_elb_lb:
+        name: my-load-balancer
+        security_group_name: my-security-group
+        zones: "{{ my_elb_zones }}"
+        listeners:
+          - protocol: http
+            load_balancer_port: 80
+            instance_protocol: http
+            instance_port: 80
+      register: elb_result
+      changed_when: "'created' in elb_result.status"
+
+    - name: Update ELB if needed
+      ec2_elb_lb:
+        name: my-load-balancer
+        security_group_name: my-security-group
+        zones: "{{ my_elb_zones }}"
+        listeners:
+          - protocol: http
+            load_balancer_port: 80
+            instance_protocol: http
+            instance_port: 80
+      when: "'created' not in elb_result.status"
+      changed_when: "'updated' in elb_result.status"

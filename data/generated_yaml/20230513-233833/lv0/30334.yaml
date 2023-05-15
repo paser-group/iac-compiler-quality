@@ -1,0 +1,25 @@
+
+import novaclient.client
+
+def os_keypair(name, force_update=False):
+    """Creates or updates a keypair with the given name.
+
+    :param name: The name of the keypair to create or update.
+    :param force_update: Whether to force update the keypair if it already exists.
+    :return: The public key data of the created or updated keypair.
+    """
+
+    nova = novaclient.client.Client(version='2')
+
+    try:
+        keypair = nova.keypairs.find(name=name)
+        if force_update:
+            nova.keypairs.delete(keypair)
+            keypair = None
+    except novaclient.exceptions.NotFound:
+        keypair = None
+
+    if keypair is None:
+        keypair = nova.keypairs.create(name=name)
+
+    return keypair.public_key

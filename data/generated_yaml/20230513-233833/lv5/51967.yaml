@@ -1,0 +1,39 @@
+
+- name: Install WinRM prerequisites
+  win_feature:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - NetFx4
+    - PowerShell
+    - WinRM
+
+- name: Create a new IIS website and binding
+  win_iis_webbinding:
+    name: "Default Web Site"
+    ip: "*"
+    port: 443
+    protocol: https
+    certificate_store_name: "My"
+    certificate_hash: "{{ my_certificate_hash }}"
+  register: website_binding
+
+- name: Update SSL certificate on default binding
+  win_iis_webbinding:
+    name: "Default Web Site"
+    ip: "*"
+    port: 443
+    protocol: https
+    certificate_store_name: "My"
+    certificate_hash: "{{ my_new_certificate_hash }}"
+  when: website_binding.rc == 0
+
+- name: Verify certificate update
+  assert:
+    that: website_binding.stdout_lines | join(" ") | search("The SSL certificate was updated successfully")
+
+- name: Remove newly created website and binding
+  win_iis_website:
+    name: "New Website"
+    state: absent
+  when: website_binding.rc == 0

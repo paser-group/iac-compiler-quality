@@ -1,0 +1,32 @@
+
+---
+- name: Create an ELB and register an instance
+  hosts: localhost
+  gather_facts: no
+  vars:
+    region: "us-west-2"
+    elb_name: "my-elb"
+    instance_id: "i-a1b2c3d4e5f6"
+  tasks:
+  - name: Create the ELB
+    ec2_elb_lb:
+      region: "{{ region }}"
+      name: "{{ elb_name }}"
+      listeners:
+        - protocol: http
+          load_balancer_port: 8080
+          instance_protocol: http
+          instance_port: 80
+      zones:
+        - "us-west-2a"
+        - "us-west-2b"
+  - name: Register instances with ELB
+    ec2_elb:
+      region: "{{ region }}"
+      name: "{{ elb_name }}"
+      state: present
+      instances:
+        - "{{ instance_id }}"
+    register: elb_registration_result
+  - debug:
+      var: elb_registration_result

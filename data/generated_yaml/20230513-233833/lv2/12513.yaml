@@ -1,0 +1,45 @@
+
+---
+- name: Fuzzing Playbook
+  hosts: all
+  gather_facts: no
+  
+  tasks:
+    # Test variable types
+    - name: Test variable types
+      debug:
+        msg: "{{ item }}"
+      with_items:
+        - "{{ ansible_env.HOME }}"
+        - "{{ play_hosts }}"
+        - "{{ inventory_hostname }}"
+        - "{{ hostvars }}"
+        - "{{ groups }}"
+        - "{{ vars }}"
+        - "{{ lookup('env', 'USER') }}"
+        - "{{ not_existing_var | length }}"
+        - "{{ [1, 2, 3, '4'] }}"
+        - "{{ {'key1': 'value1', 'key2': 2} }}"
+        - "{{ True }}"
+        - "{{ None }}"
+        - "{{ not True }}"
+
+    # Test unconventional syntax
+    - name: Test unconventional syntax
+      shell: echo "Hello, world!"
+      environment:
+        $HOME: "/root"
+        $USER: "{{ lookup('env', 'USERNAME') }}"
+        "MY_HOME": "{{ ansible_env.HOME }}"
+      register: my_output
+
+    # Test unexpected inputs
+    - name: Test unexpected inputs
+      debug:
+        msg: "{{ [1, 2, 3, {'key': ['value', 'value2']}] }}"
+
+    # Test UnsafeProxy error
+    - name: Test UnsafeProxy error
+      set_fact:
+        my_var: "{{ not_existing_var | length }}"
+      ignore_errors: yes

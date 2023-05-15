@@ -1,0 +1,45 @@
+
+---
+- name: Test ec2_eip module error
+  hosts: all
+  become: true
+  vars:
+    aws_access_key: "<your access key>"
+    aws_secret_key: "<your secret key>"
+    region: "<your region>"
+  tasks:
+  - name: Create Elastic IP
+    ec2_eip:
+      region: "{{ region }}"
+      aws_access_key: "{{ aws_access_key }}"
+      aws_secret_key: "{{ aws_secret_key }}"
+      state: present
+      in_vpc: no
+    register: elastic_ip
+
+  - name: Verify Elastic IP creation
+    debug:
+      msg: "Elastic IP {{ elastic_ip.public_ip }} created successfully."
+    when: elastic_ip is defined
+
+  - name: Delete non-existent Elastic IP
+    ec2_eip:
+      region: "{{ region }}"
+      aws_access_key: "{{ aws_access_key }}"
+      aws_secret_key: "{{ aws_secret_key }}"
+      state: absent
+      public_ip: "ip-2"
+    ignore_errors: yes
+
+  - name: Ensure Elastic IP deletion
+    ec2_eip:
+      region: "{{ region }}"
+      aws_access_key: "{{ aws_access_key }}"
+      aws_secret_key: "{{ aws_secret_key }}"
+      state: absent
+      public_ip: "{{ elastic_ip.public_ip }}"
+
+  - name: Verify Elastic IP deleted
+    debug:
+      msg: "Elastic IP {{ elastic_ip.public_ip }} deleted successfully."
+    ignore_errors: yes

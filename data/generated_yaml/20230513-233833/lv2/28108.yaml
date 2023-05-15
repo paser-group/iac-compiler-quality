@@ -1,0 +1,23 @@
+
+- name: Execute long-running command on Windows nodes
+  hosts: windows_nodes
+  gather_facts: no
+  vars:
+    winrm_timeout: 300
+  tasks:
+    - name: Execute command with long output
+      win_shell: |
+        $output = 1..150000 | % { Write-Output "Line $_" }
+        Write-Output $output
+      register: command_output
+      args:
+        # Enable streaming output to prevent buffer issues
+        stream: true
+        # Set the winrm timeout
+        timeout: "{{ winrm_timeout }}"
+    - name: Check command output for errors
+      debug:
+        var: command_output
+    - name: Confirm successful execution
+      assert:
+        that: command_output is success

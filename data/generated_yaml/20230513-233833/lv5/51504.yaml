@@ -1,0 +1,20 @@
+
+- name: Gather system facts inside container
+  hosts: node1
+  gather_facts: no
+  tasks:
+  - name: Create Docker container
+    docker_container:
+      name: test-container
+      image: ubuntu
+      command: "/bin/sleep infinity"
+  - name: Modify ansible_processor_vcpus in container
+    command: echo "1" > /sys/devices/system/cpu/online
+    delegate_to: test-container
+  - name: Gather facts from inside container
+    setup:
+    delegate_to: test-container
+  - name: Check ansible_processor_vcpus fact
+    assert:
+      that:
+      - ansible_processor_vcpus == '1'

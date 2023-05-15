@@ -1,0 +1,22 @@
+
+---
+- hosts: node1
+  gather_facts: False
+  vars:
+    backup_dest: "/mnt/backups"
+    folders:
+      - "{{ ansible_env.HOME }}"
+      - "/usr/bin"
+  tasks:
+  - name: Create backup directory
+    file:
+      path: "{{ backup_dest }}"
+      state: directory
+  - name: Add cron job for backup
+    cron:
+      name: "backup"
+      minute: "*/5"
+      hour: "*"
+      user: "{{ ansible_env.USER }}"
+      job: "{{ backup_dest }} {{ folders | join(' ') }} && /usr/bin/rsync -az --delete {{ backup_dest }} {{ inventory_hostname }}:/mnt/backups/"
+      state: present

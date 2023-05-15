@@ -1,0 +1,34 @@
+
+- name: Test for error handling in CloudFormation module
+  hosts: all
+  gather_facts: no
+  vars:
+    stack_name: "existing-stack"
+  
+  tasks:
+    
+    - name: Get existing CloudFormation stack parameters
+      cloudformation_facts:
+        stack_name: "{{ stack_name }}"
+      register: cfn_facts
+      ignore_errors: true
+
+    - name: Ensure that the stack exists
+      fail:
+        msg: "The specified stack {{ stack_name }} does not exist"
+      when: cfn_facts is not defined
+    
+    - name: Create the CloudFormation stack
+      cloudformation:
+        stack_name: "{{ stack_name }}"
+        state: "present"
+        template_body: "{{ lookup('file', 'stack-template.yml') }}"
+      register: cfn_output
+      ignore_errors: true
+
+    - name: Delete the CloudFormation stack
+      cloudformation:
+        stack_name: "{{ stack_name }}"
+        state: "absent"
+      register: cfn_delete
+      ignore_errors: true

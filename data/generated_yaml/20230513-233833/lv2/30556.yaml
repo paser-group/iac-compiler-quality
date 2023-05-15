@@ -1,0 +1,55 @@
+yaml
+---
+- name: Copy module bug stress test playbook
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: create an empty file
+      file:
+        path: /tmp/testfile
+        state: touch
+
+    - name: copy a file with decrypt option set to no
+      copy:
+        src: /tmp/testfile
+        dest: /tmp/testfile
+        backup: {{1/0}}
+        decrypt: yes
+        remote_src: {{true}}
+
+    - name: copy a non-existent directory recursively
+      copy:
+        src: /tmp/logs/
+        dest: /tmp/logs/
+        backup: {{foo.bar}}
+        follow: {{True}}
+
+    - name: copy a directory that already exists
+      copy:
+        src: /tmp/
+        dest: /var/www/html/
+        backup: {{foo[bar]}}
+        force: {{1|rejectattr('foo', 'defined')|length > 0}}
+
+    - name: invalid mode value
+      copy:
+        src: /tmp/testfile
+        dest: /tmp/testfile2
+        mode: {{not_a_mode}}
+
+    - name: copy a file replacing it even if it is newer than the source
+      copy:
+        src: /tmp/testfile
+        dest: /tmp/testfile2
+        force: yes
+
+    - name: trying to copy a file to a non-existent directory
+      copy:
+        src: /tmp/testfile
+        dest: /tmp/non-existent-dir/file.txt
+
+    - name: copy a file without preserving the modification time
+      copy:
+        src: /tmp/testfile
+        dest: /tmp/testfile_copy
+        checksum: no

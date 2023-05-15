@@ -1,0 +1,27 @@
+yaml
+- name: Fix 'scm_archive_role is not defined' error
+  hosts: all
+  become: yes
+
+  tasks:
+    - name: Install Python Yaml module
+      apt:
+        name: python-yaml
+        state: present
+
+    - name: Clone ansible repository
+      git:
+        repo: https://github.com/ansible/ansible.git
+        dest: /opt/ansible
+        update: no
+
+    - name: Set Galaxy location
+      set_fact:
+        galaxy_location: "/opt/ansible/lib/ansible/galaxy"
+
+    - name: Fix 'scm_archive_role is not defined' error
+      replace:
+        path: "{{ galaxy_location }}/cli/galaxy.py"
+        regexp: "^\\s*if options.scm_archive_role:$"
+        replace: "\n    options.scm_archive_role = ''"
+      when: "options.scm_archive_role is not defined"

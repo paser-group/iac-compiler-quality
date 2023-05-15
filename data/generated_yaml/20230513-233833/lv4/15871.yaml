@@ -1,0 +1,16 @@
+
+---
+- name: Find Errored Nodes in Openstack Inventory
+  hosts: localhost
+  gather_facts: False
+  tasks:
+  - name: Retrieve Openstack Inventory
+    shell: cat /etc/ansible/inventory/openstack_inventory.yml
+    register: inventory
+  - name: Extract Errored Nodes
+    set_fact:
+      bad_nodes: "{{ inventory.stdout_lines | select('match', 'internal_ip:') | reject('match', '[0-9]+.[0-9]+.[0-9]+.[0-9]+') | map('regex_replace', '^([^:]+):.*$','\\1') | list }}"
+    when: inventory.stdout_lines | select('match', 'Errored: true') | list | count > 0
+  - name: Display Bad Nodes
+    debug:
+      var: bad_nodes

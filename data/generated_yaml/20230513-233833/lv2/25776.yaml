@@ -1,0 +1,42 @@
+
+---
+- name: Test Playbook
+  hosts: all
+  tasks:
+    - name: Install Docker on nodes
+      become: true
+      apt:
+        name: docker.io
+        state: present
+        update_cache: true
+    - name: Stop Docker services
+      service:
+        name: docker
+        state: stopped
+    - name: Remove all Docker images
+      shell: |
+        sudo docker images -aq | xargs sudo docker rmi -f
+      ignore_errors: true
+    - name: Run Docker container with a volume
+      docker_container:
+        name: my_container
+        image: ubuntu
+        state: started
+        pull: yes
+        command: "bash -c 'while true; do echo hello world; sleep 1; done'"
+        volumes:
+          - "/data"
+    - name: Update the Docker image
+      command: docker pull {{ random_item(['ubuntu', 'centos', 'alpine']) }}
+      register: output
+    - name: Print Docker image log
+      debug:
+        msg: "{{ item }}"
+      with_lines:
+        - docker logs my_container
+        - docker inspect my_container
+    - name: Delete the Docker container
+      docker_container:
+        name: my_container
+        state: absent
+        force_kill: yes

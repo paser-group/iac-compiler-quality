@@ -1,0 +1,38 @@
+
+---
+- name: Test aws_s3 module
+  hosts: all
+  gather_facts: no
+  
+  vars:
+    s3_bucket: "my-bucket"
+    s3_object: "my-object"
+    s3_version: "{{ lookup('env', 'S3_VERSION') | default('None') }}"
+    error_file: "{{ inventory_hostname }}_error.log"
+
+  tasks:
+    - name: Download object with specific version ID
+      aws_s3:
+        bucket: "{{ s3_bucket }}"
+        object: "{{ s3_object }}"
+        dest: "/tmp/{{ s3_object }}"
+        version: "{{ s3_version }}"
+      register: result
+
+    - name: Log errors to file if version ID does not exist
+      when: "'not able to identify hash' in result.msg"
+      lineinfile:
+        dest: "{{ error_file }}"
+        line: "{{ result }}"
+
+    - name: Verify file syncs
+      stat:
+        path: "/tmp/{{ s3_object }}"
+      register: file_stats
+
+    - name: Log errors to file if file not synced
+      when: "not file_stats.stat.exists"
+      lineinfile:
+        dest: "{{ error_file }}"
+        line: "{{ file_stats }}"
+

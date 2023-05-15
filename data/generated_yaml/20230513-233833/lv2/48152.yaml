@@ -1,0 +1,69 @@
+
+---
+- name: Edge Case Playbook
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Create a large file and fill the disk
+      shell: "dd if=/dev/zero of=/tmp/largefile bs=1M count=10000"
+      register: result
+      ignore_errors: true
+      changed_when: false
+      failed_when: "'No space left on device' not in result.stderr"
+
+    - name: Remove large file
+      file:
+        path: /tmp/largefile
+        state: absent
+
+    - name: Create file with unconventional syntax
+      file:
+        path: "/tmp/{{ item }}"
+        state: touch
+      with_items:
+        - "[*file]"
+        - "<file>"
+        - "{file}"
+
+    - name: Create a directory with unexpected input
+      file:
+        path: "/tmp/{{ item }}"
+        state: directory
+      with_items:
+        - "!"
+        - "%"
+        - "&"
+
+    - name: Perform an unconventional mount
+      mount:
+        src: ""
+        path: "/mnt/{{ item }}"
+        fstype: tmp
+        state: mounted
+      with_items:
+        - "/dev/sdb1"
+        - "/dev/sdc1"
+        - "/dev/sdd1"
+
+    - name: Attempt to remove root directory
+      file:
+        path: /
+        state: absent
+      ignore_errors: true
+
+    - name: Perform a command with unexpected input
+      command: "echo {{ item }}"
+      with_items:
+        - "|"
+        - ";"
+        - "&"
+
+    - name: Execute a shell command with an unconventional syntax
+      shell: "echo {{ item }}}"
+      with_items:
+        - "{TEST"
+        - "<TEST>"
+        - "&TEST&"
+
+

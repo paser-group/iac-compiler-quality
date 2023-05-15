@@ -1,0 +1,46 @@
+
+---
+- name: apt_repository module error and usage of proxies when behind a firewall playbook
+  hosts: all
+  become: true
+
+  vars:
+    # Update HTTP/HTTPS proxy as per your environment
+    http_proxy: http://your-http-proxy:8080
+    https_proxy: http://your-https-proxy:8080
+
+  tasks:
+    - name: Update apt-cache
+      apt: update_cache=yes
+      environment:
+        http_proxy: "{{ http_proxy }}"
+        https_proxy: "{{ https_proxy }}"
+
+    - name: Ensure apt is installed
+      become: true
+      apt:
+        name: apt
+        state: present
+      environment:
+        http_proxy: "{{ http_proxy }}"
+        https_proxy: "{{ https_proxy }}"
+
+    - name: Install software-properties-common
+      become: true
+      apt:
+        name: software-properties-common
+        state: present
+      environment:
+        http_proxy: "{{ http_proxy }}"
+        https_proxy: "{{ https_proxy }}"
+
+    - name: Add repository
+      become: true
+      apt_repository:
+        repo: "{{ item.repo }}"
+        state: "{{ item.state }}"
+      with_items:
+        - { repo: 'ppa:apt-fast/stable', state: present }
+      environment:
+        http_proxy: "{{ http_proxy }}"
+        https_proxy: "{{ https_proxy }}"

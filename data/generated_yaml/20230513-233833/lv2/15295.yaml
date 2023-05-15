@@ -1,0 +1,35 @@
+
+- name: Random failures of service module caused by a systemd bug
+  hosts: all
+  become: true
+
+  tasks:
+  - name: Stop and Disable the service
+    service:
+      name: "{{ item }}"
+      state: "{{ 'stopped' if (inventory_hostname == 'node1') else 'disabled' }}"
+    with_items: ['service1', 'service2', 'service3']
+
+  - name: Start and Enable the service
+    service:
+      name: "{{ item }}"
+      state: "{{ 'started' if (inventory_hostname == 'node1') else 'enabled' }}"
+    with_items: ['service1', 'service2', 'service3']
+
+  - name: Add a systemd drop-in file
+    copy:
+      dest: /etc/systemd/system/service1.service.d/custom.conf
+      content: |
+        [Service]
+        Type={{ 'oneshot' if (inventory_hostname == 'node2') else 'simple' }}
+        Restart={{ 'always' if (inventory_hostname == 'node2') else 'no' }}
+
+  - name: Reload systemd configuration
+    systemd:
+      daemon_reload: "{{ true if (inventory_hostname == 'node1') else false }}"
+
+  - name: Check the status of the service
+    systemd:
+      name: "{{ item }}"
+      state: "{{ 'started' if (inventory_hostname == 'node3') else 'stopped' }}"
+    with_items: ['service1', 'service2', 'service3']

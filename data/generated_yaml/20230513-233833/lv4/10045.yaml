@@ -1,0 +1,31 @@
+
+- name: Check Ansible compatibility with Cygwin
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Execute Cygwin command to check Ansible compatibility
+      ansible.builtin.command: cygcheck -c ansible
+      register: cygwin_check
+    - name: Print Cygwin compatibility result
+      ansible.builtin.debug:
+        var: cygwin_check.stdout_lines
+
+- name: Test Private Key handling by Ansible
+  hosts: all
+  gather_facts: true
+  tasks:
+    - name: Create a temporary file to store the private key
+      ansible.builtin.file:
+        path: /tmp/ansible_test_key
+        state: touch
+    - name: Copy the private key to temporary file on the remote node
+      ansible.builtin.copy:
+        content: "{{ lookup('file', '/path/to/private/key') }}"
+        dest: /tmp/ansible_test_key
+        mode: 0600
+    - name: Test Ansible connectivity using private key
+      ansible.builtin.command: ssh -i /tmp/ansible_test_key -o PasswordAuthentication=no {{ inventory_hostname }}
+      register: ssh_check
+    - name: Print Private Key handling by Ansible result
+      ansible.builtin.debug:
+        var: ssh_check.stdout_lines

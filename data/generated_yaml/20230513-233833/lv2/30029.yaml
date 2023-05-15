@@ -1,0 +1,23 @@
+yaml
+- name: Test s3 module errors
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Download multipart s3 object to destination folder
+      s3:
+        bucket: mybucket
+        object: "{{ item }}"
+        dest: "/folder"
+        mode: get
+        validate_certs: no
+      with_items:
+        - object1
+        - object2
+        - object3
+      register: download_s3_object
+
+    - name: Check if s3 download succeeded
+      fail:
+        msg: "Failed to download {{ item.item }}: {{ item.msg }}"
+      when: item.failed
+      with_items: "{{ download_s3_object.results }}"

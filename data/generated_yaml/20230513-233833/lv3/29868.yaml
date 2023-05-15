@@ -1,0 +1,38 @@
+
+---
+- name: Create EC2 instance and replace all instances
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  tasks:
+    - name: Launch new EC2 instance
+      ec2:
+        instance_type: t2.micro
+        image: ami-0c55b159cbfafe1f0
+        wait: true
+        region: us-east-1
+        count: 1
+        key_name: my-key-pair
+        group: demo-ecs-sg
+        instance_tags:
+          Name: "{{ ansible_host }}"
+
+    - name: Replace all instances
+      ec2_asg:
+        name: my-asg
+        max_size: 3
+        min_size: 1
+        replace_all_instances: yes
+        region: us-east-1
+        availability_zones:
+          - us-east-1a
+          - us-east-1b
+          - us-east-1c
+
+  handlers:
+    - name: terminate instance
+      ec2:
+        instance_ids: "{{ ec2.instance_ids }}"
+        state: absent
+        region: us-east-1

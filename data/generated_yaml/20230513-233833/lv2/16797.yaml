@@ -1,0 +1,26 @@
+
+- name: Stress test playbook
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: Create a file with unconventional syntax
+      shell: >
+        echo 'This is a test.' > \
+        /path/to/file{{ ansible_nodename }}_[{{ item }}].txt
+      with_sequence: start=1 end=5
+
+    - name: Generate unexpected inputs
+      command: >
+        curl -X POST "http://{{ ansible_default_ipv4.address }}:8080" \
+        -H "Content-Type: application/json" \
+        --data '{"input": [1,2,3,4,5], \
+                 "function": "max", \
+                 "arguments": {"key": "len"}}'
+      register: result
+
+    - name: Check for edge cases
+      command: >
+        find /var/log -type f -name "*log*" -user {{ ansible_user }} \
+        -exec cat {} \;
+      ignore_errors: yes

@@ -1,0 +1,52 @@
+
+---
+- name: Test playbook for GitHub issue #XYZ
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Deploy a container with a custom network and the default bridge network
+      docker_container:
+        name: my_container
+        image: nginx
+        state: started
+        networks:
+          - name: my_custom_network
+            ipv4_address: 172.28.5.1
+          - bridge
+        volumes:
+          - "/data:/mnt/data"
+        pull: yes
+      register: result
+
+    - name: Debug task
+      debug:
+        var: result
+
+    - name: Pause task
+      pause:
+        seconds: 10
+
+    - name: Start another container on all nodes
+      docker_container:
+        name: another_container
+        image: redis
+        state: absent
+        networks:
+          - "{{ hostvars[item].ansible_default_ipv4.address | regex_replace('([0-9]+)\.([0-9]+)\.([0-9]+)\.([0-9]+)', '\\1.\\2.111.111') }}"
+        command: whoami
+        pull: yes
+      with_items: "{{ ansible_play_hosts }}"
+
+    - name: Pause task again
+      pause:
+        seconds: 5
+
+    - name: Check if container exists
+      docker_container_info:
+        name: another_container
+      register: container_info
+
+    - name: Print status of the container
+      debug:
+        var: container_info.stderr

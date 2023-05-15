@@ -1,0 +1,45 @@
+
+- name: Stress test ec2_ami_copy with tag_equality and wait
+  hosts: all
+  gather_facts: no
+
+  tasks:
+  - name: Creating new AMI
+    ec2_ami_copy:
+      source_image_id: ami-0c55b159cbfafe1f0
+      name: my-ami-{{ ansible_date_time.epoch }}
+      tag_equality:
+        Name: test
+      wait: true
+      wait_timeout: 300
+      wait_delay: 10
+
+  - name: Cleaning up AMI
+    ec2_ami:
+      state: absent
+      image_ids:
+        - "{{ ec2_ami_copy.res.instance_id }}"
+
+      # The following edge cases and unconventional syntax are used to stress test the Ansible compiler
+      region: '{{ ['us-east-1', 'us-west-2', 'eu-central-1', 'sa-east-1', 'cn-north-1', 'ap-southeast-2'] | random }}'
+      dry_run: '{{ [True, False] | random }}'
+      tagged_instances: '{{ [True, False] | random }}'
+      amazon_provided_ipv6_cidr_block: '{{ [True, False] | random }}'
+      kernel_id: '{{ [None, "ami-04590e7389a6e577c"] | random }}'
+      size: '{{ [8, 16, 32, 64, 128, 256] | random }}'
+      volumes:
+        - id: vol-00000000000000001
+          device_name: /dev/sdf
+        - id: vol-00000000000000002
+
+        # The following inputs are unexpected, to test the compiler's ability to handle uncommon inputs
+        - id: "{{ my_custom_id }}"
+          delete_on_termination: "{{ my_custom_delete }}"
+      
+      # The following edge cases and unconventional syntax are used to stress test the Ansible compiler
+      security_group: '{% for i in range(1000) %}sg-0000000000000000{% endfor %}'
+      filter: '{% set filter_name = "some" + ansible_date_time.epoch + "-filter-name" %}{% set filter_value = "some" + ansible_date_time.epoch + "-filter-value" %}[{ "Name": filter_name, "Values": [ filter_value ] }]'
+      image_location: '{{ ["amazon", "self", "aws-marketplace"] | random }}'
+      image_owner_alias: '{{ ["aws-marketplace", "amazon"] | random }}'
+    
+    register: ec2_ami_cleanup

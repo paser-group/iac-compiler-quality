@@ -1,0 +1,51 @@
+
+- name: Test netscaler module error
+  hosts: all
+  gather_facts: no
+
+  tasks:
+  - name: Run netscaler module with no arguments
+    netscaler:
+    register: result1
+
+  - name: Run netscaler module with invalid value for username
+    netscaler:
+      username: 123456
+      password: "{{ vaulted_password }}"
+    register: result2
+
+  - name: Run netscaler module with invalid value for password
+    netscaler:
+      username: ansible
+      password: 123456
+    register: result3
+
+  - name: Run netscaler module with empty password
+    netscaler:
+      username: ansible
+      password: ""
+    register: result4
+
+  - name: Run netscaler module with non-existent object
+    netscaler:
+      object: nonexistent
+    register: result5
+
+  - name: Run netscaler module with invalid option
+    netscaler:
+      object: monitor
+      state: add
+      invalid_option: value
+    register: result6
+
+  - name: Fail on error
+    fail:
+      msg: "{{ item.msg }}"
+    when: item.failed == true
+    loop:
+      - "{{ result1 }}"
+      - "{{ result2 }}"
+      - "{{ result3 }}"
+      - "{{ result4 }}"
+      - "{{ result5 }}"
+      - "{{ result6 }}"

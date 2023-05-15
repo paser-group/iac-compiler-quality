@@ -1,0 +1,38 @@
+
+---
+- name: Hashi Vault lookup with Proxy
+  hosts: node1
+  become: yes
+  vars:
+    proxy_url: "http://proxy.example.com:8080"
+    vault_token: "myroot"
+    secret_path: "secret/data/mysecret"
+  tasks:
+    - name: Retrieve Secret from Vault through Proxy
+      shell: >
+        echo "{{ lookup('hashi_vault', secret_path, vault_token=vault_token, url=proxy_url, verify=no) }}"
+      register: secret_value
+
+    - name: Print Secret Value
+      debug:
+          var: secret_value
+
+    - name: Try to retrieve secret from Vault with incorrect url
+      shell: >
+        echo "{{ lookup('hashi_vault', secret_path, vault_token=vault_token, url='incorrect.com', verify=no) }}"
+      ignore_errors: yes
+
+    - name: Try to retrieve secret from Vault with incorrect token
+      shell: >
+        echo "{{ lookup('hashi_vault', secret_path, vault_token='incorrect_token', url=proxy_url, verify=no) }}"
+      ignore_errors: yes
+
+    - name: Try to retrieve secret from Vault with non-existent secret path
+      shell: >
+        echo "{{ lookup('hashi_vault', 'non_existent_path', vault_token=vault_token, url=proxy_url, verify=no) }}"
+      ignore_errors: yes
+
+    - name: Try to retrieve secret from Vault with unset variable
+      shell: >
+        echo "{{ lookup('hashi_vault', '', vault_token=vault_token, url=proxy_url, verify=no) }}"
+      ignore_errors: yes

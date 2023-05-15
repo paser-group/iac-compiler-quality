@@ -1,0 +1,25 @@
+
+- name: Test s3_lifecycle
+  hosts: all
+  tasks:
+    - name: Get S3 object prefix
+      shell: aws s3api get-object-tagging --bucket {{ bucket_name }} --key {{ object_key }} --region {{ region }} --query "TagSet[?Key=='Prefix'].Value" --output=text
+      register: prefix_before_lifecycle
+    - name: Configure S3 object lifecycle
+      aws_s3_lifecycle:
+        bucket: "{{ bucket_name }}"
+        rules:
+          - status: enabled
+            expiration:
+              days: 30
+            prefix: "{{ object_key }}"
+            id: test_lifecycle_rule
+      register: lifecycle_output
+    - name: Get S3 object prefix after applying lifecycle rule
+      shell: aws s3api get-object-tagging --bucket {{ bucket_name }} --key {{ object_key }} --region {{ region }} --query "TagSet[?Key=='Prefix'].Value" --output=text
+      register: prefix_after_lifecycle
+    - name: Display prefix values
+      debug:
+        msg:
+          - "Prefix before lifecycle: {{ prefix_before_lifecycle.stdout }}"
+          - "Prefix after lifecycle: {{ prefix_after_lifecycle.stdout }}"

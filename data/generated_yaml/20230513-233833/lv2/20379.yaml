@@ -1,0 +1,30 @@
+yaml
+---
+- name: Test json_query filter edge cases
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Test unconventional syntax
+      shell: echo '{"key": "value"}' | json_query('[?invalid_syntax]')
+      register: result
+      ignore_errors: yes
+    - name: Test unexpected inputs
+      shell: echo '{"key": "value"}' | json_query("[?'key'=='wrong_value']")
+      register: result
+      ignore_errors: yes
+    - name: Test edge case with empty list
+      shell: echo '{"list": []}' | json_query('list[0]')
+      register: result
+      ignore_errors: yes
+    - name: Test edge case with non-existent key
+      shell: echo '{"key": "value"}' | json_query('.non_existent_key')
+      register: result
+      ignore_errors: yes
+    - name: Test edge case with invalid JSON input
+      shell: echo 'invalid json input' | json_query('.key')
+      register: result
+      ignore_errors: yes
+  handlers:
+    - name: Print debug information
+      debug:
+        var: result.stdout

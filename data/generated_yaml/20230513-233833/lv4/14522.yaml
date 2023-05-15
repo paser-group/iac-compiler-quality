@@ -1,0 +1,33 @@
+
+---
+- name: Test softlink issue with Ansible Vault
+  hosts: all
+  gather_facts: no
+
+  vars:
+    secret_string: !vault |
+                    $ANSIBLE_VAULT;1.1;AES256
+                    34613861313163393365336366663435343634623833333538373463393865313932333665643638
+    secret_link: /vault/secrets/secret_file
+
+  tasks:
+
+    - name: Create softlink file
+      file:
+        src: "{{ secret_link }}"
+        dest: "/tmp/secret_file"
+        state: link
+
+    - name: Decrypt secret string
+      set_fact:
+        secret: "{{ secret_string | vault }}"
+  
+    - name: Verify softlink
+      stat:
+        path: "{{ secret_link }}"
+      register: result
+
+    - name: Fail if softlink is broken
+      fail:
+        msg: "Softlink is broken"
+      when: not result.stat.islnk

@@ -1,0 +1,37 @@
+
+- name: Retrieve snapshot information
+  vmware_guest_snapshot_info:
+    hostname: "{{ inventory_hostname }}"
+    username: "{{ username }}"
+    password: "{{ password }}"
+    name: "{{ vm_name }}"
+    validate_certs: False
+  register: snapshot_info
+
+- name: Check if snapshot already exists
+  set_fact:
+    snapshot_exists: "{{ item.name == snapshot_name }}"
+  with_items: "{{ snapshot_info.snapshots }}"
+
+- name: Delete snapshot
+  vmware_guest_snapshot:
+    hostname: "{{ inventory_hostname }}"
+    username: "{{ username }}"
+    password: "{{ password }}"
+    name: "{{ vm_name }}"
+    state: absent
+    validate_certs: False
+    snapshot_name: "{{ item.name }}"
+  with_items: "{{ snapshot_info.snapshots }}"
+  when: not snapshot_exists
+
+- name: Create snapshot
+  vmware_guest_snapshot:
+    hostname: "{{ inventory_hostname }}"
+    username: "{{ username }}"
+    password: "{{ password }}"
+    name: "{{ vm_name }}"
+    state: present
+    validate_certs: False
+    snapshot_name: "{{ snapshot_name }}"
+  when: not snapshot_exists

@@ -1,0 +1,54 @@
+
+- name: nxos_vxlan_vtep_vni suppress_arp and assoc_vrf edge cases
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: configure suppress_arp and assoc_vrf
+      nxos_vxlan_vtep_vni:
+        vtep:
+          address: "{{ hostvars[item]['ansible_host'] }}"
+          suppress_arp: "{{ item > 1 | ternary(omit, 'invalid_param') }}"
+          assoc_vrf: "{{ item % 3 == 0 | ternary(omit, ['invalid_vrf']) }}"
+          vni: "{{ 1000 + item }}"
+        state: present
+      with_sequence: start=1 end=3
+
+    - name: try to configure invalid suppress_arp
+      nxos_vxlan_vtep_vni:
+        vtep:
+          address: "{{ hostvars[item]['ansible_host'] }}"
+          suppress_arp: "invalid_param"
+          assoc_vrf: "default"
+          vni: 1001
+        state: present
+      with_sequence: start=1 end=3
+      
+    - name: try to configure invalid assoc_vrf
+      nxos_vxlan_vtep_vni:
+        vtep:
+          address: "{{ hostvars[item]['ansible_host'] }}"
+          suppress_arp: true
+          assoc_vrf: "invalid_vrf"
+          vni: 1001
+        state: present
+      with_sequence: start=1 end=3
+      
+    - name: configure suppress_arp only
+      nxos_vxlan_vtep_vni:
+        vtep:
+          address: "{{ hostvars[item]['ansible_host'] }}"
+          suppress_arp: true
+          assoc_vrf: "default"
+          vni: 1001
+        state: present
+      with_sequence: start=1 end=3
+      
+    - name: configure assoc_vrf only
+      nxos_vxlan_vtep_vni:
+        vtep:
+          address: "{{ hostvars[item]['ansible_host'] }}"
+          suppress_arp: "default"
+          assoc_vrf: "invalid_vrf"
+          vni: 1001
+        state: present
+      with_sequence: start=1 end=3

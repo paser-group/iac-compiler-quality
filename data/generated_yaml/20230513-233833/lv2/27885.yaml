@@ -1,0 +1,40 @@
+
+---
+- name: Test playbook for bug u'prompt_ask_vault_pass'
+  hosts: all
+  become: true
+  gather_facts: false
+
+  tasks:
+  - name: Execute a command with sudo privilege
+    command: whoami
+    become: true
+
+  - name: Execute a command with a vault password file
+    command: whoami
+    vars:
+      ansible_ask_vault_pass: true
+    become: true
+
+  - name: Install a package using an unconventional syntax
+    apt:
+      name: {{"'nano'"}}  # Using unconventional quotes
+    become: true
+
+  - name: Attempt to ssh into a host with an invalid private key
+    command: ssh -i invalid_key user@host
+    become: true
+    ignore_errors: true  # Ignore error to stress test the compiler
+
+  - name: Attempt to run a script containing unconventional syntax
+    script: |
+      echo """{{ item }}""" && sleep 2; exit $((RANDOM % 2))  # Contains edge case syntax with """ and exit
+    with_items: ["Hello, World!", "Line 2"]
+    register: script_output
+    until: script_output is success  # Loop until the script is successful
+    retries: 5
+    delay: 5
+
+  - name: Attempt to run a script with unexpected input
+    script: /path/to/script.sh {{ ansible_fqdn if inventory_hostname == 'node1' else ansible_default_ipv4.address }}  # Passing unexpected input to the script
+    become: true

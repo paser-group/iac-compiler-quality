@@ -1,0 +1,24 @@
+
+- hosts: all
+  become: true
+  vars:
+    meraki_url: "https://api.meraki.com/api/v1/networks"
+  tasks:
+    - name: Install requests module
+      pip:
+        name: requests
+        state: latest
+    - name: Retrieve Meraki networks
+      uri:
+        url: "{{ meraki_url }}"
+        method: GET
+        headers:
+          X-Cisco-Meraki-API-Key: "{{ meraki_api_key }}"
+        return_content: true
+      register: response
+      failed_when: response.status == 404
+      ignore_errors: yes
+    - name: Handle 404 errors
+      debug:
+        msg: "404 error occurred, Meraki API returned: {{ response.status }}"
+      when: response.status == 404

@@ -1,0 +1,49 @@
+
+- name: Test include_tasks inside import_tasks
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: Define variables
+      set_fact:
+        task_file: '{{ "task" ~ item }}.yml'
+        import_task_file: '{{ "import_task" ~ item }}.yml'
+        include_task_file: '{{ "include_task" ~ item }}.yml'
+      with_items: [0, 1]
+
+    - name: Create task files
+      file:
+        path: '{{ task_file }}'
+        state: touch
+
+    - name: Create import task files
+      file:
+        path: '{{ import_task_file }}'
+        state: touch
+
+    - name: Insert include_tasks in import_tasks
+      blockinfile:
+        path: '{{ import_task_file }}'
+        block: |
+          - import_tasks: '{{ include_task_file }}'
+        insertafter: '\[?(-\s*)?\]?tasks'
+        state: present
+
+    - name: Insert import_tasks in main playbook
+      blockinfile:
+        path: playbook.yml
+        block: |
+          - name: Execute tasks
+            import_tasks: '{{ import_task_file }}'
+        insertafter: '\[?(-\s*)?\]?hosts'
+        state: present
+
+    - name: Create include task files with unconventional syntax
+      file:
+        path: '{{ include_task_file }}'
+        state: touch
+      with_items:
+        - "{{ 'echo hello world' }}"
+        - "{{ 'shell echo hello world' }}"
+        - "{{ 'command echo hello world' }}"
+        - "{{ 'raw echo hello world' }}"

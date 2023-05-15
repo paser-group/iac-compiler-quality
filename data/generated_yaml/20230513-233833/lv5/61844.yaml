@@ -1,0 +1,36 @@
+
+- name: Configure IOSXR L3 network
+  hosts: iosxr_l3
+  gather_facts: no
+
+  tasks:
+    - name: Create loopback interface
+      iosxr_config:
+        lines:
+          - interface loopback100
+      register: initial_config
+
+    - name: Verify initial config
+      iosxr_command:
+        commands:
+          - show running-config interface loopback100
+      register: initial_output
+
+    - name: Modify loopback interface
+      iosxr_config:
+        lines:
+          - interface loopback100
+            description "Test Description"
+      register: modified_config
+
+    - name: Verify modified config
+      iosxr_command:
+        commands:
+           - show running-config interface loopback100
+      register: modified_output
+
+    - name: Ensure idempotency
+      assert:
+        that:
+          - initial_config == modified_config
+          - initial_output.stdout == modified_output.stdout

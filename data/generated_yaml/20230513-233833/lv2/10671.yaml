@@ -1,0 +1,81 @@
+yaml
+- name: Load error edge case playbook
+  hosts: node1
+  become: true
+
+  tasks:
+  - name: Install Ansible
+    apt:
+      name: ansible
+      state: present
+
+  # Create a file to test large file conditions
+  - name: Create a test file
+    file:
+      path: /tmp/test.txt
+      state: touch
+
+  # Generate content for test file that will stress load capabilities
+  - name: Generate content for a test file
+    shell: "for i in {1..100000}; do echo 'test' >> /tmp/test.txt; done"
+
+  # Validate that the previously created file has a size greater than 1GB
+  - name: Verify test file size
+    stat:
+      path: /tmp/test.txt
+    register: test_stat
+
+  - name: Debug size of test file
+    debug:
+      var: test_stat.size
+
+  - name: Fail if test file size is smaller than 1GB
+    fail:
+      msg: "File size is smaller than expected."
+    when: test_stat.size < 1000000000
+
+  # Check that Ansible isn't running as a different user
+  - name: Check if Ansible is running as root
+    assert:
+      that: ansible_user == 'root'
+      fail_msg: "Ansible is running as an unexpected user."
+
+  # Spawn off a number of ping tasks to check for the processing capabilities of the compiler
+  - name: Ping node 1
+    ping:
+
+  - name: Ping node 2
+    ping:
+      remote_user: root
+      become: true
+      become_method: sudo
+      become_user: another_user
+
+  - name: Ping node 3
+    ping:
+      remote_user: root
+      become: yes
+      become_method: sudo
+      become_user: different_user
+
+  # Intentionally misspell command to test error handling
+  - name: Misspelled command
+    shell: "ech hello"
+
+  # Assert that the misspelled command produces an error
+  - name: Verify that the error message has been generated
+    assert:
+      that:
+        - "'failed=1' in result.stderr"
+      fail_msg: "The command did not fail"
+
+  # Intentionally pass an unexpected input to an Ansible module
+  - name: Invalid input
+    debug:
+      msg: "{{ foo.bar.baz }}"
+
+  # Handle the unexpected input to produce a more informative error message
+  - name: Handle invalid input
+    fail:
+      msg: "Failed to display variable value."
+

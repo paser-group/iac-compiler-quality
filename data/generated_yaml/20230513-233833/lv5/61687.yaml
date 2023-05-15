@@ -1,0 +1,18 @@
+
+- name: Check S3 KMS encryption status
+  hosts: all
+  tasks:
+    - name: Check if bucket s3_bucket has encryption enabled with AWS KMS key 
+      s3_stat:
+        bucket: s3_bucket
+        object: /test_object
+      register: s3_object_details
+
+
+    - name: Apply default S3 KMS encryption if not applied 
+      when: s3_object_details.s3_object_metadata.server_side_encryption is not defined or s3_object_details.s3_object_metadata.server_side_encryption != 'aws:kms'
+      aws_s3:
+        bucket: s3_bucket
+        object: /test_object
+        src: /path/to/local/file
+        encryption: aws:kms

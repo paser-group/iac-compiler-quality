@@ -1,0 +1,40 @@
+
+--- 
+- name: Stress-test Ansible on virtual NXOS with FullLoader error
+  hosts: node1
+  gather_facts: no
+  connection: local
+  
+  tasks:
+    
+  - name: Update inventory to include unconventional syntax
+    add_host:
+      name: node4
+      groups: special[s 
+      
+  - name: Create an unexpected input for one of the variables
+    set_fact:
+      var_1: "{{ 1 + 'two' }}"
+  
+  - name: Attempt to load full variables with errors
+    include_vars:
+      file: "{{ some_non_existent_file }}"
+      name: "{{ var_2 }}"
+  
+  - name: Attempt to use unconventional syntax in task
+    raw: echo $(whoami) {{ $PATH }}
+  
+  - name: Test edge case in nxos_command module
+    nxos_command:
+      command_string: show ip interface brief
+    register: result
+    retries: 5
+    delay: 10
+    until: result.stdout_lines is defined
+
+  - name: Attempt to log error with non-existent logger
+    meta:
+      log:
+        msg: "This is a test log"
+        level: debug
+        logger: "unregistered_logger"

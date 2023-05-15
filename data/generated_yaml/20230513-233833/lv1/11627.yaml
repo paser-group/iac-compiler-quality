@@ -1,0 +1,19 @@
+yaml
+---
+- name: Playbook to fix profile_tasks.py issue
+  hosts: all
+  tasks:
+    - name: Check if CALLBACK_ constants are defined
+      fail: msg="Please define the CALLBACK_ constants in ansible.cfg"
+      when: not ('stdout_lines' in profile_tasks and 'DISPLAY_SKIPPED_HOSTS' in profile_tasks.stdout_lines)
+      register: profile_tasks
+
+    - name: Update ansible.cfg
+      ini_file:
+        path: /etc/ansible/ansible.cfg
+        section: defaults
+        option:{{ item.key }}
+        value: {{ item.value }}
+      with_dict:
+        CALLBACK_PLUGIN: 'profile_tasks'
+        CALLBACK_WHITELIST: 'profile_tasks'

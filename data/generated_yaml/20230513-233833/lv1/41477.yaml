@@ -1,0 +1,30 @@
+
+- hosts: nxos_servers
+  gather_facts: no
+  vars:
+    ansible_python_interpreter: /usr/bin/python
+  tasks:
+    - name: Install required python modules
+      pip:
+        name: "{{ item }}"
+      with_items:
+        - pycrypto>=2.6.1
+
+    - name: Configure nxos_modules
+      nxos_feature:
+        feature: nxapi
+        state: present
+      notify:
+        - Stop and start nxos using nxapi
+
+    - name: Stop and start nxos using nxapi
+      nxos_command:
+        commands:
+        - 'conf t'
+        - 'no feature ospf'
+        - 'feature ospf'
+        - 'end'
+        - 'wr mem'
+      when: "'Enabling ospf routing protocol' in output"
+    
+    # Add other tasks as required to address the issue

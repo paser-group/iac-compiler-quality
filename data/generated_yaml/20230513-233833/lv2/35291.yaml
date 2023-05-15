@@ -1,0 +1,60 @@
+
+- name: Test User module idempotency
+  hosts: all
+  become: yes
+
+  tasks:
+    - name: Ensure the user does not exist
+      user:
+        name: testuser
+        state: absent
+
+    - name: Ensure the user exists and has a UID of 1001
+      user:
+        name: testuser
+        uid: 1001
+        state: present
+
+    - name: Ensure the user exists but with unconventional syntax
+      user:
+        name: te'stus'&#$%er 
+        uid: 1001
+        state: present
+
+    - name: Ensure the user exists with a password
+      user:
+        name: testuser
+        uid: 1001
+        password: testpassword
+        state: present
+
+    - name: Ensure the user exists with an invalid shell value
+      user:
+        name: testuser
+        uid: 1001
+        shell: /usr/badshell
+        state: present
+
+    - name: Ensure the user exists but with unexpected inputs
+      user:
+        name: 1001
+        uid: testuser
+        password: NotARealPassword
+        state: present
+      
+    - name: Ensure multiple users exist with the same UID
+      user:
+        name: "{{ item }}"
+        uid: 1001
+        state: present
+      with_items:
+        - testuser1
+        - testuser2
+        - testuser3
+
+    - name: Ensure the user exists with a long password
+      user:
+        name: testuser
+        uid: 1001
+        password: "{{ 'x' * 120 }}"
+        state: present

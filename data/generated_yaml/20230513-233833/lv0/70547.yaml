@@ -1,0 +1,37 @@
+
+import ovirtsdk4 as sdk
+
+# Connect to the oVirt Engine
+connection = sdk.Connection(
+    url='https://ovirt-engine.example.com/ovirt-engine/api',
+    username='myuser@mydomain.com',
+    password='mypassword',
+    ca_file='/path/to/ca/file'
+)
+
+# Get a reference to the "vm_cdroms_service"
+vm_cdroms_service = connection.system_service().vm_cdroms_service()
+
+# Define the name of the CD ISO you want to retrieve
+cd_iso_name = 'my-cd-iso.iso'
+
+# Use the "list" method to retrieve a list of all the CD ISOs attached to all VMs
+cd_isos = vm_cdroms_service.list()
+
+# Loop through the CD ISOs to find the one with the specified name
+for cd_iso in cd_isos:
+    if cd_iso.file.name == cd_iso_name:
+        # Use the "get" method to retrieve the CD ISO by its ID
+        cd_iso = vm_cdroms_service.cdrom_service(cd_iso.id).get()
+        break
+
+# If the CD ISO was found, print its details
+if cd_iso:
+    print("ID:     {}".format(cd_iso.id))
+    print("Name:   {}".format(cd_iso.file.name))
+    print("Status: {}".format(cd_iso.status.state))
+else:
+    print("CD ISO not found")
+
+# Close the connection
+connection.close()

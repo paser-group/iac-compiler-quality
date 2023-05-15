@@ -1,0 +1,38 @@
+
+- name: Testing edge cases for GitHub issue #1234
+  hosts: all
+  gather_facts: false
+  vars:
+    error_task: "{{ ['node3', 'node4']|random }}"
+
+  tasks:
+    - name: Looping through nodes
+      debug:
+        msg: "{{ item }}"
+      loop:
+        - "node1"
+        - "node2"
+        - "{{ error_task }}"
+      rescue:
+        - set_fact:
+            ansible_failed_task: "{{ item }}"
+        - debug:
+            msg: "rescue: ansible_failed_task is {{ ansible_failed_task }}"
+      ignore_errors: true
+      
+    - name: Testing unconventional syntax
+      command: "echo 'Hello from {{ node }}'"
+      with_items:
+        - node1
+        - node2
+        - node3
+        - "{{ unknown_var }}"
+      ignore_errors: true
+
+    - name: Testing unexpected inputs
+      ping:
+        data: "{{ item }}"
+      with_items:
+        - "{{ range(5) }}"
+        - "{{ lookup('env','PATH') }}"
+      ignore_errors: true

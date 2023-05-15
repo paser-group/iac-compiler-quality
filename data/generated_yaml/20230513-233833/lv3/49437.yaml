@@ -1,0 +1,46 @@
+
+---
+- name: Playbook to expose Ansible Tower credentials idempotency issue
+  hosts: all
+  become: yes
+  gather_facts: no
+  vars:
+    - tower_username: "myuser"
+    - tower_password: "mypassword"
+    - tower_credential_type: "credential_type_name"
+    - tower_credential_name: "credential_name"
+  tasks:
+
+  # Task to create a new Ansible Tower credential
+  - name: Create a Tower credential
+    tower_credential:
+      tower_host: "http://localhost:8052/"
+      tower_username: "{{ tower_username }}"
+      tower_password: "{{ tower_password }}"
+      state: present
+      credential_type: "{{ tower_credential_type }}"
+      name: "{{ tower_credential_name }}"
+      inputs:
+        username: "myusername"
+        password: "mypassword"
+    register: create_credential
+
+  # Task to create the same credential again and test idempotency issue
+  - name: Create same Tower credential again 
+    tower_credential:
+      tower_host: "http://localhost:8052/"
+      tower_username: "{{ tower_username }}"
+      tower_password: "{{ tower_password }}"
+      state: present
+      credential_type: "{{ tower_credential_type }}"
+      name: "{{ tower_credential_name }}"
+      inputs:
+        username: "myusername"
+        password: "mypassword"
+    register: create_same_credential
+
+  # Fail the Playbook if the above task creates the same credential again
+  - name: Fail if same Tower credential is created again 
+    fail:
+      msg: "Error: Same Tower credential has been created again. Idempotency issue detected."
+    when: create_same_credential is defined and create_same_credential.changed == false

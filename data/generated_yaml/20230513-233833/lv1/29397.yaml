@@ -1,0 +1,25 @@
+
+---
+- hosts: localhost
+  gather_facts: no
+
+  tasks:
+  - name: Check if the s3 bucket exists
+    become: yes
+    aws_s3_bucket_facts:
+      bucket: my-bucket
+      region: us-west-1
+    register: s3_bucket
+
+  - name: Create the s3 bucket if it doesn't exist
+    become: yes
+    when: "'my-bucket' not in s3_bucket.buckets"
+    aws_s3_bucket:
+      name: my-bucket
+      region: us-west-1
+      state: present
+
+  - name: Ignore s3_bucket error
+    ignore_errors: yes
+    become: yes
+    shell: "{{ playbook_dir }}/ignore_s3_bucket_error.sh"

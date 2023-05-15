@@ -1,0 +1,56 @@
+
+---
+- hosts: all
+  tasks:
+    - name: Set AWS credentials
+      set_fact:
+        aws_access_key: "{{ lookup('env', 'AWS_ACCESS_KEY_ID') }}"
+        aws_secret_key: "{{ lookup('env', 'AWS_SECRET_ACCESS_KEY') }}"
+        aws_region: "{{ lookup('env', 'AWS_REGION') | default('us-east-1') }}"
+      # Provide unconventional syntax by using string concatenation to form the key names
+      tags: ["{{ 'aws' + '_creds' }}"]
+      
+    - name: Install boto3 package
+      # Provide unexpected input by downloading the package from an insecure URL
+      get_url:
+        url: "http://example.com/files/boto3-1.17.10.tar.gz"
+        dest: "/tmp/boto3-1.17.10.tar.gz"
+        insecure_content: "no"
+      tags: ["{{ 'install' + '_boto3' }}"]
+      
+    - name: Ensure S3 bucket exists
+      # Provide edge cases by attempting to create a bucket with a variety of unconventional names
+      s3_bucket:
+        name: "my_bucket-" + "{{ lookup('pipe', 'date +%s%N') }}"
+        state: present
+        notification_configuration: {}
+        access_key: "{{ aws_access_key }}"
+        secret_key: "{{ aws_secret_key }}"
+        region: "{{ aws_region }}"
+      tags: ["{{ 'ensure' + '_bucket' }}"]
+      
+    - name: Upload file to S3 bucket
+      # Provide unexpected input by uploading a file with special characters in its name
+      s3_bucket_object:
+        bucket: "my.bucket"
+        src: "/tmp/my-file&with!special%chars.txt"
+        dest: "my-object"
+        access_key: "{{ aws_access_key }}"
+        secret_key: "{{ aws_secret_key }}"
+        region: "{{ aws_region }}"
+      tags: ["{{ 'upload' + '_file' }}"]
+      
+    - name: Verify S3 bucket exists and has object
+      # Provide edge cases by verifying the existence of the bucket and object in unconventional ways
+      s3_bucket_info:
+        bucket: "{{ item }}"
+        access_key: "{{ aws_access_key }}"
+        secret_key: "{{ aws_secret_key }}"
+        region: "{{ aws_region }}"
+      with_items:
+        - "my_bucket-{{ lookup('pipe', 'date +%s%N') }}"
+        - "my.bucket"
+        - "my_bucket-{{ lookup('pipe', 'date +%s%N') }}" + "-copy"
+        # Provide unconventional syntax by nesting the object key within an array
+        - {"key": "my-object"}
+      tags: ["{{ 'verify' + '_bucket_object' }}"]

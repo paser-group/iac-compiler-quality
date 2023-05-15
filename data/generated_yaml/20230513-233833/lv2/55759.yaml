@@ -1,0 +1,46 @@
+
+- name: Test azure_rm_virtualnetworkpeering bug with remote resource id
+  hosts: all
+  gather_facts: false
+
+  vars:
+    destination_included_routes: 
+      - address_prefix: 10.5.0.0/16
+    resource_group: "/subscriptions/XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX/resourceGroups/testrg/providers/Microsoft.Network/virtualNetworks/testvnet"
+    peer_resource_id: "/subscriptions/YYYYYYYY-YYYY-YYYY-YYYY-YYYYYYYYYYYY/resourceGroups/peer-testrg/providers/Microsoft.Network/virtualNetworks/peervnet"
+
+  tasks:
+    - name: Create virtual network peering with remote resource id
+      azure_rm_virtualnetworkpeering:
+        resource_group: "{{ resource_group }}"
+        virtual_network_name: "testvnet"
+        name: "testpeering"
+        remote_virtual_network_id: "{{ peer_resource_id }}"
+        allow_virtual_network_access: true
+        allow_forwarded_traffic: false
+        allow_gateway_transit: false
+        use_remote_gateways: false
+        destination_included_routes: "{{ destination_included_routes }}"
+        state: present
+      delegate_to: node1
+
+    - name: Create virtual network peering with invalid remote resource id
+      azure_rm_virtualnetworkpeering:
+        resource_group: "{{ resource_group }}"
+        virtual_network_name: "testvnet"
+        name: "testpeering"
+        remote_virtual_network_id: "invalid"
+        allow_virtual_network_access: true
+        allow_forwarded_traffic: false
+        allow_gateway_transit: false
+        use_remote_gateways: false
+        destination_included_routes: "{{ destination_included_routes }}"
+        state: present
+      delegate_to: node1
+
+    - name: Check existing virtual network peering
+      azure_rm_virtualnetworkpeering_info:
+        resource_group: "{{ resource_group }}"
+        virtual_network_name: "testvnet"
+        name: "testpeering"
+      delegate_to: node1

@@ -1,0 +1,52 @@
+
+- name: Test win_iis_webbinding module
+  hosts: windows
+  gather_facts: no
+  vars:
+    cert_subject: "CN={{ ansible_fqdn }}, OU=IT, O=Example Company, L=City, S=State, C=US"
+    temp_dir: "C:\\temp"
+  tasks:
+  - name: Create new web binding
+    win_iis_webbinding:
+      name: "Test Binding"
+      protocol: https
+      port: 443
+      ip: "*"
+      certificate_arn: "self-signed"
+      certificate_subject: "{{ cert_subject }}"
+      state: present
+    register: binding_result
+
+  - name: Update default web binding
+    win_iis_webbinding:
+      name: ""
+      protocol: https
+      port: 443
+      ip: "*"
+      certificate_arn: "self-signed"
+      certificate_subject: "{{ cert_subject }}"
+      state: present
+    when: binding_result.web_binding is defined
+
+  - name: Verify SSL certificate update
+    win_shell: |
+      $bindings = Get-WebBinding
+      $default_binding = $bindings | Where-Object { $_.bindingInformation -eq "*:443:" }
+      $thumbprint = $default_binding.sslFlags.certHash
+      $cert = Get-ChildItem Cert:\\LocalMachine\\My | Where-Object { $_.Thumbprint -eq $thumbprint }
+      if ($cert.Subject -eq "{{ cert_subject }}") {
+        Write-Output "SSL certificate successfully updated on default binding."
+      } else {
+        Write-Output "Error: SSL certificate not updated on default binding."
+      }
+    register: verify_result
+    when: binding_result.web_binding is defined and binding_result.default_binding.sslFlags.certHash != ""
+
+  - name: Delete new web binding
+    win_iis_webbinding:
+      name: "Test Binding"
+      protocol: https
+      port: 443
+      ip: "*"
+      state: absent
+    when: binding_result.web_binding is defined

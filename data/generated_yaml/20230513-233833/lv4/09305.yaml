@@ -1,0 +1,37 @@
+
+---
+- hosts: all
+  become: true
+  tasks:
+    
+    # Check if ssh and rsync are installed and install if necessary
+    - name: Check if ssh is installed
+      become: true
+      stat:
+        path: /usr/bin/ssh
+      register: ssh_status
+    - name: Check if rsync is installed
+      become: true
+      stat:
+        path: /usr/bin/rsync
+      register: rsync_status
+    - name: Install ssh and rsync
+      become: true
+      apt:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - ssh
+        - rsync
+      when: ssh_status.stat.exists == false or rsync_status.stat.exists == false
+    
+    # Check if file exists on remote system, and log error if it does not exist
+    - name: Check if file exists
+      become: true
+      stat:
+        path: /path/to/file
+      register: file_status
+    - name: Log error if file does not exist
+      become: true
+      command: echo "File not found"
+      when: file_status.stat.exists == false

@@ -1,0 +1,32 @@
+
+---
+- hosts: node1
+  tasks:
+  - name: Install VMware inventory script on node1
+    command: /usr/bin/wget -O /usr/local/bin/vmware_inventory https://raw.githubusercontent.com/vmware/python_vm_inventory/master/vmware_inventory.py
+    register: download_output
+    ignore_errors: true
+
+  - name: Check cache age of VMware inventory script on node1
+    command: cat /usr/local/bin/vmware_inventory | grep -q "cache_age > 0 and cache_age < 60*60*24*30"
+    register: cache_age_output
+    ignore_errors: true
+
+  - debug:
+      var: cache_age_output.stdout_lines
+
+  - name: Return non-zero status on failure
+    fail:
+      msg: "Cache age check failed."
+
+  - name: Run VMware inventory script on node1
+    command: /usr/local/bin/vmware_inventory --list
+    register: inventory_output
+    ignore_errors: true
+
+  - debug:
+      var: inventory_output.stdout_lines
+
+  - name: Return non-zero status on failure
+    fail:
+      msg: "Inventory data not found."

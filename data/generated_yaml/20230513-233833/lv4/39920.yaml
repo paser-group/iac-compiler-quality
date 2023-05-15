@@ -1,0 +1,32 @@
+
+---
+- hosts: all
+  gather_facts: no
+  
+  tasks:
+    - name: Install Junos-eznc Python library
+      pip:
+        name: junos-eznc
+        state: present
+      become: true
+      
+    - name: Configure Junos Devices
+      junos_config:
+        host: "{{ inventory_hostname }}"
+        port: "{{ ansible_ssh_port }}"
+        mode: "exclusive"
+        provider:
+          host: "{{ hostvars['localhost']['ansible_ssh_host'] }}"
+          user: "{{ junos_username }}"
+          passwd: "{{ junos_password }}"
+          port: "{{ ansible_ssh_port }}"
+        config:
+          - system:
+              host-name: "{{ inventory_hostname }}"
+        comment: "Configure hostname on Junos Device"
+      register: result
+      become: true
+      
+    - name: Debug the output
+      debug:
+        var: result.stdout

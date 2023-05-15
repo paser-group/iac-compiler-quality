@@ -1,0 +1,31 @@
+
+- name: Ansible playbook for fixing ec2_vol incorrect failure issue
+  hosts: all
+  become: yes
+  
+  tasks:
+    - name: Stop and detach the problematic EBS volume
+      ec2_vol:
+        instance: i-XXXXXXXXXXX
+        device_name: /dev/sdf
+        state: detached
+        region: us-east-1
+      register: ec2_vol_result
+
+    - name: Create a new EBS volume from the most recent snapshot
+      ec2_vol:
+        snapshot: snap-XXXXXXXXXXXXXX
+        region: us-east-1
+        volume_type: gp2
+        state: present
+        volume_size: 8
+      register: ec2_vol_result
+
+    - name: Attach the new EBS volume to the instance
+      ec2_vol:
+        instance: i-XXXXXXXXXXX
+        device_name: /dev/sdf
+        state: attached
+        region: us-east-1
+        volume_id: "{{ ec2_vol_result.volume_id }}"
+        delete_on_termination: yes

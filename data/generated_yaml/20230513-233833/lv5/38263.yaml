@@ -1,0 +1,42 @@
+
+- name: Ensure that the required credentials and permissions are in place
+  vmware_guest:
+    vcenter_hostname: '{{ vcenter_hostname }}'
+    username: '{{ username }}'
+    password: '{{ password }}'
+    datacenter: '{{ datacenter }}'
+    validate_certs: no
+    folder: "/{{ folder_name }}"
+    name: "{{ vm_name }}"
+    state: '{{ state }}'
+    disk:
+      - size_gb: 16
+        type: thin
+        datastore: default
+    hardware:
+      memory_mb: 1024
+
+- name: Test if user lacks the appropriate permissions
+  vmware_guest:
+    vcenter_hostname: '{{ vcenter_hostname }}'
+    username: '{{ no_permission_user }}'
+    password: '{{ no_permission_password }}'
+    datacenter: '{{ datacenter }}'
+    validate_certs: no
+    folder: "/{{ folder_name }}"
+    name: "{{ vm_name }}"
+    state: '{{ state }}'
+    disk:
+      - size_gb: 16
+        type: thin
+        datastore: default
+    hardware:
+      memory_mb: 1024
+  ignore_errors: yes
+  register: testresult
+
+- name: Verify that error if no permission.
+  assert:
+    that:
+      - "'vim.fault.NoPermission' in testresult.stdout"
+  when: testresult|success

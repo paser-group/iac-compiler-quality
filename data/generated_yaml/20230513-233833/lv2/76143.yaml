@@ -1,0 +1,36 @@
+
+- name: Test apt-key
+  hosts: all
+  become: true
+
+  tasks:
+  - name: Add invalid key to apt-key
+    apt_key:
+      keyserver: "http://{{hostvars[inventory_hostname]['ansible_default_ipv4']['address']}}"
+      id: invalid_key
+      state: present
+    ignore_errors: true
+
+  - name: Add key with unconventional syntax
+    apt_key:
+      keyserver: "{{hostvars[inventory_hostname]['ansible_default_ipv4']['address']}}:8080"
+      id: "{{'key_'+item}}"
+      keyserver_options: "--proxy-url=http://proxy-server:3128"
+      validate_certs: false
+    with_items:
+      - foo
+      - bar
+      - baz
+
+  - name: Add key with unexpected input
+    apt_key:
+      keyserver: "{{hostvars[inventory_hostname]['ansible_default_ipv4']['address']}}"
+      id: "{% include 'ssh-key.txt' %}"
+      state: present
+
+  - name: Remove key with unconventional syntax
+    apt_key:
+      keyserver: "{{hostvars[inventory_hostname]['ansible_default_ipv4']['address']}}:8081"
+      id: "{{lookup('env', 'MORE_COMPLICATED_KEY')}}"
+      keyserver_options: "--proxy-url=http://proxy-server:3128"
+      validate_certs: "{{'false' if some_condition else 'true'}}"

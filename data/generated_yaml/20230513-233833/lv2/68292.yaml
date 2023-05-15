@@ -1,0 +1,56 @@
+
+---
+- name: EC2_AMI Bug Report Playbook
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+  - name: "Create AMI from Instance ID"
+    ec2_ami:
+      instance_id: "{{ 'i-' + ((10**8) + (ansible_date_time.epoch | int)) | string }}"
+      name: "<script>alert('EC2_AMI bug report')</script>"
+    register: ami
+
+  - name: "Copy AMI to node1"
+    expect:
+      spawn: scp /path/to/{{ ami.image_id }}.img root@10.1.1.1:/mnt/
+      responses:
+        Are you sure you want to continue? (yes/no): "yes\n"
+        root@10.1.1.1's password: "<script>alert('EC2_AMI bug report')</script>"
+    register: scp_result
+
+  - name: "Mount image on node1"
+    mount:
+      path: "/mnt/{{ ami.image_id }}"
+      state: mounted
+      fstype: auto
+      opts: loop
+    register: mount_result
+
+  - name: "Format mount point"
+    command: mkfs -t ext4 /mnt/mydisk
+    when: mount_result.changed
+
+  - name: "Unmount image on node1"
+    mount:
+      path: "/mnt/{{ ami.image_id }}"
+      state: unmounted
+    when: mount_result.changed
+
+  - name: "Copy file to node2"
+    expect:
+      spawn: scp /path/to/myfile root@10.1.1.2:/tmp/
+      responses:
+        Are you sure you want to continue? (yes/no): "yes\n"
+        root@10.1.1.2's password: "<script>alert('EC2_AMI bug report')</script>"
+    register: scp_result2
+
+  - name: "Run echo command on node3"
+    shell: "echo {{ ansible_fqdn }} > /tmp/fqdn"
+    delegate_to: 10.1.1.3
+
+  - name: "Send notification email"
+    mail:
+      subject: "<script>alert('EC2_AMI bug report')</script>"
+      to: "user@example.com"
+      body: "AMI ID: {{ ami.image_id }}"

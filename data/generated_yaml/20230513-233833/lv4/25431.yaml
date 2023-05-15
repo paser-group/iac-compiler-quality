@@ -1,0 +1,27 @@
+
+- name: Test Copy Module
+  hosts: all
+  tasks:
+  - name: Copy file with changed status
+    copy:
+      src: /tmp/changed_file
+      dest: /tmp/dest_file
+    register: changed_status 
+
+  - name: Copy file without changed status
+    copy:
+      src: /tmp/unchanged_file
+      dest: /tmp/dest_file
+    when: not changed_status.changed
+
+  - name: Assert paths are equal
+    assert:
+      that:
+        - '/tmp/dest_file' == '{{ changed_status.dest }}'
+    when: changed_status.changed
+
+  - name: Assert paths are not equal
+    assert:
+      that:
+        - '/tmp/dest_file' != '{{ changed_status.dest }}'
+    when: not changed_status.changed

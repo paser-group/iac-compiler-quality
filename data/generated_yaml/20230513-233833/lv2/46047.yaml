@@ -1,0 +1,60 @@
+
+- name: openssl_pkcs12 error - stress test playbook
+  hosts: all
+  become: true
+  vars:
+    cert_path: "/tmp/{{ lookup('env', 'USERNAME') }}.crt"
+    key_path: "/tmp/{{ lookup('env', 'USERNAME') }}.key"
+    pfx_path: "/tmp/{{ lookup('env', 'USERNAME') }}.pfx"
+    password: "password123"
+    bad_input: []
+    str_input: "cert"
+    int_input: 123
+    dict_input:
+      - key: value
+  tasks:
+    - name: Create certificate and key files
+      openssl_certificate:
+        path: "{{ cert_path }}"
+        privatekey_path: "{{ key_path }}"
+
+    - name: Generate PKCS#12 file with invalid name input
+      openssl_pkcs12:
+        path: "{{ pfx_path }}"
+        name: "{{ bad_input }}"
+        cert_file: "{{ cert_path }}"
+        key_file: "{{ key_path }}"
+        password: "{{ password }}"
+
+    - name: Generate PKCS#12 file with string name input
+      openssl_pkcs12:
+        path: "{{ pfx_path }}"
+        name: "{{ str_input }}"
+        cert_file: "{{ cert_path }}"
+        key_file: "{{ key_path }}"
+        password: "{{ password }}"
+
+    - name: Generate PKCS#12 file with integer name input
+      openssl_pkcs12:
+        path: "{{ pfx_path }}"
+        name: "{{ int_input }}"
+        cert_file: "{{ cert_path }}"
+        key_file: "{{ key_path }}"
+        password: "{{ password }}"
+
+    - name: Generate PKCS#12 file with dictionary name input
+      openssl_pkcs12:
+        path: "{{ pfx_path }}"
+        name: "{{ dict_input }}"
+        cert_file: "{{ cert_path }}"
+        key_file: "{{ key_path }}"
+        password: "{{ password }}"
+
+    - name: Clean up certificate, key, and pfx files
+      file:
+        path: "{{ item }}"
+        state: absent
+      with_items:
+        - "{{ cert_path }}"
+        - "{{ key_path }}"
+        - "{{ pfx_path }}"

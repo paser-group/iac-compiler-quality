@@ -1,0 +1,72 @@
+
+- name: Ansible-vault fuzzing playbook
+  hosts: all
+  gather_facts: false
+
+  vars:
+    val_file: "{{ playbook_dir }}/value.txt"
+    cipher_file: "{{ playbook_dir }}/value.txt.vault"
+
+  tasks:
+    - name: Set a random value
+      shell: echo "{{ (1..50|random|random|random|random|random)*'a' }}" > "{{ val_file }}"
+
+    - name: Encrypt the value using Ansible-vault
+      ansible.builtin.command: >
+        ansible-vault encrypt --vault-password-file /dev/null
+        --output "{{ cipher_file }}"
+        "{{ val_file }}"
+
+    - name: Copy encrypted value to another node with plain text password
+      ansible.builtin.copy:
+        src: "{{ cipher_file }}"
+        dest: /tmp/value.txt.vault
+        mode: 0664
+      delegate_to: node2
+      vars:
+        ansible_ssh_pass: plaintext-password
+
+    - name: Generate a template with the encrypted value using Ansible-vault
+      ansible.builtin.template:
+        src: templates/value.j2
+        dest: /tmp/value-from-template.txt.vault
+      delegate_to: node3
+      vars:
+        var_cipher: "{{ lookup('file', cipher_file) }}"
+
+    - name: Fuzz the encrypted file by adding a character
+      script: ./fuzz-scripts/add-char.py "{{ cipher_file }}"
+
+    - name: Test Ansible-vault with fuzzed file
+      ansible.builtin.shell: |
+        ansible-vault view --vault-password-file /dev/null "{{ cipher_file }}"
+      changed_when: false
+      failed_when: false
+
+    - name: Fuzz the encrypted file by removing a character
+      script: ./fuzz-scripts/remove-char.py "{{ cipher_file }}"
+
+    - name: Test Ansible-vault with fuzzed file
+      ansible.builtin.shell: |
+        ansible-vault view --vault-password-file /dev/null "{{ cipher_file }}"
+      changed_when: false
+      failed_when: false
+
+    - name: Fuzz the encrypted file by changing file encoding
+      script: ./fuzz-scripts/encoding.py "{{ cipher_file }}"
+
+    - name: Test Ansible-vault with fuzzed file
+      ansible.builtin.shell: |
+        ansible-vault view --vault-password-file /dev/null "{{ cipher_file }}"
+      changed_when: false
+      failed_when: false
+
+    - name: Remove temporary files
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      with_items:
+        - "{{ val_file }}"
+        - "{{ cipher_file }}"
+        - /tmp/value.txt.vault
+        - /tmp/value-from-template.txt.vault

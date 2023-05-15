@@ -1,0 +1,80 @@
+
+---
+- name: Ansible Playbook to expose vmware_guest vulnerability
+  hosts: all
+  gather_facts: no
+
+  vars:
+    # Define the vmware credentials
+    vcenter_hostname: "<vCenter_Hostname_OR_IP>"
+    vcenter_username: "<vCenter_Username>"
+    vcenter_password: "<vCenter_Password>"
+    datacenter_name: "<Datacenter_Name>"
+    datastore_name: "<Datastore_Name>"
+    cluster_name: "<Cluster_Name>"
+    network_name: "<Network_Name>"
+    vm_name: "<VM_Name>"
+    vm_username: "<VM_Username>"
+    vm_password: "<VM_Password>"
+
+  tasks:
+    - name: Create Virtual Machine
+      vmware_guest:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        datacenter: "{{ datacenter_name }}"
+        folder: /
+        name: "{{ vm_name }}"
+        state: poweredon
+        guest_id: ubuntu64Guest
+        hardware:
+          memory_mb: 2048
+          num_cpus: 2
+          scsi: paravirtual
+        disk:
+          - size_gb: 20
+            type: thin
+            datastore: "{{ datastore_name }}"
+        networks:
+          - name: "{{ network_name }}"
+            ip: "10.1.1.100"
+            netmask: 255.255.255.0
+            gateway: "10.1.1.254"
+          - name: "isolated_network"
+            start_connected: yes
+        cdrom:
+          - type: nonexistent
+
+    - name: Verify VM is created and running
+      vmware_vm_info:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        name: "{{ vm_name }}"
+      register: result
+
+    - name: Verify VM has access to the internet
+      wait_for:
+        host: 8.8.8.8
+        port: 53
+        state: started
+        timeout: 120
+      become: true
+
+    - name: Perform action requiring elevated privileges
+      vmware_guest_file_operation:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        datacenter: "{{ datacenter_name }}"
+        datastore_iso_file: "path/to/iso_file"
+        vm_id: "{{ result.virtual_machines[0].guest_id }}"
+        guest_path: "/var/tmp/test_iso_mounted"
+        operation: create_directory
+        validate_certs: no
+      register: test_result
+
+    - name: Debug Task
+      debug:
+        msg: "{{ test_result }}"

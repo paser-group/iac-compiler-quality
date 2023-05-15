@@ -1,0 +1,38 @@
+
+---
+- name: sample playbook for issue 123
+  hosts: node1
+  become: yes
+
+  tasks:
+  - name: install dependencies
+    apt: name={{ item }} state=installed
+    with_items:
+      - python-pip
+      - python-dev
+    when: ansible_distribution == "Ubuntu"
+
+  - name: add user group and users
+    group:
+      name: samplegroup
+      state: present
+    user:
+      name: sample_user1
+      group: samplegroup
+      shell: /bin/bash
+      password: "{{ 'password' | password_hash('sha512') }}"
+      state: present
+    when: inventory_hostname in groups['node1']
+
+  - name: skip tags
+    debug:
+      msg: "skip tags"
+    tags: skip_tag
+
+  - name: generate statistics data
+    shell: "echo stats ==> {{ inventory_hostname }}"
+    register: stats_output
+
+  - name: display statistical data using debug module
+    debug: var=stats_output.stdout_lines
+      verbosity: 2

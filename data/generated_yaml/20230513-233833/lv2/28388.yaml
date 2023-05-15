@@ -1,0 +1,71 @@
+
+---
+- name: Test eos_user module edge cases
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    
+    - name: Ensure new user is created with nopassword
+      eos_user:
+        name: testuser1
+        nopassword: yes
+      register: new_user_created
+
+    # Attempt to create a new user without nopassword
+    - name: Create new user without nopassword
+      eos_user:
+        name: testuser2
+      register: no_password_specified
+
+    # Attempt to update the password for an existing user
+    - name: Update password for existing user
+      eos_user:
+        name: testuser1
+        password: secret
+      register: password_updated
+
+    # Attempt to delete a non-existent user
+    - name: Delete non-existent user
+      eos_user:
+        name: invaliduser
+        state: absent
+      register: nonexistent_user_deleted
+
+    # Attempt to create a user with an invalid character
+    - name: Attempt to create user with invalid character
+      eos_user:
+        name: testuser$
+      register: invalid_character_used
+
+    # Attempt to create a user with a password that is too short
+    - name: Attempt to create user with a short password
+      eos_user:
+        name: testuser3
+        nopassword: no
+        password: abc
+      register: password_too_short
+
+    # Attempt to create a user with a password that is too long
+    - name: Attempt to create user with a long password
+      eos_user:
+        name: testuser4
+        nopassword: no
+        password: "{{ 'a' * 100 }}"
+      register: password_too_long
+
+    # Attempt to create a user with an SSH key that is too short
+    - name: Attempt to create user with a short SSH key
+      eos_user:
+        name: testuser5
+        nopassword: yes
+        ssh_key: "ssh-rsa AAAAB3NzaC1yc2EA"
+      register: ssh_key_too_short
+
+    # Attempt to create a user with an SSH key that is too long
+    - name: Attempt to create user with a long SSH key
+      eos_user:
+        name: testuser6
+        nopassword: yes
+        ssh_key: "{{ 'ssh-rsa ' + 'a' * 10000 }}"
+      register: ssh_key_too_long

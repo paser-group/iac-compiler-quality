@@ -1,0 +1,79 @@
+
+- name: Provisioning VMware Guests with Distributed Virtual Switch
+  hosts: all
+  gather_facts: yes
+
+  tasks:
+    - name: Check if VM is a Template or not
+      vmware_guest_info:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ vmware_user }}"
+        password: "{{ vmware_password }}"
+        uuid: "{{ vm_uuid }}"
+      register: result
+      delegate_to: localhost
+
+    - name: Clone the VM from template
+      vmware_guest:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ vmware_user }}"
+        password: "{{ vmware_password }}"
+        name: "{{ vm_name }}"
+        template: "{{ vm_template }}"
+        state: poweredon
+        validate_certs: no
+        hardware:
+          memory_mb: "{{ vm_memory }}"
+          num_cpus: "{{ vm_vcpus }}"
+        networks:
+        - name: "{{ vm_network }}"
+          dvs_port_group_key: "{{ vm_dvs_portgroup_key }}"
+          dvs_switch_name: "{{ vm_dvs_switch_name }}"
+      when: result.virtual_machines[0].config.template == False
+
+    - name: Update Network Adapter
+      vmware_vm_shell:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ vmware_user }}"
+        password: "{{ vmware_password }}"
+        vm_id: "{{ vm_uuid }}"
+        cmd: "ifdown {{ vm_network_adaptor }} && ifup {{ vm_network_adaptor }}"
+        wait_for_ip_address: no
+      when: ansible_distribution == 'Ubuntu'
+
+    - name: Set static IP
+      vmware_vm_shell:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ vmware_user }}"
+        password: "{{ vmware_password }}"
+        vm_id: "{{ vm_uuid }}"
+        cmd: "sudo ip addr add {{ vm_ip }}/{{ vm_cidr }} dev {{ vm_network_adaptor }}"
+        wait_for_ip_address: no
+      when: ansible_distribution == 'Ubuntu'
+
+    - name: Configure DNS
+      lineinfile:
+        path: /etc/resolv.conf
+        line: "nameserver {{ vm_dns_server }}"
+        state: present
+      when: ansible_distribution == 'Ubuntu'
+
+    - name: Mount Folder
+      vmware_guest_tools_wait:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ vmware_user }}"
+        password: "{{ vmware_password }}"
+        vm_id: "{{ vm_uuid }}"
+      when: ansible_distribution == 'Ubuntu'
+
+    - name: Create New User
+      vmware_guest_user:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ vmware_user }}"
+        password: "{{ vmware_password }}"
+        vm_id: "{{ vm_uuid }}"
+        login_name: "{{ vm_new_username }}"
+        login_password: "{{ vm_new_password }}"
+        state: present
+        validate_certs: no
+      when: ansible_distribution == 'Ubuntu'

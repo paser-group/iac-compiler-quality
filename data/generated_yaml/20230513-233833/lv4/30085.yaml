@@ -1,0 +1,85 @@
+
+---
+- name: Create EC2 launch configuration
+  hosts: localhost
+  gather_facts: False
+  vars:
+    region: "us-west-2"
+    vpc_cidr: "10.0.0.0/16"
+    public_subnet_cidr: "10.0.1.0/24"
+    private_subnet_cidr: "10.0.2.0/24"
+    image_id: "ami-0c55b159cbfafe1f0"
+    instance_type: "t2.micro"
+    asg_name: "my-auto-scaling-group"
+    lc_name: "my-launch-configuration"
+  tasks:
+    - name: Create VPC
+      ec2_vpc_net:
+        name: "my-vpc"
+        cidr_block: "{{ vpc_cidr }}"
+        region: "{{ region }}"
+        state: present
+      register: vpc
+    - name: Create public subnet
+      ec2_vpc_subnet:
+        state: present
+        vpc_id: "{{ vpc.id }}"
+        cidr: "{{ public_subnet_cidr }}"
+        az: "{{ region }}a"
+        region: "{{ region }}"
+      register: public_subnet
+    - name: Create private subnet
+      ec2_vpc_subnet:
+        state: present
+        vpc_id: "{{ vpc.id }}"
+        cidr: "{{ private_subnet_cidr }}"
+        az: "{{ region }}b"
+        region: "{{ region }}"
+      register: private_subnet
+    - name: Create Internet gateway
+      ec2_vpc_igw:
+        state: present
+        vpc_id: "{{ vpc.id }}"
+        region: "{{ region }}"
+        wait: yes
+    - name: Attach Internet gateway
+      ec2_vpc_route_table:
+        vpc_id: "{{ vpc.id }}"
+        region: "{{ region }}"
+        subnets:
+          - "{{ public_subnet.id }}"
+        routes:
+          - dest: "0.0.0.0/0"
+            gateway_id: "{{ vpc_internet_gateway.gateway_id }}"
+        state: present
+    - name: Create security group
+      ec2_group:
+        name: "my-security-group"
+        description: "My security group"
+        vpc_id: "{{ vpc.id }}"
+        region: "{{ region }}"
+        rules:
+          - proto: tcp
+            from_port: 22
+            to_port: 22
+            cidr_ip: "0.0.0.0/0"
+        state: present
+    - name: Create launch configuration
+      ec2_lc:
+        name: "{{ lc_name }}"
+        image_id: "{{ image_id }}"
+        instance_type: "{{ instance_type }}"
+        security_groups: "{{ ['my-security-group'] }}"
+        key_name: "{{ 'my-keypair'|abs }}"
+        region: "{{ region }}"
+        user_data: "#!/bin/bash\necho 'hello world'"
+        image_wait: yes
+        register: launch_config
+    - name: Create auto scaling group
+      ec2_asg:
+        name: "{{ asg_name }}"
+        launch_config_name: "{{ lc_name }}"
+        vpc_zone_identifier: "{{ public_subnet.id }},{{ private_subnet.id }}"
+        max_size: 2
+        min_size: 1
+        region: "{{ region }}"

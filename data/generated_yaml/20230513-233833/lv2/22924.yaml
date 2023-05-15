@@ -1,0 +1,54 @@
+
+- hosts: all
+  vars:
+    any_errors_fatal: true
+  tasks:
+    - name: Trigger Error 1 - Included Playbook
+      include: "{{ item }}"
+      any_errors_fatal: "{{ any_errors_fatal | bool }}"
+      with_items: 
+        - "{{ playbook_dir }}/included_tasks.yaml"
+        - "{{ playbook_dir }}/included_tasks2.yaml"
+      ignore_errors: true
+
+    - name: Trigger Error 2 - Included Role
+      include_role:
+        name: test_role
+      any_errors_fatal: "{{ any_errors_fatal | bool }}"
+      ignore_errors: true
+
+# Edge cases, unconventional syntax and unexpected inputs
+  - name: Unconventional Syntax
+    hosts: all
+    tasks:
+      - name: Include with invalid parameter
+        include:
+          other_parameter: some_value
+          file: "{{ playbook_dir }}/tasks.yaml"
+        any_errors_fatal: "{{ any_errors_fatal | bool }}"
+
+  - name: Unexpected Inputs
+    hosts: node1
+    tasks:
+      - name: Include with non-existent file
+        include: "{{ playbook_dir }}/non_existent_file"
+        any_errors_fatal: "{{ any_errors_fatal | bool }}"
+
+      - name: Execute shell command
+        shell: "ls -al"
+        any_errors_fatal: "{{ any_errors_fatal | bool }}"
+
+  - name: Edge Cases
+    hosts: all
+    tasks:
+      - name: Include with empty file
+        include: "{{ playbook_dir }}/empty_file.yaml"
+        any_errors_fatal: "{{ any_errors_fatal | bool }}"
+
+      - name: Include with symlink
+        include: "{{ playbook_dir }}/symlinked_tasks.yaml"
+        any_errors_fatal: "{{ any_errors_fatal | bool }}"
+
+      - name: Execute complex command
+        shell: "{{ 'echo hello world' | b64decode }}"
+        any_errors_fatal: "{{ any_errors_fatal | bool }}"

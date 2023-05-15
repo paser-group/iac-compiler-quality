@@ -1,0 +1,29 @@
+yaml
+---
+- name: Install boto module
+  hosts: all
+  gather_facts: yes
+  tasks:
+    - name: Install boto
+      pip:
+        name: boto
+        state: latest
+
+- name: AssumeRole
+  hosts: all
+  gather_facts: yes
+  vars:
+    role_arn: "arn:aws:iam::123456789012:role/rolename"
+    role_session_name: "test"
+  tasks:
+    - name: Read EC2 metadata
+      uri:
+        url: "http://169.254.169.254/latest/meta-data/placement/availability-zone"
+        return_content: yes
+      register: az
+    - name: Assume Role
+      sts_assume_role:
+        role_arn: "{{ role_arn }}"
+        role_session_name: "{{ role_session_name }}"
+        region: "{{ az.content[:-1] }}"
+      register: assume_role

@@ -1,0 +1,32 @@
+
+import boto3
+
+# Create an S3 client
+s3 = boto3.client('s3')
+
+# Create a KMS client
+kms = boto3.client('kms')
+
+# Get the default KMS key ARN
+default_key = kms.describe_key(KeyId='alias/aws/s3')['KeyMetadata']['Arn']
+
+# Create a new S3 bucket
+bucket_name = 'my-new-bucket'
+s3.create_bucket(Bucket=bucket_name)
+
+# Enable KMS encryption on the bucket with the default key
+s3.put_bucket_encryption(
+    Bucket=bucket_name,
+    ServerSideEncryptionConfiguration={
+        'Rules': [
+            {
+                'ApplyServerSideEncryptionByDefault': {
+                    'SSEAlgorithm': 'aws:kms',
+                    'KMSMasterKeyID': default_key
+                }
+            }
+        ]
+    }
+)
+
+print(f'Successfully enabled KMS encryption on {bucket_name} with default S3 key')

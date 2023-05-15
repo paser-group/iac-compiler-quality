@@ -1,0 +1,25 @@
+
+---
+- name: Remove -u option from sudo command
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Remove -u option
+      command: "sudo su - oracle -c \"echo test\""
+      register: output1
+
+    - name: Remove -u option
+      command: "sudo su - u oracle -c \"echo test\""
+      register: output2
+
+    - name: Compare output
+      debug:
+        var: output1.stdout_lines
+      when: output1.stdout_lines != output2.stdout_lines
+
+    - name: Change sudoers file
+      lineinfile:
+        path: /etc/sudoers
+        line: "%wheel ALL=(ALL) NOPASSWD:ALL"
+        validate: visudo -cf %s

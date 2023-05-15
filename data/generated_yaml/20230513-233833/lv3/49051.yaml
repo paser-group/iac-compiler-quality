@@ -1,0 +1,28 @@
+
+---
+- name: Transfer file to OpenBSD node
+  hosts: openbsd_node
+  gather_facts: false
+
+  vars:
+    src_file: /path/to/local/file.txt
+    dest_dir: /path/to/remote/directory/
+
+  tasks:
+  - name: Copy file to node
+    copy:
+      src: "{{ src_file }}"
+      dest: "{{ dest_dir }}"
+    register: copy_result
+
+  - name: Set incorrect media type for file
+    shell: chown nobody:nogroup {{ dest_dir }}/file.txt && echo "text/HTML" > {{ dest_dir }}/file.txt
+    when: copy_result.changed
+
+  - name: Print file properties
+    stat:
+      path: "{{ dest_dir }}/file.txt"
+    register: stat_result
+
+  - debug: var=stat_result.stat.ansible_devices
+  

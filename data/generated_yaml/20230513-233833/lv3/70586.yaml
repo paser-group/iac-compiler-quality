@@ -1,0 +1,22 @@
+
+---
+- name: Test Ansible Compiler for msrest module
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Install msrest module
+      pip:
+        name: msrest
+        state: present
+      become: true
+      
+    - name: Generate exception using msrest module
+      command: python -c "import msrest; msrest.invalid()" # This line causes an exception to arise
+      ignore_errors: true
+      
+    - name: Log exception to file
+      copy:
+        content: "{{ ansible_failed_result }}\n"
+        dest: /var/log/ansible/msrest-exception.log
+      when: ansible_failed_result|default(false)
+      become: true

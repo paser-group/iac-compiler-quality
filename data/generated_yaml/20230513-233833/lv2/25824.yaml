@@ -1,0 +1,39 @@
+
+- hosts: all
+  gather_facts: no
+  tasks:
+    - name: Run make command
+      become: yes
+      shell: >
+        make {{ lookup('env', 'MAKEFLAGS') | default('-j 1') }}
+        || echo 'Error executing make command'
+
+    - name: Restart service if make command fails
+      become: yes
+      shell: service my-service restart
+      register: service_result
+      until: service_result.rc == 0
+      retries: 3
+      when: "'Error executing make command' in service_result.stderr"
+
+    - name: Install packages required by make command
+      become: yes
+      apt:
+        name: "{{ item }}"
+        state: latest
+      loop:
+        - build-essential
+        - gcc
+        - make
+        - cmake
+
+    - name: Delete temporary build files
+      become: yes
+      file:
+        path: /tmp/build
+        state: absent
+
+    - name: Run other commands
+      become: yes
+      command: >
+        cmd /c "echo Running other commands"

@@ -1,0 +1,26 @@
+yaml
+---
+- name: Update ansible_default_ipv4.broadcast
+  hosts: all
+  become: true
+  tasks:
+    - name: Get IPv4 broadcast address
+      shell: ipcalc -b $(ip addr show eth0 | grep inet | awk '{print $2}' | cut -d'/' -f1) | awk -F= {'print $2'}
+      changed_when: false
+      register: ipv4_broadcast
+      
+    - name: Update ansible_default_ipv4.broadcast
+      lineinfile:
+        path: /etc/ansible/facts.d/network.fact
+        regexp: '^ansible_default_ipv4.broadcast'
+        line: 'ansible_default_ipv4.broadcast={{ ipv4_broadcast.stdout }}'
+      notify:
+        - Reload network configuration
+    
+  handlers:
+    - name: Reload network configuration
+      systemd:
+        daemon_reload: yes
+        name: systemd-networkd.service
+        state: restarted
+      listen: Reload network configuration

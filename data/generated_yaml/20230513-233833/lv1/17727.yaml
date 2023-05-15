@@ -1,0 +1,42 @@
+
+---
+- name: Update Azure Dynamic Inventory Script
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+  - name: Clone azure-ansible repository
+    git:
+      repo: "https://github.com/Azure/azure-ansible.git"
+      dest: "/tmp/azure-ansible"
+
+  - name: Copy azure_rm.py from cloned repository to dynamic inventory directory
+    copy:
+      src: "/tmp/azure-ansible/scripts/inventory/azure_rm.py"
+      dest: "/etc/ansible/azure_rm.py"
+      mode: '0755'
+    register: copy_azure_rm_py
+
+  - name: Check if the copy of azure_rm.py was successful
+    fail:
+      msg: "Error: Could not copy azure_rm.py from {{ copy_azure_rm_py.src }} to {{ copy_azure_rm_py.dest }}"
+    when: not copy_azure_rm_py.changed
+
+  - name: Configure dynamic inventory in ansible.cfg
+    ini_file:
+      path: "/etc/ansible/ansible.cfg"
+      section: inventory
+      option: enable_plugins
+      value: azure_rm
+
+  - name: Test dynamic inventory using azure_rm.py script
+    azure_rm:
+      environment: "{{ lookup('env', 'AZURE_CREDENTIALS') }}"
+      resource_group: example_resource_group
+    register: test_dynamic_inventory
+
+  - name: Output dynamic inventory using azure_rm.py script
+    debug:
+      var: test_dynamic_inventory.ansible_inventory
+
+...

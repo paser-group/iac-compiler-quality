@@ -1,0 +1,40 @@
+
+---
+- name: Update System CentOS 7
+  hosts: all
+  become: yes
+
+  vars:
+    memory_limit: 512M
+
+  tasks:
+  - name: Configure Swapfile
+    command: dd if=/dev/zero of=/mnt/swapfile bs=1024 count={{ memory_limit }}
+    register: swapfile_setup
+
+  - name: Format Swapfile
+    command: mkswap /mnt/swapfile
+    when: swapfile_setup.rc == 0
+
+  - name: Set the Swappiness Value
+    sysctl:
+      name: vm.swappiness
+      value: 10
+      state: present
+
+  - name: Mounting Swap file
+    mount:
+      name: /mnt/swapfile
+      fstype: swap
+      state: present
+
+  - name: Install the latest version of Yum
+    yum:
+      name: yum
+      state: latest
+
+  - name: Update Yum
+    yum:
+      name: '*'
+      exclude: kernel*
+      state: latest

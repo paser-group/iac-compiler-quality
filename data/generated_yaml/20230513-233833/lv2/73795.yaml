@@ -1,0 +1,39 @@
+
+- name: Unreachable with any_errors_fatal and serial=1
+
+  hosts: node1,node2,node3
+  serial: 1
+  any_errors_fatal: true
+  
+  tasks:
+    - name: Execute task 1
+      command: echo "Task {{ item }}" && exit {{ item }}
+      with_items: "{{ range(10)|list }}"
+      ignore_errors: true
+  
+    - name: Execute task 2
+      block:
+        - name: Inner task 1
+          command: echo "Inner task {{ item }}" && exit {{ item }}
+          with_items: "{{ range(10)|list }}"
+  
+        - name: Inner task 2
+          command: echo "Inner task {{ item }}" && exit {{ item }}
+          with_items: "{{ range(10)|list }}"
+  
+      rescue:
+        - name: Catch block
+          fail:
+            msg: "Task failed"
+  
+    - name: Execute task 3
+      block:
+        - name: Inner task 3
+          command: echo "Inner task {{ item }}" && exit {{ item }}
+          with_items: "{{ range(10)|list }}"
+  
+        - name: Inner task 4
+          command: echo "Inner task {{ item }}" && exit {{ item }}
+          with_items: "{{ range(10)|list }}"
+  
+      ignore_unreachable: yes

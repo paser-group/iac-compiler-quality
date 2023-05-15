@@ -1,0 +1,24 @@
+
+- hosts: all
+  gather_facts: no
+  vars:
+    certificate_subject: "/C=US/ST=Denial/L=Springfield/O=Dis/CN=node1.example.com"
+    certificate_file: /tmp/cert.crt
+    private_key_file: "/tmp/private.key"
+  tasks:
+    - name: Generate Self-signed Certificate
+      openssl_certificate:
+        path: "{{ certificate_file }}"
+        privatekey_path: "{{ private_key_file }}"
+        provider: selfsigned
+        subject: "{{ certificate_subject }}"
+      register: cert_details
+
+    - name: Verify Certificate
+      command: openssl x509 -noout -dates -in "{{ certificate_file }}"
+      register: cert_dates
+      ignore_errors: true
+
+    - name: Print Certificate Dates
+      debug:
+        var: cert_dates.stdout_lines

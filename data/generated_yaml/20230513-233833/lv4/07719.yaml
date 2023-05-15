@@ -1,0 +1,43 @@
+
+- name: Attach EBS volume from snapshot
+  hosts: ec2
+  gather_facts: no
+  vars:
+    snapshot_id: <snapshot_id>
+
+  tasks:
+  - name: Create EBS volume from snapshot
+    ec2_vol:
+      state: present
+      snapshot: "{{ snapshot_id }}"
+      region: us-east-1
+      volume_type: gp2
+      size: 8
+    register: created_ebs_volume
+
+  - name: Attach the volume to an instance
+    ec2_vol:
+      instance: "{{ ansible_ec2_instance_id }}"
+      volume_id: "{{ created_ebs_volume.volume_id }}"
+      device_name: /dev/sdf
+      state: attached
+      region: us-east-1
+
+  - name: Detach the volume
+    ec2_vol:
+      instance: "{{ ansible_ec2_instance_id }}"
+      volume_id: "{{ created_ebs_volume.volume_id }}"
+      state: detached
+      region: us-east-1
+
+  - name: Terminate instance
+    ec2:
+      instance_ids: "{{ ansible_ec2_instance_id }}"
+      state: absent
+      region: us-east-1
+
+  - name: Delete the volume
+    ec2_vol:
+      volume_id: "{{ created_ebs_volume.volume_id }}"
+      state: absent
+      region: us-east-1

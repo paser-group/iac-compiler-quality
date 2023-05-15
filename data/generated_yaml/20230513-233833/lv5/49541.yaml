@@ -1,0 +1,31 @@
+
+---
+- name: Verify default network count
+  hosts: cloudstack_mgmt
+  gather_facts: no
+
+  vars:
+    api_url: "https://{{ cs_mgmt_server }}/client/api"
+    api_key: "{{ cs_api_key }}"
+    api_secret: "{{ cs_secret_key }}"
+    account_name: "{{ cloudstack_account_name }}"
+    
+  tasks:
+    - name: Collect networks information
+      uri:
+        url: "{{ api_url }}/?response=json&command=listNetworks&listAll=true&accountname={{ account_name }}&apikey={{ api_key }}&signature={{ api_secret }}"
+        method: GET
+        return_content: yes
+        status_code: 200
+      register: result
+
+    - name: Count number of default networks
+      set_fact:
+        default_network_count: "{{ result.json.network | selectattr('isdefault', 'equalto', 'true') | list | count }}"
+
+    - name: Validate default network count
+      assert:
+        that:
+          - default_network_count == 1
+        fail_msg: "More than 1 default Isolated networks are found for account : {{ account_name }}"
+

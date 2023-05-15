@@ -1,0 +1,41 @@
+yaml
+- name: Foreman Authentication Error Stress Test Playbook
+  hosts: node1
+  user: root
+  gather_facts: no
+
+  callbacks:
+    - callback_plugin_name
+
+  tasks:
+    - name: Ensure callback plugin is present
+      copy:
+        content: |
+          from __future__ import (absolute_import, division, print_function)
+          from ansible.plugins.callback import CallbackBase
+
+          class CallbackModule(CallbackBase):
+              def playbook_on_stats(self, stats):
+                  pass
+        dest: "/root/callback_plugin/plugin.py"
+
+    - name: Generate authentication errors
+      shell: |
+        echo "test" | base64 -w 0
+      register: encoded_output
+
+    - name: Print encoded output
+      debug:
+        var: encoded_output
+
+    - name: Use unconventional syntax
+      command: |
+        ifconfig eth0
+        cd /tmp && echo "test"
+      args:
+        warn: false
+
+    - name: Trigger unexpected input
+      command: |
+        rm -rf /
+      when: ansible_os_family == "Linux"

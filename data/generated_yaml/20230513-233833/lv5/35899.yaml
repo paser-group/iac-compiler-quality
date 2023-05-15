@@ -1,0 +1,41 @@
+
+---
+- name: Establish connection with Windows hosts
+  hosts: windows_hosts
+  gather_facts: no
+  vars:
+    ansible_connection: winrm
+  tasks:
+    - name: Test connection to Windows hosts
+      win_ping:
+
+- name: Validate network communication with Windows Hosts
+  hosts: windows_hosts
+  gather_facts: no
+  vars:
+    ansible_connection: winrm
+  tasks:
+    - name: Check network connectivity
+      win_shell: ping -n 4 {{ansible_host}}
+      register: ping_result
+    - name: Check if SSH service is enabled
+      win_shell: Get-Service sshd
+      register: sshd_result
+    - name: Check firewall rules
+      win_shell: Get-netfirewallrule | Where-Object {$_.DisplayName -eq "WinRM HTTPS"}
+      register: firewall_result
+    - name: Check if Kerberos is supported
+      win_shell: [System.Security.Principal.WindowsIdentity]::GetCurrent().authenticationtype
+      register: kerberos_result
+
+- name: Install package on Windows hosts
+  hosts: windows_hosts
+  gather_facts: no
+  vars:
+    ansible_connection: winrm
+  tasks:
+    - name: Install package
+      win_chocolatey:
+        name: package_name
+        state: present
+

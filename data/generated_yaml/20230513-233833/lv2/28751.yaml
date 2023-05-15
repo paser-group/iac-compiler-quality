@@ -1,0 +1,25 @@
+
+- name: Test Host Vars Performance
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Create a large inventory
+      script:
+        echo '[node{{ item }}]' >> inventory
+        echo 'ansible_host=10.1.1.'$((item+1)) >> inventory
+      with_items: "{{ range(1,10001) | list }}"
+
+    - name: Create host_vars for inventory
+      script:
+        echo '{"test_var": "{{ item }}" }' > /etc/ansible/host_vars/node{{ item }}
+      with_items: "{{ range(1,10001) | list }}"
+
+    - name: Test host_vars performance
+      hosts: node1
+      become: true
+      tasks:
+        - name: Ping all hosts
+          ping:
+          async: 1000
+          poll: 0

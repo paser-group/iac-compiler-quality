@@ -1,0 +1,29 @@
+yaml
+---
+- name: Update the ec2.py dynamic inventory for ElastiCache
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Install boto3
+      pip:
+        name: boto3
+        state: present
+
+    - name: Update ec2.py with ElastiCache inventory script
+      copy:
+        content: |
+          #!/usr/bin/env python
+
+          from boto3 import client
+
+          ec = client('elasticache')
+
+          detail = []
+          for ReplicationGroups in ec.describe_replication_groups()['ReplicationGroups']:
+            detail += ReplicationGroups['NodeGroups']
+          for NodeGroups in detail:
+            for NodeGroupMembers in NodeGroups['NodeGroupMembers']:
+              print(NodeGroupMembers['CacheClusterId'])
+        dest: /path/to/ec2.py
+        mode: 0755

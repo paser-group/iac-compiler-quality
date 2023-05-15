@@ -1,0 +1,55 @@
+
+- name: Create Windows DNS record
+  win_dns_record:
+    name: www.example.com
+    zone: example.com
+    record_type: A
+    ttl: 600
+    value: 192.168.0.1
+  delegate_to: localhost
+
+- name: Check if the DNS record exists
+  win_command: nslookup www.example.com
+  register: check_dns_record
+  delegate_to: localhost
+
+- name: Try to modify the DNS record
+  win_dns_record:
+    name: www.example.com
+    zone: example.com
+    record_type: A
+    ttl: 3600
+    value: 192.168.0.2
+  delegate_to: localhost
+  become: yes
+  become_method: runas
+  become_user: Admin
+
+- name: Check if the DNS record has been modified
+  win_command: nslookup www.example.com
+  register: check_dns_record_after_modify
+  delegate_to: localhost
+
+- name: Try to delete the DNS record
+  win_dns_record:
+    name: www.example.com
+    zone: example.com
+    record_type: A
+    state: absent
+  delegate_to: localhost
+  become: yes
+  become_method: runas
+  become_user: Admin
+
+- name: Check if the DNS record has been deleted
+  win_command: nslookup www.example.com
+  register: check_dns_record_after_delete
+  delegate_to: localhost
+
+- name: Collect Results and Log Errors
+  vars:
+    test_failing_condition: "{{ check_dns_record.rc == 0 and check_dns_record_after_modify.rc == 0 and check_dns_record_after_delete.rc == 0 }}"
+  debug:
+    msg: "Test Successful"
+  when: test_failing_condition | bool
+  failed_when: not test_failing_condition | bool

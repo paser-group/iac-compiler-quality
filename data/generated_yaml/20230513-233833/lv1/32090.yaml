@@ -1,0 +1,35 @@
+
+- name: Install Ansible via source on Linux
+  hosts: all
+  become: yes
+
+  tasks:
+    - name: Install dependencies
+      apt:
+        name: "{{ item }}"
+        state: present
+      with_items:
+        - python
+        - python-dev
+        - libffi-dev
+        - libssl-dev
+        - build-essential
+
+    - name: Clone Ansible Git repository
+      git:
+        repo: 'https://github.com/ansible/ansible.git'
+        dest: /opt/ansible
+
+    - name: Switch to specific version of Ansible source code
+      shell: cd /opt/ansible && git checkout stable-{{ ansible_version }}
+
+    - name: Install Ansible
+      shell: cd /opt/ansible && source ./hacking/env-setup && pip install paramiko PyYAML Jinja2 httplib2 six
+
+    - name: Verify Ansible installation
+      command: ansible --version
+
+    - name: Cleanup
+      file:
+        path: /opt/ansible
+        state: absent

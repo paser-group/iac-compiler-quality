@@ -1,0 +1,66 @@
+
+---
+- name: Stress Test Ansible Compiler
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    # Setting ansible_forks to an insanely high value (-1) could cause resource exhaustion
+    - name: Set ansible_forks to -1
+      set_fact:
+        ansible_forks: -1
+
+    # Generating a random string longer than the maximum limit (512 bytes) of shell arguments could break the command
+    - name: Execute an invalid shell command
+      shell: "{{ random_string(1024) }}"
+      register: invalid_command
+      ignore_errors: yes
+
+    # Attempting to allocate more memory than available on the system could trigger a "Cannot allocate memory" error
+    - name: Allocate too much memory
+      command: "dd if=/dev/zero of=/dev/null bs=1M count={{ node_memory_mb_total | int + 1024 }}"
+      register: out_of_memory
+      ignore_errors: yes
+
+    # Using a reserved keyword (import) as a variable name could cause a syntax error
+    - name: Assign a reserved keyword to a variable
+      set_fact:
+        import: "{{ node_system_info.os_family }}"
+      ignore_errors: yes
+
+    # Using an undefined variable (ansible_undefined_variable) could abort the playbook with an error
+    - name: Access an undefined variable
+      debug:
+        var: "{{ ansible_undefined_variable }}"
+      ignore_errors: yes
+
+    # Attempting to execute a command with sudo permissions without sudo installed could break the command
+    - name: Execute a command with sudo
+      become: yes
+      shell: "whoami"
+      register: sudo_command
+      ignore_errors: yes
+
+    # Using an unknown module (ansible_undefined_module) could break the playbook execution
+    - name: Use an undefined module
+      ansible_undefined_module:
+        parameter: value
+      ignore_errors: yes
+
+    # Attempting to create a file in a location without sufficient permissions could trigger a "Permission denied" error
+    - name: Create a file without permission
+      file:
+        path: /root/test.txt
+        state: touch
+      ignore_errors: yes
+
+  handlers:
+    - name: Print command output
+      debug:
+        var: "{{ item.stdout }}"
+      loop:
+        - "{{ invalid_command }}"
+        - "{{ out_of_memory }}"
+        - "{{ sudo_command }}"
+
+...

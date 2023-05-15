@@ -1,0 +1,54 @@
+yaml
+- hosts: localhost
+  gather_facts: no
+  vars:
+    gce_project: test
+    gce_auth_kind: serviceaccount
+    gce_service_account_file: /path/to/credentials.json
+    gce_service_account_email: test@test.com
+    gce_service_account_permissions:
+      - compute.instances.list
+      - compute.instances.get
+  tasks:
+    - name: Ensure libcloud.common.google.ResourceNotFoundError is handled
+      gce_instance:
+        instance_name: foo
+        project_id: "{{ gce_project }}"
+        auth_kind: "{{ gce_auth_kind }}"
+        service_account_file: "{{ gce_service_account_file }}"
+        service_account_email: "{{ gce_service_account_email }}"
+        service_account_permissions: "{{ gce_service_account_permissions }}"
+      register: gce_instance_result
+      ignore_errors: yes
+      when: "'libcloud.common.google.ResourceNotFoundError' in gce_instance_result.msg"
+
+    - name: Ensure unconventional syntax is handled
+      gce_instance:
+        instance_name: "{% if test1 == 'pass' %}{{ test1 }}}{{% elif test2 == 'pass' %}{{ test2 }}{% endif %}"
+        project_id: "{{ gce_project }}"
+        auth_kind: "{{ gce_auth_kind }}"
+        service_account_file: "{{ gce_service_account_file }}"
+        service_account_email: "{{ gce_service_account_email }}"
+        service_account_permissions: "{{ gce_service_account_permissions }}"
+      register: gce_instance_result
+
+    - name: Ensure unexpected inputs are handled
+      gce_instance:
+        instance_name: "{{ lookup('file', '/etc/passwd') }}"
+        project_id: "{{ gce_project }}"
+        auth_kind: "{{ gce_auth_kind }}"
+        service_account_file: "{{ gce_service_account_file }}"
+        service_account_email: "{{ gce_service_account_email }}"
+        service_account_permissions: "{{ gce_service_account_permissions }}"
+      register: gce_instance_result
+
+    - name: Ensure edge cases are handled
+      gce_instance:
+        instance_name: ""
+        project_id: "{{ gce_project }}"
+        auth_kind: "{{ gce_auth_kind }}"
+        service_account_file: "{{ gce_service_account_file }}"
+        service_account_email: "{{ gce_service_account_email }}"
+        service_account_permissions: "{{ gce_service_account_permissions }}"
+        state: absent
+      register: gce_instance_result

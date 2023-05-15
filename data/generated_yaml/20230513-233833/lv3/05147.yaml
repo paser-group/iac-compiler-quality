@@ -1,0 +1,32 @@
+
+- name: Debug mode issue Playbook
+  hosts: all
+  become: true
+  vars:
+    sshd_debug: yes
+  
+  tasks:
+  - name: Install OpenSSH-server package
+    apt:
+      name: openssh-server
+      state: present
+
+  - name: Set sshd_config to debug mode
+    lineinfile:
+      path: /etc/ssh/sshd_config
+      regexp: '^#?\\s?Debug'
+      line: 'Debug {{ sshd_debug }}'
+    notify: 
+      - Reload sshd
+      
+  - name: Start sshd service
+    service: 
+      name: sshd
+      state: started
+      enabled: yes
+
+  handlers:
+    - name: Reload sshd
+      service:
+        name: sshd
+        state: reloaded

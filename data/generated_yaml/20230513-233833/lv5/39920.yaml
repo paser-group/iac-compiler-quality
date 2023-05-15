@@ -1,0 +1,56 @@
+
+---
+- name: Test Junos Config module for type errors
+  hosts: junos_devices
+  connection: local
+  gather_facts: no
+  
+  vars:
+    junos_config: |
+      {
+          "interfaces": {
+              "interface": {
+                  "ge-0/0/1": {
+                      "unit": {
+                          "family": [
+                              {
+                                  "inet": {
+                                      "address": {
+                                          "name": "10.1.1.1/24"
+                                      }
+                                  }
+                              }
+                          ]
+                      }
+                  }
+              }
+          }
+      }
+    invalid_data: "192.168.1.1"
+
+  tasks:
+    - name: Collect Junos Configuration data
+      junos_command:
+        commands:
+          - show interfaces terse
+      register: junos_data
+  
+    - name: Assign an invalid data type
+      set_fact:
+        junos_config: "{{ junos_config | to_yaml }}"
+        invalid_data: "{{ invalid_data | int }}"
+  
+    - name: Configure Junos device
+      junos_config:
+        config_format: set
+        load: "merge"
+        template_format: "set"
+        template_vars:
+          junos_data: "{{ junos_data.stdout_lines }}"
+        replace:
+          configuration: "{{ junos_config }}"
+      register: junos_config_result
+      
+    - name: Display the output
+      debug:
+        var: junos_config_result

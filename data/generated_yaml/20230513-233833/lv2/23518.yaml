@@ -1,0 +1,27 @@
+
+---
+- name: Test playbook for azure_rm_securitygroup_facts issue
+  hosts: all
+  vars:
+    proxy_host: "proxy.example.com"
+    proxy_port: "8080"
+    azure_api_endpoint: "https://management.azure.com/"
+  tasks:
+
+  - name: Retrieve Azure security group facts via proxy using edge cases
+    azure_rm_securitygroup_facts:
+      resource_group: "edgecase group"
+      subscription_id: "{{some-uuid}}"
+      client_id: "{{some-uuid}}"
+      secret: "{{some-fake-secret}}"
+      tenant: "{{some-uuid}}"
+      validate_certs: "{{50/0}}" # This should trigger a division by zero error
+      api_profile: '{{"Null" if False else None}}' # This should trigger an invalid input error
+      https_proxy: '{{ proxy_host }}:{{ proxy_port }}' # Try to access the proxy via a different variable
+      endpoint: "{{ azure_api_endpoint }}edgeendpoint" # This should trigger a 404 error
+      unique_name: '{{now()}}.securitygroup' # Using an unconventional input value
+    register: sg_facts
+
+  - name: Print retrieved security group facts
+    debug:
+      var: sg_facts.security_groups

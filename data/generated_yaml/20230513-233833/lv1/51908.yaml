@@ -1,0 +1,53 @@
+
+---
+- name: Fix Ansible error working with azure_rm
+  hosts: localhost
+  become: yes
+  vars:
+    azure_resource_group: "yourResourceGroupName"
+    azure_vm_name: "yourVMName"
+    azure_username: "yourVMUsername"
+    azure_password: "yourVMPassword"
+    azure_tenant: "yourTenantID"
+    azure_subscription: "yourSubscriptionID"
+  tasks:
+  - name: Install Azure Modules
+    pip:
+      name:
+        - 'ansible[azure]'
+    become: yes
+  - name: Add azure_rm module to inventory (if not already)
+    add_host:
+      name: "{{ azure_vm_name }}"
+      groups: azure
+      ansible_host: "{{ azure_vm_name }}.{{ azure_resource_group }}.cloudapp.azure.com"
+  - name: Azure Login
+    azure_login:
+      client_id: "yourClientId"
+      secret: "yourClientSecret"
+      tenant: "{{ azure_tenant }}"
+      subscription_id: "{{ azure_subscription }}"
+  - name: Install HTTPS Transport for Python
+    apt:
+      name: "python-openssl"
+      state: present
+  - name: Set Azure Credentials
+    set_fact:
+      azure_login_host: "{{ azure_vm_name }}.{{ azure_resource_group }}.cloudapp.azure.com"
+      ansible_ssh_user: "{{ azure_username }}"
+      ansible_ssh_pass: "{{ azure_password }}"
+      ansible_python_interpreter: /usr/bin/python
+  - name: Stop VM
+    azure_rm_virtualmachine:
+      resource_group: "{{ azure_resource_group }}"
+      name: "{{ azure_vm_name }}"
+      state: stopped
+    delegate_to: "{{ azure_login_host }}"
+    become: yes
+  - name: Start VM
+    azure_rm_virtualmachine:
+      resource_group: "{{ azure_resource_group }}"
+      name: "{{ azure_vm_name }}"
+      state: running
+    delegate_to: "{{ azure_login_host }}"
+    become: yes  

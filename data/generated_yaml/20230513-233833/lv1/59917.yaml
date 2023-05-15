@@ -1,0 +1,67 @@
+yaml
+---
+- name: Ensure VMware portgroup idempotency
+  hosts: vmware_hosts
+  gather_facts: false
+
+  vars:
+    vcenter_hostname: vcenter.example.com
+    vcenter_username: admin
+    vcenter_password: password
+    vmware_portgroup_name: "example_portgroup"
+    vmware_network_name: "example_network"
+    vmware_vswitch_name: "example_vswitch"
+
+  tasks:
+    - name: Get vCenter credentials
+      vmware_guest:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: no
+      delegate_to: localhost
+      register: vc_creds
+
+    - name: Retrieve network and vSwitch information
+      vmware_portgroup_facts:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: no
+        name: "{{ vmware_portgroup_name }}"
+      delegate_to: localhost
+      register: network_facts
+
+    - name: Create vSwitch if it does not exist
+      vmware_vswitch:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: no
+        name: "{{ vmware_vswitch_name }}"
+      delegate_to: localhost
+      when: "'{{ vmware_vswitch_name }}' not in network_facts.vswitches"
+
+    - name: Create network if it does not exist
+      vmware_network:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: no
+        name: "{{ vmware_network_name }}"
+        vswitch_name: "{{ vmware_vswitch_name }}"
+      delegate_to: localhost
+      when: "'{{ vmware_network_name }}' not in network_facts.networks"
+
+    - name: Create portgroup if it does not exist
+      vmware_portgroup:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: no
+        name: "{{ vmware_portgroup_name }}"
+        vlan_id: xxx
+        network_name: "{{ vmware_network_name }}"
+        vswitch_name: "{{ vmware_vswitch_name }}"
+      delegate_to: localhost
+      when: "'{{ vmware_portgroup_name }}' not in network_facts.portgroups"

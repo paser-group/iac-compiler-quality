@@ -1,0 +1,41 @@
+
+---
+- name: Test azure_rm_keyvaultsecret authentication
+  hosts: all
+  gather_facts: false
+
+  vars:
+    secret_name: "my-secret"
+    vault_name: "my-vault"
+    tenant_id: "my-tenant-id"
+    client_id: "my-client-id"
+    client_secret: "my-client-secret!"
+
+  tasks:
+
+  - name: Create a secret in Azure Key Vault
+    azure_rm_keyvaultsecret:
+      secret_name: "{{ secret_name }}"
+      vault_name: "{{ vault_name }}"
+      state: present
+      secret_value: "my-secret-value"
+      tenant: "{{ tenant_id }}"
+      client_id: "{{ client_id }}"
+      client_secret: "{{ client_secret }}"
+      tags: ['test_1']
+
+  - name: Retrieve the created secret and fail the playbook if authentication fails
+    azure_rm_keyvaultsecret:
+      vault_name: "{{ vault_name }}"
+      secret_name: "{{ secret_name }}"
+      client_id: "invalid-id"
+      client_secret: "invalid-secret"
+      tenant: "{{ tenant_id }}"
+    register: result
+    failed_when: not result.failed | default(false)
+    ignore_errors: true
+
+  - name: Verify authentication of azure_rm_keyvaultsecret
+    fail:
+      msg: "Authentication Failed: {{ result }}"
+    when: result.failed | default(false)

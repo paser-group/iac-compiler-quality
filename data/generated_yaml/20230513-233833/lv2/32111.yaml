@@ -1,0 +1,90 @@
+
+---
+- name: eos_eapi non-default vrfs issue
+  hosts: all
+  gather_facts: false
+  connection: local
+  vars:
+    non_default_vrf: "test_vrf"
+  tasks:
+  - name: Configure non-default VRFs
+    eos_command:
+      commands:
+        - "vrf definition {{ non_default_vrf }}"
+      provider:
+        username: admin
+        password: admin
+        transport: eapi
+        host: "{{ inventory_hostname }}"
+    when: inventory_hostname == 'node1'
+
+  - name: Configure default VRF
+    eos_command:
+      commands:
+        - "ip routing"
+      provider:
+        username: admin
+        password: admin
+        transport: eapi
+        host: "{{ inventory_hostname }}"
+    when: inventory_hostname == 'node2'
+
+  - name: Configure default VRF and then non-default VRF
+    eos_command:
+      commands:
+        - "ip routing"
+        - "vrf definition {{ non_default_vrf }}"
+      provider:
+        username: admin
+        password: admin
+        transport: eapi
+        host: "{{ inventory_hostname }}"
+    when: inventory_hostname == 'node3'
+
+  - name: Configure non-default VRFs after default VRF
+    eos_command:
+      commands:
+        - "ip routing"
+        - "vrf definition {{ non_default_vrf }}"
+      provider:
+        username: admin
+        password: admin
+        transport: eapi
+        host: "{{ inventory_hostname }}"
+    when: inventory_hostname == 'node1'
+
+  - name: Configure non-default VRFs first
+    eos_command:
+      commands:
+        - "vrf definition {{ non_default_vrf }}"
+        - "ip routing vrf {{ non_default_vrf }}"
+      provider:
+        username: admin
+        password: admin
+        transport: eapi
+        host: "{{ inventory_hostname }}"
+    when: inventory_hostname == 'node2'
+
+  - name: Setting non-default VRF for a non-existing interface
+    eos_command:
+      commands:
+        - "interface non-existing"
+        - "ip vrf forwarding {{ non_default_vrf }}"
+      provider:
+        username: admin
+        password: admin
+        transport: eapi
+        host: "{{ inventory_hostname }}"
+    when: inventory_hostname == 'node3'
+
+  - name: Configure non-default VRF with an unsupported character
+    eos_command:
+      commands:
+        - "vrf definition {{ non_default_vrf }}#"
+        - "ip routing vrf {{ non_default_vrf }}#"
+      provider:
+        username: admin
+        password: admin
+        transport: eapi
+        host: "{{ inventory_hostname }}"
+    when: inventory_hostname == 'node1'

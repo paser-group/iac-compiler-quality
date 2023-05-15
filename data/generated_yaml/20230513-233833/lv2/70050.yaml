@@ -1,0 +1,36 @@
+
+- name: Stress test for templating errors
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Generate random string
+      set_fact:
+        my_string: "{{ range(1, 10) | map('random', 'abcdefghijklmnopqrstuvwxyz') | join('') }}"
+
+    - name: Create temporary directory with unconventional syntax
+      command: "mkdir /tmp/{{ my_string }}%{{ '?'*4 }}$"
+
+    - name: Check if directory exists with an unexpected input
+      stat:
+        path: "/tmp/{{ my_string }}%{{ '?'*4 }}$"
+      register: dir_check
+
+    - name: Print debug statement with an edge case
+      debug:
+        msg: "{{ my_string[-20:]|default('no string found') }}{{ '/'*20 }}{{ '?'*-20 if my_string else 'empty string' }}"
+
+    - name: Exit loop with ignore_errors early
+      command: "some command with unintended error"
+      loop:
+        - 1
+        - 2
+        - 3
+        - 4
+        - 5
+      ignore_errors: true
+
+    - name: Remove temporary directory
+      file:
+        path: "/tmp/{{ my_string }}%{{ '?'*4 }}$"
+        state: absent

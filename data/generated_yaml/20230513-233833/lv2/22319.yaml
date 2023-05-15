@@ -1,0 +1,88 @@
+
+- hosts: all
+  gather_facts: false
+  tasks:
+    - name: Set the EOS connection environment variables
+      vars:
+        eos_active: 1
+        eos_network: "mainnet"
+        eos_api_url: "https://api.eosnewyork.io"
+        eos_chain_id: "aca376f206b8fc25a6ed44dbdc66547c36c6c33e3a119ffbeaef943642f0e906"
+      environment:
+        EOS_ACTIVE: "{{ eos_active }}"
+        EOS_NETWORK: "{{ eos_network }}"
+        EOS_API_URL: "{{ eos_api_url }}"
+        EOS_CHAIN_ID: "{{ eos_chain_id }}"
+      connection: local
+
+    - name: Check the EOS connection status
+      eos_info:
+        api_url: "{{ eos_api_url }}"
+        chain_id: "{{ eos_chain_id }}"
+        network: "{{ eos_network }}"
+        state: "info"
+      connection: local
+
+    - name: Transfer 1 EOS from node1 to node2
+      eos_transaction:
+        api_url: "{{ eos_api_url }}"
+        chain_id: "{{ eos_chain_id }}"
+        network: "{{ eos_network }}"
+        from: "{{ node1 }}"
+        to: "{{ node2 }}"
+        amount: 1.0
+        memo: "Testing EOS transfer"
+        broadcast: true
+      connection: local
+
+    # Edge Case 1: Use an unknown EOS API URL
+    - name: Set eos_api_url to an unknown URL
+      set_fact:
+        eos_api_url: "https://api.unknown.com"
+
+    - name: Check EOS connection status using an unknown API URL
+      eos_info:
+        api_url: "{{ eos_api_url }}"
+        chain_id: "{{ eos_chain_id }}"
+        network: "{{ eos_network }}"
+        state: "info"
+      connection: local
+
+    # Edge Case 2: Use an invalid node name
+    - name: Transfer 1 EOS from an invalid node to node2
+      eos_transaction:
+        api_url: "{{ eos_api_url }}"
+        chain_id: "{{ eos_chain_id }}"
+        network: "{{ eos_network }}"
+        from: "{{ invalid_node }}"
+        to: "{{ node2 }}"
+        amount: 1.0
+        memo: "Testing EOS transfer"
+        broadcast: true
+      connection: local
+
+    # Edge Case 3: Use an invalid amount
+    - name: Transfer -1 EOS from node1 to node2
+      eos_transaction:
+        api_url: "{{ eos_api_url }}"
+        chain_id: "{{ eos_chain_id }}"
+        network: "{{ eos_network }}"
+        from: "{{ node1 }}"
+        to: "{{ node2 }}"
+        amount: -1.0
+        memo: "Testing EOS transfer"
+        broadcast: true
+      connection: local
+
+    # Edge Case 4: Use an invalid memo length
+    - name: Transfer 1 EOS from node1 to node2 with invalid memo length
+      eos_transaction:
+        api_url: "{{ eos_api_url }}"
+        chain_id: "{{ eos_chain_id }}"
+        network: "{{ eos_network }}"
+        from: "{{ node1 }}"
+        to: "{{ node2 }}"
+        amount: 1.0
+        memo: "Testing EOS transfer with invalid memo length - this is a really long memo that exceeds the maximum length allowed by the EOS network"
+        broadcast: true
+      connection: local

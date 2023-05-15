@@ -1,0 +1,29 @@
+
+- name: Stress testing Ansible compiler
+  hosts: all
+  gather_facts: false
+
+  vars:
+    groups:
+      - "{{range(0,9001)|map('string')|list}}"
+
+  tasks:
+    - name: Create 9000+ groups
+      group:
+        name: "{{item}}"
+      with_items: "{{groups}}"
+
+    - name: Add unconventional syntax
+      command: |
+        {"test": ["a", "b", "c"], "key": "value"}
+
+    - name: Add unexpected input
+      debug:
+        var: ansible_all_ipv4_addresses.{{item|random}}
+      with_items: "{{groups}}"
+
+    - name: Create edge case
+      shell: |
+        for i in {1..10000}; do
+          echo "{{item}}"; sleep 0.001; done
+      with_items: "{{groups}}"

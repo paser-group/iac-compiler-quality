@@ -70,10 +70,10 @@ def subprocess_ansible(sample_data, yaml_base_path, inventory_path, docker_path,
             }
         )
         
-        display.red("-"*100)
-        display.green(
-            f"Docker environment created successfully: \ndocker ps: \nstd err:\n {docker_ps_log.stderr} \nstd out:\n {docker_ps_log.stdout}\ndocker network list:\nstd err: {docker_networks_log.stderr}, std out: {docker_networks_log.stdout}"
-        )
+        # display.red("-"*100)
+        # display.green(
+        #     f"Docker environment created successfully: \ndocker ps: \nstd err:\n {docker_ps_log.stderr} \nstd out:\n {docker_ps_log.stdout}\ndocker network list:\nstd err: {docker_networks_log.stderr}, std out: {docker_networks_log.stdout}"
+        # )
         
         # Run the playbook
         os.chdir(project_root_path)
@@ -83,14 +83,14 @@ def subprocess_ansible(sample_data, yaml_base_path, inventory_path, docker_path,
             ansible_command,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            timeout=600,
+            timeout=300,
             text=True
         )
         
-        display.red("-"*100)
-        display.green(
-            f"Ansible has run successfully: {playbook_path}"
-        )
+        # display.red("-"*100)
+        # display.green(
+        #     f"Ansible has run successfully: {playbook_path}"
+        # )
         record_case(
             success=True,
             tag="run",
@@ -156,3 +156,36 @@ def run_ansible(args, config):
     trgt_path = file_path
     display.green(f'\nsaving data to {trgt_path} ...')
     output_ds.to_csv(trgt_path)
+    
+def generate_statistics(args, config):
+    
+    if args.timestamp is not None:
+        base_path = f"{config['output_dir']}/{args.timestamp}"
+    else:
+        file_list = files.list(config['output_dir'])
+        if 'debug' in file_list : file_list.pop(file_list.index('debug'))
+        if len(file_list) == 0:
+            raise FileNotFoundError(
+                'No directories in target location. Need to generate ansible files first.'
+            )
+        src_dir = sorted(file_list)[-1]
+        base_path = f'{config["output_dir"]}/' + src_dir
+
+    file_path = f"{base_path}/manifest_ds.csv"
+    datasets.disable_caching()
+    ds = Dataset.from_csv(file_path)
+    
+    
+    if args.type == "syntax":
+        stats = {}
+        for i in range(6):
+            level = i
+            correct, total = len(ds.filter(lambda example: example['level'] == level and example['syntax']  == 1 and example['response'] != "TIMEOUT ERROR")),  len(ds.filter(lambda example: example['level'] == level and  example['response'] != "TIMEOUT ERROR"))
+            
+            stats[i] = {}
+            stats[i]['level'] = level
+            stats[i]['valid'] = correct
+            stats[i]['total'] = total
+            stats[i]['percent'] = (correct / total) * 100 
+        display.green(f"\nSyntax Statistics of file: {file_path}\n")
+        display.print_dict(stats)

@@ -1,0 +1,31 @@
+
+---
+- name: Including Playbook to test load error
+  hosts: all
+  gather_facts: no
+  become: yes
+
+  roles:
+  - name: role1
+    tasks:
+    - block:
+      - name: Execute command on node1
+        command: "ls -al"
+        when: "'node1' in inventory_hostname"
+      rescue:
+      - name: Debugging info
+        debug:
+          msg: 'Error in role1'
+    
+  - include_playbook: "{{ item }}"
+    loop:
+    # includes non-existent playbook to test error
+    - "playbook1.yml"
+    # includes non-existent directory to test error
+    - "non-existent-directory/"
+    # includes conditional play to test unconventional syntax
+    - "{% if 'node2' in inventory_hostname %}playbook2.yml{% endif %}"
+    # includes non-existent IP to test error
+    - "10.1.1.4.yml"
+    # includes role behind play to test load error
+    - "role2-play.yml"

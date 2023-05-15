@@ -1,0 +1,36 @@
+
+---
+- hosts: switches
+  gather_facts: no
+  vars:
+    eos_eapi_url: "http://{{ inventory_hostname }}/command-api"
+
+  tasks:
+    - name: Check EAPI connectivity
+      eos_command:
+        commands: "show version"
+        provider:
+          host: "{{ inventory_hostname }}"
+          transport: eapi
+          username: ansible
+          password: "{{ eos_api_secret }}"
+          use_ssl: no
+          port: 80
+          url: "{{ eos_eapi_url }}"
+
+    - name: Restart EAPI service
+      eos_command:
+        commands: "management api http-commands protocol http"
+        provider:
+          host: "{{ inventory_hostname }}"
+          transport: eapi
+          username: ansible
+          password: "{{ eos_api_secret }}"
+          use_ssl: no
+          port: 80
+          url: "{{ eos_eapi_url }}"
+      register: result
+
+    - name: Display restart status
+      debug:
+        var: result

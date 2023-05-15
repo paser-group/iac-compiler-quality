@@ -1,0 +1,25 @@
+
+---
+- name: Retrieve VLAN information from network devices
+  hosts: network_devices
+  gather_facts: no
+  tasks:
+    - name: Collect VLAN information using IOS commands
+      ios_command:
+        commands:
+          - show vlan
+        provider:
+          username: "{{ username }}"
+          password: "{{ password }}"
+          host: "{{ inventory_hostname }}"
+      register: vlan_info
+
+- name: Compare retrieved VLAN details with expected VLAN information
+  hosts: network_devices
+  tasks:
+    - name: Verify VLAN details
+      assert:
+        that:
+          - item.vlan_id in [1, 1002, 1003, 1004, 1005] 
+          - item.vlan_name is defined
+      loop: "{{ vlan_info.stdout[0]['vlans']|list }}"

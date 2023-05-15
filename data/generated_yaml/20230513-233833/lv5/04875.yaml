@@ -1,0 +1,39 @@
+yaml
+---
+- name: Create and Test Linode Instance
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+      api_key: <linode_api_key>
+      ssh_key: <ssh_key_path>
+
+  tasks:
+
+    - name: Create Linode instance
+      linode_instance:
+        name: my-instance
+        type: g6-standard-2
+        region: eu-central
+        api_key: "{{ api_key }}"
+        ssh_pub_key: "{{ lookup('file', ssh_key + '.pub') }}"
+        wait: yes
+        register: linode_create
+
+    - name: Add the instance to the ansible linode inventory
+      add_host:
+        hostname: "{{ linode_create.instance.ipv4.public }}"
+        groups: linode
+        ansible_user: root
+        ansible_ssh_private_key_file: "{{ ssh_key }}"
+
+    - name: Test connection to the new instance
+      ping:
+      register: ping_output
+      ignore_unreachable: yes
+
+    - name: Check if the host is in the correct group
+      assert:
+          that:
+            - "linode" in group_names
+            - "'{{ linode_create.instance.ipv4.public }}' in groups['linode']"

@@ -1,0 +1,30 @@
+yaml
+---
+- name: Example Playbook
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Run an asynchronous task
+      command: /path/to/script.sh {{ item }}
+      async: 600
+      poll: 0
+      register: task_status
+      with_items:
+        - item1
+        - item2
+        - item3
+
+    - name: Wait for the task to complete
+      async_status:
+        jid: "{{ item.ansible_job_id }}"
+      until: task_status.finished
+      retries: 30
+      delay: 10
+      with_items: "{{ ansible_play_batch }}"
+
+    - name: Display the results of the task
+      debug:
+        msg: "{{ item.stdout }}"
+      with_items: "{{ task_status.results }}"
+

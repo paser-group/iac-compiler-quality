@@ -1,0 +1,52 @@
+
+---
+- name: Ansible Compiler Fuzz Testing Playbook
+  hosts: all
+  gather_facts: no
+  vars:
+    - centos_version: "7"
+    - wrap_async_option: "wrap_async"
+    - invalid_param: "invalid"
+
+  tasks:
+    - name: Execute valid module with wrap_async option
+      command: echo "Executing valid module with wrap_async option"
+      delegate_to: "{{ groups['node1'][0] }}"
+      register: result1
+      when: centos_version == "{{ inventory_hostname }}"
+
+    - name: Execute valid module without wrap_async option
+      command: echo "Executing valid module without wrap_async option"
+      delegate_to: "{{ groups['node2'][0] }}"
+      register: result2
+      when: centos_version == "{{ inventory_hostname }}"
+
+    - name: Execute invalid module with valid option
+      command: echo "Executing invalid module with valid option"
+      delegate_to: "{{ groups['node3'][0] }}"
+      register: result3
+      when: centos_version == "{{ inventory_hostname }}"
+      ignore_errors: yes
+      wrap_async: "{{ wrap_async_option }}"
+      param1: "{{ invalid_param }}"
+
+    - name: Execute invalid command with invalid parameters
+      command: echo "Executing invalid command with invalid parameters"
+      delegate_to: "{{ groups['node1'][0] }}"
+      register: result4
+      when: centos_version == "{{ inventory_hostname }}"
+      ignore_errors: yes
+      wrap_async: "{{ wrap_async_option }}"
+      param1: "{{ invalid_param }}"
+      param2: "{{ invalid_param }}"
+      param3: "{{ invalid_param }}"
+      param4: "{{ invalid_param }}"
+
+    - name: Display results
+      debug:
+        var: item.stdout_lines
+      with_items:
+        - "{{ result1 }}"
+        - "{{ result2 }}"
+        - "{{ result3 }}"
+        - "{{ result4 }}"

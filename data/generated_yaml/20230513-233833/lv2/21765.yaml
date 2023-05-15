@@ -1,0 +1,37 @@
+
+---
+- name: Generate edge cases playbook for EC2 ASG errors with target groups
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+  - name: Define Autoscaling Group target group
+    set_fact:
+      target_group_name: "{{ lookup('env','TARGET_GROUP_NAME') }}"
+
+  - name: Set variables
+    vars:
+      asg_name: "{{ lookup('env','ASG_NAME') }}"
+      replace_all_instances: "True"
+
+  - name: Define an empty list variable
+    set_fact:
+      instance_list: []
+
+  - name: Add instance IDs to instance_list variable
+    set_fact:
+      instance_list: "{{ instance_list + [ item.instance_id ] }}"
+    with_items:
+      - "{{ ec2_instance_info.instances }}"
+    when: "'targetgroup/{0}' in item.target_group_arns".format(target_group_name)
+
+  - name: Modify Autoscaling Group
+    ec2_asg:
+      name: "{{ asg_name }}"
+      desired_capacity: 2
+      min_size: 2
+      max_size: 3
+      replace_all_instances: "{{ replace_all_instances }}"
+      instance_ids: "{{ instance_list }}"
+      health_check_grace_period: 300
+      health_check_type: "ELB"

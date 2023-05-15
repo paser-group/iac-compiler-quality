@@ -1,0 +1,66 @@
+
+---
+- name: Test apt module
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Test unconventional syntax
+      apt:
+        name: "{{ item }}"
+        state: "{{ states | random }}"
+      loop: [ 'python3', 'nginx', 'unzip', 'mysql-server', 'apache2', 'docker-ce' ]
+      vars:
+        states:
+          - present
+          - latest
+          - absent
+          - removed
+          - purged
+          - hold
+
+    - name: Test edge cases
+      apt:
+        name: "{{ item }}"
+        state: "{{ states | random }}"
+        force: "{{ forces | random }}"
+        deb: "{{ debs | random }}"
+        autoremove: "{{ autoremoves | random }}"
+        update_cache: "{{ update_caches | random }}"
+        validate_certs: "{{ validate_certs | random }}"
+      loop: [ 'python', 'python-pip', 'libapache2-mod-security2', 'libapache2-mod-php', 'htop', 'wget' ]
+      vars:
+        states:
+          - present
+          - latest
+        forces:
+          - no
+          - yes
+        debs:
+          - "{{ item }}=1.2.3.deb"
+          - "{{ item }}=1.2.3.deb{{ rand_suffix }}"
+        autoremoves:
+          - no
+          - yes
+        update_caches:
+          - no
+          - yes
+        validate_certs:
+          - no
+          - yes
+      when: inventory_hostname == 'node1'
+
+    - name: Test unexpected inputs
+      apt:
+        name: "{{ item }}"
+        state: "{{ states | random }}"
+        update_cache: "{{ invalid_input }}"
+        install_recommends: "{{ invalid_input }}"
+        allow_unauthenticated: "{{ invalid_input }}"
+      loop: [ 'python3', 'unzip', 'mysql-server', 'docker-ce', 'php-fpm' ]
+      vars:
+        states:
+          - installed
+          - absent
+        invalid_input: "{{ random_input }}"
+      when: inventory_hostname == 'node2'

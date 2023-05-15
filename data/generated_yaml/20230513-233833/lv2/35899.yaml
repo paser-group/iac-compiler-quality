@@ -1,0 +1,46 @@
+
+---
+- name: Test playbook for Ansible connection with Windows hosts machine error
+  hosts: all
+  gather_facts: no
+  
+  vars:
+    username: "{{ lookup('env', 'USERNAME') }}"
+    password: "{{ lookup('env', 'PASSWORD') }}"
+  
+  tasks:
+    - name: Install required libraries for Windows connection
+      win_package:
+        name: "{{ ['pywinrm', 'xmltodict'] | random }}"
+        state: present
+      register: result
+      
+    - name: Check installation status
+      fail:
+        msg: "{{ result | to_nice_json }}"
+      when: result is failed
+  
+    - name: Attempt to connect to Windows host using HTTP
+      win_ping:
+        http_port: 5985
+        connection_timeout: "{{ randrange(1, 10) }}"
+        transport: "{{ ['basic', 'kerberos'] | random }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+      register: result
+  
+    - name: Check connection status
+      fail:
+        msg: "{{ result | to_nice_json }}"
+      when: result is failed
+  
+    - name: Attempt to run a PowerShell command on the Windows host
+      win_shell:
+        ps1: "{{ ['Get-Process', 'Get-Service'] | random }}"
+        transport: "{{ ['ntlm', 'credssp'] | random }}"
+      register: result
+  
+    - name: Check command output
+      fail:
+        msg: "{{ result | to_nice_json }}"
+      when: result is failed

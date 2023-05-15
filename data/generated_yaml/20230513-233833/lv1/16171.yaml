@@ -1,0 +1,44 @@
+
+---
+- name: Configure HTTPS listeners for an AWS ELB
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    elb_name: my-elb
+    elb_region: us-east-1
+    elb_cidr_blocks: 0.0.0.0/0
+    elb_https_port: 443
+    elb_https_protocol: HTTPS
+    elb_instance_port: 80
+    elb_keypair: my-keypair
+    elb_ssl_id: arn:aws:iam::123456789012:server-certificate/mycert
+
+  tasks:
+
+  - name: Create HTTPS listener for ELB
+    local_action:
+      module: ec2_elb_lb_listener
+      load_balancer_name: "{{ elb_name }}"
+      region: "{{ elb_region }}"
+      state: present
+      listener:
+        protocol: "{{ elb_https_protocol }}"
+        load_balancer_port: "{{ elb_https_port }}"
+        instance_protocol: HTTP
+        instance_port: "{{ elb_instance_port }}"
+        ssl_certificate_id: "{{ elb_ssl_id }}"
+    when: elb_https_port is defined
+
+  - name: Add HTTPS listener to ELB security group
+    local_action:
+      module: ec2_elb_sg
+      load_balancer_name: "{{ elb_name }}"
+      region: "{{ elb_region }}"
+      security_group: "{{ elb_sg }}"
+      state: present
+      cidr_ip: "{{ elb_cidr_blocks }}"
+      from_port: "{{ elb_https_port }}"
+      to_port: "{{ elb_https_port }}"
+      protocol: "{{ elb_https_protocol }}"
+    when: elb_https_port is defined

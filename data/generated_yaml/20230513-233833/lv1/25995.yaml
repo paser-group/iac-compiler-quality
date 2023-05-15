@@ -1,0 +1,26 @@
+
+---
+- hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Create S3 bucket
+      become: true
+      aws_s3:
+        state: present
+        name: "{{ bucket_name }}"
+      register: s3_result
+
+    - name: Handle pre-existing bucket error
+      when: "'Your previous request to create the named bucket succeeded and you already own it' in s3_result.stdout_lines"
+      debug:
+        msg: "S3 bucket '{{ bucket_name }}' already exists."
+
+    - name: Handle other S3 errors
+      when: "not 'Your previous request to create the named bucket succeeded and you already own it' in s3_result.stdout_lines and s3_result.failed"
+      fail:
+        msg: "S3 bucket creation failed: {{ s3_result.stderr }}"
+
+    - name: Success message
+      when: "not 'Your previous request to create the named bucket succeeded and you already own it' in s3_result.stdout_lines and not s3_result.failed"
+      debug:
+        msg: "S3 bucket '{{ bucket_name }}' successfully created."

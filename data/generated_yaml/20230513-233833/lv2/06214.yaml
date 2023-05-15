@@ -1,0 +1,57 @@
+
+---
+- name: Test mysql_db import action error handling
+  hosts: all
+  gather_facts: false
+
+  vars:
+    # Define a list of databases to create, delete, and use
+    db_names:
+      - test_db_not_exist
+      - test_db_exist
+
+  tasks:
+
+  # Create databases that do not exist
+  - name: Create non-existing databases
+    mysql_db:
+      name: "{{ item }}"
+      state: present
+    # Try to create the database a second time to generate an error
+    # and test the error message handling
+    - mysql_db:
+      name: "{{ item }}"
+      state: present
+    with_items:
+    - "{{ db_names }}"
+
+  # Try to delete a database that does not exist
+  - name: Try to delete non-existing database
+    mysql_db:
+      name: test_db_not_exist
+      state: absent
+
+  # Attempt to use a non-existing database
+  - name: Try to use non-existing database
+    mysql_db:
+      name: test_db_wrong_name
+      state: import
+      target: "{{ inventory_hostname }}"
+
+  # Generate an error with unconventional syntax
+  - name: Generate an error with unconventional syntax
+    mysql_db: name=invalid_db state=present
+
+  # Test the "target" parameter with unconventional syntax
+  - name: Test "target" with unconventional syntax
+    mysql_db:
+      name: test_db_exist
+      state: import
+      target: "{{ inventory_hostname }},invalid_node"
+
+  # Pass an unexpected input as an argument
+  - name: Pass unexpected input as an argument
+    mysql_db:
+      name: test_db_exist
+      state: present
+      invalid_arg: true

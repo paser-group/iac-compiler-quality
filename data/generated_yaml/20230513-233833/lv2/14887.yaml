@@ -1,0 +1,60 @@
+
+- name: Test playbook for incorrect facter information
+  hosts: all
+  gather_facts: no
+  
+  tasks:
+  - name: Installing facter package
+    apt:
+      name: facter
+      state: present
+    become: true
+  
+  - name: Gathering all facts with incorrect information
+    command: "facter -p {{ item }}"
+    register: fact_output
+    with_items:
+      - os
+      - kernelversion
+      - ipaddress_eth0
+    
+  - name: Debug incorrect facter information
+    debug:
+      var: fact_output
+
+  - name: Test syntax error with unconventional syntax
+    command: "echo {{ foo.bar+baz.qux }}"
+
+  - name: Test unexpected input
+    debug:
+      msg: "The value of {{ item }} is {{ wrong_syntax }}"
+    vars:
+      wrong_syntax: "{% for item %}"
+
+  - name: Test for unexpected variable error
+    template:
+      src: "{{ wrong_template }}"
+      dest: "/etc/wrong.conf"
+    vars:
+      wrong_template: "{{ wrong_variable }}"
+
+  - name: Test an edge case of using variables in parameters
+    command: "echo {{ variable1 + variable2 }} {{ variable3 }} {{ variable4 }}"
+    vars:
+      variable1: "foo"
+      variable2: "bar"
+      variable3: 42
+      variable4: "'baz qux'"
+
+  - name: Test an edge case of unconventionally formatted inventory file
+    lineinfile:
+      path: /etc/hosts
+      line: "{{item_hostname|lower}}={{item_ip}}  {{ item_hostname }}"
+    with_items:
+      - { item_hostname: 'Node1', item_ip: '10.1.1.1' }
+      - { item_hostname: 'Node2', item_ip: '10.1.1.2' }
+      - { item_hostname: 'Node3', item_ip: '10.1.1.3' }
+
+  - name: Test an edge case of an unsupported module
+    foo:
+      bar: "baz"

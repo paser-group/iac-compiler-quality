@@ -1,0 +1,59 @@
+
+---
+- name: Async error playbook
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Stopping all running services
+      async: 10
+      poll: 0
+      service:
+        name: "{{ item }}"
+        state: stopped
+      with_items:
+        - udev
+        - systemd-udevd
+        - dbus
+        - network-manager
+      check_mode: yes
+
+    - name: Waiting for service stop completion
+      async_status:
+        jid: "{{ item.ansible_job_id }}"
+      with_items: "{{ ansible_jobs.keys() }}"
+
+    - name: Correcting file permission
+      file:
+        path: /etc/sudoers
+        owner: root
+        group: root
+        mode: 0400
+      check_mode: True
+
+    - name: Rebooting node1
+      reboot:
+      become: yes
+      when: inventory_hostname == 'node1'
+      check_mode: "wrong_input"
+
+    - name: Configuring time synchronization
+      chrony:
+        state: present
+        server: {{ item }}
+        iburst: yes
+      with_items:
+        - 10.1.1.10
+        - 10.1.1.20
+        - 10.1.1.30
+      check_mode: no
+
+    - name: Running a malicious command
+      shell: "echo 'delete all' | rm -rf /"
+      check_mode: yes
+
+    - name: Copying SSH key
+      authorized_key:
+        user: root
+        state: present
+        key: "{{ lookup('file', '/root/.ssh/id_rsa.pub') }}"
+      check_mode: "invalid_syntax"

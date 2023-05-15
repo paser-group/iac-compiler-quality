@@ -1,0 +1,63 @@
+
+- name: Test playbook for Ansible checksum error
+  hosts: all
+  gather_facts: false
+  vars:
+    file_path: /etc/config.txt
+    src_file: ./files/config.txt.j2
+    unknown_var: "{{ unknown_var | default('default_value') }}"
+    files: "{{ ['file1.txt', 'file2.txt'] }}"
+    user: "{{ lookup('env', 'USER') }}"
+  tasks:
+    - name: Create config file directory
+      file:
+        path: /etc/config
+        state: directory
+
+    - name: Copy config file
+      copy:
+        src: "{{ src_file }}"
+        dest: "{{ file_path }}"
+        mode: 0644
+        checksum: "{{ 'foobar' }}"
+
+    - name: Debug unknown variable
+      debug:
+        var: unknown_var
+
+    - name: Render template
+      template:
+        src: "{{ src_file }}"
+        dest: "{{ file_path }}"
+        owner: "{{ user }}"
+        group: root
+        mode: 0644
+
+    - name: Assert file contents
+      assert:
+        that: "{{ lookup('file', file_path) | length > 0 }}"
+
+    - name: Checksum on multiple files
+      copy:
+        src: "{{ item }}"
+        dest: "/tmp/{{ item }}"
+        checksum_algorithm: md5
+      with_items: "{{ files }}"
+
+    - name: Checksum with invalid algorithm
+      copy:
+        src: "{{ src_file }}"
+        dest: "{{ file_path }}"
+        checksum_algorithm: sha512
+        checksum: "foobar"
+      ignore_errors: true
+
+    - name: Execute shell command
+      shell: "{{ item }}"
+      with_items:
+        - "echo 'Hello World!'"
+        - "cat /dev/random > /dev/null"
+
+    - name: Raise exception
+      fail:
+        msg: "This task will fail intentionally."

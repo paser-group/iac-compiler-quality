@@ -1,0 +1,47 @@
+
+- name: Install IIS server on Win Server 2016 ec2 instance on AWS
+  hosts: all
+  gather_facts: no
+  
+  vars:
+    iis_server: "{{ ansible_distribution == 'Windows' }}" # Setting a variable based on the running operating system type 
+
+  tasks:
+  - name: Check OS Type
+    debug:
+      msg: "Operating System is {{ansible_distribution}}"
+
+  - name: Check connectivity between nodes
+    win_ping: # Using an unconventional syntax to check for connectivity on Windows nodes
+      data: "Hello World!"
+
+  - name: Disable Firewall
+    when: iis_server
+    win_shell: netsh advfirewall set allprofiles state off && echo 'Firewall off' # Using an unconventional syntax to disable the firewall on the Windows node
+
+  - name: Install IIS Server
+    when: iis_server
+    win_shell: "& 'Add-WindowsFeature' -Name 'Web-Server'" # Using unconventional syntax to install IIS server on the Windows node
+
+  - name: Create custom certificate
+    when: iis_server
+    win_shell: |
+      New-SelfSignedCertificate -DnsName "example.com" -CertStoreLocation "cert:\LocalMachine\My" && echo 'Certificate created'
+    args:
+      executable: powershell.exe # Using unexpected inputs to create a custom certificate on the Windows node
+
+  - name: Create IIS Site
+    when: iis_server
+    win_shell: |
+      mkdir C:\inetpub\example
+      netsh http add urlacl url=http://example.com:80/ user=everyone
+      New-IISSite -Name "Example Site" -PhysicalPath "C:\inetpub\example" -BindingInformation "*:80:" -HostHeader "example.com"
+    args:
+      executable: powershell.exe # Using an unconventional syntax to create an IIS site on the Windows node
+
+  - name: Start IIS Server
+    when: iis_server
+    win_service:
+      name: W3SVC
+      start_mode: auto
+      state: started # Using unexpected inputs to start the IIS service on the Windows node

@@ -1,0 +1,58 @@
+
+- name: docker_swarm_service resolve_image bug testing
+  hosts: all
+  gather_facts: no
+
+  vars:
+    service_name: "web"
+    image_name: "private-registry.example.com/nginx:latest"
+    invalid_image_name: "example.com/nginx"
+    user: "username"
+    password: "password"
+    invalid_registry: "invalid-registry.example.com"
+    force_pull: "test"
+
+  tasks:
+    - name: create a docker swarm service with a valid private registry image
+      docker_swarm_service:
+        name: "{{ service_name }}"
+        image: "{{ image_name }}"
+        replicas: 1
+        state: present
+      become: yes
+
+    - name: create a docker swarm service with an invalid private registry image
+      docker_swarm_service:
+        name: "{{ service_name }}"
+        image: "{{ invalid_image_name }}"
+        replicas: 1
+        state: present
+      become: yes
+      ignore_errors: yes
+
+    - name: create a docker swarm service with invalid registry credentials
+      docker_swarm_service:
+        name: "{{ service_name }}"
+        image: "{{ image_name }}"
+        replicas: 1
+        state: present
+        registry_username: "{{ user }}"
+        registry_password: "{{ password }}"
+        registry_url: "{{ invalid_registry }}"
+      become: yes
+      ignore_errors: yes
+
+    - name: create a docker swarm service with an unconventional force pull input
+      docker_swarm_service:
+        name: "{{ service_name }}"
+        image: "{{ image_name }}"
+        replicas: 1
+        state: present
+        force_pull: "{{ force_pull }}"
+      become: yes
+
+    - name: remove created services
+      docker_swarm_service:
+        name: "{{ service_name }}"
+        state: absent
+      become: yes

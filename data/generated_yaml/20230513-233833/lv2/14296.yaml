@@ -1,0 +1,41 @@
+
+- name: Stress test Ansible compiler for accidental variable overrides in Ansible 2.1
+  hosts: all
+  vars:
+    myvar: default
+    myvar1: default1
+
+  tasks:
+    - name: Override a variable with another variable
+      set_fact:
+        myvar: "{{ myvar1 }}"
+
+    - name: Access unset variable
+      debug:
+        var: doesnotexist
+
+    - name: Pass an unexpected input to a module
+      command: "{{ myvar }} {{ doesnotexist }}"
+
+    - name: Use unconventional syntax in a playbook variable
+      set_fact:
+        myvar2: "{[1,2,3]}"
+
+    - name: Use an unexpected module
+      nosuchmodule:
+        param1: value1
+
+    - name: Use an unexpected module parameter
+      command: pwd extra_parm={{ doesnotexist }}
+
+    - name: Use an unexpected loop
+      debug:
+        msg: "{{ item }}"
+      loop: '{{ range(1,100) | list }}'
+      loop_control:
+        label: "{{ myvar }}"
+        bad_parameter: "{{ doesnotexist }}"
+    
+    - name: Use an unsupported shell
+      shell: powershell.exe echo hello
+

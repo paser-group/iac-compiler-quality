@@ -1,0 +1,46 @@
+yaml
+- hosts: all
+  gather_facts: no
+  tasks:
+    - name: Test1: Loop with unset variable
+      debug:
+        msg: "{{ item }}"
+      loop: "{{ loop1 | default([1,2,3]) }}"
+
+    - name: Test2: Use variable in block with no when clause
+      block:
+        - debug:
+            msg: "This is block 1"
+        - debug:
+            msg: "Var value: {{ item }}"
+          loop: "{{ var1 }}"
+      become: yes
+
+    - name: Test3: Pass empty dict as extra_vars
+      debug:
+        msg: "{{ var1 }}"
+      vars:
+        var1: "{{ test1 | default({}) }}"
+      extra_vars: "{}"
+
+    - name: Test4: Incorrectly evaluate variable inside 
+            with_together loop
+      debug:
+        msg: "{{ item.0 }} {{ item.1 }}"
+      with_together:
+        - "{{ var1 }}"
+        - "{{ var2 }} + 1"
+      vars:
+        var1: "{{ test1 | default([1,2,3]) }}"
+        var2: "{{ test2 }}"
+
+    - name: Test5: Syntax error in with_items statement
+      debug:
+        msg: "{{ item }}"
+      with_items: "{{ var1.a b }}"      
+
+    - name: Test6: Use unknown host key on remote node 
+            with remote_user
+      shell: echo "Hello, {{ item }}!"
+      with_items: "{{ groups['unknown-group'] }}"
+      remote_user: "myusername"

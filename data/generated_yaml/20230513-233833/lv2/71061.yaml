@@ -1,0 +1,36 @@
+
+---
+- name: Test Playbook for Yum List Issue
+  hosts: all
+  tasks:
+    - name: Ensure repoquery prints errors in stdout
+      command: repoquery --invalid-option
+      register: repo_output
+      ignore_errors: yes
+
+    - name: Run yum list command
+      yum:
+        list: all
+        update_cache: yes
+      when: repo_output.rc != 0
+
+    - name: Install package using unconventional syntax
+      yum:
+        name: '{{ "" }}'
+      register: unreliable_input
+      ignore_errors: yes
+
+    - name: Handle unreliable input
+      fail:
+        msg: "Unreliable input detected! Please check your syntax."
+      when: unreliable_input.rc != 0
+
+    - name: Remove a package without confirmation
+      yum:
+        name: package_to_remove
+        state: absent
+        skip_broken: yes
+        disable_gpg_check: yes
+        skip_if_unavailable: yes
+        enablerepo: all
+        noplugins: yes

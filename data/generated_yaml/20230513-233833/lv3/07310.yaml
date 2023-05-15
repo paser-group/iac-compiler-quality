@@ -1,0 +1,66 @@
+
+---
+- name: Set default configuration
+  hosts: all
+  become: yes
+
+  vars:
+    service_name: my_service
+    default_config:
+      setting1: true
+      setting2: false
+      setting3: value
+
+  tasks:
+    - name: Set default configurations for {{ service_name }}
+      set_fact:
+        config: "{{ default_config }}"
+    
+    - name: Start {{ service_name }}
+      systemd:
+        name: "{{ service_name }}"
+        state: started
+    
+    - name: Reload {{ service_name }} to apply changes
+      systemd:
+        name: "{{ service_name }}"
+        state: reloaded
+      notify: restart {{ service_name }}
+
+  handlers:
+    - name: restart {{ service_name }}
+      systemd:
+        name: "{{ service_name }}"
+        state: restarted
+
+- name: Override default configuration
+  hosts: all
+  become: yes
+
+  vars:
+    override_config:
+      setting1: true
+      setting2: true
+      setting3: another_value
+
+  tasks:
+    - name: Override configurations for {{ service_name }}
+      set_fact:
+        config: "{{ override_config }}"
+    
+    - name: Start {{ service_name }}
+      systemd:
+        name: "{{ service_name }}"
+        state: started
+    
+    - name: Reload {{ service_name }} to apply changes
+      systemd:
+        name: "{{ service_name }}"
+        state: reloaded
+      notify: restart {{ service_name }}
+
+  handlers:
+    - name: restart {{ service_name }}
+      systemd:
+        name: "{{ service_name }}"
+        state: restarted

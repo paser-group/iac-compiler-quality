@@ -1,0 +1,44 @@
+yaml
+- name: Fix ovirt_host_network TypeError
+  hosts: your_host_group
+  become: yes
+  
+  vars:
+    # Provide any necessary variables here
+    firewall_port: 54321
+    ovirt_api_url: 'https://192.168.1.100/ovirt-engine/api'
+    ovirt_user: your_user
+    ovirt_password: your_password
+
+  tasks:
+    - name: Remove existing firewall rule
+      ansible.builtin.firewalld:
+        port: "{{ firewall_port }}"
+        permanent: yes
+        state: absent
+      become: yes
+
+    - name: Add firewall rule
+      ansible.builtin.firewalld:
+        port: "{{ firewall_port }}"
+        permanent: yes
+        state: enabled
+      become: yes
+
+    - name: Install required dependencies
+      ansible.builtin.package:
+        name: ovirt-engine-sdk-python
+        state: present
+      become: yes
+      
+    - name: Fix ovirt_host_network TypeError
+      ovirt.ovirt.ovirt_host_network:
+        state: up
+        name: your_target_network
+        network: your_network_id
+        host: your_host_id
+        url: "{{ ovirt_api_url }}"
+        username: "{{ ovirt_user }}"
+        password: "{{ ovirt_password }}"
+        verify_ssl: False
+      become: yes

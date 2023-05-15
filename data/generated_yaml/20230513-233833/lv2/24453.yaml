@@ -1,0 +1,38 @@
+
+- hosts: all
+  gather_facts: false
+  tasks:
+    - name: Install sysctl module
+      apt:
+        name: linux-modules-extra-{{ ansible_kernel }}
+      register: apt_output
+
+    - name: Check if sysctl module was installed
+      assert:
+        that:
+          - "'install ok installed' in apt_output.stdout"
+
+    - name: Fetch sysctl.conf file
+      fetch:
+        src: /etc/sysctl.conf
+        dest: /tmp/sysctl.conf
+
+    - name: Add syntax error to sysctl.conf file
+      lineinfile:
+        path: /tmp/sysctl.conf
+        line: "{{ random('abcdefghijklmnopqrstuvwxyz0123456789', length=10) }}:invalid_syntax"
+
+    - name: Copy the contents of the modified file to wrong path
+      copy:
+        content: "{{ lookup('file', '/tmp/sysctl.conf') }}"
+        dest: /etc/sysctl.conf.invalid
+
+    - name: Run sysctl command
+      shell: sysctl -p /etc/sysctl.conf.invalid
+      register: command_output
+      changed_when: false
+
+    - name: Check if sysctl command execution was successful and contained an error message
+      assert:
+        that:
+          - "'error' in command_output.stderr and 'No such file or directory' not in command_output.stderr"

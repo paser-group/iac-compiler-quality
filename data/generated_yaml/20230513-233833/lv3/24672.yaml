@@ -1,0 +1,45 @@
+
+- name: Connect to v-center
+  hosts: all
+  
+  vars:
+    datacenter_name: "sample_datacenter"
+    vcenter_hostname: "vcenter.example.com"
+    vcenter_username: "admin@example.com"
+    vcenter_password: "password123"
+  
+  tasks:
+    - name: Set PyVmomi
+      set_fact:
+        pyvmomi_package: python-pyvmomi
+  
+    - name: Install PyVmomi
+      become: yes
+      apt:
+        name: "{{ pyvmomi_package }}"
+        update_cache: yes 
+            
+    - name: Establish vSphere Connection
+      no_log: true
+      vmware_login:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: no
+        
+    - name: List Datacenters
+      vmware_datacenter_facts:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: no
+      register: datacenters
+      
+    - name: Print Datacenters
+      debug:
+        var: datacenters
+      
+    - name: Handle vSphere Connection Error
+      fail:
+        msg: "Failed to connect to v-center."
+      when: not datacenters['facts']

@@ -1,0 +1,48 @@
+
+- name: Test for VMware bug
+  hosts: node1
+  gather_facts: false
+
+  vars:
+    vm_name: test_vm
+    datastore: datastore1
+    folder: /vm/test_folder
+    ovf_dir: /tmp
+    ovf_name: test_ovf.ova
+
+  tasks:
+    - name: Create a virtual machine
+      vmware_guest:
+        hostname: "{{ vcenter_server }}"
+        username: "{{ vcenter_user }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: false
+        name: "{{ vm_name }}"
+        folder: "{{ folder }}"
+        datastore: "{{ datastore }}"
+        hardware:
+          memory_mb: 2048
+          num_cpus: 2
+        cdrom:
+          type: client
+          iso_path: "[Datastore ISO] ubuntu-20.04.1-desktop-amd64.iso"
+        disk:
+          size_gb: 20
+          type: thin
+
+    - name: Export OVF file
+      vmware_export_ovf:
+        hostname: "{{ vcenter_server }}"
+        username: "{{ vcenter_user }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: false
+        folder: "{{ folder }}"
+        name: "{{ vm_name }}"
+        ovf_directory: "{{ ovf_dir }}"
+        ovf_name: "{{ ovf_name }}"
+
+    - name: Ensure OVF file exists
+      assert:
+        that:
+          - ovf_dir.stdout_lines | select('search', ovf_name)
+        fail_msg: "OVF file not found"

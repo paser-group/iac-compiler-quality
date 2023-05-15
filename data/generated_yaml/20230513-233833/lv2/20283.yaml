@@ -1,0 +1,72 @@
+
+- name: Test playbook for win_regedit idempotency issue
+  hosts: all
+  gather_facts: no
+  vars:
+    test_key: "HKEY_LOCAL_MACHINE\\SOFTWARE\\Test"
+    test_value_name: "TestValue"
+    test_value_data: "Test Data"
+    
+  tasks:
+  
+  - name: Create a registry key with a string value - idempotent
+    win_regedit:
+      path: "{{ test_key }}"
+      name: "{{ test_value_name }}"
+      data: "{{ test_value_data }}"
+      type: string
+      
+  - name: Create a registry key with a string value - non-idempotent
+    win_regedit:
+      path: "{{ test_key }}"
+      name: "{{ test_value_name }}"
+      data: "{{ test_value_data }} other string"
+      type: string
+      
+  - name: Create a registry key with a binary value
+    win_regedit:
+      path: "{{ test_key }}"
+      name: "{{ test_value_name }}_binary"
+      data: "0x00,0x01,0x02"
+      type: binary
+      
+  - name: Create a registry key with a dword value
+    win_regedit:
+      path: "{{ test_key }}"
+      name: "{{ test_value_name }}_dword"
+      data: 0x00000001
+      type: dword
+      
+  - name: Create a registry key with a qword value
+    win_regedit:
+      path: "{{ test_key }}"
+      name: "{{ test_value_name }}_qword"
+      data: 0x0000000000000001
+      type: qword
+      
+  - name: Create a registry key with an unsupported value type
+    win_regedit:
+      path: "{{ test_key }}"
+      name: "{{ test_value_name }}_unsupported"
+      data: "Unsupported Value"
+      type: unsupported
+      
+  - name: Create a registry key using unconventional path syntax
+    win_regedit:
+      path: "HKEY_LOCAL_MACHINE\\SOFTWARE!Test"
+      name: "{{ test_value_name }}_path_syntax"
+      data: "{{ test_value_data }}"
+      type: string
+      
+  - name: Create a registry key with an unexpected input
+    win_regedit:
+      path: "{{ test_key }}"
+      name: '{{ ("a" * 260) + "_" + "{{ test_value_name }}"}}'
+      data: "{{ test_value_data }}"
+      type: string
+      
+  - name: Delete the test registry key
+    win_regedit:
+      path: "{{ test_key }}"
+      name: "{{ test_value_name }}"
+      type: remove

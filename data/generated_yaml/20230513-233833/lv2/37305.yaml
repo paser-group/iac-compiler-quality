@@ -1,0 +1,89 @@
+
+---
+- name: Test playbook for net_vlan issue
+  hosts: all
+  become: true
+  
+  tasks:
+  
+    - name: Test passing a list of dictionaries to aggregate
+      net_vlan:
+        vlan_id: 100
+        name: "test_vlan_100"
+        state: present
+        ports:
+          - { port: "GigabitEthernet1/0/1", mode: "access", vlan: 200 }
+          - { port: "GigabitEthernet1/0/2", mode: "trunk", vlan: [100, 200] }
+          - { port: "GigabitEthernet1/0/3", mode: "trunk", vlan: [100, 200], native_vlan: 100 }
+      register: result
+      ignore_errors: true
+      
+    - name: Test passing a string instead of a list for vlan_id
+      net_vlan:
+        vlan_id: "100"
+        name: "test_vlan_100"
+        state: present
+        ports:
+          - { port: "GigabitEthernet1/0/1", mode: "access", vlan: [100, 200] }
+      register: result
+      ignore_errors: true
+      
+    - name: Test passing a null value for the vlan_id parameter
+      net_vlan:
+        vlan_id: null
+        name: "test_vlan_100"
+        state: present
+        ports:
+          - { port: "GigabitEthernet1/0/1", mode: "access", vlan: [100, 200] }
+      register: result
+      ignore_errors: true
+      
+    - name: Test passing an empty string for the vlan_id parameter
+      net_vlan:
+        vlan_id: ""
+        name: "test_vlan_100"
+        state: present
+        ports:
+          - { port: "GigabitEthernet1/0/1", mode: "access", vlan: [100, 200] }
+      register: result
+      ignore_errors: true
+      
+    - name: Test passing an empty dictionary for the ports
+      net_vlan:
+        vlan_id: 100
+        name: "test_vlan_100"
+        state: present
+        ports: {}
+      register: result
+      ignore_errors: true
+      
+    - name: Test passing an empty list for the ports
+      net_vlan:
+        vlan_id: 100
+        name: "test_vlan_100"
+        state: present
+        ports: []
+      register: result
+      ignore_errors: true
+      
+    - name: Test passing an incorrect parameter name
+      net_vlan:
+        vlan_id: 100
+        name: "test_vlan_100"
+        state: present
+        wrong_parameter: "test"
+      register: result
+      ignore_errors: true
+      
+    - name: Test passing an incorrect parameter value data type
+      net_vlan:
+        vlan_id: 100
+        name: "test_vlan_100"
+        state: present
+        ports: "not_a_list"
+      register: result
+      ignore_errors: true
+      
+    - name: Debug result
+      debug:
+        var: result

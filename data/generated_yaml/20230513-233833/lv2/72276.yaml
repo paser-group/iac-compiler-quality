@@ -1,0 +1,38 @@
+
+---
+- name: Ansible Vault Format Error Playbook
+  hosts: node1
+  vars:
+    username: "{{ lookup('env', 'USER') }}"
+    password: "{{ lookup('env', 'PASSWORD') }}"
+    secret_key: "my_super_secure_password"
+  tasks:
+    - name: Create an encrypted variable
+      ansible.builtin.vars_prompt:
+       prompt: "Enter a secret key"
+      register: secret_key_input
+    - name: Print the encrypted variable
+      debug:
+        var: secret_key_input
+    - name: Encrypt a file with an invalid key
+      ansible.builtin.command: 'ansible-vault encrypt secrets.txt --vault-password-file invalid_password.txt'
+    - name: Decrypt a file with an invalid key
+      ansible.builtin.command: 'ansible-vault decrypt secrets.txt --vault-password-file invalid_password.txt'
+    - name: Encrypt a file with an incorrect format
+      ansible.builtin.command: 'ansible-vault encrypt secrets.txt --vault-password-file incorrect_format_key.txt'
+    - name: Decrypt a file with an incorrect format key
+      ansible.builtin.command: 'ansible-vault decrypt secrets.txt --vault-password-file incorrect_format_key.txt'
+    - name: Encrypt a file with a missing key
+      ansible.builtin.command: 'ansible-vault encrypt secrets.txt'
+    - name: Decrypt a file with a missing key
+      ansible.builtin.command: 'ansible-vault decrypt secrets.txt'
+    - name: Encrypt a file with a valid key
+      ansible.builtin.command: 'ansible-vault encrypt secrets.txt --vault-password-file valid_key.txt'
+    - name: Decrypt a file with a valid key
+      ansible.builtin.command: 'ansible-vault decrypt secrets.txt --vault-password-file valid_key.txt'
+    - name: Encrypt a string with a valid key
+      ansible.builtin.debug:
+        msg: "{{ 'my_secret_string' | ansible.builtin.encrypt_string(secret_key, '') }}"
+    - name: Decrypt a string with a valid key
+      ansible.builtin.debug:
+        msg: "{{ 'vault | ' ~ 'my_secret_string' | ansible.builtin.encrypt_string(secret_key, '') | replace('\\n', '') | b64decode | ansible.builtin.stdout }}"

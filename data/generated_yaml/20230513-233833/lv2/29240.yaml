@@ -1,0 +1,45 @@
+
+---
+- name: Npm module error stress test
+  hosts: all
+  vars:
+    npm_package: "{{ lookup('env', 'NPM_PACKAGE_NAME') }}"
+  tasks:
+    - name: Install npm packages
+      npm:
+        name: "{{ npm_package }}"
+        global: yes
+        registry: http://registry.npmjs.org/
+        state: present
+      ignore_errors: yes
+    
+    - name: Retrieve npm package info
+      uri:
+        url: "https://registry.npmjs.org/{{ npm_package }}"
+        return_content: yes
+      register: npm_info
+
+    - name: Check npm version
+      command: "npm -v"
+      register: npm_version
+
+    - name: Ensure npm package is installed
+      assert:
+        that: "'versions' in npm_info.json and npm_package in npm_info.json['versions']"
+        msg: "Npm package {{ npm_package }} is not installed"
+
+    - name: Create a file with package info
+      copy:
+        content: "{{ npm_info.content|to_json }}"
+        dest: "/tmp/{{ npm_package }}-info.json"
+
+    - name: Test npm package installation
+      shell: "npm test {{ npm_package }}"
+      changed_when: false
+      ignore_errors: yes
+
+    - name: Uninstall npm package
+      npm:
+        name: "{{ npm_package }}"
+        global: yes
+        state: absent

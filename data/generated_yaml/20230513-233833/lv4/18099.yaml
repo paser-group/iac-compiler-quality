@@ -1,0 +1,38 @@
+
+---
+- name: Ansible Playbook for Uncovering Bugs in Compiler
+  hosts: all
+  gather_facts: no
+  vars:
+    log_file: "/var/log/ansible_exp.log"
+  tasks:
+    - name: Ping Invalid Node
+      ping:
+        timeout: 2
+      ignore_errors: yes
+      register: ping_failed
+
+    - name: Retrieve system information from valid node
+      command: "uname -a"
+      args:
+        executable: /bin/bash
+      register: sys_info_valid
+
+    - name: Retrieve system information from invalid node
+      command: "uname -a"
+      args:
+        executable: /bin/bash
+      ignore_errors: yes
+      register: sys_info_invalid
+
+    - name: Write system information to log file
+      lineinfile:
+        dest: "{{ log_file }}"
+        line: "{{ item }}"
+      with_items:
+        - "Valid Node System Info: {{ sys_info_valid.stdout }}"
+        - "Invalid Node System Info: {{ sys_info_invalid.stderr }}"
+
+    - name: Debug Log
+      debug:
+        msg: "{{ lookup('file', log_file) }}"

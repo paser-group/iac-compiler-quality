@@ -1,0 +1,71 @@
+yaml
+# playbook.yml
+
+- name: Test hostname module error handling for Docker containers
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Attempt to set hostname on Docker container
+      docker_container:
+        name: test_container
+        image: ubuntu:latest
+        command: hostnamectl set-hostname test_host
+      register: container_setup
+      ignore_errors: true
+
+    - name: Check if Docker container hostname setup failed
+      debug:
+        msg: "Docker container hostname setup failed"
+      when: container_setup|failed
+
+    - name: Attempt to set hostname on host machine
+      hostname:
+        name: test_host
+      register: host_setup
+      ignore_errors: true
+
+    - name: Check if setting hostname on host machine succeeded
+      debug:
+        msg: "Hostname set successfully on host machine"
+      when: host_setup|success
+
+    - name: Ensure Docker container hostname remains unchanged
+      expect:
+        command: "docker container inspect test_container --format='{{.Config.Hostname}}'"
+        stdout_lines:
+          - "test_container"
+        msg: "Docker container hostname changed unexpectedly"
+      when: container_setup|success
+
+    - name: Ensure host machine hostname remains unchanged
+      expect:
+        command: "hostname"
+        stdout_lines:
+          - "ansible"
+        msg: "Hostname changed unexpectedly on host machine"
+      when: host_setup|success
+
+    - name: Set hostname on a non-existent container
+      docker_container:
+        name: non_existent_container
+        command: hostnamectl set-hostname test_host
+        state: started
+      register: non_existent_container_setup
+      ignore_errors: true
+
+    - name: Check that trying to set hostname on non-existent container causes an error
+      debug:
+        msg: "Setting hostname on non-existent Docker container did not cause an error"
+      when: non_existent_container_setup|failed
+
+    - name: Attempt to set hostname using invalid value
+      hostname:
+        name: 'invalid=value'
+      register: invalid_val_setup
+      ignore_errors: true
+
+    - name: Check that attempting to set invalid hostname value causes an error
+      debug:
+        msg: "Trying to set an invalid hostname value did not cause an error"
+      when: invalid_val_setup|failed

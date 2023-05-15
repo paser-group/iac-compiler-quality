@@ -1,0 +1,39 @@
+
+- name: Stress testing the compiler for ec2.py dynamic inventory with ElastiCache instances
+  hosts: localhost
+  gather_facts: no
+  tasks:
+    - name: Initialize variables
+      set_fact:
+        region: us-east-1
+        instance_type: cache.m5.large
+    - name: Create an unclosed double quoted string
+      shell: echo "this is an unclosed double quoted string
+    - name: Define a variable with a single quote
+      set_fact: 
+        my_variable: "This string contains a single quote '"
+    - name: Use a variable inside quotes
+      debug: msg="Instance type is '{{instance_type}}'"
+    - name: Use a jinja2 filter that does not exist
+      debug: msg="{{ 'hello' | filter_that_does_not_exist }}"
+    - name: Use a jinja2 variable that does not exist
+      debug: msg="{{ non_existent_variable }}"
+    - name: Access an undefined variable
+      debug: msg="{{ undefined_variable }}"
+    - name: Set the value of a variable using a command that does not exist
+      set_fact: my_value="{{ command_that_does_not_exist }}"
+    - name: Create an invalid ec2.py dynamic inventory source
+      set_fact:
+        ec2_inventory:
+          plugin: aws_ec2
+          regions: "{{region}}"
+          cache: yes
+          cache_connection:
+            address: 10.1.1.0/24
+            port: 6379
+            db: 0
+            password: ""
+            timeout: 20
+            max_entries: 1000
+    - name: Print the inventory
+      debug: var=ec2_inventory

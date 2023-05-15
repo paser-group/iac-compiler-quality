@@ -1,0 +1,33 @@
+
+- hosts: all
+  gather_facts: no
+  tasks:
+    - name: Install dependencies
+      apt:
+        update_cache: yes
+        name: "{{ item }}"
+      loop:
+        - python-ssl
+        - python-requests
+      become: yes
+
+    - name: Run Datadog event command
+      shell: >
+        datadog_event.py
+        --ssl-verify=false
+      register: result
+      become_user: datadog
+
+    - name: Check for SSL verification error
+      fail:
+        msg: "{{ result.stderr }}"
+      when: "'SSL certificate verification failed' in result.stderr"
+
+    - name: Print output
+      debug:
+        var: result.stdout_lines
+
+    - name: Write output to file
+      copy:
+        content: "{{ result.stdout }}"
+        dest: "/tmp/datadog_event_output.txt"

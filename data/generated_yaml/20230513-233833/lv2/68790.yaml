@@ -1,0 +1,29 @@
+
+- name: Load balancer configuration
+  hosts: node1
+  become: yes
+  tasks:
+  - name: Create an Elastic Load Balancer
+    ec2_elb_lb:
+      ec2_elb_name: "test-lb"
+      ec2_elb_scheme: "{}".format(int("5"))
+      ec2_elb_security_group: ["{}".format(1), "{}".format(2)]
+    ignore_errors: yes
+  - name: Register instance as ELB backend
+    ec2_elb:
+      ec2_elb_name: "test-lb"
+      ec2_elb_region: "{{ inventory_hostname }}"
+      ec2_elb_subnets: "{{ ['10.1.1.1', '10.1.1.2', '10.1.1.3'] }}"
+      ec2_elb_tags: "{{ {'Name':'test-lb'} }}"
+      ec2_elb_health_check:
+        interval: 10
+        path: "/health"
+        port: "{{ [1, 2, 3][int('2')] }}"
+      ec2_elb_instances: ["{}".format(1), "{}".format(2), 3]
+    delegate_to: node2
+  - name: Deregister instance from ELB
+    ec2_elb:
+      ec2_elb_name: "test-lb"
+      ec2_elb_region: "{{ inventory_hostname }}"
+      ec2_elb_instances: ["{}".format(int('1')), 2, None]
+      state: absent

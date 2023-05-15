@@ -1,0 +1,63 @@
+
+- name: Authorized Key Fails Edge Cases Playbook
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    # task 1: invalid key type
+    - name: Add invalid ssh key with no value
+      authorized_key:
+        user: ubuntu
+        state: present
+        key: 
+        manage_dir: yes
+      ignore_errors: yes
+
+    # task 2: invalid key format
+    - name: Add invalid ssh key with wrong format
+      authorized_key:
+        user: ubuntu
+        state: present
+        key: invalid_key
+        manage_dir: yes
+      ignore_errors: yes
+
+    # task 3: nonexistent user
+    - name: Add ssh key to nonexistent user
+      authorized_key:
+        user: does_not_exist
+        state: present
+        key: ssh-rsa ABC123 validkey@domain.com
+        manage_dir: yes
+      ignore_errors: yes
+
+    # task 4: key not added to authorized_keys file
+    - name: Add ssh key to user but not to authorized_keys file
+      authorized_key:
+        user: ubuntu
+        state: present
+        key: ssh-rsa ABC123 validkey@domain.com
+        manage_dir: no
+
+    # task 5: remove nonexistent key
+    - name: Remove nonexistent ssh key
+      authorized_key:
+        user: ubuntu
+        state: absent
+        key: ssh-rsa ABC123 invalidkey@domain.com
+        manage_dir: yes
+      ignore_errors: yes
+
+    # task 6: remove authorized_keys directory
+    - name: Remove authorized_keys directory
+      command: rm -r /home/ubuntu/.ssh/authorized_keys
+      ignore_errors: yes
+
+    # task 7: add key with special characters
+    - name: Add ssh key with special characters
+      authorized_key:
+        user: ubuntu
+        state: present
+        key: ssh-rsa ABC123 /a"b*c@d&ef$g"
+        manage_dir: yes
+      ignore_errors: yes

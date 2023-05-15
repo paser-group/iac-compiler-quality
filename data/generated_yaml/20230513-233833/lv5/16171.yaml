@@ -1,0 +1,31 @@
+
+---
+- hosts: all
+
+  vars:
+    certificate_arn: "arn:aws:acm:us-west-2:111111111111:certificate/11111111-1111-1111-1111-111111111111" 
+
+  tasks:
+    - name: Create HTTPS listener for ELB
+      elb_application_lb_listener_certificate:
+        load_balancer_arn: arn:aws:elasticloadbalancing:us-west-2:111111111111:loadbalancer/app/my-load-balancer/1111111111111111
+        protocol: HTTPS
+        port: 443
+        ssl_policy: "ELBSecurityPolicy-FS-1-2-2021-06"
+        certificate_arn: "{{ certificate_arn }}"
+
+    - name: Create HTTPS routing rule for listener
+      elb_application_lb_listener_rule:
+        listener_arn: "{{ elb_application_lb_listener_certificate[0].listener_arn }}"
+        priority: 1
+        conditions:
+          - field: host-header
+            values:
+              - example.com
+        actions:
+          - type: fixed-response
+            fixed_response_config:
+              content_type: text/plain
+              message_body: "This is a fixed response"
+              status_code: "200"
+

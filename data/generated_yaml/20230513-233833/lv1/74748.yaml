@@ -1,0 +1,40 @@
+yaml
+- name: Playbook to fix multi-prompt ssh issue
+  hosts: all
+  become: true
+
+  vars:
+    # define ssh parameter variables (optional)
+    ssh_user: "{{ ansible_ssh_user }}"
+    ssh_private_key: "{{ ansible_ssh_private_key_file }}"
+    ssh_strict_host_checking: no
+    ssh_timeout: 30
+
+  tasks:
+    - name: disable StrictHostKeyChecking and UserKnownHostsFile
+      blockinfile:
+        path: /etc/ssh/ssh_config
+        state: present
+        marker: "# {mark} Ansible-managed block - disable StrictHostKeyChecking and UserKnownHostsFile"
+        block: |
+          StrictHostKeyChecking no
+          UserKnownHostsFile /dev/null
+
+    - name: Add SSH parameters to ssh_config
+      blockinfile:
+        path: /etc/ssh/ssh_config
+        state: present
+        marker: "# {mark} Ansible-managed block - Add SSH parameters"
+        block: |
+          IdentityFile {{ ssh_private_key }}
+          ForwardAgent yes
+          ServerAliveInterval {{ ssh_timeout }}
+          TCPKeepAlive yes
+
+    - name: Test SSH connection with your private key
+      expect:
+        command: ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectionAttempts=18 -o ConnectTimeout=30 -o ServerAliveInterval=60 {{ ssh_user }}@{{ inventory_hostname }}
+        responses:
+          ssh_passphrase: ""
+        echo: yes
+

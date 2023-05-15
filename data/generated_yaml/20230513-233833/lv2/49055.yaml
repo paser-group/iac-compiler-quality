@@ -1,0 +1,32 @@
+
+- name: Install Domain Controller and DNS Server
+  hosts: node1
+  tasks:
+    - name: Add domain controller role
+      win_role:
+        name: AD-Domain-Services
+      register: dc_result
+
+    - name: Install DNS Server
+      win_domain:
+        name: test.local
+        state: domain_controller
+        InstallDNS: True
+        SafeModeAdminPassword: Password123
+      when: dc_result.rc == 0
+
+- name: Join node to test.local domain
+  hosts: node2
+  tasks:
+    - name: Add node to domain
+      win_domain_membership:
+        hostname: "{{ inventory_hostname }}"
+        domain_admin_user: admin
+        domain_admin_password: "{{ 'password123' | password_hash('sha256') }}"
+        domain_name: test.local
+        ou_path: OU=Computers,DC=test,DC=local
+      register: domain_result
+
+    - name: Assert that the join was successful
+      assert:
+        that: domain_result.rc == 0

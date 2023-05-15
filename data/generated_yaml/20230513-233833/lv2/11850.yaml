@@ -1,0 +1,43 @@
+yaml
+---
+- name: Test playbook for Shell module
+  hosts: all
+  become: yes
+  vars:
+    shell_command: "{{ item }}"
+    exit_codes: "{{ range(256)|list }}"
+  tasks:
+    - name: Test shell command with valid exit code
+      shell: "{{ shell_command }}"
+      register: result_valid
+      args:
+        executable: /bin/bash
+      failed_when: result_valid.rc not in [0,1,2,3,4,5,6,7,8,9]
+      ignore_errors: yes
+      loop:
+        - echo "Command exited with code 0"
+        - echo "Command exited with code 1" && exit 1
+        - echo "Command exited with code 2" && exit 2
+        - echo "Command exited with code 3" && exit 3
+        - echo "Command exited with code 4" && exit 4
+        - echo "Command exited with code 5" && exit 5
+        - echo "Command exited with code 6" && exit 6
+        - echo "Command exited with code 7" && exit 7
+        - echo "Command exited with code 8" && exit 8
+        - echo "Command exited with code 9" && exit 9
+
+    - name: Test shell command with invalid exit code
+      shell: "{{ shell_command }}"
+      register: result_invalid
+      args:
+        executable: /bin/bash
+      failed_when: result_invalid.rc in exit_codes
+      ignore_errors: yes
+      loop: "{{ exit_codes }}"
+      when: item not in [0,1,2,3,4,5,6,7,8,9]
+
+    - debug:
+        var: item
+      loop:
+        - "{{ result_valid }}"
+        - "{{ result_invalid }}"

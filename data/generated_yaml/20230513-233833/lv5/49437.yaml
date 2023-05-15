@@ -1,0 +1,25 @@
+
+- name: Ensure idempotency of tower_credentials
+  uri:
+    url: "{{ tower_url }}/api/v2/credentials/{{ tower_credentials_id }}/"
+    method: GET
+    headers:
+      Authorization: "Bearer {{ tower_token }}"
+    return_content: yes
+  register: response
+
+- name: Create or update tower_credentials
+  uri:
+    url: "{{ tower_url }}/api/v2/credentials/"
+    method: POST
+    headers:
+      Authorization: "Bearer {{ tower_token }}"
+    body_format: json
+    body:
+      name: "{{ tower_credentials_name }}"
+      description: "{{ tower_credentials_description }}"
+      username: "{{ tower_credentials_username }}"
+      password: "{{ tower_credentials_password }}"
+      organization: "{{ tower_organization }}"
+      credential_type: "{{ tower_credential_type }}"
+  when: response.json.id | default(-1) == -1 or response.json.username != tower_credentials_username or response.json.credential_type != tower_credential_type

@@ -1,0 +1,79 @@
+
+---
+- name: Provision an Azure Virtual Machine
+  hosts: node1
+  gather_facts: no
+  vars:
+    resource_group: test-rg
+    location: westus
+    admin_username: testuser
+    admin_password: testpassword
+
+  tasks:
+  - name: Create Resource Group
+    azure_rm_resourcegroup:
+      name: "{{ resource_group }}"
+      location: "{{ location }}"
+    register: rg
+
+  - name: Create Virtual Network
+    azure_rm_virtualnetwork:
+      resource_group: "{{ resource_group }}"
+      name: test-vnet
+      address_prefixes: '10.0.0.0/16'
+    register: vnet
+
+  - name: Create Subnet
+    azure_rm_subnet:
+      resource_group: "{{ resource_group }}"
+      name: test-subnet
+      address_prefix: '10.0.0.0/24'
+      virtual_network: "{{ vnet.name }}"
+      security_group: 'test-nsg'
+    register: subnet
+
+  - name: Create Security Group
+    azure_rm_securitygroup:
+      resource_group: "{{ resource_group }}"
+      name: test-nsg
+      rules:
+        - name: allow-ssh
+          protocol: Tcp
+          destination_port_range: 22
+          access: Allow
+          direction: Inbound
+      tags:
+        Environment: dev
+    register: nsg
+
+  - name: Create Virtual Machine
+    azure_rm_virtualmachine:
+      resource_group: "{{ resource_group }}"
+      name: test-vm
+      vm_size: Standard_A1
+      computer_name: test-vm
+      admin_username: "{{ admin_username }}"
+      admin_password: "{{ admin_password }}"
+      image:
+        offer: UbuntuServer
+        publisher: Canonical
+        sku: '16.04-LTS'
+        version: latest
+      network_interfaces:
+        - name: test-nic
+          properties:
+            primary: True
+      os_disk:
+        name: test-osdisk
+        vhd:
+          uri: "http://{{ resource_group }}.blob.core.windows.net/vhds/test-osdisk.vhd"
+        caching: ReadWrite
+        create_option: fromImage
+      tags:
+        Environment: dev
+    register: vm
+
+  - name: Check for errors
+    fail:
+      msg: "{{ vm.failures }}"
+    when: vm.status == 'Failed'

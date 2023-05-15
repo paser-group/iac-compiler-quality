@@ -1,0 +1,21 @@
+
+- name: Gather Facts for All Hosts
+  hosts: all
+  tasks:
+    - name: Get System Facts
+      raw: cat /etc/os-release
+      register: raw_facts
+
+    - name: Set Facts for System
+      set_fact:
+        os_facts: "{{ raw_facts.stdout_lines | map('regex_replace', '^(\\w+)=(.*)$', '\\1=\\2') | map('ini', 'INI') | list }}"          
+
+    - name: Verify Ansible Virtualization Type
+      fail:
+        msg: "Ansible Virtualization is incorrect"
+      when: os_facts[0].ansible_virtualization_type != "docker"
+
+    - name: Update Ansible Virtualization Type
+      set_fact:
+        os_facts: "{{ os_facts | map('combine', {'ansible_virtualization_type': 'docker'}) | list }}"
+      when: os_facts[0].ansible_virtualization_type != "docker"

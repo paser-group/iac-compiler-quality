@@ -1,0 +1,42 @@
+
+---
+- name: Configure NTP on NX-OS device(s)
+  hosts: nxos_devices
+  gather_facts: no
+
+  tasks:
+  - name: Configure NTP using nxos_ntp module
+    nxos_ntp:
+      ntp:
+        - server: "{{ item.server }}"
+          key_id: "{{ item.key_id|default('') }}"
+          prefer: "{{ item.prefer|default('no') }}"
+        - source_intf: "{{ item.source_intf|default('') }}"
+          source_vrf: "{{ item.source_vrf|default('') }}"
+        - state: present
+      provider: "{{ item.provider }}"
+      authorize: "{{ item.authorize|default('') }}"
+      timeout: "{{ item.timeout|default(10) }}"
+      transport: "{{ item.transport|default('https') }}"
+      use_ssl: "{{ item.use_ssl|default('yes') }}"
+      validate_certs: "{{ item.validate_certs|default('yes') }}"
+    register: result
+    with_items: "{{ ntp_servers }}"
+
+  - name: Log errors
+    when: result | failed
+    lineinfile:
+      path: "/var/log/ntp_errors.txt"
+      line: "{{ result }}"
+
+  - name: Verify clock has synced
+    nxos_command:
+      commands:
+        - "show clock"
+      provider: "{{ item.provider }}"
+      authorize: "{{ item.authorize|default('') }}"
+      timeout: "{{ item.timeout|default(10) }}"
+      transport: "{{ item.transport|default('https') }}"
+      use_ssl: "{{ item.use_ssl|default('yes') }}"
+      validate_certs: "{{ item.validate_certs|default('yes') }}"
+    with_items: "{{ nxos_devices }}"

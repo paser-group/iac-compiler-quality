@@ -1,0 +1,26 @@
+
+---
+- name: Handle S3 Bucket Error
+  hosts: your_server_host_here
+  become: yes
+  
+  tasks:
+  - name: Install Minio Client
+    apt:
+      name: mc
+      state: latest
+
+  - name: Set Minio Environment Variables
+    shell: |
+      export MINIO_ENDPOINT="your_s3_bucket_url_here"
+      export MINIO_ACCESS_KEY="your_s3_access_key_here"
+      export MINIO_SECRET_KEY="your_s3_secret_key_here"
+      
+  - name: Check Bucket Versioning
+    shell: |
+      mc --config-dir=./.mc config host add minio {{ MINIO_ENDPOINT }} {{ MINIO_ACCESS_KEY }} {{ MINIO_SECRET_KEY }}
+      mc --config-dir=./.mc version --no-color mc/{{ MINIO_ENDPOINT }}/your_bucket_name_here
+      
+  handlers:
+    - name: Restart Minio Server
+      shell: service minio restart

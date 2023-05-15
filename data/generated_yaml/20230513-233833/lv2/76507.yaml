@@ -1,0 +1,50 @@
+
+---
+- name: Test playbook for 'Templating type error'
+  hosts: all
+
+  vars:
+    dict_var:
+      key1: value1
+      key2: value2
+    list_var: [ item1, item2, item3 ]
+    dict_list_var: 
+        - { key: value1 }
+        - { key: value2 }
+
+  tasks:
+    - name: Attempt to concatenate dict_values to a list
+      set_fact:
+        combined_var: "{{ dict_var.values() }} + {{ list_var }}"
+
+    - name: Attempt to concatenate a dict to a list
+      set_fact:
+        combined_var_two: "{{ dict_var }} + {{ list_var }}"
+
+    - name: Attempt to concatenate a dict to a dict in a list
+      set_fact:
+        combined_var_three: "{{ dict_list_var | map(attribute='key') | list }} + {{ dict_var }}"
+
+    - name: Attempt to use an invalid filter
+      set_fact:
+        filtered_var: "{{ dict_var | invalid_filter }}"
+
+    - name: Attempt to access an unsupported variable
+      set_fact:
+        unsupported_var: "{{ invalid_var }}"
+
+    - name: Attempt to use an unsupported loop
+      debug:
+        msg: "{{ item }}"
+      loop_dict:
+        - key: value1
+        - key: value2
+      loop_control:
+        loop_var: invalid_loop
+    
+
+  handlers:
+    - name: Print error message
+      debug:
+        msg: "Error occurred"
+

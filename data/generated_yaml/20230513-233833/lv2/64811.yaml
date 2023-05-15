@@ -1,0 +1,41 @@
+
+- name: sudo: 1 incorrect password attempt
+  hosts: node1
+  become: false
+  gather_facts: false
+
+  tasks:
+  - name: Test incorrect password
+    shell: echo incorrect_password | sudo -S echo "This should not display"
+    register: result1
+    ignore_errors: true
+
+  - name: Test correct password
+    shell: echo correct_password | sudo -S echo "This should display"
+    when: result1.rc == 1
+
+  - name: Test with become true
+    shell: echo correct_password | sudo -S echo "This should display even with become true"
+    when: result1.rc == 1
+    become: true
+
+  - name: Test with unprivileged user
+    shell: echo incorrect_password | sudo -S echo "This should not display"
+    register: result2
+    ignore_errors: true
+    become_user: nobody
+
+  - name: Test with root user
+    shell: echo correct_password | sudo -S echo "This should display"
+    when: result2.rc == 1
+    become_user: root
+
+  - name: Test with unconventional syntax
+    shell: echo correct_password | sudo -S echo "This should display with unconventional $@$ characters"
+    when: result2.rc == 1
+    become_user: ">{};$&root./?[]|"
+
+  - name: Unknown error handling with unexpected input
+    pause:
+      seconds: "{{ 1 / 0 }}"
+    when: result1.rc == 1

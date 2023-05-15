@@ -1,0 +1,35 @@
+
+- name: Install EOS dependencies
+  apt:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - libssl-dev
+    - libcurl4-openssl-dev
+    - libusb-1.0-0-dev
+    - clang
+    - llvm
+    - openssl
+    - libgmp-dev
+    - autotools-dev
+    - build-essential
+    - pkg-config
+
+- name: Install EOSIO Software
+  become: true
+  command: git clone https://github.com/eosio/eos.git
+  args:
+    chdir: "{{ home }}/projects"
+    creates: "{{ home }}/projects/eos"
+
+- name: Build EOS
+  become: true
+  command: bash ./eos/scripts/eosio_build.sh -s EOS --skip-build-tests
+  args:
+    chdir: "{{ home }}/projects/eos"
+
+- name: Start EOS Blockchain Node
+  become: true
+  command: ./eos/scripts/run.sh
+  args:
+    chdir: "{{ home }}/projects/eos/build/programs/nodeos"

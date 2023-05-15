@@ -1,0 +1,56 @@
+
+- name: Test Playbook
+  hosts: all
+  become: true
+  gather_facts: false
+  
+  tasks:
+  # Task 1 - Ansible-galaxy collection installation with invalid requirements
+  - name: Install Ansible Galaxy Collection
+    community.general.collection:
+      name: invalid/invalid
+      version: invalid
+      requirements:
+        - test@test.test.invalid
+    ignore_errors: true
+
+  # Task 2 - Add hosts to non-existent groups and use unusual group syntax
+  - name: Create an invalid group
+    add_host:
+      name: "{{ item }}"
+      groups: "{{ 'group-' }}{{ item }}"
+    with_items:
+      - foo
+      - bar
+      - baz [1]
+
+  # Task 3 - Use invalid syntax for host, group, and variable names
+  - name: An invalid task with bad syntax
+    debug:
+      msg: "An example of invalid syntax {{ invalid$host }}, {{ invalid:group }}, and {{ invalid-variable }}"
+
+  # Task 4 - Execute a command with literal dollar signs and special characters
+  - name: Execute a command with special characters and literal dollar signs
+    shell: touch /tmp/file$$.*(.\.txt)[2]
+    args:
+      executable: /bin/bash
+
+  # Task 5 - Install a package with invalid options
+  - name: Install a package in an invalid way
+    apt:
+      name: test-app
+      update_cache: none
+      dpkg_options: '--bad-option something&&else'
+
+  # Task 6 - Use invalid syntax in a loop
+  - name: Loop through an invalid command with bad syntax
+    debug:
+      msg: "{{ item }} is bad syntax"
+    loop: "{{ ['invalid$', 'invalid:', 'invalid@', 'invalid-'] }}"
+
+  # Task 7 - Install a file with an invalid source path
+  - name: Install a file with an invalid path
+    copy:
+      src: /var/tmp/no-file
+      dest: /tmp/some-file
+    ignore_errors: true

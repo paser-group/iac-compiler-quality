@@ -1,0 +1,65 @@
+
+- name: Test ec2_asg module with ELB instance health checks
+  hosts: localhost
+  vars:
+    region: us-east-1
+    asg_name: my-asg
+    elb_name: my-elb
+    key_name: my-keypair
+    instance_type: t2.micro
+    ami: ami-0c94855ba95c71c99
+    subnet_id: subnet-12345678
+    vpc_id: vpc-12345678
+    desired_capacity: 2
+    min_size: 1
+    max_size: 3
+  tasks:
+    - name: Create ASG and ELB
+      ec2_asg:
+        name: "{{ asg_name }}"
+        launch_config:
+          image_id: "{{ ami }}"
+          key_name: "{{ key_name }}"
+          instance_type: "{{ instance_type }}"
+          associate_public_ip_address: true
+          security_groups:
+            - "{{ sg_id }}"
+          user_data: |
+            #!/bin/bash
+            echo "Hello world!"
+        region: "{{ region }}"
+        vpc_zone_identifier: "{{ subnet_id }}"
+        min_size: "{{ min_size }}"
+        max_size: "{{ max_size }}"
+        desired_capacity: "{{ desired_capacity }}"
+        target_group_arns:
+          - "{{ target_group_arn }}"
+        wait_for_instances_to_be_in_service: true
+        load_balancers:
+          - name: "{{ elb_name }}"
+            health_check:
+              target: "HTTP:80/"
+              interval_seconds: 5
+              timeout_seconds: 3
+              healthy_threshold_count: 2
+              unhealthy_threshold_count: 2
+      register: asg_result
+
+    - name: Verify instances are healthy and ELB is registered
+      wait_for:
+        host: "{{ item }}"
+        port: 80
+        delay: 5
+        timeout: 600
+      with_items:
+        - "{{ asg_result.instances }}"
+
+    - name: Verify instances are registered with ELB
+      uri:
+        url: "https://{{ elb_dns_name }}/"
+        method: GET
+        return_content: yes
+      register: elb_result
+      until: elb_result.status == 200
+      retries: "{{ retries }}"
+      delay: 10

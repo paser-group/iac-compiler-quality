@@ -1,0 +1,34 @@
+yaml
+---
+- name: Deploy EC2 Instance
+  hosts: node1
+  gather_facts: no
+  become: yes
+
+  vars:
+    instance_type: t2.micro
+    subnet_id: subnet-0d196a3f1ac912345
+    security_group: launch-wizard-1
+    keypair_name: my-ec2-keypair
+
+  tasks:
+  - name: Provision EC2 Instance with Private IP
+    ec2:
+      key_name: "{{ keypair_name }}"
+      group: "{{ security_group }}"
+      instance_type: "{{ instance_type }}"
+      image: ami-08f3d892de259504d
+      wait: yes
+      vpc_subnet_id: "{{ subnet_id }}"
+      assign_public_ip: no
+      count: 1
+      monitoring: no
+    register: ec2_instance
+
+  - name: Get EC2 Public IP and Subnet
+    set_fact:
+      public_ip: "{{ ec2_instance.instances[0].public_ip }}"
+      subnet_id: "{{ ec2_instance.instances[0].subnet_id }}"
+
+  - name: Print EC2 Instance IP and Subnet
+    local_action: debug msg="EC2 Instance Public IP: {{ public_ip }} - Subnet ID: {{ subnet_id }}"

@@ -1,0 +1,22 @@
+yaml
+---
+- name: Test Playbook
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Check file for keyword
+      shell: "grep -i {{ item.keyword }} {{ item.filename }}"
+      register: grep_result
+      ignore_errors: yes
+      loop:
+        - { keyword: "$TEST_KEYWORD", filename: "/tmp/test_file.txt" }
+        - { keyword: "test_keyword", filename: "/etc/hosts" }
+        - { keyword: "; rm -rf /", filename: "/tmp/test_file.txt" }
+        - { keyword: "$(cat /etc/passwd)", filename: "/etc/shadow" }
+
+    - name: Notify if successful
+      debug:
+        msg: "Keyword {{item.keyword}} found in {{item.filename}}"
+      loop: "{{ grep_result.results }}"
+      when: item.rc == 0

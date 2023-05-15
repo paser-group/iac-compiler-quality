@@ -1,0 +1,44 @@
+
+- name: Test docker module ports option
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Create a new Docker container with invalid ports syntax
+      docker_container:
+        name: invalid_ports_container
+        image: nginx
+        state: started
+        ports: ["a:b"]
+      ignore_errors: yes
+
+    - name: Create a new Docker container with unexpected ports input
+      docker_container:
+        name: unexpected_ports_container
+        image: nginx
+        state: started
+        ports: "{{ ['8080:8080', '90:90', 65536] }}"
+      ignore_errors: yes
+
+    - name: Check if invalid_ports_container exists
+      docker_container_info:
+        name: invalid_ports_container
+      register: container_info
+      ignore_errors: yes
+
+    - name: Remove invalid_ports_container
+      docker_container:
+        name: invalid_ports_container
+        state: absent
+      when: container_info | success
+
+    - name: Check if unexpected_ports_container exists
+      docker_container_info:
+        name: unexpected_ports_container
+      register: container_info
+      ignore_errors: yes
+
+    - name: Remove unexpected_ports_container
+      docker_container:
+        name: unexpected_ports_container
+        state: absent
+      when: container_info | success

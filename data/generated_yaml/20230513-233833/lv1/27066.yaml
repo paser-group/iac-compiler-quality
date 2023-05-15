@@ -1,0 +1,23 @@
+yaml
+- name: Configuring ACLs on NX-OS devices
+  hosts: nxos_devices
+  gather_facts: no
+  vars:
+    acl_rules:
+      - permit ip any any
+  tasks:
+    - name: Check if access lists are already present
+      nxos_command:
+        commands: show ip access-list
+      register: acl_check
+
+    - name: Clear existing access lists if present
+      when: "'access list is not defined' not in acl_check.stdout"
+      nxos_command:
+        commands:
+          - no ip access-list
+          - reload
+
+    - name: Configure new access lists
+      nxos_acl:
+        rules: "{{ acl_rules }}"

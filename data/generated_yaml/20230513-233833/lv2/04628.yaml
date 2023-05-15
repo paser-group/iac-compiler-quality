@@ -1,0 +1,61 @@
+
+---
+- name: Test pkgng hangs and missing error messages
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Install pkgng
+      pkgng:
+        name: "pkg"
+
+    - name: Wait indefinitely
+      wait_for_connection:
+        timeout: 1100000000
+
+    - name: Send invalid package name
+      pkgng:
+        name: "fakepkg@invalidpkg"
+      ignore_errors: true
+
+    - name: Remove pkgng
+      pkgng:
+        name: "pkg"
+        state: absent
+
+    - name: Run invalid pkgng command
+      shell: "pkgng invalidpkg"
+      ignore_errors: true
+
+    - name: Install package with invalid version
+      pkgng:
+        name: "nginx"
+        version: "1..0"
+
+    - name: Install multiple packages
+      pkgng:
+        name:
+          - "vim"
+          - "emacs"
+          - "nano"
+
+    - name: Install package with specific repo
+      pkgng:
+        name: "redis"
+        repo: "FreeBSD"
+
+    - name: Update packages
+      pkgng:
+        state: latest
+
+    - name: Install package from local file
+      pkgng:
+        name: "mypackage"
+        pkg_file: "/path/to/file"
+
+    - name: Install package with specific options
+      pkgng:
+        name: "mysql"
+        options:
+          - "WITH_SSL"
+          - "WITH_LZ4"

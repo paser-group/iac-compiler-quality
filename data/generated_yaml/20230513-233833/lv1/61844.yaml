@@ -1,0 +1,29 @@
+
+---
+- name: IOSXR L3 Idempotent Fix
+  hosts: iosxr
+  gather_facts: no
+
+  tasks:
+  - name: Configure IOSXR L3
+    iosxr_config:
+      lines:
+        - router ospf 1
+        - network 10.0.0.0 0.255.255.255 area 0
+      parent: global
+    register: ospf
+
+  - name: Reboot the device if there are configuration changes
+    iosxr_reboot:
+      confirm: yes
+    when: ospf.changed
+
+  - name: Verify OSPF is idempotent
+    iosxr_command:
+      commands:
+        - show ospf neighbor
+        - show ospf route
+    register: ospf_show
+    until: ospf_show.rc == 0 and "spine1#" in ospf_show.stdout[0]
+    retries: 3
+    delay: 5

@@ -1,0 +1,44 @@
+yaml
+- name: Attach a volume and reboot the instance
+  hosts: all
+  tasks:
+    - name: Attach a volume to the instance
+      ec2_vol:
+        instance: i-xxxxxx
+        device_name: /dev/sdh
+        volume_size: 1
+        volume_type: gp2
+        wait: yes
+        region: us-west-2
+      register: vol_output
+    
+    - name: Confirm volume has been attached successfully
+      assert:
+        that:
+          - "'attach volume' in vol_output['msg']"
+        success_msg: "Volume has been attached successfully"
+        
+    - name: Reboot the instance
+      ec2:
+        instance_ids: i-xxxxxx
+        state: restarted
+        region: us-west-2
+        
+    - name: Verify that the volume is still present after the reboot
+      wait_for:
+        timeout: 300
+        host: "{{ inventory_hostname }}"
+        port: 22
+        delay: 30
+      register: ssh_output
+      
+    - name: Check if volume is present after reboot
+      command: "lsblk -p | grep /dev/xvdh"
+      register: cmd_output
+      
+    - name: Cleanup
+      ec2_vol:
+        instance: i-xxxxxx
+        volume_ids: "{{ vol_output['vol_id']}}"
+        state: absent
+        region: us-west-2

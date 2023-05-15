@@ -1,0 +1,43 @@
+
+---
+- name: Test Paramiko connection with ios_* modules
+  hosts: all
+  gather_facts: false
+  vars:
+    ssh_config: |
+      Host *
+        StrictHostKeyChecking no
+        UserKnownHostsFile /dev/null
+        LogLevel QUIET
+  tasks:
+    - name: Install Paramiko dependencies
+      apt:
+        name:
+          - python-pip
+          - python-dev
+        state: present
+      become: true
+
+    - name: Install Paramiko via pip
+      pip:
+        name: paramiko
+        state: present
+        extra_args: [--upgrade]
+      become: true
+
+    - name: Add fake SSH key to inventory
+      copy:
+        content: |-
+          SSH_KEY
+      dest: /tmp/ssh_key
+
+    - name: Test Paramiko connection with ios_command ignoring host_key_checking
+      ios_command:
+        commands: /bin/echo test
+        host: 10.1.1.1
+        subset: 1
+        ssh_config_file: /tmp/ssh_config.id_rsa
+        ansible_ssh_private_key_file: /tmp/ssh_key
+        ssh_key_unlock: true
+      vars:
+        ansible_ssh_common_args: '-o StrictHostKeyChecking=no'

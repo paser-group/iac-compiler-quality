@@ -1,0 +1,26 @@
+
+- name: Test for incorrect 'unchanged' status with --check and state=started enabled=yes
+  hosts: all
+  tasks:
+  - name: Check if service is not running and enabled
+    service:
+      name: <service_name>
+      state: stopped
+      enabled: false
+    register: result
+  - name: Debug result
+    debug:
+      var: result
+  - name: Change service state to started and enable it
+    service:
+      name: <service_name>
+      state: started
+      enabled: true
+    when: result is changed and not result.skipped and 'noop' not in ansible_deprecated
+  - name: Check service status
+    service_facts:
+      - name: <service_name>
+    register: service_facts_output
+  - name: Debug service facts output
+    debug:
+      var: service_facts_output

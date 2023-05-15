@@ -1,0 +1,26 @@
+
+- name: Test the service_facts module on CentOS 7
+  hosts: all
+  become: true
+  tasks:
+    - name: Gather service facts
+      service_facts:
+        register: services
+      changed_when: false
+    
+    - name: Print services that are incorrectly reported
+      debug:
+        var: services['ansible_facts']['ansible_services']
+      when: "'systemd-modules-load.service' in services['ansible_facts']['ansible_services'].keys() and services['ansible_facts']['ansible_os_family'] == 'RedHat' and ansible_distribution_major_version|int == 7"
+
+    - name: Start the incorrectly reported service
+      service:
+        name: systemd-modules-load.service
+        state: started
+      when: "'systemd-modules-load.service' in services['ansible_facts']['ansible_services'].keys() and services['ansible_facts']['ansible_os_family'] == 'RedHat' and ansible_distribution_major_version|int == 7"
+      
+    - name: Stop the incorrectly reported service
+      service:
+        name: systemd-modules-load.service
+        state: stopped
+      when: "'systemd-modules-load.service' in services['ansible_facts']['ansible_services'].keys() and services['ansible_facts']['ansible_os_family'] == 'RedHat' and ansible_distribution_major_version|int == 7"      

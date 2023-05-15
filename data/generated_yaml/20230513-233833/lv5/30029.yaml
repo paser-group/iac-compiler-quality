@@ -1,0 +1,37 @@
+
+- name: Download multipart S3 object and verify the file and error message
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    s3_file: "multipart_object.file"
+    s3_object_key: "multipart_object_key"
+    s3_bucket: "test_bucket"
+    s3_region: "us-east-1"
+    destination_folder: "/ansible/files"
+
+  tasks:
+    - name: Download S3 Object
+      get_url:
+        url: "https://{{ s3_bucket }}.s3.{{ s3_region }}.amazonaws.com/{{ s3_object_key }}?uploadId=xyz"
+        dest: "{{ destination_folder }}/{{ s3_file }}"
+        validate_certs: no
+
+      register: s3_download
+
+      ignore_errors: yes
+
+    - name: Verify downloaded file size
+      stat:
+        path: "{{ destination_folder }}/{{ s3_file }}"
+      register: file_stat
+
+    - name: Fail task if file size does not match expected size
+      fail:
+        msg: "{{ s3_file }} download failed. The S3 object may be multipart. Please check the s3_error.msg for more details."
+      when: file_stat.stat.size != "{{ s3_object_size }}"
+
+    - name: Fail task if download errors when destination_folder is specified 
+    fail:
+        msg: "The error message is unclear when downloading multipart S3 objects and specifying a destination folder."
+      when: "s3_download.status not in ['200','201'] and 'The specified key does not exist' not in s3_download.content"

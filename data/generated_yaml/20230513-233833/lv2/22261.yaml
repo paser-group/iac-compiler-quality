@@ -1,0 +1,57 @@
+
+---
+- name: Test playbook for symlink errors
+  hosts: node1
+
+  tasks:
+    - name: Create symlink with name 'ansible-3.6'
+      file:
+        src: /usr/bin/ansible
+        dest: /usr/bin/ansible-3.6
+        state: link
+
+    - name: Verify that ansible-3.6 symlink exists
+      stat: path=/usr/bin/ansible-3.6
+      register: symlink_check
+
+    - name: Remove the symlink using unusual path
+      file:
+        path: "../../../../../../usr/bin/ansible-3.6"
+        state: absent
+      when: symlink_check.stat.exists == True
+
+    - name: Create symlink with unconventional permissions
+      file:
+        src: /usr/bin/ansible
+        dest: /usr/bin/ansible-3.6
+        state: link
+        owner: nobody
+        group: nobody
+        mode: 'u=rwx,g=rwx,o=rw'
+
+    - name: Remove the symlink using unexpected input
+      file:
+        path: /usr/bin/ansible-3*
+        state: absent
+
+    - name: Verify that symlink doesn't exist
+      stat:
+        path: /usr/bin/ansible-3.6
+      ignore_errors: yes
+      
+    - name: Create symlink using unconventional symlink path
+      file:
+        src: /usr/bin/ansible
+        dest: /../usr/bin/../usr/bin/../usr/bin/ansible-3.6
+        state: link
+
+    - name: Verify that symlink path is correct and ansible is accessible
+      raw: ansible-3.6 --version
+      ignore_errors: yes
+
+    - name: Remove the symlink created using unconventional symlink path
+      file:
+        src: /../usr/bin/../usr/bin/../usr/bin/ansible-3.6
+        state: absent
+      when: symlink_check.stat.exists == True
+

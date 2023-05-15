@@ -1,0 +1,28 @@
+
+- name: Test Custom Module Resolution Order
+  hosts: all
+  tasks:
+  - name: Create temp directory to hold the custom module
+    tempfile:
+      state: directory
+    register: path
+
+  - name: Create custom library module
+    copy:
+      content: |
+        def hello():
+          return "Hello World!"
+      dest: "{{path.path}}/library/hello.py"
+
+  - name: Prepend custom module path
+    set_fact:
+      ansible_python_interpreter: "{{ansible_playbook_python}} {{path.path}}/library"
+
+  - name: Call 'hello' custom module
+    shell: |
+      python -c "import hello; print(hello.hello())"
+    register: result
+
+  - name: Debug output
+    debug:
+      msg: "{{result.stdout}}"

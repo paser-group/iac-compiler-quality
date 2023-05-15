@@ -1,0 +1,25 @@
+yaml
+---
+- hosts: localhost
+  gather_facts: no
+
+  tasks:
+    - name: Run Ansible Inventory
+      shell: ansible-inventory --list
+      register: inventory_output
+      ignore_errors: yes
+
+    - name: Parse Inventory Output
+      set_fact:
+        parsed_output: "{{ inventory_output.stdout | from_json }}"
+      when: inventory_output.rc == 0
+
+    - name: Print Parsed Output
+      debug:
+        var: parsed_output
+      when: inventory_output.rc == 0
+
+    - name: Handle Error in Inventory Output
+      fail:
+        msg: "{{ inventory_output.stderr_lines }}"
+      when: inventory_output.rc != 0

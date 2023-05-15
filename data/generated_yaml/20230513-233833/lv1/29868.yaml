@@ -1,0 +1,26 @@
+yaml
+---
+- name: Stop instances in ASG
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    target_asg: my-asg
+    match_tag: {'env': 'uat'}
+  
+  tasks:
+    - name: Get instances in the ASG
+      ec2_asg_facts:
+        auto_scaling_group_names: "{{ target_asg }}"
+      register: asg_facts
+
+    - name: Skip if no instances available in ASG
+      meta: end_play
+      when: asg_facts is not defined or asg_facts.auto_scaling_groups[0].instances == []
+  
+    - name: Stop instances in the ASG
+      ec2_instance:
+        instance_ids: "{{ item.instance_id }}"
+        state: stopped
+      with_items: "{{ asg_facts.auto_scaling_groups[0].instances }}"
+      when: item.tags is defined and match_tag.items() <= item.tags.items()

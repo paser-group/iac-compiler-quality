@@ -1,0 +1,68 @@
+
+---
+
+- name: Test playbook for aws_ssm_parameter_store and 'Description' key error
+  hosts: all
+
+  vars:
+    param_name: "{{ 'dummy_parameter_' ~ ansible_hostname }}"
+    param_value: "dummy_value"
+    invalid_description: "{{ random('invalid*\"n#') }}"
+    extra_description: "{{ random('x'*2050) }}"
+    long_description: "{{ random('y'*2051) }}"
+    multiline_description: |
+                          This is 
+                          a multiline 
+                          description. 
+
+  tasks:
+    - name: Create parameter with invalid description
+      aws_ssm_parameter_store:
+        name: "{{ param_name }}"
+        value: "{{ param_value }}"
+        description: "{{ invalid_description}}"
+      register: invalid_description_result
+      ignore_errors: True
+
+    - name: Debug invalid description result
+      debug:
+        var: invalid_description_result
+
+    - name: Create parameter with extra long description
+      aws_ssm_parameter_store:
+        name: "{{ param_name }}"
+        value: "{{ param_value }}"
+        description: "{{ extra_description }}"
+      register: extra_long_description_result
+      ignore_errors: True
+
+    - name: Debug extra long description result
+      debug:
+        var: extra_long_description_result
+
+    - name: Create parameter with description over character limit
+      aws_ssm_parameter_store:
+        name: "{{ param_name }}"
+        value: "{{ param_value }}"
+        description: "{{ long_description }}"
+      register: over_length_description_result
+      ignore_errors: True
+
+    - name: Debug over length description result
+      debug:
+        var: over_length_description_result
+
+    - name: Create parameter with multiline description
+      aws_ssm_parameter_store:
+        name: "{{ param_name }}"
+        value: "{{ param_value }}"
+        description: "{{ multiline_description }}"
+      register: multiline_description_result
+      ignore_errors: True
+
+    - name: Debug multiline description result
+      debug:
+        var: multiline_description_result
+
+...
+

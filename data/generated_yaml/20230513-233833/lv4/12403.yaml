@@ -1,0 +1,31 @@
+yaml
+---
+- hosts: all
+  vars:
+    test_files:
+      - 'test.txt'
+      - 'test.yml'
+      - 'test.json'
+
+  tasks:
+    - name: Test get_file_parser() function
+      block:
+        - name: Copy test files to remote nodes
+          copy:
+            dest: "/tmp/{{ item }}"
+            src: "{{ item }}"
+          with_items: "{{ test_files }}"
+
+        - name: Attempt to parse test files
+          include_tasks: "{{ item }}"
+          with_items: "{{ test_files }}"
+      rescue:
+        - name: Log any error messages
+          debug:
+            var: ansible_failed_result.exception.message
+      always:
+        - name: Remove test files from remote nodes
+          file:
+            state: absent
+            path: "/tmp/{{ item }}"
+          with_items: "{{ test_files }}"

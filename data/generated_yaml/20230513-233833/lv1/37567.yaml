@@ -1,0 +1,32 @@
+
+- name: Resolve issue with tower_job_launch module
+  hosts: your-server-hostname
+  gather_facts: no
+  
+  vars:
+     # Define the Tower job launch parameters
+     tower_job_template_id: Your-Job-Template-ID-Here
+
+  tasks:
+    - name: Launch Tower Job
+      uri:
+        url: "{{ tower_base_url }}/api/v2/job_templates/{{ tower_job_template_id }}/launch/"
+        method: POST
+        user: "{{ tower_user }}"
+        password: "{{ tower_password }}"
+        force_basic_auth: yes
+        body_format: json
+        headers:
+          Content-Type: application/json
+        status_code: 201
+        validate_certs: no
+      register: result
+
+    - name: Check for multiple results
+      fail:
+        msg: "Expected one result, but got {{ result.json | length }}"
+      when: result.json | length != 1
+
+    - name: Display Job ID
+      debug:
+        var: result.json[0].id

@@ -1,0 +1,42 @@
+
+- name: Test Docker Swarm Service functionality
+  hosts: docker_swarm_nodes
+  become: true
+  tasks:
+    - name: Create services
+      docker_swarm_service:
+        name: "{{ item }}"
+        image: docker/whalesay
+        replicas: 1
+        state: present
+      loop:
+        - prefix_service1
+        - prefix_service2
+        - prefix_service3
+        - prefix_service4
+      register: service_created
+
+    - name: Check running services
+      service_facts:
+      register: service_facts
+
+    - name: Confirm services are running
+      assert:
+        that:
+          - ansible_facts.services[item].state == 'running' and ansible_facts.services[item].status == 'active'
+        msg: "{{ item }} service is not running"
+      loop:
+        - "{{ service_created.results[0].name }}"
+        - "{{ service_created.results[1].name }}"
+        - "{{ service_created.results[2].name }}"
+
+    - name: Confirm Ansible compiler detects services with a common prefix
+      assert:
+        that:
+          - ansible_facts.services[item].state == 'running'
+        msg: "{{ item }} service is not running"
+      loop:
+        - "{{ service_created.results[0].name }}"
+        - "{{ service_created.results[1].name }}"
+        - "{{ service_created.results[2].name }}"
+        - "{{ service_created.results[3].name }}"

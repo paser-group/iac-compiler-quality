@@ -1,0 +1,36 @@
+
+  ---
+  - name: "Create S3 Bucket"
+    hosts: node1
+    become: yes
+    vars:
+      s3_bucket_name: "my-s3-bucket"
+      s3_region_name: "us-west-2"
+      s3_files:
+        - "file1.txt"
+        - "file2.txt"
+        - "file3.txt"
+        
+    tasks:
+      - name: Create S3 bucket named my-s3-bucket
+        s3_bucket:
+          name: "{{ s3_bucket_name }}"
+          region: "{{ s3_region_name }}"
+          mode: "create"
+        register: s3_bucket_response
+                
+      - name: Simulate creation of already existing bucket
+        s3_bucket:
+          name: "{{ s3_bucket_name }}"
+          region: "{{ s3_region_name }}"
+          acl: "public-read"
+          mode: "create"
+        ignore_errors: true
+
+      - name: Upload files to S3 Bucket
+        s3:
+          bucket: "{{ s3_bucket_name }}"
+          region: "{{ s3_region_name }}"
+          src: "{{ item }}"
+          dest: "{{ item }}"
+        with_items: "{{ s3_files }}"

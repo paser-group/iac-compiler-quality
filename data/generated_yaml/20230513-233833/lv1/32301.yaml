@@ -1,0 +1,24 @@
+yaml
+- name: Install Python 3.6 interpreter
+  hosts: all
+  become: true
+  gather_facts: false
+
+  tasks:
+  - name: Ensure Python3.6 installed
+    raw: test -e /usr/bin/python3.6 || (apt -y update && apt-get -y install python3.6)
+
+- name: Install Ansible Galaxy collection dependencies
+  hosts: all
+  become: true
+  
+  tasks:
+  - name: Install pip
+    raw: test -e /usr/bin/pip || (apt -y update && apt-get -y install python-pip)
+
+  - name: Install Collection dependencies
+    pip:
+      name: "{{ item }}"
+      executable: /usr/bin/pip
+      state: present
+    loop: "{{ lookup('file', 'requirements.yml') | from_yaml | list }}"

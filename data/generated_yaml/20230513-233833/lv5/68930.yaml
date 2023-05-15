@@ -1,0 +1,31 @@
+
+---
+- name: Test inventory parsing
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Test inventory file parsing
+      block:
+        # This inventory file contains an invalid IP address
+        - name: Test invalid IP address
+          command: echo "10.1.1.300" > /etc/hosts
+          delegate_to: "{{ item }}"
+        with_items: "{{ ansible_play_hosts }}"
+
+        # This inventory file contains an incorrect hostname
+        - name: Test invalid hostname
+          command: echo "10.1.1.1 invalid_host" >> /etc/hosts
+          delegate_to: "{{ item }}"
+        with_items: "{{ ansible_play_hosts }}"
+        ignore_errors: true
+
+        # This inventory file contains a missing colon
+        - name: Test invalid inventory file syntax
+          command: echo "node1 ansible_host=10.1.1.1" > invalid_inventory
+          delegate_to: "{{ item }}"
+        with_items: "{{ ansible_play_hosts }}"
+        ignore_errors: true
+
+      rescue:
+        - name: Recover from bad inventory
+          command: rm -f /etc/hosts invalid_inventory

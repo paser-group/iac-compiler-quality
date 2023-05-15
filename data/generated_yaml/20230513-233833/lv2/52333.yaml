@@ -1,0 +1,73 @@
+
+---
+- name: Test ec2_vpc_peer.py error message
+  hosts: node1
+  gather_facts: false
+  vars:
+    vpc_id: "vpc-abcd1234efgh5678"
+    vpc_peer_id: "vpc-pqrs0987tuvw5678"
+    invalid_vpc_peer_id: "vpc-xyz1234lmn5678"
+
+  tasks:
+    - name: Attempt to create VPC peering via valid ids
+      ec2_vpc_peer:
+        region: us-east-1
+        state: present
+        vpc_id: "{{ vpc_id }}"
+        peer_id: "{{ vpc_peer_id }}"
+      register: result1
+
+    - name: Assert that peer was created successfully
+      assert:
+        that:
+          - result1.changed == true
+          - result1.peer_vpc_id == "{{ vpc_peer_id }}"
+          - "'peer_vpc_id' in result1"
+        quiet: true
+
+    - name: Attempt to create VPC peering with invalid peer_id
+      ec2_vpc_peer:
+        region: us-east-1
+        state: present
+        vpc_id: "{{ vpc_id }}"
+        peer_id: "{{ invalid_vpc_peer_id }}"
+        auto_accept: true
+      register: result2
+
+    - name: Assert that error message is unhelpful
+      assert:
+        that:
+          - "'An error occurred (InvalidVpcPeeringConnectionID.NotFound) when calling the CreateVpcPeeringConnection operation: The vpc peer id {{ invalid_vpc_peer_id }} does not exist' in result2.stdout"
+          - "'NoVpcPeeringConnection' not in result2.stdout"
+        quiet: true
+
+    - name: Attempt to create VPC peering with missing tags
+      ec2_vpc_peer:
+        region: us-east-1
+        state: present
+        vpc_id: "{{ vpc_id }}"
+        peer_id: "{{ vpc_peer_id }}"
+        tags: 
+          - name: "Prod"
+      register: result3
+
+    - name: Assert that tags are missing
+      assert:
+        that:
+          - "'tags': {'Name': 'Prod'}' not in result3.tags"
+          - "'tags': []' in result3.tags"
+      quiet: true
+
+    - name: Attempt to delete VPC peering with missing vpc_peer_id
+      ec2_vpc_peer:
+        region: us-east-1
+        state: absent
+        vpc_id: "{{ vpc_id }}"
+      register: result4
+
+    - name: Assert that error message is unhelpful
+      assert:
+        that:
+          - "'An error occurred (InvalidVpcPeeringConnectionID.NotFound) when calling the DeleteVpcPeeringConnection operation: The vpc peer id None does not exist' in result4.stdout"
+          - "'The connection ID was not found' not in result4.stdout"
+        quiet: true

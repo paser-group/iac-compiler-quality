@@ -1,0 +1,38 @@
+yaml
+- name: Test playbook for 'become: yes' issue on Windows
+  hosts: all
+  become: yes
+  gather_facts: no
+  
+  tasks:
+    - name: Execute a command as a different user with sudo
+      command: whoami
+      become_user: unknown_user
+      args:
+        chdir: /home/user/
+        creates: /tmp/new_file.txt
+        removes: /tmp/old_file.txt
+        executable: /bin/bash
+        stdin: 'hello'
+        warn: no
+      
+    - name: Fail to run a command as a different user with sudo
+      command: echo "Hello World"
+      become_user: "nonexistentuser"
+      register: result
+      failed_when: result.rc != 0
+    
+    - name: Use 'when' condition to run task only on Windows
+      debug:
+        msg: "This is a Windows machine"
+      when: ansible_os_family == "Windows"
+      
+    - name: Run command as a different user with 'sudo su -'
+      shell: "sudo su - unknown_user -c 'whoami'"
+      become: true
+      args:
+        executable: /bin/sh
+        creates: /tmp/new_file.txt
+        removes: /tmp/old_file.txt
+        stdin: 'hello'
+        warn: no

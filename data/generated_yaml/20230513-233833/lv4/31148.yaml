@@ -1,0 +1,46 @@
+
+---
+- hosts: all
+  gather_facts: no
+  vars:
+    redis_host: "{{ hostvars['localhost']['ansible_facts']['default_ipv4']['address'] }}"
+
+  tasks:
+    - name: Fetching Redis facts with invalid credentials
+      redis_facts:
+        host: "{{ redis_host }}"
+        port: 6379
+        password: wrongpassword
+      register: redis_res
+      ignore_errors: true
+
+    - name: Caching Redis facts
+      cache:
+        key: redis_facts
+        value: "{{ redis_res.ansible_facts }}"
+        path: /tmp/cache
+        mode: 0600
+        state: present
+
+    - name: Fetching Redis facts from cache
+      cache:
+        key: redis_facts
+        path: /tmp/cache
+        mode: 0600
+        state: lookup
+      register: cache_res
+
+    - name: Flush Redis facts cache
+      cache:
+        key: redis_facts
+        path: /tmp/cache
+        mode: 0600
+        state: absent
+      when: "'--flush-cache' in {{ ansible_extra_args }}"
+
+    - name: Debugging Redis facts and cache facts
+      debug:
+        var: item
+      with_items:
+        - "{{ redis_res.ansible_facts }}"
+        - "{{ cache_res.cached }}"

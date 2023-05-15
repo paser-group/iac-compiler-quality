@@ -1,0 +1,51 @@
+
+- name: Test ec2_instance module
+  hosts: all
+  gather_facts: no
+
+  vars:
+    instance_type: t2.micro
+    image: ami-0c94855ba95c71c99
+    subnet_id: subnet-0123456789abcdef
+    security_group: sg-0123456789abcdef
+    assign_public_ip: yes
+
+  tasks:
+    - name: Create an EC2 instance without network interface
+      ec2_instance:
+        instance_type: "{{ instance_type }}"
+        image: "{{ image }}"
+        subnet_id: "{{ subnet_id }}"
+        security_group: "{{ security_group }}"
+        assign_public_ip: "{{ assign_public_ip }}"
+      register: instance
+
+    - name: Create an EC2 instance with invalid network interface spec
+      ec2_instance:
+        instance_type: "{{ instance_type }}"
+        image: "{{ image }}"
+        subnet_id: "{{ subnet_id }}"
+        security_group: "{{ security_group }}"
+        assign_public_ip: "{{ assign_public_ip }}"
+        network_interfaces: [{"DeviceIndex":0,"SubnetId":"subnet-0123456789abcdef","GroupIds":["sg-0123456789abcdef"],"PrivateIpAddress":"10.1.1.4","InvalidKey":"invalid_value"}]
+      register: invalid_instance
+
+    - name: Create an EC2 instance with multiple network interfaces
+      ec2_instance:
+        instance_type: "{{ instance_type }}"
+        image: "{{ image }}"
+        subnet_id: "{{ subnet_id }}"
+        assign_public_ip: "{{ assign_public_ip }}"
+        network_interfaces:
+          - "{{ subnet_id }}"
+          - "{{ subnet_id }}"
+      register: multi_instance
+
+    - name: Terminate the test instances
+      ec2:
+        state: "absent"
+        instance_ids:
+          - "{{ instance.instance_id }}"
+          - "{{ invalid_instance.instance_id }}"
+          - "{{ multi_instance.instance_ids }}"
+

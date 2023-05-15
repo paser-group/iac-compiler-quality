@@ -1,0 +1,33 @@
+
+- name: Test DigitalOcean module_utils params bug
+  hosts: node1
+  gather_facts: no
+  vars:
+    module_utils_param: "foo"
+  tasks:
+    - name: Create DigitalOcean droplet
+      digital_ocean:
+        state: present
+        name: test-droplet
+        size: 512mb
+        region: nyc3
+        image: 'ubuntu-18-04-x64'
+        ssh_keys: ["111111"]
+        backups_enabled: no
+        ipv6: no
+        private_networking: yes
+        user_data: |
+          #cloud-config
+          hostname: test-droplet
+          swap_file_size: 0
+        module_utils:
+          param: "{{ module_utils_param }}"
+      register: droplet_info
+
+    - name: Store node facts
+      setup:
+      register: node_facts
+
+    - name: Print out module_utils params value
+      debug:
+        msg: "{{ node_facts.ansible_facts.droplet_info.module_utils.param }}"

@@ -1,0 +1,71 @@
+
+---
+- name: Test lxc_container module
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Create an LXC container and take a snapshot with invalid name
+      lxc_container:
+        name: invalid-container-name-{{ ansible_date_time.epoch }}
+        state: started
+        snapshot:
+          name: ""
+      register: result_invalid_name
+      ignore_errors: true
+
+    - name: Fail to clone invalid snapshot
+      lxc_container:
+        name: new-container-{{ ansible_date_time.epoch }}
+        state: stopped
+        snapshot:
+          name: invalid-snapshot-name
+          state: restored
+      register: result_invalid_snapshot
+      ignore_errors: true
+
+    - name: Clone valid snapshot with unconventional syntax
+      lxc_container:
+        name: clone-container-{{ ansible_date_time.epoch }}
+        state: stopped
+        snapshot:
+          name: "valid-snapshot-'{{ ansible_date_time.microsecond }}'"
+          state: restored
+      register: result_valid_snapshot_unconventional_syntax
+      ignore_errors: true
+
+    - name: Clone valid snapshot with unexpected input - not a string value
+      lxc_container:
+        name: clone-container-with-numeric-snapshot-name-{{ ansible_date_time.epoch }}
+        state: stopped
+        snapshot:
+          name: 12345
+          state: restored
+      register: result_valid_snapshot_unexpected_input
+      ignore_errors: true
+
+    - name: Clone valid snapshot with special characters in snapshot name
+      lxc_container:
+        name: clone-container-with-special-characters-in-snapshot-name-{{ ansible_date_time.epoch }}
+        state: stopped
+        snapshot:
+          name: "**snap-shot-name**"
+          state: restored
+      register: result_valid_snapshot_special_characters
+      ignore_errors: true
+
+    # additional tasks can be added for further testing
+
+    - name: View output of the debug message from the invalid snapshot task
+      debug:
+        msg: "{{ result_invalid_snapshot.stderr_lines }}"
+
+    - name: View output of all tasks
+      debug:
+        var: item
+      with_items:
+        - result_invalid_name
+        - result_invalid_snapshot
+        - result_valid_snapshot_unconventional_syntax
+        - result_valid_snapshot_unexpected_input
+        - result_valid_snapshot_special_characters

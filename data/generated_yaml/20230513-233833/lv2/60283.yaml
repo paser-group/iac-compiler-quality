@@ -1,0 +1,36 @@
+yaml
+---
+- name: Test playbook for missing collection module issue
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Install invalid collection
+      ansible.builtin.command: >
+        ansible-galaxy collection install non_existent_collection
+      register: result
+      changed_when: false
+      ignore_errors: true
+
+    - name: Trigger error with missing collection
+      ansible.builtin.debug:
+        msg: "{{ 1 / 0 }}"
+      when: "'no core modules present' in result.stderr"
+    
+    - name: Incorrect syntax
+      ansible.builtin.shell: "{{ item }}"
+      with_items: 
+        - "ping {% raw %}{{ {{ }} %}{% endraw %} 1 {{"}}}}"
+        - "echo '{{ item }}'"
+      ignore_errors: true
+    
+    - name: Unexpected inputs
+      ansible.builtin.copy:
+        content: "{{ some_dict.invalid_key }}"
+        dest: /tmp/test_file.txt
+      register: copy_output
+      ignore_errors: true
+      
+    - name: Edge case
+      ansible.builtin.debug:
+        msg: "{{ lookup('pipe', 'echo hello') | upper | lower }}"
+      ignore_errors: true

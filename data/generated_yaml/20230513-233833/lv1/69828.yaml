@@ -1,0 +1,19 @@
+yaml
+- hosts: windows_servers
+  vars:
+    ansible_connection: winrm
+    ansible_winrm_transport: credssp
+  tasks:
+    - name: Check Remote User Locale
+      win_shell: Get-Culture | Select-Object -ExpandProperty Name
+      register: culture
+
+    - name: Add Locale to Allow List
+      lineinfile:
+        path: C:\Windows\System32\WindowsPowerShell\v1.0\WinRM.config
+        regex: '^\s+<ProductLocaleNames>'
+        insertafter: '^\s+<Listeners>'
+        line: '      <Value>{{ culture.stdout }}</Value>'
+
+    - name: Restart WinRM
+      win_shell: 'net stop winrm & net start winrm'

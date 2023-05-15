@@ -1,0 +1,43 @@
+
+---
+- name: Testing Ansible installation via setup.py script
+  hosts: all
+  become: yes
+  vars:
+    setuptools_versions:
+      - "51.1.0"
+      - "44.1.1"
+      - "39.0.1"
+  tasks:
+  - name: Update apt cache
+    apt:
+      update_cache: true
+
+  - name: Install dependencies
+    apt:
+      name: "{{ item }}"
+      state: present
+    with_items:
+      - python
+      - python3
+      - pip
+
+  - name: Install different versions of setuptools
+    pip:
+      name: setuptools=={{ item }}
+      state: present
+    with_items: "{{ setuptools_versions }}"
+
+  - name: Install ansible via setup.py with different setuptools versions
+    command: python setup.py install
+    args:
+      chdir: /path/to/ansible
+      warn: no
+    environment:
+      PYTHONPATH: /usr/local/lib/python2.7/site-packages
+    ignore_errors: true
+    register: cmd_output
+
+  - name: Display command output
+    debug:
+      var: cmd_output.stdout_lines

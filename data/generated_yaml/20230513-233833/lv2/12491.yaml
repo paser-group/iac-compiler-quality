@@ -1,0 +1,57 @@
+
+---
+- name: Test playbook for GitHub issue [PROBLEM FOUND] template error while templating string: Encountered unknown tag 'S'
+  hosts: all
+  become: yes
+  vars:
+    var1: "{{ 'test' | S }}"
+    var2: "{{ none_var | default(S|default) }}"
+  
+  tasks:
+    - name: Execute shell command
+      shell: "{{ 'echo success' | S }}"
+    
+    - name: Test with invalid filter syntax
+      debug:
+        msg: "{{ 'test' | Ssomething }}"
+    
+    - name: Test with an empty variable string
+      debug:
+        msg: "Variable is empty"
+      when: var1 == ""
+
+    - name: Test with an undefined variable
+      debug:
+        msg: "Variable is undefined"
+      when: none_var is not defined
+    
+    - name: Test with a dictionary variable having 'S' key
+      debug:
+        var: "{{ {'S': 'value'} | S }}"
+    
+    - name: Test with a list containing 'S' string
+      debug:
+        var: "{{ ['test', 'S'] | S }}"
+    
+    - name: Test with a malformed YAML string
+      vars:
+        yaml_str: |
+          test: "{{ 'test' }} S"
+      set_fact:
+        yaml_dict: "{{ yaml_str | from_yaml }}"
+    
+    - name: Test with an empty lookup plugin
+      debug:
+        var: "{{ lookup('S') }}"
+    
+    - name: Test with an unknown lookup plugin
+      debug:
+        var: "{{ lookup('Splugin', 'test') }}"
+    
+    - name: Test with an invalid module argument
+      apt:
+        name: apache2
+      register: result
+      ignore_errors: true
+      changed_when: false
+      failed_when: "'S' in result | to_nice_json"

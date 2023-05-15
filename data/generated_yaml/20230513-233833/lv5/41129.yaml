@@ -1,0 +1,34 @@
+
+- name: Install necessary packages
+  apt:
+    name: [gcc, make, libssl-dev, libffi-dev, python-dev, python-pip, sshpass]
+    state: present
+
+- name: Configure targets for SSH connections
+  authorized_key:
+    user: "{{ ansible_user }}"
+    state: present
+    key: "{{ lookup('file', '/path/to/public_key') }}"
+
+- name: Deploy required files to targets
+  copy:
+    src: "{{ playbook_dir }}/files/*"
+    dest: "/path/to/destination/folder"
+    mode: 0644
+
+- name: Install necessary packages on targets
+  become: true
+  apt:
+    name: [python, python-apt, python-pycurl, aptitude]
+    state: present
+
+- name: Execute command to run the Ansible Playbook generator
+  command: "{{ npm_executable }} {{ npm_module_path }}"
+  args:
+    chdir: "{{ playbook_dir }}/files/"
+    creates: "{{ playbook_dir }}/files/playbook.yml"
+
+- name: Transfer generated Playbook back to control node
+  fetch:
+    src: "{{ playbook_dir }}/files/playbook.yml"
+    dest: "{{ playbook_dir }}/artifacts/"

@@ -1,0 +1,37 @@
+yaml
+---
+- name: Take VM snapshot using UUID
+  hosts: localhost
+  gather_facts: no
+  
+  vars:
+    vm_name: "my_vm_name"
+    vm_uuid: "12345-67890-ABCDE-FGHIJ"
+
+  tasks:
+    - name: Search for VM by UUID
+      vmware_guest_find:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: no
+        uuid: "{{ vm_uuid }}"
+      register: vm_info
+
+    - name: Check if VM was found
+      fail:
+        msg: "Failed to find VM with UUID '{{ vm_uuid }}'"
+      when: vm_info.matching_objects|length == 0
+
+    - name: Take snapshot of VM
+      vmware_guest_snapshot:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: no
+        name: "{{ vm_name }}"
+        snapshot_name: "New snapshot"
+        state: present
+        wait_for_ip_address: yes
+        hardware_info: no
+      delegate_to: "{{ vm_info | json_query('matching_objects[0].esxi_hostname') }}"

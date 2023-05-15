@@ -1,0 +1,43 @@
+
+---
+- name: WinRM certification error
+  hosts: all
+  gather_facts: false
+  connection: winrm
+  vars:
+    delegate: "{{ hostvars[groups['all'][-1]]['ansible_host'] }}"
+    cert_path: "/etc/ssl/certs/ca-certificates.crt"
+    username: "admin"
+    password: "admin"
+  tasks:
+    - name: test certificate without delegate_to
+      win_ping:
+    - name: test certificate with delegate_to
+      win_ping:
+      delegate_to: "{{ delegate }}"
+      delegate_facts: true
+      ansible_shell_type: psh
+      ansible_shell_executable: pwsh.exe
+    - name: test certificate with delegate_to using unconventional syntax
+      win_ping:
+      delegate_to: "{{ groups['all'][2] }}"
+      delegate_facts: true
+      environment:
+        ANSIBLE_WINRM_CA_TRUST_CERTIFICATES: "{{ cert_path }}"
+    - name: test certificate with delegate_to using unexpected input
+      win_ping:
+      delegate_to_unknown_host: "{{ delegate }}"
+      delegate_facts: true
+      environment:
+        ANSIBLE_WINRM_CA_TRUST_CERTIFICATES: "{{ cert_path }}"
+    - name: test certificate with delegate_to using unexpected syntax
+      win_ping:
+      delegate_to:
+        unknown_host: "{{ delegate }}"
+      delegate_facts: true
+      environment:
+        ANSIBLE_WINRM_CA_TRUST_CERTIFICATES: "{{ cert_path }}"
+    - name: test certificate with delegate_to using unconventional syntax
+      win_ping:
+      delegate_to: "{{ groups['all'] | random }}"
+      delegate_facts: true

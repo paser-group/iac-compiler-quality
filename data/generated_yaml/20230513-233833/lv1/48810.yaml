@@ -1,0 +1,46 @@
+yaml
+---
+- name: Configure CloudWatch Logs retention
+  hosts: all
+  become: true
+
+  vars:
+    log_group_name: /aws/lambda/my-function
+    log_retention_days: 14
+
+  tasks:
+    - name: Create CloudWatch Logs group
+      community.aws.cloudwatchlogs_log_group:
+        name: "{{ log_group_name }}"
+        state: present
+        retention_in_days: "{{ log_retention_days }}"
+
+    - name: Set proper permissions on CloudWatch Logs group
+      community.aws.iam_policy:
+        state: present
+        name: cloudwatch-logs-group-policy
+        policy_document: |
+          {
+              "Version": "2012-10-17",
+              "Statement": [
+                  {
+                      "Action": [
+                          "logs:CreateLogStream",
+                          "logs:PutLogEvents",
+                          "logs:DescribeLogStreams"
+                      ],
+                      "Effect": "Allow",
+                      "Resource": "arn:aws:logs:*:*:log-group:{{ log_group_name }}:*"
+                  },
+                  {
+                      "Action": "logs:*",
+                      "Effect": "Deny",
+                      "Resource": "arn:aws:logs:*:*:log-group:{{ log_group_name }}:*",
+                      "Condition": {
+                          "NumericLessThanEquals": {
+                              "aws:userid": "123456789012"
+                          }
+                      }
+                  }
+              ]
+          }

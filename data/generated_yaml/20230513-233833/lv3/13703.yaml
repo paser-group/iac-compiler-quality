@@ -1,0 +1,30 @@
+
+---
+- name: Redis fact caching bug playbook
+  hosts: all
+  become: true
+
+  tasks:
+  - name: Install epel-release on RHEL6
+    when: ansible_distribution == 'RedHat' and ansible_distribution_major_version == '6'
+    yum:
+      name: epel-release
+      state: latest
+
+  - name: Install Redis on RHEL6
+    when: ansible_distribution == 'RedHat' and ansible_distribution_major_version == '6'
+    yum:
+        name: redis
+        state: latest
+
+  - name: Enable Redis service
+    systemd:
+      name: redis
+      enabled: yes
+
+  - name: Fact caching restart
+    command: ansible localhost -m setup -t redis_cache
+
+  - name: Display Redis facts
+    debug:
+      var: ansible_facts.redis_version

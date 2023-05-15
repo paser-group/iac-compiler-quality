@@ -1,0 +1,36 @@
+
+- name: [2.1.2-RC5] Edge case testing playbook
+  hosts: all
+  gather_facts: no
+  vars:
+    mount_path: "/mnt/{{ lookup('pipe', 'date +%s%N') }}"
+    mount_opts: "rw,hard,intr,nolock"
+  tasks:
+  - name: Create mount directory
+    file:
+      path: "{{ mount_path }}"
+      state: directory
+  - name: Install nfs-utils
+    apt:
+      name: nfs-common
+      update_cache: yes
+  - name: Mount nfs share to directory
+    mount:
+      path: "{{ mount_path }}"
+      src: "{{ hostvars['node1']['ansible_default_ipv4']['address'] }}:/share"
+      fstype: nfs
+      state: mounted
+      opts: "{{ mount_opts }}"
+  - name: Check if mount directory exists
+    stat:
+      path: "{{ mount_path }}"
+    register: mount_dir_stat
+  - name: Unmount nfs share
+    mount:
+      path: "{{ mount_path }}"
+      state: unmounted
+    when: mount_dir_stat.stat.exists
+  - name: Remove mount directory
+    file:
+      path: "{{ mount_path }}"
+      state: absent

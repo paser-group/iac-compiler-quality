@@ -1,0 +1,28 @@
+yaml
+---
+- name: Playbook to troubleshoot connection issues with EAPI in eos_config
+  hosts: all
+  gather_facts: no
+  vars:
+    eos_config_provider: eos
+    eos_config_settings:
+      hostname: 10.0.0.1
+      username: admin
+      password: password
+      transport: eapi
+
+  tasks:
+    - name: Check eos_config connectivity using EAPI
+      eos_config:
+        provider: "{{ eos_config_provider }}"
+        settings: "{{ eos_config_settings }}"
+        src: "{{ inventory_hostname }}-config.cfg"
+        load_method: merge
+        save_when: modified
+      register: result
+      ignore_errors: true
+
+    - assert:
+        that:
+          - "result is failed"
+        fail_msg: "The configuration change did not fail the task as expected"

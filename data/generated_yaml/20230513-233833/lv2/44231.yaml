@@ -1,0 +1,23 @@
+
+- name: Run playbook
+  hosts: all
+  gather_facts: no
+
+  vars:
+    invalid_python_path: "/usr/local/bin/python3.5"
+
+  tasks:
+  - name: Run command with invalid python path
+    command: "{{ invalid_python_path }} --version"
+    register: invalid_python_output
+    ignore_errors: true
+
+  - name: Fail with misleading message due to missing Python
+    fail:
+      msg: "Failed to run command with invalid python path"
+    when: invalid_python_output.rc == 255 and invalid_python_output.stderr.find("No such file or directory") == -1
+
+  - name: Fail with proper message due to missing Python
+    fail:
+      msg: "Missing Python on remote host(s)"
+    when: invalid_python_output.rc == 255 and invalid_python_output.stderr.find("No such file or directory") != -1

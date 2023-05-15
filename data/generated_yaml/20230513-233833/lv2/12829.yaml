@@ -1,0 +1,40 @@
+yaml
+- hosts: all
+  become: true
+  tasks:
+    - name: Set an illegal variable
+      set_fact:
+        {{- "{{" }} illegal_variable {{ "}}=" }} illegal
+      vars:
+        illegal_variable: [1, 2, 3]
+
+    - name: Loop through illegal variable
+      debug:
+        var: item
+      loop: {{- "{{" }} illegal_variable {{ "}}" }}
+
+    - name: Set a legal variable
+      set_fact:
+        legal_variable: 5
+
+    - name: Loop with illegal variable in a template
+      template:
+        src: illegal_template.j2
+        dest: /tmp/illegal_template.txt
+      vars:
+        loop_var: {{- "{{" }} illegal_variable {{ "}}" }}
+        legal_var: {{- "{{" }} legal_variable {{ "}}" }}
+
+    - name: Fail with illegal variable in a when statement
+      fail:
+        msg: "This task should have failed"
+      when: {{- "{{" }} illegal_variable {{ "}}" }} == "illegal value"
+
+    - name: Include a non-existent file
+      include: "{{- nonexistent_file.yaml -}}"
+
+    - name: Run a command with illegal variable
+      command: echo {{- "{{" }} illegal_variable {{ "}}" }}
+
+    - name: Run a command with legal variable
+      command: echo {{- "{{" }} legal_variable {{ "}}" }}

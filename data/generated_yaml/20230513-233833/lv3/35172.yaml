@@ -1,0 +1,22 @@
+
+---
+- hosts: all
+  become: true
+  
+  tasks:
+  - name: Install Let's Encrypt Client
+    command: apt-get install -y letsencrypt
+    
+  - name: Requesting the certificate
+    command: "letsencrypt --standalone --http-01-address {{ ansible_default_ipv4.address }} -d {{ ansible_fqdn }}"
+    register: letsencrypt_output
+    
+  - debug: 
+      var: letsencrypt_output.stdout_lines
+      
+  - name: Verify that only one certificate is issued
+    command: "openssl x509 -noout -subject -in /etc/letsencrypt/live/{{ ansible_fqdn }}/cert.pem"
+    register: cert_output
+    
+  - debug: 
+      var: cert_output.stdout_lines

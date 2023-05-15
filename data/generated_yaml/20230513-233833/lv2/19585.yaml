@@ -1,0 +1,49 @@
+
+- name: Test osx_defaults Invalid value with edge cases
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Set invalid value - empty string
+      osx_defaults:
+        domain: com.example.domain
+        key: keyname
+        value: ""
+        user: testuser
+      register: result_empty
+
+    - name: Set invalid value - single value (not an array)
+      osx_defaults:
+        domain: com.example.domain
+        key: keyname
+        value: 123
+        user: testuser
+      register: result_single_val
+
+    - name: Set invalid value - list with a string value
+      osx_defaults:
+        domain: com.example.domain
+        key: keyname
+        value:
+            - "string"
+        user: testuser
+      register: result_string_val
+
+    - name: Set invalid value - list with mixed type values
+      osx_defaults:
+        domain: com.example.domain
+        key: keyname
+        value:
+            - 123
+            - "string"
+            - False
+        user: testuser
+      register: result_mixed_vals
+
+    - fail:
+        msg: "{{ item.stderr }}"
+      when: item.rc != 0
+      loop:
+        - "{{ result_empty }}"
+        - "{{ result_single_val }}"
+        - "{{ result_string_val }}"
+        - "{{ result_mixed_vals }}"

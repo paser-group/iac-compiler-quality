@@ -1,0 +1,40 @@
+
+---
+- name: Test playbook for tower_job_launch module
+  hosts: all
+  gather_facts: no
+   
+  tasks:
+  - name: Launch a job
+    tower_job_launch:
+      job_template: "test-job"
+      inventory: "test-inv"
+      limit: "test-node"
+      credential: "test-cred"
+      extra_vars:
+        var1: "test-var1"
+        var2: "test-var2"
+    register: job_launch
+        
+  - name: Launch three jobs and check for errors
+    tower_job_launch:
+      job_template: "test-job"
+      inventory: "test-inv"
+      limit: "test-node"
+      credential: "test-cred"
+      extra_vars:
+        var1: "test-var1"
+        var2: "test-var2"
+    ignore_errors: true
+    loop_control:
+      loop_var: item
+    loop:
+      - 1
+      - 2
+      - 3
+    register: job_launch_three
+        
+  - name: Check for error message
+    fail:
+      msg: "Expected 'tower_cli.exceptions.MultipleResults: Expected one result, got 3' exception."
+    when: "'tower_cli.exceptions.MultipleResults: Expected one result, got 3' not in job_launch_three.stderr_lines"

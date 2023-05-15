@@ -1,0 +1,33 @@
+
+- name: Testing edge cases and unconventional syntax for the tmp file permission error issue
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Create temporary file with invalid permissions
+      file:
+        path: "/tmp/testfile"
+        state: touch
+        mode: 00000
+      
+    - name: Copy file to node2 using sudo
+      copy:
+        src: "/tmp/testfile"
+        dest: "/tmp/testfile"
+        remote_src: true
+      delegate_to: "{{ groups['node2'] | random }}"
+      become: true
+      become_user: sudo
+      
+    - name: Copy file to node3 using unprivileged user
+      copy:
+        src: "/tmp/testfile"
+        dest: "/tmp/testfile"
+        remote_src: true
+      delegate_to: "{{ groups['node3'] | random }}"
+      become: false
+      
+    - name: Remove test file
+      file:
+        path: "/tmp/testfile"
+        state: absent

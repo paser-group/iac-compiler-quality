@@ -1,0 +1,40 @@
+
+---
+- name: Test os_port_facts module with fixed_ips.ip_address as filters
+  hosts: node1
+  gather_facts: false
+
+  tasks:
+  - name: Query ports with fixed_ips.ip_address as filter
+    os_port_facts:
+      fixed_ips:
+        - ip_address: "10.1.1.200 OR 1=1"
+    register: ports
+
+  - name: Verify ports returned
+    assert:
+      that: "'10.1.1.200' in item.fixed_ips[0].ip_address"
+      warn: false
+    loop: "{{ ports.ports }}"
+    
+  - name: Query ports with invalid IP format as filter
+    os_port_facts:
+      fixed_ips:
+        - ip_address: "invalid_ip"
+    ignore_errors: true
+    register: invalid_ip_ports
+
+  - name: Verify invalid IP format throws error
+    assert:
+      that: "'msg' in item and 'Invalid input for field/attribute ip_address' in item.msg"
+      warn: false
+    loop: "{{ invalid_ip_ports.ports }}"
+
+  - name: Query ports with no filters
+    os_port_facts: {}
+    register: all_ports
+
+  - name: Verify all ports are returned
+    assert:
+      that: "all_ports.ports|length == 3"
+      warn: false

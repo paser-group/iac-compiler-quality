@@ -1,0 +1,66 @@
+yaml
+---
+- name: Stress test group_by filter
+  hosts: node1
+  gather_facts: no
+
+  vars:
+    edge_case_1: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    edge_case_2: "string not iterable"
+    edge_case_3: 42
+    edge_case_4:
+      - name: server1
+        ip: 10.1.1.4
+      - name: server2
+        ip: 10.1.1.5
+      - name: server3
+        ip: 10.1.1.6
+
+  tasks:
+    # Generate incorrect groups with various edge cases and unconventional syntax
+    - name: Test group_by filter with list of integers
+      debug:
+        var: item.group
+      loop:
+        - "{{ edge_case_1 | map('string') | list | groupby('0') }}"
+        - "{{ edge_case_1 | map('string') | list | groupby('1') }}"
+        - "{{ edge_case_1 | map('string') | list | groupby('2') }}"
+        - "{{ edge_case_1 | map('string') | list | groupby('10') }}"
+      ignore_errors: yes
+
+    - name: Test group_by filter with non-iterable
+      debug:
+        var: item.group
+      loop:
+        - "{{ edge_case_2 | groupby('0') }}"
+      ignore_errors: yes
+
+    - name: Test group_by filter with non-list iterable
+      debug:
+        var: item.group
+      loop:
+        - "{{ edge_case_3 | groupby('0') }}"
+      ignore_errors: yes
+
+    - name: Test group_by filter with complex dictionary
+      debug:
+        var: item.group
+      loop:
+        - "{{ edge_case_4 | groupby('ip') }}"
+      ignore_errors: yes
+
+    # Generate correct groups with conventional syntax and expected inputs
+    - name: Test group_by filter with correct syntax and inputs
+      vars:
+        items:
+          - name: node1
+            role: web
+          - name: node2
+            role: db
+          - name: node3
+            role: app
+      debug:
+        var: item.group
+      loop:
+        - "{{ items | groupby('role') }}"
+

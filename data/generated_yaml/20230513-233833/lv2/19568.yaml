@@ -1,0 +1,93 @@
+
+---
+- name: Ansible Fuzzing Playbook
+  hosts: node1
+  gather_facts: no
+  vars:
+    bucket_name: "mybucket"
+    file_path: "/tmp/myfile.txt"
+    invalid_file_path: "/tmp/invalidfile.txt"
+    object_name: "myobject"
+  tasks:
+
+  # 1. Edge case for invalid bucket name
+  - name: test invalid bucket name
+    gc_storage:
+      command: upload
+      bucket: ""
+      src: "{{ file_path }}"
+      dest: "{{ object_name }}"
+
+  # 2. Edge case for invalid file path
+  - name: test invalid file path
+    gc_storage:
+      command: upload
+      bucket: "{{ bucket_name }}"
+      src: "{{ invalid_file_path }}"
+      dest: "{{ object_name }}"
+
+  # 3. Edge case for unsupported command
+  - name: test unsupported command
+    gc_storage:
+      command: unsupported
+      bucket: "{{ bucket_name }}"
+      src: "{{ file_path }}"
+      dest: "{{ object_name }}"
+
+  # 4. Edge case for invalid object name
+  - name: test invalid object name
+    gc_storage:
+      command: upload
+      bucket: "{{ bucket_name }}"
+      src: "{{ file_path }}"
+      dest: ""
+
+  # 5. Unconventional syntax with extra task-level arguments
+  - name: test unconventional syntax
+    gc_storage:
+      command: upload
+      bucket: "{{ bucket_name }}"
+      src: "{{ file_path }}"
+      dest: "{{ object_name }}"
+      extra_arg1: "value1"
+      extra_arg2: "value2"
+
+  # 6. Unexpected input with wrong data type for bucket
+  - name: test invalid data type for bucket
+    gc_storage:
+      command: upload
+      bucket: []
+      src: "{{ file_path }}"
+      dest: "{{ object_name }}"
+
+  # 7. Unexpected input with wrong data type for source path
+  - name: test invalid data type for source path
+    gc_storage:
+      command: upload
+      bucket: "{{ bucket_name }}"
+      src: []
+      dest: "{{ object_name }}"
+
+  # 8. Unexpected input with wrong data type for destination object
+  - name: test invalid data type for destination object
+    gc_storage:
+      command: upload
+      bucket: "{{ bucket_name }}"
+      src: "{{ file_path }}"
+      dest: []
+
+  # 9. Unexpected input with invalid encoding for source path
+  - name: test invalid encoding for source path
+    gc_storage:
+      command: upload
+      bucket: "{{ bucket_name }}"
+      src: "/tmp/invalidfile-*.txt"
+      dest: "{{ object_name }}"
+
+  # 10. Edge case for unsupported filename
+  - name: test unsupported filename
+    gc_storage:
+      command: upload
+      bucket: "{{ bucket_name }}"
+      src: "/tmp/*.pdf"
+      dest: "{{ object_name }}"

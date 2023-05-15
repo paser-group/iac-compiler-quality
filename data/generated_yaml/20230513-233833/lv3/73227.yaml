@@ -1,0 +1,33 @@
+
+---
+- name: Recreate issue with uri module and encrypted variable
+  hosts: all
+  become: true
+
+  vars:
+    secret_pwd: !vault |
+                  $ANSIBLE_VAULT;1.1;AES256
+                  62653239323863653836643165623137313731303638323066336664303864393964336534306364
+                  6662626536636538626338326537363561643233316233330a316431616637366637323966663665
+                  62316633333663336437653861313463323761623637396330396465326466646430626666643637
+                  3538626435396661320a343861633833316632623037656261383162306161636564316632393566
+                  6537
+    url: "https://example.com/api/update"
+    params:
+      login: "username"
+      pwd: "{{ secret_pwd }}"
+
+  tasks:
+    - name: Send request to update api
+      uri:
+        url: "{{ url }}"
+        method: POST
+        body_format: form-urlencoded
+        body: "{{ params }}"
+        return_content: true
+        validate_certs: no
+      register: result
+
+    - name: Print result
+      debug:
+        var: result

@@ -1,0 +1,26 @@
+
+---
+- name: Test EOS EAPI connection issue
+  hosts: eos
+  gather_facts: no
+  
+  tasks:
+    - name: Execute EOS command
+      eos_command:
+        commands: "show version"
+      async: 180
+      poll: 0
+      connection: eapi
+      register: eos_command_output
+      ignore_errors: yes
+      
+    - name: Wait for the EAPI service to return
+      wait_for:
+        host: "{{ inventory_hostname }}"
+        port: 443
+        state: started
+        
+    - name: Assert the response from EOS EAPI
+      assert:
+        that:
+          - eos_command_output.stdout != ""

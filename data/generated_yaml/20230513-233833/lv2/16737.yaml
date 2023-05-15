@@ -1,0 +1,62 @@
+
+- name: Test ansible_connection=lxd on Gentoo Container
+  hosts: all
+  become: true
+  vars:
+    python_version: "3.4"
+  tasks:
+    - name: Update Python to 2.7
+      raw: "emerge -uDN '=dev-lang/python-2.7.12'"
+      register: python_update_output
+      changed_when: false
+      failed_when: python_update_output.rc not in [0, 1]
+    - name: Install LXD
+      shell: "{{ item }}"
+      ignore_errors: true
+      with_items:
+        - apt-get update
+        - apt-get install -y lxd
+    - name: Configure LXD
+      ini_file:
+        dest: /etc/lxd/default.conf
+        section: "default"
+        option: "ipv4.address"
+        value: "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}"
+      notify: restart lxd
+    - name: Start LXD Container with Python 3.4
+      lxd_container:
+        name: test-gentoo-python-3.4
+        state: started
+        image: gentoo
+        profile: default
+        source:
+          type: image
+        config:
+          raw.lxc: |
+            lxc.mount.entry = /usr/local/portage/usr/portage /var/lib/lxd/rootfs/usr/portage none bind,optional
+            lxc.mount.entry = /usr/local/portage/distfiles /var/lib/lxd/rootfs/usr/portage/distfiles none bind,optional
+            lxc.mount.entry = /usr/local/portage/packages /var/lib/lxd/rootfs/usr/portage/packages none bind,optional
+    - name: Update GCC in LXD Container
+      become: true
+      become_user: root
+      raw: "chroot /var/lib/lxd/rootfs/ /bin/bash -c \"emerge -uDN '=sys-devel/gcc-7.4.0'\""
+    - name: Test ansible_connection=lxd
+      hosts: "test-gentoo-python-3.4"
+      gather_facts: no
+      vars:
+        ansible_connection: lxd
+        ansible_python_interpreter: "/usr/bin/python{{ python_version }}"
+      tasks:
+        - name: Test Connection
+          ping:
+          register: ping_output
+      ignore_errors: true
+      notify: remove lxd container
+  handlers:
+    - name: Restart LXD
+      service: name=lxd state=restarted
+    - name: Remove LXD Container
+      lxd_container:
+        name: test-gentoo-python-3.4
+        state: absent
+      when: "'test-gentoo-python-3.4' in group_names"

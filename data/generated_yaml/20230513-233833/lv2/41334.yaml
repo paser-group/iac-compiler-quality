@@ -1,0 +1,34 @@
+
+- hosts: node1
+  gather_facts: no
+  tasks:
+    - name: Install bcrypt module for learninglocker app
+      command: npm install /apps/opt/app/learninglocker/node_modules/bcrypt
+      become: yes
+      ignore_errors: yes
+
+    - name: Check if bcrypt module was installed successfully
+      shell: '[[ $(npm list | grep bcrypt -c) -eq 1 ]] && echo SUCCESS || echo FAILURE'
+      register: npm_output
+
+    - name: Fail the playbook if the module is not installed successfully
+      fail:
+        msg: 'Failed to install bcrypt module for app! {{ npm_output.stdout }}'
+      when: "'SUCCESS' not in npm_output.stdout"
+      ignore_errors: yes
+
+- hosts: node2
+  gather_facts: no
+  tasks:
+    - name: Generate bcrypt hash with invalid salt
+      command: bcrypt --bcrypt-invalid-salt password
+      become: yes
+      ignore_errors: yes
+
+- hosts: node3
+  gather_facts: no
+  tasks:
+    - name: Generate hex encoded salt
+      command: bcrypt --bcrypt-algorithm 2 --bcrypt-hex-salt --bcrypt-no-of-rounds 10 password
+      become: yes
+      ignore_errors: yes

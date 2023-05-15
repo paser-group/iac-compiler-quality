@@ -1,0 +1,28 @@
+
+---
+- name: Fix regression error
+  hosts: all
+  become: true
+  
+  tasks:
+
+  - name: copy ansible.cfg to the remote system
+    copy:
+      src: ansible.cfg
+      dest: /etc/ansible/ansible.cfg
+      mode: 0440
+
+  - name: Fix become prompt issue
+    block:
+    - name: add user to the sudoers file
+      lineinfile:
+        dest: /etc/sudoers
+        insertafter: "# Allow members of group sudo to execute any command"
+        line: "user ALL=(ALL) NOPASSWD: ALL"
+        validate: /usr/sbin/visudo -cf %s
+        state: present
+
+  - name: Restart SSH service
+    service:
+      name: sshd
+      state: restarted

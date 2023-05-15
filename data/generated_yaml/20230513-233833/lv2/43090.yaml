@@ -1,0 +1,40 @@
+
+---
+- name: Stress test for Ansible compiler
+  hosts: node1
+  become: true
+
+  tasks:
+    - name: Create a directory with an unconventional name
+      file:
+        path: '/!@#$%^&*()' # unexpected input
+        state: directory
+        mode: '0777'
+      delegate_to: node2
+
+    - name: Confirm the directory exists using a register variable
+      stat:
+        path: '/!@#$%^&*()'
+      register: dir_exists
+
+    - name: Print the result of the register variable
+      debug:
+        var: dir_exists
+
+    - name: Run an unconventional command using shell module
+      shell: 'echo "This is an unconventional command" %$#%#^$&^' # unconventional syntax
+      ignore_errors: true  # edge case
+
+    - name: Install a package with an unexpected name using apt module
+      apt:
+        name: '++--Package_123--++'
+        state: present
+        update_cache: yes
+        allow_unauthenticated: yes # unexpected input
+
+    - name: Ensure the package is installed
+      assert:
+        that: >
+          "'++--Package_123--++' in result.stdout"
+        vars:
+          result: "{{ lookup('pipe', 'dpkg -l') }}"

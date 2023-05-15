@@ -1,0 +1,63 @@
+
+- name: Play to test 'aws_ssm_parameter_store' issue
+  hosts: all
+  gather_facts: no
+  become: yes
+
+  vars:
+    invalid_parameter: 123
+    invalid_key: "Invalid_Key"
+    invalid_value: "Invalid_value"
+
+  tasks:
+    - name: Test 'aws_ssm_parameter_store' with a missing parameter key
+      aws_ssm_parameter_store:
+        name: "{{ invalid_parameter }}"
+        parameters:
+          "{{ invalid_key }}": "{{ invalid_value }}"
+      register: result_missing_parameter_key
+      ignore_errors: yes
+
+    - name: Test 'aws_ssm_parameter_store' with a missing parameter value
+      aws_ssm_parameter_store:
+        name: "{{ invalid_parameter }}"
+        parameters:
+          "{{ invalid_key }}":
+      register: result_missing_parameter_value
+      ignore_errors: yes
+
+    - name: Test 'aws_ssm_parameter_store' with an invalid parameter key
+      aws_ssm_parameter_store:
+        name: "{{ invalid_parameter }}"
+        parameters:
+          "{{ invalid_key }}": "{{ invalid_value }}"
+      register: result_invalid_parameter_key
+      ignore_errors: yes
+
+    - name: Test 'aws_ssm_parameter_store' with a JSON object as a parameter value
+      aws_ssm_parameter_store:
+        name: "{{ invalid_parameter }}"
+        parameters:
+          "valid_key": {"invalid_key": "invalid_value"}
+      register: result_json_object_as_parameter_value
+      ignore_errors: yes
+
+    - name: Test 'aws_ssm_parameter_store' with non-string parameter value
+      aws_ssm_parameter_store:
+        name: "{{ invalid_parameter }}"
+        parameters:
+          "valid_key": 123
+      register: result_non_string_parameter_value
+      ignore_errors: yes
+      
+    - name: Display test results
+      debug:
+        var:
+          item
+      with_items:
+        - result_missing_parameter_key
+        - result_missing_parameter_value
+        - result_invalid_parameter_key
+        - result_json_object_as_parameter_value
+        - result_non_string_parameter_value
+      

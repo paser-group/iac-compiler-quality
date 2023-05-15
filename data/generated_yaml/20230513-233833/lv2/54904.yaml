@@ -1,0 +1,56 @@
+
+- name: Stress testing Ansible compiler on F5 BIG-IP profile_client_ssl module
+  hosts: all
+  gather_facts: no
+
+  vars:
+    # unexpected input - using the wrong data type for the chain parameter
+    client_ssl_chain: 1234
+    
+    # unconventional syntax - using Jinja2 expressions in the SSL cert/key file paths
+    client_ssl_cert: "{{ '/tmp/' + ansible_hostname + '_client_cert.pem' }}"
+    client_ssl_key: "{{ '/tmp/' + ansible_hostname + '_client_key.pem' }}"
+
+  tasks:
+    - name: Install openssl package
+      become: true
+      apt:
+        name: openssl
+        state: latest
+
+    - name: Generate client SSL certificate
+      openssl_certificate:
+        path: "/tmp/{{ ansible_hostname }}_client_cert.pem"
+        privatekey_path: "/tmp/{{ ansible_hostname }}_client_key.pem"
+        provider: selfsigned
+        subject:
+          common_name: "{{ ansible_hostname }}.example.com"
+
+    - name: Upload client SSL certificate to node1 only
+      become: true
+      copy:
+        src: "{{ client_ssl_cert }}"
+        dest: "/etc/ssl/certs/client_cert.pem"
+      when: inventory_hostname == 'node1'
+
+    - name: Upload client SSL key to node2 only
+      become: true
+      copy:
+        src: "{{ client_ssl_key }}"
+        dest: "/etc/ssl/private/client_key.pem"
+      when: inventory_hostname == 'node2'
+
+    - name: Create F5 BIG-IP client SSL profile
+      # edge case - F5 client SSL profile with unexpected parameter values
+      f5networks.f5_modules.bigip_profile_client_ssl:
+        name: "{{ inventory_hostname }}_client_ssl_profile"
+        cert: "/etc/ssl/certs/client_cert.pem"
+        key: "/etc/ssl/private/client_key.pem"
+        chain: "{{ client_ssl_chain }}"
+        defaults_from: "clientssl"
+
+    - name: Delete F5 BIG-IP client SSL profile
+      # edge case - deleting a non-existent F5 client SSL profile
+      f5networks.f5_modules.bigip_profile_client_ssl:
+        name: "{{ inventory_hostname }}_nonexistent_client_ssl_profile"
+        state: absent

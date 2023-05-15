@@ -1,0 +1,29 @@
+
+---
+- name: Kubernetes Module idempotency fix
+  hosts: kubernetes_servers
+  become: yes
+
+  tasks:
+    - name: Install Kubernetes Python Library
+      pip:
+        name: kubernetes
+
+    - name: Deploy Kubernetes Objects
+      kubernetes:
+        definition: /path/to/your/kubernetes/objects.yml
+        state: present
+      register: result
+
+    - name: Handle Non-Idempotent Response Errors 
+      set_fact:
+        ignore_response_codes: [422]
+
+    - name: Deploy Kubernetes Objects Again
+      kubernetes:
+        definition: /path/to/your/kubernetes/objects.yml
+        state: present
+      ignore_errors: True
+      when: result.status not in ignore_response_codes
+
+

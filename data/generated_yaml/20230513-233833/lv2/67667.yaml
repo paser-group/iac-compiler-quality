@@ -1,0 +1,88 @@
+
+---
+- name: Test playbook for /tmp/.ansible ownership issues with non-root remote_user
+  hosts: all
+  gather_facts: false
+  remote_user: someuser
+  become: true
+  become_method: sudo
+
+  tasks:
+    - name: Check if /tmp/.ansible exists
+      stat:
+        path: /tmp/.ansible
+      register: tmp_ansible
+
+    - name: Print debug message if /tmp/.ansible exists
+      debug:
+        msg: "/tmp/.ansible exists"
+      when: tmp_ansible.stat.exists
+
+    - name: Ensure /tmp/.ansible exists (using unexpected mode)
+      file:
+        path: /tmp/.ansible
+        state: directory
+        owner: root
+        group: root
+        mode: 0000
+
+    - name: Check if /tmp/.ansible exists with unexpected mode
+      stat:
+        path: /tmp/.ansible
+      register: tmp_ansible_mode
+
+    - name: Print error if /tmp/.ansible exists with unexpected mode
+      fail:
+        msg: "Unexpected mode for /tmp/.ansible"
+      when: tmp_ansible_mode.stat.mode != "0000"
+
+    - name: Ensure /tmp/.ansible exists with non-root ownership (using unconventional syntax)
+      file:
+        path: /tmp/.ansible
+        state: directory
+        owner: someuser:somegroup
+        mode: "+rw"
+
+    - name: Check if /tmp/.ansible exists with non-root ownership
+      stat:
+        path: /tmp/.ansible
+      register: tmp_ansible_non_root
+
+    - name: Print error if /tmp/.ansible exists with non-root ownership
+      fail:
+        msg: "Unexpected ownership for /tmp/.ansible"
+      when: tmp_ansible_non_root.stat.owner != "someuser" or tmp_ansible_non_root.stat.group != "somegroup"
+
+    - name: Ensure /tmp/.ansible exists with correct permissions (using unexpected inputs)
+      file:
+        path: /tmp/.ansible
+        state: directory
+        owner: root
+        group: root
+        mode: "drwxr--r--"
+
+    - name: Check if /tmp/.ansible exists with correct permissions
+      stat:
+        path: /tmp/.ansible
+      register: tmp_ansible_perm
+
+    - name: Print error if /tmp/.ansible exists with incorrect permissions
+      fail:
+        msg: "Invalid permissions for /tmp/.ansible"
+      when: tmp_ansible_perm.stat.mode != "0040644"
+
+    - name: Remove /tmp/.ansible (using edge case)
+      file:
+        path: /tmp/.ansible
+        state: absent
+        mode: 0000
+
+    - name: Check if /tmp/.ansible is gone
+      stat:
+        path: /tmp/.ansible
+      register: tmp_ansible_gone
+
+    - name: Print debug message if /tmp/.ansible is gone
+      debug:
+        msg: "/tmp/.ansible is gone"
+      when: not tmp_ansible_gone.stat.exists

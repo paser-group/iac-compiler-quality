@@ -1,0 +1,25 @@
+
+---
+- name: Test playbook for docker_swarm_service issue
+  hosts: node1
+  become: yes
+  vars:
+    svc_name: "{{ '' if ansible_distribution_version.split('.')[0] == '18' else 'test_service' }}"
+    update_config: "{foo: {{ 'bar' if svc_name == '' else svc_name }}}"
+    bad_service_name: "{{ svc_name | random }}"
+    bad_image: "{{ bad_service_name | lower }}"
+    invalid_replica: "{{ 0/0 }}"
+    invalid_restart_policy: "{{ []|random }}"
+    bad_ports: "{{ '1234,1234' }}"
+    invalid_container_selectors: "foo=bar"
+
+  tasks:
+  - name: Create Swarm service with bad default values
+    docker_swarm_service:
+      name: "{{ bad_service_name }}"
+      image: "{{ bad_image }}"
+      replicas: "{{ invalid_replica }}"
+      publish_ports: "{{ bad_ports }}"
+      env: "{{ update_config }}"
+      restart_policy: "{{ invalid_restart_policy }}"
+      container_labels: "{{ invalid_container_selectors }}"

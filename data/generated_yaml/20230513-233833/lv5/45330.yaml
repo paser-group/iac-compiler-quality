@@ -1,0 +1,60 @@
+
+- name: Test azure_rm_containerregistry idempotence bug
+  hosts: all
+  
+  tasks:
+    # Task 1: Create a new container registry
+    - name: Create container registry
+      azure_rm_containerregistry:
+        name: myregistry
+        resource_group: myresourcegroup
+      register: registry_created
+    
+    - name: Assert registry created successfully
+      assert:
+        that:
+          - registry_created is success
+  
+    # Task 2: Run create task again and verify idempotence
+    - name: Create container registry again
+      azure_rm_containerregistry:
+        name: myregistry
+        resource_group: myresourcegroup
+      register: registry_created_again
+    
+    - name: Assert registry not created again
+      assert:
+        that:
+          - registry_created_again is skipped
+  
+    # Task 3: Test handling of invalid inputs
+    - name: Create container registry with invalid inputs
+      azure_rm_containerregistry:
+        name: "myregistry$"
+        resource_group: myresourcegroup
+      register: registry_created_fail
+    
+    - name: Assert registry create fails with invalid inputs
+      assert:
+        that:
+          - registry_created_fail is failed
+  
+    # Task 4: Test compatibility with other Ansible features
+      # For this example, we'll use a loop to create multiple registries
+      # and then verify that they were all created successfully
+    - name: Create multiple container registries with a loop
+      vars:
+        registry_names:
+          - myregistry1
+          - myregistry2
+          - myregistry3
+      azure_rm_containerregistry:
+        name: "{{ item }}"
+        resource_group: myresourcegroup
+      loop: "{{ registry_names }}"
+      register: registries_created
+    
+    - name: Assert all registries created successfully
+      assert:
+        that:
+          - registries_created is success

@@ -1,0 +1,42 @@
+
+- name: "Test playbook for ec2_asg issue"
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+
+    - name: "Create new launch configuration"
+      ec2_lc:
+        name: "test-lc"
+        image_id: "ami-123456"
+        instance_type: "t2.micro"
+        region: "us-west-2"
+      register: lc_output
+
+    - name: "Create new auto scaling group"
+      ec2_asg:
+        name: "test-asg"
+        launch_config_name: "{{ lc_output.launch_configuration_name }}"
+        min_size: 0
+        max_size: 5
+        region: "us-west-2"
+      register: asg_output
+
+    - name: "Replace all instances with new launch configuration"
+      ec2_asg:
+        name: "test-asg"
+        launch_config_name: "{{ lc_output.launch_configuration_name }}"
+        replace_all_instances: true
+        region: "us-west-2"
+      register: replace_output
+
+    - name: "Check if instances exist in group"
+      ec2_asg_facts:
+        name: "test-asg"
+        region: "us-west-2"
+      register: asg_facts
+
+    - name: "Assert no instances exist"
+      assert:
+        that: asg_facts.instances == []
+      

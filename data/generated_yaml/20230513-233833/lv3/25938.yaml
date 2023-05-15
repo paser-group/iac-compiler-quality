@@ -1,0 +1,40 @@
+
+---
+- name: Create a new security group on AWS
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    aws_access_key: <aws_access_key>
+    aws_secret_key: <aws_secret_key>
+    region: us-east-1
+    security_group_name: my-sec-group
+    description: 'Security Group with Invalid Ports parameter'
+
+  tasks:
+    - name: Create Security Group
+      ec2_group:
+        name: "{{security_group_name}}"
+        description: "{{description}}"
+        region: "{{region}}"
+        rules:
+          - proto: tcp
+            from_port: 22
+            to_port: 65536
+            cidr_ip: 0.0.0.0/0
+            ports: InvalidValue
+        aws_access_key: "{{aws_access_key}}"
+        aws_secret_key: "{{aws_secret_key}}"
+        state: present
+      register: ec2_sec_group
+
+    - debug:
+        var: ec2_sec_group
+
+    - name: Clean up
+      ec2_group:
+        name: "{{security_group_name}}"
+        region: "{{region}}"
+        aws_access_key: "{{aws_access_key}}"
+        aws_secret_key: "{{aws_secret_key}}"
+        state: absent

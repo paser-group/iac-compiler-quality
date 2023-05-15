@@ -1,0 +1,37 @@
+yaml
+---
+- name: iptables module tcp_flags bug testing
+  hosts: all
+  tasks:
+  - name: Restrict SSH based on unusual tcp_flags
+    iptables:
+      chain: INPUT
+      protocol: tcp
+      tcp_flags: "FIN, ACK, URG, !PSH, ALL"
+      jump: DROP
+    become: true
+    
+  - name: Allow web traffic, unexpected input
+    iptables:
+      chain: INPUT
+      protocol: "tcp"
+      port: "HTTP"
+      jump: "ACCEPT"
+    become: true
+
+  - name: Imitate DDoS attack, unconventional syntax
+    iptables:
+      chain: INPUT
+      protocol: tcp
+      tcp_flags: "SYN, SYN"
+      limit: "10/s"
+      jump: "DROP"
+    become: true
+    
+  - name: Use tcp_flags on non-TCP protocol, edge case
+    iptables:
+      chain: INPUT
+      protocol: "udp"
+      tcp_flags: "FIN, ACK, URG, !PSH, ALL"
+      jump: "ACCEPT"
+    become: true

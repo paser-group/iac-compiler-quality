@@ -1,0 +1,42 @@
+
+- name: Test Ansible's vmware_host module
+  hosts: all
+  gather_facts: no
+  vars:
+    vcenter_server: "<vcenter_server>"
+    vcenter_username: "<vcenter_username>"
+    vcenter_password: "<vcenter_password>"
+    vm_name: "<vm_name>"
+    datastore_name: "<datastore_name>"
+  vars_files:
+    - secrets.yml
+  tasks:
+    - name: Connect to VMware server
+      vmware_guest:
+        vcenter_server: "{{ vcenter_server }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: no
+      delegate_to: localhost
+      register: vmware_conn
+
+    - name: Get facts about a virtual machine
+      vmware_vm_facts:
+        datacenter: "{{ vmware_conn.instance.datacenter }}"
+        hostname: "{{ vm_name }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: no
+      delegate_to: localhost
+      register: vmware_vm_facts_out
+
+    - name: Get facts about a datastore
+      vmware_datastore_facts:
+        datacenter: "{{ vmware_conn.instance.datacenter }}"
+        hostname: "{{ vm_name }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: no
+        datastore_name: "{{ datastore_name }}"
+      delegate_to: localhost
+      register: vmware_datastore_facts_out

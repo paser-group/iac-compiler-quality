@@ -1,0 +1,53 @@
+
+- name: Test sudo password error when including role
+  hosts: all
+  become: yes
+  vars:
+    role_name: "{{ 'my-role' }}"
+    sudo_password: "{{ 'mypassword' }}"
+  
+  vars_prompt:
+    - name: "sudo_password"
+      prompt: "Enter the sudo password: "
+
+  tasks:
+
+  - name: Test shell command execution
+    shell: |
+      echo "I am running as: $(whoami)"
+    register: shell_output
+
+  - name: Install the role
+    become_method: sudo
+    command: ansible-galaxy install "git+https://github.com/ansible-roles/{{role_name}}"
+    ignore_errors: true
+
+  - name: Include the role
+    include_role:
+      name: "{{role_name}}"
+      tasks_from: main
+    become: yes
+    become_method: sudo
+    vars:
+      ansible_become_pass: "{{sudo_password}}"
+  
+  - name: Test service restart
+    service:
+      name: nginx
+      state: restarted
+
+  - name: Test package install
+    apt:
+      name: htop
+      state: present
+
+  - name: Run a custom command with args
+    command: echo {{ item[0] }} {{ item[1] }}
+    with_nested:
+      - [1, 2, 3]
+      - ['a', 'b', 'c']
+    register: custom_cmd_output
+
+  - name: Debug output
+    debug:
+      var: custom_cmd_output

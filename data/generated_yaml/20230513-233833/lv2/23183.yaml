@@ -1,0 +1,46 @@
+yaml
+- name: Run win_robocopy with unconventional argument input
+  hosts: all
+  tasks:
+    - win_robocopy:
+        src: C:\source
+        robocopy_options: /MOV /ZB /FFT /MT[:n]
+        dest: C:\destination
+        checksum: yes
+        files:
+          - file1.txt
+
+- name: Run win_robocopy with unexpected syntax
+  hosts: all
+  tasks:
+    - win_robocopy: src=C:\source dest=C:\destination /copy:DAT
+      register: result
+    - debug:
+        msg: "{{ result }}"
+
+- name: Run win_robocopy with edge case input
+  hosts: all
+  vars:
+    robocopy_options: /XD "C:\folder to exclude" /XF "file to exclude"
+  tasks:
+    - win_robocopy:
+        src: C:\source
+        dest: C:\destination
+        robocopy_options: "{{ robocopy_options }}"
+      register: result
+    - debug:
+        msg: "{{ result }}"
+
+- name: Run win_robocopy with unconventional task names
+  hosts: all
+  tasks:
+    - copy:
+        content: "{{ playbook_dir }}/file1.txt"
+        dest: "{{ inventory_hostname }}_source.txt"
+    - win_robocopy:
+        src: "{{ inventory_hostname }}_source.txt"
+        dest: "{{ inventory_hostname }}_destination.txt"
+      register: "{{ inventory_hostname }}_result"
+    - debug:
+        msg: "{{ hostvars[inventory_hostname][inventory_hostname + '_result'] }}"
+

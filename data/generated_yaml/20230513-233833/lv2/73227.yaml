@@ -1,0 +1,42 @@
+
+---
+- name: Test playbook for encrypted variable prefix on uri module
+  hosts: all
+  tasks:
+    - name: Get HTTPS content using encrypted variable with '-|' prefix
+      uri:
+        url: https://{{ encrypted_var1 }}
+        return_content: yes
+      vars:
+        encrypted_var1: '|-' + '!{vault}' + 'encrypted_string'
+    
+    - name: Get HTTP content using encrypted variable with '-|-' prefix enclosed in quotes
+      uri:
+        url: "http://{{ encrypted_var2 }}"
+        return_content: yes
+      vars:
+        encrypted_var2: "'-|-' + !{vault} + 'encrypted_string'"
+      
+    - name: Get HTTPS status code using encrypted variable with '-|-' prefix formatted as a dictionary
+      uri:
+        url: "{{ encrypted_dict.encrypted_url }}"
+        method: GET
+        status_code: 200
+      vars:
+        encrypted_dict:
+          encrypted_url: '|- !vault |\n          $encrypted_string'
+    
+    - name: Get HTTP response headers using encrypted variable with '-|-' prefix combined with an arithmetic operation
+      uri:
+        url: http://{{ nodes[0] }}:{% if 80-10>20 %}{{ encrypted_port }}{% endif %}/api/test
+        return_headers: yes
+      vars:
+        encrypted_port: "-|-'{{ nodes[1] }}'|-'"
+      
+    - name: Get HTTPS request using encrypted variable with '-|-' prefix using a conditional statement
+      uri:
+        url: https://{{ encrypted_url if flag is defined else nodes[2] }}
+        method: GET
+      vars:
+        encrypted_url: '|- !vault |\n          $encrypted_string'
+        flag: true

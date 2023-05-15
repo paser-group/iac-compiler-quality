@@ -1,0 +1,48 @@
+
+---
+- name: Stress test playbook for k8s_scale
+  hosts: all
+  become: true
+  vars:
+    replicas: "{{ [1, 2, 3, 4, 5, 'abc', ''] }}"
+  tasks:
+    - name: Scale Kubernetes deployment
+      k8s_scale:
+        api_version: "apps/v1"
+        kind: "Deployment"
+        name: "{{ item }}"
+        namespace: "default"
+        replicas: "{{ replicas | random }}"
+        state: "{{ ['present', 'absent', 'running', 'stopped', 'unknown'] | random }}"
+        annotations: "{{ { item: 'invalidannotation' } } | to_json }}"
+        wait: "{{ [false, 'invalidwait'] | random }}"
+      loop: "{{ ['deployment1', 'deployment2', 'deployment3', ''] }}"
+      ignore_errors: true
+      register: result
+
+    - name: Debugging message
+      debug:
+        msg: "Scale status: {{ result }}"
+
+    - name: Removing invalid annotation
+      k8s:
+        api_version: "apps/v1"
+        kind: "Deployment"
+        name: "{{ item }}"
+        namespace: "default"
+        state: "present"
+        definition:
+          metadata:
+            annotations:
+              item: null
+      loop: [ "{{ result | json_query('results[*].item') }}", "invalid-deployment" ]
+
+    - name: Removing invalid deployment
+      k8s:
+        api_version: "apps/v1"
+        kind: "Deployment"
+        name: "invalid-deployment"
+        namespace: "invalid-namespace"
+        state: "absent"
+        wait: "{{ [false, 'invalidwait2'] | random }}"
+  

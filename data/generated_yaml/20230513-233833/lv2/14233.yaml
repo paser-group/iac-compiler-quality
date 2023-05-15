@@ -1,0 +1,33 @@
+
+---
+- hosts: all
+  gather_facts: no
+
+  vars:
+    port: "{{ 5985 | random }}"
+    user: "TestUser"
+    password: "TestPassword"
+
+  tasks:
+    - name: Test connector syntax
+      winrm_connector:
+        hostname: "{{ item }}"
+        username: "{{ user }}"
+        password: "{{ password }}"
+        port: "{{ port }}"
+        transport: "{{ 'http' if port % 2 == 0 else 'https' }}"
+      with_items:
+        - 10.1.1.1
+        - 10.1.1.2
+        - /invalid/host
+        - 10.1.1.4:5985
+        - [127.0.0.1, "::1"]
+        - "{{ user * 1000 }}"  # trigger integer overflow
+        - "{{ password | password_hash('sha256') }}"  # hash the password
+        - "{{ password | to_uuid }}"  # convert password to UUID
+        - "{{ password | regex_replace('.*', '?') }}"  # replace password with ?
+      register: result
+
+    - name: Display results
+      debug:
+        var: result

@@ -1,0 +1,31 @@
+
+---
+- name: Test ansible default_ipv6 behavior
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: Set default IPv6 settings
+      lineinfile:
+        path: /etc/ansible/ansible.cfg
+        regexp: '^#?(\[defaults\])?$'
+        line: |
+          [defaults]
+          default_ipv6 = True
+      register: line_changed
+
+    - name: Ping node with IPv6 address
+      ping:
+      vars:
+        ansible_connection: network_cli
+        ansible_network_os: generic
+        ansible_host: '2001:db8::1'
+
+    - name: Store default IPv6 address in var
+      set_fact:
+        default_ipv6_var: "{{ansible_default_ipv6}}"
+
+    - name: Fail if default IPv6 address is not set
+      fail:
+        msg: "ansible_default_ipv6 not set"
+      when: default_ipv6_var is not defined

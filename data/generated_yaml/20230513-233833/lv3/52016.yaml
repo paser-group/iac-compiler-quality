@@ -1,0 +1,45 @@
+
+- name: Create an Application Load Balancer without access_logs_s3_prefix
+  hosts: all
+  become: true
+  vars:
+    region: "<REGION>"
+    vpc_id: "<VPC ID>"
+  tasks:
+    - name: Create an Application Load Balancer
+      elb_application_lb:
+        name: "my-alb"
+        vpc_id: "{{ vpc_id }}"
+        subnets:
+          - "<SUBNET ID 1>"
+          - "<SUBNET ID 2>"
+        security_groups:
+          - "<SECURITY GROUP ID>"
+        listeners:
+          - Protocol: "HTTP"
+            Port: 80
+            DefaultActions:
+              - Type: "fixed-response"
+                FixedResponseConfig:
+                  StatusCode: "200"
+                  ContentType: "text/plain"
+                  MessageBody: "Hello World"
+        health_check:
+          interval_seconds: 30
+          path: "/health"
+          port: "traffic-port"
+          healthy_threshold_count: 2
+          unhealthy_threshold_count: 2
+          timeout_seconds: 10
+    - name: Wait for the ALB to become healthy
+      elb_application_lb_facts:
+        names: ["my-alb"]
+      register: alb_facts
+      until: alb_facts.albs[0].state == "active"
+      retries: 6
+      delay: 10
+    - name: Make a request to the ALB
+      delegate_to: localhost
+      uri:
+        url: "http://{{ alb_facts.albs[0].dns_name }}"
+        method: GET

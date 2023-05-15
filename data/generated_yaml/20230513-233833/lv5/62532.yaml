@@ -1,0 +1,34 @@
+
+- name: Create GCP Node Pool
+  hosts: gcp_instance
+  gather_facts: no
+  tasks:
+    - name: Create Node Pool
+      gcp_container_node_pool:
+        name: test-pool
+        project: my_project
+        location: us-west1-a
+        cluster: my_cluster
+        node_config:
+          disk_size_gb: 100
+          machine_type: n1-standard-2
+          oauth_scopes:
+            - https://www.googleapis.com/auth/devstorage.read_only
+        auth_kind: serviceaccount
+        service_account_file: "/path/to/service-account.json"
+      register: node_pool
+
+    - name: Verify Node Pool Creation
+      fail:
+        msg: "Node pool creation failed"
+      when: node_pool is failed
+
+    - name: Delete Node Pool
+      gcp_container_node_pool:
+        name: test-pool
+        project: my_project
+        location: us-west1-a
+        cluster: my_cluster
+        state: absent
+        auth_kind: serviceaccount
+        service_account_file: "/path/to/service-account.json"

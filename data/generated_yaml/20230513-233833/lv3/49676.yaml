@@ -1,0 +1,34 @@
+
+---
+- name: Check for requester_pays flag bug
+  hosts: all
+  gather_facts: no
+
+  vars:
+    s3_bucket_name: "test-bucket-for-issue-recreation"
+    requester_pays: False
+
+  tasks:
+    - name: Create S3 bucket
+      community.aws.s3_bucket:
+        name: "{{ s3_bucket_name }}"
+        state: present
+        region: "us-west-2"
+        requester_pays: "{{ requester_pays }}"
+
+    - name: Check for requester_pays flag existence
+      community.aws.aws_s3_bucket_info:
+        bucket: "{{ s3_bucket_name }}"
+      register: s3_bucket_info_output
+
+    - name: Check if requester_pays is not set for {{ s3_bucket_name }}
+      debug:
+        msg: "Requester pays flag is not set for {{ s3_bucket_name }}"
+      when: s3_bucket_info_output.s3_buckets[0].requester_pays == False
+
+  handlers:
+    - name: cleanup
+      community.aws.s3_bucket:
+        name: "{{ s3_bucket_name }}"
+        state: absent
+        region: "us-west-2"

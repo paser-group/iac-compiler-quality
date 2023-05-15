@@ -1,0 +1,25 @@
+yaml
+---
+- name: Create EC2 instance and add to a target group
+  hosts: localhost
+  vars:
+    region: us-west-2
+    target_group_arn: arn:aws:elasticloadbalancing:us-west-2:123456789012:targetgroup/my-target-group/73e2d6bc24d8a067
+  tasks:
+    - name: launch EC2 Instance
+      ec2:
+        key_name: mykey
+        group: webserver
+        instance_type: t2.micro
+        image: ami-0c55b159cbfafe1f0
+        wait: true
+        region: "{{ region }}"
+      register: ec2
+
+    - name: Add the instance to a target group
+      elbv2_target:
+        target_group_arn: "{{ target_group_arn }}"
+        targets:
+          - Id: "{{ ec2.instances[0].id }}"
+            Port: "{{ ec2.instances[0].network_interfaces[0].private_ip_address }}"
+        region: "{{ region }}"

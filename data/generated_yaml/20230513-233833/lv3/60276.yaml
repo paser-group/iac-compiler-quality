@@ -1,0 +1,31 @@
+
+- name: Check ACI functionality with custom module
+  hosts: all
+  gather_facts: no
+  vars:
+    aci_username: "username"
+    aci_password: "password"
+  tasks:
+  - name: Create a custom module to check ACI functionality
+    copy:
+      dest: "/usr/lib/python2.7/dist-packages/ansible/module_utils/network/custom.py"
+      mode: '0644'
+      content: |
+        from ansible.module_utils.network.aci.aci import ACIModule
+        class CustomModule(ACIModule):
+            def __init__(self, *args, **kwargs):
+                super(CustomModule, self).__init__(*args, **kwargs)
+
+            def run(self):
+                self.logger.debug("Testing custom module with ACI")
+                result = {'changed': False, 'hello': 'world', 'msg': 'ACI functionality works with custom module'}
+                self.exit_json(**result)
+
+- name: Test Custom module with ACI
+  hosts: all
+  gather_facts: no
+  tasks:
+  - name: Execute custom module with ACI
+    custom:
+      username: "{{ aci_username }}"
+      password: "{{ aci_password }}"

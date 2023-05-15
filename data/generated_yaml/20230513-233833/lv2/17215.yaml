@@ -1,0 +1,21 @@
+
+- hosts: all
+  tasks:
+    - name: Mount disk on temp directory
+      mount:
+        path: /tmp/mount
+        src: /dev/sda
+        fstype: ext4
+        state: mounted
+        opts: defaults,noatime,nodiratime,nosuid
+      when: temp_path is not defined
+
+    - name: Create temporary file
+      shell: echo "temporary file" >> {{ temp_path }}/file{{ item }}.txt
+      with_sequence: count=100
+      when: temp_path is defined
+
+    - name: Fill up disk
+      shell: fallocate -l 10G {{ temp_path }}/file{{ item }}.txt
+      with_sequence: count=1000
+      when: temp_path is defined

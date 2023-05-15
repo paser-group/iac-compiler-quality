@@ -1,0 +1,48 @@
+yaml
+---
+- name: Install Ansible via source method in Linux
+  hosts: all
+  become: yes
+  
+  tasks:
+  - name: Install dependencies
+    apt:
+      name: ['python', 'python-setuptools', 'python3', 'python3-distutils']
+      state: present
+  
+  - name: Clone Ansible repository
+    git:
+      repo: 'https://github.com/ansible/ansible.git'
+      dest: '/usr/local/src/ansible'
+      version: 'stable-2.9'
+      depth: 1
+  
+  - name: Install Ansible from source
+    command: python setup.py install
+    args:
+      chdir: /usr/local/src/ansible
+
+- name: Execute Ansible against different inventory files
+  hosts:
+  - node1
+  - node2
+  - node3
+  
+  tasks:
+  - name: Ping hosts
+    ping:
+    
+- name: Test performance and scalability of Ansible
+  hosts: node1
+  gather_facts: no
+  
+  tasks:
+  - name: Create test files
+    file:
+      path: /ansible_test_files/file{{ item }}
+      state: touch
+    with_sequence: start=1 end=50
+    
+  - name: Execute task against test files
+    command: touch /ansible_test_files/file{{ item }}
+    with_sequence: start=1 end=50

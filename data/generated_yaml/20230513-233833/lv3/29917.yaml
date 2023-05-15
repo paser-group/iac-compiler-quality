@@ -1,0 +1,51 @@
+
+---
+- name: Test Ansible Compiler for S3 bucket name containing dots
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Update the Ubuntu registry
+      apt:
+        name: '*'
+        state: present
+      tags: 
+        - update
+
+    - name: Install Python pip and the AWS CLI
+      apt:
+        name:
+          - python-pip
+          - awscli
+        state: present
+      tags:
+        - install
+
+    - name: Configure the AWS CLI
+      command: >
+        aws configure 
+        --region {{ aws_region }}
+        --aws-access-key-id {{ aws_access_key }}
+        --aws-secret-access-key {{ aws_secret_key }}
+      tags: 
+        - awscli
+        - configure 
+
+    - name: Create an S3 bucket with a name containing dots
+      command: >
+        aws s3api create-bucket 
+        --bucket {{ s3_bucket_name }} 
+        --region {{ aws_region }} 
+        --create-bucket-configuration LocationConstraint={{ aws_region }}
+      tags: 
+        - awscli
+        - s3
+
+    - name: Attempt to access the S3 bucket using the fakes3 protocol
+      s3:
+        bucket: "{{ s3_bucket_name }}"
+        region: "{{ aws_region }}"
+        mode: list
+        endpoint_url: "http://fakes3:4569"
+      tags:
+        - s3

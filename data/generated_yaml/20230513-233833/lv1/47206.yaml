@@ -1,0 +1,46 @@
+
+- name: Playbook to fix Ansible tower_role module failing with field not found error
+  hosts: <specify-hosts-here>
+  become: true
+
+  tasks:
+    - name: Install required packages (jq)
+      package:
+        name: jq
+        state: present
+
+    - name: Fetch Role Metadata
+      uri:
+        url: 'https://api.github.com/repos/ansible/ansible/contents/lib/ansible/galaxy/data/role_metas/{{ role_name }}.json'
+        return_content: yes
+        headers:
+          Accept: application/vnd.github.raw
+      register: role_metadata
+
+    - name: Ensure role is manageable
+      set_fact:
+        management_fields:
+          - platforms
+          - categories
+          - authors
+          - license
+          - galaxy_tags
+          - min_ansible_version
+      when:
+        - role_metadata.status == 200
+        - role_metadata.json.management == true
+
+    - name: Ensure role has meta information
+      fail:
+        msg: "Role '{{ role_name }}' has no metadata information. Please consult the Galaxy documentation on metadata."
+      when:
+        - role_metadata.status == 200
+        - role_metadata.json.metadata == null
+
+    - name: Ensure role conforms to the role metadata specification
+      fail:
+        msg: "{{ item }} field not found in '{{ role_name }}' metadata. Please consult the Galaxy documentation on metadata."
+      when:
+        - role_metadata.status == 200
+        - item not in role_metadata.json.metadata.keys()
+      loop: "{{ management_fields }}"

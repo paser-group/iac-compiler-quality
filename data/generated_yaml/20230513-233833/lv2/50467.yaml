@@ -1,0 +1,67 @@
+
+---
+- name: Test Ansible fuzzing on Docker Swarm Service
+  hosts: node1
+  become: true
+
+  tasks:
+    # Ensure Docker is installed
+    - name: Install Docker
+      apt:
+        name: docker.io
+        state: present
+
+    # Set up a Docker Swarm
+    - name: Set up Docker Swarm
+      shell: docker swarm init
+      args:
+        warn: false
+      register: swarm_result
+    - debug:
+        var: swarm_result
+
+    # Deploy a service with a bad default
+    - name: Deploy a Service with a Bad Default
+      shell: docker service create --name test --replicas 1 --detach=false --update-failure-action rewire --no-resolve-image --bad-default baddefault/ubuntu:latest
+      args:
+        warn: false
+      ignore_errors: yes
+      register: service_result
+    - debug:
+        var: service_result
+
+    # Check Service Status
+    - name: Check Service Status
+      shell: docker service ps test
+      args:
+        warn: false
+      register: status_result
+    - debug:
+        var: status_result
+
+    # Scale the Service
+    - name: Scale the Service
+      shell: docker service scale test=2
+      args:
+        warn: false
+      register: scale_result
+    - debug:
+        var: scale_result
+
+    # Drain a Node
+    - name: Drain a Node
+      shell: docker node update --availability=drain $(docker node ls -q | head -n 1)
+      args:
+        warn: false
+      register: drain_result
+    - debug:
+        var: drain_result
+
+    # Remove Service
+    - name: Remove Service
+      shell: docker service rm test
+      args:
+        warn: false
+      register: remove_result
+    - debug:
+        var: remove_result

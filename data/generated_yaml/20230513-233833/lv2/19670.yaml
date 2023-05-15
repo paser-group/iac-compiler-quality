@@ -1,0 +1,84 @@
+
+---
+- name: Azure Storage Account Authorization Error Test
+  hosts: all
+  gather_facts: false
+
+  tasks:
+  - name: Ensure Azure python SDK is installed
+    pip:
+      name: azure
+      state: present
+      extra_args: "--trusted-host pypi.python.org"
+
+  - name: Ensure Azure CLI is installed
+    apt:
+      name: python-pip
+      state: present
+    become: true
+
+  - name: Create storage account with incorrect key
+    azure_rm_storageaccount:
+      resource_group: myResourceGroup
+      name: mystorageaccount
+      account_type: Standard_LRS
+      sku_name: Standard_LRS
+      tags:
+        environment: test
+      access_tier: Cool
+      key: "{{ random('string', 5, 'abcdefghijklmnopqrstuvwxyz0123456789') }}"   # incorrect key
+
+  - name: Wait for storage account creation to complete with error
+    azure_rm_storageaccount_info:
+      resource_group: myResourceGroup
+      name: mystorageaccount
+      register: result
+    until: result.state == 'failed'
+    retries: 10
+    delay: 10
+
+  - name: Create storage account with invalid SKU
+    azure_rm_storageaccount:
+      resource_group: myResourceGroup
+      name: mystorageaccount
+      account_type: Standard_LRS
+      sku_name: invalidSKU   # invalid SKU name
+      tags:
+        environment: test
+      access_tier: Cool
+      key: "{{ random('string', 16, 'abcdefghijklmnopqrstuvwxyz0123456789') }}"
+
+  - name: Wait for storage account creation to complete with error
+    azure_rm_storageaccount_info:
+      resource_group: myResourceGroup
+      name: mystorageaccount
+      register: result
+    until: result.state == 'failed'
+    retries: 10
+    delay: 10
+
+  - name: Create storage account with invalid access tier
+    azure_rm_storageaccount:
+      resource_group: myResourceGroup
+      name: mystorageaccount
+      account_type: Standard_LRS
+      sku_name: Standard_LRS
+      tags:
+        environment: test
+      access_tier: invalidAccessTier   # invalid access tier name
+      key: "{{ random('string', 16, 'abcdefghijklmnopqrstuvwxyz0123456789') }}"
+
+  - name: Wait for storage account creation to complete with error
+    azure_rm_storageaccount_info:
+      resource_group: myResourceGroup
+      name: mystorageaccount
+      register: result
+    until: result.state == 'failed'
+    retries: 10
+    delay: 10
+
+  - name: Clean up
+    azure_rm_storageaccount:
+      resource_group: myResourceGroup
+      name: mystorageaccount
+      state: absent

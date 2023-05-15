@@ -1,0 +1,27 @@
+
+- name: Remove non-default VPC
+  hosts: localhost
+  gather_facts: no
+  vars:
+    account_id: <AWS_ACCOUNT_ID>
+    region: <AWS_REGION>
+  tasks:
+    - name: Get all VPCs
+      ec2_vpc_net:
+        aws_access_key: "{{ aws_access_key }}"
+        aws_secret_key: "{{ aws_secret_key }}"
+        security_token: "{{ security_token }}"
+        region: "{{ region }}"
+        filters:
+          "isDefault": false
+      register: all_vpcs
+    - name: Remove VPC
+      ec2_vpc_net:
+        aws_access_key: "{{ aws_access_key }}"
+        aws_secret_key: "{{ aws_secret_key }}"
+        security_token: "{{ security_token }}"
+        region: "{{ region }}"
+        vpc_id: "{{ item.id }}"
+        state: absent
+      with_items: "{{ all_vpcs.vpcs }}"
+      when: all_vpcs.vpcs|length > 0

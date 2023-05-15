@@ -1,0 +1,44 @@
+yaml
+- name: Testing acl module
+  hosts: all
+  become: true
+  tasks:
+    # Test default behavior of add a user ACL
+    - name: Verify default ACL configuration
+      acl:
+        path: /tmp/test_file.txt
+      register: acl_default
+
+    - name: Modify user ACL and check default ACL config
+      acl:
+        path: /tmp/test_file.txt
+        entity: user
+        name: testuser
+        permissions: rwx
+      register: acl_user
+
+    - name: verify user ACL configuration
+      acl:
+        path: /tmp/test_file.txt
+      register: acl_user_verify
+
+    - name: Verify if user ACL changes reflects in default ACL
+      assert:
+        that: acl_default.acl[0].perms == acl_user_verify.acl[0].perms
+
+    # Test the acl module by providing access to a file/directory for specified users or groups.
+    - name: Set ACL for directory
+      acl:
+        path: /tmp/
+        entity: user
+        name: "{{ ansible_user_id }}"
+        perms: rwx
+        state: present
+
+    - name: Set ACL for file
+      acl:
+        path: /tmp/test_file.txt
+        entity: user
+        name: "{{ ansible_user_id }}"
+        perms: rwx
+        state: present

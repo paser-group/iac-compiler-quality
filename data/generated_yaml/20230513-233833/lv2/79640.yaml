@@ -1,0 +1,33 @@
+
+---
+- hosts: all
+  become: yes
+  tasks:
+    - name: Install Ansible Galaxy
+      command: >
+        bash -c "sudo wget -O- https://raw.githubusercontent.com/ansible/galaxy/main/scripts/galaxy_install.sh | sh"
+      environment:
+        http_proxy: "http://{{ hostvars['proxy_server'].ansible_host }}:{{ hostvars['proxy_server'].ansible_port }}"
+        https_proxy: "http://{{ hostvars['proxy_server'].ansible_host }}:{{ hostvars['proxy_server'].ansible_port }}"
+      ignore_errors: yes
+      register: galaxy_output
+
+    - name: Print install output
+      debug:
+        var: galaxy_output.stdout_lines
+
+    - name: Install OpenSSL 3.0
+      shell: sudo add-apt-repository ppa:ondrej/php && sudo apt-get update && sudo apt-get install openssl3
+      warn: false
+      ignore_errors: yes
+
+    - name: Verify OpenSSL 3.0 installation
+      command: openssl version
+      ignore_errors: yes
+
+- meta:
+    run_once: true
+    hostvars:
+      proxy_server:
+        ansible_host: "10.1.1.254"
+        ansible_port: 8080

@@ -1,0 +1,43 @@
+
+- name: Test GCP Inventory plugin
+  hosts: all
+
+  tasks:
+  - name: Install GCP SDK
+    become: yes
+    apt:
+      name:
+        - python3-google-auth
+        - python3-google-auth-httplib2
+        - python3-google-compute-engine
+        - google-cloud-sdk
+      state: present
+
+  - name: Set GCP project ID
+    set_fact:
+      project_id: "{{ lookup('env', 'GCP_PROJECT_ID') | default('my-project-id') }}"
+
+  - name: Configure GCP Inventory plugin
+    gcp_compute_inventory:
+      auth_kind: "{{ lookup('env', 'GCP_AUTH_KIND') }}"
+      service_account_file: "{{ lookup('env', 'GCP_SERVICE_ACCOUNT_FILE') }}"
+      project: "{{ project_id }}"
+      zones: "{{ lookup('env', 'GCP_ZONES') }}"
+      hostnames:
+        - "{{ inventory_hostname }}"
+      instance_names:
+        - "{{ inventory_hostname }}"
+      instance_tags:
+        - invalid, "special characters", [1, 2, 3], "!'@#$%^&*()_+-=[]\{}|;':\", <>, ./? "
+      group_by_project: false
+      group_by_zones: false
+      group_by_label: false
+      complement: false
+      cache: false
+      strict_checks: false
+      validate_certs: false
+    ignore_errors: yes
+
+  - name: Debug GCP Inventory plugin output
+    debug:
+      var: inventory_hostname

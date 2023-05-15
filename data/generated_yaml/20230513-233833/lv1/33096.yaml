@@ -1,0 +1,22 @@
+
+---
+
+- name: Delete default security group rules
+  hosts: openstack
+  vars:
+    security_group: "default"
+  tasks:
+  - name: Get info about security group
+    command: "openstack security group show {{ security_group }} -f json"
+    register: security_group_info
+  - name: Parse security group rules from JSON output
+    set_fact:
+      security_group_rules: "{{ (security_group_info.stdout | from_json).rules }}"
+  - name: Delete security group rules
+    command: "openstack security group rule delete {{ security_group }} {{ item.id }}"
+    when: item.from_port != null and item.to_port != null
+    with_items: "{{ security_group_rules }}"
+    register: deleted_security_group_rules
+  - debug:
+      msg: "{{ deleted_security_group_rules.stdout_lines }}"
+

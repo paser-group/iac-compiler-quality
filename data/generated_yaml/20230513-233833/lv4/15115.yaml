@@ -1,0 +1,30 @@
+
+- name: Create an EC2 instance
+  hosts: localhost
+  gather_facts: false
+  connection: local
+  tasks:
+    - name: Create the EC2 instance
+      ec2:
+        instance_type: t2.micro
+        image: ami-0c94855ba95c71c99
+        key_name: mykey
+        group: default
+        count: 1
+        wait: true
+      register: ec2_instance
+
+- name: Refresh the EC2 inventory
+  hosts: localhost
+  gather_facts: false
+  connection: local
+  tasks:
+    - name: Run the meta:refresh_inventory task
+      meta:
+        refresh_inventory
+
+- name: Verify that the new instance was added
+  hosts: tag_Name_test_instance
+  gather_facts: yes
+  tasks:
+    - debug: var=hostvars[inventory_hostname].ec2_instance.private_ip_address

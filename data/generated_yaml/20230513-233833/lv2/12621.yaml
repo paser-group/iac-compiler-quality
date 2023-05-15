@@ -1,0 +1,36 @@
+
+- name: Perform stress test for ssh and paramiko error handling
+  hosts: all
+  tasks:
+  - name: Run SSH command with invalid user
+    command: ssh -l invalid-user {{ inventory_hostname }}
+    register: ssh_output
+    ignore_errors: true
+  - name: Check if ssh command failed with an error
+    fail:
+      msg: "An error occurred while running the SSH command."
+    when: ssh_output is failed
+  - name: Attempt to ssh with invalid private key
+    command: ssh -i /path/to/invalid/key {{ inventory_hostname }}
+    register: invalid_key_output
+    ignore_errors: true
+  - name: Check if ssh failed with invalid key error
+    fail:
+      msg: "An error occurred while trying to ssh with an invalid private key."
+    when: "'invalid key' in invalid_key_output.stderr"
+  - name: Generate a syntax error
+    command: echo {"{if((([":>"{{ inventory_hostname }}.txt"}})}
+    register: syntax_error_output
+    ignore_errors: true
+  - name: Check if syntax error was raised
+    fail:
+      msg: "A syntax error occurred while running the playbook."
+    when: syntax_error_output is failed
+  - name: Attempt to ssh with invalid parameters
+    command: ssh -o "BadParam=no" {{ inventory_hostname }}
+    register: invalid_param_output
+    ignore_errors: true
+  - name: Check if ssh failed with invalid parameters error
+    fail:
+      msg: "An error occurred while trying to ssh with invalid parameters."
+    when: "'BadParam' in invalid_param_output.stderr"

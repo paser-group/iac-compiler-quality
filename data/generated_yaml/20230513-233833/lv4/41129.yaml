@@ -1,0 +1,93 @@
+yaml
+---
+- name: Validate the syntax of the older playbook
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Syntax check of older playbook
+      include_vars:
+        file: "{{ playbook_dir }}/older_playbook.yml"
+      block:
+        - name: Older playbook verification
+          ansible.builtin.ansible_syntax_check:
+            file: "{{ playbook_dir }}/older_playbook.yml"
+      rescue:
+        - name: Print exception message
+          debug:
+            var: ansible_failed_result
+
+- name: Execute the older playbook and verify functionality
+  hosts: node1
+  gather_facts: false
+  become: true
+  tasks:
+    - name: Include the older playbook
+      include_vars:
+        file: "{{ playbook_dir }}/older_playbook.yml"
+      include_vars:
+        file: "{{ playbook_dir }}/variables.yml"
+    - name: Execute the older playbook
+      ansible.builtin.include:
+        playbook: "{{ playbook_dir }}/older_playbook.yml"
+
+- name: Create a new playbook from the npm module default behavior
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Generate new playbook from npm module
+      command: npm run playbook_GENERATE
+      args:
+        # npm module path
+        chdir: /path/to/npm/module
+        # Path to generated playbook
+        creates: "{{ playbook_dir }}/new_playbook.yml"
+      register: result
+
+    - name: Fail if playbook generation command failed
+      fail:
+        msg: "{{ result.stdout }}"
+      when: result.failed
+
+- name: Validate the syntax of the new playbook
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Syntax check of new playbook
+      include_vars:
+        file: "{{ playbook_dir }}/new_playbook.yml"
+      block:
+        - name: New playbook verification
+          ansible.builtin.ansible_syntax_check:
+            file: "{{ playbook_dir }}/new_playbook.yml"
+      rescue:
+        - name: Print exception message
+          debug:
+            var: ansible_failed_result
+
+- name: Execute the new playbook and verify functionality
+  hosts: node1
+  gather_facts: false
+  become: true
+  tasks:
+    - name: Include the new playbook
+      include_vars:
+        file: "{{ playbook_dir }}/new_playbook.yml"
+      include_vars:
+        file: "{{ playbook_dir }}/variables.yml"
+    - name: Execute the new playbook
+      ansible.builtin.include:
+        playbook: "{{ playbook_dir }}/new_playbook.yml"
+
+- name: Compare output and functionality between the old and new playbooks
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Compare the output of the old and new playbooks
+      command: diff "{{ playbook_dir }}/older_playbook.yml" "{{ playbook_dir }}/new_playbook.yml"
+      args:
+        creates: "{{ playbook_dir }}/playbook_diff.txt"
+      register: result
+    - name: Fail the playbook if there is a difference between the old and new playbooks
+      fail:
+        msg: "Difference found between the old and new playbook"
+      when: result.stdout_lines | length > 0

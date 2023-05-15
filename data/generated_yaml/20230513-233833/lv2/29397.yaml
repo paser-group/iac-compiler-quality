@@ -1,0 +1,24 @@
+
+- hosts: all
+  vars:
+    s3_bucket_name: "test-bucket"
+  tasks:
+    - name: create S3 bucket
+      s3_bucket:
+        name: "{{ s3_bucket_name }}"
+        state: present
+      register: bucket_result
+      ignore_errors: true
+
+    - name: check bucket ownership
+      assert:
+        that:
+          - ("status" in bucket_result)
+          - ("changed" in bucket_result)
+          - ("failed" in bucket_result) | bool
+          - ("succeeded" in bucket_result) | bool
+          - ("previous_request_succeeded" in bucket_result) | bool
+          - (bucket_result["status"] == 200) | bool
+          - (('You already own' in bucket_result['msg']) or
+             ('Your previous request to create' in bucket_result['msg'])) | bool
+        fail_msg: "Bucket ownership check failed"

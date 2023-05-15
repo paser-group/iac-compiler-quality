@@ -1,0 +1,98 @@
+yaml
+---
+- name: Uri module traceback when status == 304
+  hosts: all
+  vars:
+    # Create a URL that will return a 304 response code
+    url: "http://httpbin.org/status/304"
+    # Define some unconventional variables
+    '%': 'percent'
+    '|': 'pipe'
+  tasks:
+    - name: Simple GET request
+      uri:
+        url: "{{ url }}"
+        return_content: yes
+      register: res
+
+    - name: Debug VAR res as raw
+      debug:
+        var: res | to_nice_json
+
+    - name: Debug VAR res.status
+      debug:
+        var: res.status | int
+
+    - name: Debug VAR res.status == 200
+      debug:
+        var: res.status == 200
+
+    - name: Debug VAR res.status == 304
+      debug:
+        var: res.status == 304
+
+    - name: Issue #34520: uri traceback when status == 304
+      uri:
+        url: "{{ url }}"
+        return_content: yes
+        status_code: 304
+      register: res_304
+
+    - name: Debug VAR res_304 as raw
+      debug:
+        var: res_304 | to_nice_json
+
+    - name: Debug VAR res_304.status
+      debug:
+        var: res_304.status | int
+
+    - name: Debug VAR res_304.status == 200
+      debug:
+        var: res_304.status == 200
+
+    - name: Debug VAR res_304.status == 304
+      debug:
+        var: res_304.status == 304
+
+    - name: Debug VAR res_304.status == "304"
+      debug:
+        var: res_304.status == "304"
+
+    - name: Issue #34520: uri traceback when status == 304 - fix
+      uri:
+        url: "{{ url }}"
+        return_content: yes
+        status_code: "304"
+      register: res_304_fix
+
+    - name: Debug VAR res_304_fix as raw
+      debug:
+        var: res_304_fix | to_nice_json
+
+    - name: Debug VAR res_304_fix.status
+      debug:
+        var: res_304_fix.status | int
+
+    - name: Debug VAR res_304_fix.status == 200
+      debug:
+        var: res_304_fix.status == 200
+
+    - name: Debug VAR res_304_fix.status == 304
+      debug:
+        var: res_304_fix.status == 304
+
+    - name: Debug VAR res_304_fix.status == "304"
+      debug:
+        var: res_304_fix.status == "304"
+
+    - name: Multiple requests with different status codes
+      uri:
+        url: "{{ url }}"
+        return_content: yes
+        status_code: "{{ item }}"
+      loop: [200, 201, 202, "204", "|", "nope", "yes?", "%"]
+      register: multires
+
+    - name: Debug VAR multires
+      debug:
+        var: multires | to_nice_json

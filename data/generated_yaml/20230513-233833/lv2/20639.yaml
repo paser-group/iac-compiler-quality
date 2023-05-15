@@ -1,0 +1,33 @@
+
+- name: Test Case for async + vsphere_guest issue
+  hosts: all
+  gather_facts: no
+
+  tasks:
+  - name: Provision VMs
+    vsphere_guest:
+      vcenter_hostname: "{{ vcenter_hostname }}"
+      username: "{{ username }}"
+      password: "{{ password }}"
+      guest: "{{ item }}"
+      state: poweredoff
+      hardware:
+        memory_mb: "{{ memory_mb }}"
+      vm_extra_config:
+        isolation.tools.log.level: "{{ isolation_level }}"
+    with_items:
+      - node1
+      - node2
+      - node3
+    async: "{{ async_duration }}"
+    poll: "{{ poll_interval }}"
+    register: vsphere_guest_result
+
+  - name: Start Provisioned VMs
+    vsphere_guest:
+      vcenter_hostname: "{{ vcenter_hostname }}"
+      username: "{{ username }}"
+      password: "{{ password }}"
+      guest: "{{ item }}"
+      state: poweredon
+    with_items: "{{ vsphere_guest_result.results | map(attribute='item') | list }}"

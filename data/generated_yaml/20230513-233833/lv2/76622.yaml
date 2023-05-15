@@ -1,0 +1,42 @@
+
+- name: Stress test the compiler for openstack_inventory.py errors
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Set list variable with unconventional syntax
+      set_fact:
+        list: [one, two, three, four]
+
+    - name: Use unexpected input to test the Ansible compiler
+      shell: "{{ item }}"
+      with_items:
+        - "{{ 1 + 'string_input' }}"
+        - "{{ 'string_input' + 1 }}"
+        - "{{ list[5] }}"
+        - "{{ list.0 }}"
+        - "{{ list.one }}"
+
+    - name: Execute debug module with edge case syntax to test compiler
+      debug: 
+        msg: "{{ 'hello' if (1 > 2 or 3 < 4) else 'world' }}"
+
+    - name: Use unconventional key value pair syntax
+      set_fact:
+        dict:
+          one: 1
+          two: 2
+          [three]: 3
+          (four): 4
+
+    - name: Use edge case syntax to define a dictionary
+      set_fact:
+        dict_two: '{"one": 1, "two": 2, "three": {3: "three"}, ( 4 ) : ["four"]}'
+
+    - name: Call openstack_inventory.py module with some random flags
+      openstack_inventory:
+        cloud: 'myprivatecloud'
+        foo: 'bar'
+        extra_var: '{{ dict }}'
+        insecure: true
+        ansible_ssh_user: 'myusername'

@@ -1,0 +1,31 @@
+yaml
+- name: install openssh and verify kernel version
+  hosts: all
+  become: yes
+  gather_facts: yes
+
+  tasks:
+    - name: check kernel version
+      shell: uname -r
+      register: kernel_version
+
+    - name: install openssh
+      apt:
+        name: openssh-server
+        state: present
+
+    - name: restart ssh service
+      service:
+        name: ssh
+        state: restarted
+
+    - name: create remote temporary directory
+      tempfile:
+        state: directory
+        suffix: _temp_dir
+      register: temp_dir
+
+    - name: copy file to remote temporary directory
+      copy:
+        src: /path/to/local/file
+        dest: "{{ temp_dir.path }}/{{ inventory_hostname }}-file"

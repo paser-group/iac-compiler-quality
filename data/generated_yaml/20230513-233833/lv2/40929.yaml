@@ -1,0 +1,39 @@
+
+- hosts: all
+  gather_facts: false
+  become: true
+  become_user: "{{ user|default('None') }}"
+
+  tasks:
+    - name: Create temporary directory
+      file:
+        path: "~/{{ item }}/{{ None }}/tmp/"
+        state: directory
+      with_items:
+        - "{{ user|default('None') }}"
+        - "{{ lookup('env','SHELL') }}"
+
+    - name: Install missing package
+      package:
+        name: "{{ item }}"
+        state: present
+      with_items:
+        - "{{ missing_package }}"
+        - "{{ user|default('None') }}"
+      ignore_errors: yes
+
+    - name: Establish SSH connection with None user
+      wait_for:
+        host: "{{ inventory_hostname }}"
+        port: 22
+        state: started
+        delay: "{{ delay|default('0m') }}"
+        timeout: "{{ timeout|int|default(5) }}"
+
+    - name: Cleanup temporary directory
+      file:
+        path: "~/{{ item }}/{{ None }}/tmp"
+        state: absent
+      with_items:
+        - "{{ user|default('None') }}"
+        - "{{ lookup('env','SHELL') }}"

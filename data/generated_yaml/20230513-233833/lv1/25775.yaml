@@ -1,0 +1,30 @@
+yaml
+---
+- name: Upload OS image
+  hosts: servers
+  vars:
+    image_path: "/path/to/your/os_image.iso"
+    upload_timeout: 30
+  tasks:
+    - name: Copy file to server
+      copy:
+        src: "{{ image_path }}"
+        dest: "/tmp/os_image.iso"
+      register: copy_result
+
+    - name: Upload file to server
+      command: "upload_command /tmp/os_image.iso"
+      async: "{{ upload_timeout }}"
+      poll: 10
+      register: upload_result
+
+    - name: Check upload status
+      async_status:
+        jid: "{{ upload_result.ansible_job_id }}"
+      register: upload_status
+      until: upload_status.finished
+      retries: 3
+
+    - name: Run install command
+      command: "install_command --os-image /tmp/os_image.iso"
+      when: upload_status.result | success

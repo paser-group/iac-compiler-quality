@@ -1,0 +1,20 @@
+
+- hosts: all
+  gather_facts: yes
+  tasks:
+    - name: Gather facts about the VMware vCenter inventory
+      vmware_vm_inventory:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: no
+      register: vcenter_facts
+
+    - name: Check for orphaned VMs in vCenter inventory
+      set_fact:
+        orphaned_vms: "{{ vcenter_facts.vcenter_vm + vcenter_facts.vcenter_templates | difference(vcenter_facts.vcenter_mors) }}"
+      
+    - name: Report error message if orphaned VMs are detected
+      fail:
+        msg: "Found orphaned VMs in the VMware vCenter inventory: {{ orphaned_vms }}"
+      when: orphaned_vms is not empty

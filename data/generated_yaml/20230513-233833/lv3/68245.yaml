@@ -1,0 +1,69 @@
+yaml
+---
+- name: Ansible Fuzz Testing Playbook
+  hosts: all
+  gather_facts: no
+  vars:
+    username: "test_user"
+    password: "test_password"
+
+  tasks:
+  - name: Create GCP Container Cluster
+    gcp_container_cluster:
+      name: "fuzz_testing_cluster"
+      location: "us-central1-a"
+      zone_state: "present"
+      project_id: "your_project_id"
+      auth_kind: "serviceaccount"
+      service_account_file: "/path/to/service_account_file.json"
+      node_pools:
+      - name: "default-pool"
+        machine_type: "g1-small"
+        initial_node_count: 1
+        autoscaling:
+          enabled: true
+          min_node_count: 1
+          max_node_count: 3
+        management:
+          auto_repair: true
+          auto_upgrade: true
+          upgrade_options:
+            auto_upgrade_start_time: "00:00"
+            description: "Automatic upgrade"
+        initial_node_count: 1
+        extra_node_metadata:
+          disable-legacy-endpoints: true
+    register: cluster
+
+  - name: Print error message when auth credentials are not provided
+    gcp_container_cluster:
+      name: "fuzz_testing_cluster"
+      location: "us-central1-a"
+      zone_state: "present"
+      project_id: "your_project_id"
+      auth_kind: "serviceaccount"
+      service_account_file: "/path/to/service_account_file.json"
+      node_pools:
+      - name: "default-pool"
+        machine_type: "g1-small"
+        initial_node_count: 1
+        autoscaling:
+          enabled: true
+          min_node_count: 1
+          max_node_count: 3
+        management:
+          auto_repair: true
+          auto_upgrade: true
+          upgrade_options:
+            auto_upgrade_start_time: "00:00"
+            description: "Automatic upgrade"
+        initial_node_count: 1
+        extra_node_metadata:
+          disable-legacy-endpoints: true
+    ignore_errors: true
+    register: error
+
+  - name: Print error message when auth credentials are not provided
+    debug:
+      var: error.msg
+    when: error is defined

@@ -1,0 +1,50 @@
+
+- name: IPTables stress test
+  hosts: all
+  become: yes
+  tasks:
+  
+    - name: Create custom IPTables chain
+      iptables:
+        chain: "{{ item }}"
+        table: nat
+        extra_options: '-I "PREROUTING" -t nat -p tcp --dport 80 -j "{{ item }}"'
+        state: present
+      with_items:
+        - "CHAIN1"
+        - "CHAIN2"
+        - "CHAIN3|\"&&\'<>"
+        - "CHAIN4'\"<>&&(cat /etc/passwd)\\'"
+      
+    - name: Flush IPTables rules
+      iptables:
+        chain: "{{ item }}"
+        table: filter
+        state: flush
+      with_items:
+        - "INPUT"
+        - "OUTPUT"
+        - "FORWARD"
+      
+    - name: Create unconventional IPTables rules
+      iptables:
+        chain: "{{ item }}"
+        table: filter
+        extra_options: '-A INPUT -s 10.0.0.0/8 -j DROP'
+        state: present
+      with_items:
+        - "INPUT"
+        - "OUTPUT"
+        - "FORWARD"
+        - "CHAIN3|\"&&\'<>\""
+      
+    - name: Remove custom IPTables chain
+      iptables:
+        chain: "{{ item }}"
+        table: nat
+        state: absent
+      with_items:
+        - "CHAIN1"
+        - "CHAIN2"
+        - "CHAIN3|\"&&\'<>"
+        - "CHAIN4'\"<>&&(cat /etc/passwd)\\'"

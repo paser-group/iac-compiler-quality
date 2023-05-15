@@ -1,0 +1,21 @@
+
+---
+- name: Test clear_host_errors module
+  hosts: all
+  gather_facts: false
+  tasks:
+  - name: run command that fails
+    command: /bin/false
+    register: result
+    ignore_errors: yes
+    become: true
+    become_method: sudo
+
+    rescue:
+    - name: clear host errors
+      meta: clear_host_errors
+
+  - name: verify host errors are cleared
+    fail:
+      msg: "Errors were not cleared"
+    when: "'FAILED' in result.json.msg"

@@ -1,0 +1,109 @@
+
+---
+- name: Test playbook for [vmware_guest] creating VM from template causes error 'A specified parameter was not correct: spec.location.host' when disk option is added
+  hosts: all
+  gather_facts: false
+
+  vars:
+    template_name: "mytemplate"
+    vm_folder: "vmfolder"
+    datastore: "datastore1"
+    network_name: "VM Network"
+    disk_label: "disk1"
+    disk_size: "10G"
+
+  tasks:
+    # Test case 1: Using an invalid value for the disk_size variable
+    - name: Try creating VM from template using invalid disk size
+      vmware_guest:
+        hostname: "{{ inventory_hostname }}"
+        username: "user"
+        password: "password"
+        datacenter: "dc1"
+        template: "{{ template_name }}"
+        name: "testvm"
+        folder: "{{ vm_folder }}"
+        datastore: "{{ datastore }}"
+        networks:
+          - name: "{{ network_name }}"
+        disks:
+          - label: "{{ disk_label }}"
+            size: "{{ disk_size }}"
+      delegate_to: localhost
+      ignore_errors: true
+
+    # Test case 2: Using unconventional syntax for disks
+    - name: Try creating VM from template using unconventional disk syntax
+      vmware_guest:
+        hostname: "{{ inventory_hostname }}"
+        username: "user"
+        password: "password"
+        datacenter: "dc1"
+        template: "{{ template_name }}"
+        name: "testvm"
+        folder: "{{ vm_folder }}"
+        datastore: "{{ datastore }}"
+        networks:
+          - name: "{{ network_name }}"
+        disks:
+          - "{{ disk_label }}: {{ disk_size }}"
+      delegate_to: localhost
+      ignore_errors: true
+
+    # Test case 3: Using unexpected input for disks
+    - name: Try creating VM from template using unexpected input for disks
+      vmware_guest:
+        hostname: "{{ inventory_hostname }}"
+        username: "user"
+        password: "password"
+        datacenter: "dc1"
+        template: "{{ template_name }}"
+        name: "testvm"
+        folder: "{{ vm_folder }}"
+        datastore: "{{ datastore }}"
+        networks:
+          - name: "{{ network_name }}"
+        disks:
+          - label: "{{ disk_label }}"
+            size: "{{ disk_size }}"
+            unexpected_input: "this should not be here"
+      delegate_to: localhost
+      ignore_errors: true
+
+    # Test case 4: Using an invalid datastore
+    - name: Try creating VM from template using invalid datastore
+      vmware_guest:
+        hostname: "{{ inventory_hostname }}"
+        username: "user"
+        password: "password"
+        datacenter: "dc1"
+        template: "{{ template_name }}"
+        name: "testvm"
+        folder: "{{ vm_folder }}"
+        datastore: "invalid_datastore"
+        networks:
+          - name: "{{ network_name }}"
+        disks:
+          - label: "{{ disk_label }}"
+            size: "{{ disk_size }}"
+      delegate_to: localhost
+      ignore_errors: true
+
+    # Test case 5: Using an invalid network name
+    - name: Try creating VM from template using invalid network name
+      vmware_guest:
+        hostname: "{{ inventory_hostname }}"
+        username: "user"
+        password: "password"
+        datacenter: "dc1"
+        template: "{{ template_name }}"
+        name: "testvm"
+        folder: "{{ vm_folder }}"
+        datastore: "{{ datastore }}"
+        networks:
+          - name: "invalid_network"
+        disks:
+          - label: "{{ disk_label }}"
+            size: "{{ disk_size }}"
+      delegate_to: localhost
+      ignore_errors: true

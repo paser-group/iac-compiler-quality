@@ -1,0 +1,32 @@
+
+---
+- name: Replicate permission error in efs_facts module
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: Mount EFS file system
+      efs:
+        name: "{{ efs_name }}"
+        mount_point: "/mnt/efs"
+        state: "mounted"
+        file_system_id: "{{ efs_file_system_id }}"
+        region: "{{ aws_region }}"
+
+    - name: Create test file in EFS
+      copy:
+        dest: /mnt/efs/test_file
+        content: "test file content"
+        
+    - name: Set incorrect permissions on the mount target
+      file:
+        path: "/mnt/efs"
+        mode: '0600'
+
+    - name: Obtain EFS facts
+      efs_facts:
+        mount_target: "/mnt/efs"
+
+    - name: Print EFS facts
+      debug:
+        var: ansible_facts.efs_mount_targets

@@ -1,0 +1,29 @@
+
+---
+- name: na_ontap_gather_facts stress test playbook
+  hosts: all
+  gather_facts: no
+  vars:
+    deadlock_issues: ["#50932", "#63001"]
+  tasks:
+    - name: cause a deadlock by running two gather_facts concurrently
+      block:
+        - name: gather facts on node1
+          na_ontap_gather_facts:
+            node_name: node1
+            user: "{{ username }}"
+            password: "{{ password }}"
+          register: result1
+        - name: gather facts on node2
+          na_ontap_gather_facts:
+            node_name: node2
+            user: "{{ username }}"
+            password: "{{ password }}"
+          register: result2
+        - name: print results
+          debug:
+            var: [result1, result2]
+      rescue:
+        - name: handle deadlock
+        debug:
+          msg: "Deadlock detected due to issues {{ deadlock_issues }}"

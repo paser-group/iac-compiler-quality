@@ -1,0 +1,43 @@
+
+- hosts: all
+  gather_facts: no
+  tasks:
+    - name: Run command on paramiko connection
+      command:
+        cmd: "{{ lookup('env','MY_CMD') }}"
+      connection: paramiko
+      register: result
+
+    - name: Restart OpenSSH service
+      service:
+        name: sshd
+        state: restarted
+      connection: ssh
+      when: result.stdout.find('restart sshd') != -1
+
+    - name: Unarchive custom sshd config file
+      unarchive:
+        copy: no
+        src: "{{ lookup('env','CONFIG_ARCHIVE_URL') }}"
+        dest: "/etc/ssh/sshd_config"
+      connection: ssh
+      when: inventory_hostname == 'node1'
+
+    - name: Upload OpenSSH key
+      copy:
+        content: "{{ lookup('file', '~/.ssh/id_rsa.pub') }}"
+        dest: "/home/user/.ssh/authorized_keys"
+        force: yes
+      connection: ssh
+      when: inventory_hostname == 'node2'
+    
+    - name: Create new user with custom sshd config
+      user:
+        name: "{{ lookup('env','USER_NAME') }}"
+        shell: "{{ lookup('env','SHELL') }}"
+        password: "{{ lookup('env','PASSWORD') }}"
+        groups: "{{ lookup('env','GROUPS') }}"
+        createhome: yes
+      connection: ssh
+      become: yes
+      when: inventory_hostname == 'node3'

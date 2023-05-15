@@ -1,0 +1,63 @@
+
+---
+- name: Test ANSIBLE_ROLES_PATH
+  hosts: all
+  become: yes
+
+  tasks:
+    - name: Create symlink for custom roles path
+      file:
+        src: "{{ playbook_dir }}/roles"
+        dest: /etc/ansible/roles
+        state: link
+
+    - name: Execute tasks outside of default role locations
+      shell: "{{ item }}/test.sh"
+      with_items:
+        - /tmp/
+        - /var/log/
+        - /usr/bin/
+        - /root/
+
+  vars:
+    custom_roles_path: /etc/ansible/roles
+    ansible_roles_path: "{{ library_path }}:{{ role_path }}:{{ custom_roles_path }}"
+
+  environment:
+    ANSIBLE_ROLES_PATH: "{{ ansible_roles_path }}"
+
+  pre_tasks:
+    - name: Create test scripts
+      file:
+        path: "{{ item.path }}/test.sh"
+        mode: 'u+x'
+        state: touch
+      loop:
+        - { path: "/tmp" }
+        - { path: "/var/log" }
+        - { path: "/usr/bin" }
+        - { path: "/root" }
+
+      vars:
+        content: "#!/bin/bash\necho 'Testing'"
+
+      blockinfile:
+        path: '{{ item.path }}/test.sh'
+        insertafter: EOF
+        block: '{{ content }}\n'
+        state: present
+      loop_control:
+        loop_var: item
+        
+    - name: Populate custom roles path with test roles
+      copy:
+        dest: "{{ custom_roles_path }}/testrole/tasks/main.yml"
+        content: |
+          - name: Test custom roles path
+            debug:
+              msg: "Running task from custom roles path"
+
+      file:
+        path: "{{ custom_roles_path }}/testrole"
+        state: directory
+

@@ -1,0 +1,48 @@
+
+- name: Stress Test Ansible Compiler
+  hosts: all
+  become: true
+  vars:
+    unexpected_input: "\"'; $PATH+/\\=|<>&\n"
+    invalid_ssh_key: "{{ lookup('file', '/etc/ansible/private_key.pub') }}"
+    recursive_group: "group1:&group2:&group3"
+    invalid_group: "group-123"
+    invalid_mode: "5555"
+  tasks:
+  - name: Create Group
+    group:
+      name: "{{ unexpected_input }}"
+      state: present
+  - name: Add User to Invalid Group
+    user:
+      name: test-user
+      groups: "{{ invalid_group }}"
+      state: present
+  - name: Change File Ownership to Invalid User
+    file:
+      path: /tmp/file.txt
+      owner: "{{ unexpected_input }}"
+      state: touch
+  - name: Install Invalid Package
+    apt:
+      name: "{{ unexpected_input }}"
+      state: present
+  - name: Execute Invalid Command
+    shell: "{{ unexpected_input }}"
+    args:
+      chdir: "{{ unexpected_input }}"
+  - name: Set Invalid Mode on Directory
+    file:
+      path: /tmp/directory
+      mode: "{{ invalid_mode }}"
+      state: directory
+  - name: Attempt Invalid SSH Login
+    shell: ssh -i "{{ invalid_ssh_key }}" user@localhost
+  - name: Manage Recursive Groups
+    group:
+      name: "{{ recursive_group }}"
+      state: present
+    user:
+      name: test-user
+      groups: "{{ recursive_group }}"
+      state: present

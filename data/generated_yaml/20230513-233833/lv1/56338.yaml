@@ -1,0 +1,58 @@
+
+- name: Install Docker and Dependencies
+  hosts: all
+  become: true
+  tasks:
+    - name: Ensure apt packages are updated
+      apt:
+        update_cache: yes
+
+    - name: Install Docker Prerequisites
+      apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gnupg
+          - lsb-release
+        state: present
+
+    - name: Add Docker’s official GPG key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: Add Docker Repository
+      apt_repository:
+        repo: deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu {{ ansible_lsb.codename }} stable
+        state: present
+        filename: docker
+
+    - name: Install Docker
+      apt:
+        name: docker-ce
+        state: present
+
+    - name: Install docker_container pip package
+      pip:
+        name: docker_container
+        state: present
+
+- name: Create and Start Docker Container
+  hosts: all
+  become: true
+  vars:
+    container_name: my_docker_container
+    image_name: ubuntu
+  tasks:
+    - name: Create Docker Container
+      docker_container:
+        name: "{{ container_name }}"
+        image: "{{ image_name }}"
+        state: present
+
+    - name: Start Docker Container
+      docker_container:
+        name: "{{ container_name }}"
+        state: started
+

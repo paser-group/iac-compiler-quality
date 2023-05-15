@@ -1,0 +1,34 @@
+yaml
+---
+- name: Check host's disk space
+  hosts: your_host
+  gather_facts: true
+
+  tasks:
+  - name: Check disk space
+    stat:
+      path: /
+    register: rootfs
+
+  - name: Fail if disk space is below threshold
+    fail:
+      msg: "Disk space is low"
+    when: rootfs.stat_available_space < 1000000
+
+- name: Clear disk space
+  hosts: your_host
+  gather_facts: false
+
+  tasks:
+  - name: Identify and remove large files
+    find:
+      paths: /
+      size: +500M
+      depth: 1
+    register: large_files
+
+  - name: Remove large files
+    file:
+      path: "{{ item.path }}"
+      state: absent
+    with_items: "{{ large_files.files }}"

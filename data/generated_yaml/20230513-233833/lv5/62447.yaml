@@ -1,0 +1,48 @@
+
+---
+
+- name: Test azure_rm_sqlserver module
+  hosts: all
+  vars:
+    resource_group: test-group
+    server_name: test-server
+    database_name: test-db
+    administrator_login: test-admin
+    administrator_login_password: test-password
+    azure_location: eastus
+    sql_cmd: "SELECT 'Hello, World!'"
+
+  tasks:
+    - name: Create resource group
+      azure_rm_resourcegroup:
+        name: "{{ resource_group }}"
+        location: "{{ azure_location }}"
+
+    - name: Create SQL Server
+      azure_rm_sqlserver:
+        resource_group: "{{ resource_group }}"
+        name: "{{ server_name }}"
+        location: "{{ azure_location }}"
+        administrator_login: "{{ administrator_login }}"
+        administrator_login_password: "{{ administrator_login_password }}"
+      register: sql_server
+
+    - name: Create database
+      azure_rm_sqldatabase:
+        resource_group: "{{ resource_group }}"
+        server_name: "{{ server_name }}"
+        name: "{{ database_name }}"
+      register: sql_database
+
+    - name: Execute SQL command to generate 502 error
+      azure_rm_sqlserver_execute:
+        resource_group: "{{ resource_group }}"
+        server_name: "{{ server_name }}"
+        database_name: "{{ database_name }}"
+        sql: "{{ sql_cmd }}"
+      register: sql_output
+      ignore_errors: true
+
+    - name: Debug
+      debug:
+        var: sql_output

@@ -1,0 +1,60 @@
+
+---
+- hosts: all
+  gather_facts: no
+  tasks:
+  - name: Convert PSCredential Object to string
+    set_fact:
+      password: "{{ user_password | password_hash('sha256') }}"
+    vars:
+      user_password:
+        PowerShellWord1: ''
+        PowerShellWord2: '{{ random_word }}'
+    vars_prompt:
+      - name: random_word
+        prompt: "Enter a random word"
+        private: no
+    register: pscredential_convert
+  
+  - name: Inject PSCredential Object into configuration
+    script: pscredential.ps1
+    args:
+      executable: "{{ pwsh }}"
+      stdin: "{{ pscredential | to_nice_joined }}"
+    vars:
+      pscredential:
+        UserName: '{{ ansible_user }}'
+        Password: '{{ password }}'
+    become: yes
+  
+  - name: Verify PSCredential Object conversion
+    debug:
+      msg: "PSCredential Object converted successfully"
+    
+  - name: Restart Service
+    service:
+      name: '{{ service_name }}'
+      state: restarted
+    vars:
+      service_name: "{{ service }}"
+      service_config_file: "{{ service_name }}.config"
+    become: yes
+  
+  - name: Remove Service configuration file
+    file:
+      path: "{{ service_config_file }}"
+      state: absent
+    vars:
+      service_config_file: "{{ service_name }}.config"
+    become: yes
+
+  handlers:
+  - name: Cleanup files
+    file:
+      path: "{{ item }}"
+      state: absent
+    with_items:
+      - test.txt
+      - "{{ service_config_file }}"
+      - "random_file_{{ ansible_date_time.date }}"
+    become: yes

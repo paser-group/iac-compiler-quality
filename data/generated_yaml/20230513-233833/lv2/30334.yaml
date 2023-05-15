@@ -1,0 +1,34 @@
+yaml
+---
+- name: Test os_keypair force update feature
+  hosts: node1
+  gather_facts: false
+  tasks:
+    - name: Generate RSA keypair
+      openssl_privatekey:
+        path: /tmp/mykey.pem
+        size: 2048
+      register: mykey
+
+    - name: Create keypair
+      os_keypair:
+        state: present
+        name: mykey
+        public_key: "{{mykey.public_key}}"
+        private_key: "{{mykey.private_key}}"
+        force: "{{item}}"
+      with_items:
+        - 'true'
+        - 1
+        - '!false'
+        - (1+1)
+
+    - name: Check if keypair exists
+      os_keypair:
+        state: present
+        name: mykey
+      register: verify_keypair
+
+    - name: Print message
+      debug:
+        msg: "Keypair exists: {{verify_keypair.keypair is defined}}"

@@ -1,0 +1,72 @@
+
+- name: Deploying multiple Redis Caches
+  hosts: all
+  become: true
+  gather_facts: false
+
+  tasks:
+    - name: Provision Redis Cache 1
+      azure_rm_rediscache:
+        resource_group: my_resource_group
+        name: cache1
+        location: eastus
+        sku: Basic
+        admin_password: "{{ lookup('password', '/dev/null length=40 chars=ascii_letters,digits') }}"
+        state: present
+
+    - name: Provision Redis Cache 2
+      azure_rm_rediscache:
+        resource_group: my_resource_group
+        name: cache2
+        location: eastus
+        sku: Basic
+        admin_password: "{{ lookup('password', '/dev/null length=40 chars=ascii_letters,digits') }}"
+        state: present
+
+    - name: Provision Redis Cache 3
+      azure_rm_rediscache:
+        resource_group: my_resource_group
+        name: cache3
+        location: eastus
+        sku: Basic
+        admin_password: "{{ lookup('password', '/dev/null length=40 chars=ascii_letters,digits') }}"
+        state: present
+
+    - name: Invoking azure_rm_rediscache module on multiple caches
+      hosts: all
+      gather_facts: false
+      vars:
+        cache_list:
+          - cache1
+          - cache2
+          - cache3
+
+      tasks:
+        - name: Create Key-Value Pairs in Redis Cache
+          azure_rm_rediscache:
+            resource_group: my_resource_group
+            name: "{{ item }}"
+            operation: 'set'
+            parameters:
+              key: foo
+              value: bar
+              api_version: '2016-04-01'
+              redis_version: '3.2'
+          loop: "{{ cache_list }}"
+
+        - name: List Keys in Redis Cache
+          azure_rm_rediscache:
+            resource_group: my_resource_group
+            name: "{{ item }}"
+            operation: 'list'
+          loop: "{{ cache_list }}"
+
+        - name: Delete Key-Value Pair from Redis Cache
+          azure_rm_rediscache:
+            resource_group: my_resource_group
+            name: "{{ item }}"
+            operation: 'delete'
+            parameters:
+              key: foo
+          loop: "{{ cache_list }}"
+          

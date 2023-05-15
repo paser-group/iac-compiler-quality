@@ -1,0 +1,26 @@
+yaml
+---
+- name: Configure ntp on Cisco Nexus Switches
+  hosts: nexus_switches
+  gather_facts: no
+
+  vars:
+    ntp_servers:
+      - 192.168.1.1
+      - 192.168.1.2
+
+  tasks:
+    - name: Install ntp package
+      nxos_command:
+        commands: feature ntp
+      register: ntp_installed
+
+    - name: Configure ntp servers
+      nxos_ntp:
+        servers: "{{ ntp_servers }}"
+      when: ntp_installed.changed
+
+    - name: Save configuration changes
+      nxos_copy:
+        content: "write"
+        run_on: "active"

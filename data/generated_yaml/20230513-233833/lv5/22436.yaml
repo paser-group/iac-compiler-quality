@@ -1,0 +1,39 @@
+
+---
+- name: Test playbook for Ansible file diff issue
+  hosts: all
+  become: true
+  tasks: 
+    - name: Create test file with iso8859-15 encoding
+      file:
+        path: /tmp/test_file_iso.txt
+        state: touch
+        mode: '0644'
+        encoding: iso8859-15
+        content: "Random Content in iso8859-15"
+    - name: Copy iso8859-15 file in utf8 format
+      copy:
+        src: /tmp/test_file_iso.txt
+        dest: /tmp/test_file.txt
+        owner: root
+        group: root
+        mode: '0664'
+        backup: 'yes'
+        force: 'yes'
+        newline_sequence: LF
+    - name: Trigger Ansible file diff error
+      diff:
+        path: /tmp/test_file.txt
+        src: /tmp/test_file_iso.txt
+        ignore_lines: None 
+        options:
+          - "-u"
+          - "-p"
+        check_mode: false
+        validate: false
+        changed_when: false
+        diff_asis: false
+        error_file: "/dev/null"
+        diff_program: /usr/bin/diff
+        ed: false
+        error_handler: "surrogate_then_replace"

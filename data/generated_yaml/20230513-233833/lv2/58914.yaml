@@ -1,0 +1,40 @@
+
+- name: Create firewall addresses
+  hosts: all
+  gather_facts: no
+
+  vars:
+    addresses:
+      - name: "Address with > 64 characters ........................................................................................................................................................................................................................................................................................................................................."
+        fqdn: "www.example.com"
+        associated_interface: "port1"
+        comment: "' This is a comment containing '' single quotes\""
+      - name: "Address with spaces"
+        iprange: "172.16.0.0 172.16.0.10"
+        groups: "group1 group2"
+      - name: "Address with invalid netmask"
+        subnet: "172.16.0.0/33"
+      - name: "Address with invalid subnet"
+        subnet: "256.256.0.0/16"
+      - name: "Address with invalid IP address"
+        iprange: "192.168.0.300 192.168.0.310"
+        comment: "' This is another comment'"
+      - name: "Address with mixed syntax"
+        subnet: "10.0.0.0/24"
+        associated_interface: "port2"
+        iprange: "172.16.0.5 172.16.0.10"
+        groups: "group3 group4"
+        options: {'add-tag':[], 'name': 'Fortinet123'}
+
+  tasks:
+    - name: Create firewall addresses
+      fortios_firewall_address:
+        name: "{{ item.name }}"
+        iprange: "{{ item.iprange | default(omit) }}"
+        subnet: "{{ item.subnet | default(omit) }}"
+        fqdn: "{{ item.fqdn | default(omit) }}"
+        groups: "{{ item.groups | default(omit) }}"
+        associated_interface: "{{ item.associated_interface | default(omit) }}"
+        comment: "{{ item.comment | default(omit) }}"
+        options: "{{ item.options | default({}) }}"
+      with_items: "{{ addresses }}"

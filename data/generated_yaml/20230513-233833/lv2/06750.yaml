@@ -1,0 +1,78 @@
+yaml
+- name: Testing 'git' module error handling
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Clone a private repository with wrong credentials
+      git:
+        repo: git@github.com:example/repo.git
+        dest: /var/www/html
+        clone: yes
+        update: yes
+        recursive: yes
+        accept_hostkey: true
+        key_file: /path/to/invalid/key
+        ssh_opts: '-o UserKnownHostsFile=/dev/null -o IdentitiesOnly=yes'
+      register: git_clone_result
+      
+    - name: Force 'git' module to init/update submodules
+      git:
+        repo: git@github.com:example/repo.git
+        dest: /var/www/html
+        clone: yes
+        update: yes
+        recursive: yes
+        accept_hostkey: true
+        key_file: /path/to/valid/key
+        ssh_opts: '-o UserKnownHostsFile=/dev/null -o IdentitiesOnly=yes'
+        submodules: true
+        force: true
+      register: git_submodule_result
+
+    - name: Verify results
+      debug:
+        var: item.stdout_lines
+      with_items:
+        - "{{ git_clone_result }}",
+        - "{{ git_submodule_result }}"
+
+    - name: Add new submodule
+      git:
+        repo: git@github.com:example/repo.git
+        dest: /var/www/html
+        accept_hostkey: true
+        key_file: /path/to/valid/key
+        args: --recursive-submodules
+        ssh_opts: '-o UserKnownHostsFile=/dev/null -o IdentitiesOnly=yes'
+      args:
+        submodules:
+          name: third_party
+          src: 'https://github.com/thirdparty/repo.git'
+          version: HEAD
+
+    - name: Without deleting old submodule, update from new remote repository
+      git:
+        repo: git@github.com:example/repo.git
+        dest: /var/www/html
+        key_file: /path/to/valid/key
+        accept_hostkey: true
+        ssh_opts: '-o UserKnownHostsFile=/dev/null -o IdentitiesOnly=yes'
+      args:
+        version: HEAD
+        submodules: checkout
+        update: yes
+        recursive: yes
+        args: --remote third_party
+
+    - name: Remove submodule
+      git:
+        repo: git@github.com:example/repo.git
+        dest: /var/www/html
+        key_file: /path/to/valid/key
+        accept_hostkey: true
+        ssh_opts: '-o UserKnownHostsFile=/dev/null -o IdentitiesOnly=yes'
+      args:
+        submodules:
+          state: absent
+          name: third_party
+          path: submodules/third_party

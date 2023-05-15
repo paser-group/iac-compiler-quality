@@ -1,0 +1,41 @@
+
+---
+- name: Test gce_instance_template on non-default network
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    zone: "us-central1-a"
+    machine_type: "n1-standard-1"
+    image: "ubuntu-2004-focal-v20210223"
+    network: "non-default-network"
+    subnet: "subnet-1"
+
+  tasks:
+    - name: create GCE instance template
+      gce_instance_template:
+        name: "test-template-non-default-network"
+        machine_type: "{{ machine_type }}"
+        image: "{{ image }}"
+        network_interfaces:
+          - subnetwork: "regions/us-central1/subnetworks/{{ subnet }}"
+            network: "{{ network }}"
+            access_configs:
+              - name: External NAT
+                type: "ONE_TO_ONE_NAT"
+        project_id: "your_project_id"
+        zone: "{{ zone }}"
+        state: present
+
+    - name: Verify GCE instance template on non-default network
+      gce_instance_template_info:
+        name: "test-template-non-default-network"
+        project_id: "your_project_id"
+        zone: "{{ zone }}"
+
+    - name: delete instance template
+      gce_instance_template:
+        name: "test-template-non-default-network"
+        project_id: "your_project_id"
+        zone: "{{ zone }}"
+        state: absent

@@ -1,0 +1,31 @@
+
+---
+- name: Playbook to fix jsonfile cache plugin errors 
+  hosts: all
+  
+  tasks:
+  - name: Create directory for cache
+    file:
+      path: "/ansible_cache"
+      state: directory
+      mode: 0755
+    register: cache_dir
+
+  - name: Use jsonfile cache plugin
+    pip:
+      name: "ansible_cache.plugins.cache.jsonfile"
+      extra_args: "--user"
+      state: present
+
+  - name: Allow writing to /ansible_cache
+    file:
+      path: "/ansible_cache"
+      state: directory
+      mode: 0755
+      owner: "{{ ansible_user }}"
+      group: "{{ ansible_user }}"
+
+  - name: Run the playbook
+    ansible-playbook playbook.yml
+    vars:
+      ansible_cache_plugin: 'jsonfile'

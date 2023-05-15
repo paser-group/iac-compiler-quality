@@ -1,0 +1,50 @@
+
+---
+- name: Auto Scale policy failing playbook
+  hosts: localhost
+  vars:
+    resource_group: "my-rg"
+    location: "eastus"
+    vnet_name: "my-vnet"
+    subnet_name: "my-subnet"
+  tasks:
+  - name: Create Resource Group
+    azure_rm_resourcegroup:
+      name: "{{ resource_group }}"
+      location: "{{ location }}"
+  - name: Create Virtual Network
+    azure_rm_virtualnetwork:
+      resource_group: "{{ resource_group }}"
+      name: "{{ vnet_name }}"
+      address_prefixes: "10.0.0.0/16"
+      subnets:
+        - name: "{{ subnet_name }}"
+          address_prefix: "10.0.0.0/24"
+  - name: Create Autoscale Policy
+    azure_rm_autoscale:
+      resource_group: "{{ resource_group }}"
+      name: "my-autoscale"
+      location: "{{ location }}"
+      profiles:
+        - name: scale-up-profile
+          fixed_count: 5
+          recurrence:
+            timezone: "Eastern Standard Time"
+            start: "2021-11-23T00:00:00Z"
+            end: "2021-11-30T00:00:00Z"
+        - name: scale-down-profile
+          fixed_count: 1
+          recurrence:
+            timezone: "Eastern Standard Time"
+            start: "2021-11-23T00:00:00Z"
+            end: "2021-11-30T00:00:00Z"
+      target_resource_uri: "/subscriptions/sub/resourceGroups/{{ resource_group }}/providers/Microsoft.Compute/virtualMachines"
+  - name: Add VM to Autoscale Policy
+    azure_rm_autoscale_setting:
+      resource_group: "{{ resource_group }}"
+      name: "my-autoscale"
+      profile_name: "{{ item }}"
+      target_resource_id: "/subscriptions/sub/resourceGroups/{{ resource_group }}/providers/Microsoft.Compute/virtualMachines/myvm"
+    with_items:
+      - "scale-up-profile"
+      - "scale-down-profile"

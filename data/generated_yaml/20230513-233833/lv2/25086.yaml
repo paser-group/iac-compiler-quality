@@ -1,0 +1,45 @@
+
+---
+- name: Test Playbook
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Include VMWare inventory
+      include_vars:
+        file: "vmware_inventory.yml"
+
+    - name: Filter host by hostname
+      debug:
+        msg: "This is the host with hostname {{ item }}"
+      loop: "{{ groups['vmware'] | select('match', '^hostname') | list }}"
+
+    - name: Filter host by IP address
+      block:
+        - debug:
+            msg: "This is the host with IP {{ item }}"
+          loop: "{{ groups['vmware'] | select('match', '^ip_address') | list }}"
+      rescue:
+        - debug:
+            msg: "Blocked invalid data entry"
+          when: "'ip_address' not in item"
+
+    - name: Filter host by version
+      debug:
+        msg: "This is the host with version {{ item }}"
+      loop: "{{ groups['vmware'] | select('version_compare', '>= 2.5') | list }}"
+
+    - name: Filter out all hosts
+      fail:
+        msg: "All hosts have been filtered out"
+      when: groups['vmware'] == ''
+
+    - name: Query remaining hosts
+      set_fact:
+        query_hosts: "{{ groups['vmware'] }}"
+      when: groups['vmware'] | length > 0
+
+    - name: Verify filtered hosts
+      debug:
+        msg: "These are the hosts after applying vmware_inventory filters {{ item }}"
+      loop: "{{ query_hosts }}"

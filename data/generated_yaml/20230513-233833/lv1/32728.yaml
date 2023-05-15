@@ -1,0 +1,48 @@
+yaml
+---
+- name: Stop escaping bug in Ansible
+  hosts: all
+  become: true
+  tasks:
+    - name: Install latest version of Ansible
+      apt:
+        name: ansible
+        state: latest
+      ignore_errors: yes
+        
+    - name: Debugging
+      debug:
+        msg: "Check if escaping bug exists"
+
+    - name: Stop jumping to another role halfway through
+      block:
+        - name: Run first role
+          include_role:
+            name: role1
+          tags:
+            - role1
+
+        - name: Run second role
+          include_role:
+            name: role2
+          when: "ansible_check_mode != true"
+          tags:
+            - role2
+
+      rescue:
+        - name: Stop running second role
+          include_role:
+            name: role2
+          when: "ansible_check_mode != true"
+          tags:
+            - role2
+
+    - name: Debugging
+      debug:
+        msg: "Escaping bug should not exist anymore"
+    
+  handlers:
+    - name: restart service
+      service:
+        name: "{{ service_name }}"
+        state: restarted

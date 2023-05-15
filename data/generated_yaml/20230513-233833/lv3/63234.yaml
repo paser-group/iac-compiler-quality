@@ -1,0 +1,50 @@
+
+---
+- name: Test gcp_storage_bucket_access_control module bucket parameter bug
+  hosts: all
+  gather_facts: false
+
+  vars:
+    project_id: '<your-project-id>'
+    service_account_file: '/path/to/service-account.json'
+    bucket_name: 'test-bucket'
+
+  tasks:
+    - name: Create test bucket
+      google.cloud.gcp_storage_bucket:
+        name: "{{ bucket_name }}"
+        state: present
+        project: "{{ project_id }}"
+        auth_kind: serviceaccount
+        service_account_file: "{{ service_account_file }}"
+      register: bucket_created
+    
+    - name: Set incorrect permissions on bucket
+      google.cloud.gcp_storage_bucket_access_control:
+        bucket: "{{ bucket_name }}_invalid"
+        entities:
+          - user: "{{ service_account_email }}"
+            role: roles/storage.objectViewer
+        project: "{{ project_id }}"
+        auth_kind: serviceaccount
+        service_account_file: "{{ service_account_file }}"
+      register: invalid_bucket_perm
+    
+    - name: Verify the previous task fails with expected error
+      assert:
+        that: "'Error applying bucketAccessControl to bucket' in invalid_bucket_perm.stderr"
+        
+    - name: Set correct permissions on the test bucket
+      google.cloud.gcp_storage_bucket_access_control:
+        bucket: "{{ bucket_name }}"
+        entities:
+          - user: "{{ service_account_email }}"
+            role: roles/storage.objectViewer
+        project: "{{ project_id }}"
+        auth_kind: serviceaccount
+        service_account_file: "{{ service_account_file }}"
+      register: correct_bucket_perm
+      
+    - name: Ensure correct permission is set on the test bucket
+      assert:
+        that: correct_bucket_perm.changed == true

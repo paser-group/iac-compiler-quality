@@ -1,0 +1,27 @@
+
+- hosts: all
+  gather_facts: no
+  vars:
+    - metadata_role: "{{ 'webserver' | lower }}"
+    - metadata_expiration: "{{ '2022-01-01T00:00:00Z' }}"
+  tasks:
+    - name: Set ec2_metadata_facts
+      ec2_metadata_facts:
+        aws_secret_key: "{{ secret_key }}"
+        aws_access_key: "{{ access_key }}"
+      register: metadata
+
+    - name: Debug metadata
+      debug:
+        var: metadata
+
+    - name: Check metadata role
+      assert:
+        that:
+          - metadata.instances[0].iam_info.instance_profile_roles[0].split("/")|last == metadata_role
+          - metadata.instances[0].iam_info.instance_profile_roles[0].split("/")|last != metadata_role+"_expiration"
+
+    - name: Check metadata expiration
+      assert:
+        that:
+          - metadata.instances[0].iam_info.instance_profile_expiry_date == metadata_expiration

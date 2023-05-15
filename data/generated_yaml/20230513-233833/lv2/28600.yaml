@@ -1,0 +1,58 @@
+
+- name: Test playbook for iam_policy.py with connection refused error
+  hosts: all
+  gather_facts: no
+
+  tasks:
+  - name: Create a socket connection to node1
+    ncat:
+      port: 8080
+      state: listen
+      transport: tcp
+    ignore_errors: yes
+  
+  - name: Create a socket connection to node2
+    ncat:
+      port: 8888
+      state: bind
+      transport: udp
+    ignore_errors: yes
+
+  - name: Create a socket connection to node3
+    ncat:
+      port: 5000
+      state: connect
+      transport: tcp
+
+  - name: Generate an Ansible error by calling a non-existent module
+    non_existent:
+      args:
+        foo: bar
+
+  - name: Use an unconventional syntax to connect to node1
+    uri:
+      url: http:///node1:80/
+
+  - name: Use an unexpected input to connect to node2
+    wait_for:
+      host: node2
+      port: eighty
+      timeout: 5
+  
+  - name: Create an invalid IAM policy statement
+    iam_policy:
+      name: test-policy
+      policy:
+        Version: 2012-10-17
+        Statement:
+          - Action: '{{ foo * bar }}'
+            Effect: Allow
+            Resource: '*'
+
+  - name: Test nsocket.error using an invalid IP address
+    ncat:
+      port: 22
+      state: connect
+      transport: tcp
+      host: 999.999.999.999
+    ignore_errors: yes

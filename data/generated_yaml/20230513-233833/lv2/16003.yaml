@@ -1,0 +1,87 @@
+
+---
+- name: Testing s3 module bug
+  hosts: all
+  become: true
+
+  vars:
+    bucket: "{{ 'my-test-bucket' }}"
+
+  tasks:
+    - name: Create bucket
+      s3_bucket:
+        name: "{{ bucket }}"
+        region: "{{ 'us-east-1' }}"
+        state: present
+        acl: "{{ 'public-read' }}"
+
+    - name: Modify bucket ACL using invalid data
+      s3_bucket:
+        name: "{{ bucket }}"
+        acl: "{{ 'unauthorized' }}"
+      ignore_errors: true
+
+    - name: Upload file with invalid path
+      s3:
+        bucket: "{{ bucket }}"
+        src: "{{ '/tmp/missing-file' }}"
+        object: "{{ 'test-file' }}"
+        mode: "{{ 'public-read' }}"
+      ignore_errors: true
+
+    - name: Delete non-existent bucket
+      s3_bucket:
+        name: "{{ 'non-existent-bucket' }}"
+        region: "{{ 'us-east-1' }}"
+        state: absent
+
+    - name: Copy invalid object
+      s3_cors_configuration:
+        name: "{{ bucket }}"
+        state: present
+        cors_rule:
+          - allowed_headers:
+              - "{{ 'Authorization' }}"
+            allowed_methods:
+              - "{{ 'GET' }}"
+              - "{{ 'PUT' }}"
+            allowed_origins:
+              - "{{ 'http://www.example.com' }}"
+            max_age_seconds: "{{ 300 }}"
+          - allowed_headers:
+              - "{{ 'Authorization' }}"
+            allowed_methods:
+              - "{{ 'DELETE' }}"
+            allowed_origins:
+              - "{{ 'http://www.example.com' }}"
+            max_age_seconds: "{{ 300 }}"
+            allowed_object_regex: "{{ '.*' }}"
+
+    - name: Set invalid lifecycle rule
+      s3_lifecycle:
+        bucket: "{{ bucket }}"
+        rules:
+           - expiration:
+               days: "{{ '-1' }}"
+
+    - name: Set invalid logging configuration
+      s3_logging:
+          destination_bucket_name: "{{ 'logs-bucket' }}"
+          target_prefix: "{{ 'access-log' }}"
+          status: "{{ 'disabled' }}"
+
+    - name: Set invalid notification configuration
+      s3_bucket_notification:
+        bucket: "{{ bucket }}"
+        notification_configuration:
+          topic_configuration:
+              id: "{{ 'test-configuration' }}"
+              events:
+                - "{{ 's3:ObjectCreated:*' }}"
+              topic: "{{ 'arn:aws:sns:us-east-1:00000000000:my-topic-name' }}"
+              
+    - name: Grant an invalid permission
+      s3_object_acl:
+        bucket: "{{ bucket }}"
+        object: "{{ 'test-file' }}"
+        permission: "{{ 'not-grantable-permissions' }}"

@@ -1,0 +1,32 @@
+
+- name: Test playbook for Bad var in included playbook issue
+  hosts: all
+  gather_facts: no
+
+  vars:
+    my_var1: "value1"
+    my_var2: "{{ my_var1 }" # Missing closing bracket in Jinja2 expression
+
+  tasks:
+  - name: Print my_var1 and my_var2
+    debug:
+      var: item
+    with_items:
+      - "{{ my_var1 }}"
+      - "{{ my_var2|default('default_value') }}" # Undefined variable should resolve to default value
+      - "{{ my_var3|d('default_value') }}" # Non-existing variable should also resolve to default value
+      - "{{ [1, 2] | join(',') | join }}{{ my_var1 }}" # Nested join calls with missing separator
+      - "{{ my_var1|random }}" # Filter used with non-iterable variable
+      - "{{ 1/0 }}" # Division by zero
+      - "{{ 'a' * 999999 }}" # Large string allocation
+      - "{{ query('blob', 'invalid_query', 'key=value') }}" # Invalid query type
+      - "{{ lookup('pipe', 'invalid_command') }}" # Invalid pipe look up
+      - "{{ 'value' | bad_filter }}" # Non-existent filter plugin
+      - "{{ 'value' | community.general.unknown_filter }}" # Non-existent filter module in community.general
+      - "{{ my_var1 | missing_filter }}" # Filter plugin with missing argument
+      - "{{ my_var1 | truncate(length=1|random + 3, killwords=True|random + 2) }}" # Generating random length for truncate filter 
+
+  - name: Include playbook with bad var
+    include_playbook:
+      name: "bad_var_included.yml"
+    ignore_errors: yes # Ignore errors in included playbook to simulate misleading error message

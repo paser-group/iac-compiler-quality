@@ -1,0 +1,56 @@
+
+---
+- name: Test Rackspace inventory on CentOS7
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+  - name: Install dependencies
+    package:
+      name: "{{ item }}"
+      state: present
+    with_items:
+      - python3
+      - python3-pip
+    become: true
+
+  - name: Install required Python modules
+    pip:
+      name: python-rackspace
+      state: present
+    become: true
+
+  - name: Configure inventory
+    set_fact:
+      rackspace_api_key: "{{ lookup('env', 'RS_API_KEY') }}"
+      rackspace_username: "{{ lookup('env', 'RS_USERNAME') }}"
+    register: inventory_configure
+    when: inventory_configure is not defined
+
+  - name: Test Rackspace inventory connection
+    local_action:
+      module: apt_repository
+      name: "{{ item }}"
+      state: absent
+    with_items:
+      - epel-release
+      - centos-release-ansible-29
+    become: true
+
+  - name: Use rackspace.py inventory plugin
+    hosts: all
+    gather_facts: true
+    vars:
+      ansible_connection: rackspace
+      rackspace_api_key: "{{ lookup('env', 'RS_API_KEY') }}"
+      rackspace_username: "{{ lookup('env', 'RS_USERNAME') }}"
+      rackspace_region: dfw
+      
+  - name: Run the Playbook on CentOS7 nodes
+    hosts: centos7
+    become: true
+    gather_facts: true
+    tasks:
+      - name: Check SSL Configurations
+        debug:
+          var: ansible_facts['gathered_inventory'][ansible_hostname]['ansible_rax_auth_cert']

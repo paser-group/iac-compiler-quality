@@ -1,0 +1,28 @@
+
+---
+- name: Reboot Windows Machine and Wait for Startup
+  hosts: windows
+  become: true
+
+  tasks:
+
+    - name: Reboot the windows machine
+      win_reboot:
+        msg: "Rebooting the system for configuration changes"
+        reboot_timeout: 900
+
+    - name: Wait for the system to restart
+      wait_for_connection:
+        delay: 15
+        timeout: 300
+
+    - name: Check if the service is running
+      win_service:
+        name: "some_service_name"
+      register: service_status
+
+    - name: Restart the service
+      win_service:
+        name: "some_service_name"
+        state: restarted
+      when: service_status.started == True

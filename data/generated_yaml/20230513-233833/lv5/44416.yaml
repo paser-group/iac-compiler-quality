@@ -1,0 +1,34 @@
+
+---
+- name: Test batch processing in azure_rm_virtualmachine
+  hosts: all
+  become: true
+  vars:
+    batch_size: 3
+  tasks:
+    - name: Create VMs with batch processing
+      azure_rm_virtualmachine:
+        name: test-vm
+        resource_group: test-rg
+        vm_size: Standard_D2s_v3
+        admin_username: ansible
+        admin_password: "{{ vault_ansible_password }}"
+        image:
+          offer: UbuntuServer
+          publisher: Canonical
+          sku: '20.04-LTS'
+          version: latest
+        dns_name_label: test-vm
+        count: 3
+        network_interface_names:
+          - test-nic-1
+          - test-nic-2
+          - test-nic-3
+        batch_size: "{{ batch_size }}"
+      register: vm_output
+    - name: Start the created VMs
+      azure_rm_virtualmachine:
+        resource_group: test-rg
+        name: "{{ item.name }}"
+        state: started
+      loop: "{{ vm_output.results }}"

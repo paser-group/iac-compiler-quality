@@ -1,0 +1,57 @@
+
+---
+- name: Test playbook
+  hosts: all
+  gather_facts: false
+  vars:
+    ssh_config: "/etc/ssh/ssh_config"
+    ssh_control_path: "~/.ansible-ssh-%%h-%%p-%%r"
+  
+  tasks:
+  - name: Check current Control Path Setting
+    shell: grep -E '^ *ControlPath' {{ ssh_config }} || echo 'No ControlPath Setting'
+    register: current_control_path
+    changed_when: false
+
+  - name: Override Control Path Setting
+    block:
+      - name: Remove Existing ControlPath Setting
+        lineinfile:
+          path: "{{ ssh_config }}"
+          state: absent
+          regexp: "^\\s*ControlPath\\s.*$"
+        when: current_control_path.stdout != "No ControlPath Setting"
+
+      - name: Add New ControlPath Setting
+        lineinfile:
+          path: "{{ ssh_config }}"
+          line: "ControlPath {{ ssh_control_path }}"
+        when: current_control_path.stdout != "No ControlPath Setting"
+
+    when: ssh_control_path != ""
+
+  - name: Remove Control Path Setting
+    block:
+      - name: Remove Existing ControlPath Setting
+        lineinfile:
+          path: "{{ ssh_config }}"
+          state: absent
+          regexp: "^\\s*ControlPath\\s.*$"
+        when: current_control_path.stdout != "No ControlPath Setting"
+
+    when: ssh_control_path == ""
+
+  - name: Execute Test Command over SSH
+    vars:
+      ssh_private_key: "/path/key"
+      ssh_user: "username"
+      ssh_pass: "password"
+      ssh_port: 22
+    shell: ssh -i {{ ssh_private_key }} -o ControlPath={{ ssh_control_path }} -p {{ ssh_port }} {{ ssh_user }}@{{ inventory_hostname }} "echo 'Test Command'; exit 0"
+    register: ssh_test
+    ignore_errors: true
+    changed_when: false
+
+  - name: Analyze Test Result
+    debug:
+      var: ssh_test

@@ -1,0 +1,56 @@
+
+- name: Test ANSIBLE_VYOS_TERMINAL_LENGTH setting
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Set ANSIBLE_VYOS_TERMINAL_LENGTH to 0
+      vyos_command:
+        commands: "set terminal length 0"
+      register: vyos_output_1
+
+    - name: Print the output from the previous task
+      debug:
+        msg: "{{ vyos_output_1.stdout_lines }}"
+
+    - name: Set ANSIBLE_VYOS_TERMINAL_LENGTH to 50
+      vyos_command:
+        commands: "set terminal length 50"
+      register: vyos_output_2
+
+    - name: Ensure previous playbook task did not trigger an error
+      assert:
+        that:
+          - vyos_output_2 is success
+
+    - name: Set ANSIBLE_VYOS_TERMINAL_LENGTH to 200
+      vyos_command:
+        commands: "set terminal length 200"
+      register: vyos_output_3
+
+    - name: Print the output from the previous task
+      debug:
+        msg: "{{ vyos_output_3.stdout_lines }}"
+
+    - name: Set ANSIBLE_VYOS_TERMINAL_LENGTH to -1
+      vyos_command:
+        commands: "set terminal length -1"
+      register: vyos_output_4
+
+    - name: Print the output from the previous task
+      debug:
+        msg: "{{ vyos_output_4.stdout_lines }}" 
+
+    - name: Set invalid data type for ANSIBLE_VYOS_TERMINAL_LENGTH
+      vyos_config:
+        lines:
+          - "set system login banner config"
+          - "set system login banner {{ 1/0 }}"
+      register: vyos_output_5
+      rescue:
+        - name: Print the error message when the playbook fails
+          debug:
+            msg: "{{ ansible_failed_result }}"
+
+    - name: Print the output from the previous task
+      debug:
+        msg: "{{ vyos_output_5.stdout_lines }}" 

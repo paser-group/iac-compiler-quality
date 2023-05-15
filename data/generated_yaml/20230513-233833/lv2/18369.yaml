@@ -1,0 +1,36 @@
+
+---
+- name: INI lookup bug Bash
+  hosts: all
+  gather_facts: false
+  vars:
+    data:
+      one: 1
+      two: 2
+      three: 3
+
+  tasks:
+  - name: Display variable
+    debug: var=data[somevar | default(2)]
+    vars:
+      somevar: one
+
+  - name: Edge case
+    debug: var=data["key"]|default("default value")
+    vars:
+      key: '    \u00A0\t \u3000  '
+  
+  - name: Unconventional syntax
+    debug: var=data.\n["\001"] \u0007\u0008
+    ignore_errors: yes
+
+  - name: Unexpected input
+    ini:
+      path: '{{ inventory_dir }}/files/test.ini'
+      section: '{{ item | regex_replace("[\\\\/]","-") }}'
+      option: '{{ item | regex_replace("[^a-z0-9_]","_") | substr(0, 15) | upper }}'
+      value: '{{ item | regex_replace("[^[:print:]]","") | upper }}'
+    with_items:
+      - 'a/\\b += "\u0000\u0001"'
+      - 'b/\\c += "\u00E4\u00EB\u00FF"'
+      - 'c:\u0008\x7f\:/ += "Line1Line2"'

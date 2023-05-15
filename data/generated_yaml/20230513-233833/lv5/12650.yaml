@@ -1,0 +1,30 @@
+
+- name: Test string literal concatenation with lookup
+  hosts: localhost
+  gather_facts: no
+  vars:
+    string_var: "test"
+  tasks:
+  - name: Set lookup variable
+    set_fact:
+      command_output: "{{ lookup('shell', 'echo test') }}"
+  handlers:
+    - name: Concatenate string literal with lookup
+      block:
+        - name: Concatenate and save to file
+          copy:
+            content: "{{ command_output ~ ' - ' ~ string_var }}"
+            dest: "/tmp/test_file"
+          notify: Print result
+      when: "'test | type_debug == \"string\"'"
+  - name: Trigger handler
+    block:
+      - meta: flush_handlers
+      - name: Return result
+        debug:
+          var: result
+        when: "'test | type_debug == \"string\"'"
+  - name: Print result
+    debug:
+      msg: "Concatenated: {{ result|default('No result!') }}"
+    when: "'test | type_debug == \"string\"'"

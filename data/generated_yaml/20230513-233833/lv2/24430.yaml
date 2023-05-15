@@ -1,0 +1,29 @@
+
+---
+- hosts: all
+  gather_facts: false
+  tasks:
+    - name: Create a container with comma separated command arguments
+      docker_container:
+        name: test_container
+        image: ubuntu
+        command: "echo a,b,c,d"
+        state: started
+        restart: yes
+      become: true
+
+    - name: Check if container is running
+      wait_for:
+        host: "{{ inventory_hostname }}"
+        port: 22
+        timeout: 30
+      become: true
+
+    - name: Verify comma separated arguments are passed correctly
+      shell: "docker exec -t test_container bash -c 'echo $(echo {{ '\"a,b,c,d\"' }} | tr \",\" \" \")'"
+      register: command_output
+      become: true
+
+    - name: Print container's command output
+      debug:
+        msg: "{{ command_output.stdout }}"

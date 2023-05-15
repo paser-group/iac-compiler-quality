@@ -1,0 +1,44 @@
+
+---
+- name: Test ec2_asg module
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    region: us-east-1
+    asg_name: test-asg
+    instance_ids: []
+
+  tasks:
+    - name: Create ASG
+      ec2_asg:
+        region: "{{ region }}"
+        name: "{{ asg_name }}"
+        launch_configs: "test-launch-config"
+        min_size: 1
+        max_size: 3
+        desired_capacity: 2
+        health_check_period: 60
+        health_check_type: "EC2"
+        availability_zones:
+            - "us-east-1a"
+        tags:
+            Name: "test-asg"
+
+    - name: Retrieve instance IDs from ASG
+      ec2_instance_info:
+        region: "{{ region }}"
+        aws_asg: "{{ asg_name }}"
+      register: instances_info
+
+    - name: Terminate instance IDs
+      ec2:
+        region: "{{ region }}"
+        state: absent
+        instance_ids: "{{ instances_info.instances | map(attribute='id') | list }}"
+      register: terminate_inst
+      ignore_errors: yes
+
+    - name: Debug output of terminated instances
+      debug:
+        var: terminate_inst

@@ -1,0 +1,30 @@
+
+---
+- name: SSH errors descriptive test case
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: Attempt SSH connection with invalid private key
+      become: yes
+      shell: ssh -i /dev/null -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ansible@{{ inventory_hostname }}
+      register: invalid_key_result
+      failed_when: "'Permission denied' not in invalid_key_result.stdout"
+
+    - name: SSH to non-existent host
+      ansible_host: 192.168.1.1000
+      ansible_user: ansible
+      ansible_ssh_private_key_file: /path/to/valid/private_key
+      connection: ssh
+      failed_when: "'Name or service not known' not in ansible_ssh_result.stderr"
+
+    - name: SSH using unconventional syntax
+      command: ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ansible@{{ inventory_hostname }}
+      register: unconventional_syntax_result
+      failed_when: "'Permission denied' not in unconventional_syntax_result.stdout"
+
+    - name: Connect to unreachable host
+      wait_for: host=192.168.1.1000 port=22 delay=5 timeout=10
+      connection: local
+      register: unreachable_host_result
+      failed_when: "'Timeout reached' not in unreachable_host_result.stderr"

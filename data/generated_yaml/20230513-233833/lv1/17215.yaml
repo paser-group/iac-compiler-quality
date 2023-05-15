@@ -1,0 +1,19 @@
+yaml
+- name: Check for disk usage and available space
+  hosts: all
+  gather_facts: true
+  vars:
+    # Define the path that you want to check for available space
+    # and set a minimum amount of free space that should be available
+    temp_path: /tmp
+    min_free_space_mb: 500
+    
+  tasks:
+    - name: Check disk usage for {{ temp_path }}
+      stat:
+        path: "{{ temp_path }}"
+      register: disk_usage
+    - name: Fail if disk space is below {{ min_free_space_mb }}MB
+      fail:
+        msg: "Out of disk space: {{ temp_path }} has {{ '%0.2f' | format(disk_usage.statfs_blocks_available * disk_usage.statfs_block_size / (1024 * 1024)) }}MB available, but {{ min_free_space_mb }}MB is required."
+      when: "disk_usage.statfs_blocks_available * disk_usage.statfs_block_size < min_free_space_mb * 1024 * 1024"

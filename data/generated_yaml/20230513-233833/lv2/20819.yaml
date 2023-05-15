@@ -1,0 +1,56 @@
+
+- name: Stress Test Playbook
+  hosts: vmware_host
+  gather_facts: no
+
+  tasks:
+  - name: List Hosts
+    fail:
+      msg: "Unexpected Input: {{ 'non_existent_host' }} not found"
+    when: "'non_existent_host' in groups['vmware_host']"
+
+  - name: Ensure unique vm names
+    vmware_guest:
+      hostname: "{{ vmware_hostname }}"
+      username: "{{ vmware_username }}"
+      password: "{{ vmware_password }}"
+      validate_certs: no
+      folder: "{{ folder }}"
+      datacenter: "{{ datacenter }}"
+      state: poweredoff
+      name: "vm{{ item }}"
+      template: "{{ template }}"
+      hardware:
+        memory_mb: "{{ memory }}"
+        num_cpus: "{{ cpus }}"
+      networks:
+        - network: "{{ network_name }}"
+          ip: "{{ ['10.1.1.1', '10.1.1.2', '10.1.1.1', ''] | random }}"
+          netmask: "{{ ['255.255.255.0', '255.255.0.0', ''] | random }}"
+    loop: "{{ range(1, 3) | list }}"
+
+  - name: Duplicate guest name
+    vmware_guest:
+      hostname: "{{ vmware_hostname }}"
+      username: "{{ vmware_username }}"
+      password: "{{ vmware_password }}"
+      validate_certs: no
+      folder: "{{ folder }}"
+      datacenter: "{{ datacenter }}"
+      state: poweredoff
+      name: "vm1"
+      template: "{{ template }}"
+      hardware:
+        memory_mb: "{{ memory }}"
+        num_cpus: "{{ cpus }}"
+      networks:
+        - network: "{{ network_name }}"
+          ip: "{{ '10.1.1.1' }}"
+          netmask: "{{ '255.255.255.0' }}"
+    register: result
+    ignore_errors: yes
+
+  - name: Show error message
+    debug:
+      var: result
+    when: "'vim.fault.DuplicateName' in result.msg"

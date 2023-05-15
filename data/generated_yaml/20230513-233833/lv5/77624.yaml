@@ -1,0 +1,25 @@
+
+---
+- name: Install ansible-galaxy collections
+  hosts: all
+  tasks:
+    - name: Install collection from Galaxy
+      command: ansible-galaxy collection install {{ collection_name }} --force
+
+    - name: Verify collection installation
+      block:
+        - name: Import role from collection
+          include_role:
+            name: "{{ collection_name }}.{{ role_name }}"
+          vars:
+            collections_path: "{{ lookup('env', 'ANSIBLE_COLLECTIONS_PATH') }}"
+
+        - name: Verify role execution
+          command: "{{ item }}"
+          with_items:
+            - "{{ role_test_command }}"
+          register: role_result
+
+        - name: Print role execution output
+          debug:
+            var: role_result

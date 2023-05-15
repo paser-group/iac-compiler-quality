@@ -1,0 +1,54 @@
+
+---
+- hosts: all
+  gather_facts: false
+  vars:
+    null_var: !!null
+    unset_var: "{{ not_a_variable }}"
+
+  tasks:
+    - name: Test set on a null variable
+      set_fact:
+        null_var: "{{ 'test' }}"
+
+    - name: Test set on an unset variable
+      set_fact:
+        unset_var: "{{ 'test' }}"
+      ignore_errors: yes
+
+    - name: Test empty condition on a null variable
+      debug:
+        msg: "Null variable"
+      when: null_var is defined and null_var == ''
+
+    - name: Test empty condition on an unset variable
+      debug:
+        msg: "Unset variable"
+      when: unset_var is defined and unset_var == ''
+
+    - name: Test undefined variable in jinja expression
+      debug:
+        msg: "{{ not_a_variable }}"
+
+    - name: Test empty string as variable
+      debug:
+        msg: "{{ '' | length }}"
+
+    - name: Test undefined variable in debug message formatting
+      debug:
+        msg: "Test {{ not_a_variable }}"
+
+    - name: Test set on a non-existent variable
+      set_fact:
+        nonexistent_var: "test"
+      ignore_errors: yes
+
+    - name: Test register on non-existent command
+      shell: non_existent_command
+      register: nonexistent_command_output
+      ignore_errors: yes
+
+    - name: Test jailbreak with escape character
+      shell:
+        cmd: 'echo "{{ `whoami` }}"'
+        executable: /bin/bash

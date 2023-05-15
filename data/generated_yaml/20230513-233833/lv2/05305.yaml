@@ -1,0 +1,64 @@
+
+---
+- name: Stress Test ec2_elb Module
+  hosts: localhost
+  connection: local
+  gather_facts: no
+
+  vars:
+    elb_name: my-elb
+    instance_id: i-0123456789abcdef
+    region: us-west-2
+
+  tasks:
+    - name: Register an instance that has never been registered before
+      ec2_elb:
+        state: present
+        region: "{{ region }}"
+        elb: "{{ elb_name }}"
+        instances: "{{ instance_id }}"
+      register: result
+
+    - name: Verify the output of the ec2_elb module when registering an instance that has never been registered before
+      debug:
+        var: result
+
+    - name: Create a list that contains all valid instance ids
+      set_fact:
+        valid_instance_ids: "{{ ['i-0123456789abcdef', 'i-abcdef0123456789'] }}"
+
+    - name: Register an instance with invalid values
+      ec2_elb:
+        state: present
+        region: "{{ region }}"
+        elb: "{{ elb_name }}"
+        instances: "{{ valid_instance_ids + ['i-0123456'] }}"
+      register: result
+
+    - name: Verify the output of the ec2_elb module when registering an instance with invalid values
+      debug:
+        var: result
+
+    - name: Deregister an instance that has never been registered before
+      ec2_elb:
+        state: absent
+        region: "{{ region }}"
+        elb: "{{ elb_name }}"
+        instances: "{{ instance_id }}"
+      register: result
+
+    - name: Verify the output of the ec2_elb module when deregistering an instance that has never been registered before
+      debug:
+        var: result
+
+    - name: Deregister an instance with invalid values
+      ec2_elb:
+        state: absent
+        region: "{{ region }}"
+        elb: "{{ elb_name }}"
+        instances: "{{ valid_instance_ids + ['i-0123456'] }}"
+      register: result
+
+    - name: Verify the output of the ec2_elb module when deregistering an instance with invalid values
+      debug:
+        var: result

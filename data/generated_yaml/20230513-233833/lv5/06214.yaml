@@ -1,0 +1,37 @@
+
+- hosts: node1
+  become: true
+  vars:
+    mysql_host: "localhost"
+    mysql_port: "3306"
+    mysql_user: "username"
+    mysql_password: "password"
+    database_name: "mydatabase"
+
+  tasks:
+    - name: Check if the database exists
+      mysql_db:
+        state: list
+        name: "{{ database_name }}"
+        login_host: "{{ mysql_host }}"
+        login_port: "{{ mysql_port }}"
+        login_user: "{{ mysql_user }}"
+        login_password: "{{ mysql_password }}"
+      register: result
+      when: mysql_db != None
+
+    - name: Create database if not exists
+      mysql_db:
+        state: present
+        name: "{{ database_name }}"
+        login_host: "{{ mysql_host }}"
+        login_port: "{{ mysql_port }}"
+        login_user: "{{ mysql_user }}"
+        login_password: "{{ mysql_password }}"
+      when: result|failed
+
+    - name: Print message if database is created
+      debug:
+        msg: "Database created successfully."
+      when: result|failed
+

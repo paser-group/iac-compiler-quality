@@ -1,0 +1,46 @@
+yaml
+---
+- name: Test playbook for vmware_guest module
+  hosts: all
+  gather_facts: no
+  
+  vars:
+    vmware_guest_username: "{{ lookup('env', 'VMWARE_GUEST_USERNAME') }}"
+    vmware_guest_password: "{{ lookup('env', 'VMWARE_GUEST_PASSWORD') }}"
+    vmware_guest_hostname: "{{ lookup('env', 'VMWARE_GUEST_HOSTNAME') }}"
+    vmware_guest_datastore: "{{ lookup('env', 'VMWARE_GUEST_DATASTORE') }}"
+    vmware_guest_disk_size: "{{ lookup('env', 'VMWARE_GUEST_DISK_SIZE') }}"
+    
+  tasks:
+    - name: Resize disk with multiple SCSI controllers
+      vmware_guest:
+        hostname: "{{ vmware_guest_hostname }}"
+        username: "{{ vmware_guest_username }}"
+        password: "{{ vmware_guest_password }}"
+        datacenter: UIDatacenter
+        datastore: "{{ vmware_guest_datastore }}"
+        name: test_vm
+        scsi: paraVirtual | lsiLogic | lsiLogicSAS
+        disk_size: "{{ vmware_guest_disk_size }}"
+        state: present
+      register: resize_disk_result
+
+    - name: Restore VM with multiple SCSI controllers
+      vmware_guest:
+        hostname: "{{ vmware_guest_hostname }}"
+        username: "{{ vmware_guest_username }}"
+        password: "{{ vmware_guest_password }}"
+        datacenter: UIDatacenter
+        datastore: "{{ vmware_guest_datastore }}"
+        name: test_vm
+        scsi: paraVirtual | lsiLogic | lsiLogicSAS
+        state: poweredon
+      register: restore_vm_result
+      
+    - name: Verify resize disk result
+      debug:
+        var: resize_disk_result
+        
+    - name: Verify restore VM result
+      debug:
+        var: restore_vm_result

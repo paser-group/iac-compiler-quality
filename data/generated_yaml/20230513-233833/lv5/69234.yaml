@@ -1,0 +1,37 @@
+yml
+- hosts: all
+  become: yes
+
+  vars:
+    repo_name: example_repo
+    distributor_id: example_distributor
+
+  tasks:
+    - name: Install pulp and pulp-rpm modules
+      package:
+        name:
+          - python3-pulp
+          - python3-pulp-rpm
+        state: present
+      tags: install_pulp
+      
+    - name: Add a repo with pulp_repo module
+      pulp_repo:
+        name: "{{ repo_name }}"
+        state: present
+        url: "http://example.com/example_repo.rpm"
+        add_export_distributor: yes
+        distributors:
+          - id: "{{ distributor_id }}"
+            auto_publish: "{{ true }}"
+            publish_http: "{{ true }}"
+      register: output
+      
+    - debug:
+        var: output
+      tags: debug_output
+      
+    - assert:
+        that:
+          - distributor_id in output['pulp_repo'][repo_name]['export_distributor'] 
+      tags: validate_output

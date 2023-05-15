@@ -1,0 +1,88 @@
+
+---
+- name: Creating RoleBinding in Openshift
+  hosts: all
+  gather_facts: no
+
+  vars:
+    user_list:
+      - "user1"
+      - "user2"
+      - "user3"
+    role_list:
+      - "role1"
+      - "role2"
+      - "role3"
+    project_name: "test-project"
+    namespace: "test-namespace"
+
+  tasks:
+    - name: Login to Openshift
+      oc_login:
+        server_url: https://openshift.example.com:8443/
+        username: admin
+        password: password
+        insecure_skip_tls_verify: yes
+
+    - name: Create project
+      oadm_project:
+        name: "{{ project_name }}"
+        namespace: "{{ namespace }}"
+        display_name: "Test Project"
+      ignore_errors: yes
+
+    - name: Create RoleBinding with incorrect syntax
+      oadm_policy:
+        namespace: "{{ namespace }}"
+        state: present
+        kind: rolebinding
+        name: "{{ role_list[0] }}-binding"
+        role_name: "{{ role_list[0] }}"
+        users: ["user1", "user2", "user3"]
+        group_names: ["group1", "group2", "group3"]
+      ignore_errors: yes
+
+    - name: Create RoleBinding with unexpected inputs
+      oadm_policy:
+        namespace: "{{ namespace }}"
+        state: present
+        kind: rolebinding
+        name: "{{ role_list[1] }}-binding"
+        role_name: "{{ role_list[1] }}"
+        users: "user1,user2,user3"
+        group_names: "group1,group2,group3"
+      ignore_errors: yes
+
+    - name: Create RoleBinding with non-existent role name
+      oadm_policy:
+        namespace: "{{ namespace }}"
+        state: present
+        kind: rolebinding
+        name: "{{ role_list[2] }}-binding"
+        role_name: "role4"
+        users: "{{ user_list }}"
+      ignore_errors: yes
+
+    - name: Create RoleBinding with invalid role name
+      oadm_policy:
+        namespace: "{{ namespace }}"
+        state: present
+        kind: rolebinding
+        name: "{{ role_list[2] }}-binding"
+        role_name: "{{ role_list[2] }}-invalid"
+        users: "{{ user_list }}"
+      ignore_errors: yes
+
+    - name: Create RoleBinding with incorrect namespace
+      oadm_policy:
+        namespace: "invalid-namespace"
+        state: present
+        kind: rolebinding
+        name: "{{ role_list[2] }}-binding"
+        role_name: "{{ role_list[2] }}"
+        users: "{{ user_list }}"
+      ignore_errors: yes
+
+    - name: Logout of Openshift
+      oc_login:
+        state: absent

@@ -1,0 +1,64 @@
+
+---
+- hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: create VPC with invalid CIDR block
+      ec2_vpc:
+        state: present
+        cidr_block: 192.168.0.0/16   # invalid CIDR block
+        region: us-east-1
+      register: vpc_fail
+
+    - name: fail if VPC creation succeeds
+      fail:
+        msg: "VPC creation succeeded with invalid CIDR block {{ vpc_fail.cidr_block }}"
+
+    - name: create VPC with unconventional tags
+      ec2_vpc:
+        state: present
+        cidr_block: 10.0.0.0/16
+        region: us-east-1
+        tags:
+          unconventional_tag_1: "{{ 'value_' + ansible_date_time.date }}"
+          unconventional_tag_2: "{{ 'value_' + lookup('env', 'USER') }}"
+          unconventional_tag_3: "{{ 'value_' + lookup('env', 'HOME') }}"
+      register: vpc_tag
+
+    - name: check if unconventional tags are preserved
+      debug:
+        var: vpc_tag.vpc.tags
+
+    - name: create VPC with unexpected arguments
+      ec2_vpc:
+        state: present
+        cidr_block: 10.1.0.0/16
+        region: us-east-1
+        not_a_valid_argument: "value"   # unexpected argument
+      ignore_errors: yes
+
+    - name: create VPC with invalid route table
+      ec2_vpc:
+        state: present
+        cidr_block: 10.2.0.0/16
+        region: us-east-1
+        route_table_id: non_existent_route_table_id   # invalid route table id
+      register: vpc_rt
+
+    - name: fail if VPC creation succeeds with invalid route table
+      fail:
+        msg: "VPC creation succeeded with invalid route table ID {{ vpc_rt.route_table_id }}"
+
+    - name: terminate VPC
+      ec2_vpc:
+        state: absent
+        cidr_block: "{{ item.cidr_block }}"
+        region: us-east-1
+        ignore_missing_vpc: yes
+      with_items:
+        - "{{ vpc_fail.cidr_block }}"
+        - "{{ vpc_tag.vpc.cidr_block }}"
+        - "{{ vpc_rt.cidr_block }}"
+
+...

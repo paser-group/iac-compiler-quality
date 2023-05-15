@@ -1,0 +1,51 @@
+
+- name: Test Ansible Compiler
+  hosts: all
+  gather_facts: no
+
+  tasks:
+
+  - name: Test URI Module with unconventional syntax
+    uri:
+      url: '!@#$%^&*(+_)'
+    register: result
+    ignore_errors: yes
+
+  - name: Test URI Module with missing URL parameter
+    uri:
+      validate_certs: no
+    register: result
+    ignore_errors: yes
+
+  - name: Test URI Module with invalid scheme
+    uri:
+      url: 'ftp://example.com'
+    register: result
+    ignore_errors: yes
+
+  - name: Test URI Module with invalid HTTP response code
+    uri:
+      url: 'https://httpbin.org/status/404'
+    register: result
+    failed_when: result.status != 404
+
+  - name: Test URI Module with invalid response content
+    uri:
+      url: 'https://httpbin.org/status/200'
+    register: result
+    failed_when: "'Hello World' not in result.content"
+
+  - name: Test URI Module with import error
+    become: yes
+    pip:
+      name: requests
+      state: absent
+
+  - name: Test URI Module with valid URL parameter
+    uri:
+      url: 'https://example.com'
+    register: result
+
+  - name: Print URI Module Result
+    debug:
+      var: result

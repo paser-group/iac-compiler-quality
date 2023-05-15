@@ -1,0 +1,35 @@
+
+---
+- name: Test playbook for max_fail_percentage
+  hosts: all
+  tasks:
+    - name: Task1
+      command: echo "Task 1"
+      register: task1_out
+      failed_when: "'Task 1 failed' in task1_out.stderr"
+    
+    - name: Task2
+      command: echo "Task 2"
+      register: task2_out
+      max_fail_percentage: 50
+      failed_when: "'Task 2 failed' in task2_out.stderr"
+
+    - name: Task3
+      shell: /bin/false
+      register: task3_out
+      max_fail_percentage: 25
+      failed_when: "'Task 3 failed' in task3_out.stderr"
+
+    - name: Task4
+      raw: cat /non-existent-file > /dev/null
+      register: task4_out
+      max_fail_percentage: 75
+      failed_when: "'Task 4 failed' in task4_out.stderr"
+    
+    - assert:
+        that:
+          - task1_out.rc == 0
+          - task2_out.rc == 0
+          - task3_out.rc != 0
+          - task4_out.rc != 0
+

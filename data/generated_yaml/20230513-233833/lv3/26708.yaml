@@ -1,0 +1,24 @@
+
+---
+- name: Testing docker_network module bug in icc option
+  hosts: all
+  gather_facts: no
+  become: yes
+
+  tasks:
+    - name: Creating a docker network with icc enabled
+      docker_network:
+        name: icc_network
+        driver: bridge
+        options:
+          com.docker.network.bridge.enable_icc: "true"
+      register: result
+
+    - name: Launching docker containers on the created network
+      docker_container:
+        state: started
+        image: alpine
+        name: container{{ item }}
+        command: ping node1
+        network_mode: icc_network
+      with_sequence: start=1 end=3

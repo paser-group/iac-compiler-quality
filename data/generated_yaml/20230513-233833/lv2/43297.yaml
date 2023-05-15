@@ -1,0 +1,55 @@
+yaml
+---
+- name: Test playbook for docker_container module error
+  hosts: node1
+  gather_facts: false
+  tasks:
+    - name: Start container with invalid image name
+      docker_container:
+        image: !!python/object/new:dict_proxy
+          args:
+            - 'test'
+          listitems: true
+      register: result
+
+    - name: Display container info
+      debug:
+        var: result
+
+    - name: Start container with invalid command
+      docker_container:
+        image: ubuntu
+        command: '{{ item }}'
+      with_items:
+        - !!python/object/new:dict_proxy
+          args:
+            - 'test'
+          listitems: true
+      register: result
+
+    - name: Display container info
+      debug:
+        var: result
+
+    - name: Start container with invalid environment variable name and value
+      docker_container:
+        image: ubuntu
+        env:
+            - '!\'<>&|":'
+            - '{{ username }}": "{{ password }}'
+      register: result
+
+    - name: Display container info
+      debug:
+        var: result
+
+    - name: Start container with invalid port mapping
+      docker_container:
+        image: ubuntu
+        ports:
+            - '8888:invalid'
+      register: result
+
+    - name: Display container info
+      debug:
+        var: result

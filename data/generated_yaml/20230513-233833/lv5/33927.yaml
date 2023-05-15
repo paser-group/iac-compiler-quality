@@ -1,0 +1,44 @@
+
+---
+- name: Testing ec2_asg_facts module to find probable bugs
+  hosts: localhost
+  connection: local
+  gather_facts: no
+
+  tasks:
+  - name: Target Group not found
+    ec2_asg_facts:
+      region: "{{ region }}"
+      filters:
+        "tag-key": "environment"
+        "tag-value": "production"
+      target_group_arns:
+        - "{{ tg_arn }}"
+    register: asg_info_fail
+    ignore_errors: yes
+    
+  - name: Authentication error - invalid credentials
+    ec2_asg_facts:
+      region: "{{ region }}"
+      filters:
+        "tag-key": "environment"
+        "tag-value": "production"
+      target_group_arns:
+        - "{{ tg_arn }}"
+    register: asg_info_auth_fail
+    ignore_errors: yes
+    aws_access_key: "{{ bad_key }}"
+    aws_secret_key: "{{ bad_secret }}"
+
+  - name: Network error - DNS Resolution failure
+    ec2_asg_facts:
+      region: "{{ region }}"
+      filters:
+        "tag-key": "environment"
+        "tag-value": "production"
+      target_group_arns:
+        - "{{ tg_arn }}"
+    register: asg_info_dns_fail
+    ignore_errors: yes
+    dns_name: "{{ dns_fail }}"
+

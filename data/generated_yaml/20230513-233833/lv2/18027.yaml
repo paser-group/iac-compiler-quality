@@ -1,0 +1,36 @@
+
+- name: Error handling in loops
+  hosts: node1
+  become: true
+  vars:
+    users:
+      - name: 'user1'
+        ssh_key: ''
+      - name: 'user2'
+        ssh_key: ''
+      - name: 'user3'
+        ssh_key: ''
+      - name: 'user4'
+        ssh_key: ''
+  tasks:
+    - name: Generate error if key is empty
+      set_fact:
+        ssh_key: "{{ item.ssh_key if item.ssh_key else 'ERROR: empty ssh key detected!' }}"
+      loop: "{{ users }}"
+    - name: Display ssh keys
+      debug:
+        var: ssh_key
+      loop: "{{ users }}"
+    - name: Run a faulty loop
+      shell: |
+        for i in {1..4}
+          do
+            echo $1
+          done
+      with_items:
+        - "{{ users }}"
+        - "{{ non_existent_variable }}"
+    - name: Change user shell
+      shell: chsh -s /usr/bin/zsh {{ item.name }}
+      when: item.shell is not defined
+      loop: "{{ users }}"

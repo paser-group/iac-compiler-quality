@@ -1,0 +1,36 @@
+
+---
+- name: Docker TLS configuration Playbook
+  hosts: all
+  become: true
+  vars:
+    docker_tls_verify: "1"
+    docker_tls_ca_cert: "/path/to/ca.pem"
+    docker_tls_cert: "/path/to/cert.pem"
+    docker_tls_key: "/path/to/key.pem"
+
+  tasks:
+  - name: Install Docker module on all nodes
+    apt:
+      name: python-docker
+      state: present
+    tags:
+      - install_module
+
+  - name: Create Docker environment file
+    copy:
+      dest: "/etc/default/docker"
+      content: |
+        DOCKER_TLS_VERIFY={{docker_tls_verify}}
+        DOCKER_TLS_CA_CERT={{docker_tls_ca_cert}}
+        DOCKER_TLS_CERT={{docker_tls_cert}}
+        DOCKER_TLS_KEY={{docker_tls_key}}
+    notify: restart docker
+    tags:
+      - create_environment
+
+  handlers:
+    - name: restart docker
+      service:
+        name: docker
+        state: restarted

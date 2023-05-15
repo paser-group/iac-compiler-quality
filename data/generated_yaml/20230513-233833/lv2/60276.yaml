@@ -1,0 +1,38 @@
+yaml
+---
+- name: Test ansible.module_utils.network.aci.aci module with edge cases and unconventional syntax
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: Generate random string
+      set_fact:
+        random_string: "{{ lookup('password', '/dev/random', length=32) }}"
+
+    - name: Test edge case 1
+      aci:
+        tenant: "{{ random_string }}"
+        use_ssl: "{{ not using_ssl | default(false) }}"
+      register: result
+
+    - name: Test edge case 2
+      aci:
+        tenant: "{{ random_string }}"
+        use_proxy: "{{ using_proxy | default(false) }}"
+      when: "'proxy_server' in inventory_hostname"
+      register: result
+
+    - name: Test unconventional syntax
+      aci:
+        tenant: "{{ inventory_hostname }}|join('') }}"
+      register: result
+
+    - name: Test unexpected input
+      aci:
+        tenant: "{{ random_string | from_yaml }}"
+      register: result
+
+    - name: Test empty input
+      aci:
+        tenant: ""
+      register: result

@@ -1,0 +1,33 @@
+
+---
+- name: Ec2 Module Error Playbook
+  become: true
+  hosts: localhost
+  connection: local
+  vars:
+      instance_type: t2.micro
+      security_group: "sg-abc123"
+  tasks:
+      - name: Provisioning an EC2 instance
+        ec2:
+          key_name: "mykeypair"
+          instance_type: "{{ instance_type }}"
+          image: "ami-0c2d06da4b164a5a7"
+          wait: true
+          region: "us-east-1"
+          count: 1
+          group: "{{ security_group }}"
+          count_tag:
+              Name: "testing_ec2_instance"
+          instance_tags:
+              Name: "testing_ec2_instance"
+        register: ec2
+      - name: Adding new instance to the Ansible inventory
+        add_host:
+          hostname: "{{ ec2.instances[0].public_ip }}"
+          ansible_connection: ssh
+          ansible_user: ubuntu
+          ansible_ssh_private_key_file: /path/to/key
+          groupname: ec2_nodes
+      - name: Verify EC2 instance by checking uptime
+        ping:

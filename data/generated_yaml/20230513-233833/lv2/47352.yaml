@@ -1,0 +1,78 @@
+
+---
+- name: Test win_domain idempotency issue
+  hosts: all
+  gather_facts: false
+
+  vars:
+    domain_name: "example.com"
+
+  tasks:
+    - name: Install WinRM package
+      win_package:
+        name: winrm
+        state: latest
+
+    - name: Join domain with invalid credentials
+      win_domain:
+        domain_name: "{{ domain_name }}"
+        username: "invalid_user"
+        password: "invalid_password"
+
+    - name: Join domain with invalid domain name
+      win_domain:
+        domain_name: "invalid_domain"
+        username: "valid_user"
+        password: "valid_password"
+
+    - name: Join domain without restart
+      win_domain:
+        domain_name: "{{ domain_name }}"
+        username: "valid_user"
+        password: "valid_password"
+        restart: no
+
+    - name: Leave domain
+      win_domain:
+        domain_name: "{{ domain_name }}"
+        username: "valid_user"
+        password: "valid_password"
+        state: absent
+
+    - name: Rejoin domain with computer name
+      win_domain:
+        domain_name: "{{ domain_name }}"
+        username: "valid_user"
+        password: "valid_password"
+        computer_name: "invalid_computer_name"
+
+    - name: Rejoin domain with workgroup name
+      win_domain:
+        domain_name: "{{ domain_name }}"
+        username: "valid_user"
+        password: "valid_password"
+        workgroup_name: "invalid_workgroup_name"
+
+    - name: Join domain with uppercase domain name
+      win_domain:
+        Domain_Name: "{{ domain_name }}"
+        Username: "valid_user"
+        Password: "valid_password"
+
+    - name: Join domain without specifying username and password
+      win_domain:
+        domain_name: "{{ domain_name }}"
+
+    - name: Join domain with non-existent domain controller
+      win_domain:
+        domain_name: "{{ domain_name }}"
+        username: "valid_user"
+        password: "valid_password"
+        domain_controller: "invalid_domain_controller_name"
+
+    - name: Join domain with non-default domain OU
+      win_domain:
+        domain_name: "{{ domain_name }}"
+        username: "valid_user"
+        password: "valid_password"
+        ou_path: "OU=InvalidOU,DC=example,DC=com"

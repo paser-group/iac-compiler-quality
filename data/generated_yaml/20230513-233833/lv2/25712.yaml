@@ -1,0 +1,19 @@
+
+- name: Issue #1234 - host_group_vars.py YAML file access bug
+  hosts: all
+  gather_facts: no
+
+  vars:
+    edge_case_var: !!python/object/new:os.PathLike
+
+  tasks:
+    - name: Define hosts and vars
+      debug:
+        msg: "Host {{ item }} has variable {{ hostvars[item]['non-YAML-file'] }}"
+      with_items: "{{ groups['all'] }}"
+      when: hostvars[item]['non-YAML-file'] | default(false) | if_exist and hostvars[item]['non-YAML-file'][-4:] != '.yml'
+
+    - name: Create unexpected input
+      file:
+        path: "/tmp/{{ edge_case_var }}/file.txt"
+        state: touch

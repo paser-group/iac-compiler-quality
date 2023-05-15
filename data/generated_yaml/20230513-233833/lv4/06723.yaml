@@ -1,0 +1,27 @@
+
+---
+- name: Test Unarchive module with MD5 checksums
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Copy zip file to remote node
+      copy:
+        src: files/archive.zip
+        dest: /tmp/archive.zip
+
+    - name: Unarchive zip file to /tmp/unarchived
+      unarchive:
+        src: /tmp/archive.zip
+        dest: /tmp/unarchived
+
+    - name: Generate MD5 checksums of extracted files
+      command: md5sum /tmp/unarchived/{{ item }}
+      register: result
+      with_fileglob:
+        - /tmp/unarchived/*
+
+    - name: Verify MD5 checksums of extracted files
+      debug:
+        msg: "{{ item.stdout }} : {{ item.item }}"
+      failed_when: "'{{ item.stdout.split()[0] }}' != '{{ item.item.split(\"/\")[-1].split(\".\")[0] }}'"
+      with_items: "{{ result.results }}"

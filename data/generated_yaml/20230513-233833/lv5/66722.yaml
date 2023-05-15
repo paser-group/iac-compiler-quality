@@ -1,0 +1,23 @@
+
+- name: Test async_status plugin in PowerShell script execution
+  hosts: node1
+  gather_facts: false
+  collections:
+    - powershell_collection
+
+  tasks:
+    - name: Execute PowerShell script
+      shell: "powershell.exe -ExecutionPolicy Bypass -NoLogo -NonInteractive -NoProfile -File script.ps1"
+      async: 10
+      poll: 0
+      register: script_result
+
+    - name: Wait until script finishes executing
+      async_status:
+        jid: "{{ script_result.ansible_job_id }}"
+      register: job_result
+      until: job_result.finished
+
+    - name: Print job result
+      debug:
+        var: job_result

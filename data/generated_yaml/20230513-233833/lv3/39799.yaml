@@ -1,0 +1,44 @@
+
+---
+- name: Create default NSG and associate it to NIC
+  hosts: node1
+  gather_facts: no 
+  vars:
+    nic_name: nic1
+  tasks:
+  - name: Create network interface
+    azure_rm_networkinterface:
+      resource_group: myResourceGroup
+      name: "{{ nic_name }}"
+      virtual_network_name: myVnet
+      subnet_name: default
+      public_ip_name: myPublicIP
+      security_group_name: myNSG
+    register: nic
+
+  - name: Create default NSG
+    azure_rm_securitygroup:
+      resource_group: myResourceGroup
+      name: myNSG
+    register: nsg
+
+  - name: Remove NIC association with default NSG
+    azure_rm_networkinterface:
+      resource_group: myResourceGroup
+      name: "{{ nic_name }}"
+      security_group_name: "" 
+    register: remove_association
+
+  - name: Associate NIC with default NSG
+    azure_rm_networkinterface:
+      resource_group: myResourceGroup
+      name: "{{ nic_name }}"
+      security_group_name: "MyDefaultNSG"
+    register: add_association
+
+  - name: Display outputs
+    debug:
+      var: nic
+      var: nsg
+      var: remove_association
+      var: add_association 

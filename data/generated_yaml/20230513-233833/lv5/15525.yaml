@@ -1,0 +1,31 @@
+
+---
+- name: Test SSH Connection Debugging
+  hosts: all
+  become: true
+  vars:
+    ssh_verbose: 2
+  tasks:
+    - name: Configure SSH Connection Debugging
+      become: true
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^#?LogLevel'
+        line: "LogLevel VERBOSE{{ssh_verbose}}"
+        state: present
+      notify: restart sshd
+    - name: Test SSH Connection (node 1)
+      become: false
+      command: ssh -vvv node1
+    - name: Test SSH Connection (node 2)
+      become: false
+      command: ssh -vvv node2
+    - name: Test SSH Connection (node 3)
+      become: false
+      command: ssh -vvv node3
+  handlers:
+    - name: restart sshd
+      become: true
+      service:
+        name: sshd
+        state: restarted

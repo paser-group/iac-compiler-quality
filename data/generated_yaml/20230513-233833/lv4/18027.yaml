@@ -1,0 +1,25 @@
+
+---
+- hosts: all
+  gather_facts: no
+  vars:
+    command_to_fail: 'not-a-valid-command'
+  tasks:
+    - name: "Run a failing command on each node"
+      command: "{{ command_to_fail }}"
+      register: command_output
+      ignore_errors: yes
+      retries: 2
+      delay: 5
+      until: command_output is failed
+      loop: "{{ groups['all'] }}"
+      remote_user: "{{ ansible_user }}"
+      become: yes
+      become_method: sudo
+
+- hosts: all
+  gather_facts: no
+  tasks:
+    - name: "This should run after the previous Playbook"
+      debug:
+        msg: "This Playbook has run successfully."

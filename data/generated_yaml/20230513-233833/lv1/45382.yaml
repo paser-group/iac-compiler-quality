@@ -1,0 +1,38 @@
+
+---
+- name: Demonstrating Inventory Error Handling
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    inventory_list:
+      - /etc/my_inventory/inventory1
+      - /etc/my_inventory/inventory2
+      - /etc/my_inventory/inventory3
+
+  tasks:
+    - name: Check Inventory Files Exist
+      stat:
+        path: "{{ item }}"
+      register: inventory_file_check
+      with_items: "{{ inventory_list }}"
+      ignore_errors: yes
+
+    - name: Verify all inventories exist
+      fail:
+        msg: "Missing inventory file: {{ inventory_list[inventory_file_check.results|map(attribute='item')|list }}"
+      when: inventory_file_check is failed
+
+    - name: Use Multiple Inventories and Ignore Errors
+      debug:
+        msg: "Inventory Item: {{ item }}"
+      with_inventory:
+        - /etc/my_inventory/inventory1
+        - /etc/my_inventory/inventory2
+        - /etc/my_inventory/inventory3
+      ignore_errors: true
+      
+    - name: Verify No Inventory Errors Were Reported
+      debug:
+        msg: "No Inventory Errors Reported"
+      when: not play_hosts.failed

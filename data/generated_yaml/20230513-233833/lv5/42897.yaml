@@ -1,0 +1,70 @@
+
+- name: Install Docker on all nodes
+  hosts: all
+  become: true
+  tasks:
+    - name: Install dependencies
+      apt:
+        update_cache: yes
+        name: "{{ item }}"
+        state: present
+      with_items:
+        - apt-transport-https
+        - ca-certificates
+        - curl
+        - gnupg
+        - software-properties-common
+
+    - name: Add Docker GPG key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: Add Docker repository
+      apt_repository:
+        repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu bionic stable
+        state: present
+
+    - name: Install Docker CE
+      apt:
+        update_cache: yes
+        name: docker-ce
+        state: present
+
+- name: Configure TLS settings for Docker
+  hosts: all
+  become: true
+  tasks:
+    - name: Add Docker group to current user
+      user:
+        name: "{{ ansible_user }}"
+        append: yes
+        groups: docker
+
+    - name: Generate CA certificate
+      command: openssl req -x509 -newkey rsa:4096 -nodes -keyout /etc/docker/ca-key.pem -out /etc/docker/ca-cert.pem -days 365 -subj "/CN=mycompany.com"
+
+    - name: Generate Server certificate
+      command: openssl req -newkey rsa:4096 -nodes -keyout /etc/docker/server-key.pem -out /etc/docker/server-csr.pem -subj "/CN=mycompany.com"
+      register: server_cert
+
+    - name: Sign Server certificate using CA certificate
+      command: openssl x509 -req -in /etc/docker/server-csr.pem -CA /etc/docker/ca-cert.pem -CAkey /etc/docker/ca-key.pem -CAcreateserial -out /etc/docker/server-cert.pem -days 365
+
+    - name: Configure Docker to use TLS
+      lineinfile:
+        path: /etc/default/docker
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+      with_items:
+        - { regexp: '^#DOCKER_OPTS=', line: 'DOCKER_OPTS="--tlsverify --tlscacert=/etc/docker/ca-cert.pem --tlscert=/etc/docker/server-cert.pem --tlskey=/etc/docker/server-key.pem -H=0.0.0.0:2376"' }
+
+- name: Run Docker container on each node
+  hosts: all
+  become: true
+  tasks:
+    - name: Run Docker container
+      docker_container:
+        name: nginx
+        image: nginx
+        state: started

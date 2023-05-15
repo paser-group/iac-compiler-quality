@@ -1,0 +1,38 @@
+
+- hosts: freebsd-nodes
+  gather_facts: False
+  tasks:
+    - name: Create rc.conf file
+      file:
+        path: /etc/rc.conf
+        state: touch
+    
+    - name: Add invalid configuration line to rc.conf
+      lineinfile:
+        path: /etc/rc.conf
+        line: 'invalid_configuration_line'
+
+    - name: Start service specified in rc.conf
+      action:
+        module: service
+        name: "{{ service_name }}"
+        state: started
+
+    - name: Verify service startup failure due to invalid configuration line
+      wait_for:
+        host: "{{ inventory_hostname }}"
+        port: "{{ service_port }}"
+        state: stopped
+        timeout: 10
+
+    - name: Remove invalid configuration line from rc.conf
+      lineinfile:
+        path: /etc/rc.conf
+        state: absent
+        regexp: "^invalid_configuration_line$"
+       
+    - name: Start service again and verify startup
+      action:
+        module: service
+        name: "{{ service_name }}"
+        state: started

@@ -1,0 +1,16 @@
+yaml
+- name: Update iptables on client if DNS resolution is incorrect
+  hosts: client
+  become: true
+ 
+  tasks:
+  - name: Verify correct hostname using DNS
+    command: nslookup {{ inventory_hostname }}
+    register: dns_result
+ 
+  - name: Update iptables if hostname does not match DNS result
+    iptables:
+      chain: input
+      destination: {{ inventory_hostname }}
+      jump: DROP
+    when: dns_result.stdout.find('can\'t find') != -1

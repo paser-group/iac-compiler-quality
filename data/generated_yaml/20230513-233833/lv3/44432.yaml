@@ -1,0 +1,33 @@
+
+---
+ - name: Create OpenStack router and trigger PolicyNotAuthorized error
+   hosts: all
+   gather_facts: no
+   become: yes
+
+   vars:
+     image_name: ubuntu
+     flavor_name: m1.small
+     network_name: demo_network
+     subnet_name: demo_subnet
+
+   tasks:
+     - name: Create OpenStack router
+       os_router:
+         state: present
+         name: demo_router
+         external_gateway_info: true
+         auth:
+           auth_url: "{{ auth_url }}"
+           project_name: "{{ project_name }}"
+           username: "{{ username }}"
+           password: "{{ password }}"
+           project_domain_name: "{{ project_domain_name }}"
+           user_domain_name: "{{ user_domain_name }}"
+       register: router_output
+       ignore_errors: true
+
+     - name: Handle error conditions
+       debug:
+         var: router_output
+       failed_when: "'PolicyNotAuthorized' in router_output.msg|default('')"

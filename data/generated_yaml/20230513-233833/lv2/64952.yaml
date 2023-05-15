@@ -1,0 +1,27 @@
+
+- hosts: all
+  gather_facts: no
+  tasks:
+    - name: Install pycurl without SSL support
+      shell: "pip3 install --no-cache-dir --compile --global-option='--disable-ssl' pycurl==7.43.0.6"
+      register: pycurl_install_result
+      ignore_errors: yes
+
+    # Edge case 1: Module name contains a semicolon
+    - name: Check ovirtsdk4 presence when SSL support is disabled
+      command: "{{ item }}; echo 'SUCCESS'"
+      with_items:
+        - 'ansible-playbook playbook.yml -M test_modules -i inventory --private-key /path/key'
+        - 'ansible-playbook playbook.yml -M ovirtsdk4 -i inventory --private-key /path/key'
+      when: pycurl_install_result|failed
+      ignore_errors: yes
+
+    # Edge case 2: Passing unconventional syntax in URL parameters
+    - name: Check ovirtsdk4 presence when SSL support is disabled and URL parameters are unconventional
+      command: 'ansible-playbook playbook.yml -M ovirtsdk4 -i inventory --private-key /path/key http_method=get\;\{\{\!\-\-.leak_info\-\-}\}\;\program=ovirt\;program_version=4'
+      ignore_errors: yes
+
+    # Edge case 3: Using unexpected input in inventory file
+    - name: Check ovirtsdk4 presence when SSL support is disabled and unexpected input is passed in inventory file
+      command: 'ansible-playbook playbook.yml -M ovirtsdk4 -i inventory_unexpected --private-key /path/key'
+      ignore_errors: yes

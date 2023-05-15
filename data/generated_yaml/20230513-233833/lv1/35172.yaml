@@ -1,0 +1,40 @@
+
+- name: Install and Configure Let's Encrypt Certificate
+  hosts: webserver
+  become: yes
+
+  vars:
+    domain_name: yourdomain.com
+    email_address: youremail@yourdomain.com
+
+  tasks:
+    - name: Install Certbot
+      apt:
+        name: certbot
+        state: latest
+
+    - name: Generate Let's Encrypt Certificate
+      shell: >
+        certbot certonly
+        --standalone
+        --non-interactive
+        --agree-tos
+        --register-unsafely-without-email
+        -d "{{ domain_name }}"
+
+    - name: Copy Let's Encrypt Certificate to Server
+      copy:
+        src: "/etc/letsencrypt/live/{{ domain_name }}/cert.pem"
+        dest: "/etc/ssl/certs/{{ domain_name }}.crt"
+        mode: 0644
+
+    - name: Copy Let's Encrypt Private Key to Server
+      copy:
+        src: "/etc/letsencrypt/live/{{ domain_name }}/privkey.pem"
+        dest: "/etc/ssl/private/{{ domain_name }}.key"
+        mode: 0644
+
+    - name: Restart Nginx Service
+      systemd:
+        name: nginx
+        state: restarted

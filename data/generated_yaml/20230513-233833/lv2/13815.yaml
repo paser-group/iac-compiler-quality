@@ -1,0 +1,44 @@
+
+- name: Test playbook for custom module with pipelining
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Install dependencies
+      apt:
+        name: "{{ item }}"
+        state: present
+      with_items:
+        - python
+        - python-pip
+        - gcc
+        - libssl-dev
+      register: result
+      changed_when: false
+
+    - name: Install package via pip
+      pip:
+        name: "package==1.0"
+        state: present
+        virtualenv: "{{ virtualenv_path }}"
+      become_user: deploy
+      become: true
+      register: result
+      when: "'package' not in ansible_facts.packages"
+
+    - name: Install custom module
+      pip:
+        name: "custom-module"
+        state: present
+        extra_args: "--no-deps"
+      register: result
+
+    - name: Run custom module with pipelining
+      custom_module:
+        command: "{{ item }}"
+        pipelining: true
+      with_items:
+        - ls -l
+        - cat /etc/hosts
+        - id
+        - pwd
+        - free

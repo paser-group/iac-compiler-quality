@@ -1,0 +1,25 @@
+
+---
+- name: Playbook to address Async error with check_mode issue
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Run some async task
+      async: 30
+      poll: 1
+      shell: some_command
+      register: async_result
+      check_mode: no
+
+    - name: Check the status of the async task
+      async_status:
+        jid: "{{ async_result.ansible_job_id }}"
+      register: async_status
+      until: async_status.finished
+      retries: 100
+      delay: 5
+
+    - name: Print async task results
+      debug:
+        var: async_status

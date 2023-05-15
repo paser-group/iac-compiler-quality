@@ -1,0 +1,55 @@
+python
+from ansible_collections.os_middleware.openstack.plugins.module_utils.openstack import ( # import OpenStack module
+    OpenStackModule,
+    OSClient,
+    OSAnsibleModule
+)
+
+def add_rule_to_default_security_group(openstack_module):
+
+    sg_name = 'default' # name of the default security group
+
+    sg = openstack_module.get_client().network.find_security_group(sg_name)
+
+    # Create a new security group rule
+    rule = {
+        "security_group_id": sg.id,
+        "direction": "ingress",
+        "ethertype": "IPv4",
+        "protocol": "tcp",
+        "port_range_min": 22,
+        "port_range_max": 22,
+        "remote_ip_prefix": "0.0.0.0/0"
+    }
+
+    rule_object = openstack_module.get_client().network.create_security_group_rule(**rule)
+
+    return {'rule': rule_object}
+
+def run_module():
+
+    module_args = dict(
+        state=dict(choices=['present', 'absent'], required=False, default='present'),
+    )
+
+    result = dict(
+        changed=False,
+        security_group_rule=None,
+        msg=''
+    )
+
+    openstack_module = OSAnsibleModule(module_args)
+
+    try:
+        result['security_group_rule'] = add_rule_to_default_security_group(openstack_module)
+        result['changed'] = True
+        result['msg'] = "Security group rule added successfully"
+
+    except Exception as e:
+        result['msg'] = "Failed to add security group rule: {}".format(str(e))
+        openstack_module.fail_json(msg=result['msg'], **result)
+
+    openstack_module.exit_json(**result)
+
+if __name__ == '__main__':
+    run_module()

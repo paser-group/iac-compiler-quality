@@ -1,0 +1,40 @@
+yaml
+---
+- name: Fix sudo password error
+  hosts: all
+  become: yes
+  vars:
+    sudo_password: '<your_sudo_password>'
+  tasks:
+    - name: Update sudoers file
+      lineinfile:
+        dest: /etc/sudoers
+        regexp: '^%sudo.*'
+        line: '%sudo ALL=(ALL) NOPASSWD:ALL'
+        validate: /usr/sbin/visudo -cf %s
+        backup: yes
+        state: present
+      when: sudo_password == ''
+
+    - name: Ensure sudo password is set
+      lineinfile:
+        dest: /etc/sudoers
+        regexp: '^%sudo.*'
+        line: '%sudo ALL=(ALL) ALL'
+        validate: /usr/sbin/visudo -cf %s
+        backup: yes
+        state: present
+      when: sudo_password != ''
+
+    - name: Update sudoers file with password
+      lineinfile:
+        dest: /etc/sudoers
+        regexp: '^%sudo.*'
+        line: '%sudo ALL=(ALL) ALL'
+        validate: /usr/sbin/visudo -cf %s
+        backup: yes
+        state: present
+      when: sudo_password != ''
+      become_user: root
+      vars:
+        ansible_become_password: '{{ sudo_password }}'

@@ -1,0 +1,29 @@
+
+- hosts: localhost
+  connection: local
+  gather_facts: no
+
+  tasks:
+    - name: Set up Docker parent container for Linux subsystem for Windows
+      docker_container:
+        name: parent_container
+        image: ubuntu
+        command: sleep infinity
+        state: started
+
+    - name: Set up Docker container for Linux subsystem for Windows
+      docker_container:
+        name: linux_subsystem
+        image: microsoft/WSL:ubuntu
+        command: sleep infinity
+        state: started
+        parent_container: parent_container
+
+    - name: Ping the Linux subsystem container
+      ping:
+        ansible_connection: docker
+        ansible_host: linux_subsystem
+
+    - name: Get default IPv4 address
+      debug:
+        var: ansible_default_ipv4

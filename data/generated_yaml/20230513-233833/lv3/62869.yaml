@@ -1,0 +1,23 @@
+
+---
+- name: Install missing Ansible collection path
+  hosts: all
+  become: yes
+
+  tasks:
+  - name: Create default collection path
+    file:
+      state: directory
+      path: "/usr/share/ansible/collections"
+    register: collection_path
+
+  - name: Install default collections
+    ansible.builtin.command: >
+      ansible-galaxy collection install ansible.posix
+    register: install_status
+    changed_when: install_status.stdout_lines != []
+
+  - name: Check default collection path
+    fail:
+      msg: "Default collection path not found"
+    when: not collection_path.stat.exists

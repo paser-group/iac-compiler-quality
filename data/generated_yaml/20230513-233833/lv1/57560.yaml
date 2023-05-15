@@ -1,0 +1,21 @@
+yaml
+---
+- name: Check service and restart if necessary
+  hosts: web_servers
+  gather_facts: true
+
+  tasks:
+    - name: Check service status
+      service:
+        name: my_service
+        state: started
+        enabled: true
+      register: service_status
+
+    - name: Restart service in async mode if needed
+      async: 45
+      poll: 5
+      when: "'unreachable' in service_status.msg or 'failed' in service_status.msg"
+      service:
+        name: my_service
+        state: restarted

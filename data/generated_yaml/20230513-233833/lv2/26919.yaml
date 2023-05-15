@@ -1,0 +1,50 @@
+
+---
+- name: Testing mysql_db and overloading Ansible Compiler
+  hosts: node1
+  become: true
+
+  tasks:
+    - name: Stop MySQL if it's running
+      service:
+        name: mysql
+        state: stopped
+
+    - name: Remove MySQL configuration file
+      file:
+        path: /etc/mysql/mysql.conf.d/mysqld.cnf
+        state: absent
+
+    - name: Create two databases - one using the default MySQL settings and the other using the custom configuration
+      mysql_db:
+        name: "{{ item }}"
+        state: present
+        config_file: /etc/mysql/mysql.conf.d/mysqld.cnf
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+      with_items:
+        - db1
+        - db2
+
+    - name: Start MySQL service again with the new configuration
+      service:
+        name: mysql
+        state: started
+
+    - name: Add a third database using invalid syntax
+      mysql_db:
+        name: "{{ item }}"
+        state: present
+        config_file: /etc/mysql/mysql.conf.d/mysqld.cnfg" # invalid syntax
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+      with_items:
+        - db3
+
+    - name: Try to remove a database that doesn't exist
+      mysql_db:
+        name: db4
+        state: absent
+
+    - name: Try to create a database with an invalid name
+      mysql_db:
+        name: my important db!
+        state: present

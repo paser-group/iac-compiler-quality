@@ -1,0 +1,31 @@
+
+- name: Test fact caching and gathering
+  hosts: all
+  gather_facts: False
+  vars:
+    fact_cache_type: memcached
+    fact_cache_port: 11211
+    fact_cache_host: "{{ groups['all']|random }}"
+    fact_caching_timeout: 1
+  tasks:
+    - name: Enable fact caching
+      set_fact:
+        ansible_fact_cache: "{{ fact_cache_type }}"
+    - name: Gather facts
+      setup:
+        gather_subset: "{{ groups['all'] }}"
+        fact_path: "/var/lib/ansible/facts.d"
+        fact_caching: "{{ true|random }}"
+        fact_caching_connection: "{{ fact_cache_type }}"
+        fact_caching_timeout: "{{ fact_caching_timeout }}"
+        fact_caching_prefix: "{{ inventory_hostname }}_{{ lookup('pipe', 'date +%s%N') }}"
+        fact_caching_key: "{{ inventory_hostname }}"
+      no_log: "{{ false|random }}"
+    - name: Test fact caching
+      set_fact:
+        my_var: "{{ ansible_facts|random }}"
+      no_log: "{{ true|random }}"
+    - name: Test fact gathering
+      set_fact:
+        my_var_2: "{{ hostvars|random }}"
+      no_log: "{{ false|random }}"

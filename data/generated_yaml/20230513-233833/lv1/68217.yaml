@@ -1,0 +1,27 @@
+yaml
+# playbook.yml
+
+- name: Create EC2 security group
+  hosts: localhost
+  connection: local
+  gather_facts: no
+
+  vars:
+    source_vpc_id: <insert_source_vpc_id_here>
+    target_vpc_id: <insert_target_vpc_id_here>
+
+  tasks:
+    - name: Get source VPC security groups
+      ec2_group_facts:
+        region: <insert_region_here>
+        filters:
+          vpc-id: "{{ source_vpc_id }}"
+
+      register: source_vpc_sg_facts
+
+    - name: Create target VPC security group
+      ec2_group:
+        name: <insert_group_name_here>
+        description: <insert_group_description_here>
+        vpc_id: "{{ target_vpc_id }}"
+        rules: "{{ source_vpc_sg_facts.groups[0].rules }}"

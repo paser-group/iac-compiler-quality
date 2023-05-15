@@ -1,0 +1,39 @@
+
+- name: Provision Elasticache
+  hosts: localhost
+  connection: local
+  gather_facts: no
+  vars:
+    region: us-west-2
+    cache_engine: redis
+    cache_node_type: cache.t2.micro
+    cache_subnet_group_name: default
+    cache_parameter_group_name: default.redis2.8
+    cache_security_group_name: default
+    cache_security_group_description: "Security group for Elasticache"
+    cache_cluster_id: "example-cache"
+    aws_profile: "{{ lookup('env','AWS_PROFILE') }}"
+  tasks:
+    - name: Provision Elasticache
+      ec2_instance_facts:
+        region: "{{ region }}"
+        filters:
+          "tag:Name": "{{ cache_cluster_id }}"
+          "instance-state-name": running
+      register: ec2_cache_results
+      when: aws_profile is not defined
+    - name: Provision Elasticache with aws profile
+      ec2_instance_facts:
+        region: "{{ region }}"
+        filters:
+          "tag:Name": "{{ cache_cluster_id }}"
+          "instance-state-name": running
+      aws_access_key: "{{ aws_access_key }}"
+      aws_secret_key: "{{ aws_secret_key }}"
+      profile: "{{ aws_profile }}"
+      register: ec2_cache_results_aws_profile
+      when: aws_profile is defined
+    - name: Display results
+      debug:
+        var: ec2_cache_results
+        var: ec2_cache_results_aws_profile

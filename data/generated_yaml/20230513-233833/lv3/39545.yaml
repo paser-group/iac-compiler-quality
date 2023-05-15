@@ -1,0 +1,63 @@
+
+---
+- name: EC2 Templating Error Playbook
+  hosts: ec2-instances
+  become: true
+  gather_facts: yes
+
+  vars:
+    instance_ids:
+      - i-0123456789abcdefg
+      - i-9876543210gfedcba
+
+  tasks:
+    - name: Launch Instances
+      ec2:
+        instance_type: t2.micro
+        image_id: ami-0c55b159cbfafe1f0
+        count: 2
+        key_name: my_key
+        region: us-east-1
+        vpc_subnet_id: subnet-0123456789abcdefg
+        assign_public_ip: yes
+        wait: yes
+        instance_tags:
+          Name: "Web Server {{ count.index }}"
+
+    - name: Modify Instances
+      ec2_tag:
+        resource: '{{ item }}'
+        state: present
+        tags:
+          Environment: production
+          Name: '{{ item }}'
+      with_items: '{{ instance_ids }}'
+
+    - name: Stop Instances
+      ec2:
+        instance_ids: '{{ instance_ids }}'
+        state: stopped
+
+    - name: Assign IP Address
+      ec2_eip:
+        instance: '{{ instance_ids[0] }}'
+        region: us-east-1
+        state: present
+
+    - name: Templating Error
+      ec2:
+        region: us-east-1
+        image_id: '{{ image_id }}'
+        instance_type: '{{ instance_type }}'
+        keypair: my_key
+        count: 1
+        subnet_id: subnet-0123456789abcdefg
+        assign_public_ip: true
+        group_id: '{{ security_group_id }}'
+        instance_tags:
+          Name: 'Test Server'
+
+    - name: Start Instances
+      ec2:
+        instance_ids: '{{ instance_ids }}'
+        state: running

@@ -1,0 +1,78 @@
+
+---
+- name: Test playbook for win_acl issue
+  hosts: node1
+  gather_facts: no
+
+  tasks:
+    - name: Set user permission using win_acl
+      win_acl:
+        path: C:\test.txt
+        user: mydomain\myuser
+        rights:
+          - modify
+          - read
+          - read_and_execute
+          - write
+          - delete_child
+          - execute
+        type: allow
+        state: present
+        propagation: container_inherit, object_inherit
+        child_flags: reset_child_dacl
+        inherit_only: yes
+        audit_flags: audit_success, audit_failure
+      ignore_errors: yes
+
+    - name: Test unconventional syntax
+      win_acl:
+        path: C:\test.txt
+        user: 'domain\user'
+        rights:
+          - 'write_dac'
+          - 'generic_all'
+      state: absent
+
+    - name: Test unexpected input
+      win_acl:
+        path: C:\test.txt
+        user: "<script>alert('Hacked by Ansible!')</script>"
+        rights: 'modify'
+        type: allow
+        state: absent
+
+    - name: Set permission with invalid propagation input
+      win_acl:
+        path: C:\test.txt
+        user: mydomain\myuser2
+        rights: 'full_control'
+        type: allow
+        state: present
+        propagation: invalid_propagation_value
+
+    - name: Set permission with invalid child_flags input
+      win_acl:
+        path: C:\test.txt
+        user: mydomain\myuser3
+        rights: 'full_control'
+        type: allow
+        state: present
+        child_flags: invalid_child_flag_value
+
+    - name: Set permission with invalid audit_flags input
+      win_acl:
+        path: C:\test.txt
+        user: mydomain\myuser4
+        rights: 'full_control'
+        type: allow
+        state: present
+        audit_flags: invalid_audit_flag_value
+
+    - name: Set permission with invalid user input
+      win_acl:
+        path: C:\test.txt
+        user: ""
+        rights: 'full_control'
+        type: allow
+        state: present
+      ignore_errors: yes

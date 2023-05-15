@@ -1,0 +1,46 @@
+yaml
+---
+- name: Test cloudwatchevent_rule module
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Create Event Rule
+      cloudwatchevent_rule:
+        rule_name: "{{ 'a'|string * 1025 }}"
+        state: present
+        region: "{{ ['us-west-1']|product(['za', 'xy'])|list }}"
+        event_pattern: "{{ [undefined, null, true, false, {}, [], -1, 3.14, -3.14, 'hello']*1024 }}"
+        targets: "{{ {}|[0]*65535 }}"
+      register: result
+
+    - name: Delete rule with large name
+      cloudwatchevent_rule:
+        rule_name: "{{ 'a'|string * 1025 }}"
+        state: absent
+      ignore_errors: true
+
+    - name: Delete Rule with invalid event pattern
+      cloudwatchevent_rule:
+        rule_name: test_rule
+        state: absent
+      ignore_errors: true
+
+    - name: Delete Rule with invalid region
+      cloudwatchevent_rule:
+        rule_name: test_rule
+        state: absent
+        region: "{{ ['us-west-1', 'invalid-region'] }}"
+      ignore_errors: true
+
+    - name: Delete Rule with invalid state
+      cloudwatchevent_rule:
+        rule_name: test_rule
+        state: invalid_state
+      ignore_errors: true
+
+    - name: Delete Rule with invalid target
+      cloudwatchevent_rule:
+        rule_name: test_rule
+        state: absent
+        targets: "{{ ['invalid-target'] }}"
+      ignore_errors: true

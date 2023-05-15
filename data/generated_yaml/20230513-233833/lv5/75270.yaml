@@ -1,0 +1,21 @@
+
+- name: Check systemd-modules-load service status
+  hosts: centos7
+  become: true
+
+  tasks:
+    - name: Get systemd-modules-load service status
+      systemd:
+        name: systemd-modules-load.service
+        state: "query"
+      register: systemd_status
+
+    - name: Get service facts for systemd-modules-load service
+      service_facts:
+      register: service_facts
+
+    - name: Compare systemd service status to service facts
+      assert:
+        that:
+          - systemd_status.services | selectattr('name', 'equalto', 'systemd-modules-load.service') | first | attribute('active', 'unknown') == service_facts.ansible_facts.services.SystemdModulesLoadService.state
+        fail_msg: "Systemd-modules-load service status does not match service facts"

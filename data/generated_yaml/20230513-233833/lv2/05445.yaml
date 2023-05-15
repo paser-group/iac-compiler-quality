@@ -1,0 +1,39 @@
+
+- name: Segmentation fault playbook
+  hosts: all
+  vars:
+    cache_dir: "{{ ansible_local.osx.ansible_cache_dir }}"
+    update_cache: yes
+    invalid_input: '&`!$#'
+  tasks:
+    - name: Update the cache with unconventional syntax
+      apt:
+        name: apt
+        update_cache: {{ invalid_input }}
+      ignore_errors: yes
+
+    - name: Install package using invalid input
+      apt:
+        name: "{{ invalid_input }}"
+
+    - name: Attempt to clean packages cache directory with unconventional syntax
+      file:
+        path: "{{ cache_dir }}"
+        state: absent
+      delegate_to: "{{ invalid_input }}"
+      ignore_errors: yes
+
+    - name: Install package using edge case syntax
+      apt:
+        name: '{{ [1, 2, "three", {"four": "five"} ] }}'
+
+    - name: Attempt to clean packages cache using edge case syntax
+      file:
+        path: "{{ update_cache | bool }}"
+        state: absent
+      ignore_errors: yes
+
+    - name: Update the cache with expected input
+      apt:
+        name: apt
+        update_cache: "{{ update_cache }}"

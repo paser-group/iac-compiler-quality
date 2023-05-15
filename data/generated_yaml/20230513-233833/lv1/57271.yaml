@@ -1,0 +1,29 @@
+
+---
+
+- hosts: server
+  tasks:
+  - name: Ensure the correct packages are installed
+    yum:
+      name: "{{ item }}"
+      state: present
+    with_items:
+      - python36
+      - python36-pip
+      - python36-devel
+  - name: Install ansible and its dependencies using pip
+    pip:
+      name: ansible
+      state: latest
+  - name: Setup the Ansible vault password file
+    copy:
+      content: "{{ vault_password }}"
+      dest: /etc/ansible/vault_password.txt
+      mode: 0600
+    vars:
+      vault_password: "{{ lookup('env','VAULT_PASS') }}"
+  - name: Test the Ansible vault cipher whitelist
+    shell: ansible-vault view secret.yml
+    vars:
+      ANSIBLE_VAULT_IDENTITY_LIST: ["test"]
+      ANSIBLE_VAULT_CIPHERS: ["AES256"]

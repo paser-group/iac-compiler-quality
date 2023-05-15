@@ -1,0 +1,67 @@
+
+---
+- hosts: node1
+  gather_facts: no
+
+  tasks:
+  - name: Deploy Azure VM
+    azure_rm_deployment:
+      name: "{{ item.name }}"
+      location: "{{ item.location }}"
+      template:
+        $schema: "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#"
+        contentVersion: "1.0.0.0"
+        parameters:
+          vmName:
+            type: "string"
+          imageID:
+            type: "string"
+          adminUsername:
+            type: "string"
+          adminPassword:
+            type: "securestring"
+          sshKeyData:
+            type: "string"
+        resources:
+        - type: Microsoft.Compute/virtualMachines
+          name: "[parameters('vmName')]"
+          location: "[resourceGroup().location]"
+          apiVersion: "2018-06-01"
+          identity:
+            type: UserAssigned
+            userAssignedIdentities:
+              /subscriptions/{{ random(1000000,9999999) }}-xxxx-xxxx-xxxx-xxxxxxxxxxxx/resourceGroups/test/providers/Microsoft.ManagedIdentity/userAssignedIdentities/{{ random(1000,9999) }}-{{ random(1000,9999) }}-{{ random(1000,9999) }}-{{ random(1000,9999) }}]}"
+          properties:
+            vmSize: "Standard_DS2_v2"
+            storageProfile:
+              imageReference:
+                id: "[parameters('imageID')]"
+              osDisk:
+                createOption: FromImage
+            osProfile:
+              computerName: "{{ item.computer_name }}"
+              adminUsername: "[parameters('adminUsername')]"
+              adminPassword: "[parameters('adminPassword')]"
+              linuxConfiguration:
+                ssh:
+                  publicKeys:
+                    - path: /home/{{ parameters('adminUsername') }}/.ssh/authorized_keys
+                      keyData: "{{ parameters('sshKeyData') }}"
+      parameters:
+        vmName:
+          value: "{{ item.vm_name }}"
+        imageID:
+          value: "{{ item.image_id }}"
+        adminUsername:
+          value: "{{ item.admin_username }}"
+        adminPassword:
+          value: "{{ item.admin_password }}"
+        sshKeyData:
+          value: "{{ item.ssh_key_data }}"
+      resource_group: "{{ item.resource_group }}"
+      wait_for_deployment_completion: no
+      deployment_mode: complete
+    with_items:
+    - { name: "test-vm-1", location: "westus2", vm_name: "test-vm-1", image_id: "UbuntuLTS", admin_username: "testuser", admin_password: "testpassword", ssh_key_data: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDkTFejFjvBCN+MvGKYBAld2t6dF4ccahzvWmdZY1vLKhV3EvawuGsyDRUl2B" }
+    - { name: "test-vm-2", location: "westus2", vm_name: "test-vm-2", image_id: "UbuntuLTS", admin_username: "testuser", admin_password: "testpassword", ssh_key_data: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDkTFejFjvBCN+MvGKYBAld2t6dF4ccahzvWmdZY1vLKhV3EvawuGsyDRUl2B" }
+    - { name: "test-vm-3", location: "westus2", vm_name: "test-vm-3", image_id: "UbuntuLTS", admin_username: "testuser", admin_password: "testpassword", ssh_key_data: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDkTFejFjvBCN+MvGKYBAld2t6dF4ccahzvWmdZY1vLKhV3EvawuGsyDRUl2B" }

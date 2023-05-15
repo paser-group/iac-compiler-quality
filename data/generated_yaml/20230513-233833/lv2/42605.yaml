@@ -1,0 +1,81 @@
+
+- name: Test k8s module with edge cases, unconventional syntax, and unexpected inputs
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Incorrect Padding error
+      k8s:
+        state: present
+        name: foo
+        image: nginx
+        namespace: default
+        env:
+          - name: 'VAR1'
+            value: 'val1'
+          - name: 'VAR2'
+            value: '{{ item }}'
+        host_ip: 10.1.1.4
+        is_pod: true
+        pod_template: |
+          {"metadata":{"name":"nginx","labels":{"app":"nginx"}},"spec":{"containers":[{"name":"nginx","image":"nginx:1.14.2","ports":[{"containerPort":80}]}]}}
+        kubeconfig: /etc/kubernetes/admin.conf
+        status: Running
+        timeout: 60
+        validate_certs: false
+      delegate_to: 10.1.1.1
+      ignore_errors: true
+
+    - name: Invalid namespace
+      k8s:
+        state: present
+        name: foo
+        image: nginx
+        namespace: '{{ item }}'
+        host_ip: 10.1.1.4
+        is_pod: true
+        pod_template: |
+          {"metadata":{"name":"nginx","labels":{"app":"nginx"}},"spec":{"containers":[{"name":"nginx","image":"nginx:1.14.2","ports":[{"containerPort":80}]}]}}
+        kubeconfig: /etc/kubernetes/admin.conf
+        status: Running
+        timeout: 60
+        validate_certs: false
+      delegate_to: 10.1.1.2
+      with_items:
+        - invalid-namespace&
+
+    - name: Invalid state
+      k8s:
+        state: '{{ item }}'
+        name: foo
+        image: nginx
+        namespace: default
+        host_ip: 10.1.1.4
+        is_pod: true
+        pod_template: |
+          {"metadata":{"name":"nginx","labels":{"app":"nginx"}},"spec":{"containers":[{"name":"nginx","image":"nginx:1.14.2","ports":[{"containerPort":80}]}]}}
+        kubeconfig: /etc/kubernetes/admin.conf
+        status: Running
+        timeout: 60
+        validate_certs: false
+      delegate_to: 10.1.1.3
+      with_items:
+        - invalid-state&
+        - "present1"
+        - "running"
+
+    - name: Invalid pod template
+      k8s:
+        state: present
+        name: foo
+        image: nginx
+        namespace: default
+        host_ip: 10.1.1.4
+        is_pod: true
+        pod_template: |
+          {"metadata":{"name":"nginx,"labels":{"app":"nginx}},"spec":{"containers":[{"name":"nginx","image":"nginx:1.14.2","ports":[{"containerPort":80}]}]}}
+        kubeconfig: /etc/kubernetes/admin.conf
+        status: Running
+        timeout: 60
+        validate_certs: false
+      delegate_to: localhost
+      ignore_errors: true

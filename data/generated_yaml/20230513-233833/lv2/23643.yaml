@@ -1,0 +1,64 @@
+
+---
+- name: Testing Ansible Compiler
+  hosts: all
+  gather_facts: false
+
+  vars:
+    - common_var: "common_value"
+    - include_var: "{{ included_var }}"
+
+  tasks:
+
+    # Edge Case: Undefined Variable
+    - name: Using Undefined Variable
+      debug:
+        msg: "{{ undefined_var }}"
+
+    # Edge Case: Undefined Variable in Template Include
+    - name: Using Variable in Included Template (with undefined variable)
+      include_vars:
+        file: '{{ playbook_dir }}/included_vars.yml.j2'
+      vars:
+        - included_var: "{{ undefined_var }}"
+      no_log: true
+
+    # Edge Case: Undefined Variable in Loop
+    - name: Using Undefined Variable in Loop
+      debug:
+        msg: "{{ item.undefined_var }}"
+      with_items:
+        - { key1: "value1" }
+        - { key2: "value2" }
+
+    # Unconventional Syntax: Nested Jinja Expressions
+    - name: Using Nested Jinja Expressions
+      debug:
+        msg: "{{ {{ common_var }} }}"
+
+    # Unconventional Syntax: Variable with Special Characters
+    - name: Using Variable with Special Characters
+      debug:
+        msg: "{{ @!#^&*()_+ }}"
+
+    # Unexpected Input: Non-String Variable
+    - name: Using Non-String Variable
+      debug:
+        msg: "{{ 123 }}"
+
+    # Unexpected Input: Invalid Jinja Expression
+    - name: Using Invalid Jinja Expression
+      debug:
+        msg: "{{ { key: value } }}"
+
+    # Unexpected Input: Invalid Task Name
+    - name: Using Invalid Task Name
+      invalid_task_name:
+        parameter: "value"
+
+  handlers:
+    # Edge Case: Undefined Handler
+    - name: Undefined Handler
+      debug:
+        msg: "Handler not defined."
+

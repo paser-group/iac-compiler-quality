@@ -1,0 +1,48 @@
+
+- name: Test Dynamic Inventory with ElastiCache
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+    - name: Generate EC2 dynamic inventory
+      ec2:
+        region: "us-east-1"
+        key_name: "mykey"
+        group: "mygroup"
+        instance_filters:
+          "tag:Name": "myinstance*"
+      register: ec2_instances
+
+    - name: Configure ec2_yaml_cache module
+      ec2_yaml_cache:
+        refresh_cache: 300
+        cache_path: "/tmp/aws_ec2_cache"
+      when: ec2_instances.changed
+
+- name: Test ElastiCache connectivity
+  hosts: cached
+  gather_facts: no
+
+  tasks:
+    - name: Retrieve instance information
+      ec2_instance_info:
+      register: ec2_facts
+
+    - name: Retrieve instance facts
+      ec2_instance_facts:
+      register: ec2_facts
+
+    - name: Debug ElastiCache node endpoints
+      debug:
+        var: ec2_facts.instances.0.public_dns_name
+      when: "'ElastiCache' in ec2_facts.instances.0.tags"
+
+    - name: Ping the ElastiCache nodes
+      ping:
+      when: "'ElastiCache' in ec2_facts.instances.0.tags"
+
+    - name: Test file creation on ElastiCache nodes
+      file:
+        path: "/tmp/testfile"
+        state: touch
+      when: "'ElastiCache' in ec2_facts.instances.0.tags"

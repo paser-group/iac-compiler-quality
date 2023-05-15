@@ -1,0 +1,25 @@
+
+---
+- hosts: localhost 
+  connection: local
+  gather_facts: false
+
+  tasks:
+  - name: Dynamically add ElastiCache node to inventory
+    add_host:
+      name: "{{ item }}"
+      groups: cache_servers
+      ansible_host: "{{ hostvars[item]['cache_nodes']['0001']['Endpoint']['Address'] }}"
+      ansible_port: 6379
+      ansible_connection: cache_redis
+      ansible_cache_type: elasticache
+      ansible_cache_cluster: "{{ hostvars[item]['cache_cluster'] }}"
+      ansible_cache_name: "{{ hostvars[item]['cache_nodes']['0001']['CacheNodeId'] }}"
+    with_items: "{{ groups['ec2'] }}"
+    when: hostvars[item].cache_nodes is defined
+
+- hosts: cache_servers
+  gather_facts: false
+  tasks:
+  - name: Test connectivity with ElastiCache node
+    ping:

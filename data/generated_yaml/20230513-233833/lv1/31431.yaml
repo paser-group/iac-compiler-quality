@@ -1,0 +1,39 @@
+yaml
+---
+- name: Fix Ansible VaultLib.encrypt error
+  hosts: all
+  tasks:
+    - name: Install Python PIP
+      become: true
+      raw: "apt-get install python-pip -y"
+
+    - name: Install PyCrypto and PyCryptodome
+      become: true
+      pip:
+        name: "{{ item }}"
+        state: latest
+      with_items:
+        - pycrypto
+        - pycryptodome
+
+    - name: Encrypt file using Ansible Vault
+      vars_prompt:
+        - name: "vault_password"
+          prompt: "Enter Ansible Vault password:"
+          private: true
+      ansible-vault:
+        encrypt:
+          vault_password_file: "{{ vault_password }}"
+          secret: "/path/to/secret/file"
+          name: "encrypted_file"
+
+    - name: Decrypt file using Ansible Vault
+      vars_prompt:
+        - name: "vault_password"
+          prompt: "Enter Ansible Vault password:"
+          private: true
+      ansible-vault:
+        decrypt:
+          vault_password_file: "{{ vault_password }}"
+          secret: "/path/to/secret/file"
+          name: "encrypted_file"

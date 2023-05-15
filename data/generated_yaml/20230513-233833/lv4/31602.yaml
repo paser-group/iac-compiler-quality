@@ -1,0 +1,33 @@
+
+---
+- name: Test Kubernetes module's idempotency on HTTP 422 response
+  hosts: all
+  gather_facts: no
+  become: yes
+  
+  tasks:
+    - name: Create namespace
+      k8s:
+        api_version: v1
+        kind: Namespace
+        name: test-namespace
+      register: create_namespace
+      
+    - name: Test idempotency with HTTP 422 response
+      k8s:
+        apply:
+          force: true
+          content: |
+            apiVersion: v1
+            kind: Namespace
+            metadata:
+              name: test-namespace
+              labels:
+                app: test
+        return_content: true
+      register: idempotent_response
+      
+    - name: Check for HTTP 422 response
+      fail:
+        msg: "HTTP 422 response received"
+      when: idempotent_response.rc == 422

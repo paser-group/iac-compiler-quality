@@ -1,0 +1,58 @@
+
+---
+- name: Test ec2_vol module
+  hosts: localhost
+  gather_facts: false
+  vars:
+    volume_id: 'vol-0123456789'
+    instance_id: 'i-0123456789'
+    mounted_device: '/dev/sdf'
+  tasks:
+    - name: Create EBS Volume
+      ec2_vol:
+        region: "{{ region }}"
+        device_name: "{{ mounted_device }}"
+        volume_size: 1
+        volume_type: gp2
+        delete_on_termination: true
+      register: ebs_vol
+
+    - name: Test ec2_vol module with invalid volume ID
+      ec2_vol:
+        region: "{{ region }}"
+        volume_id: 'vol-9999999999'
+        instance: "{{ instance_id }}"
+        device_name: "{{ mounted_device }}"
+        state: 'attached'
+      register: invalid_vol
+      ignore_errors: yes
+
+    - name: Test ec2_vol module with invalid instance ID
+      ec2_vol:
+        region: "{{ region }}"
+        volume_id: "{{ volume_id }}"
+        instance: 'i-9999999999'
+        device_name: "{{ mounted_device }}"
+        state: 'attached'
+      register: invalid_instance
+      ignore_errors: yes
+
+    - name: Test ec2_vol module with device name conflict
+      ec2_vol:
+        region: "{{ region }}"
+        volume_id: "{{ volume_id }}"
+        instance: "{{ instance_id }}"
+        device_name: '/dev/sde'
+        state: 'attached'
+      register: dev_conflict
+      ignore_errors: yes
+
+    - name: Test ec2_vol module with already attached volume
+      ec2_vol:
+        region: "{{ region }}"
+        volume_id: "{{ volume_id }}"
+        instance: "{{ instance_id }}"
+        device_name: "{{ mounted_device }}"
+        state: 'attached'
+      register: already_attached
+      ignore_errors: yes

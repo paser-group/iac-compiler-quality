@@ -1,0 +1,29 @@
+
+---
+- name: Ansible Git Module Playbook
+  hosts: all
+  become: True
+  vars:
+    git_repo_url: "<git_repo_url>"
+    git_repo_branch: "<git_repo_branch>"
+  tasks:
+    - name: Add remote git public key to known_hosts
+      shell: ssh-keyscan <git_domain> >> ~/.ssh/known_hosts
+      register: keyscan_result
+      changed_when: keyscan_result.stdout != ""
+    - name: Create directory for repository
+      file:
+        path: "/home/ubuntu/git_repos"
+        state: directory
+      become: True
+      become_user: ubuntu
+    - name: Clone git repository
+      git:
+        repo: "{{git_repo_url}}"
+        dest: "/home/ubuntu/git_repos"
+        version: "{{git_repo_branch}}"
+      become: True
+      become_user: ubuntu
+  handlers:
+    - name: Reload SSH Configuration
+      service: name=ssh state=reloaded

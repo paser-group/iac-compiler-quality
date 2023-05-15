@@ -1,0 +1,41 @@
+
+---
+- name: S3 Bucket with KMS Encryption
+  hosts: localhost
+  gather_facts: no
+  vars:
+    s3_bucket_name: my-s3-bucket-name
+    region: us-east-1
+  tasks:
+    - name: Create S3 bucket 
+      s3_bucket:
+        name: "{{ s3_bucket_name }}"
+        state: present
+        region: "{{ region }}"
+      register: s3_bucket_output
+
+    - name: Assign permissions to S3 bucket 
+      s3_cors:
+        bucket: "{{ s3_bucket_name }}"
+        state: present
+        cors_rule_1:
+          allowed_headers:
+          - "*"
+          allowed_methods:
+          - HEAD
+          - GET
+          max_age_seconds: 300
+          allowed_origins:
+          - "*"
+
+    - name: Enable Default S3 Key KMS Encryption 
+      s3_encryption:
+        bucket: "{{ s3_bucket_name }}"
+        # By default S3 uses AES-256 encryption, 
+        # to test KMS set encryption_key to "aws:kms"
+        encryption_key: "{{ encryption_key | default('AES256') }}"
+        region: "{{ region }}"
+      register: s3_encryption_output
+
+    - debug:
+        var: s3_encryption_output

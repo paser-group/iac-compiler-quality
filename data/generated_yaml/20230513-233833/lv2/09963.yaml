@@ -1,0 +1,31 @@
+
+---
+- name: Test Ansible-vault with odd-length string
+  hosts: node1
+  gather_facts: no
+
+  vars:
+    secret: "mysecretkey" # change this to an odd-length string to test the issue 
+
+  tasks:
+    - name: Create a secret file
+      tempfile:
+        state: file
+      register: temp_file
+      
+    - name: Write a secret to the file
+      lineinfile:
+        line: "{{ secret }}"
+        path: "{{ temp_file.path }}"
+
+    - name: Encrypt the secret file
+      command: ansible-vault encrypt --vault-password-file=myvault {{ temp_file.path }}
+      vars:
+        ansible_become_pass: mypass
+      changed_when: false
+
+    - name: Test the encrypted secret file
+      shell: cat {{ temp_file.path }} | ansible-vault view --vault-password-file=myvault
+      vars:
+        ansible_become_pass: mypass
+      ignore_errors: true

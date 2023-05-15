@@ -1,0 +1,41 @@
+
+---
+- name: Test Ansible Compiler with s3_bucket error with Minio - GetBucketVersioning NotImplemented issue
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Install Minio client
+      shell: wget -O mc https://dl.min.io/client/mc/release/linux-amd64/mc && chmod +x mc && mv mc /usr/local/bin
+      
+    - name: Configure Minio
+      shell: |
+        mc config host add myminio http://localhost:9000 YOUR-ACCESS-KEY YOUR-SECRET-KEY
+
+    - name: Create S3 Bucket
+      shell: |
+        mc mb myminio/test-bucket
+
+    - name: Enable S3 Versioning
+      shell: |
+        mc version enable myminio/test-bucket
+
+    - name: Upload a file to S3 Bucket
+      shell: |
+        echo "Hello, World!" > hello.txt
+        mc cp hello.txt myminio/test-bucket
+
+    - name: Download an object from S3 Bucket
+      shell: |
+        mc cp myminio/test-bucket/hello.txt hello2.txt
+
+    - name: List S3 Bucket objects
+      shell: |
+        mc ls myminio/test-bucket
+
+    - name: Empty S3 Bucket
+      shell: |
+        mc rm -r --force myminio/test-bucket/
+
+    - name: Remove S3 Bucket
+      shell: |
+        mc rb --force myminio/test-bucket

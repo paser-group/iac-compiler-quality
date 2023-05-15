@@ -1,0 +1,42 @@
+
+- name: Check and correct media types
+  hosts: all
+  become: true
+  gather_facts: true
+
+  tasks:
+  - name: Create directory with colon in the name
+    file:
+      path: "/tmp/col:dir"
+      state: directory
+
+  - name: Set incorrect media type using semicolon instead of slash
+    command: >
+      chattr +i --mime-type "application;octet-stream" /etc/file.txt
+    ignore_errors: true
+
+  - name: Set correct media type using slash and remove immutable attribute
+    command: >
+      chattr -i --mime-type "application/octet-stream" /etc/file.txt
+    ignore_errors: true
+
+  - name: Create symlink with invalid target path
+    file:
+      src: "/etc/invalid-target"
+      dest: "/tmp/file-link"
+      state: link
+
+  - name: Set media type using invalid command option
+    command: >
+      file -i --mime-type=/etc/file.txt
+    ignore_errors: true
+
+  - name: Ensure file is accessible
+    file:
+      path: "/etc/file.txt"
+      mode: "0644"
+
+  - name: Remove temporary directory with colon
+    file:
+      path: "/tmp/col:dir"
+      state: absent

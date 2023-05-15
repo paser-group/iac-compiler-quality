@@ -1,0 +1,60 @@
+
+from azure.common.credentials import ServicePrincipalCredentials
+from azure.mgmt.resource import ResourceManagementClient
+from azure.mgmt.resource.resources.models import DeploymentMode
+
+# Tenant ID for the Azure subscription
+TENANT_ID = '<your tenant id>'
+
+# Client ID for the Azure service principal
+CLIENT_ID = '<your client id>'
+
+# Client secret for the Azure service principal
+CLIENT_SECRET = '<your client secret>'
+
+# Subscription ID for the Azure subscription
+SUBSCRIPTION_ID = '<your subscription id>'
+
+# Resource group name to deploy the ARM template
+RESOURCE_GROUP = '<your resource group name>'
+
+# Deployment name for the ARM template
+DEPLOYMENT_NAME = '<your deployment name>'
+
+# Path to the ARM template file
+ARM_TEMPLATE_FILE = '<path to the ARM template file>'
+
+# Parameters for the ARM template
+PARAMETERS = {}
+
+# Create Azure service principal credentials
+credentials = ServicePrincipalCredentials(
+    client_id=CLIENT_ID,
+    secret=CLIENT_SECRET,
+    tenant=TENANT_ID
+)
+
+# Create Azure Resource Manager client
+resource_client = ResourceManagementClient(
+    credentials,
+    SUBSCRIPTION_ID
+)
+
+# Deploy the ARM template
+deployment_properties = {
+    'mode': DeploymentMode.incremental,
+    'template': open(ARM_TEMPLATE_FILE, 'r').read(),
+    'parameters': PARAMETERS
+}
+
+try:
+    deployment = resource_client.deployments.create_or_update(
+        RESOURCE_GROUP,
+        DEPLOYMENT_NAME,
+        deployment_properties
+    )
+    print(f"Deployment {DEPLOYMENT_NAME} succeeded.")
+except Exception as ex:
+    print(f"Deployment {DEPLOYMENT_NAME} failed.")
+    error_msg = str(ex.inner_exception.error)
+    print(f"Error message: {error_msg}")

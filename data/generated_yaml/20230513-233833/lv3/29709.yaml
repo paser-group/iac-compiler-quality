@@ -1,0 +1,44 @@
+
+--- # Example Playbook to expose bugs while specifying subnet_name parameter
+- name: Create Azure VM with subnet_name parameter
+  hosts: localhost
+  connection: local
+  gather_facts: False
+  vars:
+    resource_group: "myResourceGroup"
+    location: "eastus"
+    vm_name: "testvm"
+    nic_name: "testvm-{{ ansible_date_time.epoch }}"
+    vm_size: "Standard_B1ls"
+    image:
+      offer: "UbuntuServer"
+      publisher: "Canonical"
+      sku: "16.04.0-LTS"
+      version: "latest"
+    admin_username: "azureuser"
+    ssh_password_enabled: false
+    subnet_name: "my-subnet" # Incorrect subnet name to trigger an error.
+  tasks:
+  - name: Create NIC
+    azure_rm_networkinterface:
+      resource_group: "{{ resource_group }}"
+      name: "{{ nic_name }}"
+      location: "{{ location }}"
+      virtual_network_name: myVnet
+      subnet_name: "{{ subnet_name }}"
+      security_group: myNSG
+      public_ip_allocation_method: Static
+    register: nic
+  - name: Create VM
+    azure_rm_virtualmachine:
+      resource_group: "{{ resource_group }}"
+      name: "{{ vm_name }}"
+      vm_size: "{{ vm_size }}"
+      admin_username: "{{ admin_username }}"
+      ssh_password_enabled: "{{ ssh_password_enabled }}"
+      network_interface_names: "{{ nic.name }}"
+      image:
+        offer: "{{ image.offer }}"
+        publisher: "{{ image.publisher }}"
+        sku: "{{ image.sku }}"
+        version: "{{ image.version }}"

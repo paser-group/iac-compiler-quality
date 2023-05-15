@@ -1,0 +1,45 @@
+
+- name: Test esg_asg module
+  hosts: all
+  tasks:
+    - name: Create a security group with duplicate rules
+      esg_asg:
+        name: "{{ item }}"
+        rules:
+          - protocol: tcp
+            from_port: 80
+            to_port: 80
+            cidr_ip: 0.0.0.0/0
+          - protocol: tcp
+            from_port: 80
+            to_port: 80
+            cidr_ip: 0.0.0.0/0
+      with_items:
+        - sg-123456
+        - sg-789012
+      register: result
+
+    - block:
+        - name: Print the result
+          debug:
+            var: result
+
+        - name: Remove the security group
+          esg_asg:
+            name: "{{ item }}"
+            state: absent
+        when: result is failed
+
+      catch:
+        - name: Print error message
+          debug:
+            msg: "Error occurred: {{ ansible_failed_task }}"
+          
+      always:
+        - name: Ensure the security group is removed
+          esg_asg:
+            name: "{{ item }}"
+            state: absent
+      with_items:
+          - sg-123456
+          - sg-789012

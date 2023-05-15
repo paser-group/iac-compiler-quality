@@ -1,0 +1,67 @@
+yaml
+- name: Test idempotency issue/bug in ios_config
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Configure interface with custom MTU
+      ios_config:
+        provider:
+          host: "{{ inventory_hostname }}"
+          username: "{{ ansible_user }}"
+          password: "{{ ansible_ssh_pass }}"
+        lines:
+          - interface GigabitEthernet1/0/1
+          - description "Custom description"
+          - mtu 666   # Note: Uncommon input for MTU value
+          - no shutdown
+      register: cmd_output_1
+
+    - name: Configure interface with same MTU
+      ios_config:
+        provider:
+          host: "{{ inventory_hostname }}"
+          username: "{{ ansible_user }}"
+          password: "{{ ansible_ssh_pass }}"
+        lines:
+          - interface GigabitEthernet1/0/1
+          - description "Custom description"
+          - mtu 666
+          - no shutdown
+      register: cmd_output_2
+
+    - name: Test if interface was already configured 
+      debug:
+        msg: "Interface already configured properly"
+      when: cmd_output_2 == cmd_output_1
+
+    - name: Configure interface with different MTU
+      ios_config:
+        provider:
+          host: "{{ inventory_hostname }}"
+          username: "{{ ansible_user }}"
+          password: "{{ ansible_ssh_pass }}"
+        lines:
+          - interface GigabitEthernet1/0/1
+          - description "Custom description"
+          - mtu 777   # Note: Different MTU value than previous configuration
+          - no shutdown
+      register: cmd_output_3
+
+    - name: Check if interface MTU is as expected
+      ios_command:
+        provider:
+          host: "{{ inventory_hostname }}"
+          username: "{{ ansible_user }}"
+          password: "{{ ansible_ssh_pass }}"
+        commands:
+          - show interface GigabitEthernet1/0/1 | include MTU
+      register: cmd_output_4
+
+    - name: Debug MTU command output
+      debug:
+        var: cmd_output_4.stdout_lines
+
+    - name: Fail Playbook if MTU is not as expected
+      fail:
+        msg: "MTU value is not equal to expected value"
+      when: cmd_output_4 == "MTU 777"

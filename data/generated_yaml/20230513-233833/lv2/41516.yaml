@@ -1,0 +1,40 @@
+
+---
+- name: AWS S3 Module Edge Case Testing
+  hosts: node1
+  become: true
+
+  tasks:
+    - name: Create directory on S3 bucket
+      aws_s3:
+        bucket: mybucket
+        object: "{{ item }}"
+        mode: mkdir
+        region: us-east-1
+        max_retries: "{{ lookup('env', 'MAX_RETRIES') | default(0) }}"
+      with_items:
+        - "{{ lookup('env', 'DIRECTORY_NAME') | default('test') }}"
+        - "{{ lookup('env', 'NON_EXISTENT_DIRECTORY_NAME') | default('non_existent_directory/test') }}"
+      register: s3_mkdir_output
+      ignore_errors: true
+
+    - name: Print output of create directory operation
+      debug:
+        var: s3_mkdir_output
+
+    - name: Copy file to non-existent directory
+      aws_s3:
+        bucket: mybucket
+        object: "{{ item }}"
+        src: /path/to/local/file
+        mode: put
+        region: us-east-1
+        max_retries: "{{ lookup('env', 'MAX_RETRIES') | default(0) }}"
+      with_items:
+        - "{{ lookup('env', 'NON_EXISTENT_DIRECTORY_NAME') | default('non_existent_directory/test.txt') }}"
+      register: s3_put_output
+      ignore_errors: true
+
+    - name: Print output of copy file operation
+      debug:
+        var: s3_put_output

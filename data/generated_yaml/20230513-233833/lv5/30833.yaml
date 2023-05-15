@@ -1,0 +1,30 @@
+
+- name: Generate HaProxy Configuration and Restart
+  hosts: all
+  vars:
+    haproxy_drain_mode: true
+  
+  tasks:
+    - name: Generate HaProxy Configuration
+      blockinfile:
+        path: /etc/haproxy/haproxy.cfg
+        block: |
+          listen http-in
+            mode http
+            option httplog
+            {% if haproxy_drain_mode %}
+            option http-server-close
+            server web1 10.0.0.2:80 check inter 5000 downinter 1000 rise 2 fall 5
+            server web2 10.0.0.3:80 check inter 5000 downinter 1000 rise 2 fall 5
+            {% endif %}
+
+    - name: Ensure HaProxy is restarted
+      service:
+        name: haproxy
+        state: restarted
+
+    - name: Verify HaProxy is in Drain Mode
+      assert:
+        that:
+          - ansible_service_mgr.stdout_lines[-1] == "HaProxy is in Drain Mode"
+      when: haproxy_drain_mode

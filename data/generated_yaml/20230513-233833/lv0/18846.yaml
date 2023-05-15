@@ -1,0 +1,36 @@
+ python
+from ansible.module_utils.basic import AnsibleModule
+
+def run_module():
+
+    module_args = {
+        "cmd": {"type": "str", "required": True},
+        "shell": {"type": "bool", "default": False},
+        "warn_only": {"type": "bool", "default": False}
+    }
+
+    module = AnsibleModule(module_args)
+
+    cmd = module.params["cmd"]
+    shell = module.params["shell"]
+    warn_only = module.params["warn_only"]
+
+    try:
+        if shell:
+            (rc, stdout, stderr) = module.run_command(cmd, use_unsafe_shell=True)
+        else:
+            (rc, stdout, stderr) = module.run_command(cmd)
+
+        if rc != 0:
+            if warn_only:
+                module.exit_json(changed=False, rc=rc, stdout=stdout, stderr=stderr, warning="Command exited with non-zero status")
+            else:
+                module.fail_json(msg="Command exited with non-zero status", rc=rc, stdout=stdout, stderr=stderr)
+
+        module.exit_json(changed=False, rc=rc, stdout=stdout, stderr=stderr)
+
+    except Exception as e:
+        module.fail_json(msg="Error executing command", error=str(e))
+
+if __name__ == '__main__':
+    run_module()

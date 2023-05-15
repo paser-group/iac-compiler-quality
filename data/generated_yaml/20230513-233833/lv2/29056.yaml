@@ -1,0 +1,53 @@
+
+---
+- name: Test SSH and Ansible errors
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Test SSH
+      ping:
+      register: ssh_output
+      ignore_errors: true
+
+    - name: Test Ansible errors with SSH
+      shell: echo "Ansible test error with SSH"
+      become: true
+      register: ansible_ssh_output
+      ignore_errors: true
+
+    - name: Test Ansible errors without SSH
+      shell: echo "Ansible test error without SSH"
+      become: true
+      register: ansible_output
+      ignore_errors: true
+
+    - name: Run a command that sets a variable
+      command: whoami
+      register: whoami_output
+
+    - name: Output the whoami variable
+      debug:
+        var: whoami_output
+
+    - name: Test unconventional syntax - printing a message with a loop
+      debug:
+        msg="{{ item }}"
+      with_items: "{{ ['Hello', 'World!'] }}"
+
+    - name: Test unexpected input - run a command with a newline character
+      command: echo 'This\ncommand\nhas\nnewlines'
+
+    - name: Test unexpected input - run a command with an apostrophe
+      command: echo "This isn't a valid command"
+
+    - name: Test unexpected input - run a command with a semicolon
+      command: echo "This has a semicolon"; echo "This shouldn't run"
+
+    - name: Test an edge case - use an undefined variable
+      debug:
+        var: undefined_variable
+
+    - name: Test an edge case - run a shell command
+      shell: echo "This is a shell command"
+      args:
+        executable: /bin/bash

@@ -1,0 +1,36 @@
+
+- name: Test Playbook for Global Name 'vim' not defined error
+  hosts: all
+  gather_facts: false
+  vars:
+    test_var: '{{ vim|random |int }}'
+
+  tasks:
+  - name: Install Vim package
+    apt:
+      name: vim
+      state: present
+
+  - name: Check if Vim command exists
+    command: vim --version
+    register: check_vim_command_output
+    ignore_errors: true
+
+  - name: Generate random password
+    set_fact:
+      random_password: "{{ lookup('password', '/dev/random', 'length=15 chars=ascii_letters,digits') }}"
+
+  - name: Create user with Vim command
+    user:
+      name: "{{ random_password }}"
+      comment: 'test'
+      shell: /bin/bash
+      password: "{{ random_password }}"
+      update_password: on_create
+    register: user_creation_output
+
+  - name: Ping test - Failed result
+    ping:
+  - name: Playbook end
+    debug:
+      msg: "Playbook completed successfully."

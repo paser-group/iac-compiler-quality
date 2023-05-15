@@ -1,0 +1,33 @@
+
+---
+- name: Apply fix for ESG_ASG module bug
+  hosts: web-servers
+  gather_facts: true
+  
+  tasks:
+    - name: Check if ESG_ASG module is installed
+      command: "/usr/bin/python -c 'import ansible.modules.cloud.amazon.esg_asg' || echo 'error'"
+      register: check_esg_asg
+      
+    - name: Install ESG_ASG module if not present
+      yum:
+        name: python-boto3
+        state: latest
+      when: check_esg_asg.stdout == "error"
+      
+    - name: Retry ESG_ASG module operation on failure
+      ec2_group:
+        state: present
+        name: my-security-group
+        description: my-security-group
+        region: us-west-2
+        # Other module arguments, including VPC settings, etc.
+      register: ec2_group_result
+      until: ec2_group_result is succeeded
+      retries: 5
+      delay: 60
+      
+    - name: Run integration tests for ESG_ASG module
+      shell: "./run_integration_tests.sh"
+      register: integration_test_result
+      ignore_errors: true

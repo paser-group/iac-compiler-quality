@@ -1,0 +1,70 @@
+yaml
+- name: Install necessary packages
+  hosts: localhost
+  gather_facts: no
+  become: yes
+
+  tasks:
+    - name: Install Python3 pip
+      raw: dnf install python3-pip -y
+      ignore_errors: yes
+
+    - name: Install Boto3 Python module
+      pip:
+        name: boto3
+      become: yes
+
+- name: Launch EC2 instance and build Windows instance
+  hosts: localhost
+  become: yes
+
+  vars:
+    access_key: <your_aws_access_key>
+    secret_key: <your_aws_secret_key>
+    region: <your_aws_region>
+    instance_type: t2.micro
+    security_group: <your_security_group>
+
+  tasks:
+    - name: Launch EC2 instance
+      ec2:
+        key_name: "{{ item.keypair }}"
+        instance_type: "{{ instance_type }}"
+        image: "{{ item.ami }}"
+        wait: yes
+        region: "{{ region }}"
+        group: "{{ security_group }}"
+        count_tag:
+          Name: Windows-{{ item.ami }}
+        instance_tags:
+          Name: Windows-{{ item.ami }}
+        assign_public_ip: yes
+        vpc_subnet_id: subnet-xxxxxxxx
+        exact_count: 1
+        monitoring: yes
+        instance_profile_name: "{{ instance_profile }}"
+        user_data: "{{ lookup('template', 'win_user_data_jenkins.ps1.j2') }}"
+        instance_initiated_shutdown_behavior: stop
+        volumes:
+          - device_name: /dev/sda1
+            volume_type: gp2
+            volume_size: 30
+        key_data: "{{ lookup('file', item.keypair + '.pem') }}"
+        instance_tags:
+          Name: Windows-{{ item.ami }}
+          creator: ansible
+        wait_timeout: 500
+        instance_ids:
+          - "{{ item.instanceid }}"
+      register: ec2
+
+    - name: Print instance variables
+      debug:
+        var: ec2
+
+      loop:
+        - {
+            "ami": "ami-xxxxxx",
+            "instanceid": "",
+            "keypair": "deployer",
+          }

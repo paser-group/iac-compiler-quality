@@ -1,0 +1,37 @@
+
+- name: Azure Create Network Interface with no public IP
+  hosts: all
+  gather_facts: false
+
+  tasks:
+  - name: Create Network Interface
+    azure_rm_networkinterface:
+      name: nic1
+      virtual_network_name: vnet1
+      subnet_name: web
+      private_ip_address_allocation: static
+      private_ip_address: 10.1.2.4
+      resource_group: myResourceGroup
+      state: present
+      enable_ip_forwarding: true
+      dns_servers: 10.0.0.4, 10.0.0.5
+      custom_headers: { "User-Agent": "Ansible/2.9" }
+      virtual_machine:
+        id: /subscriptions/{{ subscription_id }}/resourceGroups/myResourceGroup/providers/Microsoft.Compute/virtualMachines/myVM
+      tags:
+        cost_center: CC1234
+      protect_sensitive_data: false
+      enable_accelerated_networking: true
+      ip_configurations:
+      - name: ipconfig1
+        private_ip_address_allocation: static
+        private_ip_address_version: IPv6
+        subnet:
+          id: /subscriptions/{{ subscription_id }}/resourceGroups/myResourceGroup/providers/Microsoft.Network/virtualNetworks/myVirtualNetwork/subnets/mySubnet
+        public_ip_address: none
+      
+    register: result
+
+  - name: Debug - Print Output
+    debug:
+      var: result

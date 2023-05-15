@@ -1,0 +1,62 @@
+
+# define virtual network and subnet name and CIDR
+vars:
+  virtual_network_name: "test-virtualnetwork"
+  virtual_network_cidr: "10.1.0.0/16"
+  subnet_name: "test-subnet"
+  subnet_cidr: "10.1.1.0/24"
+
+# create new virtual network with specified name and CIDR
+- name: Create Azure virtual network
+  azure_rm_virtualnetwork:
+    name: "{{ virtual_network_name }}"
+    resource_group: "{{ resource_group }}"
+    address_prefixes: "{{ virtual_network_cidr }}"
+  register: virtual_network
+
+# create new subnet under the created virtual network
+- name: Create Azure virtual network subnet
+  azure_rm_subnet:
+    resource_group: "{{ resource_group }}"
+    virtual_network_name: "{{ virtual_network.name }}"
+    name: "{{ subnet_name }}"
+    address_prefix: "{{ subnet_cidr }}"
+  register: subnet
+
+# associate a public IP address with the virtual machine
+- name: Create public IP address
+  azure_rm_publicipaddress:
+    resource_group: "{{ resource_group }}"
+    name: "{{ vm_name }}-publicip"
+    allocation_method: Dynamic
+  register: public_ip_address
+
+# associate the virtual machine with the created subnet and public IP address
+- name: Create Azure virtual machine NIC
+  azure_rm_networkinterface:
+    resource_group: "{{ resource_group }}"
+    virtual_machine_name: "{{ vm_name }}"
+    name: "{{ vm_name }}-nic"
+    enable_ip_forwarding: no
+    ip_configurations:
+      - name: "ipconfig{{ vm_name }}"
+        subnet_name: "{{ subnet.name }}"
+        public_ip_address: "{{ public_ip_address.name }}"
+  register: nic
+
+# deploy the virtual machine within the specified subnet
+- name: Create Azure virtual machine
+  azure_rm_virtualmachine:
+    resource_group: "{{ resource_group }}"
+    name: "{{ vm_name }}"
+    vm_size: "{{ vm_size }}"
+    storage_account_name: "{{ storage_account_name }}"
+    admin_username: "{{ admin_username }}"
+    admin_password: "{{ admin_password }}"
+    nic_names:
+      - "{{ nic.name }}"
+    image:
+      offer: "{{ offer }}"
+      publisher: "{{ publisher }}"
+      sku: "{{ sku }}"
+      version: "{{ version }}"

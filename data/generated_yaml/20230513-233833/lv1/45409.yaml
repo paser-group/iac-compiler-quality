@@ -1,0 +1,41 @@
+
+---
+- name: Resize disk or restore a VM with multiple SCSI controllers
+  hosts: your_vmware_hosts
+
+  tasks:
+  - name: Resize disks of the VMs
+    vmware_guest_disk_resize:
+      hostname: "{{ vcenter_hostname }}"
+      username: "{{ vcenter_username }}"
+      password: "{{ vcenter_password }}"
+      validate_certs: False
+      datacenter: "{{ datacenter_name }}"
+      folder: "{{ vm_folder }}"
+      name: "{{ vm_name }}"
+      disk: "{{ disk_label }}"
+      size_gb: "{{ new_disk_size_gb }}"
+      state: "{{ vm_power_state }}"
+    register: resize_disk_result
+
+  - name: Restore a VM with multiple SCSI controllers
+    vmware_guest:
+      hostname: "{{ vcenter_hostname }}"
+      username: "{{ vcenter_username }}"
+      password: "{{ vcenter_password }}"
+      validate_certs: False
+      folder: "{{ vm_folder }}"
+      datacenter: "{{ datacenter_name }}"
+      name: "{{ vm_name }}"
+      state: "{{ vm_power_state }}"
+      hardware:
+        scsi_devices:
+          - scsi_controller: "{{ first_scsi }}"
+            bus_number: "{{ first_bus_number }}"
+          - scsi_controller: "{{ second_scsi }}"
+            bus_number: "{{ second_bus_number }}"
+      networks:
+        - name: "{{ network_name }}"
+          start_connected: yes
+    register: restore_vm_result
+...

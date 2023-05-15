@@ -1,0 +1,65 @@
+
+---
+- name: Test playbook for ec2 module
+  hosts: all
+  become: True
+
+  tasks:
+  - name: Launch an EC2 instance with all parameters
+    ec2:
+      key_name: "{{ item.key_name }}"
+      instance_type: "{{ item.instance_type }}"
+      image: "{{ item.image }}"
+      region: "{{ item.region }}"
+      group: "{{ item.group }}"
+      vpc_subnet_id: "{{ item.vpc_subnet_id }}"
+      assign_public_ip: "{{ item.assign_public_ip }}"
+      instance_tags:
+        Name: "{{ item.name }}"
+        Environment: "{{ item.env }}"
+        File: "{{ item.file_path }}"
+        Version: "{{ item.version }}"
+      count: "{{ item.count }}"
+      wait: "{{ item.wait }}"
+      volumes:
+      - device_name: "{{ item.device_name }}"
+        volume_type: "{{ item.volume_type }}"
+        volume_size: "{{ item.volume_size }}"
+        volume_tags:
+          Name: "{{ item.volume_name }}"
+    with_items:
+      - { key_name: 'my_key', instance_type: 't2.micro', image: 'ami-123456', region: 'us-west-2',
+          group: 'test-group', vpc_subnet_id: 'subnet-123456', assign_public_ip: 'yes',
+          name: 'Test Instance 1', env: 'staging', file_path: 'test/file/path/1', version: 1,
+          count: 2, wait: 'yes', device_name: '/dev/xvdf', volume_type: 'gp2',
+          volume_size: 20, volume_name: 'Test Volume 1' }
+      - { key_name: 'my_key', instance_type: 't2.small', image: 'ami-789012', region: 'us-east-1',
+          group: 'test-group-2', vpc_subnet_id: 'subnet-789012', assign_public_ip: 'no',
+          name: 'Test Instance 2', env: 'production', file_path: 'test/file/path/2', version: 2,
+          count: 1, wait: 'no', device_name: '/dev/xvdg', volume_type: 'io1',
+          volume_size: 50, volume_name: 'Test Volume 2' }
+
+  - name: Terminate the EC2 instances launched in the previous task
+    ec2:
+      instance_ids: "{{ ec2_ids.ec2_instances }}"
+      state: absent
+    register: ec2_terminated
+    failed_when: ec2_terminated.failed == True
+    no_log: "{{ ec2_terminated.tasks }}"
+    when: ec2_ids is defined
+
+  - name: Delete the AWS volumes attached to the EC2 instances
+    ec2_vol:
+      instance: "{{ item.instance_id }}"
+      volume_id: "{{ item.volume_id }}"
+      state: "absent"
+      force_detach: "yes"
+    with_items:
+      - { instance_id: "{{ ec2_vol.inst_name1.instance_id }}",
+          volume_id: "{{ ec2_vol.inst_name1.volume_id }}" }
+      - { instance_id: "{{ ec2_vol.inst_name2.instance_id }}",
+          volume_id: "{{ ec2_vol.inst_name2.volume_id }}" }
+    register: ec2_vol_deleted
+    failed_when: ec2_vol_deleted.failed == True
+    no_log: "{{ ec2_vol_deleted.tasks }}"
+    when: ec2_vol is defined

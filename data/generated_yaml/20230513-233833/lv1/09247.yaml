@@ -1,0 +1,27 @@
+
+- name: Disable atfork warnings
+  hosts: all
+  become: yes
+
+  vars:
+    system_warnings: False
+
+  tasks:
+    - name: Update /etc/systemd/system.conf
+      lineinfile:
+        path: /etc/systemd/system.conf
+        regexp: "^#?DefaultSystemCallFilter"
+        line: "DefaultSystemCallFilter="
+        state: present
+
+    - name: Update /etc/security/pam_env.conf
+      lineinfile:
+        path: /etc/security/pam_env.conf
+        regexp: "^#?system_warnings"
+        line: "system_warnings={{ system_warnings }}"
+        state: present
+
+    - name: Restart systemd daemon
+      service:
+        name: systemd-journald
+        state: restarted

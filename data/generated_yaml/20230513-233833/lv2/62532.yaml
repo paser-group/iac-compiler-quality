@@ -1,0 +1,82 @@
+
+---
+- name: Test playbook for gcp_container_node_pool module error with location field
+  hosts: node1
+  become: yes
+  gather_facts: no
+
+  vars:
+    node_pool_name: test-node-pool
+    operation_timeout: 7200
+
+  tasks:
+    # Tests that an invalid location field value triggers an error
+    - name: Create a node pool with an invalid location field value
+      gcp_container_node_pool:
+        name: "{{ node_pool_name }}"
+        location: "invalid"
+        node_config:
+          machine_type: n1-standard-8
+          disk_size_gb: 100
+          oauth_scopes:
+            - https://www.googleapis.com/auth/devstorage.read_only
+        operation_timeout: "{{ operation_timeout }}"
+      register: result
+      ignore_errors: yes
+
+    # Tests that a successful node pool creation returns a resource ID
+    - name: Create a node pool
+      gcp_container_node_pool:
+        name: "{{ node_pool_name }}"
+        location: europe-west1-b
+        node_config:
+          machine_type: n1-standard-8
+          disk_size_gb: 100
+          oauth_scopes:
+            - https://www.googleapis.com/auth/devstorage.read_only
+        operation_timeout: "{{ operation_timeout }}"
+      register: result
+      failed_when: "result.resource_id is not defined"
+
+    # Tests that updating a node pool with invalid parameters returns an error
+    - name: Update a node pool with invalid parameters
+      gcp_container_node_pool:
+        name: "{{ node_pool_name }}"
+        node_config:
+          idle_timeout_sec: -1
+        operation_timeout: "{{ operation_timeout }}"
+      register: result
+      ignore_errors: yes
+
+    # Tests that deleting a non-existent node pool returns an error
+    - name: Delete a non-existent node pool
+      gcp_container_node_pool:
+        name: "non-existent-node-pool"
+        state: absent
+        operation_timeout: "{{ operation_timeout }}"
+      register: result
+      ignore_errors: yes
+
+    # Tests that retrieving a non-existent node pool returns an error
+    - name: Retrieve a non-existent node pool
+      gcp_container_node_pool_facts:
+        name: "non-existent-node-pool"
+      register: result
+      ignore_errors: yes
+
+    # Tests that retrieving facts for a node pool with correct parameters returns data
+    - name: Retrieve node pool facts
+      gcp_container_node_pool_facts:
+        name: "{{ node_pool_name }}"
+        project_id: "my-project-id"
+        location: europe-west1-b
+        register: result
+      failed_when: "result.facts == {}"
+
+    # Tests that a node pool can be deleted
+    - name: Delete the node pool
+      gcp_container_node_pool:
+        name: "{{ node_pool_name }}"
+        state: absent
+        operation_timeout: "{{ operation_timeout }}"
+      register: result

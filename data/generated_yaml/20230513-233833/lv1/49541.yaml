@@ -1,0 +1,12 @@
+yaml
+- name: Fix broken build due to multiple default Isolated networks
+  hosts: your_hosts
+  tasks:
+    - name: Find default Isolated networks
+      shell: cloudmonkey list networks keyword=default | grep isolatednetworktype | grep -v guest | awk '{print $3}' | sort | uniq -c | awk '$1 > 1 {print $2}'
+      register: default_isolated_networks
+
+    - name: Remove additional default Isolated networks
+      shell: cloudmonkey list networks keyword=default | grep "{{ item }}" | awk '{print $1}' | xargs -I {} cloudmonkey delete network id={}
+      with_items: "{{ default_isolated_networks.stdout_lines }}"
+      when: default_isolated_networks.stdout_lines | length > 1

@@ -1,0 +1,28 @@
+
+---
+- hosts: all
+  gather_facts: yes
+
+  tasks:
+    - name: Check if efs_facts reports permission errors
+      block:
+        - name: Write to a protected directory with 0000 permissions
+          copy:
+            content: "This is a test."
+            dest: "/tmp/"
+            mode: 0000
+            force: yes
+          register: protected_dir
+
+        - name: Get EFS Facts
+          efs_facts:
+            id: fs-12345678
+          register: efs
+
+      rescue:
+        - name: Print failed task error
+          debug:
+            var: ansible_failed_task
+
+    - name: Stress test efs_facts by running it forever
+      shell: while true; do ansible nfs -m efs_facts -a 'id=fs-12345678'; done

@@ -1,0 +1,41 @@
+
+- name: Test ec2.py Python Script
+  hosts: all
+  gather_facts: yes
+
+  tasks:
+
+  - name: Check if ec2.py returns data
+    shell: python /path/to/ec2.py --list
+    failed_when: "'{}'".format(hostvars[groups['all'][0]]['shell_output']) == "''"
+
+  - name: Get all groups
+    shell: python /path/to/ec2.py --list | jq -r '.children | keys | join(" ")'
+    register: groups
+
+  - name: Ensure ec2.py group existence
+    debug: var=groups
+    fail:
+      msg: "Group not exist"
+    when: groups.rc != 0
+   
+  # test different ec2.py inputs
+  - name: Test ec2.py with invalid region
+    shell: python /path/to/ec2.py --refresh-cache --refresh-on-ttl --region=invalid
+
+  - name: Test ec2.py with invalid credentials
+    shell: python /path/to/ec2.py --refresh-cache --refresh-on-ttl --aws_access_key=invalid --aws_secret_key=invalid
+
+  # test unconventional syntax
+  - name: Test ec2.py with unconventional syntax
+    shell: python /path/to/ec2.py --list -s invalid -y
+
+  - name: Test ec2.py with unconventional filter syntax
+    shell: python /path/to/ec2.py --list -f "tag_Name:webserver&instance-state-name:running"
+
+  # test unexpected inputs
+  - name: Test ec2.py with unexpected input
+    shell: python /path/to/ec2.py --list -foo
+
+  - name: Test ec2.py with unexpected input value
+    shell: python /path/to/ec2.py --list --host="user@domain"

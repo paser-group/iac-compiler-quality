@@ -1,0 +1,30 @@
+
+---
+- hosts: all
+  tasks:
+    - name: Check if gcpubsub module is installed
+      command: pip show gcpubsub
+      failed_when: "'No distributions found' in check.stdout"
+      changed_when: false
+
+    - name: Modify gcpubsub module
+      lineinfile:
+        path: "/usr/local/lib/python2.7/dist-packages/ansible/modules/cloud/gcp/gcpubsub.py"
+        regexp: "{{ item }}"
+        line: "#{{ item }}"
+      with_items:
+        - "from google.cloud import pubsub_v1"
+        - "Client = pubsub_v1.PublisherClient"
+
+    - name: Use gcpubsub module
+      gcpubsub:
+        project: "my_project"
+        auth_kind: "serviceaccount"
+        service_account_file: "/path/to/service_account.json"
+        topic_name: "my_topic"
+        msg_body: "Test message"
+      register: gcpubsub_result
+      ignore_errors: true
+
+    - name: Debug gcpubsub result
+      debug: var=gcpubsub_result

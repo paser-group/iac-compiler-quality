@@ -1,0 +1,33 @@
+
+- name: Test file descriptor management
+  hosts: all
+  vars:
+    invalid_fd: -1
+  tasks:
+    - name: Create test file
+      tempfile:
+        state: touch
+        suffix: .txt
+      register: test_file
+
+    - name: Test invalid file descriptor while writing
+      command:
+        cmd: echo "Test content" > /proc/{{ ansible_pid }}/{{ test_file.path }}/{{ invalid_fd }}
+      register: write_result
+      ignore_errors: true
+
+    - name: Test invalid file descriptor while reading
+      command:
+        cmd: cat /proc/{{ ansible_pid }}/{{ test_file.path }}/{{ invalid_fd }}
+      register: read_result
+      ignore_errors: true
+
+    - debug:
+        var: write_result.stderr
+        when: write_result.rc != 0
+    - debug:
+        var: read_result.stderr
+        when: read_result.rc != 0
+    - fail:
+        msg: "Expected error not found"
+      when: write_result.rc == 0 or read_result.rc == 0

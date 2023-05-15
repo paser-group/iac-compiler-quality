@@ -1,0 +1,26 @@
+
+---
+- name: Identify discrepancies between default and overridden configurations
+  hosts: all
+  gather_facts: true
+
+  tasks:
+    - name:  Get native NICs of node
+      command: "ls /sys/class/net"
+      register: nics
+      changed_when: false
+
+    - name: Get default IP address
+      ansible.builtin.set_fact:
+        default_ip: "{{ ansible_default_ipv4['address'] }}"
+      changed_when: false
+
+    - name: Get overridden IP address
+      ansible.builtin.set_fact:
+        overridden_ip: "{{ override_var | default(omit)}}"
+      changed_when: false
+
+    - name: Check if overridden IP is different than the default
+      ansible.builtin.debug:
+        msg: "Overridden IP is different than default"
+      when: overridden_ip is defined and overridden_ip != default_ip

@@ -1,0 +1,47 @@
+
+- name: Provision VMs using vsphere_guest with async
+  hosts: localhost
+  vars:
+    num_vms: 3
+    cpu_count: 1
+    memory_size_mb: 1024
+    disk_size_gb: 10
+  tasks:
+    - name: Provision VMs
+      vsphere_guest:
+        vcenter_hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        datacenter: "{{ datacenter }}"
+        folder: "{{ folder }}"
+        name: "vm{{ item }}"
+        num_cpus: "{{ cpu_count }}"
+        memory_mb: "{{ memory_size_mb }}"
+        disk_size_gb: "{{ disk_size_gb }}"
+        state: poweredon
+        guest_id: "{{ guest_id }}"
+        hardware:
+          cdrom:
+            client_device: false
+          floppy:
+            client_device: false
+        wait_for_ip_address: yes
+        wait_for_ip_address_timeout: 180
+        esxi_hostname: "{{ esxi_hostname }}"
+        vm_network_type: "{{ vm_network_type }}"
+        vm_network_name: "{{ vm_network_name }}"
+      with_sequence: count="{{ num_vms }}"
+      async: "{{ num_vms }}"
+      poll: 0
+      register: result
+      ignore_errors: yes
+
+    - name: Verify VM creation
+      wait_for:
+        host: "{{ item.0.ipv4[0] }}"
+        port: 22
+        delay: 10
+        timeout: 120
+        state: started
+      with_items: "{{ result.results }}"
+      ignore_errors: yes

@@ -1,0 +1,31 @@
+yaml
+---
+- name: Ensure Cobbler validate_certs works
+  hosts: cobbler-server
+  become: true
+  tasks:
+    - name: Install Cobbler API module
+      package:
+        name: python-cobbler
+        state: present
+    
+    - name: Ensure Cobbler validate_certs is enabled
+      ini_file:
+        dest: /etc/cobbler/settings
+        section: cobbler
+        option: validate_certs
+        value: 1
+      notify:
+        - restart Cobbler
+    
+    - name: Validate Cobbler certificates
+      cobbler_system:
+        state: present
+        name: test-system
+      ignore_errors: true
+
+  handlers:
+    - name: restart Cobbler
+      service:
+        name: cobbler
+        state: restarted

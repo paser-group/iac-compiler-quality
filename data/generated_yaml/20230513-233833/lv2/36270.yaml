@@ -1,0 +1,75 @@
+yaml
+---
+- name: Test Playbook for Azure RM Virtual Machine Deserialization Error
+  hosts: all
+  gather_facts: true
+
+  vars:
+    vm_name: "My_VM"
+
+  tasks:
+    - name: Create VM with invalid OS disk type
+      azure_rm_virtualmachine:
+        name: "{{ vm_name }}"
+        admin_username: "adminUser"
+        admin_password: "Pa$$w0rd"
+        image:
+          offer: WindowsServer
+          publisher: MicrosoftWindowsServer
+          sku: 2019-Datacenter-with-Containers
+          version: latest
+        hardware_profile:
+          vm_size: Standard_B1s
+        os_disk:
+          name: "{{ vm_name }}-osdisk"
+          caching: ReadWrite
+          disk_size_gb: 128
+          storage_account_type: Premium_LRS
+          create_option: fromImage123 # Invalid value to test deserialization error
+
+    - name: Create VM with invalid NIC reference
+      azure_rm_virtualmachine:
+        name: "{{ vm_name }}"
+        admin_username: "adminUser"
+        admin_password: "Pa$$w0rd"
+        image:
+          offer: WindowsServer
+          publisher: MicrosoftWindowsServer
+          sku: 2019-Datacenter-with-Containers
+          version: latest
+        hardware_profile:
+          vm_size: Standard_B1s
+        os_disk:
+          name: "{{ vm_name }}-osdisk"
+          caching: ReadWrite
+          disk_size_gb: 128
+          storage_account_type: Premium_LRS
+          create_option: fromImage
+        network_interface_ids:
+          - /subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/MyResourceGroup/providers/Microsoft.Network/networkInterfaces/MyNic1 # Invalid NIC reference to test edge case
+          
+    - name: Create VM and attach existing disk with invalid URI
+      azure_rm_virtualmachine:
+        name: "{{ vm_name }}"
+        admin_username: "adminUser"
+        admin_password: "Pa$$w0rd"
+        image:
+          offer: WindowsServer
+          publisher: MicrosoftWindowsServer
+          sku: 2019-Datacenter-with-Containers
+          version: latest
+        hardware_profile:
+          vm_size: Standard_B1s
+        os_disk:
+          name: "{{ vm_name }}-osdisk"
+          caching: ReadWrite
+          disk_size_gb: 128
+          storage_account_type: Premium_LRS
+          create_option: fromImage
+        data_disks:
+          - lun: 0
+            name: "{{ vm_name }}-datadisk1"
+            disk_size_gb: 64
+            create_option: attach
+            managed_disk:
+              id: /subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/MyResourceGroup/providers/Microsoft.Compute/disks/MyDataDisk1 # Invalid disk URI to test unconventional syntax          

@@ -1,0 +1,30 @@
+
+---
+- name: Test s3_bucket module with Module_six_moves_urllib_parse object
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Install required Python libraries
+      become: true
+      apt: name={{ item }} state=present
+      with_items:
+        - python
+        - python-pip
+        - python-boto
+        - python-boto3
+        - python-botocore
+        - python-requests
+        - python-six
+      when: ansible_distribution == "Ubuntu"
+    
+    - name: Test s3_bucket module with Module_six_moves_urllib_parse object
+      s3_bucket:
+        bucket: myBucket
+        object: "{{ {{ 'https://example.com/path/file.txt'|urlsplit|path|quote }} }}"
+        mode: get
+      register: result
+      failed_when: result is failed
+      changed_when: result is success
+
+    - debug:
+        var: result

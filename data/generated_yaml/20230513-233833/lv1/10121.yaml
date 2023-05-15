@@ -1,0 +1,43 @@
+
+---
+- hosts: all
+  become: true
+  gather_facts: true
+  
+  tasks:
+    - name: Install ecryptfs-utils
+      apt:
+        name: ecryptfs-utils
+        state: present
+
+    - name: Update ecryptfs conf file
+      lineinfile:
+        path: /etc/pam.d/common-auth
+        regexp: '^auth(\s)+required(\s)+pam_ecryptfs.so(\s)'
+        line: 'auth   required   pam_ecryptfs.so unwrap'
+        state: present
+        backup: yes
+
+    - name: Mount ecryptfs home directory
+      mount:
+        name: /home/user
+        src: /home/user/.Private
+        fstype: ecryptfs
+        opts: rw,nodev,relatime,ecryptfs_fnek_sig=deadbeef,ecryptfs_cipher=aes,ecryptfs_key_bytes=16,ecryptfs_unlink_sigs
+        state: mounted
+        passno: 0
+        dump: 0
+        onlyif: test -f /home/user/.Private
+
+    - name: Update authconfig to disable ecryptfs
+      lineinfile:
+        path: /etc/authconfig/authconfig.conf
+        regexp: '^(ENABLED_CRYPT_METHODS=ecryptfs)(\s)*$'
+        line: 'ENABLED_CRYPT_METHODS='
+        state: present
+        backup: yes
+      
+    - name: Restart sshd service
+      service:
+        name: sshd
+        state: restarted

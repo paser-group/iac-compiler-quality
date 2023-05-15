@@ -1,0 +1,51 @@
+
+---
+- hosts: node1
+  gather_facts: no
+  any_errors_fatal: {{ "true" if randrange(2) else "false" }}
+
+  tasks:
+    - name: random failure
+      command: "{{ item }}"
+      register: result
+      ignore_errors: yes
+      with_items:
+        - echo 'Hello, World!' > /tmp/hello_world
+        - cat /tmp/hello_world
+        - ls /non_existent_directory
+        - echo 'Ansible test' > /var/log/test.log
+
+    - name: print failure output
+      debug:
+        var: result
+
+- hosts: node2
+  gather_facts: no
+
+  tasks:
+    - name: mock failure
+      shell: "echo 'Any errors set to "{{ any_errors_fatal }}"; This should force a failure'"
+      register: result
+      failed_when: "{{ any_errors_fatal }}"
+      changed_when: false
+
+    - name: print failure output
+      debug:
+        var: result
+
+- hosts: node3
+  gather_facts: no
+
+  tasks:
+    - name: execute bash script
+      script: "{{ item }}"
+      register: result
+      with_fileglob:
+        - '/non/existent/file/path'
+        - '/var/log/test.log'
+        - ''
+        - ' && echo "Command Executed from Fuzz Testing"'
+
+    - name: print failure output
+      debug:
+        var: result

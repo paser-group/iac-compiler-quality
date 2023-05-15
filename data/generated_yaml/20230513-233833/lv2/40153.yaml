@@ -1,0 +1,33 @@
+
+---
+- name: Test aws_ec2_net Module Issue
+  hosts: node1
+  become: true
+  vars:
+    vpc_id: 'vpc-xxxxxx'
+  tasks:
+    - name: Remove default VPC
+      ec2_vpc_net:
+        state: absent
+        region: "{{ item.region }}"
+        vpc_id: "{{ item.vpc_id }}"
+      with_items:
+      - { region: "us-east-1", vpc_id: "{{ vpc_id }}" }
+      - { region: "us-west-2", vpc_id: "{{ vpc_id }}" }
+      - { region: "ap-southeast-1", vpc_id: "{{ vpc_id }}" }
+    - name: Generate Resource Name List
+      set_fact:
+        count: "{{ loop.index }}"
+        resource_name: "{{ 'name-' + count | string }}"
+      loop: "{{ query('sequence','start=0 end=2') }}"
+    - name: Create VPC
+      ec2_vpc_net:
+        state: present
+        cidr_block: '10.0.0.0/16'
+        resource_tags:
+          Name: "{{ resource_name }}"
+      with_items:
+        - "{{ lookup('template', './templates/resource_list.j2') }}"
+    - name: Fail
+      debug:
+        msg: "{{ nonexistent_variable }}"

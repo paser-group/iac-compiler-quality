@@ -1,0 +1,41 @@
+
+---
+- name: Exposing Unicode idempotent issues in eos_banner module
+  hosts: node1
+  become: yes
+  tasks:
+    - name: Install required packages
+      apt:
+        name: "{{ item }}"
+      with_items:
+        - package1
+        - package2
+
+    - name: Add banner to the device
+      eos_banner:
+        banner: "{{ unicode_msg }}"
+        provider: "{{ eos_provider }}"
+        
+    - name: Validate the banner message
+      eos_command:
+        commands: show banner
+        provider: "{{ eos_provider }}"
+      register: banner_status
+
+    - name: Wait for banner status
+      pause:
+        seconds: 10
+
+    - name: Validate the banner message is idempotent
+      eos_banner:
+        banner: "{{ unicode_msg }}"
+        provider: "{{ eos_provider }}"
+      register: banner_status_new
+
+    - name: Debug banner status
+      debug:
+        var: banner_status
+      
+    - name: Debug new banner status
+      debug:
+        var: banner_status_new

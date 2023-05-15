@@ -1,0 +1,47 @@
+
+- name: Generate certificate using LetsEncrypt
+  hosts: all
+  collections:
+    - community.general
+    - community.crypto
+
+  vars:
+    domains:
+      - example.com
+      - www.example.com
+    dest: /etc/letsencrypt
+
+  tasks:
+    - name: Install dependencies
+      pip:
+        name:
+          - acme
+          - certbot
+
+    - name: Generate LetsEncrypt certificate
+      acme_certificate:
+        account_email: user@example.com
+        acme_directory: https://acme-staging-v02.api.letsencrypt.org/directory
+        domains: "{{ domains }}"
+        dest: "{{ dest }}"
+        state: present
+      register: cert
+
+    - name: Verify domain ownership
+      acme_validate:
+        account_email: user@example.com
+        challenge_type: http-01
+        dest: "{{ item }}"
+      with_items: "{{ domains }}"
+
+    - name: Output certificate and private key
+      debug:
+        var: item
+      with_items:
+        - "{{ cert }}"
+
+    - name: Output validation result
+      debug:
+        var: item
+      with_items:
+        - "{{ cert }}.validation_results"

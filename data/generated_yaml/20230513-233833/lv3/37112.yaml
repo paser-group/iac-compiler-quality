@@ -1,0 +1,46 @@
+
+- name: Testing cs_instance module with user_data
+  hosts: all
+  gather_facts: false
+  tasks:
+  - name: Create an instance with user data using Python3
+    cs_instance:
+      name: instance1
+      region: us-west-2
+      cpu: 1
+      ram: 512
+      count: 1
+      image: ami-0c55b159cbfafe1f0
+      ssh_key_name: mykeypair
+      user_data: |
+        #!/usr/bin/env bash
+        echo "This is user data with Python3"
+    register: result_python3
+
+  - name: debug python3 output
+    debug:
+      var: result_python3.stdout_lines
+
+  - name: Create an instance with user data using Python2
+    cs_instance:
+      name: instance2
+      region: us-west-2
+      cpu: 1
+      ram: 512
+      count: 1
+      image: ami-0c55b159cbfafe1f0
+      ssh_key_name: mykeypair
+      user_data: |
+        #!/usr/bin/env bash
+        echo "This is user data with Python2"
+    register: result_python2
+
+  - name: debug python2 output
+    debug:
+      var: result_python2.stdout_lines
+
+  - name: Compare the outputs of Python3 and Python2
+    assert:
+      that:
+        - result_python3.stdout_lines[0] == "This is user data with Python3"
+        - result_python2.stdout_lines[0] == "This is user data with Python2"

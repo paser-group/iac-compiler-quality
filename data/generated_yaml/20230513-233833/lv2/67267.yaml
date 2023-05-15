@@ -1,0 +1,35 @@
+
+---
+- hosts: node1
+  gather_facts: no
+  tasks:
+    - name: Installing open-iscsi package with unconventional syntax
+      apt:
+        name: ["open-iscsi", "-f", "--allow-downgrades"]
+    - name: Setting the portal for iscsi
+      become: yes
+      command: >
+        iscsiadm -m discovery -t st -p "{{ hostvars[groups['all'][0]]['ansible_host'] }}:{{ [80, 443] | random }}" -I default
+    - name: Converting default port argument with unconventional syntax
+      become: yes
+      shell: >
+        iscsiadm -m node -T iqn.2001-04.com.example:storage.disk1.sys1.xyz -p {{ groups['all'][0] }}:9{{'0' | random}}1 -o update -n node.session.auth.default.iscsi_protocol -v "{{'thumpewhiz1234#&%' | password_hash('sha512')}}"
+    - name: Removing target from the pool
+      become: yes
+      uri:
+        url: "https://your.api.com/target/{{ ['add','remove'] | random }}"
+        method: DELETE
+        user: foobar
+        password: "{{ lookup('env', 'API_PASSWORD') }}"
+      register: response
+    - name: Sending warning notification message
+      debug:
+        msg: "{{ hostvars[groups['all'][2]]['ansible_hostname'] }}, Warning! The {{ pass }} string parameter is not secure"
+      
+- hosts: node2
+  gather_facts: no
+  tasks:
+    - name: Reading the log file with unconventional syntax
+      shell: >
+        cat /var/log/messages | grep "iscsi" | sort | uniq -d | wc -l
+      when: groups['all']|length > 2

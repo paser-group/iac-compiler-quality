@@ -1,0 +1,40 @@
+
+- name: Test ansible_ssh_user issue
+  hosts: all
+  gather_facts: no
+  vars:
+    remote_user: "{{ ansible_ssh_user | default('ubuntu') }}"
+  tasks:
+    - name: Run some command as the default remote_user
+      command: echo "Hello, world!" chdir=/tmp
+      register: cmd_output
+      changed_when: false
+  
+    - name: Run some command as a custom remote_user
+      local_action: command echo "Remote user is {{ remote_user }}" chdir=/tmp
+      delegate_to: localhost
+      vars:
+        ansible_ssh_user: "custom_user"
+      register: custom_remote_user_output
+      changed_when: false
+
+    - name: Disable ansible_ssh_user to verify it fails
+      local_action: command echo "ansible_ssh_user not set!" chdir=/tmp
+      delegate_to: localhost
+      vars:
+        ansible_ssh_user: "{{ omit }}"
+      register: disable_ansible_ssh_user_output
+      changed_when: false
+
+    - name: Set ansible_ssh_user to a non-existent user to verify it fails
+      local_action: command echo "Non-existent ansible_ssh_user!" chdir=/tmp
+      delegate_to: localhost
+      vars:
+        ansible_ssh_user: "non-existent"
+      register: non_existent_user_output
+      changed_when: false
+
+    - name: Run some command as the default remote_user again
+      command: echo "Hello again, world!" chdir=/tmp
+      register: cmd_output2
+      changed_when: false

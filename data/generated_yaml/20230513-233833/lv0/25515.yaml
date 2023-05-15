@@ -1,0 +1,37 @@
+python
+from getpass import getpass
+from nxapi_plumbing import Device # to use NX-API transport
+from netmiko import ConnectHandler # to use CLI transport
+from nxos_vxlan_vtep import VxlanVtep # to configure VXLAN VTEP
+
+# Variables that need to be configured
+hostname = 'switch'
+mgmt_ip = '192.0.2.1'
+username = input('Enter your username: ')
+password = getpass()
+
+# NX-API transport configuration
+device = Device(host=mgmt_ip, username=username, password=password, transport='http')
+device.open()
+vtep = VxlanVtep(device)
+vtep.interface = 'loopback0'
+vtep.vlan_id = 100
+vtep.nve_id = 1
+vtep.ipv4_addr = '192.0.2.2'
+vtep.multicast_group = '239.1.1.1'
+vtep.cleanup()
+vtep.create()
+
+# CLI transport configuration
+cli_device = {
+    'device_type': 'cisco_nxos',
+    'ip': mgmt_ip,
+    'username': username,
+    'password': password
+}
+cli_conn = ConnectHandler(**cli_device)
+cli_conn.config_mode()
+cli_conn.send_command('interface nve1')
+cli_conn.send_command('no shut')
+cli_conn.send_command('member vni 100')
+cli_conn.disconnect()

@@ -1,0 +1,35 @@
+
+---
+- name: Create a Docker container and execute a command
+  hosts: all
+  become: true
+  vars:
+    container_name: my_container
+  tasks:
+    # Install Docker
+    - name: Install Docker
+      apt:
+        name: docker.io
+        state: present
+
+    # Pull Docker image
+    - name: Pull Docker image
+      docker_image:
+        name: ubuntu
+        state: present
+
+    # Create Docker container
+    - name: Create Docker container
+      docker_container:
+        name: "{{ container_name }}"
+        image: ubuntu
+        command: "ls -1 /tmp && touch /tmp/foo && ls -1 /tmp && exit 2"
+        state: started
+        restart: yes
+
+    # Fail the play if the container exists with non-zero error code
+    - name: Fail the play if the container exists with non-zero error code
+      assert:
+        that: "'Exited (2)' in item.value.Status"
+        fail_msg: "The container '{{ container_name }}' has a non-zero exit status."
+      with_items: "{{ lookup('docker_container', container_name, wantlist=True)}}"

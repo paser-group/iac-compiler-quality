@@ -1,0 +1,23 @@
+
+---
+- name: Demonstrate async task with incorrect working directory
+  hosts: all
+  gather_facts: false
+  
+  tasks:
+    - name: Run async task with incorrect working directory
+      async: 30
+      poll: 5
+      command: /usr/bin/bash ./script.sh
+      chdir: /opt/wrong_dir
+      register: async_output
+
+    - async_status:
+        jid: "{{ async_output.ansible_job_id }}"
+        mode: status
+      register: job_status
+      until: job_status.finished
+
+    - name: Print output of async task
+      debug:
+        var: async_output.stdout_lines

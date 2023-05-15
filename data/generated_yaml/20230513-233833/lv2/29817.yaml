@@ -1,0 +1,19 @@
+
+- name: Try to get stderr of postfix check command
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Running postfix check command in a new shell session
+      command: /bin/bash -c 'postfix check 2>&1 >/dev/null | tee -a /tmp/postfix_check.log'
+
+    - name: Retrieve stderr output from log file
+      command: cat /tmp/postfix_check.log | grep -oP '^(?!.*/dev/null).*'
+      register: postfix_check_output
+
+    - name: Print stderr output of postfix check command
+      debug:
+        var: postfix_check_output.stdout_lines
+
+    - name: Run a nested command with unexpected input
+      command: /bin/bash -c 'echo "password" | sudo -S echo "unexpected input" && [ -f /root ]'

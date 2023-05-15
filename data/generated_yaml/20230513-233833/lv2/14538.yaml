@@ -1,0 +1,45 @@
+
+- name: Test playbook for ssh connection issues
+  hosts: all
+  gather_facts: no
+  tasks:
+
+  - name: Attempt to SSH using a non-existent key
+    remote_user: ansible
+    become: yes
+    become_method: sudo
+    become_user: root
+    command: ssh -i /path/to/nonexistent/key ansible@{{ inventory_hostname }}
+
+  - name: Attempt to establish an SSH connection using a malformed hostname
+    remote_user: ansible
+    become: yes
+    become_method: sudo
+    become_user: root
+    command: ssh ansible@!$@#)(!)&!!1
+
+  - name: Docker pull an image using a malformed password
+    docker_image:
+      name: nginx
+      source: pull
+    environment:
+      DOCKER_REGISTRY: registry.example.com
+      DOCKER_LOGIN: uname
+      DOCKER_PASSWORD: #$@^#$$%(
+
+  - name: Attempt to connect to an internally unreachable network using SSH
+    remote_user: ansible
+    become: yes
+    become_method: sudo
+    become_user: root
+    command: ssh ansible@10.1.2.3
+
+  - name: Attempt to connect to an internal network using SSH without specifying the gateway
+    remote_user: ansible
+    become: yes
+    become_method: sudo
+    become_user: root
+    command: ssh -o ProxyCommand='ssh -W %h:%p' ansible@10.1.1.2
+
+  - name: Attempt to download a file to a non-existent directory on remote host
+    get_url: url=http://example.com/test.pdf dest=/path/to/nonexistent/directory

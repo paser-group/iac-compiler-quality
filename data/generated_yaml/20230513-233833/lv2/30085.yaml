@@ -1,0 +1,45 @@
+
+- name: Create an EC2 Launch Configuration
+  hosts: localhost
+  gather_facts: no
+  
+  tasks:
+    # Define variables
+    - name: Set variables
+      set_fact:
+        aws_region: "{{ lookup('env', 'AWS_REGION') | default('us-east-1') }}"
+        vpc_id: "{{ lookup('aws_vpc', region=aws_region, filters=[{'Name': 'isDefault', 'Values': ['true']}], profiles=['default']) }}"
+        instance_type: "{{ lookup('env', 'INSTANCE_TYPE') | default('t2.micro') }}"
+        ami_id: "ami-0c55b159cbfafe1f0"
+
+    # Ensure a default VPC exists
+    - name: Create default VPC if it doesn't exist
+      ec2_vpc_net:
+        name: default
+        cidr_block: "10.0.0.0/16"
+        region: "{{ aws_region }}"
+        state: present
+      register: vpc
+
+    # Create a Launch Configuration
+    - name: Create Launch Configuration
+      ec2_lc:
+        name: "test-lc"
+        region: "{{ aws_region }}"
+        image_id: "{{ ami_id }}"
+        instance_type: "{{ instance_type }}"
+        key_name: "{{ lookup('env', 'KEY_NAME') | default('mykey') }}"
+        security_groups: "sg-123456, sg-789012, sg-invalid"
+        user_data: "{{ lookup('file', playbook_dir + '/userdata.sh') }}"
+        vpc_id: "{{ vpc_id }}"
+        profile: "default"
+        state: present
+      ignore_errors: yes
+
+    # Remove Launch Configuration if it was successfully created
+    - name: Remove Launch Configuration if it was successfully created
+      ec2_lc:
+        name: "test-lc"
+        region: "{{ aws_region }}"
+        state: absent
+      when: ec2_lc.changed

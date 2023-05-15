@@ -1,0 +1,41 @@
+
+---
+- name: Execute commands on Cisco IOS with Pubkey authentication
+  hosts: all
+  connection: network_cli
+  gather_facts: no
+
+  tasks:
+    - name: Ensure necessary directories exist
+      file:
+        path: "/tmp/{{ item }}"
+        state: directory
+      with_items:
+        - logs
+        - tmp
+
+    - name: Set up SSH Key
+      block:
+        - name: Create SSH Key Copy on Node 1
+          command: ssh-copy-id -i ~/.ssh/id_rsa.pub user@10.1.1.1
+          async: 60
+          poll: 0
+        - name: Create SSH Key Copy on Node 2
+          command: ssh-copy-id -i ~/.ssh/id_rsa.pub user@10.1.1.2
+        - name: Remove Public Key from Node 3
+          shell: echo "" > ~/.ssh/authorized_keys && echo "Public Key Removed from Node 3"
+
+    - name: Run arbitrary commands on Cisco IOS
+      ios_command:
+        commands: "{{ item }}"
+      with_items:
+        - "show version"
+        - "show ip int brief"
+        - "show running-config"
+        - "show startup-config"
+        - "show cdp neighbors"
+        - "show logging"
+        - "show users"
+        - "show processes"
+        - "show interfaces"
+      no_log: "{{ item }}" == "show logging"

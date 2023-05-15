@@ -1,0 +1,28 @@
+
+- name: Async install of vmware tool playbook
+  hosts: all
+  become: yes
+  tasks:
+    - name: Update package cache on target servers
+      apt:
+        update_cache: yes
+    
+    - name: Install open-vm-tools package asynchronously
+      package:
+        name: open-vm-tools
+        state: present
+        async: 1000
+        poll: 0
+      register: package_installation
+    
+    - name: Wait for open-vm-tools package installation to complete
+      async_status:
+        jid: "{{ package_installation.ansible_job_id }}"
+      register: job_status
+      until: job_status.finished
+      retries: 30
+      delay: 10
+    
+    - name: Check the stdout output for errors
+      debug:
+        msg: "{{ package_installation.stdout }}"

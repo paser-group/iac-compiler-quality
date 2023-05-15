@@ -1,0 +1,31 @@
+
+- name: Create EC2 spot request and wait for instances to start
+  hosts: localhost
+  vars:
+    ami_id: ami-0c55b159cbfafe1f0
+    instance_type: t2.micro
+    spot_price: 0.005
+    count: 1
+    region: us-west-2
+    key_name: mykey
+    group: mysg
+  tasks:
+    - name: Create EC2 spot request
+      ec2:
+        image: "{{ ami_id }}"
+        instance_type: "{{ instance_type }}"
+        spot_price: "{{ spot_price }}"
+        count: "{{ count }}"
+        region: "{{ region }}"
+        key_name: "{{ key_name }}"
+        group: "{{ group }}"
+        instance_tags:
+          Name: my-instance
+        assign_public_ip: true
+      register: spot_request
+    - name: Wait for instances to start
+      wait_for:
+        host: "{{ item.public_ip }}"
+        port: 22
+        state: started
+      loop: "{{ spot_request.instance_ids }}"

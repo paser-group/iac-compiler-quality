@@ -1,0 +1,35 @@
+
+- hosts: all
+  gather_facts: no
+  tasks:
+    - name: Test Undefined Variable case
+      debug:
+        var: "{{ item.ansible_default_ipv4 }}"
+      with_items:
+        - "{{ dict_obj|default({}) }}"
+
+    - name: Test Invalid host case
+      ping:
+      delegate_to: '{{ invalid_host|default("10.1.1.4") }}'
+
+    - name: Test Unconventional Syntax Case
+      command: ls -al
+      when: "{{ item|default(False) }}"
+      with_items:
+        - "{{ false|default('true') }}"
+
+    - name: Test Unexpected Input Case
+      debug:
+        var: "{{ 1 / 0 }}"
+
+    - name: Test Empty Dict Case
+      debug:
+        msg: "Empty dict test passed"
+      when: item.ansible_facts is not defined
+      with_inventory_hostnames:
+        - all
+
+    - name: Test Recursive Reference Case
+      set_fact:
+        recursive_var: "{{ recursive_var }}"
+      when: "{{ recursive_var | default(False) }}"

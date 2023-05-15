@@ -1,0 +1,24 @@
+yaml
+- name: Unzip archive
+  hosts: localhost
+  gather_facts: false
+  tasks:
+
+  - name: Check if archive is valid
+    win_command: "{{ item }}"
+    loop:
+      - "powershell test-path {{ compressed_file }} | if ($?) {'OK'} else {'ERR'}"
+    register: unzip_ouput
+
+  - name: Unzip the archive
+    win_unzip:
+      src: "{{ compressed_file }}"
+      dest: "{{ unzipped_folder }}"
+    register: unzip_result
+    ignore_errors: true
+
+  - name: Fail the task if unzip fails due to faulty archive
+    fail:
+      msg: "Archive is faulty"
+    when: "'ERR' in item.stdout"
+    loop: "{{ unzip_output.results }}"

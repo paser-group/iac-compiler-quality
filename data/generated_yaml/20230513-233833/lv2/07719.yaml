@@ -1,0 +1,75 @@
+
+- name: Attaching a volume from a snapshot
+  hosts: all
+  become: true
+  vars:
+    volume_id: vol-0123456789abcdef
+    snapshot_id: snap-0123456789abcdef
+    mount_point: /mnt/data
+  tasks:
+    - name: Check if volume is attached
+      ec2_vol:
+        name: "{{ volume_id }}"
+        region: us-west-2
+        state: attached
+      register: volume_attached
+
+    - name: Detaching volume from instance
+      ec2_vol:
+        name: "{{ volume_id }}"
+        region: us-west-2
+        state: detached
+      when: volume_attached is defined and volume_attached.volume_id is defined
+
+    - name: Check if snapshot exists
+      ec2_snapshot_facts:
+        snapshot_ids:
+          - "{{ snapshot_id }}"
+        region: us-west-2
+      register: snapshot_present
+
+    - name: Creating a new volume from a snapshot
+      ec2_vol:
+        name: "{{ volume_id }}"
+        snapshot: "{{ snapshot_id }}"
+        region: us-west-2
+      when: snapshot_present is defined and snapshot_present.snapshot_ids is defined
+
+    - name: Attaching the volume to the instance
+      ec2_vol:
+        name: "{{ volume_id }}"
+        instance: "{{ inventory_hostname }}"
+        region: us-west-2
+      ignore_errors: true
+
+    - name: Checking the status of the volume
+      ec2_vol:
+        name: "{{ volume_id }}"
+        region: us-west-2
+        state: present
+      register: volume_present
+
+    - name: Mount the volume
+      mount:
+        path: "{{ mount_point }}"
+        src: "/dev/{{ volume_id }}"
+        fstype: ext4
+        state: mounted
+      when: volume_present is defined and volume_present.volumes is defined
+
+    - name: Writing a file to the mounted volume
+      shell: echo "Hello World" > "{{ mount_point }}/test.txt"
+      when: volume_present is defined and volume_present.volumes is defined
+
+    - name: Unmount the volume
+      mount:
+        path: "{{ mount_point }}"
+        state: unmounted
+      when: volume_present is defined and volume_present.volumes is defined
+
+    - name: Removing the volume
+      ec2_vol:
+        name: "{{ volume_id }}"
+        region: us-west-2
+        state: absent
+      ignore_errors: true

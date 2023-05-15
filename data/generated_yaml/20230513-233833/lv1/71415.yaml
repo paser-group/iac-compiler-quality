@@ -1,0 +1,25 @@
+
+---
+- name: Check hostname mismatch issue
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Check for correct hostname
+      command: hostnamectl status --static
+      register: hostname
+      ignore_errors: true
+
+    - name: Check for incorrect hostname
+      command: '[[ $(hostname -f) != {{inventory_hostname}} ]] && echo "{{inventory_hostname}}" || exit 0'
+      register: incorrect_hostname
+      ignore_errors: true
+
+    - name: Validate hostname
+      fail:
+        msg: "Hostname mismatch detected. Expected '{{inventory_hostname}}' but got '{{hostname.stdout}}'"
+      when: incorrect_hostname.stdout_lines|length > 0
+
+    - name: Test privilege escalation
+      become: true
+      shell: echo 'Testing privilege escalation'

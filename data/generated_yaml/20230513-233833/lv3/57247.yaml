@@ -1,0 +1,61 @@
+
+---
+- name: EC2 Group with ELB Rule
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    elb_name: example-elb
+    sec_group_name: example-sec-group
+    sec_group_description: Example Security Group with ELB Rule
+    sec_group_elb_rule:
+      ip_protocol : tcp
+      from_port : 80
+      to_port: 80
+      cidr_ip: 10.1.1.0/24
+      load_balancer_names:
+        - "{{elb_name}}"
+
+  tasks:
+    - name: Create Security Group
+      ec2_group:
+        name: "{{sec_group_name}}"
+        description: "{{sec_group_description}}"
+        vpc_id: "vpc-123456"
+        rules:
+          - proto: tcp
+            from_port: 22
+            to_port: 22
+            cidr_ip: 0.0.0.0/0
+        tags:
+          Name: "{{sec_group_name}}"
+        region: us-east-1
+        state: present
+      register: sec_group
+
+    - name: Add ELB rule to the Security Group
+      ec2_group:
+        name: "{{sec_group_name}}"
+        load_balancer_names:
+        - "{{elb_name}}"
+        region: us-east-1
+        state: present
+
+    - name: Update the Security Group by adding the ELB rule
+      ec2_group:
+        name: "{{sec_group_name}}"
+        description: "{{sec_group_description}}"
+        vpc_id: "vpc-123456"
+        rules:
+          - proto: tcp
+            from_port: 22
+            to_port: 22
+            cidr_ip: 0.0.0.0/0
+          - proto: tcp
+            from_port: 80
+            to_port: 80
+            cidr_ip: 10.1.1.0/24
+        tags:
+          Name: "{{sec_group_name}}"
+        region: us-east-1
+        state: present

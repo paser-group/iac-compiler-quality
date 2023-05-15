@@ -1,0 +1,23 @@
+yaml
+---
+- name: Example playbook to fix 'sudo: 1 incorrect password attempt' error
+  hosts: your_host
+  become: yes
+
+  tasks:
+  - name: check sudo access without becoming root
+    command: 'sudo -n true'
+    register: sudo_access
+
+  # If 'sudo -n true' command fails, it means sudo password is required
+  - name: run command via sudo
+    command: some_command
+    become: yes
+    become_method: sudo
+    when: sudo_access.rc != 0
+
+  # For tasks that do not require become privileges
+  - name: run command as regular user
+    command: some_command
+    become: no
+    when: sudo_access.rc == 0

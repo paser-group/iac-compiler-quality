@@ -1,0 +1,26 @@
+
+---
+- name: Stress test delegate_to
+  hosts: all
+  vars:
+    ip_regex: '10\.1\.{{ [0,1,2,3,4,5,6,7,8,9]|shuffle|first }}\.{{ [0,1,2,3,4,5,6,7,8,9]|shuffle|first }}'
+  tasks:
+    - name: Set delegated IP
+      set_fact:
+        delegated_ip: "{{ ip_regex }}"
+    - name: Set invalid delegate_to syntax
+      command: echo "Invalid command"
+      delegate_to: "{{ '' }}"
+      ignore_errors: true
+    - name: Delegate to random IP
+      command: echo "Delegated to {{ item }}"
+      delegate_to: "{{ item }}"
+      with_items: "{{ groups['all']|shuffle }}"
+      when: item != inventory_hostname
+    - name: Delegate to unknown host
+      command: echo "Delegated to {{ item }}"
+      delegate_to: "{{ '10.1.1.4' }}"
+      ignore_errors: true
+    - name: Delegate to all hosts
+      command: echo "Delegated to all hosts"
+      delegate_to: "{{ groups['all'] }}"

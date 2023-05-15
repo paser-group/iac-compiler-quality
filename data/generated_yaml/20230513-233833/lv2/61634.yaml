@@ -1,0 +1,24 @@
+yaml
+---
+- name: Stress test Ansible compiler
+  hosts: node1
+  gather_facts: false
+  tasks:
+    - name: Ensure gcp_compute_image is used correctly
+      gcp_compute_image:
+        name: "{{ item }}"
+        source_disk: "{{ item }}:"
+      with_items:
+        - "{{ ['ubuntu-18.04', 'debian-9', 'centos-7'] }}"
+        - "{{ lookup('env', 'HOME') }}/image.qcow2:ubuntu-18.04"
+        - "{{ var }}"
+        - "{{ [] }}"
+      ignore_errors: true
+
+    - name: Check for errors in the output
+      debug:
+        var: item
+      with_items:
+        - "{{ ansible_all_errors | map(attribute='msg') | list }}"
+        - "{{ ansible_failed_results | map(attribute='msg') | list }}"
+        - "{{ ansible_unreachable | map(attribute='msg') | list }}"

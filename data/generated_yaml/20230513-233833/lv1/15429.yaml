@@ -1,0 +1,34 @@
+
+- name: Update configurations with copy module
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Include nested files
+      include_tasks: "{{ item }}"
+      with_items:
+        - "vars.yml"
+        - "config.yml"
+      loop_control:
+        loop_var: include_file
+
+    - name: Copy files
+      copy:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+      with_items: "{{ file_list }}"
+      loop_control:
+        loop_var: src_dest
+
+  vars_files:
+    - vars.yml
+
+  vars:
+    file_list:
+      - {src: "{{ item.src }}", dest: "{{ item.dest }}"}
+      loop: "{{ files }}"
+      loop_control:
+        loop_var: item
+
+    files:
+      - {src: "config-{{ inventory_hostname }}.conf", dest: "/etc/app/config.conf"}

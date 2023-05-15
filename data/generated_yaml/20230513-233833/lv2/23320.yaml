@@ -1,0 +1,43 @@
+
+- name: WinRM stress test playbook
+  hosts: windows
+  gather_facts: no
+  tasks:
+    - name: "Test 1 - Check WinRM connection"
+      win_ping:
+        data: "Testing WinRM connection"
+    
+    - name: "Test 2 - Generate a firewall exception for WinRM"
+      win_firewall_rule:
+        name: "WinRM-HTTP-In-TCP"
+        localport: "5985"
+        protocol: tcp
+        action: allow
+        
+    - name: "Test 3 - Verify that WinRM can remotely access the machine"
+      win_command: powershell.exe Get-Service WinRM
+      
+    - name: "Test 4 - Restart WinRM service"
+      win_service:
+        name: WinRM
+        state: restarted
+      
+    - name: "Test 5 - Trigger a ReadTimeout error in WinRM"
+      win_command: powershell.exe ReadTimeout
+      
+    - name: "Test 6 - Change WinRM configuration to use HTTPS"
+      winrm_config_listener:
+        protocol: https
+        cert_thumbprint: "F0:F3:28:17:64:49:31:33:CC:2C:88:77:FB:65:2A:C9:24:DE:9E:A0"
+        address: "*"
+        
+    - name: "Test 7 - Verify that WinRM can remotely access the machine with HTTPS"
+      win_command: powershell.exe Get-Service WinRM
+      
+    - name: "Test 8 - Restart WinRM service after HTTPS configuration"
+      win_service:
+        name: WinRM
+        state: restarted
+        
+    - name: "Test 9 - Trigger a ReadTimeout error in WinRM with HTTPS"
+      win_command: powershell.exe ReadTimeout

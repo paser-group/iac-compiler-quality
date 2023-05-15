@@ -1,0 +1,29 @@
+
+---
+- name: Check the file modes of Ansible Galaxy role
+  hosts: all
+  become: true
+  tasks:
+    - name: Install Ansible Galaxy role
+      ansible-galaxy:
+        name: "{{ role_name }}"
+      register: galaxy_output
+
+    - name: Find all the files within the installed role directory
+      find:
+        paths: "{{ galaxy_output.path }}"
+        recurse: yes
+        file_type: any
+      register: find_output
+
+    - name: Get file mode details for all the files
+      stat:
+        path: "{{ item.path }}"
+      with_items: "{{ find_output.files }}"
+      register: stat_output
+
+    - name: Check that the file modes are correct
+      debug:
+        msg: "File mode of {{ item.item.path }} is incorrect"
+      loop: "{{ stat_output.results }}"
+      when: item.stat.mode != item.item.mode

@@ -1,0 +1,24 @@
+yaml
+---
+- hosts: all
+  gather_facts: false
+  vars:
+    inventory_file: "/path/to/large/inventory"
+  tasks:
+    - name: Improve inventory performance
+      block:
+        - name: Load host_vars dynamically
+          include_vars:
+            file: "{{ inventory_file }}"
+            name: inventory
+      rescue:
+        - name: Load host_vars from cache
+          vars:
+            inventory: "{{ lookup('file', '/tmp/inventory_cache.json') | from_json }}"
+      changed_when: false
+      always:
+        - name: Save inventory cache
+          copy:
+            content: "{{ inventory | to_json }}"
+            dest: "/tmp/inventory_cache.json"
+  strategy: free

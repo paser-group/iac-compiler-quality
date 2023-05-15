@@ -1,0 +1,22 @@
+yaml
+---
+- hosts: dellos9
+  gather_facts: false
+  tasks:
+    - name: reload remote device
+      dellos9_command:
+        commands: "reload"
+        wait_for: reboot, 00:02:00
+      register: reload_result
+
+    - name: check device status
+      dellos9_command:
+        commands: "show system uptime"
+      register: uptime_result
+      until: uptime_result.stdout_lines is search("up")
+
+    - name: run command after reboot
+      dellos9_command:
+        commands: "{{ command }}"
+      register: command_result
+      ignore_errors: true

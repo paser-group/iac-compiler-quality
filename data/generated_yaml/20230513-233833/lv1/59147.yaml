@@ -1,0 +1,37 @@
+
+---
+- name: GCP Inventory Plugin Error
+  hosts: localhost
+  gather_facts: no
+  
+  tasks:
+  - name: Include Google Cloud SDK
+    include_role:
+      name: google.gce_sdk
+      
+  - name: Gather GCP Instance facts
+    gcp_compute_instance_info:
+      project: your_project_id
+      filters:
+        - name="your_instance_name"
+    register: instance_info_data
+  
+  - name: Create dynamic inventory
+    gcp_compute:
+      project: "{{ project }}"
+      auth_kind: serviceaccount
+      service_account_email: "{{ service_account_email }}"
+      zones: "{{ instance_info_data.instances[0].zone }}"
+      hostnames:
+        - name: "{{ instance_info_data.instances[0].name }}"
+          groups:
+            - gcp_instances
+      groups:
+        - gcp_instances
+    when: instance_info_data | success
+  
+  - meta: clear_host_errors
+  
+  - name: Display inventory
+    debug:
+      var: hostvars[groups['gcp_instances'][0]]['ansible_host']

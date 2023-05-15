@@ -1,0 +1,46 @@
+
+- hosts: all
+  gather_facts: no
+  vars:
+    nodes:
+    - { name: "node1", image: "ubuntu-20.04", flavor: "m1.small" }
+    - { name: "node2", image: "ubuntu-20.04", flavor: "m1.small" }
+    - { name: "node3", image: "ubuntu-20.04", flavor: "m1.small" }
+  tasks:
+    - name: "Launching Cloud instances"
+      os_server:
+        state: present
+        auth: "{{ auth }}"
+        name: "{{ item.name }}"
+        image: "{{ item.image }}"
+        flavor: "{{ item.flavor }}"
+        timeout: 120
+      register: instance
+      with_items: "{{ nodes }}"
+    - name: "Creating a list of running VMs"
+      set_fact:
+        vm_list: "{{ vm_list|default([]) + [ item.id ] }}"
+      with_items: "{{ instance.results }}"
+      when: item.status | default('') == 'ACTIVE'
+    - name: "Add nodes to the inventory"
+      add_host:
+        name: "{{ item.name }}"
+        groups: "incomplete_nodes"
+        internal_ip: "{{ item.networks['node-net'][0] }}"
+      with_items: "{{ instance.results }}"
+      when: item.id in vm_list and item.status | default('') == 'ACTIVE'
+    - name: "Fail a node"
+      command: >
+        random=999999
+        if [ $(( $RANDOM % $random )) -eq 0 ]; then
+          exit 5
+        else
+          exit 0
+        fi
+      delegate_to: "{{ groups['incomplete_nodes'] | shuffle | first }}"
+      changed_when: false
+    - name: "Remove errored nodes"
+      remove_hosts:
+        inventory_hostname: "{{ item.0 }}"
+      when: item.1.rc != 0
+      with_items: "{{ hostvars | dict2items }}"

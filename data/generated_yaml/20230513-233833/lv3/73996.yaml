@@ -1,0 +1,31 @@
+
+# Recursive playbook to expose maximum recursion depth issue in Ansible 
+
+- name: Recursive playbook 
+  hosts: all 
+  
+  # Variables 
+  vars:
+    recursion_depth: 0 
+    recursion_limit: 500
+
+  tasks: 
+    # Recursive function to test recursion depth 
+    - name: Recursive function 
+      block: 
+        - name: Increment recursion depth by 1 
+          set_fact: 
+            recursion_depth: "{{ recursion_depth+1 }}"
+
+        - name: Call recursive function 
+          include_tasks: "{{ playbook_dir }}/recursive.yaml"
+          when: recursion_depth < recursion_limit
+
+        - name: Decrement recursion depth by 1 
+          set_fact: 
+            recursion_depth: "{{ recursion_depth-1 }}"
+      when: recursion_depth < recursion_limit
+      
+# Recursive task 
+- name: Call recursive function 
+  include_tasks: "{{ playbook_dir }}/recursive.yaml"

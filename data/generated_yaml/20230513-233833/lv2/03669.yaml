@@ -1,0 +1,33 @@
+yaml
+- name: Test lvol module casting error
+  hosts: node1
+  become: true
+  tasks:
+    - name: Ensure lvm2 package is installed
+      apt:
+        name: lvm2
+        state: present
+
+    - name: Create logical volumes
+      lvol:
+        vg: '{{ inventory_hostname }}-vg'
+        lv: test-lv
+        size: 1G
+        pvs: /dev/{{ inventory_hostname }}-vg/{{ inventory_hostname }}-pv
+        state: present
+      register: result
+
+    - name: Trigger int casting error in lvol module
+      lvol:
+        vg: '{{ inventory_hostname }}-vg'
+        lv: test-lv
+        size: 9223372036854775807G # Maximum signed 64-bit integer value
+        pvs: /dev/{{ inventory_hostname }}-vg/{{ inventory_hostname }}-pv
+        state: present
+      ignore_errors: yes
+      register: result2
+
+    - name: Ensure lvol module error was caught
+      fail:
+        msg: 'lvol module did not handle int casting error correctly'
+      when: "result2 | failed and 'int too large to convert' in result2.stdout"

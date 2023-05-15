@@ -1,0 +1,49 @@
+
+- name: Stress-Test Playbook
+  hosts: all
+  gather_facts: no
+  vars:
+    ssh_key: "/path/key"
+    username: "admin"
+    password: "password"
+    invalid_port: "123456"
+    invalid_ip: "10.1.1.4"
+    invalid_username: "invalid-user"
+    invalid_password: "invalid-password"
+  tasks:
+    - name: Test valid SSH connection
+      debug:
+        msg: "Valid SSH connection to {{ inventory_hostname }} established."
+
+    - name: Test invalid SSH key path
+      shell: "ssh -i /path/invalid-key {{ username }}@{{ inventory_hostname }}"
+      register: invalid_ssh_key
+      ignore_errors: true
+      failed_when: "'Permission denied' not in invalid_ssh_key.stderr"
+
+    - name: Test invalid SSH port
+      shell: "ssh -i {{ ssh_key }} -p {{ invalid_port }} {{ username }}@{{ inventory_hostname }}"
+      register: invalid_ssh_port
+      ignore_errors: true
+      failed_when: "'ssh: connect to host' not in invalid_ssh_port.stderr"
+
+    - name: Test invalid SSH IP
+      shell: "ssh -i {{ ssh_key }} {{ username }}@{{ invalid_ip }}"
+      register: invalid_ssh_ip
+      ignore_errors: true
+      failed_when: "'Could not resolve hostname' not in invalid_ssh_ip.stderr"
+
+    - name: Test invalid SSH username
+      shell: "ssh -i {{ ssh_key }} {{ invalid_username }}@{{ inventory_hostname }}"
+      register: invalid_ssh_username
+      ignore_errors: true
+      failed_when: "'Permission denied' not in invalid_ssh_username.stderr"
+
+    - name: Test invalid SSH password
+      expect:
+        command: "ssh -i {{ ssh_key }} {{ username }}@{{ inventory_hostname }}"
+        responses:
+          "assword: ": "{{ invalid_password }}\n"
+      register: invalid_ssh_password
+      ignore_errors: true
+      failed_when: "'Permission denied' not in invalid_ssh_password.stdout"

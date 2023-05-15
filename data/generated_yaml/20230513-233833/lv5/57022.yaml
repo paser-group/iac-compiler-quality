@@ -1,0 +1,24 @@
+
+---
+- name: Test playbook for ansible_connection loop bug
+  hosts: all
+  connection: local
+  
+  vars:
+    hosts_list:
+      - node1
+      - node2
+      - node3
+  
+  tasks:
+  - name: Set ansible_connection for each host
+    connection:
+      ansible_host: "{{ item }}"
+      ansible_connection: "{{ hostvars[item]['ansible_connection'] if hostvars[item]['ansible_connection'] else 'ssh' }}"
+    loop: "{{ hosts_list }}"
+    register: connection_output
+  
+  - name: Print ansible_connection for each host
+    debug:
+      var: item.item.ansible_connection
+    with_items: "{{ connection_output.results }}"

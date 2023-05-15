@@ -1,0 +1,44 @@
+
+---
+- name: Install Docker and fix TLS config issue
+  hosts: all
+  vars:
+    docker_version: "latest"
+    docker_apt_repo: "deb [arch=amd64] https://download.docker.com/linux/{{ ansible_distribution|lower }} {{ ansible_distribution_release }} stable"
+  tasks:
+    - name: Add Docker GPG key
+      apt_key:
+        url: https://download.docker.com/linux/{{ ansible_distribution|lower }}/gpg
+        state: present
+      register: docker_gpg_key
+
+    - name: Add Docker APT repository
+      apt_repository:
+        repo: "{{ docker_apt_repo }}"
+        state: present
+      register: docker_repo
+
+    - name: Install Docker
+      apt:
+        name: docker-ce={{ docker_version }} docker-ce-cli={{ docker_version }} containerd.io
+        state: present
+      register: docker_install
+
+    - name: Fix TLS config error
+      copy:
+        dest: /etc/docker/daemon.json
+        content: |
+          {
+            "tls": true,
+            "tlsverify": true,
+            "tlscacert": "/etc/docker/ssl/ca.pem",
+            "tlscert": "/etc/docker/ssl/server-cert.pem",
+            "tlskey": "/etc/docker/ssl/server-key.pem",
+            "hosts": ["tcp://0.0.0.0:2376", "unix:///var/run/docker.sock"]
+          }
+      register: docker_tls_config
+      
+    - name: Restart Docker service
+      service:
+        name: docker
+        state: restarted

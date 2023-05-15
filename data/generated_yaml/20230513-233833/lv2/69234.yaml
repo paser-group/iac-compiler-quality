@@ -1,0 +1,71 @@
+
+---
+- name: Stress Test for pulp_repo module
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: Create repository with incorrect pulp_id
+      pulp_repo:
+        name: test-repo
+        pulp_id: "test-repo-id"
+        state: present
+        pulp_secret_cert: "{{ lookup('file', '/tmp/secret.pem') }}"
+        add_export_distributor: yes
+      ignore_errors: yes
+
+    - name: Add repository with invalid pulp_secret_cert path
+      pulp_repo:
+        name: test-repo
+        pulp_id: "test-repo-id"
+        state: present
+        pulp_secret_cert: "invalid-path"
+        add_export_distributor: yes
+      ignore_errors: yes
+
+    - name: Remove repository with invalid name
+      pulp_repo:
+        name: ""
+        pulp_id: "test-repo-id"
+        state: absent
+        add_export_distributor: yes
+      ignore_errors: yes
+
+    - name: Add repository with constraint error on pulp_id
+      pulp_repo:
+        name: test-repo
+        state: present
+        pulp_id: "{{ '.' * 254 }}.com"
+        add_export_distributor: yes
+      ignore_errors: yes
+
+    - name: Add repository with multiple export distributor options
+      pulp_repo:
+        name: test-repo
+        pulp_id: "test-repo-id"
+        state: present
+        add_export_distributor: yes
+        export_distributor_options: "{{ {'http': 'true', 'https': 'true'} }}"
+        
+    - name: Remove repository with unconventionally formatted pulp_secret_cert
+      pulp_repo:
+        name: test-repo
+        pulp_id: "test-repo-id"
+        state: absent
+        pulp_secret_cert: |
+          -----BEGIN CERTIFICATE-----
+          invalid-certificate
+          -----END CERTIFICATE-----
+        add_export_distributor: yes
+      ignore_errors: yes
+
+    - name: Add repository with extra options not listed in documentation
+      pulp_repo:
+        name: test-repo
+        pulp_id: "test-repo-id"
+        state: present
+        pulp_secret_cert: "{{ lookup('file', '/tmp/secret.pem') }}"
+        add_export_distributor: yes
+        replicated: no
+        custom-export-distributor: "{{ {'ftp': 'true'} }}"
+        some-invalid-option: "some-value"

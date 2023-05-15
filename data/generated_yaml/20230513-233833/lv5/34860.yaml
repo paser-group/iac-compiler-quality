@@ -1,0 +1,47 @@
+yaml
+---
+- hosts: all
+  become: true
+  vars:
+    backup_file_path: "/var/tmp"
+    target_backup_file_path: "/srv/backups"
+    backup_file_name: "example_file"
+    target_backup_file_name: "example_file_backup"
+    invalid_permissions: "000"
+    invalid_owner: "root:root"
+  tasks:  
+    # Create dummy file for backup testing
+    - name: Create file to be backed up
+      copy:
+        content: "Test file for backup"
+        dest: "/tmp/{{ backup_file_name }}"
+    
+    # Schedule cron job to backup dummy file
+    - name: Schedule cron job to backup file
+      cron:
+        name: "Test cron job"
+        minute: "0"
+        hour: "0"
+        job: "tar -cvzf {{ backup_file_path }}/{{ backup_file_name }}.tgz /tmp/{{ backup_file_name }}"
+        backup: true
+        backup_file: "{{ backup_file_name }}.tgz"
+        backup_dir: "{{ target_backup_file_path }}"
+    
+    # Copy dummy file backups to target location with invalid permissions
+    - name: Copy backup file to target location with invalid permissions
+      copy:
+        src: "{{ backup_file_path }}/{{ backup_file_name }}.tgz"
+        dest: "{{ target_backup_file_path }}/{{ target_backup_file_name }}.tgz"
+        owner: "{{ invalid_owner }}"
+        mode: "{{ invalid_permissions }}"
+          
+    # Modify the backup location to cause conflicts
+    - name: Modify destination backup file location
+      lineinfile:
+        path: "/etc/crontab"
+        regexp: "backup_dir"
+        line: "backup_dir={{ target_backup_file_path }}"
+        
+    # Execute cron job to trigger backup operation      
+    - name: Execute cron job
+      shell: "run-parts /etc/cron.hourly/"

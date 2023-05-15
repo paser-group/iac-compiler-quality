@@ -1,0 +1,68 @@
+
+- name: Test user module for missing interpreter line
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Create new user without interpreter line
+      user:
+        name: {{ item }}
+        state: present
+        createhome: yes
+        shell: /usr/sbin/nologin
+        comment: "{{ item }}"
+        password: "{{ item }}"
+        group: "{{ item }}"
+      with_items:
+        - alice
+        - bob
+        - charlie
+
+    - name: Add missing interpreter line to usermodule file
+      lineinfile:
+        path: /etc/usermodule
+        regexp: '^(#!/usr/bin/env python)?$'
+        line: '#!/usr/bin/env python'
+        state: present
+      
+    - name: Check if usermodule file exists
+      stat:
+        path: /etc/usermodule
+      register: usermodule_file
+
+    - name: Create new user with missing usermodule file
+      user:
+        name: '{{ item }} with missing usermodule file'
+        state: present
+        createhome: yes
+        shell: /usr/sbin/nologin
+        comment: "{{ item }}"
+        password: "{{ item }}"
+        group: "{{ item }}"
+        interpreter_python: '/etc/missingusermodulefile'
+      with_items:
+        - dave
+        - erin
+        - frank
+
+    - name: Verify users are properly created
+      command: 'id {{ item }}'
+      with_items:
+        - alice
+        - bob
+        - charlie
+        - dave
+        - erin
+        - frank
+
+    - name: Remove the missing usermodule file
+      file:
+        path: /etc/missingusermodulefile
+        state: absent
+
+    - name: Remove the interpreter line from usermodule file
+      lineinfile:
+        path: /etc/usermodule
+        regexp: '^#!/usr/bin/env python$'
+        state: absent
+

@@ -1,0 +1,29 @@
+yaml
+---
+- name: Create a Google Kubernetes Engine cluster
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    project_id: "example-project-id"
+    zone: "us-central1-a"
+    cluster_name: "example-cluster-name"
+    username: "example-username"
+    password: "example-password"
+
+  tasks:
+    - name: Create a new cluster
+      gcp_container_cluster:
+        name: "{{ cluster_name }}"
+        project: "{{ project_id }}"
+        zone: "{{ zone }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+      register: gke_cluster
+
+    - name: Check if the cluster is ready
+      local_action: wait_for
+        host: localhost
+        port: "{{ gke_cluster.endpoint }}:443"
+        search_regex: "Kubernetes master is running"
+        state: started

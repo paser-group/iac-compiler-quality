@@ -1,0 +1,32 @@
+
+---
+
+- name: Fix GCE.py inventory script error
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Install necessary Python packages
+      pip:
+        name: google-auth
+        state: present
+
+    - name: Copy GCE.py inventory script
+      copy:
+        src: /contrib/inventory/gce.py
+        dest: /etc/ansible/hosts
+
+    - name: Edit GCE.py inventory script
+      lineinfile:
+        path: /etc/ansible/hosts
+        regexp: 'libcloud\.common\.google\.ResourceNotFoundError'
+        line: 'except (HttpError, ResourceNotFoundError):'
+
+    - name: Check GCE.py inventory script functionality
+      shell: "ansible-inventory -i /etc/ansible/hosts --list"
+      register: inventory_output
+
+    - name: Display GCE.py inventory script output
+      debug:
+        var: inventory_output.stdout_lines
+

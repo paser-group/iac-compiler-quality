@@ -1,0 +1,26 @@
+
+---
+- hosts: all
+  tasks:
+    - name: Generate different types of files
+      become: yes
+      become_user: root
+      shell: make {{ item }}={{ random(0,1) | ternary("file.txt","file.exe") }}
+      with_items:
+        - name
+        - filename
+        - file
+      when: "{{ item }}" not in vars
+      register: make_output
+    - name: Fail the playbook if make command fails
+      fail:
+        msg: "Make command failed with error code {{ item.rc }}"
+      when: item.rc != 0
+      with_items: "{{ make_output.results }}"
+    - name: Remove generated files
+      become: yes
+      become_user: root
+      file:
+        path: "/tmp/{{ item.item }}.*"
+        state: absent
+      with_items: "{{ make_output.results }}"

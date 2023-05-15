@@ -1,0 +1,50 @@
+
+---
+- name: Test gce_instance_template on non-default network
+  hosts: node1
+  gather_facts: false
+
+  vars:
+    network: "non-default-network"
+    type: "n1-standard-1"
+    disk_size: 50
+    zone: "us-central1-a"
+
+  tasks:
+    - name: Create GCE instance template with non-default network
+      gcp_compute_instance_template:
+        name: "test-template"
+        network_interfaces:
+          - network: "{{ network }}"
+        machine_type: "{{ type }}"
+        disks:
+          - auto_delete: true
+            boot: true
+            initialize_params:
+              disk_name: "test-instance-disk"
+              disk_size_gb: "{{ disk_size }}"
+              source_image: "centos-7"
+        project: "test-project"
+        auth_kind: serviceaccount
+        service_account_file: "/path/to/creds.json"
+        region: "{{ zone[:-2] }}"
+      register: result
+
+    - name: Launch instance from created template
+      gcp_compute_instance:
+        name: "test-instance"
+        source_instance_template: "{{ result.instance_template }}"
+        project: "test-project"
+        auth_kind: serviceaccount
+        service_account_file: "/path/to/creds.json"
+        zone: "{{ zone }}"
+      when: result.changed
+
+    - name: Delete test instance
+      gcp_compute_instance:
+        name: "test-instance"
+        state: "absent"
+        project: "test-project"
+        auth_kind: serviceaccount
+        service_account_file: "/path/to/creds.json"
+        zone: "{{ zone }}"

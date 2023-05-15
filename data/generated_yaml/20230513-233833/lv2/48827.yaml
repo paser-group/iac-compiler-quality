@@ -1,0 +1,76 @@
+yaml
+---
+- name: Test playbook for default filter and lookup issue
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    # Edge case 1: Providing an undefined inventory variable to lookup
+    - name: Test undefined inventory variable in lookup
+      debug:
+        msg: "{{ lookup('env', inventory_variable | default('undefined')) }}"
+      vars:
+        inventory_variable: "{{ hostvars[inventory_hostname]['undefined_var'] }}"
+
+
+    # Edge case 2: Using non-existent filters with the default filter
+    - name: Test non-existent filter with default filter
+      vars:
+        mylist: []
+      debug:
+        msg: "{{ mylist | fake_filter | default('The list is empty.') }}"
+
+
+    # Edge case 3: Using quotes in variable names with the default filter
+    - name: Test quotes in variable names with default filter
+      vars:
+        'mylist"': []
+      debug:
+        msg: "{{ mylist\" | default('The list is empty.') }}"
+
+
+    # Edge case 4: Providing an undefined variable to the default filter
+    - name: Test undefined variable with default filter
+      vars:
+        undefined_var: "{{ hostvars[inventory_hostname]['undefined_var'] }}"
+      debug:
+        msg: "{{ undefined_var | default('Variable is undefined.') }}"
+
+
+    # Edge case 5: Nested variables with the default filter
+    - name: Test nested variables with the default filter
+      vars:
+        myvar: "{{ hostvars[inventory_hostname]['nested']['var'] }}"
+      debug:
+        msg: "{{ myvar | default('Nested variable is undefined.') }}"
+
+
+    # Edge case 6: Using shell module with default filter
+    - name: Test shell module with default filter
+      shell: ls /fake
+      ignore_errors: true
+      register: result
+      vars:
+        valid_dir: "{{ result.stdout | default('Directory does not exist.') }}"
+      debug:
+        var: valid_dir
+
+
+    # Edge case 7: Using delegate_to with default filter
+    - name: Test delegate_to with default filter
+      vars:
+        invalid_node: "node4"
+      debug:
+        msg: "{{ 'Success' | default('Fail.') }}"
+      delegate_to: "{{ invalid_node }}"
+
+
+    # Edge case 8: Creating an invalid inventory file
+    - name: Test invalid inventory file
+      hosts:
+        - invalid_host
+      gather_facts: no
+      tasks:
+        - debug:
+            msg: "This should not be printed."
+

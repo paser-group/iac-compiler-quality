@@ -1,0 +1,29 @@
+yaml
+---
+- name: Btrfs filesystem error
+  hosts: node1
+  become: yes
+
+  tasks:
+    - name: Creating btrfs partition
+      parted:
+        device: /dev/sda
+        number: 4
+        part_start: 20GB
+        flags: [btrfs]
+      register: parted_output
+
+    - name: Formatting partition with btrfs
+      filesystem:
+        fstype: btrfs
+        dev: /dev/sda4
+      register: filesystem_output
+
+    - name: Creating subvolumes
+      btrfs_subvolume:
+        dev: /dev/sda4
+        path: /mnt/btrfs_subvol1
+
+    - name: Asserting invalid btrfs command to trigger error
+      shell: echo "Invalid command" | btrfs
+      changed_when: false

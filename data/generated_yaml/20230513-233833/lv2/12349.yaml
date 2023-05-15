@@ -1,0 +1,28 @@
+
+- name: Stress Test Playbook for UnsafeProxy Errors
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Install pip for Python 2.6
+      raw: "apt-get install -y python-pip"
+      become: true
+
+    - name: Install old version of requests library
+      pip: name=requests==1.0.0 version_spec='<2.0.0'
+
+    - name: Add unsafe_proxy parameter to ansible.cfg
+      lineinfile:
+        dest: /etc/ansible/ansible.cfg
+        regexp: '^#?(unsafe_writes|unsafe_lookups|allow_world_readable_tmpfiles|unsafe_proxy) ='
+        line: "unsafe_proxy = yes"
+        state: present
+        backrefs: true
+
+    - name: Test UnsafeProxy Usage
+      shell: "curl --proxy http://10.1.1.2:8080 http://ansible.com"
+      register: debug_output
+      failed_when: "'error' in debug_output.stdout"
+
+    - name: Uninstall old version of requests library
+      pip: name=requests state=absent

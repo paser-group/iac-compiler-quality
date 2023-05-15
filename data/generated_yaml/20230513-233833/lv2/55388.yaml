@@ -1,0 +1,66 @@
+
+- hosts: all
+  gather_facts: no
+  vars:
+    kubeconfig: /etc/kubernetes/admin.conf
+    namespace: "{{ lookup('env', 'POD_NAMESPACE') | default('default') }}"
+    deployment: "my-deployment"
+    container_name: "nginx"
+
+  tasks:
+  - name: Deploy a NGINX container
+    kubernetes.core.v1.Pod:
+      name: "{{ deployment }}"
+      namespace: "{{ namespace }}"
+      spec:
+        containers:
+        - name: "{{ container_name }}"
+          image: nginx:latest
+          volumeMounts:
+          - name: "{{ deployment }}-vol"
+            mountPath: /data
+          ports:
+          - containerPort: 80
+
+  - name: Expose NGINX container
+    kubernetes.core.v1.Service:
+      name: "{{ deployment }}-svc"
+      namespace: "{{ namespace }}"
+      spec:
+        selector:
+          app: "{{ deployment }}"
+          tier: frontend
+        ports:
+          - port: 80
+            targetPort: {{ container_name }}
+        type: LoadBalancer
+
+  - name: Check if Service is available
+    wait_for:
+      host: "{{ deployment }}-svc.{{ namespace }}.svc"
+      port: 80
+      delay: 5
+      timeout: 300
+
+  - name: Delete Deployment
+    kubernetes.core.v1.Delete:
+      api_version: "apps/v1"
+      kind: "Deployment"
+      name: "{{ deployment }}"
+      namespace: "{{ namespace }}"
+
+  - name: Delete Service
+    kubernetes.core.v1.Delete:
+      api_version: "v1"
+      kind: "Service"
+      name: "{{ deployment }}-svc"
+      namespace: "{{ namespace }}"
+
+  - name: Check if Deployment has been deleted
+    kubernetes.core.v1.Kubectl:
+      kubeconfig: "{{ kubeconfig }}"
+      namespace: "{{ namespace }}"
+      command: "get deployment {{ deployment }}"
+      register: result
+      ignore_errors: yes
+    failed_when: result.stdout.find('NotFound') == -1

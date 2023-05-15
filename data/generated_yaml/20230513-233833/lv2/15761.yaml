@@ -1,0 +1,61 @@
+
+- name: Playbook for testing Ansible compiler
+  hosts: all
+  gather_facts: false
+
+  vars:
+    username: "test_user"
+    password: "test_password"
+    invalid_port: "123456"
+    invalid_param: "invalid_parameter"
+
+  tasks:
+    - name: Test with invalid playbook syntax
+      command: ansible-playbook {{ invalid_param }}
+
+    - name: Test with unavailable node
+      ping:
+      delegate_to: node4
+
+    - name: Test with incorrect syntax
+      shell: echo {{ invalid_param }}
+
+    - name: Test with unreachable node
+      shell: echo "Success"
+      delegate_to: 10.1.1.10
+
+    - name: Test with a non-existent group
+      command: ansible all -i inventory -m ping --limit "non_existent_group"
+
+    - name: Test with an invalid port
+      command: ansible all -i inventory -m ping --ssh-extra-args="-p {{ invalid_port }}"
+
+    - name: Test with incorrect credentials
+      shell: echo "Success"
+      register: result
+      ignore_errors: true
+      become_user: {{ username }}
+      become: true
+      become_method: su
+      become_password: {{ password }}
+
+    - name: Test with syntax error in inventory file
+      command: ansible-playbook playbook.yml -i "{{ invalid_param }}" 
+
+    - name: Test with invalid inventory file
+      command: ansible-playbook playbook.yml -i non_existent_file
+
+    - name: Test with incorrect module parameter
+      apt:
+        name: apache2
+        state: {{ invalid_param }}
+
+    - name: Test with invalid module
+      invalid_module:
+        name: test_module
+
+    - name: Test with invalid variable name
+      shell: "echo {{ invalid-param }}"
+
+    - name: Test with unreachable port
+      command: nc -zv 10.1.1.1 {{ invalid_port }}

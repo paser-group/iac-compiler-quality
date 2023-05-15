@@ -1,0 +1,28 @@
+yaml
+---
+- name: Check and Configure Route 53 zone for private DNS
+  hosts: localhost
+  gather_facts: no
+   
+  vars:
+    private_zone: example.com # replace with target zone 
+    vpc_id: vpc-1234567890 # replace with VPC ID
+
+  tasks:
+  - name: Retrieve existing private zone 
+    route53_zone_info:
+      private_zone: "{{ private_zone }}"
+    register: current_zone
+  
+  - name: Create private zone in Route 53 
+    route53_zone:
+      name: "{{ private_zone }}"
+      vpc_id: "{{ vpc_id }}"
+    when: current_zone is not defined
+
+  - name: Update private zone in Route 53 
+    route53_zone:
+      name: "{{ private_zone }}"
+      vpc_id: "{{ vpc_id }}"
+      state: present
+    when: current_zone is defined

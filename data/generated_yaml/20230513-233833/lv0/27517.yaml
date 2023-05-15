@@ -1,0 +1,33 @@
+
+- name: Ensure NX-OS feature is enabled
+  nxos_feature:
+    name: fcoe
+    state: enabled
+  register: feature_result
+  check_mode: no
+
+- name: Ensure port channel exists
+  nxos_portchannel:
+    name: port-channel1
+    protocol: lacp
+    mode: active
+    members:
+      - Ethernet1/1
+      - Ethernet1/2
+  register: portchannel_result
+  check_mode: no
+  when:
+    - feature_result.changed or feature_result.ansible_facts|default({})|json_query('nxos_feature.fcoe == "enabled"')
+
+- name: Configure port channel when changed
+  nxos_portchannel:
+    name: port-channel1
+    protocol: lacp
+    mode: active
+    members:
+      - Ethernet1/1
+      - Ethernet1/2
+  register: portchannel_result
+  check_mode: no
+  when:
+    - portchannel_result.changed or feature_result.changed

@@ -1,0 +1,45 @@
+
+- name: Test ec2 rds postgres creation
+  hosts: node1
+  vars:
+    region: us-west-2
+    instance_type: t2.micro
+    image_id: ami-0c94855ba95c71c99
+    subnet_id: subnet-0f7d4204c9d4a7e4c
+    security_group_id: sg-007b6e896bffee4e9
+    dbname: "{{ ['helloworld-']*30 | join }}"
+    username: my_user
+    password: my_password
+    db_instance_type: db.t2.micro
+  tasks:
+  - name: Check if the rds instance already exists
+    rds:
+      command: describe
+      aws_access_key: "{{ aws_access_key }}"
+      aws_secret_key: "{{ aws_secret_key }}"
+      region: "{{ region }}"
+      db_instance_identifier: "{{ dbname }}"
+    register: rds_instance
+    ignore_errors: yes
+
+  - debug:
+      var: rds_instance
+
+  - name: Create an RDS postgres instance
+    rds:
+      command: create
+      engine: postgres
+      instance_name: "{{ dbname }}"
+      user: "{{ username }}"
+      password: "{{ password }}"
+      db_instance_class: "{{ db_instance_type }}"
+      region: "{{ region }}"
+      tags:
+        Name: "{{ dbname }}"
+        Environment: "{{ ['production']*100 | join }}"
+      security_groups: "{{ ['RDS_SECURE']*1000 | join }}"
+      subnet_group_name: "{{ ['dev']*45 | join }}"
+    when: rds_instance.ansible_facts is not defined
+
+  - debug:
+      var: rds_instance

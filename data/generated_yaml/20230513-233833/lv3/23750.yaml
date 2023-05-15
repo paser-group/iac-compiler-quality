@@ -1,0 +1,22 @@
+
+--- 
+- name: Test playbook to expose vmware_guest_snapshot vulnerabilities 
+  hosts: node1
+  vars:
+      vm_uuid: "{{ uuid }}"  # specify the UUID of the target VM
+  tasks:
+  - name: Capture failed search result and display error message 
+    vmware_guest_snapshot:
+        hostname: "{{ lookup('env', 'VCENTER_HOST') }}"
+        username: "{{ lookup('env', 'VCENTER_USER') }}"
+        password: "{{ lookup('env', 'VCENTER_PASSWORD') }}"
+        validate_certs: no
+        datacenter_name: "{{ datacenter_name }}"
+        name: "{{vm}} "  
+        snapshot_name: "{{snapshot}}"  # specify a name for the snapshot
+        state: present
+      register: result 
+    - name: Displaying appropriate error message upon failure 
+      fail:
+        msg: "Virtual machine with UUID {{vm_uuid}} not found! Please check the UUID and try again."
+      when: result is failed 

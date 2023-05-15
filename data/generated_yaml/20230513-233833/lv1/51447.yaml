@@ -1,0 +1,33 @@
+
+---
+- name: Configure GCP Container Node Pool
+  hosts: target_hosts
+  gather_facts: false
+  tasks:
+    - name: Create GCP Container Cluster
+      gcp_container_cluster:
+        name: my-cluster
+        project: my-gcp-project
+        zone: us-central1-a
+      register: created_cluster
+
+    - name: Create GCP Container Node Pool
+      gcp_container_node_pool:
+        name: my-pool
+        project: my-gcp-project
+        zone: us-central1-a
+        cluster: "{{ created_cluster.cluster_id }}"
+        initial_node_count: 2
+        location: us-central1
+      register: created_pool
+      ignore_errors: true
+
+    - name: Retry Creation of GCP Container Node Pool
+      gcp_container_node_pool:
+        name: my-pool
+        project: my-gcp-project
+        zone: us-central1-a
+        cluster: "{{ created_cluster.cluster_id }}"
+        initial_node_count: 2
+        location: us-central1-a # Corrects the location field
+      when: created_pool.failed

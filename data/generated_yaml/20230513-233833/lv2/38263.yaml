@@ -1,0 +1,59 @@
+
+---
+- name: Test vmware_guest vim.fault.NoPermission edge cases
+  hosts: node1
+  gather_facts: no
+
+  tasks:
+    - name: Install pyVmomi library
+      pip:
+        name: pyVmomi
+        version: 7.0.1
+        state: present
+
+    - name: Create a new VM on VMware ESXi hypervisor
+      vmware_guest:
+        hostname: "{{ansible_host}}"
+        username: "{{ansible_user}}"
+        password: "{{ansible_ssh_pass}}"
+        validate_certs: no
+        name: "Test VM"
+        disk:
+          - size_gb: 10
+            type: thick
+            datastore: datastore1
+        hardware:
+          memory_mb: 1024
+          num_cpus: 1
+          scsi: paravirtual
+        state: powered_on
+      delegate_to: node2
+
+    - name: Grant Virtual Machine User vim.fault.NoPermission
+      vmware_guest:
+        hostname: "{{ansible_host}}"
+        username: "{{ansible_user}}"
+        password: "{{ansible_ssh_pass}}"
+        validate_certs: no
+        name: "Test VM"
+        Annotation: "{{lookup('file', '/root/data.txt') | b64encode}}"
+        state: powered_on
+        customvalues:
+          - key: "tools.syncTimeWithHost"
+            value: "false"
+          - key: runonce.runonce
+            value: "true"
+            hidden: yes
+          - key: "usb.generic.allowHID"
+            value: "true"
+      delegate_to: node3
+  
+    - name: Remove the VM from VMware ESXi hypervisor
+      vmware_guest:
+        hostname: "{{ansible_host}}"
+        username: "{{ansible_user}}"
+        password: "{{ansible_ssh_pass}}"
+        validate_certs: no
+        name: "Test VM"
+        state: absent
+      delegate_to: node2

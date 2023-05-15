@@ -1,0 +1,19 @@
+
+---
+- name: Create temporary files
+  hosts: all
+  tasks:
+
+  - name: Generate temporary files
+    command: touch /tmp/tmp_file
+    register: result
+
+  - name: Modify temporary file to introduce syntax error
+    shell: echo "#!/usr/bin/env python" >> /tmp/AnsiballZ_setup.py
+           echo "test syntax error" >> /tmp/AnsiballZ_setup.py
+           chmod +x /tmp/AnsiballZ_setup.py
+           mv /tmp/AnsiballZ_setup.py ~/.ansible/tmp/ansible-tmp-{{ result.stdout_lines[0] }}_source
+    register: file_result
+  
+  - name: Execute Ansible module to trigger the error
+    shell: ansible node1 -m debug -a "var=foo"

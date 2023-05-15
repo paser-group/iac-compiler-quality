@@ -1,0 +1,17 @@
+
+---
+- name: Test for Ansible bug in random_mac filter
+  hosts: all
+  gather_facts: no
+  vars:
+    mac_prefix_length:
+      - 2
+      - 4
+  tasks:
+    - name: "Generate MAC addresses with prefixes of length {{ item }}"
+      set_fact:
+        mac_address: "{{ '00:11:22:' + '%0'+ item + 'x' % (range(0,16**(2-int(item, 10))),) | regex_replace('(..)(?!$)', '\\1:') }}"
+      with_items: "{{ mac_prefix_length }}"
+    - name: "Ping an external ip"
+      ping:
+        dest: 1.1.1.1

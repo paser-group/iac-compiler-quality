@@ -1,0 +1,41 @@
+yaml
+- name: Segmentation fault issue reproduction playbook
+  hosts: all
+  become: true
+  
+  tasks:
+  
+  - name: Create temporary files directory
+    tempfile:
+      state: directory
+    register: temp_dir
+
+  - name: Create temporary my.cnf file
+    copy:
+      dest: "{{ temp_dir.path }}/.my.cnf"
+      content: |
+        [client]
+        user=root
+        password=mypassword
+
+  - name: Install MySQL server
+    apt:
+      name: mysql-server
+      state: present
+
+  - name: Change MySQL root password
+    mysql_user:
+      login_unix_socket: /var/run/mysqld/mysqld.sock
+      name: root
+      password: rootpassword
+      update_password: always
+
+  - name: Create MySQL user with .my.cnf file
+    mysql_user:
+      login_user: root
+      login_password: rootpassword
+      host: "{{ inventory_hostname }}"
+      name: testuser
+      password: testpassword
+      login_path: "{{ temp_dir.path }}/.my.cnf"
+      priv: "*.*:USAGE"

@@ -1,0 +1,24 @@
+yaml
+---
+- name: Check Processor vCPUs for Containers
+  hosts: all
+  gather_facts: yes
+  tasks:
+    - name: Check for Containerization
+      stat:
+        path: /.dockerenv
+      register: docker_env
+
+    - name: Get Processor Information
+      set_fact:
+        num_vcpus: "{{ ansible_processor_vcpus }}"
+      when: docker_env.stat.isreg == False
+
+    - name: Get Processor Information for Docker
+      set_fact:
+        num_vcpus: "{{ hostvars[inventory_hostname]['ansible_processor_vcpus'] }}"
+      when: docker_env.stat.isreg == True
+
+    - name: Display Processor Information
+      debug:
+        msg: "Number of vCPUs: {{ num_vcpus }}"

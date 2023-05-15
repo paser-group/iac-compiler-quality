@@ -1,0 +1,30 @@
+
+---
+- name: Test jinja2 syntax
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Define variables with jinja2 syntax
+      set_fact:
+        var1: "{{'{{' }} var_loop.item {{ '}}' }}"
+        var2: "{{'{{' }} var_loop.item | length {{ '}}' }}"
+        var3: "{{'{{' }} var_loop.item | default('default_value') {{ '}}' }}"
+      with_dict: 
+         var_loop:
+           value1: "{{'{{ hello_world }}' }}"
+           value2: "{{'{{ not defined }}' }}"
+           value3: "{{'{{' }}"
+           value4: "{{'||' }}"
+
+    - name: Test Ansible ping module with jinja variables
+      ping:
+        data: "{{ var1 }}{{ var2 }}{{ var3 }}"
+
+    - name: Generate file from a jinja2 template with jinja variables
+      template:
+        src: test.j2
+        dest: /tmp/result
+      loop: "{{ dict(var_loop | dict2items) }}"
+      loop_control:
+         loop_var: var_loop.item
+  

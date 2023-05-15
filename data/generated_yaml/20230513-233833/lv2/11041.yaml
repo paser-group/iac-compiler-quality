@@ -1,0 +1,49 @@
+
+- name: Stress test for SSH connection errors
+  hosts: all
+  vars:
+    ssh_port: "{{ 22 }}"
+    ssh_user: "admin"
+    ssh_password: "P@ssw0rd"
+  tasks:
+    - name: invalid syntax
+      shell: ${{ invalid_syntax }}
+
+    - name: invalid command
+      command: nonexistent_cmd
+
+    - name: undefined variable
+      shell: "{{ random_var }}"
+
+    - name: connection timeout
+      wait_for: timeout=1
+
+    - name: SSH connection with wrong password
+      wait_for_connection:
+        connect_timeout: 5
+        sleep: 5
+      delegate_to: "{{ inventory_hostname }}"
+      vars:
+        ansible_ssh_user: "{{ ssh_user }}"
+        ansible_ssh_pass: wrong_pass
+
+    - name: SSH connection with wrong port
+      wait_for_connection:
+        connect_timeout: 5
+        sleep: 5
+      delegate_to: "{{ inventory_hostname }}"
+      vars:
+        ansible_ssh_user: "{{ ssh_user }}"
+        ansible_ssh_pass: "{{ ssh_password }}"
+        ansible_port: "{{ ssh_port + 1 }}"
+
+    - name: long command (1MB)
+      shell: "{{ 'a'*1000000 }}"
+
+    - name: high CPU and memory usage
+      script: heavy_load_script.sh
+
+    - name: TCP/IP connection errors
+      uri:
+        url: http://google.com
+        status_code: 505

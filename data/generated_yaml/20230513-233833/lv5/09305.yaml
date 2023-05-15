@@ -1,0 +1,28 @@
+
+- hosts: all
+  tasks:
+    - name: Attempt to copy test file with ssh
+      copy:
+        src: /tmp/test.txt
+        dest: /tmp/test.txt
+      delegate_to: "localhost"
+      delegate_facts: true
+      when: "'ssh' in ansible_playbook_python"
+
+    - name: Attempt to copy test file with rsync
+      synchronize:
+        src: /tmp/test.txt
+        dest: /tmp/test.txt
+      delegate_to: "localhost"
+      delegate_facts: true
+      when: "'rsync' in ansible_playbook_python"
+
+    - name: Check for copied file
+      stat:
+        path: /tmp/test.txt
+      register: result
+
+    - name: Fail if file not copied
+      debug:
+        msg: "File not found."
+      failed_when: not result.stat.exists

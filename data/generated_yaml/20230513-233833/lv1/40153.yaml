@@ -1,0 +1,42 @@
+yaml
+---
+- name: Remove Default VPC
+  hosts: localhost
+  gather_facts: false
+  vars:
+    region: us-east-1
+  tasks:
+    - name: Get Default VPC ID
+      ec2_vpc_net_facts:
+        filters:
+          name: 'isDefault'
+          values: ['true']
+        region: "{{ region }}"
+      register: default_vpc
+      
+    - name: Fail if no default VPC
+      fail:
+        msg: "No default VPC found in {{ region }}"
+      when: "{{ default_vpc.results | length == 0 }}"
+        
+    - name: Deregister Default Subnets
+      ec2_subnet_net:
+        state: absent
+        vpc_id: "{{ default_vpc.results[0].id }}"
+        filters:
+          name: 'defaultForAz'
+          values: ['true']
+        region: "{{ region }}"
+        
+    - name: Deregister Default Security Group
+      ec2_group:
+        state: absent
+        vpc_id: "{{ default_vpc.results[0].id }}"
+        group_name: "{{ default_vpc.results[0].id }}-default"
+        region: "{{ region }}"
+        
+    - name: Delete Default VPC
+      ec2_vpc_net:
+        state: absent
+        vpc_id: "{{ default_vpc.results[0].id }}"
+        region: "{{ region }}"

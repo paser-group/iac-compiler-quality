@@ -1,0 +1,24 @@
+
+---
+- name: Test playbook for ansible-galaxy list errors
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Execute ansible-galaxy list command with missing search directory
+      command: ansible-galaxy list -p /tmp/galaxy --roles-path /etc/ansible/roles --force-color
+      register: result
+      
+    - name: Fail if search directories are missing
+      fail:
+        msg: "Search directories are missing"
+      when: result.rc != 0 and ("No valid search directories found" in result.stderr or "Failed to add loader" in result.stderr or "SyntaxError" in result.stderr)
+      
+    - name: Warn if search directories may be missing
+      debug:
+        var: result.stderr
+      when: result.rc != 0 and "cannot access '/etc/ansible/roles'" in result.stderr
+  
+    - name: Print Ansible Galaxy roles
+      debug:
+        var: result.stdout_lines
+      when: result.rc == 0

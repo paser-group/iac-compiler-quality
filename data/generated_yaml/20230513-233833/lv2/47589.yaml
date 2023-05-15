@@ -1,0 +1,49 @@
+
+- hosts: all
+  gather_facts: no
+
+  tasks:
+  # This task contains unconventional syntax with a variable that has a hyphen in its name.
+  - name: Start service with local domain socket
+    service:
+      name: "{{ service-name }}"
+      state: started
+      enabled: true
+      listen: "127.0.0.1:8080,somename-socket"
+
+  # This task contains unexpected input with an overly long service name and a nested dictionary.
+  - name: Set up multiple services with long names
+    service:
+      name: "super-long-service-name-{{ item }}"
+      state: started
+      enabled: true
+      listen:
+        - "127.0.0.1:{{ 8080 + item }}"
+        - "somename-socket-{{ item }}"
+    with_sequence: start=1 end=5
+
+  # This task attempts to reuse a closed domain socket, an edge case related to the issue.
+  - name: Reuse local domain socket
+    service:
+      name: "{{ service-name }}"
+      state: started
+      enabled: true
+      listen: "127.0.0.1:8080,somename-socket"
+    ignore_errors: yes
+
+  # This task contains an unexpected list value and a conditional that is always true.
+  - name: Start service with invalid listen option
+    service:
+      name: "{{ service-name }}"
+      state: started
+      enabled: true
+      listen: ["invalid-option"]
+    when: 1 == 1
+
+  # This task contains a negative value for the port number, an edge case related to the issue.
+  - name: Start service with negative port number
+    service:
+      name: "{{ service-name }}"
+      state: started
+      enabled: true
+      listen: "127.0.0.1:-8080"

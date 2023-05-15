@@ -1,0 +1,24 @@
+
+- name: Import database from SQL file
+  mysql_db:
+    name: mydatabase
+    state: import
+    target: "{{ ansible_host }}"
+    login_user: myuser
+    login_password: "{{ mysql_password }}"
+    src: /path/to/file.sql
+  register: db_result
+
+- name: Handle constraint violations
+  fail:
+    msg: "{{ db_result.msg }}"
+  when: "db_result.failed and 'Error 1050' in db_result.msg"
+
+- name: Drop table if it already exists
+  mysql_db:
+    name: mytable
+    state: absent
+    target: "{{ ansible_host }}"
+    login_user: myuser
+    login_password: "{{ mysql_password }}"
+  when: db_result.changed

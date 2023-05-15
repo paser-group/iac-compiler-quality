@@ -68,7 +68,7 @@ def parse():
         default=None,
     )
     
-    # subparser for validation
+    # subparser for getting output
     parser_gen = subparser.add_parser('run')
     parser_gen.add_argument(
         '-c',
@@ -90,6 +90,38 @@ def parse():
         help='used to read from a specific timestamp generated data. (Default: most recent)',
         type=str,
         default=None,
+    )
+    
+    
+    # Subperser for statistics
+    parser_gen = subparser.add_parser('stat')
+    parser_gen.add_argument(
+        '-c',
+        '--config',
+        help='config path',
+        type=str,
+        default="{{PROJECT_ROOT}}/confs/config.yaml",
+    )
+
+    parser_gen.add_argument(
+        '--debug',
+        help='used for testing the create_ansible function',
+        action='store_true',
+        default=False,
+    )
+
+    parser_gen.add_argument(
+        '--timestamp',
+        help='used to read from a specific timestamp generated data. (Default: most recent)',
+        type=str,
+        default=None,
+    )
+    
+    parser_gen.add_argument(
+        '--type',
+        help='used to generate type of statistics. (Default: syntax)',
+        type=str,
+        default="syntax",
     )
     
     argcomplete.autocomplete(parser)

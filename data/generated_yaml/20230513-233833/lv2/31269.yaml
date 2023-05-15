@@ -1,0 +1,44 @@
+
+---
+- name: Test ec2_lc placement_tenancy
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: Create launch configuration with invalid placement_tenancy value
+      ec2_lc:
+        name: test_lc
+        image_id: ami-0c94855ba95c71c99
+        instance_profile_name: test_profile
+        key_name: test_key
+        security_groups: ["sg-1234567890abcdef","sg-0987654321fedcba"]
+        spot_price: 10.00
+        # Provide an invalid value to placement_tenancy parameter
+        placement_tenancy: invalid_value
+        state: present
+
+    - name: Create launch configuration without placement_tenancy parameter
+      ec2_lc:
+        name: test_lc_2
+        image_id: ami-0c94855ba95c71c99
+        instance_profile_name: test_profile
+        key_name: test_key
+        security_groups: ["sg-1234567890abcdef","sg-0987654321fedcba"]
+        spot_price: 10.00
+        state: present
+
+    - name: Update launch configuration with valid placement_tenancy value
+      ec2_lc:
+        name: test_lc
+        instance_profile_name: updated_profile
+        # Provide a valid value to placement_tenancy parameter
+        placement_tenancy: dedicated
+        state: present
+
+    - name: Delete launch configurations
+      ec2_lc:
+        name: "{{ item }}"
+        state: absent
+      with_items:
+        - test_lc
+        - test_lc_2

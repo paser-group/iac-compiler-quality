@@ -1,0 +1,80 @@
+
+---
+- name: Stress Testing Playbook
+  hosts: localhost
+  connection: local
+  gather_facts: no
+
+  tasks:
+    # Test case 1: Empty inventory file
+    - name: empty inventory file
+      shell: echo ""
+      register: output
+      ignore_errors: yes
+    - name: dynamic inventory with empty file
+      inventory:
+        plugin: script
+        args:
+          script: inventory.py
+          empty_okay: true
+      when: "'nodename' in output.stdout"
+
+    # Test case 2: Implicit localhost in YAML inventory
+    - name: Implicit localhost in YAML file
+      inventory:
+        hosts:
+          # Missing Group
+          - localhost
+      register: output
+      ignore_errors: true
+    - name: check localhost
+      assert:
+        that:
+          - 'localhost' in output['ansible_inventory_hosts']
+
+    # Test case 3: Syntax errors
+    - name: Syntax error 1
+      shell: |
+        echo '
+        [group1]"" : # Invalid group name
+        localhost # Valid host name
+        '
+      register: output
+      ignore_errors: true
+    - name: Syntax error 2
+      inventory:
+        hosts:
+          - group1
+      register: output2
+      ignore_errors: true
+    - name: check hosts
+      assert:
+        that:
+          - 'localhost' not in output2['ansible_inventory_hosts']
+
+    # Test case 4: Group vars
+    - name: group vars
+      inventory:
+        plugin: script
+        args:
+          script: inventory.py
+      vars:
+        group1_var1: val1
+        group1_var2: val2
+      register: output3
+    - name: check group vars
+      assert:
+        that:
+          - 'group1_var1' in output3['ansible_inventory']['group1']['vars']
+          - 'group1_var2' in output3['ansible_inventory']['group1']['vars']
+    
+    # Test case 5: Nonexistent inventory plugin
+    - name: Nonexistent inventory plugin
+      inventory:
+        plugin: fake_plugin
+      register: output4
+      ignore_errors: true
+    - name: check error message
+      assert:
+        that:
+          - 'Failed to find inventory plugin' in output4.stderr

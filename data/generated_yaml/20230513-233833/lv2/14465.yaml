@@ -1,0 +1,59 @@
+
+- name: Test playbook for remote directory resolution failures
+  hosts: all
+  vars:
+    remote_tmp_dir: "/var/tmp"
+    group1_nodes:
+      - node1
+      - node2
+    group2_nodes:
+      - node2
+      - node3
+
+  tasks:
+
+  - name: Check if tmp directory exists
+    stat:
+      path: "{{ remote_tmp_dir }}"
+    register: tmp_dir
+
+  - name: Create tmp directory if it does not exist
+    file:
+      path: "{{ remote_tmp_dir }}"
+      state: directory
+    when: not tmp_dir.stat.exists
+
+  - name: Check connection to group1 nodes
+    ping:
+    when: "'node1' in group1_nodes and 'node2' in group1_nodes"
+
+  - name: Check connection to group2 nodes
+    ping:
+    when: "'node2' in group2_nodes and 'node3' in group2_nodes"
+
+  - name: Find tmp directory on group 1 nodes
+    find:
+      paths: "{{ remote_tmp_dir }}"
+    register: tmp_dir1
+    when: "'node1' in group1_nodes and 'node2' in group1_nodes"
+
+  - name: Find tmp directory on group 2 nodes
+    find:
+      paths: "{{ remote_tmp_dir }}"
+    register: tmp_dir2
+    when: "'node2' in group2_nodes and 'node3' in group2_nodes"
+
+  - name: Fail if tmp directory not found on any node
+    fail:
+      msg: "Failed to find tmp directory on any node"
+    when: not tmp_dir1.files and not tmp_dir2.files
+
+  - name: Generate error message if unable to access tmp directory on all group 1 nodes
+    fail:
+      msg: "Failed to access tmp directory on group 1 nodes"
+    when: tmp_dir1.files and not tmp_dir1.stat.isdir
+
+  - name: Generate error message if unable to access tmp directory on all group 2 nodes
+    fail:
+      msg: "Failed to access tmp directory on group 2 nodes"
+    when: tmp_dir2.files and not tmp_dir2.stat.isdir

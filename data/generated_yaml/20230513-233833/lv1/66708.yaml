@@ -1,0 +1,42 @@
+yaml
+---
+
+- name: Configure dynamic inventory with AWS EC2 instances
+  hosts: localhost
+  gather_facts: False
+  vars:
+    boto_profile: "default"
+
+  tasks:
+    - name: Configure RDS instances with custom boto profile
+      block:
+        - name: Load RDS instances
+          rds:
+            boto_profile: "{{ boto_profile }}"
+            register: rds_instances
+        
+        - name: Add RDS instances to inventory
+          add_host:
+            name: "{{ item.private_ip_address }}"
+            groups: rds_instances
+          with_items: "{{ rds_instances.instances }}"
+      
+      when: "'rds_instances' in group_names"
+    
+    - name: Configure EC2 instances with custom boto profile
+      block:
+        - name: Load EC2 instances
+          ec2_instance_facts:
+            region: "{{ region }}"
+            filters:
+              instance-state-name: "running"
+            register: ec2_instances
+        
+        - name: Add EC2 instances to inventory
+          add_host:
+            name: "{{ item.private_ip_address }}"
+            groups: ec2_instances
+          with_items: "{{ ec2_instances.instances }}"
+      
+      when: "'ec2_instances' in group_names"
+

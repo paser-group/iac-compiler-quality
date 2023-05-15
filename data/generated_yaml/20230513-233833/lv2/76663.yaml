@@ -1,0 +1,41 @@
+
+---
+
+  - name: Test playbook for debugging reboot module hang
+    hosts: all
+    gather_facts: no
+    
+    vars:
+      count: 1
+      
+    tasks:
+    
+      - name: Restart node with multiple verbosity levels
+        reboot:
+          msg: "Restarting node with {{ count }} verbosity level(s)"
+          verbosity: "{{ 'v' * count }}"
+        vars:
+          count: "{{ count | int + 1 }}"
+        with_sequence: count=1
+        
+      - name: Ensure all nodes are restarted
+        wait_for_connection:
+          timeout: 300
+          
+      - name: Simulate a reboot hang with connection debug verbosity level
+        reboot:
+          msg: "Rebooting node with -vvvv verbosity level"
+          verbosity: '-vvvv'
+          
+      - name: Wait for a long time and ensure the system is down
+        pause:
+          minutes: 5
+        register: pause_result
+        failed_when: false
+        
+      - name: Test reboot module when the system is down
+        reboot:
+          msg: "Restarting the system from a down state"
+          force: yes
+        when: pause_result is failed
+

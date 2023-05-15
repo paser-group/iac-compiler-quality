@@ -1,0 +1,34 @@
+
+- name: Raise error if include_role used with delegate_to
+  hosts: node1
+  tasks:
+    - name: Include role and delegate
+      include_role:
+        name: example_role
+      delegate_to: node2
+
+    - name: Raise error if include_role used with delegate_to
+      assert:
+        that: "'delegate_to' not in item"
+        msg: "Error: include_role used with delegate_to"
+      loop: "{{ ansible_playbook_all_hosts }}"
+
+- name: Raise error if include_role used with delegate_to (Alternative syntax)
+  hosts: node3
+  tasks:
+    - name: Delegate to node2 and include role
+      delegate_to: node2
+      include_role:
+        name: example_role
+
+    - name: Raise error if include_role used with delegate_to
+      assert:
+        that: "'delegate_to' not in item"
+        msg: "Error: include_role used with delegate_to"
+      register: result
+      failed_when: false
+
+    - name: Fail the task if the assertion failed
+      fail:
+        msg: "Error: include_role used with delegate_to"
+      when: result is failed

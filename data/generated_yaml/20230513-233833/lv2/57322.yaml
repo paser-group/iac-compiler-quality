@@ -1,0 +1,54 @@
+
+---
+- name: Test network_cli connection plugin performance
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Execute a long-running command with large output
+      command: "head -c 100000 /dev/urandom"
+      register: rand_output
+
+    - name: Copy the output to a remote machine
+      copy:
+        content: "{{ rand_output.stdout }}"
+        dest: "/tmp/random.bin"
+        mode: 0644
+
+    - name: Execute a command with a delayed network response
+      expect:
+        command: "/bin/sh -c 'sleep 5 && echo Hello'"
+        echo: yes
+        timeout: 10
+      become: yes
+      become_user: root
+
+    - name: Simulate a network time-out error
+      expect:
+        command: "ping 10.1.1.999 -c 1"
+        timeout: 3
+        responses:
+          timeout:
+            - "Connection timed out"
+            - "Request timed out"
+        ignore_errors: yes
+
+    - name: Test an unconventional syntax
+      shell: echo "Hello {{ world }}"
+      vars:
+        world: "Universe"
+
+    - name: Test an unexpected input
+      set_fact:
+        data: "{{ (4 + '5') / 3 }}"
+      ignore_errors: yes
+
+    - name: Execute a command with sudo privileges
+      command: "whoami"
+      become: yes
+      become_user: root
+
+    - name: Create a new loopback interface
+      interface:
+        name: lo:0
+        state: present
+        addresses: "10.1.1.4/24"

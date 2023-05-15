@@ -1,0 +1,96 @@
+
+---
+- name: Test Playbook for azure_rm_sqldatabase module
+  hosts: all
+  vars:
+    database_name: "my_database"
+    resource_group: "my_resource_group"
+    login_name: "my_login_name"
+    login_password: "my_login_password"
+    recovery_services_vault_name: "my_recovery_services_vault_name"
+    sku_name: "Basic"
+    storage_account_type: "GRS"
+    tags: "{'tag1': 'value1', 'tag2': 'value2'"
+    location: "East US"
+  tasks:
+  - name: Create sqldatabase without recovery services vault ID
+    azure_rm_sqldatabase:
+      resource_group: "{{ resource_group }}"
+      name: "{{ database_name }}"
+      login_name: "{{ login_name }}"
+      login_password: "{{ login_password }}"
+      sku_name: "{{ sku_name }}"
+      storage_account_type: "{{ storage_account_type }}"
+      tags: "{{ tags }}"
+      location: "{{ location }}"
+    register: result1
+    ignore_errors: yes
+
+  - name: Create sqldatabase with invalid location
+    azure_rm_sqldatabase:
+      resource_group: "{{ resource_group }}"
+      name: "{{ database_name }}"
+      login_name: "{{ login_name }}"
+      login_password: "{{ login_password }}"
+      sku_name: "{{ sku_name }}"
+      storage_account_type: "{{ storage_account_type }}"
+      tags: "{{ tags }}"
+      location: "invalid_location"
+    register: result2
+    ignore_errors: yes
+
+  - name: Create sqldatabase with invalid sku name
+    azure_rm_sqldatabase:
+      resource_group: "{{ resource_group }}"
+      name: "{{ database_name }}"
+      login_name: "{{ login_name }}"
+      login_password: "{{ login_password }}"
+      sku_name: "invalid_sku_name"
+      storage_account_type: "{{ storage_account_type }}"
+      tags: "{{ tags }}"
+      location: "{{ location }}"
+    register: result3
+    ignore_errors: yes
+
+  - name: Create sqldatabase with invalid storage account type
+    azure_rm_sqldatabase:
+      resource_group: "{{ resource_group }}"
+      name: "{{ database_name }}"
+      login_name: "{{ login_name }}"
+      login_password: "{{ login_password }}"
+      sku_name: "{{ sku_name }}"
+      storage_account_type: "invalid_storage_account_type"
+      tags: "{{ tags }}"
+      location: "{{ location }}"
+    register: result4
+    ignore_errors: yes
+
+  - name: Create sqldatabase with invalid tags syntax
+    azure_rm_sqldatabase:
+      resource_group: "{{ resource_group }}"
+      name: "{{ database_name }}"
+      login_name: "{{ login_name }}"
+      login_password: "{{ login_password }}"
+      sku_name: "{{ sku_name }}"
+      storage_account_type: "{{ storage_account_type }}"
+      tags: "{tag1: value1, tag2: value2}"
+      location: "{{ location }}"
+    register: result5
+    ignore_errors: yes
+  
+  - name: Create sqldatabase with valid parameters
+    azure_rm_sqldatabase:
+      resource_group: "{{ resource_group }}"
+      name: "{{ database_name }}"
+      login_name: "{{ login_name }}"
+      login_password: "{{ login_password }}"
+      sku_name: "{{ sku_name }}"
+      storage_account_type: "{{ storage_account_type }}"
+      tags: "{{ tags }}"
+      location: "{{ location }}"
+      recovery_services_vault_id: "/subscriptions/<subscription_id>/resourceGroups/{{ resource_group }}/providers/Microsoft.RecoveryServices/vaults/{{ recovery_services_vault_name }}"
+    register: result6
+
+  - name: Debug print sqldatabase creation result
+    debug:
+      var: result6

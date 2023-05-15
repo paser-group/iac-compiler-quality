@@ -1,0 +1,42 @@
+yaml
+- name: Example Playbook for Group Variable Issue
+  hosts: all
+  become: true
+  
+  vars:
+      web_servers:
+        - node1
+        - node2
+      
+      db_servers:
+        - node3
+
+  tasks:
+    - name: Configure Web Servers
+      hosts: "{{ web_servers }}"
+      vars:
+        site_url: "www.example.com"
+      template:
+        src: templates/site.conf.j2
+        dest: /etc/apache2/sites-available/site.conf
+      notify:
+        - restart apache
+
+    - name: Configure Database Server
+      hosts: "{{ db_servers }}"
+      vars:
+        site_url: "db.example.com"
+      template:
+        src: templates/site.conf.j2
+        dest: /etc/mysql/my.cnf
+      notify:
+        - restart mysql
+
+  handlers:
+    - name: Restart Apache
+      service: name=apache2 state=restarted
+      listen: restart apache
+
+    - name: Restart MySQL
+      service: name=mysql state=restarted
+      listen: restart mysql

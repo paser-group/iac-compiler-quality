@@ -1,0 +1,66 @@
+yaml
+---
+- name: Azure Storage Account Error Test
+  hosts: all
+  gather_facts: false
+
+  vars:
+    storage_account: myAzureStorageAccount
+    resource_group: myResourceGroup
+    location: eastus
+    sku_tier: <SkuName.standard_lrs: 'Standard_LRS'>
+    sku_name: invalidSkuName
+
+  tasks:
+
+  # Task 1: Test with an invalid SKU name
+  - name: Test with invalid SKU name
+    azure_rm_storageaccount:
+      resource_group: "{{ resource_group }}"
+      name: "{{ storage_account }}"
+      sku_tier: "{{ sku_tier }}"
+      sku_name: "{{ sku_name }}"
+      location: "{{ location }}"
+    register: result1
+    ignore_errors: true # Ignore errors as sku_name is invalid
+
+  # Task 2: Test with correct SKU name
+  - name: Test with correct SKU name
+    azure_rm_storageaccount:
+      resource_group: "{{ resource_group }}"
+      name: "{{ storage_account }}"
+      sku_tier: "{{ sku_tier }}"
+      sku_name: "{{ SkuName.standard_lrs }}"
+      location: "{{ location }}"
+    register: result2
+
+  # Task 3: Test with unconventional syntax
+  - name: Test with unconventional syntax
+    azure_rm_storageaccount:
+      resource_group: "{{ resource_group }}"
+      name: "{{ storage_account }}"
+      sku_tier: "{{ sku_tier }}"
+      sku_name: "<enum 'SkuName'>.standard_lrs: 'Standard_LRS'"
+      location: "{{ location }}"
+    register: result3
+
+  # Task 4: Test with unexpected input
+  - name: Test with unexpected input
+    azure_rm_storageaccount:
+      resource_group: "{{ resource_group }}"
+      name: "{{ storage_account }}"
+      sku_tier: "{{ sku_tier }}"
+      sku_name: "standard_lrs: invalidSkuName"
+      location: "{{ location }}"
+    register: result4
+
+  # Task 5: Test with a list of nodes
+  - name: Test with a list of nodes
+    azure_rm_storageaccount:
+      resource_group: "{{ resource_group }}"
+      name: "{{ storage_account }}"
+      sku_tier: "{{ sku_tier }}"
+      sku_name: "{{ SkuName.standard_lrs }}"
+      location: "{{ location }}"
+    delegate_to: node1, node2, node3
+

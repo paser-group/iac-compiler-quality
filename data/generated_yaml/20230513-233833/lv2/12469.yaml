@@ -1,0 +1,21 @@
+yaml
+---
+- name: Test playbook with edge cases and unexpected inputs
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Set environment variable with unconventional syntax
+      shell: export {{ item }}="Hello, World!"; echo ${{ item }}
+      with_items:
+        - "MY_VAR"
+        - "ENV_{{ ansible_hostname.upper() }}"
+
+    - name: Test variable evaluation in environment
+      shell: echo ${{ item }}
+      with_items:
+        - "{{ lookup('env', 'MY_VAR') }}"
+        - "{{ lookup('env', 'ENV_NODE{{ ansible_fqdn | regex_replace('^(.*?)\\..*$', '\\1') }}') }}"
+
+    - name: Test edge case for environment variable evaluation as template
+      shell: echo 'Hello, {{ lookup('env', 'MY_VAR') }}!'

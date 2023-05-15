@@ -1,0 +1,42 @@
+
+---
+- name: Test playbook to expose vulnerability in get_url module
+  hosts: all
+  become: true
+  vars:
+    file_name: "test.txt"
+    file_content: "test file"
+    dest_folder: "/tmp/"
+  tasks:
+
+  - name: Create a test file on all nodes
+    copy: content="{{file_content}}" dest="{{dest_folder}}{{file_name}}"
+    with_items: "{{play_hosts}}"
+    delegate_to: "{{item}}"
+    run_once: true
+
+  - name: Download a file from node2 with an incorrect If-Modified-Since header
+    get_url:
+      url: http://10.1.1.2:{{dest_folder}}{{file_name}}
+      dest: "./"
+      headers:
+        If-Modified-Since: "Sat, 01 Jan 2000 00:00:00 GMT"
+    delegate_to: localhost
+
+  - name: Verify that the downloaded file has the correct content
+    assert:
+      that:
+        - "{{lookup('file', file_name) == file_content}}"
+
+  - name: Display the downloaded file's content
+    debug:
+      msg: "{{lookup('file', file_name)}}"
+
+  - name: Delete the test file on all nodes
+    file:
+      path: "{{dest_folder}}{{file_name}}"
+      state: absent
+    with_items: "{{play_hosts}}"
+    delegate_to: "{{item}}"
+    run_once: true
+

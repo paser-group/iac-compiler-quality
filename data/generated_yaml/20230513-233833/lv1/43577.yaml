@@ -1,0 +1,30 @@
+yaml
+- name: Import and Create a MySQL Database from SQL File
+  hosts: database_servers
+  become: true # If required
+  vars:
+    db_name: my_database # Modify the database name according to your requirements
+    db_file_location: /tmp/database.sql # Modify the file location
+  tasks:
+    - name: Create MySQL Database
+      mysql_db:
+        name: "{{ db_name }}"
+        state: present
+      register: db_creation
+
+    - name: Import SQL File to MySQL
+      shell: mysql {{ db_name }} < "{{ db_file_location }}"
+      ignore_errors: true
+
+    - name: Check if the Import was Successful
+      mysql_db:
+        name: "{{ db_name }}"
+        state: dump
+      register: db_result
+
+    - name: Ensure the Database has Proper Charset after Import
+      mysql_db:
+        name: "{{ db_name }}"
+        state: collation
+        collation: utf8mb4_general_ci
+      when: db_result is succeeded

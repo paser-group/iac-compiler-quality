@@ -1,0 +1,36 @@
+
+- name: Stress Testing Ansible compiler for out-of-memory issue when calling a batch file using win_command module
+  hosts: all
+  gather_facts: false
+ 
+  tasks:
+  - name: Run batch file with large output and memory usage
+    win_command: "call \"{{ playbook_dir }}/test.bat\""
+    args:
+      chdir: "{{ playbook_dir }}"
+      get_output: true
+
+  - name: Run batch file with large input and memory usage
+    win_command: "call \"{{ playbook_dir }}/test.bat\""
+    args:
+      chdir: "{{ playbook_dir }}"
+      stdin: "{{ lookup('file', '/dev/urandom') | b64encode }}"
+      
+  - name: Run batch file with unconventional syntax and uncommon parameters
+    win_command: "call \"{{ playbook_dir }}/test.bat\" -a -b --param1 value1"
+    args:
+      chdir: "{{ playbook_dir }}"
+
+  - name: Run batch file with unexpected inputs
+    win_command: "call \"{{ playbook_dir }}/{{ lookup('file', '/dev/random') }}\""
+    args:
+      chdir: "{{ playbook_dir }}"
+      get_output: true
+
+  - name: Run batch file with unusual outputs and high memory usage
+    win_command: "call \"{{ playbook_dir }}/test.bat\""
+    args:
+      chdir: "{{ playbook_dir }}"
+      get_output: true
+      output_encoding: binary
+      output_max_size: 1000000000 

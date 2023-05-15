@@ -1,0 +1,66 @@
+
+---
+- name: ios_command edge case playbook
+  hosts: ios_devices
+  vars:
+    command: "sh run"
+  tasks:
+    - name: use double square brackets inside a loop
+      debug:
+        var: "{{ item }}"
+      loop:
+        - "[[shell]] {{ command }}"
+        - "{{ [ '[[', 'shell', ']]', ' ', command ] | join('') }}"
+        - "[[[shell]] {{ command }]"
+        - "[[shell]] {{ command }]]"
+        - "{{ command }}[[[shell]]"
+    - name: set privilege level in command
+      ios_command:
+        commands:
+          - "enable"
+          - "conf t"
+          - "username test privilege 15"
+        responses:
+          "[Pp]assword": "{{ enable_pass }}"
+          "(config)#": null
+          "(config-user)#": null
+      vars:
+        enable_pass: "myenablepass"
+    - name: use null to ignore certain responses
+      ios_command:
+        commands:
+          - "show version"
+          - "show running-config"
+        responses:
+          "[Pp]assword": "{{ enable_pass }}"
+          "Cisco IOS Software, IOS-XE Software": null
+          "Configuration register is": null
+      vars:
+        enable_pass: "myenablepass"
+    - name: use conditional statements in tasks
+      ios_command:
+        commands:
+          - "{{ command }}"
+        provider:
+          username: "{{ username }}"
+          password: "{{ password }}"
+          host: "{{ ansible_host }}"
+          use_ssl: no
+      when:
+        - ansible_connection == 'network_cli'
+        - username is defined
+        - password is defined
+        - command is defined
+    - name: use multiple ios_command in one task
+      ios_command:
+        commands:
+          - "show version"
+          - "show running-config"
+      vars:
+        enable_pass: "myenablepass"
+      register: output
+      - name: debug command output
+        debug:
+          var: item.stdout_lines
+        loop: "{{ output.results }}"
+...

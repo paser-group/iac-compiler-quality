@@ -1,0 +1,20 @@
+
+- hosts: all
+  become: yes
+
+  tasks:
+  - name: check installed packages
+    shell: dpkg-query -W -f='${Package}\n' | grep -q -w "{{ item }}"
+    args:
+      executable: /bin/bash
+    ignore_errors: yes
+    with_items:
+    - "package_name"
+    register: dpkg_result
+
+  - name: install packages
+    apt:
+      name: "package_name"
+      force_apt_get: yes
+      force: yes
+    when: "'package_name' not in dpkg_result.stdout_lines"

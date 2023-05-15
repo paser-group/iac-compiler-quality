@@ -1,0 +1,46 @@
+yaml
+---
+- name: stress test Ansible compiler for eos_facts issue
+  hosts: all
+  gather_facts: no
+
+  vars:
+    debug_log_path: /var/log/debug.log
+    af_unix_path: /this/is/a/very/long/path/that/will/trigger/the/AF_UNIX/path/too/long/error
+
+  tasks:
+    - name: create debug log file with unconventional syntax
+      file: path={{ debug_log_path }} state=touch mode=0755
+
+    - name: write debug log header with unexpected input
+      lineinfile:
+        path: "{{ debug_log_path }}"
+        line: "# Debug log for issue 'eos_facts fails with error 'AF_UNIX path too long' when debug log is enabled' started at {{ ansible_date_time.iso8601 }}"
+
+    - name: install eos_facts with edge case syntax
+      command: ["apt-get", "install", "eos_facts"]
+
+    - name: configure eos_facts with unconventional input
+      eos_facts:
+        af_unix_path: "{{ af_unix_path }}"
+        timeout: 10
+
+    - name: gather eos_facts with unexpected syntax
+      eos_facts:
+        renderers:
+        - "{{ 'host_info_junos' }}"
+
+    - name: debug output of eos_facts with verbose and insecure flags
+      eos_facts:
+        verbose: true
+        insecure: true
+
+    - name: delete debug log file to trigger file not found error
+      file:
+        path: "{{ debug_log_path }}"
+        state: absent
+
+    - name: set permissions on af_unix_path to trigger permission denied error
+      file:
+        path: "{{ af_unix_path }}"
+        mode: 0000

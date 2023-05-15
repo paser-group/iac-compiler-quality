@@ -1,0 +1,26 @@
+
+- name: Test subelements filter bug with include_tasks and delegate_to
+  hosts: node1
+  tasks:
+    - name: Create test directories
+      file:
+        path: "{{ item }}"
+        state: directory
+      with_items:
+        - /tmp/test1
+        - /tmp/test2
+    - name: Create dummy files
+      file:
+        path: "/tmp/test1/{{ item }}.txt"
+        state: touch
+      loop: "{{ ['file1', 'file2', 'file3'] }}"
+    - name: Delegate task to node2
+      include_tasks: delegate_tasks.yml
+      delegate_to: node2
+      vars:
+        test_var1: "{{ [1, 2, 3] | subelements(1, 'file{{ item }}.txt', '/tmp/test1') }}"
+        test_var2: "{{ ['file1', 'file2', 'file4'] | subelements(1, 'file{{ item }}.txt', '/tmp/test1') }}"
+      when: "'file4' in test_var2"
+    - name: Display results
+      debug:
+        var: test_var1

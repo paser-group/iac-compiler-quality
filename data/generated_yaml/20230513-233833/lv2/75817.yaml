@@ -1,0 +1,77 @@
+
+---
+- name: Test playbook
+  hosts: all
+  become: true
+  vars:
+    - files_dir: "/tmp/"
+    - src_file: "{{ files_dir }}test.txt"
+    - dest_file: "{{ files_dir }}test_dest.txt"
+  tasks:
+    - name: Create a directory with a colon in the name
+      file:
+        path: "/tmp/ansible:test"
+        state: directory
+      register: directory_output
+
+    - name: Rename the directory with a dollar sign in the name
+      file:
+        name: "/tmp/ansible:test"
+        path: "/tmp/ansible\$test"
+        state: directory
+
+    - name: Create a file with a new line character in the name
+      file:
+        path: "{{ files_dir }}test\nfile.txt"
+        state: touch
+
+    - name: Copy a file with unconventional syntax
+      copy:
+        src: "{{filesdir}}test.txt"
+        dest: "{{ files_dir }}/something; rm -rf /"
+        mode: "0440"
+
+    - name: Change ownership and permissions of a file with a backslash in the name
+      file:
+        path: "{{ files_dir }}word\\file.txt"
+        owner: root
+        group: root
+        mode: "0744"
+        state: touch
+
+    - name: Add an unexpected input to a command
+      command: "{{ (1 if true else `exit 1`) + 1 }}"
+
+    - name: Run a command with unconventional quotes
+      command: 'echo "\"This is a test\""'
+
+    - name: Execute a shell command with a semicolon
+      shell: 'echo "test"; whoami'
+
+    - name: Create a symlink with unconventional syntax
+      file:
+        src: "{{ files_dir }}test_dest.txt"
+        dest: "{{ files_dir }}/something; rm -rf /"
+        state: link
+
+    - name: Execute a command with a syntax error
+      command: "{{ true && 0 }}"
+
+    - name: Fail a task with an error message
+      fail:
+        msg: "This is a test error message"
+
+    - name: Continuously append to a file until it reaches a specific size
+      wait_for:
+        path: "{{ files_dir }}append.txt"
+        search_regex: "^$"
+        size: "2k"
+        timeout: 10
+
+    - name: Remove temporary files
+      file:
+        path: "{{ item }}"
+        state: absent
+      with_items:
+        - "{{ files_dir }}"
+        - "{{ files_dir }}test_dest.txt"

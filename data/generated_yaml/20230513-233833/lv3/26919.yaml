@@ -1,0 +1,32 @@
+
+- name: Create mysql_db
+  hosts: node1
+  become: true
+  vars:
+    mysql_db:
+      name: mydb
+      state: present
+      config_file: /etc/my.cnf
+  tasks:
+    - name: Install MySQL server
+      apt:
+        name: mysql-server
+        update_cache: yes
+      register: mysql_install
+
+    - name: Configure MySQL server
+      lineinfile:
+        path: "{{ item }}"
+        line: "{{ mysql_config }}"
+      with_items:
+        - /etc/mysql/my.cnf
+      when: mysql_install|success
+
+    - name: Create the database
+      mysql_db:
+        name: "{{ mysql_db.name }}"
+        state: "{{ mysql_db.state }}"
+      register: db_created
+
+    - debug:
+        var: db_created

@@ -1,0 +1,31 @@
+
+- hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: Install HAProxy
+      apt:
+        name: haproxy
+        state: latest
+
+    - name: Start HAProxy in drain mode
+      command: haproxy -f /etc/haproxy/haproxy.cfg -Dr
+
+    - debug:
+        msg: "HAProxy is in drain mode"
+
+    - name: Stop HAProxy
+      command: haproxy -f /etc/haproxy/haproxy.cfg -C /var/run/haproxy.pid -sf $(cat /var/run/haproxy.pid)
+
+    - name: Restart HAProxy in drain mode
+      command: haproxy -f /etc/haproxy/haproxy.cfg -Dr
+
+    - debug:
+        msg: "HAProxy is in drain mode again"
+
+    - name: Check current mode
+      command: haproxy -f /etc/haproxy/haproxy.cfg -c
+      register: haproxy_output
+
+    - debug:
+        msg: "{{ haproxy_output.stdout }}"

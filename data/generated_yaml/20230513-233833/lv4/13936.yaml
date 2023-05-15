@@ -1,0 +1,16 @@
+yaml
+- name: Gather Windows Server Information
+  hosts: windows
+  gather_facts: true
+  tasks:
+    - name: Query WinRM Service Status
+      win_command: sc query winrm
+      register: winrm_status
+
+    - name: Query memory usage
+      win_command: powershell.exe -Command "Get-WMIObject Win32_OperatingSystem | Select-Object @{Name = 'MemoryUsage'; Expression = {($_.TotalVisibleMemorySize-$_.FreePhysicalMemory)/$_.TotalVisibleMemorySize*100}}"
+      register: mem_usage
+
+    - name: Query Event Viewer for Errors in Last 24 Hours
+      win_command: powershell.exe -command Get-Eventlog -logname Application -After (Get-Date).AddDays(-1) -EntryType Error
+      register: event_viewer_errors

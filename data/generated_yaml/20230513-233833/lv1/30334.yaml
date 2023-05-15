@@ -1,0 +1,26 @@
+
+- hosts: localhost
+  gather_facts: no
+  vars:
+    openstack_auth_url: http://<AUTHENTICATION-ENDPOINT>:5000/v3
+    openstack_project_name: <PROJECT-NAME>
+    openstack_username: <USERNAME>
+    openstack_password: <PASSWORD>
+    openstack_domain_name: <DOMAIN-NAME>
+    openstack_region_name: <REGION-NAME>
+    keypair_name: my_keypair_name
+  tasks:
+    - name: Create OpenStack keypair
+      os_keypair:
+        name: "{{ keypair_name }}"
+        public_key_file: "/path/to/public_key"
+        cloud: "{{ openstack_cloud }}"
+      register: keypair_result
+
+    - name: Update OpenStack keypair with force flag
+      when: keypair_result.changed == true and keypair_result.original_msg | regex_search('Keypair with name .* already exists')
+      os_keypair:
+        name: "{{ keypair_name }}"
+        public_key_file: "/path/to/public_key"
+        cloud: "{{ openstack_cloud }}"
+        force: true

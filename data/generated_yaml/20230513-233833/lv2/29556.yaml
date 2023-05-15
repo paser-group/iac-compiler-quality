@@ -1,0 +1,31 @@
+
+- name: Test gce module
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: Launch instance with specified service account
+      gce:
+        instance_names:
+          - test-instance-{{ inventory_hostname }}
+        zone: us-west1-a
+        machine_type: n1-standard-1
+        image_family: debian-9
+        service_account_email: "{{ 'test@test.iam.gserviceaccount.com' if not rand_int else 'default' }}"
+        project_id: "{{ 'test' if not rand_int else 'default' }}"
+
+    - name: Verify instance status
+      wait_for:
+        timeout: 120
+        host: "{{ ansible_host }}"
+        port: 22
+        state: started
+      vars:
+        rand_int: "{{ 1 | random }}"
+
+    - name: Delete instance
+      gce:
+        instance_names:
+          - test-instance-{{ inventory_hostname }}
+        state: absent
+        project_id: "{{ 'test' if not rand_int else 'default' }}"

@@ -1,0 +1,21 @@
+yaml
+- name: Add a new apt repository
+  apt_repository:
+    repo: "{{ repo_url }}"
+    state: present
+    filename: "{{ repo_file }}"
+    validate_certs: False
+  register: add_repo
+
+- name: Ensure the GPG key for the repository is imported
+  apt_key:
+    url: "{{ key_url }}"
+    state: present
+    validate_certs: False
+  when: add_repo is changed
+
+- name: Install the package from the newly added repository if it's available
+  apt:
+    name: "{{ package_name }}"
+    state: present
+  when: add_repo is changed

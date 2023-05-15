@@ -1,0 +1,64 @@
+
+- name: Find with Regex Bug Test
+  hosts: node1
+  tasks:
+    - name: Find and Loop over results
+      find:
+        paths: "/tmp"
+        file_type: directory
+        contains: "abc["
+        use_regex: true
+      register: find_result
+    
+    # Test Case 1: Suppressing output using silent mode
+    - name: Find with silent output 
+      find:
+        paths: "/tmp"
+        file_type: file
+        contains: "xyz"
+        use_regex: true
+      register: find_result_silent
+      silent: true
+    
+    # Test Case 2: Using `changed_when` to test if output matches regex
+    - name: Find with Regex expression 
+      find:
+        paths: "/tmp"
+        file_type: file
+        contains: "abc["
+        use_regex: true
+      register: find_result_regex_pattern
+      changed_when: "'abc[' not in find_result_regex_pattern.results|map(attribute='stdout_lines')|list|flatten'"
+    
+    # Test Case 3: Shell command to find files with `abc[`
+    - name: Find using Shell Command with `grep`
+      shell: "find /tmp -type f | xargs grep -l abc\\["
+      register: find_shell_result
+
+    # Test Case 4: Use with_items with underscores and hyphens to search for both
+    - name: Find with Regex expression and underscores
+      find:
+        paths: "/tmp"
+        file_type: file
+        contains: "abc_"
+        use_regex: true
+      register: find_result_underscore
+    
+    - name: Find with Regex expression and hyphens 
+      find:
+        paths: "/tmp"
+        file_type: file
+        contains: "abc-"
+        use_regex: true
+      register: find_result_hyphen
+    
+    - name: Debug file names to console
+      debug:
+        msg: "Found Files:"
+      with_items:
+        - "{{ find_result results }}"
+        - "{{ find_result_silent results }}"
+        - "{{ find_result_regex_pattern results }}"
+        - "{{ find_shell_result.stdout.split('\n')|select(".") }}"
+        - "{{ find_result_underscore.results }}"
+        - "{{ find_result_hyphen.results }}"

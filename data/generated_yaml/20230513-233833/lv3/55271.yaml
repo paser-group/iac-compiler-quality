@@ -1,0 +1,31 @@
+
+---
+- name: Deploy Web Application
+  hosts: all
+  become: true
+  vars:
+    app_name: "webapp"
+  tasks:
+  - name: Install Required Packages
+    apt:
+      name:
+        - nginx
+        - git
+      state: present
+  - name: Clone Web Application Files
+    git:
+      repo: "https://github.com/example_repo.git"
+      dest: "/opt/{{ app_name }}"
+  - name: Install Dependencies
+    pip:
+      requirements: "/opt/{{ app_name }}/requirements.txt"
+  - name: Configure Web Application
+    template:
+      src: "/opt/{{ app_name }}/config.j2"
+      dest: "/etc/nginx/sites-enabled/{{ app_name }}"
+    notify: Restart Nginx
+  handlers:
+  - name: Restart Nginx
+    service:
+      name: nginx
+      state: restarted

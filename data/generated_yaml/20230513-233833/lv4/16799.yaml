@@ -1,0 +1,69 @@
+
+ - name: Add custom library path
+  hosts: all
+  become: true
+  tasks:
+    - name: Add custom library path
+      ansible.builtin.file:
+        path: "/etc/ansible/ansible.cfg"
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: '0644'
+        state: touch
+      ansible.builtin.lineinfile:
+        dest: /etc/ansible/ansible.cfg
+        regexp: ^library        ## Check if library already exists
+        line: library = /etc/ansible/library:/path/to/custom_module_folder   ## Add the custom library path to Ansible configuration
+    - name: Verify New Library Path is Added
+      debug: var=ansible_env.ANSIBLE_LIBRARY
+
+ - name: Create custom module
+  hosts: all
+  become: true
+  tasks:
+    - name: Create a custom test module
+      ansible.builtin.copy:
+        dest: /path/to/custom_module_folder/test_module.py
+        content: |
+          #!/usr/bin/python
+          from ansible.module_utils.basic import *
+
+          def main():
+              module = AnsibleModule(
+                  argument_spec=dict(
+                      name=dict(required=True, type='str'),
+                      state=dict(choices=['up', 'down'], default='up'),
+                  )
+              )
+
+              name = module.params['name']
+              state = module.params['state']
+
+              up_message = "{0} is up".format(name)
+              down_message = "{0} is down".format(name)
+
+              result = dict(changed=True)
+
+              if state == 'up':
+                  result['message'] = up_message
+              else:
+                  result['message'] = down_message
+
+              module.exit_json(**result)
+
+          if __name__ == '__main__':
+              main()
+
+ - name: Testing custom module
+  hosts: all
+  become: true
+  tasks:
+    - name: Testing custom module
+      test_module:
+        name: "ansible"
+        state: "up"
+      register: result
+
+    - debug:
+        var: result
+

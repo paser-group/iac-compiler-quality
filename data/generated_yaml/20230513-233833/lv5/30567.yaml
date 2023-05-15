@@ -1,0 +1,20 @@
+
+# task to create a file with a large download size
+- name: create file with large download size
+  command: dd if=/dev/urandom of=/tmp/largefile bs=1M count=1000
+  become: yes
+
+# task to fetch the large file and cause network errors
+- name: fetch large file, causing network errors
+  fetch:
+    src: /tmp/largefile
+    dest: /tmp/largefile
+  ignore_errors: yes
+
+# task to debug if there were any network errors
+- name: check for network errors in the task output
+  debug:
+    msg: "{{ item }}"
+  with_items:
+    - "{{ ansible_play_hosts_all }}"
+  when: "'FAILED' in item.results[*].msg"

@@ -1,0 +1,58 @@
+
+---
+- name: Stress testing ec2_vpc_vgw_facts module
+  hosts: all
+  gather_facts: no
+  
+  vars:
+    vgw_ids:
+      - 'vgw-0a12345'
+      - 'vgw-0b12345'
+  
+  tasks:
+    - name: Get VPN gateway facts
+      ec2_vpc_vgw_facts:
+        region: 'us-west-2'
+        vgw_ids: "{{ vgw_ids }}"
+      register: vgw_facts
+
+    - name: Check if VPN gateway list is empty
+      fail:
+        msg: "Error - VPN Gateway list is empty!"
+      when: vgw_facts.vpn_gateways|length == 0
+
+    - name: Check if unauthorized user can access VPN Gateway details
+      ec2_vpc_vgw_facts:
+        region: 'us-west-2'
+        vgw_ids: "{{ vgw_ids }}"
+        aws_secret_access_key: 'fake_secret'
+        aws_access_key: 'fake_access'
+      register: unauth_vgw_facts
+      ignore_errors: true
+
+    - name: Check if multiple VPN Gateways can be listed at once
+      ec2_vpc_vgw_facts:
+        region: 'us-west-2'
+        vgw_ids: "{{ vgw_ids }} + ['vgw-0c12345', 'vgw-0d12345']"
+      register: multi_vgw_facts
+      
+    - name: Check if VPN Gateway with no tags can be listed
+      ec2_vpc_vgw_facts:
+        region: 'us-west-2'
+        vgw_ids: "{{ vgw_ids + ['vgw-0e12345'] }}"
+      register: no_tag_vgw_facts
+
+    - name: Check if VPN Gateway with empty tags can be listed
+      ec2_vpc_vgw_facts:
+        region: 'us-west-2'
+        vgw_ids: "{{ vgw_ids + ['vgw-0f12345'] }}"
+      register: empty_tag_vgw_facts
+
+    - name: Check if VPN Gateway with unconventional tags can be listed
+      ec2_vpc_vgw_facts:
+        region: 'us-west-2'
+        vgw_ids: "{{ vgw_ids + ['vgw-0g12345'] }}"
+        tags:
+          'tag1&!$%^': 'value1%$'
+          'tag2 $%#^': 'value2@#'
+      register: unusual_tag_vgw_facts

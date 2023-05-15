@@ -1,0 +1,35 @@
+
+- name: Add ELB rule to Security Group
+  hosts: localhost  # Replace with the desired host group or IP address
+  gather_facts: false
+
+  vars:
+    elb_name: ExampleELB
+    region: us-west-2
+    sg_name: ExampleGroup
+    description: "Allow incoming traffic from ELB"
+
+  tasks:
+    - name: Get ELB DNS name
+      ec2_elb_facts:
+        region: "{{ region }}"
+        names: "{{ elb_name }}"
+      register: elb_dns
+
+    - name: Get Security Group ID
+      ec2_group_info:
+        region: "{{ region }}"
+        name: "{{ sg_name }}"
+      register: sec_group
+
+    - name: Add inbound rule for ELB
+      ec2_group:
+        state: present
+        security_group_id: "{{ sec_group.security_groups[0].group_id }}"
+        region: "{{ region }}"
+        description: "{{ description }}"
+        rules:
+          - proto: tcp
+            from_port: 80
+            to_port: 80
+            cidr_ip: "{{ elb_dns.elbs[0].dns_name }}/32"

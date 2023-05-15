@@ -1,0 +1,16 @@
+
+- name: create a Docker network with icc option set
+  docker_network:
+    name: my_network
+    internal_only: True
+  register: network_result
+
+- name: test the network by accessing from outside
+  shell: docker run --network my_network busybox ping -c 1 google.com
+  ignore_errors: True
+  register: access_result
+
+- name: fail the playbook execution if traffic reaches outside of the network
+  fail:
+    msg: 'The icc option is not enforced correctly'
+  when: "'unknown host google.com' not in access_result.stderr"

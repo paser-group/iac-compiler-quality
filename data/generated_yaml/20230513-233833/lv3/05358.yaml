@@ -1,0 +1,35 @@
+
+---
+- name: Attempt to Login Remote Machines
+  hosts: all
+  vars_prompt:
+    - name: "password"
+      prompt: "Enter the sudo password for the remote machine:"
+      private: yes
+  tasks:
+    - name: Test connection to remote machine
+      command: echo "Connection successful"
+      register: connection_test
+      ignore_errors: true
+    - name: Check if user is already root
+      command: whoami
+      register: is_root
+      ignore_errors: true
+
+    - name: Check sudo access on remote machine
+      expect:
+        command: "sudo -k"
+        responses:
+          "Password": "{{ password }}"
+        timeout: 5
+        echo: false
+      register: sudo_access_check
+      ignore_errors: true
+
+    - name: Run The Playbook
+      command: ansible-playbook /dev/null
+      become: yes
+      become_method: sudo
+      become_user: root
+      environment:
+        ANSIBLE_SSH_ARGS: "-o ControlMaster=auto -o ControlPersist=60s"

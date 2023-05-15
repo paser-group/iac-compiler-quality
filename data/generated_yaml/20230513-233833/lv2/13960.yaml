@@ -1,0 +1,56 @@
+
+- name: Test playbook for Ansible
+  hosts: all
+  gather_facts: false
+
+  vars:
+    invalid_group: "invalid group with space"
+
+  tasks:
+    - name: Test space in group name
+      debug:
+        msg: "got a message"
+      when: "'{{ invalid_group }}' in group_names"
+
+    - name: Test invalid extra variable syntax
+      shell: echo "Extra vars invalid syntax"
+      extra_vars: "{{ {'var 1': 'value 1', 'var 2': 'value 2'} }}"
+
+    - name: Test invalid variable names
+      debug:
+        msg: "invalid variable name"
+      vars:
+        " name with space ": "value"
+
+    - name: Test invalid inventory hostname using square brackets
+      debug:
+        msg: "invalid inventory hostname using square brackets"
+      delegate_to: "{{ groups['[invalid_node]'] | first }}"
+
+    - name: Test invalid inventory hostname using parantheses
+      debug:
+        msg: "invalid inventory hostname using parantheses"
+      delegate_to: "{{ groups['(invalid_node)'] | first }}"
+
+    - name: Test invalid inventory hostname using curly braces
+      debug:
+        msg: "invalid inventory hostname using curly braces"
+      delegate_to: "{{ groups['{invalid_node}'] | first }}"
+
+    - name: Test invalid syntax in inventory file
+      debug:
+        msg: "invalid syntax in inventory file"
+      delegate_to: "{{ groups['invalid_node'] | first }}"
+
+    - name: Test invalid import file path
+      import_playbook:
+          src: "{{ playbook_dir }}/invalid_folder/invalid_file.yml"
+
+    - name: Test invalid include file path
+      include_vars:
+          file: "{{ playbook_dir }}/invalid_file.yml"
+
+    - name: Test invalid role name
+      include_role:
+          name: invalid_role_name
+

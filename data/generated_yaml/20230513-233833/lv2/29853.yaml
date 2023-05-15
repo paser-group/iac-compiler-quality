@@ -1,0 +1,49 @@
+
+- name: Test iam_policy module errors using policy_json
+  hosts: all
+  become: true
+  tasks:
+    - name: Create IAM User
+      iam:
+        name: test-user
+        state: present
+        access_key_state: create
+        secret_key_state: create
+      register: iam_user
+
+    - name: Create IAM Policy Document with unconventional syntax
+      set_fact:
+        iam_policy_document: |
+          {
+            "Version" : "2012-10-17",
+            "Statement" : [
+              {
+                "Action" : "sts:AssumeRole",
+                "Effect" : "Allow",
+                "Resource" : "*",
+              }
+            ]
+          }
+
+    - name: Create IAM Policy
+      iam_policy:
+        name: test-policy
+        state: present
+        policy_name: test-policy
+        policy_json: "{{ iam_policy_document }}"
+      ignore_errors: yes
+      
+    - name: Test edge case with unexpected input
+      iam_policy:
+        state: invalid_state
+
+    - name: Delete IAM Policy
+      iam_policy:
+        name: test-policy
+        state: absent
+
+    - name: Delete IAM User
+      iam_user:
+        name: test-user
+        access_key: "{{ iam_user.access_key }}"
+        state: absent

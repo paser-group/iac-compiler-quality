@@ -1,0 +1,31 @@
+
+tasks:
+  - name: Install package dependencies
+    apt:
+      name: "{{ item }}"
+      state: present
+    with_items:
+      - pass
+      - libgcrypt20-dev
+ 
+  - name: Create a password store directory
+    file:
+      path: /root/ansible-test-store
+      state: directory
+ 
+  - name: Add password entry to password store
+    command: pass insert test-password
+ 
+  - name: Encrypt password using libgcrypt
+    command: echo "{{ passphrase }}" | env LIBGCRYPT_VERSION=1 gpg --batch --no-tty --passphrase-fd 0 --symmetric --cipher-algo AES256 --output /root/password.gpg /dev/stdin
+    no_log: true
+ 
+  - name: Decrypt password using libgcrypt
+    command: env LIBGCRYPT_VERSION=1 gpg --batch --no-tty --passphrase="{{ passphrase }}" --quiet --output - --decrypt /root/password.gpg
+    register: decrypted_password
+    no_log: true
+ 
+  - name: Verify password retrieval using Ansible
+    assert:
+      that:
+        - decrypted_password.stdout == "test-password\n"

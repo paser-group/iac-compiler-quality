@@ -1,0 +1,34 @@
+
+- name: Test ansible-galaxy default roles path
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Create temporary ansible.cfg
+      copy:
+        content: |
+          [defaults]
+          roles_path = /tmp/ansible/roles
+        dest: /tmp/ansible.cfg
+
+    - name: Install role via ansible-galaxy CLI
+      shell: |
+        ansible-galaxy install role_name
+        ansible-galaxy install ./role_path/role_name
+      args:
+        executable: /bin/bash
+
+    - name: Check if role is installed
+      stat:
+        path: /tmp/ansible/roles/role_name
+      register: role_installed
+
+    - name: Remove role if installed
+      file:
+        path: /tmp/ansible/roles/role_name
+        state: absent
+      when: role_installed.stat.exists
+
+    - name: Remove temporary ansible.cfg
+      file:
+        path: /tmp/ansible.cfg
+        state: absent

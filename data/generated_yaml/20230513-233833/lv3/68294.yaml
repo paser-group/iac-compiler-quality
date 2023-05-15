@@ -1,0 +1,43 @@
+
+---
+- name: Recreate EC2 inventory connection reset and parsing error
+  hosts: localhost
+  connection: local
+  gather_facts: no
+
+  vars:
+    aws_access_key: "<aws_access_key>"
+    aws_secret_key: "<aws_secret_key>"
+
+  tasks:
+    - name: Stop all running Docker containers
+      become: true
+      shell: docker stop $(docker ps -q)
+
+    - name: Copy the inventory file to the Ansible default inventory location
+      copy:
+        content: |
+          [ec2]
+          10.1.1.1
+        dest: /etc/ansible/hosts
+        mode: 0644
+
+    - name: Generate connection reset and parsing error
+      hosts: ec2
+      gather_facts: no
+      connection: ec2
+      become: true
+      tasks:
+        - name: Install AWS CLI
+          apt:
+            name: awscli
+            state: present
+
+        - name: Terminate all EC2 instances
+          shell: >
+            |-
+              aws ec2 terminate-instances
+              --instance-ids $(aws ec2 describe-instances --output text --query 'Reservations[*].Instances[*].InstanceId')
+
+        - name: Verify inventory connection reset and parsing error
+          ping:

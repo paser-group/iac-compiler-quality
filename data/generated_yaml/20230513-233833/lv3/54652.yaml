@@ -1,0 +1,73 @@
+
+---
+- name: Replicate GitHub Issue - os_server is not idempotent if I use port-id= - Multiple matches found for default
+  hosts: all
+  tasks:
+    - name: Launching a new instance with specified port-id
+      os_server:
+        auth:
+          auth_url: 'http://10.1.1.254:5000/v3'
+          username: 'admin'
+          password: 'admin_password'
+          project_name: 'admin'
+          project_domain_name: 'Default'
+          user_domain_name: 'Default'
+        state: present
+        name: target_instance
+        image: ubuntu
+        flavor: m1.small
+        network: provider-net
+        security_groups: ['default']
+        port_id: 24bd4766-7ddc-4b40-8380-0f5bc3d95f54
+      register: instance_details
+
+    - name: Demonstrate the idempotency issue associated with port-id
+      os_server:
+        auth:
+          auth_url: 'http://10.1.1.254:5000/v3'
+          username: 'admin'
+          password: 'admin_password'
+          project_name: 'admin'
+          project_domain_name: 'Default'
+          user_domain_name: 'Default'
+        state: present
+        name: target_instance
+        image: ubuntu
+        flavor: m1.small
+        network: provider-net
+        security_groups: ['default']
+        port_id: 24bd4766-7ddc-4b40-8380-0f5bc3d95f54
+      ignore_errors: true
+
+    - name: Add multiple ports with default value
+      os_port:
+        auth:
+          auth_url: 'http://10.1.1.254:5000/v3'
+          username: 'admin'
+          password: 'admin_password'
+          project_name: 'admin'
+          project_domain_name: 'Default'
+          user_domain_name: 'Default'
+        state: present
+        name: 'port1'
+        network: provider-net
+        security_groups: ['default']
+      register: port1
+
+    - name: Attempt to create or update the instance with a specified port-id
+      os_server:
+        auth:
+          auth_url: 'http://10.1.1.254:5000/v3'
+          username: 'admin'
+          password: 'admin_password'
+          project_name: 'admin'
+          project_domain_name: 'Default'
+          user_domain_name: 'Default'
+        state: present
+        name: target_instance
+        image: ubuntu
+        flavor: m1.small
+        network: provider-net
+        security_groups: ['default']
+        port_id: 24bd4766-7ddc-4b40-8380-0f5bc3d95f54
+      register: instance_details

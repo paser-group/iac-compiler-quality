@@ -1,0 +1,46 @@
+
+---
+- name: User module idempotency test
+  hosts: all
+  become: yes
+
+  tasks:
+  - name: Add Valid User
+    user:
+      name: validuser
+      password: "{{ 'secretpass' | password_hash('sha512') }}"
+      shell: /bin/bash
+      groups: sudo
+      append: yes
+
+  - name: Add Invalid User
+    user:
+      name: invaliduser
+      password: "{{ 'secretpass' | password_hash('sha512') }}"
+      shell: /bin/bash
+      groups: sudo
+      append: yes
+    ignore_errors: yes
+
+  - name: Install Expect package
+    apt:
+      name: expect
+      state: present
+
+  - name: Create expect script
+    copy:
+      dest: /tmp/useradd.exp
+      content: |
+        spawn useradd invaliduser
+        expect "useradd: user 'invaliduser' already exists"
+        send "exit\n"
+      mode: '0755'
+
+  - name: Test User Module Idempotence
+    command: expect /tmp/useradd.exp
+    register: output
+    ignore_errors: yes
+
+  - name: Check Test Results
+    assert:
+      that: "'already exists' in output.stderr"

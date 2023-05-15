@@ -1,0 +1,32 @@
+yaml
+---
+- name: Fix Unicode parsing issue with junos_config
+  hosts:
+    - junos_devices
+  gather_facts: no
+  connection: local
+  tasks:
+    - name: Update junos installation
+      shell: sudo apt-get update && sudo apt-get upgrade -y && sudo apt-get install -y python-junos-eznc
+      register: update_status
+    - name: Check for success of junos update
+      debug:
+        var: update_status
+    - name: Edit junos configuration file
+      become: yes
+      junos_config:
+        provider:
+          host: "{{ ansible_host }}"
+          user: "{{ ansible_user }}"
+          passwd: "{{ ansible_password }}"
+        overwrite: true
+        body: |
+          system {
+            login {
+              message "System access by {{if ($USER) }} {{.Username}} {{end}} from {{.RemoteIPAddress}}";
+              user-class operator {
+                permissions all;
+                login-expiry 3;
+              }
+            }
+          }

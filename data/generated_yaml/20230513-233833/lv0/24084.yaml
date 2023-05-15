@@ -1,0 +1,56 @@
+python
+from azure.common.credentials import UserPassCredentials
+from azure.mgmt.resource import ResourceManagementClient
+from azure.mgmt.resource.resources import DeploymentProperties
+from azure.mgmt.resource.resources.models import DeploymentMode
+
+
+# Set subscription ID and credentials
+subscription_id = 'YOUR_SUBSCRIPTION_ID'
+credentials = UserPassCredentials('YOUR_USERNAME', 'YOUR_PASSWORD')
+
+# Create Resource Management client
+resource_client = ResourceManagementClient(
+    credentials=credentials,
+    subscription_id=subscription_id
+)
+
+# Define deployment properties
+resource_group_name = 'my-resource-group'
+deployment_name = 'my-deployment'
+template = {
+    "resources": [
+        {
+            "type": "Microsoft.Storage/storageAccounts",
+            "name": "mystorageaccount",
+            "apiVersion": "2019-06-01",
+            "location": "eastus",
+            "sku": {
+                "name": "Standard_LRS"
+            },
+            "kind": "Storage",
+            "properties": {}
+        }
+    ]
+}
+deployment_properties = DeploymentProperties(
+    mode=DeploymentMode.incremental,
+    template=template
+)
+
+# Create deployment
+deployment_async_operation = resource_client.deployments.create_or_update(
+    resource_group_name=resource_group_name,
+    deployment_name=deployment_name,
+    properties=deployment_properties
+)
+
+# Wait for deployment to complete
+deployment_async_operation.wait()
+
+# Print deployment errors
+deployment = resource_client.deployments.get(resource_group_name, deployment_name)
+if deployment.properties.provisioning_state != 'Succeeded':
+    print('Deployment failed with the following errors:')
+    for error in deployment.properties.outputs['error']['value']:
+        print(f"- {error['message']}")

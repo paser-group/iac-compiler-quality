@@ -42,6 +42,31 @@ def green(msg: str, end='\n'):
     prints a string in green text
     """
     print(Fore.GREEN + msg + Style.RESET_ALL)
+    
+def print_dict(dictionary, indent=0):
+    for key, value in dictionary.items():
+        if isinstance(value, dict):
+            green(f"{' ' * indent}{key}:")
+            print_dict(value, indent + 2)
+        elif isinstance(value, list):
+            green(f"{' ' * indent}{key}:")
+            for item in value:
+                if isinstance(item, dict):
+                    print_dict(item, indent + 2)
+                else:
+                    green(f"{' ' * (indent + 2)}{item}")
+        else:
+            green(f"{' ' * indent}{key}: {value}")
+
+def print_list(data_list, indent=0):
+    if all(isinstance(item, str) for item in data_list):
+        green('\n'.join(f"{' ' * indent}{item}" for item in data_list))
+    elif all(isinstance(item, dict) for item in data_list):
+        for index, dictionary in enumerate(data_list, start=1):
+            green(f"{' ' * indent}Dictionary {index}:")
+            print_dict(dictionary, indent + 2)
+    else:
+        red("Invalid data type in the list.")
 
 def red(msg: str, end='\n'):
     """

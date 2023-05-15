@@ -1,0 +1,32 @@
+
+- name: Playbook to recreate openstack.py issue
+  hosts: all
+  become: true
+  gather_facts: false
+  vars:
+    auth_url: "http://openstack.example.com:5000/"
+    username: "admin"
+    password: "password"
+    project_name: "admin"
+    project_domain_name: "Default"
+  tasks:
+    - name: Install openstacksdk
+      pip:
+        name: openstacksdk
+        state: latest
+    - name: Create network
+      os_network:
+        cloud: "openstack"
+        auth:
+          auth_url: "{{ auth_url }}"
+          username: "{{ username }}"
+          password: "{{ password }}"
+          project_name: "{{ project_name }}"
+          project_domain_name: "{{ project_domain_name }}"
+        state: present
+        name: test_network
+        provider_network_type: vxlan
+        router_external: false
+      register: result
+    - name: Test network connectivity
+      ping:

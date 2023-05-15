@@ -1,0 +1,22 @@
+
+---
+- hosts: all
+  become: yes
+  vars:
+    url: "https://google.com"
+  
+  tasks:
+  
+  - name: Ensure HTTPSHandler module is missing
+    block:
+    - name: Move HTTPSHandler module
+      command: mv /usr/lib/python2.7/httplib.py /usr/lib/python2.7/httplib.py.backup
+    - name: Ensure HTTPS communication fails
+      uri:
+        url: "{{ url }}"
+        method: GET
+      register: response
+      failed_when: response.status != 200
+    ALWAYS:
+    - name: Restore HTTPSHandler module
+      command: mv /usr/lib/python2.7/httplib.py.backup /usr/lib/python2.7/httplib.py

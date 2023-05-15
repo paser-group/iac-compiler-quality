@@ -1,0 +1,44 @@
+
+---
+- name: Ensure os_server idempotency when using port-id
+  hosts: localhost
+  gather_facts: no
+  
+  vars:
+    port_id: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" # Specify the port ID you want to use
+    server_name: "my_server" # Specify the name of the server
+      
+  tasks:
+    - name: Get the port information
+      os_port_facts:
+        name_or_id: "{{ port_id }}"
+        auth: "{{ os_auth }}"
+      register: port_details
+    
+    - name: Create a new server
+      os_server:
+        cloud: "{{ cloud_name }}"
+        auth: "{{ os_auth }}"
+        state: present
+        name: "{{ server_name }}"
+        port_id: "{{ port_id }}"
+        image: "{{ image_name }}"
+        flavor: "{{ flavor_name }}"
+        key_name: "{{ key_name }}"
+      register: server_details
+      when: port_details.openstack_ports | length == 1
+      
+    - name: Update the existing server
+      os_server:
+        cloud: "{{ cloud_name }}"
+        auth: "{{ os_auth }}"
+        state: present
+        name: "{{ server_name }}"
+        image: "{{ image_name }}"
+        flavor: "{{ flavor_name }}"
+      register: server_details
+      when: port_details.openstack_ports | length >= 2
+      
+    - name: Display result
+      debug:
+        var: server_details

@@ -1,0 +1,28 @@
+
+- name: Test Cyrillic filename handling in archive module
+  hosts: all
+  gather_facts: false
+  vars:
+    archive_file: "/tmp/test_archive.zip"
+    src_files:
+      - "файл1.txt"
+      - "файл2.txt"
+  tasks:
+    - name: Create archive with Cyrillic filenames
+      archive:
+        path: "{{ item }}"
+        dest: "{{ archive_file }}"
+        format: zip
+      with_items: "{{ src_files }}"
+    - name: Extract archive and verify filenames
+      unarchive:
+        src: "{{ archive_file }}"
+        dest: "/tmp/test_dir"
+        remote_src: true
+      register: extract_result
+    - name: Check if Cyrillic filenames are correctly preserved
+      assert:
+        that:
+          - "'файл1.txt' in extract_result.files"
+          - "'файл2.txt' in extract_result.files"
+        success_msg: "Cyrillic file names are correctly preserved in archive"

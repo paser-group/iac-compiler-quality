@@ -1,0 +1,47 @@
+
+---
+- hosts: all
+  gather_facts: False
+  vars:
+    sg_name: "my_security_group"
+    sg_resource_group: "my_resource_group"
+    sg_location: "westus"
+    protocols:
+      - "tcp"
+      - "udp"
+    addresses:
+      - "10.1.1.0/24"
+      - "10.1.2.0/24"
+      - "10.3.4.5/32"
+      - "10.4.5.6-10.4.5.10"
+      - "vmname1"
+      - "vmname2.domain.com"
+      - "vmname3.computer.local."
+      - "10.256.1.1"
+
+  tasks:
+
+  - name: Create Security group
+    azure_rm_securitygroup:
+      name: "{{ sg_name }}"
+      resource_group: "{{ sg_resource_group }}"
+      location: "{{ sg_location }}"
+    register: securityGroup
+
+  - name: Add network security rule for comma-separated IP addresses prefixes
+    azure_rm_securitygroup_rule:
+      resource_group: "{{ sg_resource_group }}"
+      security_group: "{{ sg_name }}"
+      name: "AllowFromCIDR"
+      protocol: "{{ item.0 }}"
+      source_address_prefix: "{{ item.1 }}"
+      access: Allow
+      direction: Inbound
+      priority: "{{ item.2 }}"
+    with_indexed_items:
+      - "{{ protocols }}"
+      - "{{ addresses }}"
+      - "{{ range(1,9)|list }}"
+
+  - name: Debug
+    debug: var=securityGroup

@@ -1,0 +1,23 @@
+
+- name: Check shebangs in fact files
+  hosts: all
+  gather_facts: no
+
+  tasks:
+  - name: Find fact files
+    find:
+      paths: "/etc/ansible/facts.d"
+      file_type: directory
+      recurse: yes
+      patterns: "*.fact"
+    register: fact_files
+
+  - name: Check shebang in fact files
+    shell: 'grep -L "^#!" {{ item.path }}'
+    register: shebang_errors
+    with_items:
+      - "{{ fact_files.files }}"
+
+  - name: Print Errors
+    debug:
+      var: shebang_errors

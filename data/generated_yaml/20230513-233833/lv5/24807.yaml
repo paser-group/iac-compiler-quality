@@ -1,0 +1,25 @@
+
+- name: ec2_asg erroring with IndexError
+  hosts: node1
+  gather_facts: no
+  tasks:
+  - name: install pip boto package
+    pip: name=boto state=present
+  - name: create asg group
+    ec2_asg:
+      region: "{{ ec2_region }}"
+      name: my_asg_group
+      min_size: 1
+      max_size: 1
+      desired_capacity: 1
+      launch_config_name: "{{ launch_config_name }}"
+      availability_zones: "{{ az }}"
+    register: asg_group
+  - name: add instances to asg group
+    ec2_asg:
+      region: "{{ ec2_region }}"
+      name: my_asg_group
+      instance_id: "{{ item.id }}"
+      state: present
+    with_items: "{{ ec2.instances }}"
+

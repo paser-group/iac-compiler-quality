@@ -1,0 +1,35 @@
+
+- name: Playbook to Install DNS Server on Windows Domain Controller
+  hosts: <your_windows_host>
+  become: true
+
+  tasks:
+    - name: Install DNS Server Role
+      win_feature:
+        name: DNS
+        state: present
+        include_management_tools: yes
+
+    - name: Install DNS Manager
+      win_chocolatey:
+        name: Microsoft-Windows-DNS-Server-Tools
+        state: present
+      
+    - name: Add DNS Server Role to Domain Controller
+      win_domain:
+        hostname: localhost
+        username: '<your_admin_username>'
+        password: '<your_admin_password>'
+        domain_user: '<your_domain_username>'
+        domain_password: '<your_domain_password>'
+        state: domainrole
+        domain_role: dns
+        
+    - name: Fix DNS Server Configuration
+      win_command:
+        cmdline: "dnscmd /config /EnableEDNS0 0"
+    
+    - name: Restart DNS Server
+      win_service:
+        name: DNS
+        state: restarted

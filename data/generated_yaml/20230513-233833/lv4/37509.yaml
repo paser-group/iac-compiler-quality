@@ -1,0 +1,30 @@
+yaml
+- name: Test Set_fact Template Handling
+  hosts: all
+
+  vars:
+    my_variable: "Hello World!"
+
+  tasks:
+
+    - name: Attempt to set variable with template
+      set_fact:
+        my_variable: "{{ item }}"
+      with_items:
+        - "{{ 5 }}"
+        - "{{ '5' }}"
+        - "{{ ['5'] }}"
+        - "{{ {'value': '5'} }}"
+      register: set_fact_result
+
+    - name: Report success or failure of Set_fact execution
+      fail:
+        msg: "Set_fact failed to execute properly with item - {{ item }}"
+      when: "'FAILED!' in item.stdout"
+      with_items: "{{ set_fact_result.results }}"
+
+    - name: Report success of Set_fact execution
+      debug:
+        msg: "Set_fact ran successfully with item - {{ item }}"
+      when: "'FAILED!' not in item.stdout"
+      with_items: "{{ set_fact_result.results }}"

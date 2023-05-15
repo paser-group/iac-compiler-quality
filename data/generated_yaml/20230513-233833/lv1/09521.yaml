@@ -1,0 +1,36 @@
+yaml
+---
+- name: Provision a Vagrant Machine
+  hosts: localhost
+  connection: local
+
+  tasks:
+    - name: Install required Ansible packages
+      apt:
+        name: "{{ item }}"
+        state: present
+      with_items:
+        - python-pip
+        - python-dev
+        - build-essential
+
+    - name: Install Ansible on Vagrant VM
+      pip:
+        name: ansible
+        state: present
+
+    - name: Check if Vagrantfile exists
+      stat:
+        path: /path/to/Vagrantfile
+      register: vagrant_file
+
+    - name: Create Vagrantfile if it doesn't exist
+      file:
+        path: /path/to/Vagrantfile
+        state: touch
+      when: vagrant_file.stat.exists == False
+
+    - name: Run Vagrant provisioner with Ansible
+      command: vagrant provision --provision-with=ansible
+      args:
+        chdir: /path/to/vagrant/directory

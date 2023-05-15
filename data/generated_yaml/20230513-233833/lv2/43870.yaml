@@ -1,0 +1,29 @@
+
+---
+- name: Test DNF Module Failure
+  hosts: all
+  become: true
+  tasks:
+    - name: Install Packages with Scriptlet Error
+      dnf:
+        name: "{{ item }}"
+        state: present
+      with_items:
+        - "package1"
+        - "{{ 1/0 }}"
+        - "package2"
+      register: result
+
+    - name: Display Warning Message if Scriptlet Error Occurs
+      debug:
+        msg: "Warning: RPM scriptlet errors occurred during package installation!"
+      when: result|failed
+
+    - name: Remove Packages
+      dnf:
+        name: "{{ item }}"
+        state: absent
+      with_items:
+        - "package1"
+        - "{{ 1/0 }}"
+        - "package2"

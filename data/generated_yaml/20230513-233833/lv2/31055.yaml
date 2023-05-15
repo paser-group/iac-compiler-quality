@@ -1,0 +1,68 @@
+
+- hosts: all
+  gather_facts: no
+  vars:
+    region: "{{ lookup('env', 'AWS_REGION') }}"
+    profile: "{{ lookup('env', 'AWS_PROFILE') }}"
+  tasks:
+    # Edge case: use an invalid profile name.
+    - name: Create a VPC with an invalid profile name
+      ec2_vpc_net:
+        name: test-vpc
+        cidr_block: 10.0.0.0/16
+        region: "{{ region }}"
+        profile: invalid-profile
+      register: output
+      ignore_errors: yes
+
+    # Edge case: use an invalid region name.
+    - name: Create a VPC with an invalid region name
+      ec2_vpc_net:
+        name: test-vpc
+        cidr_block: 10.0.0.0/16
+        region: invalid-region
+        profile: "{{ profile }}"
+      register: output
+      ignore_errors: yes
+
+    # Unconventional syntax: use a multiple line CIDR block.
+    - name: Create a VPC with an unconventional CIDR block
+      ec2_vpc_net:
+        name: test-vpc
+        cidr_block: |
+          10.0.0.0/16
+        region: "{{ region }}"
+        profile: "{{ profile }}"
+      register: output
+
+    # Unexpected input: use a non-string value for VPC name.
+    - name: Create a VPC with a non-string name
+      ec2_vpc_net:
+        name: 1234
+        cidr_block: 10.0.0.0/16
+        region: "{{ region }}"
+        profile: "{{ profile }}"
+      register: output
+      ignore_errors: yes
+
+    # Unexpected input: use a dictionary instead of string for CIDR block.
+    - name: Create a VPC with a dictionary CIDR block
+      ec2_vpc_net:
+        name: test-vpc
+        cidr_block:
+          - 10.0.0.0
+          - 16
+        region: "{{ region }}"
+        profile: "{{ profile }}"
+      register: output
+      ignore_errors: yes
+
+    # Edge case: create a VPC with a very long name.
+    - name: Create a VPC with a long name
+      ec2_vpc_net:
+        name: "test-vpc-12345678901234567890123456789012345678901234567890123456789012345678901234567890"
+        cidr_block: 10.0.0.0/16
+        region: "{{ region }}"
+        profile: "{{ profile }}"
+      register: output
+      ignore_errors: yes

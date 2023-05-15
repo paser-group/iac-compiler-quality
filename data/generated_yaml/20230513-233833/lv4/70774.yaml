@@ -1,0 +1,41 @@
+
+- hosts: all
+  become: true
+  tasks:
+
+  - name: Yum Test
+    block:
+      - name: Check if yum is installed
+        command: yum
+        ignore_errors: yes
+        register: yum_installed
+
+      - name: Install yum if not installed
+        yum:
+          name: yum
+          state: present
+        when: yum_installed.rc != 0
+
+      - name: Check if target node has access to repositories
+        yum_repository:
+          name: epel
+          state: present
+        ignore_errors: yes
+        register: available_repo
+
+      - fail:
+          msg: "Unable to access the required repositories"
+        when: available_repo is failed
+
+      - name: Install a package that doesn't exist.
+        yum:
+          name: NonExistentPackage
+          state: present
+
+    rescue:
+      - debug:
+          msg: "An error was detected while executing tasks."
+
+    always:
+      - name: Finalize
+        meta: flush_handlers

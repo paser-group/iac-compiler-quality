@@ -1,0 +1,43 @@
+
+---
+- name: VMware playbook for edge cases
+  hosts: all
+  gather_facts: no
+  
+  tasks:
+    - name: Create a new VMware portgroup
+      vmware_portgroup:
+        datacenter_name: '{{ item.datacenter_name }}'
+        cluster_name: '{{ item.cluster_name }}'
+        portgroup_name: '{{ item.portgroup_name }}'
+        vlan_id: '{{ item.vlan_id }}'
+        network_policy:
+          security:
+            allow_promiscuous: {{ item.allow_promiscuous | default(false) }}
+            mac_changes: {{ item.mac_changes | default(false) }}
+            forged_transmits: {{ item.forged_transmits | default(false) }}
+      loop:
+        - { datacenter_name: 'MyDC', cluster_name: 'MyCluster', portgroup_name: 'MyPortgroup', vlan_id: '10', allow_promiscuous: false, mac_changes: false, forged_transmits: false }
+        - { datacenter_name: 'MyDC', cluster_name: 'MyCluster', portgroup_name: 'MyPortgroup', vlan_id: '20', allow_promiscuous: false, mac_changes: true, forged_transmits: false }
+        - { datacenter_name: 'MyDC', cluster_name: 'MyCluster', portgroup_name: 'MyPortgroup', vlan_id: '30', allow_promiscuous: false, mac_changes: false, forged_transmits: true }
+        - { datacenter_name: 'MyDC', cluster_name: 'MyCluster', portgroup_name: 'MyPortgroup', vlan_id: '40', allow_promiscuous: true, mac_changes: false, forged_transmits: false }
+        - { datacenter_name: 'MyDC', cluster_name: 'MyCluster', portgroup_name: 'MyPortgroup', vlan_id: '50', allow_promiscuous: 'invalid_input', mac_changes: false, forged_transmits: false }
+        - { datacenter_name: 'MyDC', cluster_name: 'MyCluster', portgroup_name: 'MyPortgroup', vlan_id: '60', allow_promiscuous: true, mac_changes: 'invalid_input', forged_transmits: false }
+        - { datacenter_name: 'MyDC', cluster_name: 'MyCluster', portgroup_name: 'MyPortgroup', vlan_id: '70', allow_promiscuous: false, mac_changes: true, forged_transmits: 'invalid_input' }
+    - name: Delete the newly created VMware portgroup
+      vmware_portgroup:
+        portgroup_name: '{{ item.portgroup_name }}'
+        state: absent
+      loop:
+        - { portgroup_name: 'MyPortgroup' }
+    - name: Try to delete a non-existent VMware portgroup
+      vmware_portgroup:
+        portgroup_name: 'InvalidPortgroup'
+        state: absent
+    - name: Create a new VMware portgroup with unconventional syntax
+      vmware_portgroup:
+        datacenter_name: 'MyDC'
+        cluster_name: 'MyCluster'
+        portgroup_name: '1MyPortgroup'
+        vlan_id: '100'
+        security_policy: allow_promiscuous: false, mac_changes: false, forged_transmits: false

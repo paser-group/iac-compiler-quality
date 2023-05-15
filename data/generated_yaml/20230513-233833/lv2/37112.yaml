@@ -1,0 +1,23 @@
+
+- name: Test Case - cs_instance 'user_data' python3 error when working in python2
+  hosts: node1
+  tasks:
+    - name: Run invalid command with an argument containing an invalid syntax
+      shell: "{{ 'cmd with syntax error || exit 0' }}"
+      register: result
+      ignore_errors: true
+
+    - name: Expect specific Python3 error message, since Python2 works fine
+      debug:
+        var: result.stderr_lines
+        failed_when: "'invalid syntax' not in result.stderr|lower"
+
+    - name: Execute a Python3 script with a syntax error
+      command: python3 -c 'import zlib; print zlib.compress(b"bad data", bad_param)'
+      register: result_script
+      ignore_errors: true
+
+    - name: Expect specific Python3 error message from the script
+      debug:
+        var: result_script.stderr_lines
+        failed_when: "'name 'bad_param' is not defined' not in result_script.stderr|lower"

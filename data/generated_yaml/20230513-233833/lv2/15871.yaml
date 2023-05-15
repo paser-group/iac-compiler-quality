@@ -1,0 +1,40 @@
+
+- name: Test Openstack inventory for errored nodes
+  hosts: all
+  gather_facts: false
+
+  tasks:
+  # Edge Case 1: Include a host that doesn't have an internal_ip
+  - name: Check for errored nodes without internal_ips
+    assert:
+      that: "'internal_ip' in hostvars[item]"
+    when: "'internal_ip' not in hostvars[item] and 'error' in hostvars[item]"
+    with_items: "{{ groups['all'] }}"
+
+  # Edge Case 2: Use unconventional syntax in an inventory group
+  - name: Ping node2 in the '[node]s' group
+    ping:
+    when: inventory_hostname in groups['[node]s']
+
+  # Edge Case 3: Use an unexpected input in the inventory file
+  - name: Print out an unexpected input
+    debug:
+      var: hostvars['invalid_host']
+
+  # Edge Case 4: Use a variable that doesn't exist in a module
+  - name: Install Apache
+    apt:
+      name: apache2
+      state: present
+      invalid_variable: "{{ invalid_variable }}"
+
+  # Edge Case 5: Execute a command using unconventional syntax
+  - name: Run a command with unconventional syntax
+    shell: echo "Hello world!"
+      echo "Hello again!"
+
+  # Edge Case 6: Use invalid YAML syntax
+  - name: Use invalid YAML syntax
+    shell: |
+      - Invalid YAML syntax
+      * Invalid YAML syntax

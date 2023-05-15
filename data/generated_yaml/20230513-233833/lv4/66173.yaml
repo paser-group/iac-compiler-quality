@@ -1,0 +1,49 @@
+
+- name: Test Ansible Tower authentication
+  hosts: ansible-tower
+  gather_facts: no
+
+  vars:
+    tower_username: admin
+    tower_passwords:
+      - incorrect_password
+      - another_invalid_password
+      - {{ lookup('env', 'TOWER_PASSWORD') }}
+
+  tasks:
+
+    - name: Attempt to log in with correct credentials
+      uri:
+        url: https://{{ inventory_hostname }}/api/v2/authtoken/
+        method: POST
+        user: "{{ tower_username }}"
+        password: "{{ tower_passwords[0] }}"
+        return_content: yes
+      register: result_correct
+
+    - name: Check if authentication succeeds with correct credentials
+      debug:
+        var: result_correct.status_code
+      when: result_correct.status_code == 200
+
+    - name: Attempt to log in with incorrect credentials
+      uri:
+        url: https://{{ inventory_hostname }}/api/v2/authtoken/
+        method: POST
+        user: "{{ tower_username }}"
+        password: "{{ item }}"
+        return_content: yes
+      register: result_incorrect
+      loop: "{{ tower_passwords[1:] }}"
+
+    - name: Check if authentication fails with incorrect credentials
+      fail:
+        msg: "Authentication failed with password: {{ item.item }}"
+      with_items: "{{ result_incorrect.results }}"
+      when: item.status == 401 or item.status == 404
+
+    - name: Check for authentication timeout
+      assert:
+        that:
+          - result_correct.status_code == 200
+          - result_incorrect.status == "ERROR: Timed Out"

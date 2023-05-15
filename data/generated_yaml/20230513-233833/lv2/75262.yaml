@@ -1,0 +1,61 @@
+
+- name: Run Apt Module with Strange Cache Error (Python3)
+  hosts: all
+  become: yes
+  vars:
+    apt_cache_valid_time: 3600
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: "{{ apt_cache_valid_time }}"
+        force_apt_get: yes
+      register: apt_update_result
+    - name: Fail the playbook if update fails
+      fail:
+        msg: "Failed to update apt cache"
+      when: apt_update_result is failed
+    - name: Install Python3
+      apt:
+        name: python3
+        state: present
+    - name: Try to install python3 package with an invalid option
+      apt:
+        name: python3
+        state: present
+        invalid_option: true
+    - name: Try to remove a non-existing package
+      apt:
+        name: non_existing_package
+        state: absent
+    - name: Restart the wrong service
+      service:
+        name: wrong_service_name
+        state: restarted
+    - name: Execute a shell command with an error
+      shell: "ls /non_existing_directory"
+      register: shell_result
+      ignore_errors: true
+    - name: Show the result of the previous shell command
+      debug:
+        var: shell_result
+    - name: Change the password of an invalid user
+      user:
+        name: invalid_user
+        password: "invalid_password"
+    - name: Try to create a directory with invalid file mode
+      file:
+        path: /tmp/invalid_directory_mode
+        state: directory
+        mode: invalid_mode
+    - name: Try to ping a non-existing host
+      ping:
+        host: non_existing_host
+    - name: Try to copy a non-existing file to a non-existing directory
+      copy:
+        src: /non_existing_file
+        dest: /non_existing_directory
+    - name: Uninstall Python3
+      apt:
+        name: python3
+        state: absent

@@ -1,0 +1,22 @@
+
+- name: Docker Connection Failure Playbook
+  hosts: all
+  become: yes
+  vars:
+    container_name: my_container
+    image_name: ubuntu
+  tasks:
+  - name: Create Docker Container
+    docker_container:
+      name: "{{ container_name }}"
+      image: "{{ image_name }}"
+      state: started
+      exposed_ports:
+        - "8080"
+  - name: Create Non-Root User
+    command: adduser myuser --disabled-password --gecos ""
+  - name: Attempt to Connect to Docker Container with Non-Root User
+    become_user: myuser
+    shell: |
+      docker exec {{ container_name }} /bin/bash -c "echo 'Hello World!'"
+    ignore_errors: yes

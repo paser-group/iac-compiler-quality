@@ -1,0 +1,31 @@
+
+- name: Test nxos_acl module
+  hosts: network_devices
+  gather_facts: no
+
+  vars:
+    access_lists:
+      - name: ACL_1
+        rules:
+          - action: permit
+            protocol: tcp
+            source: 10.0.0.0/8
+            destination: any
+
+  tasks:
+    - name: Configure ACL
+      nxos_acl:
+        access_lists: "{{ access_lists }}"
+        state: present
+      register: acl_result
+
+    - name: Print DEBUG information
+      debug:
+        var: acl_result
+
+    - name: Verify ACL configuration
+      assert:
+        that:
+          - "'ACL_1' in acl_result.access_lists"
+          - "'10.0.0.0/8' in acl_result.access_lists.ACL_1.rules.source"
+          - "'any' in acl_result.access_lists.ACL_1.rules.destination"

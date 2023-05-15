@@ -1,0 +1,37 @@
+
+---
+- name: Test playbook for slack callback plugin error 404 
+  hosts: all
+  gather_facts: false 
+  vars:
+    slack_webhook: "https://invalid-webhook-url.com"
+
+  tasks:
+    - name: Send a slack notification 
+      failed_when: true
+      slack:
+        token: "{{ lookup('env','SLACK_API_TOKEN') }}"
+        attachments:
+          - pretext: "Ansible playbook test"
+            color: "#FF0000"
+            text: "{{ play_hosts }} Some plays failed or were unreachable"
+            fallback: "Error 404: slack callback plugin cannot be found"
+
+    - name: Testing unconventional syntax 
+      command: echo {{ item[1] item[0] }}
+      args:
+        executable: "/bin/bash"
+      with_together:
+        - [ "hello", "there" ]
+        - ["heh", "!"]
+
+    - name: Testing unexpected inputs 
+      lineinfile:
+        path: "/path/to/file"
+        line: "{{ item }}"
+        insertbefore: BOF
+      with_items:
+        - [] 
+        - "[]"
+        - [1,[2,[3],4]]
+        - "{ malformed-json: 'true }"

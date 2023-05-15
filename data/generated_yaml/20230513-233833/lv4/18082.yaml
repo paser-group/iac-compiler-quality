@@ -1,0 +1,22 @@
+
+- name: Verify WinRM certificate on remote node
+  hosts: destination_node
+  tasks:
+    - name: Get certificate thumbprint
+      win_shell: $thumbprint=(Get-ChildItem -Path Cert:\LocalMachine\WinRM -Recurse | Where-Object {$_.Thumbprint -match '^[0-9a-f]{40}$'}).Thumbprint
+      register: cert
+
+    - name: Print certificate thumbprint
+      debug: var=cert.thumbprint.stdout_lines
+
+    - name: Download certificate
+      win_copy: src="Cert:\LocalMachine\WinRM\thumbprint={{ cert.thumbprint.stdout }}\Exportable" dest="{{ playbook_dir }}/winrm_cert.crt"
+
+    - name: Verify certificate
+      win_powershell: |
+        $cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2('{{ playbook_dir }}/winrm_cert.crt')
+        if ($cert.Verify()) {
+          Write-Host "Certificate is valid"
+        } else {
+          Write-Host "Certificate is invalid"
+        }

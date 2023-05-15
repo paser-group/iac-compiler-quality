@@ -1,0 +1,30 @@
+
+- hosts: all
+  become: true
+  tasks:
+    - name: Install package
+      apt:
+        name: mypackage
+        state: present
+
+    - name: Run command that will fail
+      command: /usr/bin/command arg1 arg2
+      ignore_errors: true
+      register: result
+
+    - name: Fail task
+      fail:
+        msg: "Task failed"
+      when: result is failed
+
+  rescue:
+    - name: Log error
+      meta: clear_host_errors
+      debug:
+        msg: '{{ ansible_host }} - Task failed!'
+
+    - name: Attempt restart
+      meta: clear_host_errors
+      service:
+        name: myservice
+        state: restarted

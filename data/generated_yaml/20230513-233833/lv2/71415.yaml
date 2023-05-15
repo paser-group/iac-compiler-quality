@@ -1,0 +1,55 @@
+yaml
+---
+- name: Stress test Ansible compiler
+  hosts: node1
+  become: true
+  vars:
+    invalid_hostname: "invalidhostname)"
+  tasks:
+    - name: Attempt to ssh with invalid hostname
+      debug:
+        msg: "Logging in as root with invalid hostname {{ invalid_hostname }}"
+      ansible_user: "{{ ansible_user | default('root') }}"
+      ansible_ssh_pass: "{{ ansible_ssh_pass | default('password') }}"
+      ansible_ssh_common_args: "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+      ansible_ssh_private_key_file: "{{ ansible_ssh_private_key_file | default('/root/.ssh/id_rsa') }}"
+      ansible_host: "{{ invalid_hostname }}"
+      register: result
+
+    - name: Print output of failed attempt
+      debug:
+        msg: "{{ result.stdout }}"
+
+    - name: Try to become sudo with invalid hostname
+      debug:
+        msg: "Attempting to become sudo with invalid hostname"
+      become_method: su
+      become_user: root
+      become_pass: "{{ become_pass | default('password') }}"
+      when: "'timeout waiting for privilege escalation prompt' in result.stdout"
+
+    - name: Generate command using unconventional syntax
+      debug:
+        msg: "Running command without backslashes"
+      command: echo "hello" > /dev/null 2>&1
+
+    - name: Attempt to install package with unexpected input
+      debug:
+        msg: "Installing package +*'\" with apt"
+      apt:
+        name: "+*'\""
+        state: latest
+
+    - name: Identify network configuration issues
+      debug:
+        msg: "Attempting to ping all nodes on the network"
+      ping:
+        count: 3
+        timeout: 1
+      run_once: true
+      delegate_to: 10.1.1.254
+
+    - name: Produce unexpected output
+      command: echo "This should not be output"
+      changed_when: false
+      ignore_errors: true

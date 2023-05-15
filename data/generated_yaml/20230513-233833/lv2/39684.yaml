@@ -1,0 +1,47 @@
+yaml
+---
+- name: Test role import and default value overwriting
+  hosts: all
+  gather_facts: false
+
+  # Define a variable with a default value
+  vars:
+    default_var: "default_value"
+
+  tasks:
+    # Try to import a role that doesn't exist
+    - import_role:
+        name: nonexistent_role
+      ignore_errors: yes
+  
+    # Try to import a role with a non-default variable value
+    - import_role:
+        name: dummy_role
+      vars:
+        dummy_var: "non_default_value"
+
+    # Try to import a role and overwrite the default value of a variable
+    - import_role:
+        name: dummy_role
+      vars:
+        default_var: "overwritten_value"
+
+    # Try to import a role and use an undefined variable in the imported role
+    - import_role:
+        name: dummy_role
+      vars:
+        undefined_var: "{{ non_existent }}"
+
+    # Try to use an undefined variable when overwriting a default variable value
+    - debug:
+        var: "{{ undefined_var }}{{ default_var }}"
+
+    # Try to use an undefined variable when importing a role
+    - import_role:
+        name: "{{ undefined_role }}"
+  
+    # Try to use unconventional syntax to define a variable and import a role
+    - vars:
+        "{{ default_var }}": "{{ dummy_var }}"
+      import_role:
+        name: "{{ role_to_import }}"

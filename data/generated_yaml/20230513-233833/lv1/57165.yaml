@@ -1,0 +1,19 @@
+
+---
+- name: Handle "script finished while get share connection close error" issue
+  hosts: all
+  become: yes
+  
+  tasks:
+    - name: Disable Kerberos authentication
+      lineinfile:
+        path: /etc/samba/smb.conf
+        regexp: '^  kerberos method = '
+        line: '  kerberos method = none'
+      register: kerberos_disable
+
+    - name: Restart Samba service
+      service:
+        name: smbd
+        state: restarted
+      when: kerberos_disable.changed

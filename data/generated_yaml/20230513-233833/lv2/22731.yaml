@@ -1,0 +1,57 @@
+
+---
+- name: STS Assume Role Error Stress Test
+  hosts: all
+  become: true
+  gather_facts: false
+
+  vars:
+    aws_role_arn: "arn:aws:iam::123456789012:role/test-role"
+    aws_external_id: "example-external-id"
+    aws_duration: 900
+    aws_role_session_name: "test-session-name"
+    aws_mfa_serial_number: "arn:aws:iam::123456789012:mfa/test-user"
+
+  tasks:
+    - name: Assume Role with Incorrect Region
+      ec2_vpc_subnet_facts:
+        region: "us-west-1"
+      roles:
+        - { role: "boto.sts", aws_role_arn: "{{ aws_role_arn }}", aws_external_id: "{{ aws_external_id }}", duration_seconds: "{{ aws_duration }}", role_session_name: "{{ aws_role_session_name }}" }
+
+    - name: Assume Role with Incorrect External ID
+      ec2_vpc_subnet_facts:
+        region: "us-east-1"
+      roles:
+        - { role: "boto.sts", aws_role_arn: "{{ aws_role_arn }}", aws_external_id: "incorrect-external-id", duration_seconds: "{{ aws_duration }}", role_session_name: "{{ aws_role_session_name }}" }
+
+    - name: Assume Role with Incorrect Session Name
+      ec2_vpc_subnet_facts:
+        region: "us-west-2"
+      roles:
+        - { role: "boto.sts", aws_role_arn: "{{ aws_role_arn }}", aws_external_id: "{{ aws_external_id }}", duration_seconds: "{{ aws_duration }}", role_session_name: "incorrect-session-name" }
+
+    - name: Assume Role with Incorrect Duration
+      ec2_vpc_subnet_facts:
+        region: "us-east-2"
+      roles:
+        - { role: "boto.sts", aws_role_arn: "{{ aws_role_arn }}", aws_external_id: "{{ aws_external_id }}", duration_seconds: "10", role_session_name: "{{ aws_role_session_name }}" }
+
+    - name: Assume Role with MFA
+      ec2_vpc_subnet_facts:
+        region: "us-west-1"
+      roles:
+        - { role: "boto.sts", aws_role_arn: "{{ aws_role_arn }}", aws_external_id: "{{ aws_external_id }}", duration_seconds: "{{ aws_duration }}", role_session_name: "{{ aws_role_session_name }}", mfa_serial_number: "{{ aws_mfa_serial_number }}" }
+
+    - name: Assume Role with Multiple Roles
+      ec2_vpc_subnet_facts:
+        region: "us-east-1"
+      roles:
+        - { role: "boto.sts", aws_role_arn: "{{ aws_role_arn }}", aws_external_id: "{{ aws_external_id }}", duration_seconds: "{{ aws_duration }}", role_session_name: "{{ aws_role_session_name }}" }
+        - { role: "boto.sts", aws_role_arn: "{{ aws_role_arn }}", aws_external_id: "{{ aws_external_id }}", duration_seconds: "{{ aws_duration }}", role_session_name: "{{ aws_role_session_name }}" }
+
+    - name: Assume Role with Unconventional Syntax
+      ec2_vpc_subnet_facts:
+        region: "us-west-2"
+      roles:
+        - { role: "boto.sts", "| {{ aws_role_arn }}": "", aws_external_id: "{{ aws_external_id }}", duration_seconds: "{{ aws_duration }}", role_session_name: "{{ aws_role_session_name }}" }

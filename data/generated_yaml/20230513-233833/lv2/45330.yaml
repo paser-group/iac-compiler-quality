@@ -1,0 +1,94 @@
+
+- name: Azure Container Registry Idempotence Test
+  hosts: node1
+  gather_facts: false
+
+  vars:
+    registry_name: "myregistry"
+    resource_group: "myrg"
+    location: "eastus"
+    admin_username: "adminuser"
+    admin_password: "pa$$w0rd!"
+    tags: "environment=dev,type=testing"
+
+  tasks:
+    - name: Create Resource Group
+      azure_rm_resourcegroup:
+        name: "{{ resource_group }}"
+        location: "{{ location }}"
+
+    - name: Create Container Registry
+      azure_rm_containerregistry:
+        name: "{{ registry_name }}"
+        resource_group: "{{ resource_group }}"
+        location: "{{ location }}"
+        admin_user_enabled: false
+        admin_username: "{{ admin_username }}"
+        admin_password: "{{ admin_password }}"
+        tags: "{{ tags }}"
+
+    - name: Update Container Registry
+      azure_rm_containerregistry:
+        name: "{{ registry_name }}"
+        resource_group: "{{ resource_group }}"
+        admin_user_enabled: true
+        admin_username: "{{ admin_username }}"
+        admin_password: "{{ admin_password }}"
+        tags: []
+
+    - name: Delete Container Registry
+      azure_rm_containerregistry:
+        name: "{{ registry_name }}"
+        resource_group: "{{ resource_group }}"
+        state: absent
+
+    - name: Create Container Registry with non-alphanumeric characters in name
+      azure_rm_containerregistry:
+        name: "my-registry.*"
+        resource_group: "{{ resource_group }}"
+        location: "{{ location }}"
+
+    - name: Create Container Registry in non-existent resource group
+      azure_rm_containerregistry:
+        name: "{{ registry_name }}"
+        resource_group: "invalid-rg"
+        location: "{{ location }}"
+
+    - name: Create Container Registry in invalid location
+      azure_rm_containerregistry:
+        name: "{{ registry_name }}"
+        resource_group: "{{ resource_group }}"
+        location: "invalid-location"
+
+    - name: Create Container Registry with invalid admin password
+      azure_rm_containerregistry:
+        name: "{{ registry_name }}"
+        resource_group: "{{ resource_group }}"
+        location: "{{ location }}"
+        admin_user_enabled: false
+        admin_username: "{{ admin_username }}"
+        admin_password: "{{ admin_password[:-1] }}"
+        tags: "{{ tags }}"
+
+    - name: Create Container Registry with unset admin username
+      azure_rm_containerregistry:
+        name: "{{ registry_name }}"
+        resource_group: "{{ resource_group }}"
+        location: "{{ location }}"
+        admin_user_enabled: true
+        admin_username: ""
+        admin_password: "{{ admin_password }}"
+        tags: "{{ tags }}"
+
+    - name: Create Container Registry with invalid tags
+      azure_rm_containerregistry:
+        name: "{{ registry_name }}"
+        resource_group: "{{ resource_group }}"
+        location: "{{ location }}"
+        admin_user_enabled: false
+        admin_username: "{{ admin_username }}"
+        admin_password: "{{ admin_password }}"
+        tags: "invalid tag format"
+
+    - name: Create Container Registry by running a shell command
+      shell: az acr create --name "{{ registry_name }}" --resource-group "{{ resource_group }}" --location "{{ location }}"

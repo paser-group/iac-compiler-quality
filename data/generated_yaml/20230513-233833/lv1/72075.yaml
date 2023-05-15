@@ -1,0 +1,18 @@
+yaml
+---
+- name: Ensure main.yml exists in role dependencies
+  hosts: all
+  become: true
+
+  tasks:
+  - name: Check if main.yml exists in role dependency
+    stat:
+      path: "{{ item }}/tasks/main.yml"
+    register: dependency_file
+    with_items: "{{ lookup('env', 'ANSIBLE_ROLES_PATH')|split(':') }}"
+
+  - name: Fail task when 'main.yml' does not exist
+    fail:
+      msg: "The task 'main.yml' does not exist in role dependency {{ item.item }}"
+    when: not item.stat.exists
+    with_items: "{{ dependency_file.results }}"

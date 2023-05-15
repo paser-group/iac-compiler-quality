@@ -1,0 +1,61 @@
+
+---
+- hosts: localhost
+  gather_facts: no
+  vars:
+    region: "us-west-2"
+    ec2_access_key: "{{ lookup('env','EC2_ACCESS_KEY') }}"
+    ec2_secret_key: "{{ lookup('env','EC2_SECRET_KEY') }}"
+    rds_access_key: "{{ lookup('env','RDS_ACCESS_KEY') }}"
+    rds_secret_key: "{{ lookup('env','RDS_SECRET_KEY') }}"
+    instance_type: "t2.micro"
+    instance_keypair: "my-key-pair"
+    instance_volume_size: "50"
+
+  tasks:
+    - name: Create EC2 instance
+      ec2:
+        region: "{{ region }}"
+        aws_access_key: "{{ ec2_access_key }}"
+        aws_secret_key: "{{ ec2_secret_key }}"
+        key_name: "{{ instance_keypair }}"
+        instance_type: "{{ instance_type }}"
+        instance_tags:
+          Name: EC2-RDS-PGSQL-Test
+        image_id: "ami-0c3fd0f5d33134a76"
+        volumes:
+          - device_name: /dev/xvda
+            volume_size: "{{ instance_volume_size }}"
+        count: 1
+        assign_public_ip: true
+        wait: true
+      register: ec2_instance
+
+    - name: Create RDS instance
+      rds:
+        region: "{{ region }}"
+        aws_access_key: "{{ rds_access_key }}"
+        aws_secret_key: "{{ rds_secret_key }}"
+        command: create
+        instance_name: "ansible-rds-instance"
+        instance_class: db.t2.micro
+        db_engine: postgres
+        db_name: "test-db"
+        username: "myuser"
+        password: "mypassword"
+        allocated_storage: 5
+        wait: true
+        instance_size: 10
+        instance_iops: 20
+        tags:
+          env: dev
+          app: my-app
+      register: rds_instance
+
+    - name: Confirm EC2 and RDS instance creation
+      assert:
+        that:
+          - ec2_instance is success
+          - rds_instance is success
+      success_msg: "Both EC2 RDS instances were created successfully"
+      fail_msg: "Failed to create EC2 RDS instances"

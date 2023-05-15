@@ -1,0 +1,47 @@
+
+- name: Update App
+  hosts: all
+  become: true
+  become_method: sudo
+
+  vars:
+    app_user: myapp
+    app_dir: /var/myapp
+
+  tasks:
+    - name: Install package dependencies
+      apt:
+        name:
+          - package1
+          - package2
+        update_cache: yes
+
+    - name: Ensure app directory exists
+      file:
+        path: "{{ app_dir }}"
+        state: directory
+        owner: "{{ app_user }}"
+        group: "{{ app_user }}"
+        mode: '0755'
+
+    - name: Copy app files to app directory
+      copy:
+        src: "{{ playbook_dir }}/app_files/"
+        dest: "{{ app_dir }}/"
+        owner: "{{ app_user }}"
+        group: "{{ app_user }}"
+        mode: '0644'
+
+  # Fix for Type error when become password is digit only
+    - name: Ensure password string is enclosed in quotes
+      set_fact:
+        sudo_password: "'{{ ansible_become_password }}'"
+      when: ansible_become_password is defined and ansible_become_password | regex_search('\\d+')
+
+    - name: Install app dependencies
+      command: "{{ app_dir }}/install.sh"
+      become: true
+      become_method: sudo
+      become_user: "{{ app_user }}"
+      become_password: "{{ sudo_password }}"
+

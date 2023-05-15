@@ -1,0 +1,33 @@
+
+- name: Test win_firewall module
+  hosts: windows
+  become: true
+  vars:
+    windows_firewall_rule_name: "Test Rule"
+    windows_firewall_rule_port: "80"
+    windows_firewall_rule_action: "allow"
+  tasks:
+    # Create a firewall rule
+    - name: Create a firewall rule
+      win_firewall:
+        rule: "{{ windows_firewall_rule_name }}"
+        profile: "public"
+        direction: "in"
+        protocol: "tcp"
+        localport: "{{ windows_firewall_rule_port }}"
+        action: "{{ windows_firewall_rule_action }}"
+        enabled: "yes"
+      register: result
+
+    # Verify the firewall rule is applied
+    - name: Verify the firewall rule is applied
+      win_command: netsh advfirewall firewall show rule name="{{ windows_firewall_rule_name }}" verbose | find "{{ windows_firewall_rule_port }}" 
+      changed_when: false
+      failed_when: false
+      register: show_result
+
+    # Fail if the firewall rule is not found or applied
+    - name: Fail if the firewall rule is not found
+      fail:
+        msg: "The firewall rule was not applied"
+      when: show_result.stdout == ""

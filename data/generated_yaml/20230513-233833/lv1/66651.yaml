@@ -1,0 +1,54 @@
+
+---
+- name: Asynchronous execution with last task failing
+  hosts: all
+  gather_facts: true
+
+  tasks:
+    - name: Run Task 1 asynchronously
+      shell: /bin/sleep 5
+      async: 30
+      poll: 1
+      register: task_1_result
+
+    - name: Run Task 2 asynchronously
+      shell: /bin/sleep 5
+      async: 30
+      poll: 1
+      register: task_2_result
+
+    - name: Run Task 3 asynchronously
+      shell: /bin/sleep 5
+      async: 30
+      poll: 1
+      register: task_3_result
+
+    - name: Wait for all async tasks to complete
+      async_status:
+        jid: "{{ item.ansible_job_id }}"
+      register: async_status_result
+      until: async_status_result.finished
+      retries: 30
+      delay: 5
+      loop:
+        - "{{ task_1_result }}"
+        - "{{ task_2_result }}"
+        - "{{ task_3_result }}"
+
+    - name: Check async tasks results
+      debug:
+        msg: "{{ item.stdout }}"
+      loop:
+        - "{{ task_1_result }}"
+        - "{{ task_2_result }}"
+        - "{{ task_3_result }}"
+
+    - name: Failing task
+      command: /bin/false
+      register: failing_task_result
+      when: async_status_result.finished
+
+    - name: Error handler
+      fail:
+        msg: "Unable to connect to socket"
+      when: failing_task_result is failed

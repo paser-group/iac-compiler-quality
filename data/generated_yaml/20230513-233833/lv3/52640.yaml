@@ -1,0 +1,24 @@
+yaml
+---
+- name: Transfer a file using the scp module
+  hosts: all
+  become: yes
+  tasks:
+    - name: Copy file to remote host
+      become: yes
+      copy:
+        src: /path/to/local/file
+        dest: /path/to/remote/file
+        mode: '0644'
+      register: result
+
+    - name: Transfer file using scp
+      become: yes
+      shell: sshpass -p {{ remote_password }} scp -o PubkeyAuthentication=no -o StrictHostKeyChecking=no /path/to/local/file {{ remote_username }}@{{ remote_host }}:/path/to/remote/file
+      ignore_errors: yes
+      register: scp_result
+
+    - name: Fail if scp command fails
+      fail:
+        msg: "SCP command failed: {{ scp_result.stderr }}"
+      when: scp_result.rc != 0

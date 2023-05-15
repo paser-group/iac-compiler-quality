@@ -1,0 +1,55 @@
+python
+#!/usr/bin/env python
+
+import json
+
+class DynamicInventory(object):
+    def __init__(self):
+        self.inventory = {}
+
+        # add implicit localhost
+        self.inventory['_meta'] = {'hostvars': {'localhost': {}}}
+
+        # initialize empty groups
+        self.inventory['all'] = {'hosts': [], 'children': []}
+        self.inventory['_meta']['hostvars']['localhost']['ansible_connection'] = 'local'
+
+    def add_host(self, group, hostname, hostvars=None):
+        if group not in self.inventory:
+            # add new group
+            self.inventory[group] = {'hosts': [], 'children': []}
+
+        # add host to group
+        self.inventory[group]['hosts'].append(hostname)
+
+        if hostvars:
+            # add host variables
+            if '_meta' not in self.inventory:
+                self.inventory['_meta'] = {'hostvars': {}}
+
+            if hostname not in self.inventory['_meta']['hostvars']:
+                self.inventory['_meta']['hostvars'][hostname] = {}
+
+            self.inventory['_meta']['hostvars'][hostname].update(hostvars)
+
+    def add_group(self, group, children):
+        if group not in self.inventory:
+            # add new group
+            self.inventory[group] = {'hosts': [], 'children': []}
+
+        # add group children
+        self.inventory[group]['children'] = children
+
+    def empty(self):
+        return json.dumps(self.inventory)
+
+if __name__ == '__main__':
+    inventory = DynamicInventory()
+    inventory.add_host('web', 'web1.example.com', {'ansible_host': '192.0.2.1'})
+    inventory.add_host('web', 'web2.example.com', {'ansible_host': '192.0.2.2'})
+    inventory.add_host('db', 'db1.example.com', {'ansible_host': '192.0.2.3'})
+
+    inventory.add_group('prod', ['web', 'db'])
+    inventory.add_group('test', ['web'])
+
+    print(inventory.empty())

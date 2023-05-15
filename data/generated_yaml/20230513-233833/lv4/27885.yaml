@@ -1,0 +1,50 @@
+
+# Creating an encrypted file using the vault
+- name: Create an encrypted file
+  hosts: all
+  vars:
+    username: "admin"
+    password: "secret"
+  tasks:
+    - name: Create a file with sensitive information
+      copy:
+        content: |
+          Username: {{ username }}
+          Password: {{ password }}
+        dest: /etc/myapp/credentials.yml
+        mode: "0600"
+    - name: Encrypt the file using the vault
+      vault:
+        encrypt: yes
+        src: /etc/myapp/credentials.yml
+        # Prompt for the vault password on the command line
+        vault_password_file: .vault_pass
+
+# Encrypting a variable using the vault
+- name: Encrypt a variable
+  hosts: all
+  gather_facts: false
+  vars:
+    # Encrypt this variable
+    to_encrypt: "this is a secret"
+  tasks:
+    - name: Encrypt the variable using the vault
+      set_fact:
+        encrypted_string: "{{ to_encrypt | vault_encrypt }}"
+      vars:
+        # Specify the vault password on the command line
+        ansible_ask_vault_pass: true
+
+# Decrypting a file using the vault
+- name: Decrypt a file
+  hosts: all
+  vars:
+    # Name of the file to decrypt
+    file_to_decrypt: /etc/myapp/credentials.yml
+  tasks:
+    - name: Decrypt the file
+      vault:
+        decrypt: yes
+        src: "{{ file_to_decrypt }}"
+        # Prompt for the vault password on the command line
+        vault_password_file: .vault_pass

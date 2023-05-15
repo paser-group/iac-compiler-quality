@@ -1,0 +1,54 @@
+
+---
+- name: Ansible Playbook to test copy module
+  hosts: all
+  gather_facts: no
+  
+  tasks:
+    - name: copy file with non-ASCII characters in filename
+      copy:
+        src: "{{ playbook_dir }}/file_with_ñ.txt"
+        dest: "/tmp/test_copy_ñ.txt"
+        remote_src: yes
+
+    - name: copy file with file mode set to octal or symbolic 
+      copy:
+        src: "{{ playbook_dir }}/test.txt"
+        dest: "/tmp/test_copy.txt"
+        mode: "0644"
+        symbolic: yes
+
+    - name: copy file with invalid source path
+      copy:
+        src: "{{ playbook_dir }}/invalid_path.txt"
+        dest: "/tmp/test_copy2.txt"
+      
+    - name: copy file with invalid dest path
+      copy:
+        src: "{{ playbook_dir }}/test.txt"
+        dest: "/invalid_dest_path/test_copy.txt"
+      
+    - name: copy file as a different user 
+      copy:
+        src: "{{ playbook_dir }}/test.txt"
+        dest: "/tmp/test_copy_as_root.txt"
+        remote_user: root
+      
+    - name: copy file using sudo 
+      become: yes
+      copy:
+        src: "{{ playbook_dir }}/test.txt"
+        dest: "/tmp/test_copy_sudo.txt"
+      
+    - name: copy file and change its owner
+      become: yes
+      copy:
+        src: "{{ playbook_dir }}/test.txt"
+        dest: "/tmp/test_copy_own.txt"
+      delegate_to: node2
+      run_once: yes
+      register: result
+      
+    - name: debug result
+      debug:
+        var: result

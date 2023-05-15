@@ -1,0 +1,45 @@
+yaml
+- name: Vault error test playbook
+  hosts: all
+  gather_facts: false
+
+  tasks:
+
+  - name: Initialize Vault
+    ansible.builtin.set_fact:
+      my_vault:
+        secret: mysecret
+
+  - name: Create encrypted variable
+    ansible.builtin.set_fact:
+      my_secret: !vault |
+        $ANSIBLE_VAULT;1.1;AES256
+        66336633633366336139626161653662396237303961313734316331633538303137623562333961
+        3261323535366539653864663666343636633966396464300a393763373631383062306165656663
+        61323831313131663165353262303139643466633336393966613333613030336139346139306538
+        6462313139636531660a303733316536663165646234366334626237653338653836336430643530
+        623766353865323561663861
+
+  - name: Attempt to read encrypted variable directly
+    debug:
+      var: my_secret
+
+  - name: Attempt to read encrypted variable via hostvars
+    debug:
+      var: hostvars[inventory_hostname].my_secret
+
+  - name: Attempt to read decrypted variable via hostvars[] with incorrect syntax
+    debug:
+      var: hostvars(inventory_hostname)[my_secret]
+
+  - name: Attempt to decrypt variable using incorrect vault password
+    ansible.builtin.set_fact:
+      decrypted_secret: "{{ my_secret | vault('incorrect_password') }}"
+
+  - name: Attempt to decrypt variable using incorrect vault identifier
+    ansible.builtin.set_fact:
+      decrypted_secret: "{{ my_secret | vault('unknown_vault_type') }}"
+
+  - name: Attempt to decrypt variable using incorrect data format
+    ansible.builtin.set_fact:
+      decrypted_secret: "{{ 'not_a_vault_encrypted_string' | vault(my_vault.secret) }}"

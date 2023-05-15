@@ -1,0 +1,30 @@
+yaml
+---
+- name: Inventory Test
+  hosts: node1
+  gather_facts: false
+
+  tasks:
+  - name: Gather vCenter Facts with orphaned VMs
+    vmware_vm_inventory:
+      hostname: "{{ ansible_host }}"
+      username: "{{ vcenter_user }}"
+      password: "{{ vcenter_password }}"
+      validate_certs: false
+      with_serverspec: false
+      with_tags: false
+      with_custom_attributes: false
+      with_custom_filters: false
+      property_names: "{{ ['name', 'guest.guestState'] }}"
+      vm_type: "{{ ['vm'] }}"
+      property_traversal_specs: |-
+        guest:VmGuestAgent
+        config:VmConfigInfo
+        network:VmNetworkInfo
+        datastore:VmDatastoreInfo
+      orphaned_vms: true
+    register: vcenter
+
+  - name: Check Result
+    debug:
+      var: vcenter

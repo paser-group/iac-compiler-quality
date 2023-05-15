@@ -1,0 +1,39 @@
+
+---
+- name: Test playbook for nxos_facts issue
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Test edge cases
+      nxos_facts:
+        provider:
+          host: "{{ item }}:{{ range(65537) | join(':') }}:"
+          username: "{{ item }}  {{ ' ' * 1024 }}"
+          password: "{{ item | regex_replace('(.{1})', '\\1 ') | regex_replace('(.{100})', '\\1\\n') }}SUPERSECUREPASSWORD"
+      delegate_to: localhost
+      with_items:
+        - node1
+        - node2
+        - node3
+
+    - name: Test unconventional syntax
+      nxos_facts:
+        provider: "{{ (1 + 2 * 3) | random(seed=item) | string | min(1000) }}"
+      delegate_to: localhost
+      with_items:
+        - node1
+        - node2
+        - node3
+
+    - name: Test unexpected inputs
+      nxos_facts:
+        provider:
+          host: "{{ item | regex_replace('.', '0x0\\g<0>') }}"
+          username: "{{ item[-1] }}"
+          password: "{{ (1 / item | float) | string }}"
+      delegate_to: localhost
+      with_items:
+        - node1
+        - node2
+        - node3

@@ -1,0 +1,40 @@
+
+- name: Create an os_router
+  hosts: openstack
+  become: true
+  vars:
+    router_name: <router-name>
+    subnet: <subnet>
+  tasks: 
+    - name: Create new os_router
+      os_router:
+        state: present
+        name: "{{ router_name }}"
+        external_gateway_info: {"network": "<external-network>"}
+        region_name: "<region>"
+      register: new_router
+
+    - name: Add subnet to the os_router
+      os_router:
+        state: present
+        router: "{{ router_name }}"
+        subnet: "{{ subnet }}"
+        region_name: "<region>"
+
+    - name: Create port on os_router
+      os_port:
+        state: present
+        name: "router_port"
+        mac_address: "<mac-address>"
+        network: "<internal-network>"
+        fixed_ips:
+          - ip_address: "<ip-address>"
+        router:
+          name: "{{ router_name }}"
+        region_name: "<region>"
+      register: port_created
+
+    - name: Verify the created port is operational
+      wait_for:
+        host: "{{ port_created.port.private_ipv4 }}"
+

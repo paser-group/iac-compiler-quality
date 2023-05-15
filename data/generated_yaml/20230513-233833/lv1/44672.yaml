@@ -1,0 +1,38 @@
+yaml
+---
+- name: Playbook to resolve 'unable to set terminal parameters' error
+  hosts: cisco_devices
+  gather_facts: no
+  
+  tasks:
+    - name: Run cisco ios command
+      ios_command:
+        commands:
+          - "terminal length 0"
+        provider:
+          username: "{{ ansible_user }}"
+          password: "{{ ansible_password }}"
+          host: "{{ ansible_host }}"
+          use_ssl: yes
+          auth_pass: "{{ ansible_password }}"
+          authorize: yes
+          authorize_pass: "{{ ansible_password }}"
+          network_os: ios
+          transport: paramiko
+      register: result
+  
+    - name: Terminal parameter reset
+      ios_command:
+        commands:
+          - "terminal no length"
+        provider:
+          username: "{{ ansible_user }}"
+          password: "{{ ansible_password }}"
+          host: "{{ ansible_host }}"
+          use_ssl: yes
+          auth_pass: "{{ ansible_password }}"
+          authorize: yes
+          authorize_pass: "{{ ansible_password }}"
+          network_os: ios
+          transport: paramiko
+      when: result.output|search("unable to set terminal parameters|privilege level 0")

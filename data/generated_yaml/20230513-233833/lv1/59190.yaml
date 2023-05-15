@@ -1,0 +1,47 @@
+
+---
+- name: vmware mem_reservation Fix
+  hosts: all
+  gather_facts: yes
+
+  vars:
+    vm_name: "vm-01"
+    memory: "2048"
+    cluster: "cluster01"
+    datastore: "datastore01"
+    state: "present"
+
+  tasks:
+  - name: Create Virtual Machine
+    vmware_guest:
+      hostname: "vcenter.localdomain"
+      username: "{{ vcenter_username }}"
+      password: "{{ vcenter_password }}"
+      validate_certs: no
+      name: "{{ vm_name }}"
+      annotation: "Test VM"
+      folder: "/{{ cluster }}/vm/"
+      hardware:
+        memory_mb: "{{ memory }}"
+      disk:
+        - size_gb: 50
+          type: thin
+          datastore: "{{ datastore }}"
+          autoselect_datastore: yes
+          scsi: paravirtual
+      networks:
+        - name: VM Network
+      state: present
+    delegate_to: localhost
+    register: result
+
+  - name: Set mem_reservation to default
+    vmware_guest_memory:
+      hostname: "vcenter.localdomain"
+      username: "{{ vcenter_username }}"
+      password: "{{ vcenter_password }}"
+      validate_certs: no
+      name: "{{ vm_name }}"
+      memory_reservation: "{{ memory }}"
+      state: "{{ state }}"
+    delegate_to: localhost

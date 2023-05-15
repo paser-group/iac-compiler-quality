@@ -1,0 +1,36 @@
+
+- name: Launch VM without MAC address
+  vmware_guest:
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_username }}"
+    password: "{{ vcenter_password }}"
+    validate_certs: False
+    datacenter: "{{ datacenter_name }}"
+    folder: "{{ folder_name }}"
+    name: "{{ vm_name }}"
+    state: present
+    guest_id: "{{ vm_guest_id }}"
+    disk:
+      - size_gb: "{{ vm_disk_size }}"
+        type: "{{ vm_disk_type }}"
+        datastore: "{{ vm_datastore }}"
+    hardware:
+      memory_mb: "{{ vm_memory }}"
+      num_cpus: "{{ vm_vcpu }}"
+  register: vm_guest
+
+- name: Gather facts about VM and verify MAC address
+  vmware_guest_facts:
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_username }}"
+    password: "{{ vcenter_password }}"
+    validate_certs: False
+    uuid: "{{ vm_guest.instance.uuid }}"
+    create_dirs: no
+    gather_network_info: yes
+  register: vm_facts
+
+- name: Assert that MAC address is present in gathered facts
+  assert:
+    that:
+      - vm_facts.instance.hw_eth0.macaddress is defined

@@ -1,0 +1,33 @@
+yaml
+- name: Redis Fact Caching Issue
+  hosts: redis-servers
+  vars:
+    rhel_version: 6
+  tasks:
+    - name: Verify RHEL version
+      setup:
+      register: fact_cache
+      
+    - name: Install Redis package on RHEL6
+      package:
+        name: redis
+        state: latest
+      when: '"Red Hat Enterprise Linux Server" in fact_cache.ansible_facts["ansible_distribution"] and rhel_version == fact_cache.ansible_facts["ansible_distribution_major_version"]'
+
+    - name: Ensure Redis is running
+      service:
+        name: redis
+        state: started
+        enabled: yes
+
+    - name: Enable fact caching
+      lineinfile:
+        path: /etc/ansible/facts.d/redis.fact
+        line: 'ansible_local.redis_version={{ ansible_local.redis.version }}'
+        state: present
+      become: true
+      when: '"Red Hat Enterprise Linux Server" in fact_cache.ansible_facts["ansible_distribution"] and rhel_version == fact_cache.ansible_facts["ansible_distribution_major_version"]'
+
+    - name: Use Redis fact caching
+      debug:
+        msg: "The Redis version on this host is {{ ansible_local.redis_version }}"

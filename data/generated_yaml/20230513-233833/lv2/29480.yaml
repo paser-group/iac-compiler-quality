@@ -1,0 +1,41 @@
+
+- name: Fuzzing the ios_command module
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Define command with error
+      ios_command:
+        commands: ["show interfaces | include gi1/0", "show ip protocols"]
+        warn: no
+        wait_for:
+          - match: "Error: This is an invalid command input"
+          - match: "Permission denied"
+      register: result
+
+    - name: Fail when matched error found
+      failed_when: "result.stdout_lines | select('search', '^Error: ') | list | count > 0 or result.stdout_lines | select('search', '^Permission denied') | list | count > 0"
+
+    - name: Run command with excess output
+      ios_command:
+        commands: "show interfaces description"
+        wait_for: "Match dropped due to full output buffer"
+        ignore_errors: yes
+
+    - name: Perform invalid command
+      ios_command:
+        commands: "show vlan id 4000"
+        wait_for: "Invalid input detected"
+        ignore_errors: yes
+
+    - name: Run invalid command over ssh
+      ios_command:
+        provider: "{{ ssh_conn }}"
+        commands: ["show version | experimental", "show run" ]
+        wait_for: "syntax error"
+        ignore_errors: yes
+
+    - name: Execute long command
+      ios_command:
+        commands: ["show running-config | section interface", "interface GigabitEthernet1/0"]
+      register: long_output
+      ignore_errors: no

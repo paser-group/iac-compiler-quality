@@ -1,0 +1,43 @@
+
+- hosts: node1
+  become: yes
+  tasks:
+    - name: Install MySQL packages
+      apt:
+        name: "{{ item }}"
+        state: present
+      with_items:
+        - mysql-server
+        - python3-mysqldb
+        - libmysqlclient-dev
+
+    - name: Create a test database and user
+      mysql_db:
+        name: test_db
+        state: present
+      become_user: root
+
+    - name: Grant privileges to the test user
+      mysql_user:
+        name: test_user
+        host: '%'
+        password: test_password
+        priv:
+          - ALL
+        state: present
+        append_privs: yes
+      become_user: root
+
+    - name: Remove privileges from the test user
+      mysql_user:
+        name: test_user
+        host: '%'
+        priv: '{{ item }}'
+        state: absent
+      become_user: root
+      loop:
+        - ALL
+        - SELECT
+        - INSERT
+        - UPDATE
+        - DELETE

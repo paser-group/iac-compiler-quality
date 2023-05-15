@@ -1,0 +1,71 @@
+
+- name: IPv6 instantiation error stress test
+  hosts: node1
+  gather_facts: false
+
+  tasks:
+    - name: Create a VM with an invalid IPv6 address
+      vmware_guest:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        name: "test-vm-{{ ansible_date_time.date }}"
+        state: poweredon
+        guest_id: ubuntu64Guest
+        hardware:
+          memory_mb: 512
+          num_cpus: 1
+        disk:
+          size_gb: 10
+          type: thin
+        network_interfaces:
+          - ipv6: "not-a-real-ipv6-address"
+            network_label: "VM Network"
+      ignore_errors: true
+      register: result_1
+
+    - name: Create a VM with an empty IPv6 address
+      vmware_guest:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        name: "test-vm-{{ ansible_date_time.date }}"
+        state: poweredon
+        guest_id: ubuntu64Guest
+        hardware:
+          memory_mb: 512
+          num_cpus: 1
+        disk:
+          size_gb: 10
+          type: thin
+        network_interfaces:
+          - ipv6: ""
+            network_label: "VM Network"
+      ignore_errors: true
+      register: result_2
+
+    - name: Create a VM with missing IPv6 address
+      vmware_guest:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        name: "test-vm-{{ ansible_date_time.date }}"
+        state: poweredon
+        guest_id: ubuntu64Guest
+        hardware:
+          memory_mb: 512
+          num_cpus: 1
+        disk:
+          size_gb: 10
+          type: thin
+        network_interfaces:
+          - network_label: "VM Network"
+      ignore_errors: true
+      register: result_3
+
+    - debug:
+        var: result_1
+    - debug:
+        var: result_2
+    - debug:
+        var: result_3

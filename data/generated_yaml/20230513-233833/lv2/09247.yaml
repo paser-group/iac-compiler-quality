@@ -1,0 +1,95 @@
+yaml
+- name: Fuzz test playbook for atfork import warning issue
+  hosts: all
+  gather_facts: no
+  become: yes
+  vars:
+    system_warnings: false
+  tasks:
+    # Incorrect syntax for import
+    - name: Test incorrect import syntax
+      command: >
+        {"{%"}} import non_existent_module
+      register: result
+      ignore_errors: true
+
+    # Test multiple values for system_warnings
+    - name: Test multiple values for system_warnings
+      command: echo Hi
+      register: result
+      loop: "{{ [true, false, 1, 0, 'True', 'False'] }}"
+
+    # Test invalid variable type for system_warnings
+    - name: Test invalid variable type for system_warnings
+      command: echo Hi
+      register: result
+      vars:
+        system_warnings: abc
+      ignore_errors: true
+
+    # Test command module with invalid arguments
+    - name: Test command module with invalid arguments
+      command: echo Hi
+      args:
+        arg1: value1
+        arg2: value2
+      register: result
+      ignore_errors: true
+
+    # Test invalid syntax for loop
+    - name: Test invalid syntax for loop
+      copy:
+        content: "{{ item }}"
+        dest: /tmp/test.txt
+      register: result
+      loop: []
+      loop_control:
+        bad_syntax: True
+
+    # Test quoting in shell command
+    - name: Test quotes in shell command
+      shell: "echo 'Hello'"
+      register: result
+
+    # Test invalid argument for shell module
+    - name: Test invalid argument for shell module
+      shell: echo "Hello"
+      args:
+        bad_arg: true
+      register: result
+      ignore_errors: true
+
+    # Test invalid syntax for include statement
+    - name: Test invalid syntax for include statement
+      include:
+        mistakes/mistyped.yaml
+      register: result
+      ignore_errors: true
+
+    # Test overwriting variable with extra-vars flag
+    - name: Test overwriting variable with extra-vars flag
+      debug:
+        msg: "{{ system_warnings }}"
+      register: result
+      vars:
+        system_warnings: true
+      extra_vars:
+        system_warnings: false
+
+    # Test invalid syntax for module parameter
+    - name: Test invalid syntax for module parameter
+      command:
+        cmd: whoami
+      args:
+        badparam: true
+      register: result
+      ignore_errors: true
+
+  handlers:
+    - name: Restart Service
+      become: yes
+      service:
+        name: "{{ item }}"
+        state: restarted
+      loop: "{{ groups['all'] }}"
+      listen: "Restart"

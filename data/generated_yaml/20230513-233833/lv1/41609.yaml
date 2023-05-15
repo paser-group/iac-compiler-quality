@@ -1,0 +1,19 @@
+yaml
+- name: Playbook to handle invalid facts.d script JSON
+  hosts: all
+  gather_facts: yes
+
+  tasks:
+    - name: Run facts.d script
+      shell: /etc/ansible/facts.d/my_script.sh
+      register: script_output
+      ignore_errors: True
+    
+    - name: Check if JSON is valid
+      set_fact:
+        error_message: "Invalid JSON from my_script.sh"
+      when: script_output.rc != 0 or not (script_output.stdout | from_json)
+
+    - name: Display results
+      debug:
+        var: ansible_local.my_script_output

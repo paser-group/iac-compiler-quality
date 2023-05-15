@@ -1,0 +1,26 @@
+yaml
+---
+- hosts: all
+  become: yes
+
+  tasks:
+
+   # Task 1 - Test for privilege escalation
+   - name: Attempt to escalate privileges
+     command: su - root
+     register: output
+
+   - name: Check if output has root permissions
+     debug: msg="Root privileges granted"
+     when: output.stdout_lines[0] contains 'root'
+
+   # Task 2 - Test for error handling
+   - name: Trigger an error
+     shell: unknowncommand "parameter"
+     ignore_errors: true
+     register: command_out
+
+   - name: Call custom error handler
+     fail:
+      msg: "Command failed: {{ command_out }}"
+      when: command_out.rc != 0

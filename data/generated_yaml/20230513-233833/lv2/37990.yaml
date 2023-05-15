@@ -1,0 +1,72 @@
+
+---
+- name: Test junos module run error handling
+  hosts: node1
+  gather_facts: no
+
+  tasks:
+    - name: Test wrong connection type
+      junos_command:
+        command: show version
+        provider:
+          host: 10.1.1.2
+          username: admin
+          password: password
+          port: 22
+          connection: incorrect
+      register: junos_output
+      ignore_errors: true
+
+    - name: Display junos module run output
+      debug:
+        msg: "{{ junos_output.stdout }}"
+
+    - name: Test invalid username and password
+      junos_command:
+        command: show version
+        provider:
+          host: 10.1.1.2
+          username: wronguser
+          password: wrongpass
+          port: 22
+          connection: local
+      register: junos_output2
+      ignore_errors: true
+
+    - name: Display junos module run output
+      debug:
+        msg: "{{ junos_output2.stdout }}"
+  
+    - name: Test input validation
+      junos_command:
+        command: show version
+        provider:
+          host: 10.1.1.2
+          connection: network_cli
+        warnings_false:
+          - '^some-unexpected-warning$'
+        args:
+          port: "1883"
+          user1: something
+          user2: something else
+      register: junos_output3
+      ignore_errors: true
+
+    - name: Display junos module run output
+      debug:
+        msg: "{{ junos_output3.stdout }}"
+        
+    - name: Test unexpected input
+      junos_command:
+        command: show version
+        provider:
+          host: 10.1.1.2
+          connection: network_cli
+        args:
+          unexpected_arg: value
+      register: junos_output4
+      ignore_errors: true
+
+    - name: Display junos module run output
+      debug:
+        msg: "{{ junos_output4.stdout }}"

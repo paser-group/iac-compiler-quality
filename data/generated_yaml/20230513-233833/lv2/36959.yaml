@@ -1,0 +1,67 @@
+
+- hosts: all
+  gather_facts: no
+  tasks:
+    - name: Test cloudfront_distribution module with unconventional syntax and unexpected inputs
+      cloudfront_distribution:
+        state: present
+        distribution_config:
+          DefaultCacheBehavior:
+            ForwardedValues:
+              QueryString: yyxx
+            Compress: 'yes'
+            LambdaFunctionARN: '{{ ansible_managed }}'
+            GeoRestriction:
+              RestrictionType: country
+              Quantity: 10
+              Items: ["CA", "US", "MX", "BR", "JP", "AU", "IN", "DE", "FR", "UK"]
+            TrustedSigners:
+              Enabled: 'no'
+              Quantity: 0
+      register: cloudfront_distribution_out
+
+    - name: Test geolocation update with invalid IP range
+      cloudfront_distribution:
+        state: present
+        distribution_id: '*'
+        distribution_config:
+          Restrictions:
+            GeoRestriction:
+              RestrictionType: blacklist
+              Quantity: 1
+              Items:
+                - "192.168.0.1/24"
+          Enabled: 'yes'
+          Comment: "This distribution has an invalid IP range"
+          DefaultCacheBehavior:
+            ForwardedValues:
+              QueryString: always
+            TargetOriginId: "{{ ansible_managed }}"
+            ViewerProtocolPolicy: redirect-to-https
+      register: cloudfront_distribution_out
+
+    - name: Test invalid CloudFront distribution ID
+      cloudfront_distribution:
+        state: absent
+        distribution_id: "an_invalid_distribution_id"
+      register: cloudfront_distribution_out
+
+    - name: Test geolocation update with unexpected value type
+      cloudfront_distribution:
+        state: present
+        distribution_config:
+          DefaultCacheBehavior:
+            ForwardedValues:
+              QueryString: always
+            Compress: false
+            LambdaFunctionARN: '{{ ansible_managed }}'
+            GeoRestriction:
+              RestrictionType: whitelist
+              Quantity: '10'
+              Items: ["CA", "US", "MX", "BR", "JP", "AU", "IN", "DE", "FR", "UK"]
+            TrustedSigners:
+              Enabled: 'yes'
+              Quantity: 1
+              Items:
+                - "an_unknown_arn"
+      register: cloudfront_distribution_out

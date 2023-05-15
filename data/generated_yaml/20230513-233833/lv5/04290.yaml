@@ -1,0 +1,30 @@
+
+---
+- name: Add privileges for MySQL user
+  hosts: node1
+  become: true
+  vars:
+    user_name: myuser
+    user_password: mypassword
+    user_privileges: "SELECT, INSERT, UPDATE, DELETE"
+  tasks:
+  - name: Install MySQL and Python3-MySQLdb package if not installed
+    apt:
+      name: ['mysql-server', 'python3-mysqldb']
+      state: present
+    when: "'mysql-server' not in ansible_pkg_mgr.packages_list and 'dpkg' in ansible_os_family"
+
+  - name: Add MySQL user
+    mysql_user:
+      name: "{{ user_name }}"
+      password: "{{ user_password }}"
+      priv: "{{ user_privileges }}.*:ALL"
+      host: '%'
+      state: present
+  
+  - name: Check privileges for myuser
+    mysql_user:
+      name: "{{ user_name }}"
+      priv: "{{ user_privileges }}.*:ALL"
+      host: '%'
+      state: present

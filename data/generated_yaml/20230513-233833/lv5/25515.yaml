@@ -1,0 +1,53 @@
+
+- name: Test nxos_vxlan_vtep module with nxapi and cli transports
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Install required dependencies
+      block:
+        - name: Install nxapi transport
+          pip: name=junos-eznc extra_args="--user"
+        - name: Install cli transport
+          pip: name=pyyaml extra_args="--user"
+      become: true
+    - name: Configure devices for testing
+      block:
+        - name: Set up nxapi transport
+          nxos_login:
+            transport: nxapi
+            host: "{{ inventory_hostname }}"
+            username: "{{ nxapi_username }}"
+            password: "{{ nxapi_password }}"
+          register: nxapi_session
+        - name: Set up cli transport
+          cli_config:
+            transport: cli
+            host: "{{ inventory_hostname }}"
+            username: "{{ cli_username }}"
+            password: "{{ cli_password }}"
+          register: cli_session
+      become: true
+    - name: Test nxos_vxlan_vtep module with nxapi transport
+      nxos_vxlan_vtep:
+        vtep_ip: "{{ vtep_ip }}"
+        vni: "{{ vni }}"
+        vrf: "{{ vrf }}"
+      transport: nxapi
+      session: "{{ nxapi_session }}"
+      register: nxapi_output
+    - name: Test nxos_vxlan_vtep module with cli transport
+      nxos_vxlan_vtep:
+        vtep_ip: "{{ vtep_ip }}"
+        vni: "{{ vni }}"
+        vrf: "{{ vrf }}"
+      transport: cli
+      session: "{{ cli_session }}"
+      register: cli_output
+    - name: Check for errors in nxos_vxlan_vtep module output
+      block:
+        - fail:
+            msg: 'Error found in nxapi output.'
+          when: nxapi_output.failed == true
+        - fail:
+            msg: 'Error found in cli output.'
+          when: cli_output.failed == true

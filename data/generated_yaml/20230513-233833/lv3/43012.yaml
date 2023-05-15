@@ -1,0 +1,25 @@
+
+---
+- name: Windows DSC PSCredential Conversion Error
+  hosts: windows-nodes
+  gather_facts: no
+  vars:
+    ansible_user: '{{ remote_user }}'
+    ansible_password: '{{ remote_pass }}'
+    remote_user: 'admin'
+    remote_pass: 'password'
+    psdsc_credential:
+      user: '{{ remote_user }}'
+      password: '{{ remote_pass }}'
+  tasks:
+    - name: Install PSDSC module
+      win_psmodule:
+        name: PSDscResources
+        state: present
+    - name: Convert PSCredential object to JSON
+      win_command: powershell.exe -command "$res = ConvertTo-Json -InputObject '{{ psdsc_credential }}'; Write-Host $res"
+      register: output
+      failed_when: output.rc not in [0,2]
+    - name: Print the output
+      debug:
+        var: output.stdout_lines

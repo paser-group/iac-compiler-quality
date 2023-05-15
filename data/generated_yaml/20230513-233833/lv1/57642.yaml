@@ -1,0 +1,42 @@
+yaml
+---
+
+- hosts: all
+  gather_facts: false
+  vars:
+    vcenter_hostname: "<vcenter_hostname>"
+    vcenter_username: "<vcenter_username>"
+    vcenter_password: "<vcenter_password>"
+    vcenter_datacenter: "<vcenter_datacenter>"
+  tasks:
+  - name: Gather Orphaned VMs from vSphere
+    vmware_vm_inventory:
+      hostname: "{{ vcenter_hostname }}"
+      username: "{{ vcenter_username }}"
+      password: "{{ vcenter_password }}"
+      datacenter: "{{ vcenter_datacenter }}"
+      validate_certs: false
+      collect_guest_disk_info: true
+      with_guest_info: true
+      with_template_info: true
+      with_cluster_info: true
+      with_rdm_info: true
+      with_pbm_info: true
+      with_expire_info: false
+      with_provider_info: false
+      with_folder_info: true
+      with_tags: ['detected', 'vmware.shared.tag']
+      tag_key: "detected"
+      tag_value: "orphaned"
+    register: orphaned_vms
+    
+  - name: Remove Orphaned VMs from vSphere
+    vmware_guest:
+      hostname: "{{ vcenter_hostname }}"
+      username: "{{ vcenter_username }}"
+      password: "{{ vcenter_password }}"
+      datacenter: "{{ vcenter_datacenter }}"
+      name: "{{ item.guest_name }}"
+      state: absent
+    with_items: "{{ orphaned_vms.virtual_machines }}"
+

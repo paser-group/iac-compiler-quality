@@ -1,0 +1,26 @@
+
+---
+- hosts: all
+  become: true
+  
+  tasks:
+    - name: Copy large file to remote node
+      copy:
+        src: "large_file.iso"
+        dest: "{{ remote_tmp }}/large_file.iso"
+        remote_src: true
+        timeout: 600
+      register: result
+  
+    - name: Wait for file to copy
+      async_status:
+        jid: "{{ result.ansible_job_id }}"
+        timeout: 5400
+      register: copy_status
+      until: copy_status.finished
+  
+    - name: Print result
+      debug:
+        msg: "File upload successful"
+      when: copy_status.finished
+  

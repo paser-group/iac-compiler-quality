@@ -1,0 +1,45 @@
+
+- name: Create EC2 instance and RDS instance for PostgreSQL
+  hosts: ec2_instances
+  become: true
+  vars:
+    ec2_region: "us-east-1"
+    ec2_instance_type: "t2.micro"
+    ec2_ami: "ami-0c94855ba95c71c99"
+    ec2_key_pair: "ansible-keypair"
+    ec2_security_group: "sg-085754a099d0b1446"
+    rds_instance_name: "postgres-test-db"
+    rds_instance_engine: "postgres"
+    rds_instance_storage_type: "gp2"
+    rds_instance_class: "db.t2.micro"
+    rds_master_username: "postgresuser"
+    rds_master_password: "postgrespassword"
+    rds_db_name: "testdb"
+  tasks:
+    - name: Create EC2 instance
+      ec2:
+        region: "{{ ec2_region }}"
+        instance_type: "{{ ec2_instance_type }}"
+        image: "{{ ec2_ami }}"
+        key_name: "{{ ec2_key_pair }}"
+        group_id: "{{ ec2_security_group }}"
+        count: 1
+        instance_tags:
+          Name: "test-instance"
+        wait: true
+        assign_public_ip: true
+      register: ec2_instance
+
+    - name: Create RDS instance for PostgreSQL
+      rds:
+        state: present
+        region: "{{ ec2_region }}"
+        instance_name: "{{ rds_instance_name }}"
+        username: "{{ rds_master_username }}"
+        password: "{{ rds_master_password }}"
+        storage_type: "{{ rds_instance_storage_type }}"
+        instance_type: "{{ rds_instance_class }}"
+        db_name: "{{ rds_db_name }}"
+        engine: "{{ rds_instance_engine }}"
+        publicly_accessible: true
+      register: rds_instance

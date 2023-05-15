@@ -1,0 +1,34 @@
+
+---
+- name: Check and Install Package on CentOS 8 Stream
+  hosts: node1
+  gather_facts: false
+  become: true
+  vars:
+    package: "{{ package_name | default('foo') }}" # set default value for package_name
+  tasks:
+    - name: Verify that dnf package manager is installed
+      command: "which dnf" # check if dnf is installed
+      register: dnf_check
+
+    - name: Install dnf package manager if not already installed
+      yum:
+        name: dnf
+        state: present
+      when: dnf_check.rc != 0 # install dnf if not installed
+
+    - name: Get list of installed repositories
+      command: "dnf repolist"
+      register: repo_list
+
+    - name: Check if package is available in any repository
+      check_availability:
+        package: "{{ package }}"
+        repo_list: "{{ repo_list.stdout }}"
+      register: availability
+
+    - name: Install package using dnf package manager
+      dnf:
+        name: "{{ package }}"
+        state: latest
+      when: availability.is_available

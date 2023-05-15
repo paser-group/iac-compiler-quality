@@ -1,0 +1,55 @@
+
+---
+- name: Dynamic variable with_items issue test
+  hosts: node1
+  gather_facts: false
+  
+  vars:
+    my_list: 
+      - "{{ item }} {{ item }}"
+    my_dict:
+      test1: "value1"
+      test2: "{{ item }}_{{ item }}"
+      
+  tasks:
+    - name: Test with_items with dynamic variable
+      debug:
+        msg: "{{ item }}"
+      with_items: "{{ my_list }}"
+      
+    - name: Test with_items with dynamic variable inside dict values
+      debug:
+        msg: "{{ item.value }}"
+      with_dict: "{{ my_dict }}"
+      
+    - name: Test with_items with unconventional list
+      debug:
+        msg: "{{ item }}"
+      with_items: 
+        - "{{ true | ternary('yes', 'no') }}"
+        - "{{ false | ternary('yes', 'no') }}"
+        - "{{ 1.23|int }}"
+        - "{{ 'hello'|int }}"
+        - "{{ omit }}"
+        - "{{ not_exist | default('default_value') }}"
+        - "{{ none_var }}"
+      
+    - name: Test with_items with non-list values
+      debug:
+        msg: "{{ item }}"
+      with_items:
+        - 1234
+        - true
+        - "{{ hostvars['node1']['ansible_interface'] | default('eth0') }}"
+        - "{{ not_exist }}"
+        - "{{ playbook_dir }}/{{ not_exist }}"
+        - "{{ my_dict | to_yaml }}"
+        - "{{ my_dict | to_nice_json }}"
+
+    - name: Test with_items with special characters
+      debug:
+        msg: "{{ item }}"
+      with_items:
+        - "{{ lookup('file', 'file.txt') | b64encode }}"
+        - "{{ '/%^@:?<>{}[]&*()\\|=+-' | urlencode }}"
+        - "{{ '/%^@:?<>{}[]&*()\\|=+-' | regex_replace('([\\%])', '\\\\1') }}"

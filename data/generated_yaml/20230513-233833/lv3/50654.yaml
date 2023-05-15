@@ -1,0 +1,38 @@
+
+---
+- name: Docker Swarm Service Name Issue
+  hosts: node1
+  become: true
+  vars:
+    swarm_service_name:
+      - "my_service"
+      - "my_other_service"
+      - "my_incorrect_service_name"
+      - "my_another_service"
+      - "my_final_service"
+      
+  tasks:
+    - name: Create Docker Swarm Services
+      docker_swarm_service:
+        name: "{{ item }}"
+        state: started
+        image: nginx
+        published_ports:
+          - "80:80/tcp"
+      with_items: "{{ swarm_service_name }}"
+          
+    - name: Check Services using prefix
+      docker_swarm_service:
+        prefix: my_service
+      register: my_services
+      
+    - debug:
+        var: my_services
+        
+    - name: Check Services using incorrect prefix
+      docker_swarm_service:
+        prefix: my_incorrect_service
+      register: incorrect_services
+      
+    - debug:
+        var: incorrect_services

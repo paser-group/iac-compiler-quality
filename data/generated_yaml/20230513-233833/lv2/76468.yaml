@@ -1,0 +1,33 @@
+
+- name: Test Playbook for WinRM connection errors
+  hosts: win-servers
+  gather_facts: no
+
+  vars:
+    winrm_port: 5555
+    ps_path: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+
+  tasks:
+  - name: Ensure WinRM is enabled
+    win_command: systeminfo | findstr /B /C:"OS Name" /C:"OS Version"
+    register: os_version
+    changed_when: false
+
+  - name: Configure WinRM to listen on alternate port
+    win_shell: Set-Item -Path WSMan:\localhost\Service\Listener -Value @{
+                        Address="*";
+                        Transport="HTTP";
+                        Port="{{ winrm_port }}";
+                      }
+    when: os_version.stdout_lines[0] is search("Windows Server 2019") and os_version.stdout_lines[1] is search("1809")
+
+  - name: Execute WinRM command and capture error if connection error occurs
+    ignore_errors: yes
+    win_command: "{{ ps_path }} winrm id -r:{{ inventory_hostname }}:{{ winrm_port }}"
+    register: winrm_output
+
+  - name: Fail the playbook if WinRM connection error occurs
+    fail:
+      msg: "Connection to {{ inventory_hostname }} WinRM endpoint failed with error: {{ winrm_output.stderr }}"
+    when: winrm_output.rc != 0 or winrm_output.stderr is search("WinRM cannot process the request")
+

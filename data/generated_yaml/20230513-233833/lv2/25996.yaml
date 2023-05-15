@@ -1,0 +1,35 @@
+
+---
+- name: Stresstest playbook for s3_bucket issue
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: Create an S3 bucket with dots and uppercase letters
+      s3_bucket:
+        name: my-Test-Bucket.com
+        state: present
+
+    - name: Retrieve the S3 bucket properties
+      s3_bucket:
+        name: my-Test-Bucket.com
+        state: present
+      register: s3bucket_props
+
+    - name: Check if the S3 bucket properties is correctly set.
+      assert:
+        that:
+          - s3bucket_props.state == 'present'
+          - s3bucket_props.name == 'my-Test-Bucket.com'
+
+    - name: Attempt to create another S3 bucket with the same name but with no dots or uppercase letters.
+      s3_bucket:
+        name: myTestBucket
+        state: present
+      register: failed_s3bucket_creation
+
+    - name: Check if the creation of the S3 bucket with no uppercase letters and dots fails. Also check the error message.
+      assert:
+        that:
+          - failed_s3bucket_creation.failed == true
+          - failed_s3bucket_creation is search('No uppercase letters, dots, underscores or must start with lowercase letter.')

@@ -1,0 +1,52 @@
+
+- name: Generate vtp password for N1 images
+  hosts: node1
+  gather_facts: no
+
+  tasks:
+  - name: Initialize password for VTP
+    nxos_vtp_version:
+      version: N1
+      password: "{{ ['password', 'secret', 'PaSsWoRd'] | random() }}"
+
+  - name: Create file with password
+    copy:
+      content: "{{ ['password', ''] | random() }}"
+      dest: "/var/tmp/{{ ['password', 'vtp-password'] | random() }}.txt"
+
+  - name: Change ownership of the file to root
+    file:
+      path: "/var/tmp/{{ ['password', 'vtp-password'] | random() }}.txt"
+      owner: 'root'
+
+  - name: Remove the password file
+    file:
+      path: "/var/tmp/{{ ['password', 'vtp-password'] | random() }}.txt"
+      state: absent
+
+  - name: Pass an invalid version for VTP
+    nxos_vtp_version:
+      version: 'N1_1'
+      password: "{{ ['password', 'secret', 'PaSsWoRd'] | random() }}"
+
+  - name: Pass invalid properties to nxos_vtp_version
+    nxos_vtp_version:
+      state: latest
+      password: "{{ ['password', 'secret', 'PaSsWoRd'] | random() }}"
+
+  - name: Pass unexpected input to the password parameter
+    nxos_vtp_version:
+      version: N1
+      password: ['password', 'secret', 'PaSsWoRd']
+
+  - name: Use an invalid module name
+    ce_vrrp:
+      interface: ethernet1/1
+      priority: 120
+
+  - name: Pass incorrect credentials to the module
+    nxos_vtp_version:
+      version: N1
+      password: "{{ ['password', 'secret'] | random() }}"
+    become: yes
+    become_user: root

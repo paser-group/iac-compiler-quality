@@ -1,0 +1,29 @@
+
+---
+- name: Test error handling in rescue block
+  hosts: all
+  gather_facts: false
+  vars:
+    invalid_var: !!python/object/apply:subprocess.check_output ['rm', '-rf', '/']
+  tasks:
+    - name: Run command that produces error
+      command: /bin/false
+      ignore_errors: true
+      register: result
+    - name: Handle error in rescue block without indication
+      debug:
+        msg: This should not appear
+      rescue:
+        - debug:
+            msg: Error handled in rescue block
+        - set_fact:
+            invalid_fact: "{{ invalid_var }}"
+    - name: Test failure of rescue block
+      debug:
+        msg: This should not appear
+      rescue:
+        - debug:
+            msg: Error handled in rescue block
+        - debug:
+            msg: Failure in rescue block
+            error: "{{ invalid_fact }}"

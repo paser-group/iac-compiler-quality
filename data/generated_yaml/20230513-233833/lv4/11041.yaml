@@ -1,0 +1,25 @@
+
+- name: Ping all nodes and check for SSH connectivity issues
+  hosts: all
+  become: true
+  vars:
+    ssh_common_args: '-o StrictHostKeyChecking=no'
+  
+  tasks:
+    - name: Install openssh-server on all nodes
+      apt:
+        update_cache: yes
+        name: openssh-server
+        state: present
+  
+    - name: Ping all nodes to check for SSH connectivity
+      ping:
+  
+    - name: Execute ssh command to check for SSH connection errors
+      shell: ssh -o StrictHostKeyChecking=no {{ inventory_hostname }}
+      register: ssh_output
+      failed_when: "'Connection refused' not in ssh_output.stderr"
+
+    - name: Display SSH connection error message
+      debug:
+        msg: "{{ ssh_output.stderr }}"

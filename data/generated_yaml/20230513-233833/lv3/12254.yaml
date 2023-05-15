@@ -1,0 +1,29 @@
+
+---
+- hosts: all
+  gather_facts: no
+
+  tasks:
+  - name: "Run asynchronous task"
+    async: 10
+    poll: 0
+    command: /usr/bin/my_long_running_task
+
+    register: job_id
+
+  - name: "Print the job status"
+    async_status:
+      jid: "{{ job_id.ansible_job_id }}"
+
+    register: job_result
+
+  - name: "Wait for job completion"
+    until: job_result.finished
+    retries: 30
+    delay: 2
+    async: 10
+    poll: 0
+
+  - name: "Do something with the result"
+    debug: msg="{{ item }}"
+    with_items: "{{ job_result.results }}"

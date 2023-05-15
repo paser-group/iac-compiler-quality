@@ -1,0 +1,41 @@
+
+---
+- name: Stress test the wait_for module
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Attempt to ping all nodes in the inventory file
+      ping:
+      register: ping_result
+
+    - name: Check if all nodes are reachable
+      wait_for:
+        host: "{{ item }}"
+        port: 22
+        timeout: 5
+        ignore_errors: true
+      loop: "{{ groups['all'] }}"
+      register: wait_result
+
+    - name: Print the wait_for results
+      debug:
+        var: wait_result
+
+    - name: Generate a connection error on node2
+      shell: "curl http://10.1.1.2:9090"
+      async: 10
+      poll: 1
+      register: curl_result
+
+    - name: Wait for node2 to become unreachable due to connection error
+      wait_for:
+        host: node2
+        port: 22
+        timeout: 10
+        delay: 5
+      ignore_errors: true
+
+    - name: Print the curl results
+      debug:
+        var: curl_result

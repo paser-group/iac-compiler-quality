@@ -1,0 +1,53 @@
+
+---
+- name: Test playbook for nxos_ip_interface module issue
+  hosts: all
+  become: yes
+
+  tasks:
+    - name: Configure IPv6 on interface
+      nxos_ip_interface:
+        interface: "{{ item }}"
+        ipv6:
+          address: "{{ item }}/64"
+          enable: yes
+        state: present
+      with_items:
+        - "Ethernet1/1"
+        - "Ethernet1/2"
+        - "Vlan1"
+        - "Loopback1"
+        - "Loopback2"
+        - "Port-channel1"
+        - "mgmt0"
+
+    - name: Attempt to configure invalid IP address
+      nxos_ip_interface:
+        interface: "Ethernet1/1"
+        ipv6:
+          address: "invalid_ipv6_address"
+          enable: yes
+        state: present
+
+    - name: Attempt to configure invalid interface
+      nxos_ip_interface:
+        interface: "invalid_interface"
+        ipv6:
+          address: "{{ hostvars[inventory_hostname]['ansible_eth0']['ipv6'][0]['address'] }}/64"
+          enable: yes
+        state: present
+
+    - name: Attempt to enable IPv6 without address
+      nxos_ip_interface:
+        interface: "Ethernet1/1"
+        ipv6:
+          enable: yes
+        state: present
+
+    - name: Attempt to disable existing IPv6 address
+      nxos_ip_interface:
+        interface: "Ethernet1/1"
+        ipv6:
+          address: "{{ hostvars[inventory_hostname]['ansible_eth0']['ipv6'][0]['address'] }}/64"
+          enable: no
+        state: present

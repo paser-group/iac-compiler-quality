@@ -1,0 +1,45 @@
+
+---
+- name: IAM module - Credentials error message testing
+  hosts: all
+  become: yes
+  tasks:
+  - name: Test unhelpful credentials error message
+    iam_user:
+      name: test_user
+      password: "{{ lookup('password', '/dev/null') }}"
+      state: present
+    register: result
+    ignore_errors: true
+    failed_when: >
+      result.changed and
+      ('Given final block not properly padded' in result.msg or
+       'stronger key' in result.msg or
+       'openssl/evp.h' in result.msg or
+       'Invalid maximum TTL' in result.msg or
+       'stale-while-revalidate' in result.msg or
+       'SSL_CTX_load_verify_locations' in result.msg or
+       'TLSV1_ALERT_PROTOCOL_VERSION' in result.msg or
+       'unknown algorithm' in result.msg)
+      
+  - name: Test AWS credentials invalid message
+    iam_user:
+      name: test_user
+      password: "{{ lookup('password', '/dev/null') }}"
+      access_key: invalid_access_key
+      secret_key: invalid_secret_key
+      state: present
+    register: result
+    failed_when: >
+      ('The security token included in the request is invalid' not in result.msg or
+       'The AWS Access Key Id you provided does not exist in our records' not in result.msg)
+
+  - name: Test insufficient permissions message
+    iam_user:
+      name: test_user
+      password: "{{ lookup('password', '/dev/null') }}"
+      access_key: invalid_access_key
+      secret_key: invalid_secret_key
+      state: present
+    register: result
+    failed_when: "'You are not authorized to perform this operation.' not in result.msg"

@@ -1,0 +1,60 @@
+yaml
+---
+- hosts: node1
+  gather_facts: false
+  
+  tasks:
+    - name: Override variables in include_vars with default values
+      include_vars: "{{ item }}"
+      vars:
+        file_path: "{{ role_path }}/defaults/main.yml"
+        default_value: "{{ default_value | default('default') }}"
+      with_items:
+        - "{{ lookup('file', role_path + '/vars/file.txt') }}"
+        - "{{ file_path }}"
+      vars_files:
+        - vars/defaults.yml
+
+    - name: Pass dictionary as the 'include_vars' argument
+      include_vars:
+        variable: "{{ item }}"
+      with_items:
+        - dict1: "{{ var1 | d({}) }}"
+          dict2: "{{ var2 | d({}) }}"
+      register: result
+      
+    - name: Extract values from complex data types
+      debug:
+        var: result | selectattr('key', 'equalto', 'dict2') | map(attribute='value') | flatten
+      vars:
+        my_list:
+          - "{{ result | map(attribute='key') | list }}"
+
+    - name: Use a nested include statement with different variables file extension
+      include_vars: vars/custom.json
+      
+    - name: Use inventory variables to define include_vars file name
+      include_vars: "{{ item }}"
+      with_items: 
+        - "vars/{{ inventory_hostname }}{{ env | default('prod') }}.yml" 
+
+    - name: Execute a shell command through include_vars
+      include_vars: "{{ item }}"
+      with_items: 
+        - "({{ my_var | default('ls') }}) && echo hello"
+      register: output
+
+    - name: Test lookup plugins within include_vars
+      include_vars: "vars/{{ lookup('env','MY_VAR') }}.yml"
+
+- hosts: node2,node3
+  gather_facts: false
+  
+  tasks:
+    - name: Include a non-existing file
+      include_vars: "{{ lookup('env','NON_EXISTING_FILE') }}"
+      ignore_errors: yes
+
+    - name: Use only_if with include_vars
+      include_vars: "{{ lookup('file','/etc/passwd') }}"
+      only_if: "false == true"

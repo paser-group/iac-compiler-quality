@@ -1,0 +1,39 @@
+
+- name: Create PTR Record
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: Set DNS name and IP variables
+      set_fact:
+        dns_name: "{{ hostvars[item].ansible_hostname }}"
+        ip_address: "{{ hostvars[item].ansible_default_ipv4.address }}"
+      with_items: "{{ groups['all'] }}"
+
+    - name: Create PTR record
+      win_dns_record:
+        name: "{{ ip_address.split('.')[-1] }}.in-addr.arpa"
+        value: "{{ dns_name }}"
+        type: "PTR"
+      with_items: "{{ groups['all'] }}"
+
+    - name: Add invalid IP for PTR record
+      win_dns_record:
+        name: "{{ ip_address.split('.')[-1] }}.in-addr.arpa"
+        value: "invalid_dns_name"
+        type: "PTR"
+      with_items: "{{ groups['all'] }}"
+
+    - name: Add empty DNS name
+      win_dns_record:
+        name: "{{ ip_address.split('.')[-1] }}.in-addr.arpa"
+        value: ""
+        type: "PTR"
+      with_items: "{{ groups['all'] }}"
+
+    - name: Add unsupported record type
+      win_dns_record:
+        name: "{{ ip_address.split('.')[-1] }}.in-addr.arpa"
+        value: "{{ dns_name }}"
+        type: "X25"
+      with_items: "{{ groups['all'] }}"

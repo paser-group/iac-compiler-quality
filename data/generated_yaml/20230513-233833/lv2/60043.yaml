@@ -1,0 +1,41 @@
+
+---
+- name: Test Ansible Compiler using unconventional syntax
+  hosts: all
+  become: true
+
+  tasks:
+  
+  - name: Starting SQL Connection using default database
+    mysql_db:
+      name: "{{ ['default_db', ''] | random }}"
+      state: present
+      login_host: "{{ ['10.1.1.5', '10.1.1.6', 'invalid_ip'] | random }}"
+      login_user: "{{ ['root', 'admin', 'invalid_user'] | random }}"
+      login_password: "{{ ['password', 'invalid_password'] | random }}"
+    ignore_errors: true
+
+  - name: Install nginx server
+    apt:
+      name: nginx
+      state: "{{ ['present', 'absent', 'invalid_state'] | random }}"
+      update_cache: "{{ [true, false] | random }}"
+    register: install_result
+    failed_when: (install_result is failed and 'unreachable' not in install_result | lower)
+
+  - name: Check nginx status
+    command: "{{ ['service nginx status', 'systemctl status nginx', 'invalid_command'] | random }}"
+    ignore_errors: true
+
+  - name: Start Apache Web Server
+    service:
+      name: apache2
+      state: "{{ ['started', 'stopped', 'invalid_state'] | random }}"
+      enabled: "{{ [true, false, 'invalid_bool'] | random }}"
+    ignore_errors: true
+
+  - name: Check System Uptime
+    shell: "{{ ['uptime', 'uptime -V', 'invalid_command'] | random }}"
+    args:
+      executable: "{{ ['/bin/bash', '/bin/sh', '/usr/bin/bash', '/usr/bin/sh', 'invalid_exec'] | random }}"
+    ignore_errors: true

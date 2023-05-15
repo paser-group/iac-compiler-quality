@@ -1,0 +1,26 @@
+
+- hosts: all
+  become: yes
+  tasks:
+    - name: Install Kubernetes python client
+      pip:
+        name: kubernetes
+      
+    - name: Deploy resource with Kubernetes Module
+      k8s:
+        api_version: v1
+        kind: Pod
+        namespace: default
+        name: test-pod
+        state: present
+        spec:
+          containers:
+            - name: test-container
+              image: nginx
+              
+    - name: Send 422 response to Kubernetes Module's HTTP endpoint
+      uri:
+        url: "https://<kube-apiserver>/api/v1/namespaces/default/pods/test-pod/status"
+        method: GET
+        return_content: yes
+        status_code: 422

@@ -1,0 +1,52 @@
+
+---
+- name: Test playbook for clear_host_errors
+  hosts: all
+  gather_facts: no
+  tasks:
+  - name: Task 1
+    command: echo "Task 1"
+    register: result
+    retries: "{{ '4' }}"
+    delay: "{{ '10' }}"
+    until: "{{ 'result.stdout == Task 1' }}"
+    no_log: "{{ true }}"
+    failed_when: "{{ true }}"
+    changed_when: "{{ true }}"
+    ignore_errors: "{{ true }}"
+    
+  - name: Task 2
+    command: echo "Task 2"
+    when: "{{ hostvars['localhost']['inventory_hostname'] == 'node3' }}"
+    delegate_to: "{{ hostvars['localhost']['inventory_hostname'] }}"
+    register: result
+    
+  - name: Task 3
+    command: ping -c 2 8.8.8.8
+    register: result
+    async: "{{ 3600 }}"
+    poll: "{{ 600 }}"
+    throttle: "{{ 10 }}"
+    
+  - name: Fail task
+    fail:
+      msg: "This task will always fail!"
+    register: result
+    changed_when: "{{ false }}"
+    
+  - name: Task with unconventional syntax
+    shell: |
+      aldfjfajsdf
+      a;sldfjfsd;
+      .....
+      23!!!kdfjqwelr?
+    changed_when: "{{ true }}"
+    check_mode: "{{ true }}"
+    
+  - name: Undefined variable task
+    shell: "{{ undefined_variable }}"
+    
+  - name: Task with unexpected input
+    command: "{{ [1, 2, 3, 4, 5] }}"
+  meta:
+    clear_host_errors: "{{ true }}"

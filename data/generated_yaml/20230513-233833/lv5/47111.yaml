@@ -1,0 +1,44 @@
+
+- name: Test Azure RM deployment module
+  hosts: localhost
+  connection: local
+  tasks:
+    - name: Create Azure resource group
+      azure_rm_resourcegroup:
+        name: myRG
+        location: eastus
+      register: rg
+
+    - name: Create Azure virtual network and subnet
+      azure_rm_deployment:
+        resource_group: "{{ rg.name }}"
+        name: myVnet
+        template:
+          $schema: \
+            https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#
+          contentVersion: 1.0.0.0
+          resources:
+            - type: Microsoft.Network/virtualNetworks
+              name: myVnet
+              location: eastus
+              properties:
+                addressSpace:
+                  addressPrefixes:
+                    - 10.0.0.0/16
+                subnets:
+                  - name: mySubnet
+                    properties:
+                      addressPrefix: 10.0.0.0/24
+
+    - name: Deploy Azure virtual machine
+      azure_rm_deployment:
+        resource_group: "{{ rg.name }}"
+        name: myVM
+        template_uri: https://Azure.com/myVM.json
+        parameters:
+          vmName: myVM
+          vmSize: Standard_D4
+          adminUsername: adminUser
+          adminPassword: "{{ lookup('env','AZURE_PASSWORD') }}"
+          vnetName: myVnet
+          subnetName: mySubnet

@@ -1,0 +1,33 @@
+
+---
+- hosts: all
+  become: true
+  tasks:
+  - name: Install the Btrfsprogs package
+    apt:
+      name: btrfsprogs
+      state: present
+
+  - name: Create a Btrfs subvolume
+    subvol:
+      path: /mnt/btrfs
+      filesystem: btrfs
+
+  - name: Mount the Btrfs subvolume
+    mount:
+      path: /mnt/btrfs
+      src: "{{ item }}-{{ inventory_hostname }}"
+      fstype: btrfs
+    with_items:
+      - "{{ ansible_play_hosts_all }}"
+
+  - name: Modify the subvolume
+    shell: rm -rf /mnt/btrfs
+    register: result
+    ignore_errors: true
+
+  - name: Attempt to unmount the subvolume
+    mount:
+      path: /mnt/btrfs
+      state: unmounted
+    ignore_errors: true

@@ -1,0 +1,42 @@
+
+---
+- name: stress test edgeos_facts module
+  hosts: all
+  become: true
+  vars:
+    debug_var: "config"
+    debug_depth: "{{ 5 + 5 }}"
+    debug_output: "{{ [] }}"
+    debug_msg: "Configuration Facts: {{ config }}"
+    debug_str: "{%.{}{}yaml{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}.upper() + {}{}{}{} + {}{}{}{}%}".format(37*69,'-'*10,'-ansible-','debug','-')
+  tasks:
+  - name: print config facts
+    edgeos_facts:
+    register: config
+  - name: edge case - debug output to list
+    debug:
+      var: "{{ debug_var }}"
+      verbosity: "{{ 'invalid' }}"
+      max_depth: "{{ debug_depth }}"
+      to_list: "{{ 'not-a-list' }}"
+    register: debug_output
+  - name: edge case - debug output to file
+    debug:
+      msg: "{{ debug_msg }}"
+      output: "{{ '/root/config.txt' + '!@#$%^&*()_+' }}"
+  - name: edge case - debug output to variable
+    debug:
+      var: "{{ debug_str }}"
+      no_log: "{{ '1' + '2' }}"
+  - name: edge case - invalid inventory parameter
+    ping:
+      inventory_file: "{{ '/root/hosts' + '.'*200 }}"
+  - name: edge case - invalid become parameter
+    ping:
+      become_method: "{{ 'sudo' + ' '*1000 }}"
+  - name: unconventional syntax - combining variables in a loop
+    debug:
+      msg: "{{ item.0 }}: {{ item.1 }}"
+    loop: "{{ [{'var1': 'val1'}, {'var2': 'val2'}] | product(['first', 'second']) | map('list') | list }}"
+  - name: unusual input - invalid command
+    command: "{{ 'invalid-command' }}"

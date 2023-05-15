@@ -1,0 +1,82 @@
+yaml
+---
+- name: gcp_compute JSON output bug
+  hosts: all
+  gather_facts: no
+  
+  vars:
+    compute_instance_template: "projects/test-project/global/instanceTemplates/test-instance-template"
+    ssh_key: "ssh-rsa ... user@test.com"
+  
+  tasks:
+    - name: Run gcp_compute inventory plugin with JSON output
+      shell: ansible-inventory -i inventory --list --export --yaml --output-file test.json
+      register: plugin_output
+      ignore_errors: true
+    
+    - name: Check if plugin output contains JSON data
+      assert:
+        that: plugin_output.stdout_lines is search("(^\s*[{[]|[,{]\s*$)")
+        msg: "Output doesn't contain JSON data"
+    
+    - name: Filter out all instances that use compute_instance_template
+      set_fact:
+        instances: "{{ plugin_output.stdout | from_json | json_query(jmesquery) }}"
+      vars:
+        jmesquery: "[?contains(instance_template, '{{ compute_instance_template }}')].{'instance_name': name}"
+    
+    - name: Print instance names and metadata
+      debug:
+        msg: "Instance {{ item.instance_name }} has metadata {{ item.metadata }}"
+      with_items: "{{ instances }}"
+    
+    - name: Make a network request for each instance
+      uri:
+        url: "http://{{ item.instance_name }}.example.com"
+        return_content: true
+        headers:
+          "Authorization": "Bearer {{ access_token }}"
+      register: instance_uris
+      with_items: "{{ instances }}"
+      vars:
+        access_token: "{{ lookup('env', 'ACCESS_TOKEN') }}"
+    
+    - name: Check that at least one instance returned a non-empty response
+      assert:
+        that: instance_uris | json_query('results[*].content') | join("") is not match("^\\s*$")
+        msg: "No instances returned a non-empty response"
+    
+    - name: Remove SSH public key from all instances
+      google_compute_instance:
+        project: test-project
+        zone: europe-west1-b
+        name: "{{ item.instance_name }}"
+        auth_kind: serviceaccount
+        service_account_file: "/path/to/service/account/key.json"
+        remove_access_config: false
+        access_configs:
+          - name: "external-nat"
+            type: "ONE_TO_ONE_NAT"
+        network_interfaces:
+          - network: "global/networks/node-net"
+        metadata: {}
+      with_items: "{{ instances }}"
+      no_log: true
+    
+    - name: Add SSH public key to all instances
+      google_compute_instance:
+        project: test-project
+        zone: europe-west1-b
+        name: "{{ item.instance_name }}"
+        auth_kind: serviceaccount
+        service_account_file: "/path/to/service/account/key.json"
+        remove_access_config: false
+        access_configs:
+          - name: "external-nat"
+            type: "ONE_TO_ONE_NAT"
+        network_interfaces:
+          - network: "global/networks/node-net"
+        metadata:
+          ssh-keys: "user:{{ ssh_key }}"
+      with_items: "{{ instances }}"
+      no_log: true

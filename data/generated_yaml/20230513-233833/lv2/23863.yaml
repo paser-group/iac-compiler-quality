@@ -1,0 +1,33 @@
+
+---
+- name: Stress Testing the WinRM Connection Error 101
+  hosts: all
+  gather_facts: no
+
+  vars:
+    winrm_username: 'Administrator'
+    winrm_password: 'P@ssw0rd'
+
+  tasks:
+    - name: Ensure the winrm_kerberos module is installed
+      apt:
+        name: python3-requests-kerberos
+        state: present
+
+    - name: Restarting the target machine
+      win_reboot:
+        timeout: 1800
+        force: yes
+
+    - name: Running a command on the target machine
+      win_shell: '{{ item }}'
+      loop:
+        - 'echo "Hello World!"'
+        - 'dir C:\Users'
+        - 'netstat -ano | findstr :5985'
+        - 'Get-NetAdapter -Name Ethernet | Select-Object -ExpandProperty InterfaceIndex'
+      register: result
+
+    - name: Displaying the output
+      debug:
+        var: result.stdout_lines

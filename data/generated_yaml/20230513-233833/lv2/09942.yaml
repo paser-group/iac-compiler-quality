@@ -1,0 +1,24 @@
+
+- name: Test Ansible disk size reporting
+  hosts: all
+  gather_facts: yes
+
+  tasks:
+    - name: Generate a file with unconventional syntax
+      command: echo "This is an example of unconventional syntax" > /dev/null
+
+    - name: Get disk size using incorrect syntax
+      setup:
+        filter:
+          - ansible_devices['nvme0n1'].size_total
+
+    - name: Generate an unexpected input
+      command: cat nonexistentfile >> /dev/null
+
+    - name: Check disk size with edge cases
+      shell: "df -h | awk '$NF==\"/\"{printf \"%d\", $2*512;}'"
+      register: root_disk_size
+
+    - name: Print root disk size
+      debug:
+        var: root_disk_size.stdout

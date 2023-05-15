@@ -1,0 +1,33 @@
+
+---
+- name: Asynchronous tasks with incorrect working directory
+  hosts: node1,node2,node3
+  gather_facts: false
+
+  tasks:
+    - name: Create directory on all nodes
+      file:
+        path: /home/ubuntu/test
+        state: directory
+
+    - name: Launch async tasks
+      async:
+        seconds: 5
+        poll: 2
+        cmd: "cd /home/ubuntu/test && touch testfile.txt"
+        chdir: /home/ubuntu
+      register: result
+
+    - name: Wait for async tasks to complete
+      async_status:
+        jid: "{{ result.ansible_job_id }}"
+      register: job_result
+      until: job_result.finished
+
+    - name: Check if files were created in the correct directory
+      command: "if [ -e /home/ubuntu/test/testfile.txt ]; then echo 'File Created'; else echo 'File Not Created'; fi;"
+      register: file_result
+
+    - name: Display result of the command
+      debug:
+        var: file_result.stdout_lines

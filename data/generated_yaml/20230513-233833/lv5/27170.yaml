@@ -1,0 +1,29 @@
+
+- name: Configure IPv6 interfaces on nxos device
+  hosts: nxos
+  gather_facts: no
+
+  vars:
+    interfaces:
+      - name: eth1/1
+        ipv6_address: 2001:db8::1/64
+      - name: eth1/2
+        ipv6_address: 2001:db8::2/64
+
+  tasks:
+    - name: Configure interfaces
+      nxos_ip_interface:
+        interface: "{{ item.name }}"
+        ipv6: "{{ item.ipv6_address }}"
+      loop: "{{ interfaces }}"
+
+    - name: Verify interfaces are configured
+      nxos_command:
+        commands:
+          - show ipv6 interface brief
+      register: output
+
+    - name: Check output for correct configuration
+      assert:
+        that: "'{{ item.name }}' in output.stdout"
+      loop: "{{ interfaces }}"

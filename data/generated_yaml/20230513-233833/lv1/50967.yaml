@@ -1,0 +1,40 @@
+yaml
+---
+- name: Deploying Windows using Azure dynamic inventory
+  hosts: all
+  gather_facts: false
+
+  vars:
+    ansible_python_interpreter: /usr/bin/python3     # Update the python interpreter path
+
+  tasks:
+    - name: Install Azure SDK for Python
+      pip:
+        name: azure
+        state: present
+
+    - name: Use Azure AD Authentication Login
+      azure_login:
+        client_id: "{{ lookup('env', 'AZURE_CLIENT_ID') }}"
+        secret: "{{ lookup('env', 'AZURE_SECRET') }}"
+        tenant: "{{ lookup('env', 'AZURE_TENANT') }}"
+
+    - name: Get the Azure VMs
+      azure_rm:
+        ad_user: "{{ lookup('env', 'AZURE_USER') }}"
+        ad_password: "{{ lookup('env', 'AZURE_PASSWORD') }}"
+        subscription_id: "{{ lookup('env', 'AZURE_SUBSCRIPTION_ID') }}"
+      register: azure_info
+
+    - name: Add Windows Hosts to Hosts File
+      lineinfile:
+        path: /etc/hosts
+        line: "{{ item.private_ip_address }} {{ item.name }}"
+      with_items: "{{ azure_info.virtual_machines }}"
+
+    - name: Use Windows with WinRM
+      winrm_listener:
+        state: started
+
+    - name: Test Connection
+      win_ping:

@@ -1,0 +1,39 @@
+
+- name: Test Cyrillic symbols in filenames
+  hosts: all
+  become: true
+
+  tasks:
+  - name: Create file with Cyrillic symbols in the name
+    file:
+      path: /tmp/файл.txt
+      state: touch
+
+  - name: Create archive with Cyrillic symbols in the name
+    archive:
+      path: /tmp/файл.txt
+      dest: /tmp/архив.zip
+      format: zip
+
+  - name: Extract archive with Cyrillic symbols in the name
+    unarchive:
+      src: /tmp/архив.zip
+      dest: /tmp/extracted
+      remote_src: true
+
+  - name: Verify extraction of file with Cyrillic symbols
+    stat:
+      path: /tmp/extracted/файл.txt
+    register: file_stats
+
+  - name: Print whether file was successfully extracted
+    debug:
+      msg: "File extracted successfully: {{ file_stats.stat.exists }}"
+
+  - name: Remove extracted files and archive
+    file:
+      path: /tmp/{{ item }}
+      state: absent
+    with_items:
+      - extracted
+      - архив.zip

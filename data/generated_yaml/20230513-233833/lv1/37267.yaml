@@ -1,0 +1,56 @@
+yaml
+- name: Deploy ELB target group and application load balancer
+  hosts: localhost
+  connection: local
+  gather_facts: no
+
+  vars:
+    region: "us-west-2"
+    target_group_name: "my-target-group"
+    target_group_protocol: "HTTP"
+    target_group_port: 80
+    vpc_id: "vpc-1234567890"
+    instances_name_tag: "my-app-{{item}}"
+    ec2_filters: 
+      "tag:Name": "{{ instances_name_tag }}"
+
+  tasks:
+    - name: Describe instances in the VPC
+      ec2_instance_facts:
+        region: "{{ region }}"
+        filters: "{{ ec2_filters }}"
+      register: instances
+
+    - name: Create ELB target group
+      elb_target_group:
+        name: "{{ target_group_name }}"
+        protocol: "{{ target_group_protocol }}"
+        port: "{{ target_group_port }}"
+        vpc_id: "{{ vpc_id }}"
+      register: target_group
+
+    - name: Register instances with the target group
+      elb_target_group:
+        name: "{{ target_group_name }}"
+        region: "{{ region }}"
+        targets:
+          - id: "{{ item.instance_id }}"
+            port: "{{ target_group_port }}"
+        state: "present"
+      loop: "{{ instances.instances }}"
+      when: "item.state.name == 'running'"
+
+    - name: Create application load balancer
+      elb_application_lb:
+        name: "my-load-balancer"
+        subnets:
+          - "subnet-1234567890"
+        security_groups:
+          - "sg-1234567890"
+        listeners:
+          - protocol: "HTTP"
+            port: 80
+            default_actions:
+              - type: "forward"
+                target_group_arn: "{{ target_group.target_group_arn }}"
+      register: load_balancer

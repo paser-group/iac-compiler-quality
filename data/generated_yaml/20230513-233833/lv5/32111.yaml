@@ -1,0 +1,32 @@
+
+---
+- name: Test eos_eapi non-default VRF enablement
+  hosts: all
+  
+  vars:
+    non_default_vrfs:
+      - vrf1
+      - vrf2
+      
+  tasks:
+    - name: Configure non-default VRFs
+      eos_vrf:
+        name: "{{ item }}"
+        state: present
+      loop: "{{ non_default_vrfs }}"
+      
+    - name: Configure default VRF
+      eos_command:
+        commands:
+          - "interface Ethernet1"
+          - "ip vrf forwarding management"
+        provider:
+          host: "{{ inventory_hostname }}"
+          username: ansible
+          password: ansible
+          
+    - name: Configure eAPI
+      eos_eapi:
+        state: configured
+        enable_vrf: "{{ item }}"
+      loop: "{{ non_default_vrfs }}"

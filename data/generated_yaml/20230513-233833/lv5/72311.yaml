@@ -1,0 +1,32 @@
+
+---
+- hosts: all
+  gather_facts: no
+
+  tasks:
+
+  - name: ping test using SSH
+    ping:
+      name: Test Ping using SSH
+    vars:
+      ansible_ssh_user: "ssh_user"
+      ansible_ssh_private_key_file: "/path/my_key.pem"
+      ansible_connection: ssh
+
+  - name: Verify the SSH key
+    shell:
+      cmd: 'ssh-keygen -y -f /path/my_key.pem > /dev/null'
+      warn: false
+    register: key_output
+  - fail:
+      msg: 'The SSH key is invalid'
+    when: "'invalid' in key_output.stdout"
+
+  - name: Test Network Connectivity
+    shell:
+      cmd: 'ping -c 2 10.1.1.1 > /dev/null 2>&1'
+      warn: false
+    register: ping_output
+  - fail:
+      msg: 'Network connectivity is not available'
+    when: "ping_output.rc != 0"

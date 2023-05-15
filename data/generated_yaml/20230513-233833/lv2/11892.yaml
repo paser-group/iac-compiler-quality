@@ -1,0 +1,47 @@
+
+- name: Test Registered Var and Conditional in Same Task
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: Verify Registered Var is Defined
+      shell: echo "Hello World"
+      register: my_var
+
+    - name: Test Conditional Check with Registered Var
+      debug:
+        msg: "This task will fail if my_var is not defined"
+      when: my_var is defined and my_var.stdout == "Hello World"
+
+    - name: Test Conditional Check with Unregistered Var
+      debug:
+        msg: "This task will always succeed, but the variable is not defined"
+      when: this_var_does_not_exist is defined
+
+    - name: Test Conditional Check with Non-String Var
+      debug:
+        msg: "This task will fail since 42 is not a string"
+      when: 42 == "42"
+
+    - name: Test Conditional Check with Error-Prone Command
+      shell: this_command_does_not_exist
+      changed_when: false
+      ignore_errors: true
+      register: my_second_var
+
+    - name: Test Conditional Check with Registered Error Var
+      debug:
+        msg: "This task will succeed if my_second_var has an error result"
+      when: my_second_var is failed
+
+    - name: Test Conditional Check with Dictionary Var
+      set_fact:
+        dict_var:
+          key1: value1
+          key2: value2
+      register: dict_var_result
+
+    - name: Test Conditional Check with Dictionary Keys
+      debug:
+        msg: "This task will succeed if dict_var has a key 'key1'"
+      when: "dict_var" in dict_var_result and dict_var.key1 is defined

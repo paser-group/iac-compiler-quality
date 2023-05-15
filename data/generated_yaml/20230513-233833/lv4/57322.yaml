@@ -1,0 +1,49 @@
+
+---
+- name: Test network_cli connection plugin performance
+  hosts: all
+  vars:
+    ansible_user: root
+    ansible_password: password
+    ansible_network_os: ios
+    ansible_connection_timeout: 30
+  tasks:
+    - name: Install network tools
+      become: true
+      apt:
+        name: net-tools
+        state: present
+
+    - name: Establish network connections
+      hosts: node2
+      connection: ssh
+      gather_facts: no
+      vars:
+        ssh_args: "-o PreferredAuthentications=password"
+      tasks:
+        - name: ping node1
+          ping:
+        - name: ssh to node3 
+          shell: ssh node3 uptime
+
+    - name: Collect network metrics
+      hosts: all
+      connection: network_cli
+      gather_facts: no
+      tasks:
+        - name: measure latency
+          command: ping -c5 node2 | tail -1 | awk '{print $4}' | cut -d '/' -f 2
+          register: latency
+        - name: measure bandwidth
+          command: iperf -s & sleep 1s ; iperf -c node2 -t10 -P4
+        - name: measure packet drops
+          command: netstat -suna | grep dropped
+      register: metrics
+
+    - name: Remove temporary files
+      hosts: all
+      connection: network_cli
+      gather_facts: no
+      tasks:
+        - name: Terminate network connections
+          meta: end_host

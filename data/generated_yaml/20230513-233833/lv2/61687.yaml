@@ -1,0 +1,68 @@
+
+---
+- name: s3_bucket encryption test
+  hosts: all
+  become: yes
+
+  tasks:
+    - name: Create s3 bucket with no encryption
+      s3_bucket:
+        name: "{{ item }}-bucket"
+        region: "{{ item }}"
+        state: present
+        acl: private
+      with_items:
+        - us-west-2
+        - us-east-1
+        - us-west-1
+
+    - name: Test for default s3 key encryption
+      s3_bucket:
+        name: "{{ item }}-bucket"
+        region: "{{ item }}"
+        state: present
+        default_encryption: true
+        acl: private
+      with_items:
+        - us-west-2
+        - us-east-1
+        - us-west-1
+
+    - name: Test for default kms key encryption
+      s3_bucket:
+        name: "{{ item }}-bucket"
+        region: "{{ item }}"
+        state: present
+        default_encryption: true
+        encryption_type: "aws:kms"
+        acl: private
+      with_items:
+        - us-west-2
+        - us-east-1
+        - us-west-1
+
+    - name: Test for unconventional kms key encryption
+      s3_bucket:
+        name: "{{ item }}-bucket"
+        region: "{{ item }}"
+        state: present
+        encryption_type: "aws:kms"
+        kms_master_key_id: "{{ playbook_dir }}/kms_keys/invalid_key.txt"
+        acl: private
+      with_items:
+        - us-west-2
+        - us-east-1
+        - us-west-1
+
+    - name: Test for invalid syntax
+      s3_bucket extra_var: invalid_syntax
+
+    - name: Delete s3 buckets
+      s3_bucket:
+        name: "{{ item }}-bucket"
+        region: "{{ item }}"
+        state: absent
+      with_items:
+        - us-west-2
+        - us-east-1
+        - us-west-1

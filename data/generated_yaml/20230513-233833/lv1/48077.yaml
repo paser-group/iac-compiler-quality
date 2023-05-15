@@ -1,0 +1,24 @@
+yaml
+---
+- name: Ensure proper retention settings for CloudWatch Logs
+  hosts: all
+  gather_facts: true
+
+  tasks:
+    - name: Retrieve retention settings for log groups
+      awslogs_info:
+        name: "{{ cloudwatchlogs_log_group }}"
+      register: log_group_retention
+
+    - name: Ensure retention setting exists for log group
+      assert:
+        that:
+          - "'retentionInDays' in log_group_retention"
+        fail_msg: "Retention setting missing for log group '{{ cloudwatchlogs_log_group }}'"
+        success_msg: "Retention setting configured for log group '{{ cloudwatchlogs_log_group }}'"
+
+    - name: Update retention setting for log group
+      awslogs:
+        name: "{{ cloudwatchlogs_log_group }}"
+        retention: "{{ retentionInDays }}"
+      when: "'{{ retentionInDays }}' != log_group_retention['retentionInDays']"

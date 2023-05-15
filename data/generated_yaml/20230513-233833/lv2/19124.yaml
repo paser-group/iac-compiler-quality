@@ -1,0 +1,89 @@
+
+- name: Test playbook for os_security_group_rule issue
+  hosts: all
+  gather_facts: no
+  tasks:
+
+  - name: Verify security group name 
+    os_security_group_info:
+      filters:
+        - name=default
+    register: sg_info
+
+  - name: Print security group info 
+    debug:
+      var: sg_info
+
+  - name: Try to add rule that already exists 
+    os_security_group_rule:
+      auth:
+        auth_url: http://example.com/v3
+        project_name: demo
+        username: admin
+        password: pass
+      security_group: default
+      protocol: icmp
+      direction: ingress
+      remote_ip_prefix: 0.0.0.0/0
+      icmp_type: 8
+      icmp_code: 0
+    register: existing_rule_result
+    ignore_errors: true
+
+  - name: Print existing_rule_result
+    debug:
+      msg: "{{ existing_rule_result }}"
+
+  - name: Try to add rule with invalid parameter type 
+    os_security_group_rule:
+      auth:
+        auth_url: http://example.com/v3
+        project_name: demo
+        username: admin
+        password: pass
+      security_group: default
+      protocol: icmp
+      direction: ingress
+      remote_ip_prefix: invalid_ip
+      icmp_type: 8
+      icmp_code: 0
+    register: invalid_param_result
+    ignore_errors: true
+
+  - name: Print invalid_param_result
+    debug:
+      msg: "{{ invalid_param_result }}"
+
+  - name: Try to add rule with invalid values 
+    os_security_group_rule:
+      auth:
+        auth_url: http://example.com/v3
+        project_name: demo
+        username: admin
+        password: pass
+      security_group: default
+      protocol: tcp
+      direction: ingress
+      remote_ip_prefix: 0.0.0.0/0
+      port_range_min: 80
+      port_range_max: 20
+    register: invalid_rule_result
+    ignore_errors: true
+
+  - name: Print invalid_rule_result
+    debug:
+      msg: "{{ invalid_rule_result }}"
+
+  - name: Add ingress rule to default security group 
+    os_security_group_rule:
+      auth:
+        auth_url: http://example.com/v3
+        project_name: demo
+        username: admin
+        password: pass
+      security_group: default
+      protocol: tcp
+      direction: ingress
+      remote_ip_prefix: 0.0.0.0/0
+      port_range_min: 22
+      port_range_max: 22

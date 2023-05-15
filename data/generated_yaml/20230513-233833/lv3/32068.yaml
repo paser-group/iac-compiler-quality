@@ -1,0 +1,32 @@
+
+---
+- name: Recreate Ansible 2.4.0+ sysvinit fact issue
+  hosts: all
+  become: true
+
+  vars:
+    sys_service: "sysvinit"
+
+  tasks:
+    - name: Check Ansible Service Manager fact value
+      debug:
+        var: ansible_service_mgr
+
+    - name: Install sysvinit-utils
+      apt:
+        name: sysvinit-utils
+        state: present
+
+    - name: Check service manager using sysvinit service
+      command: "/sbin/init --version | grep sysvinit"
+      register: sysvinit_check
+      ignore_errors: yes
+
+    - name: Set correct ansible_service_mgr fact value for sysvinit
+      set_fact:
+        ansible_service_mgr: "{{ sys_service }}"
+      when: sysvinit_check.rc == 0
+
+    - name: Double check Ansible Service Manager fact value
+      debug:
+        var: ansible_service_mgr

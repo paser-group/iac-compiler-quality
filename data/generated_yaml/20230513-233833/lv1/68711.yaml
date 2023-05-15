@@ -1,0 +1,102 @@
+
+---
+- hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    aws_profile: my_profile
+    
+  tasks:
+    - name: Configure AWS CLI with IAM role 
+      block:
+        - name: Set AWS profile to IAM role
+          set_fact:
+            aws_profile: null
+
+        - name: Test AWS CLI configuration without profile
+          shell: aws s3 ls >/dev/null
+          ignore_errors: true
+          register: aws_cli_output
+
+        - name: Extract profile name from error message
+          set_fact:
+            aws_profile: "{{ aws_cli_output.stderr | regex_search('An error occurred.+--profile ([^\\\\s]+)', '\\1') }}"
+          when: aws_cli_output.failed and 'profile' not in aws_cli_output.stderr
+
+        - name: Configure AWS profile
+          set_fact:
+            aws_profile: "{{ lookup('env', 'AWS_PROFILE') }}"
+          when: aws_profile is not defined
+
+        - name: Display AWS profile
+          debug:
+            var: aws_profile
+
+        - name: Install boto3 and botocore
+          pip: name={{ item }} state=present
+          with_items:
+            - boto3
+            - botocore
+
+      rescue:
+        - name: Install AWS CLI
+          apt:
+            name: awscli
+            update_cache: yes
+          when: ansible_os_family == 'Debian'
+
+        - name: Install AWS CLI
+          yum:
+            name: awscli
+            state: present
+          when: ansible_os_family == 'RedHat'
+
+        - name: Check AWS config
+          shell: aws configure get region >/dev/null
+          register: aws_cli_config_output
+
+        - name: Create AWS configuration
+          lineinfile:
+            path: ~/.aws/config
+            line: "{{ item }}"
+          with_items:
+            - "[profile {{ aws_profile }}]"
+            - "output=json"
+            - "region={{ aws_region }}"
+
+    - name: Test boto Route53
+      block:
+        - name: Test boto Route53
+          python:
+            interp: auto
+            program: |
+              import boto3
+
+              client = boto3.client('route53')
+
+              response = client.list_hosted_zones()
+
+              print(response)
+
+      rescue:
+        - name: Set AWS credentials
+          block:
+            - name: Check AWS IAM role
+              shell: curl -s http://169.254.169.254/latest/meta-data/iam/security-credentials/ >/dev/null
+              register: iam_role_output
+        
+            - name: Set AWS credentials
+              set_fact:
+                aws_access_key_id: "{{ iam_role_info.AccessKeyId }}"
+                aws_secret_access_key: "{{ iam_role_info.SecretAccessKey }}"
+                aws_session_token: "{{ iam_role_info.Token }}"
+
+            - name: Create AWS credentials file
+              blockinfile:
+                path: ~/.aws/credentials
+                block: |
+                  [{{ aws_profile }}]
+                  aws_access_key_id = {{ aws_access_key_id }}
+                  aws_secret_access_key = {{ aws_secret_access_key }}
+                  aws_session_token = {{ aws_session_token }}

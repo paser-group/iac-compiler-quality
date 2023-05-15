@@ -1,0 +1,78 @@
+
+---
+- name: Test playbook for User module default shell
+  hosts: all
+  become: yes
+
+  tasks:
+    - name: Create user with custom shell
+      user:
+        name: testuser1
+        shell: /bin/zsh
+        state: present
+
+    - name: Create user with invalid shell
+      user:
+        name: testuser2
+        shell: /bin/invalid
+        state: present
+      ignore_errors: yes
+
+    - name: Create user with non-existent group
+      user:
+        name: testuser3
+        group: invalidgroup
+        state: present
+      ignore_errors: yes
+
+    - name: Modify user with custom comment
+      user:
+        name: testuser1
+        comment: "Test user with custom comment"
+        state: present
+
+    - name: Delete user with custom comment
+      user:
+        name: testuser1
+        comment: "Test user with custom comment"
+        state: absent
+
+    - name: Create user with hashed password
+      user:
+        name: testuser1
+        password: $6$random_salt$hashed_password
+        state: present
+
+    - name: Create user with UID outside range
+      user:
+        name: testuser4
+        uid: 4294967296
+        state: present
+      ignore_errors: yes
+
+    - name: Create user with duplicate UID
+      user:
+        name: testuser5
+        uid: 1001
+        state: present
+      ignore_errors: yes
+
+    - name: Change default shell for all users
+      shell: chsh -s /bin/zsh {{ item }}
+      with_items: "{{ ansible_users }}"
+      when: "'/bin/bash' in item.shell"
+
+  vars:
+    ansible_users:
+      - name: root
+        shell: /bin/bash
+      - name: testuser1
+        shell: /bin/bash
+      - name: testuser2
+        shell: /bin/bash
+      - name: testuser3
+        shell: /bin/bash
+      - name: testuser4
+        shell: /bin/bash
+      - name: testuser5
+        shell: /bin/bash

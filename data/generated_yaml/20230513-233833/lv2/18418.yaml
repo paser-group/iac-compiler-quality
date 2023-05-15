@@ -1,0 +1,45 @@
+
+---
+- name: Stress-test playbook
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: Copy large file to node1
+      copy:
+        src: "{{ random('/dev/urandom', start=0, end=100000000) }}"
+        dest: "/tmp/large_file.bin"
+        remote_src: yes
+      delegate_to: "{{ groups['node1'] | random }}"
+      run_once: true
+      become: yes
+
+    - name: Copy large file to node2
+      copy:
+        src: "{{ random('/dev/urandom', start=0, end=100000000) }}"
+        dest: "/tmp/large_file.bin"
+        remote_src: yes
+      delegate_to: "{{ groups['node2'] | random }}"
+      run_once: true
+      become: yes
+
+    - name: Copy large file to node3
+      copy:
+        src: "{{ random('/dev/urandom', start=0, end=100000000) }}"
+        dest: "/tmp/large_file.bin"
+        remote_src: yes
+      delegate_to: "{{ groups['node3'] | random }}"
+      run_once: true
+      become: yes
+
+    - name: Verify MD5 hash
+      command: "/usr/bin/md5sum /tmp/large_file.bin"
+      register: md5_output
+      delegate_to: "{{ groups['node1'] | random }}"
+      run_once: true
+
+    - name: Fail if MD5 hash doesn't match
+      fail:
+        msg: "MD5 hash of copied file on node1 does not match"
+      when: '"{{ md5_output.stdout.split(" ")[0] }}" != "{{ md5_output.stdout.split(" ")[0] }}"'
+      run_once: true

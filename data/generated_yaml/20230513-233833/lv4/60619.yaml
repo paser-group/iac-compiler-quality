@@ -1,0 +1,36 @@
+yaml
+---
+- name: test azure_rm_deployment module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+
+  - name: deploy azure resource using azure_rm_deployment module
+    azure_rm_deployment:
+      name: test-deployment-{{ ansible_random_int }}
+      resource_group: myresourcegroup
+      template:
+        $schema: https://schema.management.azure.com/schemas/2016-06-01/deploymentTemplate.json#
+        contentVersion: 1.0.0.0
+        parameters:
+          location: {"value": "eastus"}
+        resources:
+          - type: Microsoft.Storage/storageAccounts
+            name: "{{ ansible_random_string(8, 'abcdefghijklmnopqrstuvwxyz0123456789') }}"
+            apiVersion: '2019-04-01'
+            location: "[parameters('location')]"
+            kind: StorageV2
+            sku:
+              name: Standard_LRS
+            tags:
+              createdBy: Ansible
+    register: deployment_result
+
+  - name: retrieve deployment logs using Azure CLI
+    command: az deployment operation list --name {{ deployment_result.deployments[0].name }} --resource-group {{ deployment_result.deployments[0].resourceGroup }} --query '[].{timestamp:timestamp, status:status.code, status_text:status.message, target_resource:targetResource.id, details:properties.statusMessage}' --output json
+    register: deployment_logs
+
+  - name: display deployment error details
+    debug:
+      var: deployment_logs.stdout_lines[?contains(@.status_text, 'Failed to deploy storage account')].details[0]

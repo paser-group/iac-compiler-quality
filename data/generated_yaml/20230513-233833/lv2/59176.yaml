@@ -1,0 +1,45 @@
+
+---
+- name: Ensure password-3 type is recognized in Ansible
+  hosts: all
+  gather_facts: no
+  
+  tasks:
+    - name: Register password-3 type
+      set_fact:
+        password_type: password-3
+
+    - name: Create user with password-3 type
+      user:
+        name: john
+        password: "{{ lookup('password', '/dev/null length=15 chars=ascii_letters,digits,special') }}"
+        password_type: "{{ password_type }}"
+        state: present
+
+    - name: Verify user creation with password-3 type
+      command: id john
+      register: result
+      ignore_errors: true
+      
+    - name: Display user creation result
+      debug:
+        msg: "User creation status: {{ result.stdout }}"
+
+    - name: Set user's password to password-3 type
+      shell: chage -d0 -M60 -W7 john
+      become: yes
+      become_method: su
+
+    - name: Verify user's password type is password-3
+      shell: loginctl user-status john
+      register: result
+      ignore_errors: true
+
+    - name: Display user's password type
+      debug:
+        msg: "User's password type: {{ result.stdout_lines }}"
+
+    - name: Remove user with password-3 type
+      user:
+        name: john
+        state: absent

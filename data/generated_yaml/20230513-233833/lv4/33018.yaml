@@ -1,0 +1,34 @@
+
+---
+- name: Provision Bitbucket repository
+  hosts: all
+  become: true
+
+  vars:
+    repo_url: "git@bitbucket.org:<username>/<repository>.git"
+    target_dir: "/opt/{{ repo_name }}"
+  
+  tasks:
+
+  - name: Install git
+    apt:
+      name: git
+      state: present
+
+  - name: Generate SSH key pair
+    community.general.openssh_keypair:
+      path: /root/.ssh/id_rsa
+      force: true
+    
+  - name: Add public key to Bitbucket account
+    bitbucket_key:
+      url: "{{ repo_url }}"
+      username: "<username>"
+      password: "<password>"
+      key: "{{ lookup('file', '/root/.ssh/id_rsa.pub') }}"
+      state: present
+
+  - name: Clone Bitbucket repository
+    git:
+      repo: "{{ repo_url }}"
+      dest: "{{ target_dir }}"

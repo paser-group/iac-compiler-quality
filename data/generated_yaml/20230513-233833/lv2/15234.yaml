@@ -1,0 +1,55 @@
+
+- name: Fuzz testing playbook for out of memory errors during yum update
+  hosts: all
+  gather_facts: false
+
+  tasks:
+  - name: Install updates
+    yum:
+      state: latest
+      name: all
+    register: result
+
+  - name: Check for out of memory errors
+    fail:
+      msg: "Out of memory error occurred during the yum update command"
+    when: result.msg == 'Cannot allocate memory'
+
+  - name: Attempt to update with low memory limit
+    yum:
+      state: latest
+      name: all
+    environment:
+      MALLOC_ARENA_MAX: 1
+      MALLOC_MMAP_THRESHOLD_: 1024
+      MALLOC_TRIM_THRESHOLD_: 1024
+    register: result_low_mem_limit
+
+  - name: Check for out of memory errors with low memory limit
+    fail:
+      msg: "Out of memory error occurred with low memory limit during the yum update command"
+    when: result_low_mem_limit.msg == 'Cannot allocate memory'
+
+  - name: Attempt to update with high memory limit
+    yum:
+      state: latest
+      name: all
+    environment:
+      MALLOC_ARENA_MAX: 30
+      MALLOC_MMAP_THRESHOLD_: 4096
+      MALLOC_TRIM_THRESHOLD_: 4096
+    errors: ignore
+
+  - name: Check for out of memory errors with high memory limit
+    fail:
+      msg: "Out of memory error occurred with high memory limit during the yum update command"
+    when: result_high_mem_limit.msg == 'Cannot allocate memory'
+
+  - name: Attempt to update with unconventional syntax
+    command: "yum -rhn update"
+    errors: ignore
+
+  - name: Check for out of memory errors with unconventional syntax
+    fail:
+      msg: "Out of memory error occurred with unconventional syntax during the yum update command"
+    when: result_unconventional.msg == 'Cannot allocate memory'

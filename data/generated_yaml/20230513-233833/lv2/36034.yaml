@@ -1,0 +1,64 @@
+
+---
+- name: Test playbook for inventory file error
+  hosts: all
+  connection: local
+  gather_facts: no
+  vars:
+    inventory_file: "{{ inventory }}"
+  tasks:
+    - name: Check if inventory file exists
+      stat:
+        path: "{{ inventory_file }}"
+      register: stat_result
+    - name: Error if inventory file is missing
+      fail:
+        msg: "Inventory file {{ inventory_file }} not found."
+      when: not stat_result.stat.exists
+
+- name: Test playbook with unconventional syntax and unexpected inputs
+  hosts: "{{ hosts }}"
+  become: "{{ is_become }}"
+  tasks:
+    - name: Test input of missing key
+      debug:
+        var: "{{ missing_key }}"
+
+    - name: Test input of non-existent value
+      debug:
+        var: "{{ non_existent_value }}"
+
+    - name: Test input of unconventional syntax
+      command: "{{ unconventional_syntax && echo 'Hello, world!' || echo 'Goodbye, world!' }}"
+
+- name: Test playbook with edge cases
+  hosts: all
+  vars:
+    inventory_file: "{{ inventory }}"
+  tasks:
+    - name: Test empty inventory file
+      ini_file:
+        dest: "{{ inventory_file }}"
+        section: ""
+        option: ""
+        value: ""
+
+    - name: Test inventory file with no hosts
+      ini_file:
+        dest: "{{ inventory_file }}"
+        section: "test_group"
+        option: ""
+
+    - name: Test inventory file with duplicated hosts
+      ini_file:
+        dest: "{{ inventory_file }}"
+        section: "test_group"
+        option: "host2"
+        value: "10.1.1.2"
+      notify: restart nginx
+
+  handlers:
+    - name: Restart nginx
+      service:
+        name: nginx
+        state: restarted

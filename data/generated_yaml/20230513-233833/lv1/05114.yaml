@@ -1,0 +1,23 @@
+
+---
+- name: Handle more error types in template
+  hosts: all
+  vars:
+    error_messages:
+      - "File not found"
+      - "Permission denied"
+      - "Invalid argument"
+  tasks:
+    - name: Generate template file with error types
+      template:
+        src: error_template.j2
+        dest: /path/to/error_file.txt
+        validate: "ls /path/to/error_file.txt"
+      register: template_result
+      failed_when: "'Could not find' not in template_result.msg"
+    - name: Notify when error types are found
+      debug:
+        msg: "{{ item }} error found in template file"
+      when: "'{{ item }}' in template_result.msg"
+      with_items: "{{ error_messages }}"
+

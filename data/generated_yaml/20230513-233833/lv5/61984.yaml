@@ -1,0 +1,60 @@
+
+- name: Install Nginx
+  apt:
+    name: nginx
+    state: present
+
+- name: Configure Nginx
+  copy:
+    dest: /etc/nginx/sites-available/default
+    src: default
+  notify:
+    - reload nginx
+
+- name: Create error file
+  file:
+    path: /usr/share/nginx/html/error.html
+    state: touch
+    mode: 0644
+  notify:
+    - "systemctl restart nginx"
+
+- name: Configure azure_rm_managed_disk
+  azure_rm_managed_disk:
+    blob_container_name: mycontainer
+    blob_name: error.html
+    blob_type: page_blob
+    account_name: myaccount
+    account_type: Standard_LRS
+    storage_account_key: mykey
+    state: present
+  register: blob_result
+
+- name: Block inbound traffic on port 80
+  command: iptables -A INPUT -p tcp --dport 80 -j DROP
+  async: 0
+  poll: 0
+  ignore_errors: true
+
+- name: Upload error file
+  azure_rm_managed_disk:
+    blob_container_name: "{{ blob_result.blob_container_name }}"
+    blob_name: "{{ blob_result.blob_name }}"
+    blob_type: "{{ blob_result.blob_type }}"
+    account_name: "{{ blob_result.account_name }}"
+    account_type: "{{ blob_result.account_type }}"
+    storage_account_key: "{{ blob_result.storage_account_key }}"
+    state: present
+  ignore_errors: true
+
+- name: Unblock inbound traffic on port 80
+  command: iptables -D INPUT -p tcp --dport 80 -j DROP
+  async: 0
+  poll: 0
+  ignore_errors: true
+
+- name: Verify error file upload
+  command: curl -s http://localhost/error.html
+  register: curl_result
+  until: curl_result.stdout != ''
+  retries: 3

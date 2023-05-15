@@ -1,0 +1,60 @@
+
+from ansible.module_utils.basic import AnsibleModule
+from ansible.module_utils.vmware import compare_params, get_params
+
+def main():
+    module_args = dict(
+        vmkernel=dict(type='str', required=True),
+        host=dict(type='str', required=True),
+        vcenter=dict(type='str', required=True),
+        username=dict(type='str', required=True),
+        password=dict(type='str', required=True, no_log=True),
+        validate_certs=dict(type='bool', default=True),
+        )
+
+    module = AnsibleModule(argument_spec=module_args, supports_check_mode=True)
+
+    try:
+        from pyVim.connect import SmartConnectNoSSL, Disconnect
+        from pyVmomi import vim
+    except ImportError:
+        module.fail_json(msg='pyVmomi is required for this module')
+
+    vmkernel, host, vcenter, username, password, validate_certs = get_params(module.params)
+
+    si = SmartConnectNoSSL(host=host, user=username, pwd=password)
+    atexit.register(Disconnect, si)
+
+    content = si.RetrieveContent()
+
+    search_index = content.searchIndex
+    host_obj = search_index.FindByDnsName(dnsName=host, vmSearch=False)
+
+    if not host_obj:
+        module.fail_json(msg='Failed to locate host: %s in vCenter: %s' % (host, vcenter))
+
+    vmkernel_list = search_index.FindAllByIp(ip=vmkernel, vmSearch=False)
+
+    if not vmkernel_list:
+        module.fail_json(msg='No VMKernel found for IP address: %s' % vmkernel)
+
+    vmk_object = None
+
+    for vmk in vmkernel_list:
+        if vmk.config.network.vnic[0].spec.ip.ipAddress == vmkernel:
+            vmk_object = vmk
+
+    if not vmk_object:
+        module.fail_json(msg='Failed to locate VMKernel with IP address: %s on host: %s' % (vmkernel, host))
+
+    vmk_facts = {
+        'mtu': vmk_object.config.settings.mtu,
+        'vlan': vmk_object.config.settings.vlan.vlanId,
+        'portgroup': vmk_object.portgroup.key,
+        'dhcp': vmk_object.config.dhcpConfig.enabled,
+    }
+
+    module.exit_json(changed=False, ansible_facts={'vmkernel_facts': vmk_facts})
+
+if __name__ == '__main__':
+    main()

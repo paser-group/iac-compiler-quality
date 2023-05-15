@@ -1,0 +1,32 @@
+
+---
+- name: Verify Facter information
+  hosts: all
+  tasks:
+    - name: Install Facter
+      become: true
+      apt:
+        name: facter
+        update_cache: yes
+
+    - name: Execute Facter command
+      command: facter > /tmp/facter_output.txt
+      changed_when: false
+
+    - name: Copy output file to control node
+      become: true
+      fetch:
+        src: /tmp/facter_output.txt
+        dest: /tmp/facter_output_{{ inventory_hostname }}.txt
+        flat: yes
+
+    - name: Parse output file and extract Facter information
+      lineinfile:
+        path: /tmp/facter_output_{{ inventory_hostname }}.txt
+        regexp: '^(.*?)=.*$'
+        register: facter_output
+      changed_when: false
+
+    - name: Check if Facter information is correct
+      debug:
+        msg: "{{ facter_output.matches | map(attribute='group(1)') | list }}"

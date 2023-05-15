@@ -1,0 +1,22 @@
+yaml
+---
+- name: Issue pywintypes.error: (5, 'OpenSCManager', 'Access is denied.')
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Ensure the user has the necessary permissions to run OpenSCManager
+      win_command: whoami.exe
+      register: user
+
+    - name: Run the OpenSCManager command
+      win_command: OpenSCManager
+      args:
+        state: started
+      become: true
+      register: open_scm
+
+    - name: Check if OpenSCManager failed due to access denied error
+      debug:
+        msg: "Error: {{ open_scm.rc }} - {{ open_scm.stderr }}"
+      failed_when: open_scm.rc != 0 and 'Access is denied.' in open_scm.stderr

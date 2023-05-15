@@ -1,0 +1,40 @@
+
+- name: Resize disk for VM with multiple SCSI controllers
+  hosts: node1
+  gather_facts: no
+  tasks:
+    - name: Resizing disk using vmware_guest module
+      vmware_guest:
+        hostname: "{{ inventory_hostname }}"
+        username: myusername
+        password: mypassword
+        datacenter: dc1
+        validate_certs: false
+        disk:
+          disk1: "{{ size_gb }}"
+      delegate_to: localhost
+      register: resize_output
+      when: scsi_controller == 'multiple'
+  
+    - name: Restore VM with multiple SCSI controllers
+      vmware_guest:
+        hostname: "{{ inventory_hostname }}"
+        username: myusername
+        password: mypassword
+        datacenter: dc1
+        validate_certs: false
+        state: poweredoff
+        folder: /vm
+        name: myvm
+        disk:
+            size_gb: "{{ size_gb }}"
+            controller_type: "{{ controller_type }}"
+            controller_number: 1
+            unit_number: 0
+            scsi: "{{ scsi }}"
+        hardware:
+            memory_mb: 2048
+            num_cpus: 2
+      delegate_to: localhost
+      register: restore_output
+      when: scsi_controller == 'multiple' and controller_type == 'lsiLogic'

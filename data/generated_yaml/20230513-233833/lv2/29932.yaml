@@ -1,0 +1,58 @@
+
+---
+- name: Docker Edge Cases Playbook
+  hosts: node1
+  gather_facts: no
+
+  tasks:
+    - name: Check if Docker is installed
+      command: docker version
+      changed_when: false
+
+    - name: Pull an invalid Docker image
+      docker_image:
+        name: '{{ hostvars["node2"]["host"] }}:invalid'
+      ignore_errors: yes
+
+    - name: Pull a non-existing Docker image
+      docker_image:
+        name: nonexistent
+
+    - name: Pull an invalid Docker image from a private registry
+      docker_image:
+        name: '{{ hostvars["node3"]["host"] }}:5000/private/image:invalid'
+        force: true
+      ignore_errors: yes
+
+    - name: Build a Docker image with an invalid Dockerfile path
+      docker_image:
+        path: /path/to/invalid/Dockerfile
+
+    - name: Build a Docker image with unconventional Dockerfile syntax
+      docker_image:
+        path: /path/to/unconventional/Dockerfile
+
+    - name: Stop a non-running Docker container
+      docker_container:
+        name: nonexistent
+        state: stopped
+      ignore_errors: yes
+
+    - name: Start a Docker container with an invalid image name
+      docker_container:
+        name: invalid_container
+        image: invalid_image
+      ignore_errors: yes
+
+    - name: Start a Docker container with a non-existing volume
+      docker_container:
+        name: '{{ hostvars["node2"]["host"] }}:invalid_container'
+        image: ubuntu
+        volumes:
+          - /nonexisting:/data
+
+    - name: Start a Docker container with unconventional environment variables syntax
+      docker_container:
+        name: unconventional_container
+        image: ubuntu
+        env: ['foo', 'bar', 'baz']

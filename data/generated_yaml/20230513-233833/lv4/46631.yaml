@@ -1,0 +1,35 @@
+
+- name: Set up Repositories
+  apt_repository:
+    repo: "{{ ansible_distribution_release }}-pgdg"
+    state: present
+    update_cache: yes
+  become: yes
+
+- name: Install Dependencies
+  apt:
+    name: "{{ item }}"
+    state: latest
+  become: true
+  with_items:
+    - libvirt-bin
+    - qemu-kvm
+    - virtinst
+    - create-resources
+    - python-setuptools
+    - python-tempestconf
+    - cloud-init
+    - openstack-heat-templates
+    - openvswitch-switch
+    - python-openstackclient
+    - nova-compute-kvm
+    - python-neutronclient
+  become: yes
+  when: inventory_hostname in groups['compute']
+
+- name: Create Self-Signed Certificate
+  become: yes
+  openssl_certificate:
+    action: create
+    common_name: "{{ inventory_hostname }}"
+    path: /etc/ssl/certs/{{ inventory_hostname }}.crt

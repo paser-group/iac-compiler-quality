@@ -1,0 +1,44 @@
+
+---
+- name: Haproxy Playbook
+  hosts: all
+  become: yes
+  tasks:
+  - name: Install HAPRoxy
+    apt:
+      name: haproxy
+      state: latest
+
+  - name: Create haproxy.cfg
+    file:
+      path: /etc/haproxy/haproxy.cfg
+      state: touch
+
+  - name: Configure haproxy.cfg 
+    lineinfile:
+      path: /etc/haproxy/haproxy.cfg
+      line: |
+        listen web_front
+          bind *:80
+          stats enable
+          balance roundrobin
+          server web-1 10.1.1.1:80 check
+          server web-2 10.1.1.2:80 check
+      regexp: "{{ item.regexp }}"
+      insertafter: "{{ item.insertafter | default('EOF') }}"
+    with_items:
+    - "{"regexp": "#.*default backend.*"}" 
+    - "{"regexp": "#.*frontend.*"}"
+
+  - name: Stop the first web server
+    shell: haproxy -f /etc/haproxy/haproxy.cfg -p /run/haproxy.pid -sf $(cat /run/haproxy.pid) 
+    when: inventory_hostname == 'node1'
+
+  - name: Start the first web server back up
+    shell: haproxy -f /etc/haproxy/haproxy.cfg -p /run/haproxy.pid -D
+
+  - name: Ensure haproxy is running
+    systemD:
+      name: haproxy
+      state: started
+      enabled: true

@@ -1,0 +1,26 @@
+
+---
+- name: AWS SSM Parameter Store Key Error Playbook
+  hosts: all
+  gather_facts: false
+  vars:
+    aws_access_key: "<aws_access_key>"
+    aws_secret_key: "<aws_secret_key>"
+  tasks:
+    - name: Set up AWS Credentials
+      set_fact:
+        aws_access_key: "{{ aws_access_key }}"
+        aws_secret_key: "{{ aws_secret_key }}"
+      
+    - name: Create a sample SSM parameter with a missing key
+      aws_ssm_parameter_store:
+        name: "/sample/key"
+        value: "sample_value"
+        region: "us-east-1"
+        with_items:
+          - key: "MissingDescriptionKey"
+      
+    - name: Debug Output of SSM parameter
+      debug:
+        msg: "{{ item }}"
+      with_items: "{{ lookup('aws_ssm', '/sample/key', region='us-east-1') }}"

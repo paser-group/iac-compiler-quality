@@ -1,0 +1,59 @@
+
+---
+- name: Test playbook for interpreter discovery fix
+  hosts: all
+  remote_user: ubuntu
+  become: true
+
+  tasks:
+    - name: Install Python 2.7
+      apt:
+        name: python2.7
+        state: present
+
+    - name: Copy Python script to remote nodes
+      copy:
+        src: ./test_script.py
+        dest: /tmp/test_script.py
+        mode: 0755
+
+    - name: Run script with 2.7 interpreter
+      command: python2.7 /tmp/test_script.py
+      register: script_output
+
+    - name: Print script output
+      debug:
+        var: script_output.stdout_lines
+
+    - name: Install Python 3.6
+      apt:
+        name: python3.6
+        state: present
+
+    - name: Copy Python script to remote nodes with 3.x syntax
+      copy:
+        src: ./test_script_3x.py
+        dest: /tmp/test_script_3x.py
+        mode: 0755
+
+    - name: Run script with 3.6 interpreter
+      command: python3.6 /tmp/test_script_3x.py
+      register: script_output_3x
+
+    - name: Print script output from 3.x interpreter
+      debug:
+        var: script_output_3x.stdout_lines
+
+    - name: Verify interpreter discovery fix
+      command: python /tmp/test_script.py
+      register: script_output_latest
+
+    - name: Ensure correct python version is used
+      assert:
+        that:
+          - "Python 2.7" in script_output_latest.stdout
+          - "Python 3.6" not in script_output_latest.stdout
+
+    - name: Test unexpected input
+      command: "python /tmp/test_script.py {{ 'a' * 100000 }}"
+      ignore_errors: true

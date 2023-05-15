@@ -1,0 +1,20 @@
+
+---
+- hosts: all
+  become: true
+  vars:
+    input_data: "test_string"
+  tasks:
+    - name: Test b64encode filter for incorrect padding
+      debug:
+        msg: |
+          {{
+            input_data | b64encode | regex_replace('==$', '')
+          }}
+    - name: Python Base64 Library Output
+      command: python -c "import base64; print(base64.b64encode(b'{{ input_data }}').rstrip(b'=').decode('utf-8'))"
+      register: python_output
+
+    - name: Verify Output
+      assert:
+        that: "{{ python_output.stdout }} == {{ input_data | b64encode | regex_replace('==$', '') }}"

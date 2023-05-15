@@ -1,0 +1,41 @@
+
+---
+- name: Create Elastic Load Balancer and Trigger Health Check
+  hosts: localhost
+  gather_facts: False
+  tasks:
+  - name: Create AWS Elastic Load Balancer
+    local_action:
+      module: ec2_elb_lb
+      state: present
+      name: my-elb
+      listeners:
+        - instance_port: 80
+          protocol: http
+          lb_port: 80
+          lb_protocol: http
+      zones:
+        - us-east-1a
+        - us-east-1b
+        - us-east-1c
+      health_check:
+        ping_port: 80
+        ping_path: /test
+        healthy_threshold: 2
+        unhealthy_threshold: 2
+        interval: 30
+        timeout: 5
+  - name: Register Instances
+    local_action:
+      module: ec2_instance
+      state: running
+      count: 3
+      image: ami-0123456
+      instance_type: t2.micro
+      group: "{{ security_group }}"
+      wait: yes
+      key_name: "{{ key_pair_name }}"
+  - name: Trigger Health Check
+    local_action:
+      shell: "/bin/echo -e \"HTTP/1.1 200 OK\n\n\" | sudo nc -ll 80"
+    run_once: true

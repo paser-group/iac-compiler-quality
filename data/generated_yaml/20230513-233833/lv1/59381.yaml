@@ -1,0 +1,30 @@
+yaml
+---
+- hosts: cisco_ios
+  gather_facts: no
+  vars:
+    ssh_user: "{{ ansible_user }}"
+    ssh_private_key_file: /path/to/private_key
+  tasks:
+    - name: Check for existing SSH session
+      wait_for:
+        host: "{{ ansible_host }}"
+        port: 22
+        state: started
+      failed_when: false
+      register: ssh_check
+    - name: Remove existing SSH session
+      shell: 'echo "show ssh sessions | include {{ ssh_user }}" | ssh -o StrictHostKeyChecking=no -i {{ ssh_private_key_file }} {{ ssh_user }}@{{ ansible_host }}'
+      when: "'No existing session' not in ssh_check.msg"
+    - name: Configure pubkey authentication
+      ios_command:
+        commands:
+          - "aaa new-model"
+          - "username {{ ssh_user }} privilege 15 secret YourPassword"
+          - "ip ssh pubkey-chain"
+          - "key-string"
+          - "{{ lookup('file', '/path/to/public_key/file') }}"
+      register: pubkey_configure
+    - name: Print pubkey configuration result
+      debug:
+        var: pubkey_configure

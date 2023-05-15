@@ -1,0 +1,32 @@
+
+---
+- name: Create route table with instance dependency
+  hosts: localhost
+  gather_facts: False
+  tasks:
+    - name: Create an EC2 instance
+      ec2:
+        key_name: mykey
+        instance_type: t2.micro
+        image: ami-0c94855ba95c71c99
+        wait: true
+        count: 1
+        assign_public_ip: true
+        region: us-west-2
+        vpc_subnet_id: subnet-0b9e739cca67517bb
+        group: mysecuritygroup
+        instance_tags:
+          Name: my-instance
+      register: instance_result
+    - name: Create a new route table with instance dependency
+      ec2_vpc_route_table:
+        vpc_id: vpc-0c1bbc27f0e7087cd
+        tags:
+          name: my-route-table
+        routes:
+          - dest: 0.0.0.0/0
+            instance_id: "{{ instance_result.instances[0].id }}"
+      register: route_table_result
+    - name: Debug output
+      debug:
+        var: route_table_result

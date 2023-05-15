@@ -1,0 +1,43 @@
+
+- name: Test AWS Playbook
+  hosts: localhost
+  gather_facts: no
+  
+  tasks:
+    - name: Run a command with an incorrect module name
+      command: echo "hello world"
+      non_existent_module_name: arg_value
+      
+    - name: Try to install a non-existent package using apt
+      apt:
+        name: package_name_that_does_not_exist
+      
+    - name: Test an invalid AWS module syntax with an empty access_key
+      aws_s3:
+        access_key: ''
+        secret_key: 'my_secret_key'
+        bucket: 'my_bucket'
+        object: 'object_name'
+      delegate_to: non_existent_node
+      
+    - name: Try to ping non-existent hosts
+      ping:
+      delegate_to: "{{ item }}"
+      with_items:
+        - non_existent_host1
+        - "non existent host2"
+        
+    - name: Attempt to execute a non-existent script
+      script: /path/to/nonexistent/script.sh
+      
+    - name: Test an invalid AWS module syntax with an empty bucket name
+      aws_s3:
+        access_key: 'my_access_key'
+        secret_key: 'my_secret_key'
+        bucket: ''
+        object: 'object_name'
+      register: aws_s3_output
+      
+    - name: Print the output of the failed AWS task
+      debug:
+        var: aws_s3_output

@@ -1,0 +1,38 @@
+
+- name: hostname module error test playbook
+  hosts: all
+
+  tasks:
+  - name: set hostname of node1
+    hostname:
+      name: "{{ hostvars['node1']['ipv4']['address'] }}"
+      timeout: "{{ 6/3 }}"
+
+  - name: set hostname of node2
+    command: "echo {{ hostvars['node2']['ipv4']['address'] }} > /proc/sys/kernel/hostname"
+    changed_when: false
+
+  - name: set hostname of node3
+    shell: "hostnamectl set-hostname {{ hostvars['node3']['ipv4']['address'] }}"
+    args:
+      executable: /bin/bash
+
+  - name: set hostname of nonexistent node4
+    command: /bin/hostnamectl set-hostname 10.1.1.4
+    ignore_errors: yes
+
+  - name: set invalid hostname on node1
+    command: /bin/hostnamectl set-hostname 'abc$^&*()-=}{[]\;'\'"":<>?,./'
+    ignore_errors: yes
+
+  - name: set empty hostname on node2
+    hostname:
+      name: ""
+
+  - name: set whitespace hostname on node3
+    hostname:
+      name: "  "
+      
+  - name: set numeric hostname on node3
+    command: /bin/hostnamectl set-hostname 1234567890
+    ignore_errors: yes

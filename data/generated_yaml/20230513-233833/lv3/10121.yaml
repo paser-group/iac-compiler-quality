@@ -1,0 +1,30 @@
+
+- hosts: all
+  become: true
+  gather_facts: false
+  tasks:
+    - name: Install dependencies
+      apt:
+        name:
+          - ecryptfs-utils
+        state: latest
+
+    - name: Encrypt home directory with ecryptfs
+      command: >
+        echo "password" | sudo mount -t ecryptfs
+        -o ecryptfs_cipher=aes,
+        ecryptfs_key_bytes=16,
+        ecryptfs_passthrough=no,
+        no_sig_cache,
+        passphrase_passwd="password",
+        key_passphrase="password"
+        /home/ubuntu/.private
+        /home/ubuntu
+
+    - name: Check if ecryptfs directories are mounted
+      shell: mount | grep ecryptfs
+      register: ecryptfs_check
+
+    - name: Display ecryptfs mount output
+      debug:
+        var: ecryptfs_check.stdout_lines

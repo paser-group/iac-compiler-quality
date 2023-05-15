@@ -1,0 +1,29 @@
+
+  - name: "Vault example"
+    hosts: node1
+    vars:
+      password: "mypassword"
+      secret: "mysecret"
+    tasks:
+      - name: "Create secret file"
+        copy:
+          content: "{{ secret }}"
+          dest: "/etc/mysecret.txt"
+        when: "'mysecret.txt' not in ansible_facts.filesystem"
+      - name: "Encrypt secret file"
+        command: "ansible-vault encrypt /etc/mysecret.txt --vault-password-file .vault_pass"
+        environment:
+          ANSIBLE_VAULT_PASSWORD_FILE: ".vault_pass"
+      - name: "Decrypt secret file"
+        command: "ansible-vault decrypt /etc/mysecret.txt --vault-password-file .vault_pass"
+        environment:
+          ANSIBLE_VAULT_PASSWORD_FILE: ".vault_pass"
+      - name: "Read decrypted file"
+        shell: "cat /etc/mysecret.txt"
+        register: file_output
+        environment:
+          ANSIBLE_VAULT_PASSWORD_FILE: ".vault_pass"
+      - name: "Print file contents"
+        debug:
+          var: file_output.stdout
+  

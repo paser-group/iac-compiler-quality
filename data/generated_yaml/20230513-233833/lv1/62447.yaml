@@ -1,0 +1,52 @@
+yaml
+---
+- name: Install and configure Azure SQL Server
+  hosts: all
+  become: true
+  vars:
+    sql_server_name: my-azure-sql-server
+    sql_admin_username: myadmin
+    sql_admin_password: mypassword
+    sql_database_name: myazuredb
+    
+  tasks:
+    - name: Install required Azure modules
+      pip: name=azure
+
+    - name: Create Azure SQL Server
+      azure_rm_sqlserver:
+        resource_group: myresourcegroup
+        name: "{{ sql_server_name }}"
+        location: eastus
+        admin_username: "{{ sql_admin_username }}"
+        admin_password: "{{ sql_admin_password }}"
+      register: sql_server
+
+    - name: Create Azure SQL Database
+      azure_rm_sqldatabase:
+        resource_group: myresourcegroup
+        server_name: "{{ sql_server_name }}"
+        name: "{{ sql_database_name }}"
+      register: sql_database
+
+    - name: Add firewall rule to Azure SQL Server
+      azure_rm_sqlfirewallrule:
+        resource_group: myresourcegroup
+        server_name: "{{ sql_server_name }}"
+        name: my-ip-address
+        start_ip_address: "{{ ansible_host }}"
+        end_ip_address: "{{ ansible_host }}"
+      register: firewall_rule
+      when: (firewall_rule is not defined) or (firewall_rule | failed)
+
+    - name: Wait for SQL Server to be ready
+      register: server_status
+      retries: 30
+      delay: 30
+      until: server_status.stdout.find('Ready') != -1
+      shell: |
+        az sql server show --name {{ sql_server_name }} --resource-group myresourcegroup --query 'state'
+
+    - name: Display SQL Server connection strings
+      debug:
+        msg: "Connection strings: {{ sql_database.connection_strings }}"

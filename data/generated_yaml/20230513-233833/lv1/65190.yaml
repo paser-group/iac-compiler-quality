@@ -1,0 +1,26 @@
+
+---
+- name: Fix ovirt_nic error
+  hosts: your-hostname
+  gather_facts: no
+
+  vars:
+    datacenter_name: "BUA"
+    network_name: "infra-prod"
+
+  tasks:
+  - name: Check if network exists in datacenter
+    ovirt_nic:
+      state: present
+      network: "{{ network_name }}"
+      data_center: "{{ datacenter_name }}"
+    register: network_status
+    ignore_errors: true
+
+  - name: Create network in datacenter if not exists
+    ovirt_network:
+      state: present
+      name: "{{ network_name }}"
+      data_center: "{{ datacenter_name }}"
+    when: network_status.rc != 0 and network_status.msg == "Network '{{ network_name }}' was not found in datacenter '{{ datacenter_name }}'."
+

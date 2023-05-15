@@ -1,0 +1,50 @@
+
+---
+- hosts: all
+  gather_facts: false
+  tasks:
+    - name: Test register variable with check
+      command: echo "Testing register variable with check"
+      args:
+        warn: no
+      ignore_errors: yes
+      register: test_var
+      changed_when: false
+      check_mode: true
+
+    - name: Test conditional statement
+      fail:
+        msg: "Conditional statement failed!"
+      when: test_var is defined and test_var.stdout == "Testing register variable with check"
+
+    - name: Test unconventional syntax with register variable
+      command: echo "Testing unconventional syntax with register variable"
+      args:
+        warn: no
+      ignore_errors: yes
+      register: "{{ test_{{ item }} }}"
+      changed_when: false
+      with_items:
+        - var1
+        - var2
+        - var3
+
+    - name: Test unexpected input
+      command: "{{ undefined_command }}"
+      args:
+        warn: no
+      ignore_errors: yes
+
+    - name: Test edge case
+      shell: |
+        for i in `seq 1 10`
+        do
+          echo "Edge case test $i"
+        done
+      args:
+        executable: /bin/bash
+      register: edge_test_output
+
+    - name: Display edge case test results
+      debug:
+        var: edge_test_output

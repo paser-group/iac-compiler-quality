@@ -1,0 +1,19 @@
+
+---
+- hosts: localhost
+  gather_facts: false
+  tasks:
+  - name: Retrieve data from AWS SSM Parameter Store
+    ec2_parameter_store_facts:
+      name: "{{ '{{' }}random_string(ascii_letters, 10){{ '}}' }}"
+    register: parameter_data
+  - name: Verify that 'Description' key is present
+    fail:
+      msg: "Key Error: 'Description' not found for {{ parameter_data }} "
+    when: "'Description' not in {{ parameter_data }} ['{{ '{{' }} parameter_data.parameters[0].Name {{ '}}' }}']"
+  - name: Collect target system logs and metadata
+    ...(task code)...
+  - name: Clean up the created parameters
+    ec2_parameter_store:
+      name: "{{ parameter_data.parameters[0].Name }}"
+      state: absent

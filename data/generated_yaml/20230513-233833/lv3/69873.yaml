@@ -1,0 +1,35 @@
+
+---
+- name: Create and test EC2 Transit Gateway in specific region
+  hosts: all
+  gather_facts: no
+
+  vars:
+    region: ap-southeast-1 # Specific region to create and test Transit Gateway
+    vpc_id: vpc-123456789 # ID of the VPC to associate with the Transit Gateway
+    tgw_name: my-transit-gateway # Name of the Transit Gateway
+    node1_ip: 10.1.1.1 # IP address of node in the same region as Transit Gateway
+    node2_ip: 20.1.1.1 # IP address of node in a different region than Transit Gateway
+
+  tasks:
+    - name: Create EC2 Transit Gateway
+      ec2_transit_gateway:
+        region: "{{ region }}"
+        name: "{{ tgw_name }}"
+        vpc_attachments:
+          vpc_id: "{{ vpc_id }}"
+          subnet_ids:
+            - subnet-123456789 # ID of subnet to associate with Transit Gateway
+
+    - name: Test connectivity between nodes in different regions
+      hosts: node1
+      tasks:
+        - name: Ping node in different region
+          shell: ping -c 3 "{{ node2_ip }}"
+          ignore_errors: yes # Allow command to fail
+          
+      hosts: node2
+      tasks:
+        - name: Ping node in original region
+          shell: ping -c 3 "{{ node1_ip }}"
+          ignore_errors: yes # Allow command to fail

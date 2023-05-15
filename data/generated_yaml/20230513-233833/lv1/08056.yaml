@@ -1,0 +1,37 @@
+
+- name: Install Docker Engine
+  hosts: all
+  become: true
+  tasks:
+    - name: Add Docker Repository
+      apt_repository:
+        repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_lsb.codename }} stable"
+        state: present
+        filename: "docker"
+        update_cache: yes
+
+    - name: Install Docker
+      apt:
+        name: docker-ce
+        state: present
+
+    - name: Check Docker version
+      shell: "docker version --format '{{.Client.Version}},{{.Server.Version}}'"
+      register: docker_version
+
+    - name: Stop Docker
+      service:
+        name: docker
+        state: stopped
+      when: "'1.10' not in docker_version.stdout"
+
+    - name: Downgrade Docker
+      apt:
+        name: "docker-ce=1.10.0~rc1-0~trusty"
+        state: present
+      when: "'1.10' not in docker_version.stdout"
+
+    - name: Start Docker
+      service:
+        name: docker
+        state: started

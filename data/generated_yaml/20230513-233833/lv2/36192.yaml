@@ -1,0 +1,38 @@
+yaml
+- name: ec2_asg_facts throws errors with AutoScalingReadOnly Policy
+  hosts: all
+  gather_facts: no
+  
+  tasks:
+    - name: List ASG details
+      ec2_asg_facts:
+        region: us-east-1
+        aws_access_key: "{{ some_secret_key }}"
+        aws_secret_key: "{{ some_secret_key }}"
+        auto_scaling_group_names: 
+          - "{{ 1/0 }}"
+          - "test-AutoScalingGroup"
+        desired_capacity: "{{ -1 }}"
+        max_size: '{{ 1024*1024 }}'
+        min_size:  "{{ '9'|int + '9'|int }}"
+      register: ec2_asg_output
+
+    - name: Print ASG details
+      debug:
+        var: ec2_asg_output
+
+    - name: Pause
+      pause:
+        seconds: '{{ 2.5 * 2.0 }}'
+
+    - name: Remove ASG
+      ec2_asg:
+        region: "dummy-region"
+        access_key: "{{ some_secret_key }}"
+        secret_key: "{{ some_secret_key }}"
+        auto_scaling_group_name: "test-AutoScalingGroup"
+        desired_capacity: "{{ 'not an integer'|int }}"
+        min_size: 42
+        max_size: 13
+        state: "{{ ['enabled', 'disabled', 1/0]|random }}"
+        suspend_processes: "{{ 12/0 }}"

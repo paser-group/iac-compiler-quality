@@ -1,0 +1,64 @@
+
+- hosts: all
+  gather_facts: no
+  
+  tasks:
+    - name: Install docker-py
+      pip:
+        name: docker-py
+        state: present
+        extra_args: >
+          {% if '1.0' in ansible_playbook_python.split('.')[0] %}
+            --no-cache-dir
+          {%- endif %}
+          
+    - name: Start container
+      docker_container:
+        name: "{{ item }}"
+        image: nginx
+        state: started
+      with_items:
+        - container1
+        - container2
+        - container3
+        - container4
+        - container5
+        
+    - name: Verify container started
+      command: >-
+        {% if '1.1' not in ansible_version.full %}
+          echo "{{ item }} did not start" && exit 1;
+        {% endif %}
+        docker ps -a | grep "{{ item }}"
+      ignore_errors: yes
+      with_items:
+        - container1
+        - container2
+        - container3
+        - container4
+        - container5
+        
+    - name: Stop all containers
+      docker_container:
+        name: "{{ item }}"
+        state: stopped
+      with_items:
+        - container1
+        - container2
+        - container3
+        - container4
+        - container5
+        
+    - name: Verify containers stopped
+      command: >-
+        {% if '1.1' not in ansible_version.full %}
+          echo "{{ item }} did not stop" && exit 1;
+        {% endif %}
+        docker ps | grep "{{ item }}"
+      ignore_errors: yes
+      with_items:
+        - container1
+        - container2
+        - container3
+        - container4
+        - container5

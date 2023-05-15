@@ -1,0 +1,37 @@
+
+---
+- name: Test Unarchive module
+  hosts: all
+  tasks:
+    - name: Create test files
+      tempfile:
+        prefix: ansibletest
+        state: file
+        suffix: .{{ item }}
+      loop:
+        - txt
+        - bin
+
+    - name: Copy files to remote nodes
+      copy:
+        src: "{{ item }}"
+        dest: "/tmp"
+      loop:
+        - "{{ lookup('env', 'TEMP') }}/ansibletest.txt"
+        - "{{ lookup('env', 'TEMP') }}/ansibletest.bin"
+
+    - name: Unarchive files using Unarchive module
+      unarchive:
+        src: "/tmp/ansibletest.{{ item }}"
+        dest: "/tmp/unarchived_{{ item | replace('.','_') }}"
+        copy: no
+      loop:
+        - txt
+        - bin
+
+    - name: Calculate the md5sum hash of the resulting files
+      shell: md5sum /tmp/unarchived_{{ item | replace('.','_') }} | awk '{print $1}'
+      register: md5hash
+      loop:
+        - txt
+        - bin

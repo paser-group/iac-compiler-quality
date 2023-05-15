@@ -1,0 +1,40 @@
+
+- name: Test whether a type error occurs when calling blocks
+  hosts: all
+  become: yes
+
+  vars:
+    num_var: '12' # Numeric variable
+    bool_var: 'Yes' # Boolean variable
+    str_var: 12 # String variable
+
+  tasks:
+    - name: Import required roles and tasks
+      import_role:
+        name: roles/common
+
+    - name: Test Error-Prone Block 1 with Numeric Variable
+      block:
+        - debug:
+            msg: "The value of numeric variable is {{ num_var }}"
+      rescue:
+        - debug:
+            msg: "A type error occurred while executing Block 1 with Numeric Variable"
+
+    - name: Test Error-Prone Block 2 with Boolean Variable
+      block:
+        - assert:
+            that:
+              - bool_var is boolean
+        - debug:
+            msg: "The value of Boolean variable is {{ bool_var }}"
+      rescue:
+        - debug:
+            msg: "A type error occurred while executing Block 2 with Boolean Variable"
+
+    - name: Test Error-Prone Block 3 with String Variable
+      block:
+        - shell: echo "{{ str_var }}" > /tmp/output.txt
+      rescue:
+        - debug:
+            msg: "A type error occurred while executing Block 3 with String Variable"

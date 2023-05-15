@@ -1,0 +1,116 @@
+
+---
+- name: Test SSL certificates with Ansible compiler
+  hosts: localhost
+  gather_facts: no
+  tasks:
+    - name: Install Python dependencies
+      pip:
+        name: "{{ item }}"
+      with_items:
+        - certifi
+        - requests
+
+    - name: Fetch SSL certificates
+      block:
+        - name: Get certificate from proxy using Python 2
+          uri:
+            url: https://proxy1.com
+            return_content: true
+            force_basic_auth: true
+            user: "{{ proxy_user }}"
+            password: "{{ proxy_password }}"
+          environment:
+            HTTPS_PROXY: https://proxy1.com
+
+        - name: Get certificate from proxy using Python 3
+          uri:
+            url: https://proxy1.com
+            return_content: true
+            force_basic_auth: true
+            user: "{{ proxy_user }}"
+            password: "{{ proxy_password }}"
+          headers:
+            accept-encoding: ''
+          environment:
+            HTTPS_PROXY: https://proxy1.com
+            PATH: "{{ ansible_env.PATH }}:/usr/local/bin"
+
+        - name: Get self-signed certificate
+          uri:
+            url: https://selfsigned.com
+            return_content: true
+            status_code: 200
+          validate_certs: no
+
+        - name: Get certificate issued by well-known CA
+          uri:
+            url: https://letsencrypt.org
+            depth: 1
+            return_content: true
+
+      vars:
+        proxy_user: "proxy-user"
+        proxy_password: "{{ vaulted_proxy_password }}"
+
+    - name: Copy SSL certificates to controller machine
+      block:
+        - name: Create folder to store certs
+          file:
+            path: "/etc/ssl/certs"
+            state: directory
+            owner: root
+            group: root
+            mode: '0755'
+
+        - name: Copy SSL certificates to the controller machine
+          copy:
+            src: "{{ item.src }}"
+            dest: "/etc/ssl/certs/{{ item.name }}"
+            owner: root
+            group: root
+            mode: '0644'
+          with_items:
+            - { name: 'proxy1.crt', src: './proxy1.crt' }
+            - { name: 'selfsigned.crt', src: './selfsigned.crt' }
+            - { name: 'letsencrypt.crt', src: './letsencrypt.crt' }
+
+    - name: Test SSL/TLS certificate compatibility
+      block:
+        - name: Test SSL certificate from proxy using Python 2
+          ansible.builtin.certs:
+            file: "/etc/ssl/certs/proxy1.crt"
+            validate_certs: yes
+            proxy: "https://proxy1.com"
+            proxy_python_ver: "2"
+          register: cert_proxy_py2
+
+        - name: Test SSL certificate from proxy using Python 3
+          ansible.builtin.certs:
+            file: "/etc/ssl/certs/proxy1.crt"
+            validate_certs: yes
+            proxy: "https://proxy1.com"
+            proxy_python_ver: "3"
+            env:
+              HTTP_PROXY: "https://proxy1.com"
+              HTTPS_PROXY: "https://proxy1.com"
+              PATH: "{{ ansible_env.PATH }}:/usr/local/bin"
+          register: cert_proxy_py3
+
+        - name: Test self-signed certificate
+          ansible.builtin.certs:
+            file: "/etc/ssl/certs/selfsigned.crt"
+            validate_certs: no
+          register: cert_selfsigned
+
+        - name: Test certificate from Let's Encrypt
+          ansible.builtin.certs:
+            file: "/etc/ssl/certs/letsencrypt.crt"
+            validate_certs: yes
+          register: cert_letsencrypt
+
+      register: cert_results
+
+    - name: Print results
+      debug:
+        var: cert_results

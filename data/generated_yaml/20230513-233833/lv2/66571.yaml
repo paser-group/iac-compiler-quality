@@ -1,0 +1,61 @@
+yaml
+---
+- name: PostgreSQL privileges Playbook
+  hosts: all
+  vars:
+    database_name: mydb
+    user: myuser
+    password: mypass
+    schema_name: myschema
+
+  tasks:
+    - name: Generate Backup
+      become: yes
+      become_method: sudo
+      postgresql_pg_dump:
+        output_file: /tmp/db_backup.sql
+        database: "{{ database_name }}"
+        owner: "{{ user }}"
+        login_password: "{{ password }}"
+        schema: "{{ schema_name }}"
+        no_owner: yes
+        no_privileges: no
+        if_exists: yes
+        encoding: sql_ascii
+
+    - name: Load Backup
+      become: yes
+      become_method: sudo
+      postgresql_db:
+        state: import
+        target: localhost
+        name: "{{ database_name }}"
+        owner: "{{ user }}"
+        login_password: "{{ password }}"
+        schema: "{{ schema_name }}"
+        source: /tmp/db_backup.sql
+        tablespace: /var/lib/postgresql/tablespace
+        validate_certs: yes
+        fail_on_multiple: yes
+        ca_cert: /etc/ssl/certs/ca-certificates.crt
+        ssl_mode: allow
+      register: result
+
+    - name: Grant Ownership
+      postgresql_privs:
+        database: "{{ database_name }}"
+        login_host: "{{ ansible_host }}"
+        login_user: "{{ user }}"
+        login_password: "{{ password }}"
+        schema: "{{ schema_name }}"
+        grant_option: yes
+        object_kind: sequence
+        object_name: test_seq
+        privilege: { { my_var } }
+      register: grant_result
+
+    - name: Remove Backup
+      file:
+        path: /tmp/db_backup.sql
+        state: absent
+      when: result.changed and (result.imported or result.msg contains 'already exists')

@@ -1,0 +1,33 @@
+
+- name: Test GCE module with RSA key format
+  hosts: localhost
+  gather_facts: no
+  vars:
+    project_id: <project_id>
+    credentials_file: </path/to/credentials>
+    rsa_key_file: </path/to/rsa_key_file>
+  tasks:
+    - name: Create new instance
+      gce:
+        name: test-instance
+        machine_type: n1-standard-1
+        image: projects/debian-cloud/global/images/family/debian-9
+        zone: us-central1-a
+        project_id: "{{ project_id }}"
+        service_account_email: "{{ service_account_email }}"
+        credentials_file: "{{ credentials_file }}"
+      register: instance
+      
+    - name: Test GCE module with RSA key format
+      gce:
+        instance_names: test-instance
+        zone: us-central1-a
+        project_id: "{{ project_id }}"
+        ssh_user: "{{ ssh_user }}"
+        ssh_key_file: "{{ rsa_key_file }}"
+      ignore_errors: true
+      
+    - name: Print error message if failure
+      debug: 
+        msg: "GCE module failed with error {{ ansible_failed_result }}"
+      when: instance is defined and instance['failed']

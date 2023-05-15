@@ -1,0 +1,33 @@
+
+- name: Check SSH Connectivity
+  hosts: all
+  become: true
+  gather_facts: no
+  tasks:
+  - name: Test SSH connectivity 
+    command: ls  
+    ignore_errors: yes
+    register: ssh_output
+  - fail:
+      msg: "SSH Connectivity Test Failed"
+    when: "'Name or service not known' in ssh_output['msg'] or 'Permission denied' in ssh_output['msg'] or ssh_output['rc'] != 0"
+
+- name: Check Ansible Connectivity
+  hosts: all
+  become: true
+  gather_facts: no
+  tasks:
+  - name: Ping each node 
+    ping:
+  - name: Fail if any nodes are unreachable
+    fail:
+      msg: "Ansible ping test failed"
+    when: "'UNREACHABLE' in result"
+  - name: Execute built-in command on each node
+    command: uptime
+    ignore_errors: yes
+    register: cmd_output
+  - name: Fail if any command fails
+    fail:
+      msg: "Command execution failed on some nodes"
+    when: cmd_output.rc != 0

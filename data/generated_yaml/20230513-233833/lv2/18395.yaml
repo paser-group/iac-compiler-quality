@@ -1,0 +1,51 @@
+
+- name: Test yaml import using include_vars
+  hosts: node1
+  gather_facts: false
+
+  tasks:
+    - name: Include vars from a missing file
+      include_vars:
+        file: missing-vars.yml
+      ignore_errors: yes
+      
+    - name: Include vars with missing file name
+      include_vars:
+        file_var: ""
+      ignore_errors: yes
+        
+    - name: Include vars with incorrect file name
+      include_vars:
+        file: "{{ lookup('env', 'HOME') }}/non-existent.yml"
+      ignore_errors: yes
+
+    - name: Including vars with incorrect yaml syntax
+      include_vars:
+        file: incorrect-yml-syntax.yml
+      ignore_errors: yes
+      
+    - name: Include vars with wrong file extension
+      include_vars:
+        file: wrong-extension.yaml
+      
+    - name: Checking the content of the variables defined
+      debug:
+        var: "{{ item }}"
+      with_items:
+        - missing_var1
+        - missing_var2
+        - incorrect_syntax_var1
+        - incorrect_syntax_var2
+        - non_existent_var
+        
+    - name: Assert values of variables
+      assert:
+        that:
+          - missing_var1 is defined
+          - missing_var2 is defined
+          - non_existent_var is not defined
+        
+    - name: Use the variables in a command
+      shell: echo "{{ missing_var1 }} {{ missing_var2 }} {{ incorrect_syntax_var1 }} {{ incorrect_syntax_var2 }}"
+      
+

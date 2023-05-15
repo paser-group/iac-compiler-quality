@@ -1,0 +1,65 @@
+yaml
+---
+- name: Provision EC2 instances in VPC
+  hosts: localhost
+  gather_facts: no
+  vars:
+    region: us-east-1
+    vpc_cidr: 10.0.0.0/16
+    subnets:
+      - name: subnet1
+        cidr: 10.0.1.0/24
+      - name: subnet2
+        cidr: 10.0.2.0/24
+  tasks:
+    - name: Create VPC
+      ec2_vpc:
+        state: present
+        region: "{{ region }}"
+        cidr_block: "{{ vpc_cidr }}"
+        resource_tags:
+          Name: ansible-vpc
+        register: vpc
+
+    - name: Create subnets
+      ec2_vpc_subnet:
+        state: present
+        region: "{{ region }}"
+        cidr_block: "{{ subnet.cidr }}"
+        vpc_id: "{{ vpc.id }}"
+        availability_zone: "{{ item }}"
+        map_public: true
+        resource_tags:
+          Name: "ansible-{{ subnet.name }}"
+        wait: true
+        with_items: "{{ subnets }}"
+      register: subnets_result
+
+    - name: Create security group
+      ec2_group:
+        state: present
+        region: "{{ region }}"
+        name: ansible-sg
+        description: Security group for EC2 instances
+        vpc_id: "{{ vpc.id }}"
+        rules:
+          - proto: tcp
+            from_port: 22
+            to_port: 22
+            cidr_ip: 0.0.0.0/0
+
+    - name: Launch EC2 instances
+      ec2:
+        state: present
+        region: "{{ region }}"
+        key_name: ansible-keypair
+        instance_type: t2.micro
+        image: ami-0323c3dd2da7fb37d
+        count: 2
+        instance_tags:
+          Name: "ansible-ec2-instance"
+        vpc_subnet_id: "{{ item.subnet_id }}"
+        assign_public_ip: yes
+        group: "ansible-sg"
+        wait: true
+        with_items: "{{ subnets_result.results }}"

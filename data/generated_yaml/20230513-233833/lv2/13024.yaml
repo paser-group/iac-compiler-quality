@@ -1,0 +1,35 @@
+
+- name: Proxy Certificate Errors Test
+  hosts: localhost
+  gather_facts: no
+  tasks:
+    - name: Install OpenSSL and Create Self-Signed Certificates
+      with_items:
+        - "{{ range(5)|list }}"
+      shell: |
+        sudo apt-get install openssl -y
+        openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout private-key{{item}}.pem -out certificate{{item}}.crt -subj "/C=US/ST=CA/L=San Francisco/O=GitHub/OU=IT Department/CN=github.com/emailAddress=support@github.com"
+      register: cert_output
+
+    - name: Configure Network Proxy with Invalid Certificate
+      no_log: true
+      shell: |
+        sudo echo "export https_proxy=https://proxy.invalid:1234" >> /etc/environment
+        sudo echo "export SSL_CERT_FILE=$HOME/certificate0.crt" >> /etc/environment
+
+    - name: Test Invalid Certificate on Target Nodes with Dynamic Inventory
+      hosts: all
+      tasks:
+        - name: Ping Targets to Verify Connection
+          ping:
+          register: ping_output
+
+    - name: Clean Up Changes
+      hosts: localhost
+      no_log: true
+      tasks:
+        - name: Clean Up Environment
+          shell: |
+            sudo sed -i '/export https_proxy/d' /etc/environment
+            sudo sed -i '/export SSL_CERT_FILE/d' /etc/environment
+          when: ping_output is success

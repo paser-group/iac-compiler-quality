@@ -1,0 +1,38 @@
+
+---
+- name: Stress Test Slack Notification
+  hosts: node1
+  gather_facts: false
+
+  tasks:
+  - name: Install Slack Python package
+    pip:
+      name: slack-sdk
+      state: present
+    ignore_errors: yes
+
+  - name: Set Slack API Token
+    set_fact:
+      slack_token: "{{ lookup('env', 'SLACK_TOKEN') }}"
+    ignore_errors: yes
+
+  - name: Test Slack API
+    command: "curl -X GET 'https://slack.com/api/api.test?token={{ slack_token }}'"
+    register: slack_response
+    ignore_errors: yes
+
+  - name: Debug Slack API response
+    debug:
+      var: slack_response
+
+  - name: Send Slack Notification
+    slack:
+      token: "{{ slack_token }}"
+      msg: "Testing Slack Notification"
+      username: "{{ lookup('env', 'SLACK_USERNAME') | default(ansible_user_id) }}"
+      channel: "{{ lookup('env', 'SLACK_CHANNEL') | default('#general') }}"
+    ignore_errors: yes
+
+  - name: Debug Slack Notification response
+    debug:
+      var: ansible_slack_msg

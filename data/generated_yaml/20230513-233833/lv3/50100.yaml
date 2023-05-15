@@ -1,0 +1,36 @@
+
+---
+- name: Test Ansible inventory openstack plugin
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+    - name: Create inventory file
+      copy:
+        content: |
+          openstack_user: admin
+          openstack_password: password
+          openstack_project_name: project_name
+          openstack_auth_url: https://auth_url
+          openstack_region_name: region_name
+          openstack_domain_name: domain_name
+        dest: /etc/ansible/openstack.ini
+
+    - name: Generate inventory
+      meta: refresh_inventory
+
+    - name: Check inventory
+      command: ansible-inventory -i /etc/ansible/dynamic_inventory/openstack_inventory.yml --list
+      register: inventory_output
+      ignore_errors: true
+
+    - name: Print output
+      debug:
+        var: inventory_output.stderr
+        verbosity: 1
+      when: "'ERROR! Failed to construct inventory' in inventory_output.stderr"
+
+    - name: Print success
+      debug:
+        msg: "Inventory generated successfully"
+      when: "'ERROR! Failed to construct inventory' not in inventory_output.stderr"

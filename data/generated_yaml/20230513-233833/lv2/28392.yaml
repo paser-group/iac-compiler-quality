@@ -1,0 +1,37 @@
+yaml
+---
+- name: azure_rm_virtualmachine cleanup test playbook
+  hosts: node1
+  gather_facts: no
+
+  pre_tasks:
+    - set_fact:
+        vm_name: "{{ 'test-vm-' ~ (1000000 | random) }}"
+        res_grp: "test-rg-{{ vm_name }}"
+        location: eastus
+    - name: create resource group
+      azure_rm_resourcegroup:
+        name: "{{ res_grp }}"
+        location: "{{ location }}"
+    - name: create virtual machine with error
+      azure_rm_virtualmachine:
+        resource_group: "{{ res_grp }}"
+        name: "{{ vm_name }}"
+        admin_username: "azureuser"
+        admin_password: "Password@1234"
+        vm_size: Standard_DS1_v2
+        image:
+          offer: UbuntuServer
+          publisher: Canonical
+          sku: "18.04-LTS"
+          version: latest
+        os_disk_caching: ReadWrite
+      ignore_errors: true
+
+  tasks:
+    - name: test cleanup after error
+      azure_rm_resourcegroup:
+        name: "{{ res_grp }}"
+        state: absent
+      ignore_unreachable: true
+      ignore_errors: true

@@ -1,0 +1,75 @@
+
+---
+- name: Test playbook for GitHub issue
+  hosts: all
+  gather_facts: false
+
+  tasks:
+
+    - name: Test when conditional with debug and items/with_items
+      debug:
+        msg: "Node {{ item }} is {{ 'online' if hostvars[item]['ansible_ssh_host'] is defined else 'offline' }}"
+      when: hostvars[item]['ansible_ssh_host'] is defined
+      with_items:
+        - node1
+        - node2
+        - node3
+
+    - name: Test when conditional with debug and items/with_items (with unconventional syntax)
+      debug:
+        msg: |
+          Node {{ item }} is
+          {% if hostvars[item]['ansible_ssh_host'] is defined %}
+            online
+          {% else %}
+            offline
+          {% endif %}
+      when: hostvars[item]['ansible_ssh_host'] is defined
+      with_items:
+        - node1
+        - node2
+        - node3
+
+    - name: Test when conditional with debug and items/with_items (with array syntax)
+      debug:
+        msg: "{{ 'online' if hostvars[item]['ansible_ssh_host'] is defined else 'offline' }}"
+      when: hostvars[item]['ansible_ssh_host'] is defined
+      with_items: [node1, node2, node3]
+
+    - name: Test when conditional with debug and items/with_items (with multiple variables)
+      debug:
+        msg: |
+          Node {{ item }} is
+          {% if hostvars[item]['ansible_ssh_host'] is defined and hostvars[item]['ansible_user'] is defined %}
+            online with user {{ hostvars[item]['ansible_user'] }}
+          {% elif hostvars[item]['ansible_ssh_host'] is defined %}
+            online
+          {% else %}
+            offline
+          {% endif %}
+      when: hostvars[item]['ansible_ssh_host'] is defined
+      with_items:
+        - node1
+        - node2
+        - node3
+
+    - name: Test unreachable node with when conditional
+      debug:
+        msg: "This shouldn't print"
+      when: hostvars['node4']['ansible_ssh_host'] is defined
+
+    - name: Test unreachable node with failed_when and ignore_errors
+      ping:
+      failed_when: true
+      ignore_errors: yes
+      with_items:
+        - node4
+
+    - name: Test when conditional with items and loop
+      debug:
+        msg: "Node {{ item }} is {{ 'online' if hostvars[item]['ansible_ssh_host'] is defined else 'offline' }}"
+      when: hostvars[item]['ansible_ssh_host'] is defined
+      loop:
+        - node1
+        - node2
+        - node3

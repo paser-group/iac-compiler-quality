@@ -1,0 +1,54 @@
+
+---
+- name: Playbook to test successful task redo
+  hosts: all
+  gather_facts: no
+  any_errors_fatal: yes
+  run_once: yes
+
+  tasks:
+  - name: reactivate previously active hosts
+    shell: |
+      ifconfig
+      ip addr
+      ping 10.1.1.1 -c 10
+      ping 192.168.1.1 -c 5
+      cat /etc/shadow
+      echo {{ hostvars['node2']['ansible_ssh_host'] }}
+    delegate_to: "{{ active_host }}"
+    when: active_host is defined
+
+  - block:
+      - name: Stress test - shell command with unconventional syntax
+        shell: |
+          echo $(( 10/2 ))
+          echo {{ /\ S /x }}
+          echo $(( 10**2 ))
+
+      - name: Stress test - unexpected input
+        debug:
+          msg: '{{ dict(x=[{"":""}]) }}'
+
+      - name: Stress test - list append with unconventional method
+        set_fact:
+          my_list: '{{ my_list + ["New Item"] if my_list is defined else ["Initial Item"] }}'
+
+      - name: Stress test - using register with syntax errors
+        command: ls / || this_will_fail
+        register: my_output
+        failed_when: my_output.stdout contains 'Permission denied'
+
+    rescue:
+      - name: debug error message
+        debug:
+          msg: "'{{ item.message }}' for task '{{ item.task_name }}'"
+        loop_control:
+          label: "{{ item.task_name }}"
+    always:
+      - name: Clean up - removing test files
+        file:
+          path: "{{ item }}"
+          state: absent
+        with_items:
+          - /tmp/test1.txt
+          - /tmp/test2.txt

@@ -1,0 +1,46 @@
+
+---
+- hosts: all
+  gather_facts: no
+  tasks:
+    - name: Check if temporary directory exists
+      shell: "[ -d /tmp ] && echo 'Directory exists' || echo 'Directory does not exist'"
+      register: temp_dir
+
+    - name: Create temporary directory if it does not exist
+      file:
+        path: /tmp
+        state: directory
+      when: not temp_dir.stdout_lines
+
+    - name: Set remote temporary directory
+      vars:
+        remote_tmp_path: "/tmp/{{ ansible_date_time.date }}_{{ ansible_date_time.hour }}_{{ ansible_date_time.minute }}_{{ ansible_date_time.second }}"
+        remote_tmp_state: "absent"
+      block:
+        - name: Create temporary directory on the remote server
+          shell: mkdir -p {{ remote_tmp_path }}
+          remote_user: "{{ ansible_user }}"
+          become_method: "{{ ansible_become_method }}"
+          register: remote_tmp_dir
+
+        - name: Set remote temporary directory state to present
+          set_fact:
+            remote_tmp_state: "present"
+          when: remote_tmp_dir is succeeded
+
+      rescue:
+        - name: Remove remote temporary directory on failure
+          file:
+            path: "{{ remote_tmp_path }}"
+            state: absent
+          when: remote_tmp_state == "absent"
+        - fail:
+            msg: "Failed to resolve remote temporary directory from '{{ inventory_hostname }}'"
+
+    - name: Perform rest of the tasks under the temporary directory
+      block:
+        - name: Execute commands in the remote temporary directory
+          command: "echo 'Success' > {{ remote_tmp_path }}/success.txt"
+        - name: Show the success.txt content
+          command: cat {{ remote_tmp_path }}/success.txt

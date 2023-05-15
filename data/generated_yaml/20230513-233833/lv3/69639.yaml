@@ -1,0 +1,35 @@
+yaml
+- name: Deploying helm chart
+  hosts: all
+  vars:
+    kubeconfig: /etc/kubernetes/admin.conf
+    helm_release_name: my-release
+    helm_chart_name: my-chart
+  tasks:
+    - name: Installing helm
+      become: true
+      apt:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - curl
+        - apt-transport-https
+        - gnupg2
+        - software-properties-common
+        - helm
+    - name: Adding helm to the path
+      become: true
+      command: ln -s /usr/local/bin/helm /usr/bin/helm
+      args:
+        creates: /usr/bin/helm
+    - name: Add Helm repository
+      become: true
+      command: helm repo add stable https://charts.helm.sh/stable
+    - name: Deploy Helm chart
+      become: true
+      command: helm install {{ helm_release_name }} {{ helm_chart_name }}
+      args:
+        chdir: /path/to/helm/chart
+      register: result
+      until: result.stdout.find("StatusCode.UNAVAILABLE") != -1
+      retries: 3

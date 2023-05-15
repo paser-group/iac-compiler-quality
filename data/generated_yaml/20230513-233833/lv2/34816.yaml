@@ -1,0 +1,39 @@
+
+- name: Test Ec2_group Module for Intermittent Errors
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Add New Group
+      ec2_group:
+        name: "{{ 'group1' if (1==1) else 'group2' }}" # Ternary Operator to randomly choose between group1 and group2
+        description: "{{ lookup('env','USER') }}" # Lookup environment variable value to set as group description
+        vpc_id: "{{ 'vpc-004f6ffde617b1a00' if (1==1) else 'vpc-02fdfa377a3cfe05c' }}" # Ternary Operator to randomly choose between two VPC ID's
+        purge_rules: "{{ true if (is_alternate_host is defined and is_alternate_host == true) else false }}" # Ternary Operator to set purge_rules flag dynamically based on a defined variable
+        region: "{{ ['ap-southeast-1', 'us-west-2', 'eu-west-1'] | random }}" # Randomly choose a region
+      register: group_created
+
+    - name: Add Rules to Existing Group and Non-Existing Group
+      ec2_group:
+        name: "{{ 'group1' if (is_alternate_host is defined and is_alternate_host == true) else 'group3' }}" # Ternary Operator to randomly choose between non-existing and existing group
+        rules:
+          - proto: "{{ ['tcp','udp','icmp'] | random }}"
+            from_port: "{{ range(0,65535)|random }}"
+            to_port: "{{ range(from_port,65535)|random }}"
+            cidr_ip: "{{ '0.0.0.0/0' if (1==1) else lookup('env','MY_CIDR_IP') }}" # Lookup environment variable value to set as CIDR IP
+            group_name: "{{ 'group1' if (is_alternate_host is defined and is_alternate_host == true ) else 'group2' }}" # Ternary Operator to randomly choose existing group from earlier or non-existing group
+      when: >-
+        ('GroupExistsError' in group_created.stderr and hostvars[inventory_hostname].index('|')==0) or
+        ('GroupExistsError' not in group_created.stderr and hostvars[inventory_hostname].index('|')==1)
+
+    - name: Add Invalid Rule to Existing Group
+      ec2_group:
+        name: "{{ 'group1' if (is_alternate_host is defined and is_alternate_host == true) else 'group3' }}" # Ternary Operator to randomly choose between non-existing and existing group
+        rules:
+          - proto: "{{ ['ssh','icmpv6'] | random }}"
+            from_port: "{{ range(0,65535)|random }}"
+            to_port: "{{ range(from_port,65535)|random }}"
+            cidr_ip: "{{ 1/0 }}" # Trigger division by zero error
+            group_name: "{{ 'group1' if (is_alternate_host is defined and is_alternate_host == true ) else 'group2' }}" # Ternary Operator to randomly choose existing group from earlier or non-existing group
+      when: >-
+        ('GroupExistsError' in group_created.stderr and hostvars[inventory_hostname].index('|')==0) or
+        ('GroupExistsError' not in group_created.stderr and hostvars[inventory_hostname].index('|')==1)

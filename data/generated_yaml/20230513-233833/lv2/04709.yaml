@@ -1,0 +1,33 @@
+
+- hosts: all
+  become: true
+  tasks:
+    - name: Add apt key
+      apt_key:
+        keyserver: "{{ item }}"
+        key: "{{ key | default(omit) }}"
+        state: present
+      with_items:
+        - http://keyserver.ubuntu.com
+        - https://keyserver.ubuntu.com
+        - hkp://keyserver.ubuntu.com:80
+        - hkps://keys.gnupg.net
+        - hkp://pgp.mit.edu
+        - http://keys.gnupg.net/pks/lookup?op=get&search=0x{{ key_id | default(omit) }}
+        - https://keys.gnupg.net/pks/lookup?search=0x{{ key_id | default(omit) }}
+      vars:
+        key: "{{ lookup('file', 'mykey.asc') | default(omit) }}"
+        key_id: "3B4FE6ACC0B21F32"
+        key_short_id: "C0B21F32"
+
+    - name: Test apt key removal
+      apt_key:
+        id: "{{ key_short_id }}"
+        state: absent
+      ignore_errors: yes
+      register: result
+
+    - name: Fail on failed results
+      fail:
+        msg: "{{ result | failed }}"
+      when: result | failed

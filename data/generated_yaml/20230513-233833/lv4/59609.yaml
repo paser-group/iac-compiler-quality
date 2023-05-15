@@ -1,0 +1,27 @@
+
+---
+- name: Check compatibility of aws_secret lookup plugin with different botocore versions
+  hosts: all
+  become: true
+  vars:
+    botocore_versions:
+      - 2.7.0
+      - 2.9.0
+      - 2.10.0
+  tasks:
+    - name: Ensure boto and botocore are installed
+      apt:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - python-boto
+        - python3-boto
+        - python-botocore
+        - python3-botocore
+    - name: Test aws_secret lookup plugin with different botocore versions
+      debug:
+        var: lookup('aws_secret', 'mysecret', secrets_provider='env')
+      loop: "{{ botocore_versions }}"
+      vars:
+        boto_version: "{{ item }}"
+

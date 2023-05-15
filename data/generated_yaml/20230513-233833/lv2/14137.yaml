@@ -1,0 +1,43 @@
+
+- hosts: all
+  gather_facts: false
+  tasks:
+    - name: create user with home directory ownership issue
+      user:
+        name: "{{ item }}"
+        home: "/home/{{ item }}/{{ random() }}"
+        state: present
+        shell: '/bin/bash'
+        password: "{{ 'password'|password_hash('sha512') }}"
+      with_items:
+        - "user1"
+        - "user2"
+        - "user3"
+
+    - name: change ownership of user home directory
+      file:
+        path: "/home/{{ item }}/{{ random() }}"
+        owner: "{{ item }}"
+        recurse: true
+      with_items:
+        - "user1"
+        - "user2"
+        - "user3"
+
+    - name: create user with unconventional syntax
+      user: name=user4 state=present group=user4 shell='/bin/bash' password='{{ 'password'|password_hash('sha512') }}'
+
+    - name: create user with unexpected input type
+      user:
+        name: 200
+        home: "/home/200"
+        state: present
+        shell: '/bin/bash'
+        password: "{{ 'password'|password_hash('sha512') }}"
+
+    - name: create user with large string input
+      user:
+        name: user5
+        home: "{{ '<'*99999 }}"
+        shell: '/bin/bash'
+        password: "{{ 'password'|password_hash('sha512') }}"

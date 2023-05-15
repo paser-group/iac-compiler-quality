@@ -1,0 +1,66 @@
+
+- name: Test Ansible JSON file cache plugin prefix option
+  hosts: all
+  become: true
+
+  tasks:
+  - name: Remove cache files
+    shell: rm -rf /etc/ansible/facts.d/*.fact
+    ignore_errors: yes
+
+  - name: Install dependencies
+    apt:
+      update_cache: yes
+      name:
+        - python3-pip
+        - python3-yaml
+        - python3-jinja2
+      state: present
+
+  - name: Configure JSON file cache plugin
+    lineinfile:
+      path: /etc/ansible/ansible.cfg
+      line: 'fact_caching=cache'
+      state: present
+    notify: flush cache
+
+  - name: Test cache plugin prefix option - Empty value
+    debug:
+      var: ansible_local.cache
+
+  - name: Configure JSON file cache plugin - Empty prefix
+    lineinfile:
+      path: /etc/ansible/ansible.cfg
+      line: 'fact_caching_options=plugin:cache,prefix:'
+      state: present
+    notify: flush cache
+
+  - name: Test cache plugin prefix option - Empty prefix
+    debug:
+      var: ansible_local.cache
+
+  - name: Configure JSON file cache plugin - Single character prefix
+    lineinfile:
+      path: /etc/ansible/ansible.cfg
+      line: 'fact_caching_options=plugin:cache,prefix:x'
+      state: present
+    notify: flush cache
+
+  - name: Test cache plugin prefix option - Single character prefix
+    debug:
+      var: ansible_local.cache
+
+  - name: Configure JSON file cache plugin - Long prefix
+    lineinfile:
+      path: /etc/ansible/ansible.cfg
+      line: 'fact_caching_options=plugin:cache,prefix:abcdefghijklmnopqrstuvwxyz'
+      state: present
+    notify: flush cache
+
+  - name: Test cache plugin prefix option - Long prefix
+    debug:
+      var: ansible_local.cache
+
+  handlers:
+  - name: flush cache
+    shell: rm -rf /etc/ansible/facts.d/*.fact

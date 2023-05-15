@@ -1,0 +1,45 @@
+
+---
+- name: Test get_url with unconventional syntax and unexpected inputs
+  hosts: all
+  become: true
+
+  vars:
+    edge_cases:
+      - url: http://localhost/file.txt
+        dest: /tmp
+        validate_certs: false
+      - url: http://localhost:8080/file.txt
+        dest: /folder/
+        mode: a+X
+      - url: "http://{{ inventory_hostname }}:8080/file.txt"
+        dest: /folder/
+        headers: "{'Custom-Header': 'custom-value'}"
+      - url: "http://localhost:{{ item }}/"
+        dest: /folder/
+      - url: http://localhost/file_redirect.txt
+        dest: /tmp
+        status_code: 302
+    unexpected_inputs:
+      - {url: http://localhost/file.txt, dest: /tmp}
+      - {url: http://localhost/file.txt, dest: "/$wrongpath"}
+
+  tasks:
+
+    # Test edge cases of the get_url module
+    - name: Test get_url with edge cases
+      get_url:
+        url: "{{ item.url }}"
+        dest: "{{ item.dest }}"
+        mode: "{{ item.mode|default(omit) }}"
+        headers: "{{ item.headers|default(omit) }}"
+        validate_certs: "{{ item.validate_certs|default(true) }}"
+        status_code: "{{ item.status_code|default(omit) }}"
+      with_items: "{{ edge_cases }}"
+
+    # Test get_url module with unexpected inputs
+    - name: Test get_url with unexpected inputs
+      get_url:
+        url: "{{ item.url }}"
+        dest: "{{ item.dest }}"
+      with_items: "{{ unexpected_inputs }}"

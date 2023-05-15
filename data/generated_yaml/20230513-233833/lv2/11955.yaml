@@ -1,0 +1,42 @@
+
+---
+- name: Test include pathing issue
+  hosts: all
+  become: true
+  vars:
+    dest_file: /tmp/test_file
+    file_content: This is a test content
+  tasks:
+    - name: Ensure the destination directory exists
+      file:
+        path: "{{ dest_file | dirname }}"
+        state: directory
+
+    - name: Copy file over with relative path
+      copy:
+        src: "./{{ dest_file | basename }}"
+        dest: "{{ dest_file }}"
+      ignore_errors: true
+
+    - name: Copy file over with absolute path
+      copy:
+        src: "{{ lookup('env','PWD') }}/{{ dest_file | basename }}"
+        dest: "{{ dest_file }}"
+
+    - name: Ensure file exists with relative path
+      stat:
+        path: "./{{ dest_file | basename }}"
+      register: relative_stat
+
+    - name: Print relative stat
+      debug:
+        var: relative_stat
+
+    - name: Ensure file exists with absolute path
+      stat:
+        path: "{{ lookup('env','PWD') }}/{{ dest_file | basename }}"
+      register: absolute_stat
+
+    - name: Print absolute stat
+      debug:
+        var: absolute_stat

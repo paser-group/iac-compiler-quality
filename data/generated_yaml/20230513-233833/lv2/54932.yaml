@@ -1,0 +1,34 @@
+
+---
+- name: Provision a Redis Cache on Azure
+  hosts: all
+  vars:
+    location: "{{ lookup('env', 'LOCATION') }}"
+    sku: "{{ lookup('env', 'CACHE_SKU') }}"
+    resource_group: "{{ lookup('env', 'RESOURCE_GROUP') }}"
+    cache_name: "{{ lookup('env', 'CACHE_NAME') }}"
+    cache_version: "{{ lookup('env', 'CACHE_VERSION') }}"
+    tags: "{{ lookup('env', 'CACHE_TAGS') }}"
+  tasks:
+  - name: Provision Redis Cache Resource Group
+    azure_rm_resourcegroup:
+      name: "{{ resource_group }}"
+      location: "{{ location }}"
+    register: rg_results
+
+  - name: Block on provisioning ops
+    azure_rm_rediscache:
+      resource_group: "{{ resource_group }}"
+      name: "{{ cache_name }}"
+      location: "{{ location }}"
+      sku: "{{ sku }}"
+      parameters:
+        enableNonSslPort: false
+      wait_for_deployment: "{{ lookup('env', 'PROVISIONING_OPERATION_DELAY') }}"
+      block_on_provisioning: true
+      state: present
+    register: cache_results
+
+  - name: Check Redis Cache Provisioning Status
+    debug:
+      msg: "Provisioning Results: {{ cache_results }}"

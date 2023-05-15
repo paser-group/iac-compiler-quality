@@ -1,0 +1,34 @@
+
+- hosts: all
+  become: true
+  
+  tasks:
+  - name: Check if buildah package is installed
+    command: buildah --version
+    register: buildah_pkg
+
+  - name: Install Buildah if not already installed
+    command: apt-get update && apt-get install -y buildah
+    when: buildah_pkg.rc != 0
+
+  - name: Create an OCI container image
+    buildah:
+      state: present
+      name: nginx_image
+      from: scratch
+      comment: "An example image for Ansible buildah connection"
+  
+  - name: Create a build container with SSH access
+    buildah:
+      state: present
+      name: nginx_container
+      image: nginx_image                 
+    register: build_lr
+
+  - name: Copy an index.html file
+    file:
+      src: /tmp/index.html
+      dest: /var/www/html/index.html
+
+  - name: Start the container
+    command: buildah run -t -n '{{ build_lr.id }}' /usr/sbin/nginx -g 'daemon off;'

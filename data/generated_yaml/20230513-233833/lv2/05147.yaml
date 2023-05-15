@@ -1,0 +1,42 @@
+
+- hosts: all
+  become_method: sudo
+
+  tasks:
+    - name: Start sshd in debug mode
+      command: "/usr/sbin/sshd -d -p 2222"
+      ignore_errors: yes
+
+    - name: Install OpenSSH client
+      apt:
+        name: openssh-client
+        state: present
+
+    - name: Connect to debug sshd
+      ssh:
+        user: root
+        port: 2222
+        ssh_args: "-o StrictHostKeyChecking=no"
+        remote_user: root
+        password: "{{ 'password' }}"
+      register: ssh_output
+
+    - name: Print output of ssh command
+      debug:
+        var: ssh_output.stdout_lines
+
+    - name: Stop sshd
+      shell: "kill $(ps aux | grep '[/]usr/sbin/sshd -d -p 2222' | awk '{print $2}')"
+      ignore_errors: yes
+
+    - name: Cause parsing error in sshd
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: 'LogLevel'
+        insertbefore: '^#LogLevel'
+        line: 'LogLevel "-1'
+
+    - name: Restart sshd
+      service:
+        name: sshd
+        state: restarted

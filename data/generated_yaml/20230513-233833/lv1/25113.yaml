@@ -1,0 +1,27 @@
+yaml
+---
+- name: Fix internal server error (500) for LXC module in Proxmox
+  hosts: proxmox
+  tasks:
+    - name: Copy custom openvz.py file to proxmox server
+      copy:
+        src: /path/to/custom/openvz.py
+        dest: /usr/share/pyshared/proxmoxer/resources/openvz.py
+      sudo: yes
+
+    - name: Restart proxmoxer service
+      systemd:
+        name: proxmoxer.service
+        state: restarted
+      sudo: yes
+
+    - name: Validate internal server error issue has been resolved
+      command: >
+        curl --silent --output /dev/null --head --fail
+        https://<proxmox-server>/api2/json/access/ticket
+      register: result
+
+    - name: Fail the playbook if error 500 still exists
+      fail:
+        msg: "Internal Server Error (500) - Could not resolve issue"
+      when: result.rc != 0

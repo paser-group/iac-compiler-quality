@@ -1,0 +1,39 @@
+
+- name: Ensure Java certificate is imported
+  hosts: all
+  tasks:
+      - name: Download Java certificate
+        get_url:
+            url: "http://java_certificate_url.com"
+            dest: "/path/to/cert.crt"
+      - name: Import certificate into Java keystore
+        shell: 'keytool -importcert -trustcacerts -file /path/to/cert.crt -keystore /path/to/java_keystore -alias java_cert'
+
+- name: Ensure certificate is properly migrated
+  hosts: all
+  tasks:
+      - name: Copy old certificate to destination
+        copy:
+            src: "/path/to/old_cert.crt"
+            dest: "/path/to/new_cert.crt"
+      - name: Remove old certificate from Java keystore
+        shell: 'keytool -delete -alias old_cert -keystore /path/to/java_keystore -storepass changeit'
+      - name: Import new certificate into keystore
+        shell: 'keytool -importcert -trustcacerts -file /path/to/new_cert.crt -keystore /path/to/java_keystore -alias java_cert'
+
+- name: Ensure certificate configuration is secure
+  hosts: all
+  tasks:
+      - name: Verify Java keystore permissions
+        stat:
+            path: "/path/to/java_keystore"
+        register: keystore_file
+      - name: Verify permissions on Java keystore directory
+        stat:
+            path: "/path/to/keystore/directory"
+        register: keystore_directory
+      - name: Fix Java keystore permissions if required
+        file:
+            path: "/path/to/keystore/directory"
+            mode: "0755"
+        when: keystore_directory.stat.mode != "0755" or keystore_file.stat.mode != "0600"

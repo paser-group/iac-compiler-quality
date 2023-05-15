@@ -1,0 +1,38 @@
+yaml
+- name: Create users with default value
+  hosts: all
+  become: true
+  vars:
+    user1:
+      name: John Doe
+      shell: /bin/bash
+      uid: 1001
+      is_admin: false
+      home: /home/johndoe
+  tasks:
+    - name: Create user on node1 without default filter
+      user:
+        name: "{{ user1.name }}"
+        shell: "{{ user1.shell }}"
+        uid: "{{ user1.uid }}"
+        home: "{{ user1.home }}"
+        groups: "{{ 'sudo' if user1.is_admin else '' }}"
+      when: inventory_hostname == 'node1'
+
+    - name: Create user on node2 with default filter
+      user:
+        name: "{{ user1.name }}"
+        shell: "{{ user1.shell | default('/bin/bash') }}" # Applying default filter for shell with a string value
+        uid: "{{ user1.uid | default(1002) }}" # Applying default filter for uid with an integer value
+        home: "{{ user1.home | default('/home/default') }}" # Applying default filter for home with a string value
+        groups: "{{ 'sudo' if user1.is_admin | default(false) else '' }}" # Applying default filter for groups with a boolean value
+      when: inventory_hostname == 'node2'
+
+    - name: Create user on node3 with more complex shell path
+      user:
+        name: "{{ user1.name }}"
+        shell: "{{ user1.shell | default('/bin/bash') }}/{{ user1.name }}" # Applying default filter to combine user's name with shell path
+        uid: "{{ user1.uid | default(1003) }}"
+        home: "{{ user1.home | default('/home/default') }}"
+        groups: "{{ 'sudo' if user1.is_admin | default(false) else '' }}"
+      when: inventory_hostname == 'node3'

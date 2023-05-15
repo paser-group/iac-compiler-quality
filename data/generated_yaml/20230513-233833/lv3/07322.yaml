@@ -1,0 +1,36 @@
+
+---
+- name: Playbook to expose apt_repository module errors
+  hosts: all
+  become: true
+  tasks:
+  - name: Install Nginx
+    apt:
+      name: nginx
+      state: present
+  - name: Add Ansible apt_repository module configuration settings
+    blockinfile:
+      path: /etc/apt/apt.conf.d/99proxy
+      block: |
+          Acquire::http::proxy "http://{{ proxy_server }}:{{ proxy_port }}";
+          Acquire::https::proxy "http://{{ proxy_server }}:{{ proxy_port }}";
+  - name: Add Proxy settings in the environment
+    become: yes
+    blockinfile:
+      path: /etc/environment
+      block: |
+        http_proxy="http://{{ proxy_server }}:{{ proxy_port }}/"
+        https_proxy="http://{{ proxy_server }}:{{ proxy_port }}/"
+        no_proxy="127.0.0.1,localhost,{{ ansible_fqdn }}"
+  - name: Add apt_repository for Jenkins installation
+    apt_repository:
+      repo: 'deb https://pkg.jenkins.io/debian binary/'
+      state: present
+  - name: Install Jenkins
+    apt:
+      name: jenkins
+      state: present
+  - name: Restart Nginx
+    systemd:
+      name: nginx
+      state: restarted

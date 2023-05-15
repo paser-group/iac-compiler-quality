@@ -1,0 +1,45 @@
+yaml
+---
+- name: Install Windows PowerShell Desired State Configuration (DSC)
+  hosts: windows_servers
+  gather_facts: false
+  tasks:
+    - name: Install WMF 5.0 or higher
+      win_updates:
+        category_names:
+          - Windows Management Framework
+        state: latest
+
+- name: Run DSC Configuration
+  hosts: windows_servers
+  gather_facts: false
+  tasks:
+    - name: Copy DSC configuration to remote machine
+      win_copy:
+        src: "path/to/DSC/config"
+        dest: "C:\\path\\to\\DSC\\config"
+      register: copy_result
+
+    - name: Apply Configuration using DSC
+      win_dsc:
+        module_name: "path/to/DSC/module"
+        configuration: "configuration_name"
+      register: dsc_result
+      become_method: runas
+      become_user: "{{ dsc_username }}"
+      become_pass: "{{ dsc_password }}"
+      vars:
+        dsc_username: "{{ dsc_credential.username | default('Administrator') }}"
+        dsc_password: "{{ dsc_credential.password }}"
+
+- name: Verify DSC Configuration
+  hosts: windows_servers
+  gather_facts: false
+  tasks:
+    - name: Check DSC configuration compliance
+      win_dsc_resource:
+        resource_name: "resource_name"
+        state: "get"
+        instance_name: "*"
+        namespace: "root/Microsoft/Windows/DesiredStateConfiguration"
+      register: compliance_result

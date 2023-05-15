@@ -1,0 +1,26 @@
+
+- hosts: localhost
+  gather_facts: no
+ 
+  tasks:
+  - name: Copy AMI to another region
+    ec2_ami_copy:
+      source_region: us-west-2
+      region: us-west-1
+      name: "{{ ami_name }}"
+      tag_equality:
+        - key: "{{ ami_tag }}"
+          value: "{{ ami_tag_value }}"
+    register: ami_copy_result
+    ignore_errors: true
+ 
+  - name: Wait for AMI copy to complete
+    wait_for:
+      host: localhost
+      port: 22
+      state: stopped
+    when: ami_copy_result.changed == true
+ 
+  - name: Confirm AMI copy result
+    debug:
+      var: ami_copy_result

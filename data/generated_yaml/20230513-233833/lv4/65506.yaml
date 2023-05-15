@@ -1,0 +1,43 @@
+
+---
+- name: Identifying Bugs in Ansible beadm Module
+  hosts: all
+  gather_facts: yes
+
+  vars:
+    ansible_become: yes
+    ansible_become_method: sudo
+    ansible_ssh_private_key_file: /path/to/private/key.pem
+    apt_packages:
+      - python3-apt
+      - python3-pexpect
+    yum_packages:
+      - python3-pexpect
+      - python3-libselinux
+
+  tasks:
+    - name: Install beadm module dependencies
+      package:
+        name: "{{ apt_packages if ansible_pkg_mgr == 'apt' else yum_packages }}"
+
+    - name: Install beadm module
+      pip:
+        name: beadm
+
+    - name: Test beadm module
+      command: beadm list
+      register: output
+
+    - name: Validate beadm output
+      assert:
+        that: "'1' in output.stdout"
+        success_msg: "beadm module test succeeded!"
+        fail_msg: "beadm module test failed!"
+
+    - name: Clean up testing environment
+      file:
+        state: absent
+        path: "{{ item }}"
+      with_items:
+        - "beadm.conf"
+        - "/usr/local/bin/beadm"

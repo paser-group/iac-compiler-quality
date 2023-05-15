@@ -1,0 +1,25 @@
+
+---
+- name: Debugging network module using persistent connection
+  hosts: all
+  tasks:
+    - name: Disable debug logs temporarily
+      vars:
+        persist_conn_path: "/etc/ansible/persistent_connection.conf"
+      block:
+        - name: Copy persistent_connection.conf to remote host
+          copy:
+            src: files/persistent_connection.conf
+            dest: "{{ persist_conn_path }}"
+            
+        - name: Reload persistent connection
+          service:
+            name: "{{ item }}"
+            state: restarted
+          with_items: "{{ ansible_facts.services|default([]) }}"
+          when: item.startswith('persistent_conn')
+      rescue:
+        - name: Undo configuration changes with a warning
+          include_tasks: tasks/undo_debug.yml
+          vars:
+            persist_conn_path: "{{ persist_conn_path }}"

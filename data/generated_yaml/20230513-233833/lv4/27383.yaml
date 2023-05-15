@@ -1,0 +1,31 @@
+
+---
+- name: Configure NTP on Cisco NX-OS devices
+  hosts: nxos_devices
+  gather_facts: no
+  vars:
+    ntp_servers:
+      - 10.0.0.1
+      - 10.0.0.2
+    ntp_auth_key: cisco123
+  tasks:
+    - name: Configure NTP servers
+      nxos_ntp:
+        servers: "{{ ntp_servers }}"
+        key_id: 1
+        key_string: "{{ ntp_auth_key }}"
+        state: present
+      register: status
+    - name: Reload NTP service
+      nxos_ntp:
+        servers: "{{ ntp_servers }}"
+        key_id: 1
+        key_string: "{{ ntp_auth_key }}"
+        state: present
+        reload: yes
+      when: status.changed
+      notify: Reload NTP
+  handlers:
+    - name: Reload NTP
+      nxos_reboot:
+        confirm: no

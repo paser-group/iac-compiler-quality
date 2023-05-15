@@ -1,0 +1,31 @@
+
+---
+- hosts: all
+  gather_facts: yes
+
+  vars:
+    my_var: some_value
+
+  tasks:
+    - name: Example Task
+      command: some_command
+      become: yes
+      register: command_output
+
+    - name: Another Task
+      debug:
+        var: my_var
+
+    - name: Task That May Affect Performance
+      command: command_that_takes_a_while
+      become: yes
+      async: 3600
+      poll: 0
+      register: async_output
+
+    - name: Notify If Previous Task Takes Too Long
+      fail:
+        msg: 'Previous task took too long'
+      when: async_output.failed == true
+      retries: 5
+      delay: 60

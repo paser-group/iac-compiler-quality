@@ -1,0 +1,36 @@
+
+- hosts: all
+  gather_facts: false
+  vars:
+    service_account_contents: "invalid_value"
+    image_family: "{{ ['ubuntu1604-lts', 'ubuntu1904'] | random }}"
+    machine_type: "{{ ['n1-standard-1', 'n1-standard-8'] | random }}"
+    zone: "{{ ['us-west1-b', 'us-east1-b'] | random }}"
+  tasks:
+    - name: Create Compute Instance with Invalid Service Account Contents
+      gcp_compute_instance:
+        name: vm-test-{{ ansible_date_time.epoch }}
+        machine_type: "{{ machine_type }}"
+        zone: "{{ zone }}"
+        disks:
+          - boot: true
+            auto_delete: true
+        network_interfaces:
+          - network: projects/project-123456789/global/networks/default
+            access_configs:
+              - name: external-nat
+                type: ONE_TO_ONE_NAT
+        metadata:
+          items:
+            - key: startup-script
+              value: "echo 'Hello Ansible!'"
+            - key: invalid-metadata
+              value: "{{ 'invalid-value' }}"
+              kind: '{{ '' }}"
+            - key: invalid-startup-script
+              value: "{{ {{ invalid }} }}"
+        service_account_contents: "{{ service_account_contents }}"
+      register: result
+    - name: Print Compute Instance Creation Result
+      debug:
+        var: result

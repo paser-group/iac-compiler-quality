@@ -1,0 +1,46 @@
+
+---
+- name: Azure SQL Server Playbook
+  hosts: node1
+  become: true
+  
+  tasks:
+    - name: Install Azure CLI
+      apt:
+        name: azure-cli
+        state: present
+        
+    - name: Connect to Azure Account
+      azure_login:
+        client_id: "{{ lookup('env', 'AZURE_CLIENT_ID') }}"
+        secret: "{{ lookup('env', 'AZURE_SECRET') }}"
+        tenant: "{{ lookup('env', 'AZURE_TENANT') }}"
+        
+    - name: Create Azure Resource Group
+      azure_rm_resourcegroup:
+        name: myResourceGroup
+        location: eastus
+        
+    - name: Create Azure SQL Server
+      azure_rm_sqlserver:
+        resource_group: myResourceGroup
+        name: mySqlServer
+        location: eastus
+        admin_username: admin
+        admin_password: Password2020
+        version: 12.0
+        
+    - name: Create Firewall Rule for Azure SQL Server
+      azure_rm_sqlserverfirewallrule:
+        resource_group: myResourceGroup
+        server_name: mySqlServer
+        name: AllowAllIps
+        start_ip_address: 0.0.0.0
+        end_ip_address: 255.255.255.255
+        
+    - name: Create Azure SQL Database
+      azure_rm_sqldatabase:
+        resource_group: myResourceGroup
+        server_name: mySqlServer
+        name: mySqlDatabase
+        collation: SQL_Latin1_General_CP1_CI_AS

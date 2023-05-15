@@ -1,0 +1,65 @@
+
+---
+- name: Redfish facts stress test playbook
+  hosts: all
+  tasks:
+    - name: Install python-redfish module
+      pip:
+        name: python-redfish
+        state: present
+
+    - name: Edge case: Invalid key
+      redfish_facts:
+        login_username: "admin"
+        login_password: "password"
+        server_url: "https://10.1.1.{{ item }}"
+        invalid_key: "{{ item }}"
+      loop:
+        - 1
+        - 2
+        - 3
+
+    - name: Edge case: Empty string input
+      redfish_facts:
+        login_username: "admin"
+        login_password: "password"
+        server_url: ""
+      ignore_errors: yes
+
+    - name: Edge case: Invalid URL
+      redfish_facts:
+        login_username: "admin"
+        login_password: "password"
+        server_url: "ftp://10.1.1.1"
+      ignore_errors: yes
+
+    - name: Unconventional syntax
+      redfish_facts: "{{ item }}"
+      with_items:
+        - login_username: "admin"
+          login_password: "password"
+          server_url: "https://10.1.1.1"
+        - login_username: "admin"
+          login_password: "password"
+          server_url: "https://10.1.1.2"
+
+    - name: Unexpected input
+      redfish_facts:
+        login_username: "admin"
+        login_password: "password"
+        server_url: "https://10.1.1.1"
+        wrong_parameter: "This parameter doesn't exist."
+
+    - name: Edge case: Invalid parameter input type
+      redfish_facts:
+        login_username: "admin"
+        login_password: "password"
+        server_url: "https://10.1.1.1"
+        retry_on_ratelimit: "not_boolean"
+
+    - name: Edge case: Invalid URL with non-existent server
+      redfish_facts:
+        login_username: "admin"
+        login_password: "password"
+        server_url: "https://10.1.1.4"
+      ignore_errors: yes

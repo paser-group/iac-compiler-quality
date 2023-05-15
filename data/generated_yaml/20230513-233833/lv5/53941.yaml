@@ -1,0 +1,28 @@
+yaml
+---
+- name: Test for Docker Swarm service private registries bug
+  hosts: swarm
+  become: true
+  vars:
+    private_registry_url: "https://example.com:5000"
+    private_registry_cred: "{'username': 'test', 'password': 'test'}"
+  tasks:
+    - name: Create Docker Swarm service with private registry image
+      docker_swarm_service:
+        name: myapp
+        image: "{{ private_registry_url }}/myimage:latest"
+        auth_username: "{{ private_registry_cred.username }}"
+        auth_password: "{{ private_registry_cred.password }}"
+        mode: replicated
+        replicas: 1
+      register: svc
+
+    - name: Test the Swarm service
+      ping:
+        data: "hello"
+      delegate_to: "{{ groups['swarm'][0] }}"
+
+    - name: Remove the Swarm service
+      docker_swarm_service:
+        name: myapp
+        state: absent

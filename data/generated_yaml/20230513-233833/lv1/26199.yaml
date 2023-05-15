@@ -1,0 +1,29 @@
+
+---
+- hosts: all
+  become: yes
+  vars:
+    jenkins_plugins:
+      - plugin_name: pluginA
+        version: 1.0
+      - plugin_name: pluginB
+        version: 2.5
+      
+  tasks:
+  - name: Ensure Jenkins CLI jar is present
+    get_url:
+      url: "http://{{ansible_host}}:{{jenkins_port}}/jnlpJars/jenkins-cli.jar"
+      dest: "{{ansible_user_dir}}/jenkins-cli.jar"
+   
+  - name: Ensure Jenkins plugins are installed
+    jenkins_plugin:
+      name: "{{ item.plugin_name }}"
+      version: "{{ item.version }}"
+      state: present
+    loop: "{{ jenkins_plugins }}"
+    register: jenkins_plugins_result
+    ignore_errors: yes
+    changed_when: false
+    failed_when:
+      - "'failed' in jenkins_plugins_result.msg"
+      - "'silent_fail' in jenkins_plugins_result.msg"

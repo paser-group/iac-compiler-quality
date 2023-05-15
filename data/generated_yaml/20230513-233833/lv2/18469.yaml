@@ -1,0 +1,32 @@
+
+- name: Stress test Ansible Compiler for Multiprocess AWS Lambda Issues
+  hosts: all
+  vars:
+    lambda_env_var: '/lambda/handler.py'
+  tasks:
+    - name: Create a new function
+      lambda_function:
+        mode: create
+        function_name: test_lambda_function
+        runtime: python3.8
+        handler: '{{ lambda_env_var }}'
+
+    - name: Update an existing function
+      lambda_function:
+        mode: update
+        function_name: test_lambda_function
+        handler: '{{ lambda_env_var }}'
+
+    - name: Package a deployment
+      command: aws lambda package-guided-deployment
+
+    - name: Deploy the most recent package
+      command: aws lambda deploy-latest-package
+
+    - name: Invoke the function
+      command: aws lambda invoke-function test_lambda_function
+
+    - name: Delete the test Lambda function
+      lambda_function:
+        mode: delete
+        function_name: test_lambda_function

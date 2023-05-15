@@ -1,0 +1,61 @@
+yaml
+---
+- name: Test Playbook
+  hosts: all
+  gather_facts: no
+  tasks:
+  - name: Copy File with wrong filename format
+    copy:
+      src: "{{item}}"
+      dest: /tmp/
+    with_items:
+      - "/etc/*"
+      - "/.
+      - "/"
+      - ".."
+      - ">"    
+      - "<"
+      - "/tmp/../../../etc/passwd"
+    
+  - name: Copy File from non-existent directory
+    copy:
+      src: "/this/does/not/exist"
+      dest: /tmp/
+    
+  - name: Connect via SSH with known_hosts entry for wrong hostname
+    ssh_known_hosts:
+      name: "wrong.hostname.com"
+      key: "AAAAB3NzaC1yc2EAAAABIwAAAQEAqo6AtmPUY2q5ApPvddYnY0LpE6gsG7gCLqJkTijK1JE3O6JlV/UamfXcH+UbPGnjGvS4Nkvc4Rs+XI5BC3c4LK4u+oDA5GT0WU8LUSV4RG+ELUar36yDPqYDuGSOm7l0xkjIneYXt9n4+TTGzaNICsU8MVk9cp5cmld8AE1x5VYturOxTe9656jSrNk7RLwM2Nx5X0ee4+PGgQTJ/GQleczhsXPz1lmSN/p+IMyNDGElB7rHUMI5XlihY+l3tv26wM5Jj19QiDCCxB0MSBwu+/ExWX4ZLzrBU2nKLbpL0dYd2U/Ytqlyk5mvgNzm7k83yIbAeumQ=="
+      state: present
+      path: "/root/.ssh/known_hosts"
+      
+  - name: Connect via SSH with known_hosts entry for wrong IP Address
+    ssh_known_hosts:
+      name: "10.10.10.10"
+      key: "AAAAB3NzaC1yc2EAAAABIwAAAQEAqo6AtmPUY2q5ApPvddYnY0LpE6gsG7gCLqJkTijK1JE3O6JlV/UamfXcH+UbPGnjGvS4Nkvc4Rs+XI5BC3c4LK4u+oDA5GT0WU8LUSV4RG+ELUar36yDPqYDuGSOm7l0xkjIneYXt9n4+TTGzaNICsU8MVk9cp5cmld8AE1x5VYturOxTe9656jSrNk7RLwM2Nx5X0ee4+PGgQTJ/GQleczhsXPz1lmSN/p+IMyNDGElB7rHUMI5XlihY+l3tv26wM5Jj19QiDCCxB0MSBwu+/ExWX4ZLzrBU2nKLbpL0dYd2U/Ytqlyk5mvgNzm7k83yIbAeumQ=="
+      state: present
+      path: "/root/.ssh/known_hosts"
+
+  - name: Try to copy file with invalid port number
+    copy:
+      src: "/etc/passwd"
+      dest: "{{ansible_host}}:{{22+44+invalidport}}:/tmp/passwd"
+      
+  - name: Try to delete file with invalid parameters
+    file:
+      path: "/tmp/malwarefile"
+      state: deleted
+      foo: "bar"
+
+  - name: Try to copy a directory that does not exist
+    copy:
+      src: "/tmp/nonexistentdir"
+      dest: "/tmp/localdir"
+      remote_src: yes
+
+  - name: Deliberately introduce a syntax error in the playbook by not closing brackets correctly
+    apt:
+      name: docker-ce
+      state: present
+    when: groups['docker'] == 'node1'
+    

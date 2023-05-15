@@ -1,0 +1,36 @@
+yaml
+---
+- hosts: all
+  become: true
+  tasks:
+    - name: Install pkgng
+      pkgng:
+        state: latest
+
+    - name: Verify pkgng installation
+      command: pkg
+      register: pkg_output
+      ignore_errors: true
+
+    - name: Print pkgng status
+      debug:
+        var: pkg_output.stdout_lines
+
+    - name: Determine if pkgng is hung
+      command: /bin/sleep 10 &
+      async: 5
+      poll: 0
+      register: sleep_process
+
+    - name: Debug hung pkgng
+      command: ps -ef | grep pkg
+      when: sleep_process|success
+
+    - name: Check for missing error messages
+      shell: dmesg | grep -i pkgng
+      register: dmesg_output
+      ignore_errors: true
+
+    - name: Print missing error messages
+      debug:
+        var: dmesg_output.stdout_lines

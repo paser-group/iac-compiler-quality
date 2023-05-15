@@ -1,0 +1,36 @@
+
+---
+- name: Azure LB facts bug recreation
+  hosts: node1
+  gather_facts: no
+
+  vars:
+    lb_name: "test-lb"
+
+  tasks:
+    - name: Get LB facts
+      azure_rm_loadbalancer_facts:
+        resource_group: "{{ lb_name }}"
+        name: "{{ lb_name }}"
+      register: lb_facts
+    
+    - name: Print LB backend pools
+      debug:
+        var: lb_facts['backend_address_pools']
+
+
+    - name: Recreation of Ansible module error in list()
+      set_fact: 
+        list_items: "{{ [['one']] | list() }}"
+    
+    - name: Test error handling in Azure module
+      azure_rm_loadbalancer_facts:
+        resource_group: "{{ lb_name }}"
+        name: "{{ lb_name }}"
+        idle_timeout_in_minutes: "{{ list_items[2] }}"   # Triggering the bug here - "TypeError: list() takes at least 2 arguments (1 given)"
+      register: result
+      ignore_errors: true
+      
+    - name: Print error message
+      debug:
+        var: result

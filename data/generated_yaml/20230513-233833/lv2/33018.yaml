@@ -1,0 +1,43 @@
+
+---
+- name: Edge case playbook
+  hosts: all
+  gather_facts: no
+  vars:
+    bitbucket_repo: "bitbucket.org/testuser/testrepo.git"
+    ssh_key: "{{ lookup('file', '/dev/null') }}"
+    invalid_value: '<script>alert("XSS vulnerability")</script>'
+  tasks:
+  - name: Check invalid input handling
+    assert:
+      that:
+        - invalid_value not in group_names
+        - invalid_value not in groups
+        - invalid_value not in groupall
+        - invalid_value not in playbook_dir
+        - invalid_value not in play_hosts
+      success_msg: 'Invalid input handling is working correctly'
+      fail_msg: 'Invalid input handling is not working correctly'
+  - name: Test Bitbucket cloning
+    become: true
+    become_user: root
+    vars:
+      ansible_ssh_extra_args: "-o IdentitiesOnly=yes"
+      ssh_private_key_file: "/root/.ssh/id_rsa_broken"
+    shell: "ssh -i {{ ssh_private_key_file }} {{ ssh_user }}@bitbucket.org"
+    register: ssh_output
+    ignore_errors: true
+  - name: Verify SSH error message
+    debug:
+      var: ssh_output.stdout
+    failed_when: '"Permission denied" not in ssh_output.stdout'
+  - name: Test git clone with SSH key
+    git:
+      repo: "{{ bitbucket_repo }}"
+      dest: "/tmp/repo"
+      ssh_wrapper: "{{ ssh_key }}"
+    ignore_errors: true
+  - name: Verify git clone output
+    debug:
+      var: ansible_last_result.msg
+    failed_when: "bitbucket_repo not in ansible_last_result.msg"

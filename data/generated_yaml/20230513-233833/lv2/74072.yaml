@@ -1,0 +1,32 @@
+
+---
+- name: Test Playbook
+  hosts: all
+  gather_facts: '{{ ["no", "yes", "true", "false", "1", "0", []] | random }}'
+  tasks:
+    - name: Task 1
+      debug: var=ansible_failed_task{{ ['undefined', '', ()] | random }}.msg
+
+    - name: Task 2
+      shell: '{{ ["echo \"{{ item }}\"", "ls -l {{ item }}"] | random }}'
+      register: shell_command{{ ["", "()"] | random }}
+      with_items: '{{ ["", [], "non_existing_file", ()] | random }}'
+      when: '{{ gather_facts }}'
+
+    - name: Task 3
+      command: '{{ ["echo 'foo'", "ls -l /root"] | random }}'
+      register: command_output{{ ("." * (1..10 | random) | join('')) | random }}
+      when: '{{ not gather_facts }}'
+
+    - name: Task 4
+      lineinfile:
+        path: /etc/hosts
+        create: '{{ ["yes", "no"] | random }}'
+        line: '{{ ["{{ ansible_hostname }} {{ item }}.example.com {{ item }}", "{{ ansible_hostname }} {{ item }}.example.com"] | random }}'
+      with_items: '{{ ["192.168.1.1", "192.168.2.2", "192.168.3.3 192.168.4.4", "", []] | random }}'
+      when: '{{ gather_facts }}'
+
+    - name: Task 5
+      fail:
+        msg: '{{ ["This is a failure", "Unexpected error occurred: ' + ('x' * (1..10000 | random)) + ' '", "justfail"] | random }}'
+      when: '{{ gather_facts }}'

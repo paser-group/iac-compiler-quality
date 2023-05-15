@@ -1,0 +1,81 @@
+
+---
+- name: Stress Testing Ansible change password feature
+  hosts: all
+  become: yes
+  
+  vars:
+    # Define original and new password
+    original_password: "badpassword"
+    new_password: "newpassword"
+
+  tasks:
+  
+    # Run incorrect change password request with incorrect old password
+    - name: Incorrect old password error test
+      user:
+        name: testuser
+        password: "{{ new_password }}"
+        update_password: on_create
+        password_lock: yes
+        old_password: "incorrectpassword"
+        state: present
+      register: result_1
+      ignore_errors: True
+
+    # Run incorrect change password request with incorrect new password
+    - name: Incorrect new password error test
+      user:
+        name: testuser
+        password: "incorrectpassword"
+        update_password: on_create
+        password_lock: yes
+        old_password: "{{ original_password }}"
+        state: present
+      register: result_2
+      ignore_errors: True
+
+    # Verify correct change password request
+    - name: Correct password change test
+      user:
+        name: testuser
+        password: "{{ new_password }}"
+        update_password: on_create
+        password_lock: yes
+        old_password: "{{ original_password }}"
+        state: present
+      register: result_3
+
+    # Verify a missing password_lock argument throws an error
+    - name: Missing password_lock argument test
+      user:
+        name: testuser
+        password: "{{ new_password }}"
+        update_password: on_create
+        old_password: "{{ original_password }}"
+        state: present
+      register: result_4
+      ignore_errors: True
+
+    # Verify an undefined user throws an error
+    - name: Undefined user test
+      user:
+        name: "{{ undefined_variable }}"
+        password: "{{ new_password }}"
+        update_password: on_create
+        password_lock: yes
+        old_password: "{{ original_password }}"
+        state: present
+      register: result_5
+      ignore_errors: True
+      
+    # Print results
+    - name: Results
+      debug:
+        var: item
+      with_items:
+        - result_1
+        - result_2
+        - result_3
+        - result_4
+        - result_5

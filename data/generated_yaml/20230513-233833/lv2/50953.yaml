@@ -1,0 +1,30 @@
+yaml
+- name: Stress testing Ansible compiler
+  hosts: node1
+  gather_facts: false
+
+  tasks:
+    - name: Create a file containing unconventional syntax
+      copy:
+        content: "{'key': 'invalid syntax,}"
+        dest: "/tmp/unconventional_syntax.yml"
+
+    - name: Generate a large in-memory OSS memory error
+      command: echo $'1\n' | dd of=/dev/null bs=1M count=15002
+      register: large_memory_error
+      ignore_errors: true
+
+    - name: Use slurp to read a file
+      slurp:
+        src: /var/log/syslog
+      register: logfile
+
+    - name: Use slurp with inventory directory
+      slurp:
+        src: "{{ inventory_dir }}/invalidfile"
+      register: invalidfile
+
+    - name: Use slurp with a non-existent file
+      slurp:
+        src: /tmp/nonexistentfile.txt
+      register: nonexistentfile

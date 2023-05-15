@@ -1,0 +1,49 @@
+yaml
+- name: Create DNS record
+  win_dns_record:
+    name: test.example.com
+    zone: example.com
+    type: A
+    value: 192.168.1.1
+  register: dns_record_result
+  ignore_errors: yes
+
+- name: Check result of DNS record creation
+  debug:
+    var: dns_record_result
+
+- name: Handle PermissionDenied error
+  when: "'Permission denied' in dns_record_result.msg"
+  win_command: secedit /export /cfg "%TEMP%\security.cfg"
+  register: security_config
+  failed_when: security_config.rc != 0
+
+- name: Add DNS Record permission to security config
+  when: "'Permission denied' in dns_record_result.msg"
+  lineinfile:
+    path: "%TEMP%\security.cfg"
+    line: "System\CurrentControlSet\Services\DNS\Parameters\{zone}\=*\r"
+    regexp: "^System\\\\CurrentControlSet\\\\Services\\\\DNS\\\\Parameters\\\\{zone}=.*$"
+  register: permission_result
+  failed_when: permission_result.failed == true
+
+- name: Apply security config changes
+  when: "'Permission denied' in dns_record_result.msg"
+  win_command: secedit /configure /db %windir%\security\Database\new.sdb /cfg "%TEMP%\security.cfg" /areas SECURITYPOLICY
+  register: security_config_apply
+  failed_when: security_config_apply.rc != 0
+
+- name: Create DNS record (retry)
+  when: "'Permission denied' in dns_record_result.msg"
+  win_dns_record:
+    name: test.example.com
+    zone: example.com
+    type: A
+    value: 192.168.1.1
+  register: dns_record_result_retry
+  ignore_errors: yes
+
+- name: Check result of DNS record creation (retry)
+  when: "'Permission denied' in dns_record_result_retry.msg"
+  debug:
+    var: dns_record_result_retry

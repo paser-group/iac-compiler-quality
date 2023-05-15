@@ -1,0 +1,36 @@
+
+- name: Deploy EC2 instance in VPC with Private IP set, get public IP and subnet
+  hosts: localhost
+  gather_facts: False
+  vars:
+    vpc_id: "vpc-123456"
+    subnet_id: "subnet-123456"
+    private_ip: "10.0.0.10"
+    key_name: "my-ssh-keypair"
+    instance_type: "t2.micro"
+    region: "us-east-1"
+    image_id: "ami-0c2b8ca1dad447f8a"
+  tasks:
+    - name: Create EC2 instance with Private IP and Subnet
+      ec2:
+        instance_type: "{{ instance_type }}"
+        image: "{{ image_id }}"
+        vpc_subnet_id: "{{ subnet_id }}"
+        private_ip_address: "{{ private_ip }}"
+        key_name: "{{ key_name }}"
+        region: "{{ region }}"
+        group_id: "sg-123456"
+        count: 1
+        assign_public_ip: no
+      register: ec2_instance
+
+    - name: Get Public IP and Subnet of EC2 instance
+      ec2_remote_facts:
+        region: "{{ region }}"
+        filters:
+          instance-id: "{{ ec2_instance.instances[0].id }}"
+      register: ec2_facts
+
+    - name: Debug
+      debug:
+        var: ec2_facts

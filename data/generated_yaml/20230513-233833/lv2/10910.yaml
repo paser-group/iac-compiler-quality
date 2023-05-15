@@ -1,0 +1,37 @@
+
+---
+- name: Test unstable-1.9 branch's ec2.py
+  hosts: all
+  gather_facts: no
+  tasks:
+
+    - name: Set unbound error variable
+      set_fact:
+        error_var: "{{ undefined_var }}"
+
+    - name: Attempt to gather EC2 facts with invalid access/secret keys 
+      ec2_instance_facts:
+        aws_access_key: 'invalidaccesskey'
+        aws_secret_key: 'invalidsecretkey'
+      ignore_errors: yes
+
+    - name: Launch an instance with nonexistent AMI
+      ec2:
+        key_name: "ansible_test_key"
+        instance_type: "t2.micro"
+        image: "ami-000000000"
+        count: 1
+        vpc_subnet_id: "{{ random_subnet_id }}"
+      vars:
+        random_subnet_id: "{{ query('random', 'subnet-********') }}"
+      ignore_errors: yes
+
+    - name: Attempt to terminate nonexistent instance
+      ec2:
+        instance_ids: "i-123456789"
+        state: "absent"
+      ignore_errors: yes
+
+    - name: Raise an exception
+      fail:
+        msg: "Unrecoverable error occurred."

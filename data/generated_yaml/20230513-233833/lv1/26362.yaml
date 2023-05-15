@@ -1,0 +1,19 @@
+yaml
+---
+- name: Play to clear host errors
+  hosts: all
+  gather_facts: true
+
+  tasks:
+  - name: Check for errors on servers
+    command: "check_for_errors.sh"
+    register: error_info
+    ignore_errors: yes
+
+  - name: Fail if all servers have error
+    fail:
+      msg: "All servers have errors. Cannot clear host errors."
+    when: "error_info.results | map(attribute='rc') | list | count_errors('0') | int == 0"
+
+  - name: Clear host errors
+    command: "clear_host_errors.sh"

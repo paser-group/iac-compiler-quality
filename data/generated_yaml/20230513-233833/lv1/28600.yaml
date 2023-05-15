@@ -1,0 +1,48 @@
+yaml
+---
+- name: Fix connection refused error in iam_policy.py
+  hosts: all
+  become: yes
+
+  tasks:
+  - name: Install required packages
+    apt:
+      update_cache: yes
+      name:
+        - python
+        - python-dev
+        - python-pip
+        - libssl-dev
+        - libffi-dev
+
+  - name: Install required Python modules
+    pip:
+      name:
+        - ansible==2.4.0
+        - boto
+        - boto3
+
+  - name: Modify iamauth.credentials file permissions
+    become: yes
+    file:
+      path: /etc/ansible/iamauth.credentials
+      mode: '0600'
+
+  - name: Update the boto/boto3 configuration file
+    become: yes
+    lineinfile:
+      dest: /etc/boto.cfg
+      regexp: '^aws_access_key_id\s*='
+      line: aws_access_key_id = YOUR_ACCESS_KEY_HERE
+      state: present
+    replace:
+      regexp: '^aws_secret_access_key\s*='
+      replace: aws_secret_access_key = YOUR_SECRET_KEY_HERE
+
+  - name: Run iam_policy.py
+    become: yes
+    shell: >
+      python /path/to/iam_policy.py
+      --region=YOUR_REGION_HERE
+      --access-key-id=YOUR_ACCESS_KEY_HERE
+      --secret-access-key=YOUR_SECRET_KEY_HERE

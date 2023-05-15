@@ -1,0 +1,18 @@
+
+- name: Set the default port for NXAPI when SSL is enabled
+  hosts: nxos_hosts
+  gather_facts: no
+  tasks:
+    - name: Ensure the NXAPI default port is set to 443
+      nxos_command:
+        commands: show running-config nxapi
+      register: nxapi_config
+      
+    - name: Update the NXAPI default port if necessary
+      nxos_config:
+        lines:
+          - nxapi https port 443
+          - nxapi https | no shutdown
+        parents: nxapi
+        state: present
+      when: "'https' in nxapi_config.stdout and 'port 443' not in nxapi_config.stdout"

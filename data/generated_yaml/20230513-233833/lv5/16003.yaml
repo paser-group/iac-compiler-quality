@@ -1,0 +1,31 @@
+
+---
+- name: Test S3 module for Ansible 2.1.0 bug
+  hosts: localhost
+  gather_facts: no
+  tasks:
+    - name: Install boto
+      pip: name=boto
+
+    - name: Create S3 Bucket
+      s3: bucket="my-test-bucket" mode=create region="us-west-1"
+      register: result
+
+    - name: Create object within bucket
+      s3: bucket="my-test-bucket" object="test-object" src="/tmp/test-file.txt" mode=create region="us-west-1"
+      when: result.changed == true
+
+    - name: Confirm object within bucket
+      s3_stat:
+        bucket: "my-test-bucket"
+        object: "test-object"
+        region: "us-west-1"
+      register: s3_object
+
+    - name: Delete object within bucket
+      s3: bucket="my-test-bucket" object="test-object" mode=delete region="us-west-1"
+      when: s3_object.stat.exists == true
+
+    - name: Delete S3 Bucket
+      s3: bucket="my-test-bucket" mode=delete region="us-west-1"
+      when: result.changed == true

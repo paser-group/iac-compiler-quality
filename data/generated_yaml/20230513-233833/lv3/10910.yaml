@@ -1,0 +1,31 @@
+
+---
+- name: Recreate ec2.py unbound error variable issue
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: Fetch ec2.py script
+      fetch:
+        src: https://raw.githubusercontent.com/ansible/ansible/stable-1.9/contrib/inventory/ec2.py
+        dest: /tmp/ec2.py
+        mode: '0644'
+      remote_src: true
+
+    - name: Make ec2.py script executable
+      file:
+        path: /tmp/ec2.py
+        mode: '0755'
+
+    - name: Execute ec2.py script and redirect output to file
+      command: /usr/bin/python /tmp/ec2.py --list > ~/ec2-inventory.txt
+      args:
+        creates: ~/ec2-inventory.txt
+
+    - name: Print contents of ec2-inventory.txt file
+      shell: cat /root/ec2-inventory.txt
+
+    - name: Remove ec2-inventory.txt file
+      file:
+        path: ~/ec2-inventory.txt
+        state: absent

@@ -1,0 +1,77 @@
+
+---
+- name: Web Application Playbook
+  hosts: all
+  vars:
+    app_name: 'webapp'
+    db_name: 'webapp_db'
+  gather_facts: false
+
+  tasks:
+  - name: Unconventional syntax
+    shell: echo "Hello, World!" ; cd /tmp/ ; touch "{{@#$%&'(})}[]$\_- "
+    ignore_errors: true
+
+  - name: Edge case - Large playbook
+    copy:
+      content: "{{ range(10000) | list }}"
+      dest: "/tmp/large_playbook"
+
+  - name: Unexpected input
+    fail:
+      msg: "{{ unexpected_input }}"
+
+  - name: Edge case - Large file
+    command: head -c 500MB /dev/urandom > /tmp/large_file
+
+  - name: Edge case - Timeout task
+    command: /bin/sleep 120
+    async: 60
+    poll: 10
+    register: background_task
+    ignore_errors: true
+    when: ansible_os_family == 'Debian'
+
+  - name: Debug info
+    debug:
+      msg: "Hostname: {{ ansible_hostname }} OS: {{ ansible_distribution }}"
+
+  - name: Verify webapp service status
+    service:
+      name: "{{ app_name }}"
+      state: started
+      enabled: yes
+
+  - name: Disable SELinux
+    selinux:
+      state: disabled
+    when: ansible_selinux != 'disabled'
+
+  - name: Install packages
+    apt:
+      name: "{{ item }}"
+      state: latest
+    with_items:
+      - curl
+      - wget
+      - vim
+
+  - name: MySQL DB setup
+    become: true
+    become_user: root
+    mysql_db:
+      name: "{{ db_name }}"
+      state: present
+    register: mysql_db_setup
+    until: mysql_db_setup is succeeded
+    failed_when: False
+
+  - name: Cleanup
+    file:
+      path: "/tmp/*"
+      state: absent
+    delegate_to: "{{ item }}"
+    with_items:
+      - node1
+      - node2
+      - node3

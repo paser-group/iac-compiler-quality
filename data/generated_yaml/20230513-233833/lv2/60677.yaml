@@ -1,0 +1,24 @@
+
+- name: Install vmware tool asynchronously
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Install open-vm-tools
+      async: 5
+      poll: 0
+      become: true
+      apt:
+        name: open-vm-tools
+        state: present
+      register: install_vmware_tool
+    - name: Wait for vmware tool installation to complete
+      async_status:
+        jid: "{{ install_vmware_tool.ansible_job_id }}"
+      register: async_install_vmware_tool
+      until: async_install_vmware_tool.finished
+      retries: 10
+      delay: 5
+    - name: Print install_vmware_tool.stdout_lines on error
+      debug:
+        msg: "{{ install_vmware_tool.stdout_lines }}"
+      when: install_vmware_tool.failed

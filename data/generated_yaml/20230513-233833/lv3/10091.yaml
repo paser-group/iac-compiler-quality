@@ -1,0 +1,27 @@
+
+---
+- name: Test apt_key module with invalid certificate
+  hosts: node1
+  gather_facts: false
+
+  vars:
+    apt_key_id: "example_key"
+    apt_key_url: "https://example.com/repo/example_key.asc"
+
+  tasks:
+    - name: Copy invalid certificate to /usr/local/share/ca-certificates/
+      copy:
+        src: files/invalid.crt
+        dest: /usr/local/share/ca-certificates/
+      register: cert_copy
+
+    - name: Update certificate authority
+      command: update-ca-certificates
+      when: cert_copy.changed
+
+    - name: Configure APT key with invalid URL
+      apt_key:
+        id: "{{ apt_key_id }}"
+        url: "{{ apt_key_url }}"
+        state: present
+      ignore_errors: yes

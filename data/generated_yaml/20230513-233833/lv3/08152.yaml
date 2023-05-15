@@ -1,0 +1,29 @@
+
+- name: Configure Netscaler with Auth and JSON Decoding Errors
+  hosts: netscaler
+  vars:
+    netscaler_user: "{{ lookup('env','NS_USER') }}"
+    netscaler_pass: "{{ lookup('env','NS_PASS') }}"
+  tasks:
+  - name: Create an invalid JSON data file
+    copy:
+      dest: "/tmp/invalid_file.json"
+      content: "{"
+  - name: Add SSL vserver
+    netscaler_lbvserver:
+      nsip: "ns01.example.com"
+      nitro_user: "{{ netscaler_user }}"
+      nitro_pass: "{{ netscaler_pass }}"
+      name: "ssl_vserver"
+      servicetype: "SSL"
+      ipv46: "{{ ansible_host }}"
+      port: "{{ ansible_port }}"
+      state: present
+  - name: Bind service to vserver
+    netscaler_csvserver:
+      nsip: "ns01.example.com"
+      nitro_user: "{{ netscaler_user }}"
+      nitro_pass: "{{ netscaler_pass }}"
+      name: "csv_server"
+      lbvserver: "ssl_vserver"
+      state: present

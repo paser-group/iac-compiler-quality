@@ -1,0 +1,38 @@
+
+---
+- name: Stress test playbook for ec2_asg IndexError
+  hosts: localhost
+  gather_facts: no
+  vars:
+    index: "{{ random(0, 99) }}"
+  tasks:
+    - name: Create empty list
+      set_fact:
+        my_list: []
+
+    - name: Add index to list
+      set_fact:
+        my_list: "{{ my_list[:index] + [item] + my_list[index+1:] }}"
+      with_items:
+        - "{{ range(0, 100) | list }}"
+
+    - name: Create dictionary with invalid key
+      set_fact:
+        my_dict: "{ 'invalid key{{ playbook_dir }}': 'invalid value' }"
+
+    - name: Execute ec2_asg module with invalid group name
+      ec2_asg:
+        name: "{{ my_list }}"
+        launch_config_name: "{{ random() }}"
+        availability_zones: "{{ my_dict }}"
+        state: present
+        region: "us-west-2"
+        desired_capacity: 5
+        max_size: 10
+        min_size: 2
+      register: result
+
+    - name: Verify error message contains IndexError
+      assert:
+        that:
+          - "'IndexError' in result.msg"

@@ -1,0 +1,23 @@
+
+---
+- hosts: all
+  tasks:
+  - name: Retrieve disk size information
+    shell: fdisk -l | grep Disk | grep bytes
+    register: disk_size_output
+  - name: Extract disk size information
+    set_fact:
+      disk_size: "{{ disk_size_output.stdout_lines[0].split(',')[1].strip() }}"
+  - name: Calculate expected disk size
+    set_fact:
+      expected_disk_size: "{{ ansible_devices.sda.sectors * 512 }}"
+  - name: Compare expected and reported disk sizes
+    set_fact:
+      size_difference: "{{ expected_disk_size | int - disk_size | int }}"
+    register: disk_size_mismatch
+    ignore_errors: True
+  - name: Log any differences in disk size
+    shell: |
+      if [ "{{ disk_size_mismatch.failed }}" == "True" ]; then
+        echo "Node {{ inventory_hostname }} has a disk size mismatch of {{ size_difference }} bytes" >> /var/log/disk_size.log
+      fi

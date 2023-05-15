@@ -1,0 +1,39 @@
+
+- name: Test playbook for netbox_prefix issue
+  hosts: all
+  gather_facts: no
+  
+  tasks:
+    - name: Add new prefix to netbox
+      netbox_prefix: 
+        netbox_token: "{{ lookup('env', 'NETBOX_TOKEN') }}"
+        prefix: "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}/32"
+      register: prefix_created
+    
+    - name: Verify prefix was added
+      netbox_prefix: 
+        netbox_token: "{{ lookup('env', 'NETBOX_TOKEN') }}"
+        state: present
+        prefix: "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}/32"
+      register: prefix_verified
+    
+    - name: Test unconventional input syntax
+      shell: >
+        {{ hostvars[inventory_hostname]['ansible_fqdn'] }}
+      register: hostname
+      
+    - name: Test unexpected input
+      netbox_prefix:
+        netbox_token: "{{ lookup('env', 'NETBOX_TOKEN') }}"
+        prefix: "{{ lookup('env', 'PREFIX') }}"
+      register: prefix_created_unexpected
+    
+    - name: Check for changes
+      debug:
+        var: prefix_created.changed
+      when: inventory_hostname == 'node1'
+      
+    - name: Check for changes (unexpected input)
+      debug:
+        var: prefix_created_unexpected.changed
+      when: inventory_hostname == 'node1'

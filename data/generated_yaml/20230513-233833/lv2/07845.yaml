@@ -1,0 +1,30 @@
+
+- name: Test Playbook for GCE
+  hosts: all
+  gather_facts: false
+  vars:
+    rsa_key_file: /tmp/invalid_rsa_key
+    invalid_name: "MyInstance\x07"
+    unsupported_zone: "us-central24-a"
+    out_of_range_port: 123456
+  tasks:
+  - name: Copy invalid RSA key file
+    copy: src=/dev/random dest={{ rsa_key_file }}
+    register: key_result
+    ignore_errors: yes
+  - name: Create instance with invalid RSA key
+    gce:
+      instance_names: "{{ invalid_name }}"
+      zone: "{{ unsupported_zone }}"
+      machine_type: "{{ out_of_range_port }}"
+      image: "ubuntu-2004-focal-v20210223"
+      image_family: "ubuntu-2004-lts"
+      service_account_email: "invalid email"
+      scopes: "this is an invalid scope"
+      zone_auth_key_file_path: "{{ rsa_key_file }}"
+      project_id: "invalid project"
+    delegate_to: localhost
+    ignore_errors: yes
+  - name: Debug
+    debug:
+      var: key_result

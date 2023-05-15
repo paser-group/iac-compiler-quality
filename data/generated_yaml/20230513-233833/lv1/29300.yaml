@@ -1,0 +1,37 @@
+yaml
+- name: Create VPC route table
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    vpc_id: <insert VPC ID>
+    region: <insert region>
+    route_table_name: <insert route table name>
+
+  tasks:
+  - name: Get route table ID
+    ec2_vpc_route_table_facts:
+      region: "{{ region }}"
+      filters:
+        "tag:Name": "{{ route_table_name }}"
+        "vpc-id": "{{ vpc_id }}"
+    register: route_table_info
+
+  - name: Create route table if it doesn't exist
+    ec2_vpc_route_table:
+      region: "{{ region }}"
+      vpc_id: "{{ vpc_id }}"
+      state: present
+      tags:
+        Name: "{{ route_table_name }}"
+    when: not route_table_info.route_tables
+
+  - name: Update route table tag if already exists
+    ec2_vpc_route_table_tag:
+      region: "{{ region }}"
+      route_table_id: "{{ route_table_info.route_tables[0].id }}"
+      state: present
+      tags:
+        Name: "{{ route_table_name }}"
+    when: route_table_info.route_tables
+

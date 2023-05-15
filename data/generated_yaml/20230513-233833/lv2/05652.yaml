@@ -1,0 +1,52 @@
+
+- name: Test memtotal_mb fact on HP-UX
+  hosts: all
+  gather_facts: no
+  vars:
+    - os_release: "B.11.11"
+  tasks:
+    - name: Check memtotal_mb value
+      shell: cat /etc/memsize
+      register: memsize_output
+      changed_when: false
+      failed_when: "'error' in memsize_output.stdout"
+    - name: Extract memsize value
+      set_fact:
+        memsize: "{{ memsize_output.stdout | regex_replace('([\r\n])', '') }}"
+    - name: Test memtotal_mb fact on HP-UX
+      shell: "python -c 'import math;print int(math.ceil({{ memsize }}/1048576.0))'"
+      register: memtotal_mb_output
+      changed_when: false
+      failed_when: "'error' in memtotal_mb_output.stderr"
+    - name: Debug memtotal_mb fact value
+      debug:
+        var: ansible_memtotal_mb
+    - name: Compare calculated memtotal_mb with the fact value
+      fail:
+        msg: "Memtotal_mb fact value does not match calculated value!"
+      when: ansible_memtotal_mb != memtotal_mb_output.stdout|int
+    - name: Test unconventional syntax and unexpected inputs
+      shell: "echo {1..5}{a..c}{,(1+2),[(3 + 4) * 2]},$((2*3))"
+      args:
+        chdir: "/tmp"
+      register: syntax_output
+      changed_when: false
+      failed_when: false
+    - name: Debug syntax output
+      debug:
+        var: syntax_output.stdout_lines
+    - name: Test unexpected input for os_release var
+      block:
+        - name: Set os_release to unsupported value
+          set_fact:
+            os_release: "unsupported"
+        - name: Gather facts
+          setup:
+        - name: Debug os_release fact
+          debug:
+            var: ansible_lsb.dist_release
+          when: ansible_lsb.dist_release == "unsupported"
+      rescue:
+        - name: Debug os_release value if an error occurs
+          debug:
+            var: os_release

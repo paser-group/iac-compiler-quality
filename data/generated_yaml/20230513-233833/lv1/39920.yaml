@@ -1,0 +1,22 @@
+
+- name: Configure Junos devices using Ansible
+  hosts: junos-devices
+  gather_facts: no
+  connection: local
+
+  tasks:
+  - name: Install Junos PyEZ library
+    pip:
+      name: junos-eznc
+      state: present
+
+  - name: Configure Junos devices with commit
+    junos_config:
+      src: junos.conf
+    register: result
+
+  - name: Check for errors in Junos configuration
+    fail:
+      msg: "{{ item.message }}"
+    when: "item.level == 'ERROR'"
+    with_items: "{{ result['changed'] | default({}) | dict2items }}"

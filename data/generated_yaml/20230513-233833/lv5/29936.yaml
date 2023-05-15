@@ -1,0 +1,36 @@
+
+- name: Check health check ping path parameter
+  hosts: node1
+  gather_facts: False
+  vars:
+  - elb_name: my-load-balancer
+  - region: us-east-1
+  tasks:
+  - name: Create a new health check with a modified ping path
+    ec2_elb_lb:
+      state: present
+      region: "{{ region }}"
+      name: "{{ elb_name }}"
+      listeners:
+        - protocol: tcp
+          load_balancer_port: 80
+          instance_port: 80
+      health_check:
+        ping_path: /index.html?q=1
+        interval: 10
+        timeout: 5
+        unhealthy_threshold: 2
+        healthy_threshold: 2
+    when: "'ping_path' not in item.stdout"
+    # Replace with a non-existent file path to check if the ping path validator is working
+    # The file does not exist, so it should raise an error if the validator is working
+    vars:
+    - path: /not/a/real/path
+    - cmd: "[ -f {{ path }} ]"
+    - expected_output: fatal
+    loop: "{{ query('pipe', cmd) | trim | split('\n') }}"
+  - name: Delete the load balancer
+    ec2_elb_lb:
+      state: absent
+      region: "{{ region }}"
+      name: "{{ elb_name }}"

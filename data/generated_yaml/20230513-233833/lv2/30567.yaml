@@ -1,0 +1,41 @@
+
+---
+- name: Stress test playbook for Network Errors
+  hosts: all
+  gather_facts: no
+  vars:
+    prompt: "Error>>>"
+  tasks:
+    - name: Test a command with a missing prompt value
+      expect:
+        command: "cat /etc/hosts"
+        responses:
+          "Are you sure you want to continue connecting": "yes\n"
+          "[sudo] password for ansible": "password\n"
+        timeout: 10
+      register: result1
+      
+    - name: Test an incorrect expect syntax
+      expect:
+        command: "whoami"
+        responses: "Error": "{{ prompt }} {{ item }}\n"
+        timeout: 5
+      loop: "{{ ['test1', 'test2', 'test3'] }}"
+      register: result2
+      
+    - name: Test expect syntax with invalid input
+      expect:
+        command: "ls -l /no/such/directory"
+        responses:
+          "': No such file or directory": "{{ prompt }}\n"
+          "[sudo] password for ansible": "password\n"
+        timeout: 5
+      register: result3
+      
+    - name: Print results
+      debug:
+        var: item
+      loop:
+        - "{{ result1 }}"
+        - "{{ result2 }}"
+        - "{{ result3 }}"

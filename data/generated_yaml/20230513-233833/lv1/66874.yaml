@@ -1,0 +1,30 @@
+
+---
+- name: Playbook for fixing access_token parsing issue with Linode inventory plugin
+  hosts: localhost
+  gather_facts: false
+  
+  vars:
+    access_token: "{{ lookup('env','LINODE_ACCESS_TOKEN') }}"
+    # Other variables as needed
+
+  tasks:
+    - name: Install required Python libraries
+      pip:
+        name: "{{ item }}"
+      loop:
+        - linode-sdk
+        - # Other libraries needed to run the Linode inventory plugin
+
+    - name: Update Linode inventory plugin
+      git:
+        repo: https://github.com/ansible-collections/community.general.git
+        dest: /etc/ansible/roles/community.general
+        version: release-2.3.1 # Or appropriate version with the fixes
+      become: true
+
+    - name: Test the updated inventory plugin
+      ansible-inventory:
+        inventory_plugins:
+          - /etc/ansible/roles/community.general/plugins/inventory/linode.py
+        list: all

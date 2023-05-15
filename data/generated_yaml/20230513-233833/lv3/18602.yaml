@@ -1,0 +1,29 @@
+
+---
+- name: Test Playbook for Any Errors Fatal Issue
+  hosts: all
+  gather_facts: no
+  any_errors_fatal: true
+
+  tasks:
+    - name: Task 1
+      shell: echo "Executing Task 1"
+      register: result1
+      
+    - name: Task 2 - Fails
+      shell: /bin/false
+      when: result1.stdout == "Executing Task 2"
+      register: result2
+      ignore_errors: true
+
+    - name: Rescue Task - should be executed if Task 2 fails
+      shell: echo "Executing Rescue Task"
+      when: result2 | failed
+
+  rescue:
+    - name: Rescue Task 2 - should be executed if Rescue Task 1 fails
+      shell: echo "Executing Rescue Task 2"
+
+  always:
+    - name: Always Task
+      shell: echo "Executing Always Task"

@@ -1,0 +1,51 @@
+
+---
+- name: Kerberos issue stress test playbook
+  hosts: all
+  tasks:
+    - name: Install Kerberos
+      apt: name=krb5-user state=present
+
+    - name: Configure Kerberos client
+      kerberos_auth:
+        principal: "{{ item.principal }}"
+        realm: "{{ item.realm }}"
+        password: "{{ item.password }}"
+      with_items:
+        - { principal: "client1@{{ ansible_domain }}", realm: "EXAMPLE.COM", password: "password1" }
+        - { principal: "client2@{{ ansible_fqdn }}", realm: "EXAMPLE.COM", password: "password2" }
+        - { principal: "client3@{{ ansible_hostname }}", realm: "EXAMPLE.COM", password: "password3" }
+    
+    - name: Verify Kerberos configuration
+      command: klist -s
+
+    - name: Attempt to get a ticket and fail
+      kerberos_auth:
+        principal: "client4@{{ ansible_domain }}"
+        realm: "EXAMPLE.COM"
+        password: "password4"
+        validate_certs: false
+      failed_when: true
+
+    - name: Attempt to get a ticket and ignore errors
+      kerberos_auth:
+        principal: "client5@{{ ansible_fqdn }}"
+        realm: "EXAMPLE.COM"
+        password: "password5"
+        validate_certs: false
+      ignore_errors: true
+
+    - name: Attempt to get a ticket and continue on failure
+      kerberos_auth:
+        principal: "client6@{{ ansible_hostname }}"
+        realm: "EXAMPLE.COM"
+        password: "password6"
+        validate_certs: false
+      register: result
+      failed_when: false
+      changed_when: false
+      ignore_errors: true
+    
+    - name: Print Kerberos output
+      debug:
+        var: result

@@ -1,0 +1,64 @@
+
+---
+- name: Ansible playbook for testing edge cases and unconventional syntax
+  hosts: all
+  become: true
+  gather_facts: true
+  
+  tasks:
+  
+  - name: Installing pip
+    package:
+      name: python-pip
+      state: present
+    environment:
+      PATH: "{{ ansible_env.PATH }}:/usr/local/bin"
+
+  - name: Installing modules using pip
+    pip:
+      name: "{{ item }}"
+      state: present
+    with_items:
+      - requests
+      - paramiko
+      - boto3
+      - awscli
+    environment:
+      PATH: "{{ ansible_env.PATH }}:/usr/local/bin"
+
+  - name: Setting incorrect PATH
+    environment:
+      PATH: "/usr/bin:/bin"
+    become_user: root
+    
+  - name: Installing modules using hardcoded PATH
+    pip:
+      name: "{{ item }}"
+      state: present
+    with_items:
+      - requests
+      - paramiko
+      - boto3
+      - awscli
+    environment:
+      PATH: "/usr/local/bin:/usr/bin:/bin"
+      
+  - name: Setting incorrect PATH using variables
+    vars:
+      my_path: "/tmp/{{ ansible_env.PATH }}"
+    environment:
+      PATH: "{{ my_path }}:/usr/local/bin"
+      
+  - name: Installing modules using variables for PATH
+    vars:
+      my_path: "/tmp/{{ ansible_env.PATH }}:/usr/local/bin"
+    pip:
+      name: "{{ item }}"
+      state: present
+    with_items:
+      - requests
+      - paramiko
+      - boto3
+      - awscli
+    environment:
+      PATH: "{{ my_path }}"

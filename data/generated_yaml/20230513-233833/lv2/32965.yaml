@@ -1,0 +1,60 @@
+
+---
+- name: Regression Test Playbook
+  hosts: all
+  become: yes
+
+  vars:
+    - python_path: "/usr/bin/python"
+
+  tasks:
+    - name: Check Python availability
+      command: "{{ python_path }} --version"
+      register: python_ver
+
+    - name: Check Python Version
+      debug: 
+        msg: "Python Version: {{ python_ver.stdout }}"
+
+    - name: Check if Python is installed
+      when: python_ver is failed
+      debug:
+        msg: "Python is not installed!"
+
+    - name: Install Python2
+      when: "'Python 2.7' not in python_ver.stdout"
+      become: yes
+      apt:
+        name: python-minimal
+        state: present
+
+    - name: Create a file with invalid syntax
+      copy:
+        dest: /tmp/error.yml
+        content: |
+          - hosts: all
+            tasks:
+              - debug:
+                  msg: "This is invalid syntax
+      ignore_errors: yes
+
+    - name: Execute the invalid playbook
+      ansible-playbook /tmp/error.yml
+
+    - name: Execute command with invalid syntax
+      command: "{{ python_path }} -c 'print('Hello, World!')"
+      ignore_errors: yes
+
+    - name: Create a symbolic link to a non existent location
+      file:
+        src: /non/existent/location
+        dest: /tmp/link
+        state: link
+      ignore_errors: yes
+
+    - name: Create a directory with invalid permissions
+      file:
+        path: /root/test
+        state: directory
+        mode: '0000'
+      ignore_errors: yes

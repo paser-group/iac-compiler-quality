@@ -1,0 +1,48 @@
+yaml
+- name: Test playbook for GitHub issue
+  hosts: all
+  gather_facts: no
+  
+  tasks:
+    - name: Execute shell command that creates variables with dots and other characters
+      shell: |
+        echo "hello" > ~/filename.txt
+        touch /tmp/$$.txt
+        printf "new line 1\nnew line 2\n" > /tmp/new_file.txt
+      register: shell_output
+
+    - name: Print output of shell command
+      debug:
+        var: shell_output
+
+    - name: Access and print registered variables with dots and unexpected characters
+      debug:
+        var: "{{ shell_output.stdout.0 }}"
+      
+    - name: Access non-existent registered variable, expect error
+      debug:
+        var: "{{ non_existent.stdout }}"
+      
+    - name: Use incorrect syntax for accessing registered variables, expect error
+      debug:
+        var: "{{ shell_output:stdout:0 }}"
+      
+    - name: Access registered variables with unexpected character casing
+      debug:
+        var: "{{ shell_output.StdOut.0 }}"
+
+    - name: Use string interpolation with registered variables
+      debug:
+        msg: "The contents of the file are {{ shell_output.stdout.0 }}"
+      
+    - name: Use invalid string interpolation syntax with registered variables, expect error
+      debug:
+        msg: "The contents of the file are { shell_output.stdout.0 }"
+      
+    - name: Use quoted string interpolation with registered variables
+      debug:
+        msg: "'The contents of the file are {{ shell_output.stdout.0 }}'"
+      
+    - name: Use invalid quoted string interpolation syntax with registered variables, expect error
+      debug:
+        msg: "'The contents of the file are { shell_output.stdout.0 }'"

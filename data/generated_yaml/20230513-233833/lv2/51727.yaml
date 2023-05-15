@@ -1,0 +1,42 @@
+yaml
+- name: Test playbook for Jinja 2.10, set and include ansible.vars.hostvars.HostVarsVars error
+  hosts: all
+  vars:
+    # Testing edge case of using '{}' inside a Jinja variable - should throw an error
+    var1: "{{ { } }}"
+    # Testing edge case of using assignment operator inside a Jinja variable - should throw an error
+    var2: "{{ '=' }}"
+    # Testing edge case of using invalid variable name - should throw an error
+    '{{$invalid_var_name}}': "This is an invalid variable name"
+    # Testing edge case of using invalid Jinja syntax - should throw an error
+    var4: "{{ invalid_jinja_syntax }}"
+    # Testing edge case of passing unexpected input - should throw an error
+    var5: "{{ ['item1', 'item2', 'item3'] | item(10) }}"
+
+  tasks:
+    - name: Test include with invalid file path - should throw an error
+      include: "{{ 'invalid_file_path' }}"
+
+    - name: Test include with invalid syntax - should throw an error
+      include: "{{ 'test.yml' },,}"
+
+    - name: Test include with invalid variable name - should throw an error
+      include: "{{ $invalid_include_variable_name }}"
+
+    - name: Test set module with invalid variable name - should throw an error
+      set_fact: 
+        '{{$invalid_var_name}}': "This is an invalid variable name"
+
+    - name: Test set module with edge case variables - should throw an error
+      set_fact:
+        # Testing edge case of using '=', which is a reserved character - should throw an error
+        var1: "=This is an edge case variable"
+        # Testing edge case of using '.' as the variable name - should throw an error
+        '.': "This is an edge case variable"
+        # Testing edge case of using an array with an invalid key value - should throw an error
+        [invalid_key]: "This is an edge case variable"
+
+    - name: Test when condition with invalid syntax - should throw an error
+      debug:
+        msg: "This should never be printed"
+      when: "invalid when condition syntax"

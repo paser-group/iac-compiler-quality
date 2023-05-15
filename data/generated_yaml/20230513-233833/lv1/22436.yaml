@@ -1,0 +1,28 @@
+
+---
+- name: Ansible Crash with ISO8859-15 File and Diff Option
+  hosts: your_host_or_group
+  gather_facts: no
+  
+  tasks:
+    
+    - name: Copy ISO8859-15 file to remote host
+      copy:
+        src: /path/to/local/iso8859-15/file
+        dest: /path/to/remote/iso8859-15/file
+      become: yes
+
+    - name: Applying Diff option to ISO8859-15 file
+      command:
+        cmd: diff -u --from-file=/path/to/remote/iso8859-15/file /path/to/remote/iso8859-15/newfile
+        chdir: /path/to/remote/iso8859-15/
+      register: diff_output
+      become: true
+      ignore_errors: yes
+      
+    - name: Replace Surrogates in ISO8859-15 file
+      command:
+        cmd: iconv -f ISO-8859-15 -t UTF-8 -c /path/to/remote/iso8859-15/file -o /path/to/remote/iso8859-15/tmpfile && mv /path/to/remote/iso8859-15/tmpfile /path/to/remote/iso8859-15/file
+        chdir: /path/to/remote/iso8859-15/
+      become: true
+      when: diff_output.rc != 0

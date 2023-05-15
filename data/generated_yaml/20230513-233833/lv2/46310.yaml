@@ -1,0 +1,36 @@
+
+---
+- name: Ansible playbook for testing Vault-ids duplicate issue
+  hosts: all
+
+  vars:
+    vault_ids: "{{ lookup('env','VAULT_IDS') }}"
+    default: "{{ lookup('env', 'DEFAULT') }}"
+
+  tasks:
+    - name: Print hostnames
+      debug:
+        msg: "{{ ansible_hostname }}"
+
+    - name: Retrieve vault-ids
+      command: "{{ vault_ids }}"
+      register: vault_ids_output
+      ignore_errors: true
+
+    - name: Print vault-ids output
+      debug:
+        var: vault_ids_output.stdout_lines
+
+    - name: Generate default vault-ids
+      command: "{{ default }}"
+      register: default_output
+      ignore_errors: true
+
+    - name: Print default output
+      debug:
+        var: default_output.stdout_lines
+
+    - name: Check for duplicate vault-ids
+      assert:
+        that:
+          - {{ lookup('uniq', vault_ids_output.stdout_lines + default_output.stdout_lines) | length }} == {{ vault_ids_output.stdout_lines | length + default_output.stdout_lines | length }}

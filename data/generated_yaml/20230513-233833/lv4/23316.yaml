@@ -1,0 +1,64 @@
+
+---
+- name: Testing Unicode parsing issue
+  hosts: all
+  vars:
+    juniper_template: |
+        set system login message "Welcome to example.com 😊"
+  tasks:
+  - name: Install required modules and dependencies
+    apt:
+      name:
+        - python-junos-eznc
+        - junos-eznc
+        - python-ssl
+      state: present
+
+  - name: Install and configure Juniper module
+    juniper_junos_config:
+      host: "{{ inventory_hostname }}"
+      config_mode: "exclusive"
+      junos_install_config: True
+    delegate_to: "{{ item }}"
+    loop: "{{ play_hosts }}"
+    run_once: true
+    become: true
+
+  - name: Embed Unicode characters within Juniper configuration
+    lineinfile:
+      path: /etc/juniper.conf
+      line: "{{ juniper_template }}"
+      regexp: 'set system login message(.*)'
+      insertafter: 'set system host-name example'
+    notify: apply juniper config
+
+  - name: Apply Juniper configuration
+    juniper_junos_config:
+      host: "{{ inventory_hostname }}"
+      config_mode: "exclusive"
+      load: "merge"
+      source: "/etc/juniper.conf"
+      commit: yes
+    delegate_to: "{{ item }}"
+    loop: "{{ play_hosts }}"
+    run_once: true
+    become: true
+    changed_when: "'changed' in juniper_config.stdout"
+
+  - name: Record configuration results
+    log:
+      msg: "{{ inventory_hostname }}: {{ juniper_config.stdout }}"
+    run_once: true
+
+  handlers:
+   - name: apply juniper config
+     juniper_junos_config:
+       host: "{{ inventory_hostname }}"
+       config_mode: "exclusive"
+       load: "merge"
+       source: "/etc/juniper.conf"
+       commit: no
+     become: true
+     delegate_to: "{{ item }}"
+     loop: "{{ play_hosts }}"
+     run_once: true

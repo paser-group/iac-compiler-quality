@@ -1,0 +1,67 @@
+yaml
+- name: Test ansible_default_ipv4.broadcast
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Ping all hosts
+      ping:
+
+    # Edge case 1: Pass an IPv6 address instead of the expected IPv4 address
+    - name: Test edge case 1
+      debug:
+        msg: "{{ hostvars[item]['ansible_default_ipv4']['broadcast'] }}"
+      with_items:
+        - "{{ groups['all'] }}"
+      when: hostvars[item]['ansible_default_ipv4']['address'] == '::1'
+
+    # Edge case 2: Pass an invalid IPv4 address (with a missing octet)
+    - name: Test edge case 2
+      debug:
+        msg: "{{ hostvars[item]['ansible_default_ipv4']['broadcast'] }}"
+      with_items:
+        - "{{ groups['all'] }}"
+      when: hostvars[item]['ansible_default_ipv4']['address'] == '192.168.1.'
+
+    # Edge case 3: Pass an invalid IP address (with an invalid octet value)
+    - name: Test edge case 3
+      debug:
+        msg: "{{ hostvars[item]['ansible_default_ipv4']['broadcast'] }}"
+      with_items:
+        - "{{ groups['all'] }}"
+      when: hostvars[item]['ansible_default_ipv4']['address'] == '10.0.0.256'
+
+    # Unconventional syntax
+    - name: Test unconventional syntax
+      debug: var=hostvars[item]['ansible_default_ipv4'].broadcast
+      with_items:
+        - "{{ groups['all'] }}"
+
+    # Test case with global variable
+    - name: Test case with global variable
+      set_fact:
+        myvar: "{{ hostvars[item]['ansible_default_ipv4'].broadcast }}"
+      with_items:
+        - "{{ groups['all'] }}"
+      
+    # Unexpected input
+    - name: Test unexpected input - an integer
+      debug:
+        msg: "{{ hostvars[item]['ansible_default_ipv4']['broadcast'] }}"
+      when: hostvars[item]['ansible_default_ipv4']['address'] | int == 127001     
+
+    # Unexpected input
+    - name: Test unexpected input - a list
+      debug:
+        msg: "{{ hostvars[item]['ansible_default_ipv4']['broadcast'] }}"
+      when: hostvars[item]['my_list'][0]['ip_address'] == hostvars[item]['ansible_default_ipv4']['address']
+
+    # Unexpected input
+    - name: Test unexpected input - a dictionary
+      debug:
+        msg: "{{ hostvars[item]['ansible_default_ipv4']['broadcast'] }}"
+      vars:
+        my_dict:
+          address: "{{ hostvars[item]['ansible_default_ipv4']['address'] }}"
+          broadcast: 10.0.0.255
+      when: my_dict['address'] == hostvars[item]['ansible_default_ipv4']['address']

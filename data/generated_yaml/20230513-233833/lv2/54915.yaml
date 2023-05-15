@@ -1,0 +1,50 @@
+
+- hosts: all
+  gather_facts: true
+
+  vars_files:
+    - empty_vars.yml
+    - non_existing_vars.yml
+
+  tasks:
+    - name: Create an empty file
+      file:
+        path: /tmp/sample.txt
+        state: touch
+
+    - name: Try to include non-existing file
+      include_vars:
+        file: "{{ item }}"
+        silent: yes
+      with_items:
+        - non_existing_file_1.yml
+        - non_existing_file_2.yml
+
+    - name: Use variable not defined anywhere
+      debug:
+        msg: "{{ random_variable }}"
+
+    - name: Try to copy non-existing file
+      copy:
+        src: non_existing_file_3.yml
+        dest: /tmp/target.yml
+
+    - name: Try to access fact that doesn't exist
+      debug:
+        msg: "{{ hostvars['node1']['some_nonexistent_fact'] }}"
+
+    - name: Concatenate string and list
+      set_fact:
+        my_list: [1, 2, 3]
+        my_string: "This is a string"
+        my_result: "{{ my_string + my_list }}"
+
+    - name: Divide by Zero
+      set_fact:
+        my_var: "{{ 1/0 }}"
+
+    - name: Import task from different file, but with wrong file path
+      import_tasks: "{{ playbook_dir }}/tasks/file_does_not_exist.yml"
+
+    - name: Execute shell command with syntax error
+      shell: "echo 'Some text' | | grep 'Some text'"

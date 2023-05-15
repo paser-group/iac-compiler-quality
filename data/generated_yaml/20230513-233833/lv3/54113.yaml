@@ -1,0 +1,28 @@
+
+---
+- name: Check for error handling in win_unzip
+  hosts: all
+  gather_facts: no
+  vars:
+    zipfile: "/path/to/faulty.zip"
+    unzip_dir: "C:/temp"
+  tasks:
+    - name: Copy faulty zip file to remote node
+      copy:
+        src: "{{ zipfile }}"
+        dest: "{{ unzip_dir }}"
+      register: copy_result
+    - name: Check if copy was successful
+      fail:
+        msg: "Unable to copy zipfile to remote node."
+      when: not copy_result|success
+    - name: Unzip file
+      win_unzip:
+        src: "{{ unzip_dir }}/faulty.zip"
+        dest: "{{ unzip_dir }}"
+      ignore_errors: yes
+      register: unzip_result
+    - name: Check if unzip encountered errors
+      debug:
+        msg: "Error encountered while unzipping"
+      when: unzip_result is failed

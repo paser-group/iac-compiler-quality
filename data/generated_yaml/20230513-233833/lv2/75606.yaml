@@ -1,0 +1,34 @@
+
+---
+- name: Test known_hosts module
+  hosts: all
+  become: true
+  
+  vars:
+    user: ansible
+    ssh_key: /home/ansible/.ssh/id_rsa
+    
+  tasks:
+  
+    - name: Add a new host key to known_hosts
+      known_hosts:
+        name: "{{ hostvars[item].inventory_hostname }}"
+        key: "{{ hostvars[item].ansible_ssh_hostkey }}"
+        path: "/home/{{ user }}/.ssh/known_hosts"
+      loop: "{{ groups['all'] }}"
+  
+    - name: Remove the known_hosts file
+      file:
+        path: "/home/{{ user }}/.ssh/known_hosts"
+        state: absent
+        # Check if the ~/.ssh directory is missing
+        # and the path is set to default
+        when: ssh_key is not file and not ssh_key.startswith('/home/{{ user }}/.ssh')
+  
+    - name: Add a new host key to known_hosts with unconventional syntax
+      known_hosts: "{{ hostvars[item].inventory_hostname }}, {{ hostvars[item].ansible_ssh_hostkey }} ssh-rsa"
+      loop: "{{ groups['all'] }}"
+  
+    - name: Add a new host key to known_hosts with unexpected inputs
+      known_hosts: "{{ hostvars[item].inventory_hostname }}, {{ hostvars[item].ansible_ssh_hostkey }} {{ hostvars[item].inventory_hostname}},10.1.1.,,,,"
+      loop: "{{ groups['all'] }}"

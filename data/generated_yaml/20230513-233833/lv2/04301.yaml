@@ -1,0 +1,68 @@
+
+- name: Test mysql_db state=dump
+  hosts: all
+  gather_facts: no
+  vars:
+    db_name: "{{ lookup('env', 'DB_NAME') }}"
+    db_user: "{{ lookup('env', 'DB_USER') }}"
+    db_password: "{{ lookup('env', 'DB_PASSWORD') }}"
+    dump_file: "/tmp/db_{{ ansible_date_time.date }}.sql"
+
+  tasks:
+  - name: Dumping mysql database
+    mysql_db:
+      name: "{{ db_name }}"
+      user: "{{ db_user }}"
+      password: "{{ db_password }}"
+      state: dump
+      target: "{{ dump_file }}"
+      ignore_tables: "{{ lookup('env', 'IGNORE_TABLES') }}"
+    failed_when: dump_file.stat.size == 0
+    ignore_errors: yes
+
+  - name: Verify dump file
+    command: "mysql {{ db_name }} < {{ dump_file }}"
+    register: verify_dump
+    ignore_errors: yes
+
+  - name: Send email with task results
+    mail:
+      subject: "Playbook {{ inventory_hostname }} execution - {{ verify_dump.rc }}"
+      to: "{{ lookup('env', 'ADMIN_EMAIL') }}"
+      body: "{{ verify_dump.stdout_lines | join('\n') }}"
+    delegate_to: localhost
+    ignore_errors: yes
+
+  - name: Restart docker service
+    service:
+      name: docker
+      state: restarted
+      enabled: yes
+    become: yes
+    become_user: non_existent_user
+
+  - name: Check the status of the docker service
+    systemd:
+      name: docker.service
+    register: systemd_status
+
+  - name: Print error if systemd service is inactive
+    lineinfile:
+      line: "Systemd service is inactive"
+      dest: "/tmp/error.log"
+    when: systemd_status.status == 'inactive'
+    ignore_errors: yes
+
+  - name: Write error to file
+    copy:
+      content: "Unexpected error"
+      dest: "/tmp/error.log"
+      insertbefore: EOF
+    when: verify_dump.rc != 0 and systemd_status.status == 'active'
+    ignore_errors: yes
+
+  - name: Print ansible_facts to file
+    copy:
+      content: "{{ ansible_facts }}"
+      dest: "/tmp/ansible_facts.log"
+      insertbefore: EOF

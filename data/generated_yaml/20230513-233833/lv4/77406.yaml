@@ -1,0 +1,24 @@
+
+- hosts: all
+  tasks:
+    - name: Generate values from a file
+      set_fact:
+        values: "{{ lookup('file', 'values.txt') | split('\n') }}"
+
+    - name: Transform values using Jinja2 filters
+      set_fact:
+        transformed_values: "{{ values | map('reverse') | map('upper') | list }}"
+
+    - name: Execute an action on each value
+      with_items: "{{ transformed_values }}"
+      command: "echo {{ item }}"
+
+    - name: Perform an HTTP request
+      uri:
+        url: "https://httpbin.org/get"
+        method: GET
+      register: result
+
+    - name: Print the response
+      debug:
+        var: result.content

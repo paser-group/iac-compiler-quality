@@ -1,0 +1,31 @@
+yaml
+---
+- name: Ensure default configuration is respected
+  hosts: all
+  become: yes
+  
+  tasks:
+  - name: Ensure default configuration file exists
+    stat:
+      path: /etc/myapp/config.yml
+    register: config_file
+    
+  - name: Copy default configuration file
+    copy:
+      src: default_config.yml
+      dest: /etc/myapp/config.yml
+      mode: '0644'
+    when: not config_file.stat.exists
+    
+  - name: Copy customized configuration file
+    copy:
+      src: "{{ item }}"
+      dest: /etc/myapp/config.yml
+      mode: '0644'
+    with_items: "{{ config_files }}"
+    when: config_file.stat.exists
+  
+  vars:
+    config_files:
+    - custom_config.yml
+    - another_config.yml

@@ -1,0 +1,27 @@
+
+---
+- hosts: all
+  become: yes
+  gather_facts: yes
+
+  vars:
+    ansible_become_password: "{{ sudo_password }}"
+  
+  tasks:
+    - name: Check if become password is correct
+      shell: echo "Testing sudo access"
+      register: test_result
+      ignore_errors: true
+      become: true
+  
+    - name: Display test results
+      debug:
+        var: test_result
+  
+  handlers:
+    - name: Notify user about invalid password
+      slack:
+        msg: "Invalid sudo password supplied. Please check the password and try again."
+        channel: "#ansible-alerts"
+        token: "{{ slack_token }}"
+      when: test_result|failed and sudo_password is defined

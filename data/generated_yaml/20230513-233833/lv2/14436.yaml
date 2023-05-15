@@ -1,0 +1,32 @@
+
+- name: Upgrade PS3 and apply memory fix
+  hosts: all
+  gather_facts: yes
+  become: yes
+  vars:
+    ps3_version: "3.0.1"
+    ps3_memory_fix: "/path/to/memory/fix"
+  tasks:
+    - name: Check if PS3 is already upgraded
+      command: ps3 --version
+      register: ps3_version_output
+      changed_when: false
+      failed_when: false
+    - name: Upgrade PS3 if needed
+      command: upgrade_to_ps3.ps1 {{ ps3_version }}
+      when: "'Not the latest version' in ps3_version_output.stdout"
+      changed_when: true
+      register: ps3_upgrade_output
+    - name: Apply memory fix for PS3
+      script: "{{ ps3_memory_fix }}"
+      when: ps3_upgrade_output is changed
+    - name: Verify PS3 is upgraded and memory fix is applied
+      command: ps3 --version
+      register: ps3_version_output2
+      changed_when: false
+      failed_when: false
+      check_mode: yes
+      ignore_errors: yes
+    - name: Print PS3 version and memory fix status
+      debug:
+        msg: "PS3 version is {{ ps3_version }} {{ 'and' if ps3_upgrade_output is changed else 'but' }} a memory fix {{ 'has' if ps3_upgrade_output is changed else 'has not' }} been applied."

@@ -1,0 +1,33 @@
+yaml
+---
+- name: Example Playbook
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    instance_type: t2.micro
+    image_id: ami-00a208c7cdba991ea
+    security_group: sg-XXXX
+
+  tasks:
+  - name: Launch EC2 Instance
+    ec2:
+      key_name: mykey
+      region: us-east-1
+      instance_type: "{{ instance_type }}"
+      image: "{{ image_id }}"
+      wait: yes
+      count: 1
+      group_id: "{{ security_group }}"
+    register: ec2
+
+  - name: Save Instance Info to Host
+    add_host:
+      name: "{{ item.private_ip }}"
+      groups: launched
+    with_items: "{{ ec2.instances }}"
+
+  - name: Test Templating
+    debug: msg="{{ url }}"
+    vars:
+      url: "http://{{ groups['launched'][0] }}:8080"

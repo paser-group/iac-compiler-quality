@@ -1,0 +1,23 @@
+yaml
+- name: Fix Ansible-vault "Odd-length string" error
+  hosts: all
+  become: true
+  vars:
+    # Define the path to the encrypted file and the password
+    vault_file: /path/to/encrypted/file
+    password: super_secret
+
+  tasks:
+    - name: Decrypt the file
+      command: ansible-vault decrypt "{{ vault_file }}" --vault-password-file=/path/to/passwordfile
+      register: output
+      ignore_errors: true
+
+    - name: Check if the decrypt command failed with "Odd-length string" error
+      when: "'Odd-length string' in output.stderr"
+      fail:
+        msg: "Error: '{{ output.stderr }}'"
+
+    - name: Encrypt the file
+      command: ansible-vault encrypt "{{ vault_file }}" --vault-password-file=/path/to/passwordfile
+

@@ -1,0 +1,33 @@
+
+- name: Create Resource Group
+  azure_rm_resourcegroup:
+    name: "{{ rg_name }}"
+    location: "{{ location }}"
+  register: rg_result
+
+- name: Create Azure VM
+  azure_rm_virtualmachine:
+    resource_group: "{{ rg_name }}"
+    name: "{{ vm_name }}"
+    image:
+      offer: UbuntuServer
+      publisher: Canonical
+      sku: '20.04-LTS'
+      version: latest
+    vm_size: Standard_B1ms
+    admin_username: "{{ admin_username }}"
+    admin_password: "{{ admin_password }}"
+    network_interfaces:
+    - name: nic1
+      primary: true
+    os_disk:
+      name: "{{ vm_os_disk }}"
+      caching: ReadWrite
+      create_option: FromImage
+    data_disks:
+      - disk_size_gb: 32
+        lun: 0
+        create_option: Empty
+    tags:
+      environment: test
+  when: "not rg_result is skipped and rg_result is succeeded"

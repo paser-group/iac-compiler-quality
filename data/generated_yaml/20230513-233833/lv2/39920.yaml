@@ -1,0 +1,51 @@
+yaml
+---
+- hosts: all
+  connection: local
+  gather_facts: no
+  tasks:
+    - name: create variable with uncommon syntax
+      set_fact:
+        {{ 'junos-var' }}: "{{ 'junos-config' }}"
+
+    - name: create a task that uses unsupported junos argument
+      junos_config:
+        provider: "{{ item }}"
+        destination: "config"
+        mode: "private"
+        src: "/config/junos.conf"
+      with_items:
+        - "{{ 'junos-node'}}"
+        - "{{ 'junos-port' }}"
+        - "{{ 'junos-version' }}"
+        
+    - name: configure system login with junos module
+      junos_config:
+        provider: "{{ 'junos-node' }}"
+        lines:
+          - "system {{ item }}"
+      with_items:
+        - "login user Testinguid class Juniper-guest" 
+        - "login user accessinguid class remote"
+
+    - name: update system services with junos module
+      junos_config:
+        provider: "{{ 'junos-node' }}"
+        lines:
+          - "system services {{ item }}"
+      with_items:
+        - "dhcp-local-server quota 3000"
+
+    - name: test junos_config module with unusal characters and inputs
+      junos_config:
+        provider: "{{ 'junos-node'}}"
+        destination: "config"
+        mode: "private"
+        overwrite: "true"
+        confirm: "false"
+        replace: "false"
+        src: "{{ item }}"
+      with_items:
+        - "/folder%./Directory/junos.conf}"
+        - "/junos/${var}.conf}"
+        - "/junos/{{ junos-var }}"

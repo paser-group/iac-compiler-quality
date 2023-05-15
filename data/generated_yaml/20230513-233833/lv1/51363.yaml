@@ -1,0 +1,31 @@
+yaml
+---
+
+- name: Fix for Network_cli error 'unable to set terminal parameters'
+  hosts: exos_devices
+  gather_facts: no
+  
+  tasks:
+
+  - name: Configure terminal parameters
+    cli_command:
+      command_string: "terminal width 512"
+      provider: "{{ cli }}"
+    register: result
+
+  - name: Verify successful execution
+    fail:
+      msg: "Unable to configure terminal parameters"
+    when: "'Error: ' in result.stdout"
+
+  - name: Save running configuration
+    cli_command:
+      command_string: "write memory"
+      provider: "{{ cli }}"
+
+  vars:
+    cli:
+      host: "{{ inventory_hostname }}"
+      username: your_username
+      password: your_password
+      transport: cli

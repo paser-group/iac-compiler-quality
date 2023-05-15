@@ -1,0 +1,74 @@
+
+- hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: Ensure port channel is created with idempotency check
+      nxos_portchannel:
+        name: "{{ item }}"
+        members: "{{ nodes }}"
+        state: "{{ state | default('present') }}"
+        idempotency_method: "{{ idempotency_method | default('nxos_portchannel_show_command') }}"
+      with_items: "{{ port_channels }}"
+      vars:
+        nodes: ["Ethernet1/1", "Ethernet1/2"]
+        port_channels:
+          - "10"
+          - "20"
+          - "30"
+      ignore_errors: yes
+
+    - name: Ensure port channel is removed with idempotency check
+      nxos_portchannel:
+        name: "{{ item }}"
+        state: "{{ state | default('absent') }}"
+        idempotency_method: "{{ idempotency_method | default('nxos_portchannel_show_command') }}"
+      with_items: "{{ port_channels }}"
+      vars:
+        port_channels:
+          - "10"
+          - "20"
+          - "30"
+      ignore_errors: yes
+
+    - name: Generate error with unconventional syntax
+      nxos_feature:
+        feature: "node|3;show feature | a" 
+
+    - name: Generate error with unexpected inputs
+      nxos_feature:
+        feature: "{{ item }}"
+      with_items:
+        - ""
+        - ":"
+        - "test'"
+        - "te$!"
+        - "'test'"
+        - "- test" 
+
+    - name: Stress test idempotency check with multiple modifications
+      nxos_feature:
+        feature: "{{ item }}"
+        state: "{{ state | default('present') }}"
+        idempotency_method: "{{ idempotency_method | default('nxos_feature_show_command') }}"
+      with_items: "{{ features }}"
+      vars:
+        features:
+          - "bgp"
+          - "interface"
+          - "ip routing"
+          - "snmp-server"
+        state: "present"
+
+    - name: Stress test idempotency check with multiple deletions
+      nxos_feature:
+        feature: "{{ item }}"
+        state: "absent"
+        idempotency_method: "{{ idempotency_method | default('nxos_feature_show_command') }}"
+      with_items: "{{ features }}"
+      vars:
+        features:
+          - "bgp"
+          - "interface"
+          - "ip routing"
+          - "snmp-server"

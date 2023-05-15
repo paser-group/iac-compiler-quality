@@ -1,0 +1,31 @@
+yaml
+- name: Configure IOS Interfaces
+  hosts: your-ios-devices
+  gather_facts: no
+  connection: network_cli
+
+  vars:
+    interface_state: present   # set to 'absent' to remove the interface
+
+  tasks:
+
+    - name: Get interfaces with overridden states
+      ios_command:
+        commands:
+          - show interfaces
+          - show interfaces description
+        provider:
+          host: "{{ inventory_hostname }}"
+          username: your-username
+          password: your-password
+      register: interfaces
+
+    - name: Configure interface with overridden state
+      ios_interface:
+        name: "{{ item.name }}"
+        description: "{{ item.description }}"
+        state: "{{ interface_state }}"
+      loop: "{{ interfaces.stdout[1] }}"
+      when:
+        - item.description is defined
+        - item.state != interface_state

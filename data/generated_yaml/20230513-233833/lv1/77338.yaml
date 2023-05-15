@@ -1,0 +1,22 @@
+
+---
+- name: Remove file when src contains an error
+  hosts: all
+  vars:
+    file_src: /path/to/file
+  tasks:
+    - name: Check if file exists
+      stat:
+        path: "{{ file_src }}"
+      register: file_exists
+
+    - name: Remove file if it exists
+      file:
+        path: "{{ file_src }}"
+        state: absent
+      when: file_exists.stat.exists and file_src is not match('.*{{ file_exists.stat.path }}$')
+
+    - name: Return failed status if file still exists
+      fail:
+        msg: "Failed to remove file '{{ file_src }}': file still exists"
+      when: file_exists.stat.exists and file_src is not match('.*{{ file_exists.stat.path }}$')

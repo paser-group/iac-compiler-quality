@@ -1,0 +1,41 @@
+yaml
+---
+- name: Testing Ansible Compiler for ELB Application LB Module
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Create an Application Load Balancer using the elb_application_lb module
+      elb_application_lb:
+        subnet_id: subnet-12345
+        listeners:
+          - protocol: HTTP
+            load_balancer_port: 80
+            instance_protocol: HTTP
+            instance_port: 80
+        target_groups:
+          - name: my-target-group
+            protocol: HTTP
+            port: 80
+            target_type: instance
+        health_check:
+          protocol: HTTP
+          port: 80
+          path: /
+          healthy_threshold: 2
+          unhealthy_threshold: 10
+          timeout: 5
+          interval: 30
+        conn_type: #Missing parameters
+      register: lb
+      
+    - debug:
+        var: lb #We are testing the Playbook to reproduce the issue
+      
+    - name: Verify that the Application Load Balancer is deleted
+      elb_application_lb:
+        load_balancer_name: "{{ lb.load_balancer.name }}"
+        state: absent
+      register: res
+      
+    - debug:
+        var: res

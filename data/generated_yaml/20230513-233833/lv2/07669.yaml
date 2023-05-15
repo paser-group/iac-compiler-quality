@@ -1,0 +1,65 @@
+
+- name: Stress Test Playbook
+  hosts: all
+  gather_facts: no
+  
+  tasks:
+    - name: Run setup module with invalid parameter
+      setup:
+        filter: "{{ invalid_parameter }}"
+      register: setup_output
+      ignore_errors: yes
+
+    - name: Assert setup module output
+      assert:
+        that:
+          - setup_output is failed
+          - 'coerce not found' in setup_output.stderr
+
+    - name: Generate facts dynamically with invalid parameter
+      set_fact:
+        "{{ invalid_parameter }}": "{{ range(10) | random }}"
+
+    - name: Run setup module with invalid filter
+      setup:
+        filter: "{{ invalid_filter }}"
+      register: setup_output
+      ignore_errors: yes
+
+    - name: Assert setup module output
+      assert:
+        that:
+          - setup_output is failed
+          - 'coerce not found' in setup_output.stderr
+
+    - name: Use setup module with invalid inventory
+      setup:
+        filter: ansible_all_ipv4_addresses
+      when: inventory_hostname == 'invalid_node'
+      ignore_errors: yes
+
+    - name: Assert setup module output
+      assert:
+        that:
+          - setup_output is failed
+
+    - name: Use setup module with localhost specified as inventory
+      setup:
+        filter: "{{ item }}"
+      with_items:
+        - ansible_all_ipv4_addresses
+        - ansible_architecture
+        - ansible_bios_date
+        - ansible_bios_version
+        - ansible_distribution
+        - ansible_domain
+        - ansible_env
+        - ansible_fqdn
+        - ansible_hostname
+        - ansible_loop_control
+      delegate_to: localhost
+
+    - name: Use setup module with all hosts specified as inventory
+      setup:
+        filter: ansible_all_ipv4_addresses
+      delegate_to: all

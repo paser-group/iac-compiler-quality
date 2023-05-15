@@ -1,0 +1,32 @@
+
+---
+- name: Playbook for custom module error in Ansible 2.0 with pipelining
+  hosts: all
+  gather_facts: True
+  tasks:
+    - name: Install required dependencies
+      become: true
+      apt:
+        name:
+          - python
+          - python-pip
+      register: apt_output
+    
+    - name: Update pip
+      become: true
+      pip:
+        name: pip
+        extra_args: --upgrade
+      when: apt_output|changed
+    
+    - name: Install custom module
+      become: true
+      pip:
+        name: custom-module-name
+      when: apt_output|changed
+    
+    - name: Run playbook with pipelining disabled
+      become: true
+      shell: ansible-playbook my-playbook.yml --become-user=root
+      environment:
+        ANSIBLE_PIPELINING: "False"

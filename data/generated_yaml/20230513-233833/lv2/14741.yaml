@@ -1,0 +1,55 @@
+
+---
+- name: Delegate to and haproxy module Playbook
+  hosts: all
+  
+  tasks:
+    - name: Install haproxy package
+      apt:
+        name: haproxy
+        state: present
+
+    - name: Configure haproxy.cfg file
+      copy:
+        dest: /etc/haproxy/haproxy.cfg
+        content: |
+          listen  http-in
+               bind *:80
+               mode http
+               balance roundrobin
+               server  web01 10.1.1.1:80 check
+
+    - name: Check haproxy status
+      command: haproxy -f /etc/haproxy/haproxy.cfg -c -q
+      register: haproxy_status
+
+    - name: Print haproxy status
+      debug:
+        msg: "haproxy status: {{haproxy_status.stdout}}"
+      delegate_to: 'localhost'
+
+    - name: Reload haproxy service
+      service:
+        name: haproxy
+        state: reloaded
+      delegate_to: 'localhost'
+
+    - name: Download Ansible logo
+      get_url:
+        url: https://www.ansible.com/hubfs/2016_Images/Community/Logo/ANSIBLE-MARKER-COLOR.png?t=1615514617425
+        dest: /tmp/ansible_logo.png
+
+    - name: Copy Ansible logo to node2
+      copy:
+        src: /tmp/ansible_logo.png
+        dest: /home/ubuntu/ansible_logo.png
+      delegate_to: 'node2'
+      
+    - name: Get server uptime
+      command: uptime
+      register: uptime_result
+      ignore_errors: true
+      
+    - name: Print server uptime
+      debug:
+        var: uptime_result.stdout_lines

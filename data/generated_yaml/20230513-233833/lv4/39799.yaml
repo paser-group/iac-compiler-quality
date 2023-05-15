@@ -1,0 +1,47 @@
+
+---
+- name: Create default NSG and associate it to NIC
+  hosts: node1
+  gather_facts: false
+
+  vars:
+    resource_group: "example_rg"
+    location: "eastus"
+    nsg_name: "example_nsg"
+    nsg_rules:
+      - name: "Rule1"
+        protocol: "tcp"
+        destination_port_range: "80"
+        access: "Allow"
+        priority: 101
+        direction: "Inbound"
+    nic_name: "example_nic"
+
+  tasks:
+    - name: "Provision NIC"
+      azure_rm_networkinterface:
+        resource_group: "{{ resource_group }}"
+        location: "{{ location }}"
+        name: "{{ nic_name }}"
+      register: nic_result
+
+    - name: "Create default NSG and associate with NIC"
+      azure_rm_securitygroup:
+        resource_group: "{{ resource_group }}"
+        location: "{{ location }}"
+        name: "{{ nsg_name }}"
+        rules: "{{ nsg_rules }}"
+        network_interfaces:
+          - id: "{{ nic_result.id }}"
+      register: nsg_result
+
+    - name: "Verify NSG rules are applied to NIC"
+      azure_rm_networkinterface_info:
+        resource_group: "{{ resource_group }}"
+        name: "{{ nic_name }}"
+      register: nic_info_result
+
+    - name: "Fail if NSG rules not applied"
+      fail:
+        msg: "NSG rules not applied to NIC"
+      when: nsg_name not in nic_info_result.network_interface.network_security_group.id

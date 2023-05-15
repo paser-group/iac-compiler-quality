@@ -1,0 +1,52 @@
+
+---
+- name: Check Kubernetes resources
+  hosts: all
+  become: true
+  vars:
+    kubeconfig: "/path/to/kubeconfig"
+  tasks:
+    - name: Check if the Kubernetes API server is reachable
+      uri:
+        url: https://{{ inventory_hostname }}:6443
+        method: GET
+        headers:
+          Authorization: "Bearer {{ lookup('env', 'KUBECONFIG') }}"
+      register: result
+      ignore_errors: yes
+      until: result.status == 200
+      retries: 5
+      delay: 5
+
+    - name: Check if the kube-system namespace is present
+      command: kubectl --kubeconfig={{ kubeconfig }} get ns kube-system
+      register: result
+      ignore_errors: yes
+      changed_when: false
+
+    - name: Debug failed namespace check
+      debug:
+        var: result
+      when: result.rc != 0
+
+    - name: Check if nodes are ready
+      command: kubectl --kubeconfig={{ kubeconfig }} get node -o jsonpath='{.items[*].status.conditions[?(@.type=="Ready")].status}'
+      register: result
+      ignore_errors: yes
+      changed_when: false
+
+    - name: Debug nodes status
+      debug:
+        var: result
+      when: result.rc != 0 or result.stdout != '"True True True"'
+
+    - name: Check if kube-system pods are ready
+      command: kubectl --kubeconfig={{ kubeconfig }} get pods -n kube-system -o jsonpath='{.items[*].status.conditions[?(@.type=="Ready")].status}'
+      register: result
+      ignore_errors: yes
+      changed_when: false
+
+    - name: Debug kube-system pod status
+      debug:
+        var: result
+      when: result.rc != 0 or result.stdout != '"True True True"'

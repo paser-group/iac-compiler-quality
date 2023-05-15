@@ -1,0 +1,44 @@
+
+---
+- hosts: switches
+  gather_facts: no
+  become: yes
+  become_method: enable
+  vars:
+    context_name: management
+  tasks:
+    - name: Set context
+      eos_command:
+        commands: switch(config)# context {{ context_name }}
+        provider:
+          host: "{{ inventory_hostname }}"
+          username: "{{ ansible_user }}"
+          password: "{{ ansible_password }}"
+      register: set_context
+
+    - name: Verify context
+      eos_command:
+        commands: switch# show context
+        provider:
+          host: "{{ inventory_hostname }}"
+          username: "{{ ansible_user }}"
+          password: "{{ ansible_password }}"
+      register: show_context
+
+    - name: Restart switch
+      eos_command:
+        commands: switch# reload
+        provider:
+          host: "{{ inventory_hostname }}"
+          username: "{{ ansible_user }}"
+          password: "{{ ansible_password }}"
+      when: set_context.changed
+
+    - name: Confirm switch is up
+      wait_for:
+        host: "{{ inventory_hostname }}"
+        port: 22
+        connect_timeout: 5
+        sleep: 5
+        state: started
+      delegate_to: localhost

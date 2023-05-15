@@ -1,0 +1,51 @@
+
+---
+- name: Docker Service Playbook
+  hosts: all
+  become: true
+
+  tasks:
+  - name: Start Docker service
+    docker_service:
+      state: "{{ ['started','restarted','stopped','absent'] | random }}"
+    register: result
+
+  - name: Print result
+    debug:
+      var: result
+
+  - name: Create a Docker network with invalid gateway
+    docker_network:
+      name: "test-net"
+      ipam_config:
+              - subnet: "10.1.1.0/24"
+                iprange: "10.1.1.10/24"
+                gateway: "10.1.1.1000"
+                driver_options: {}
+    ignore_errors: true
+
+  - name: Remove non-existent Docker network
+    docker_network:
+      name: "non-existent-net"
+      state: absent
+    ignore_errors: true
+
+  - name: Create a Docker volume with an invalid driver
+    docker_volume:
+      name: "test_volume"
+      driver: "{{ ['local', 'invalid_driver', ''] | random }}"
+    ignore_errors: true
+
+  - name: Create a Docker container with invalid image
+    docker_container:
+      name: test_container
+      image: "{{ ['valid_image:latest', 'invalid_image:latest']  | random }}"
+      state: started
+      network_mode: host
+    ignore_errors: true
+
+  - name: Copy a file that does not exist in source
+    copy:
+      src: "/tmp/invalid_file.txt"
+      dest: "/tmp/test_file.txt"
+    ignore_errors: true

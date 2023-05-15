@@ -1,0 +1,24 @@
+yaml
+- name: Configure VLANs on IOS devices
+  hosts: ios_devices
+  gather_facts: no
+  vars:
+    vlan_id_list:
+      - 10
+      - 20
+      - 30
+  tasks:
+    - name: Use ios_command to get output of 'show vlan'
+      ios_command:
+        commands:
+          - show vlan
+      register: vlan_output
+    - name: Create VLANs if they don't exist
+      ios_vlan:
+        vlan_id: "{{ item }}"
+        name: "VLAN {{ item }}"
+        state: present
+        provider:
+          host: "{{ inventory_hostname }}"
+      loop: "{{ vlan_id_list }}"
+      when: "vlan_output.stdout_lines is defined and ( 'VLAN' ~ item|string not in vlan_output.stdout_lines )"

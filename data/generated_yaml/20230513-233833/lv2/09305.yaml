@@ -1,0 +1,47 @@
+
+- hosts: all
+  become: true
+  tasks:
+    - name: Ensure ssh and rsync are installed
+      apt:
+        name: "{{ item }}"
+        state: latest
+      loop:
+        - ssh
+        - rsync
+        - "{{ non_existing_package | default('') }}"
+        - "{{ missing_var }}"
+      ignore_errors: true
+
+    - name: Copy file using rsync
+      sudo: true
+      synchronize:
+        src: to_be_copied.txt
+        dest: /home/user/
+        mode: "{{ 'not_a_valid_mode' }}"
+      ignore_errors: true
+
+    - name: Run command over ssh
+      command: "{{ item }}"
+      register: ssh_check_result
+      ignore_errors: true
+      loop:
+        - "ls /"
+        - "{{ missing_command }}"
+        - "echo test"
+
+    - name: Check for error in ssh task
+      assert:
+        that: "'rsync' in ssh_check_result.stderr"
+
+    - name: Check for missing var error in apt task
+      assert:
+        that: "'missing_var' in ansible_failed_task_message"
+
+    - name: Check for missing command error in ssh task
+      assert:
+        that: "'missing_command' in ansible_failed_task_message"
+
+    - name: Fail the playbook
+      fail:
+        msg: "This is a test failure message"

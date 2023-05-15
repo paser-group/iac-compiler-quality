@@ -1,0 +1,40 @@
+
+- name: Test temporary file permission error
+  hosts: all
+  gather_facts: no
+  become: false
+  vars:
+    temp_file: "/tmp/testfile"
+  tasks:
+    - name: Create a temporary file
+      copy:
+        content: "{{ inventory_hostname }}"
+        dest: "{{ temp_file }}"
+      register: copy_result
+
+    - name: Check if temporary file was created
+      stat:
+        path: "{{ temp_file }}"
+      register: stat_result
+
+    - name: Change the permission of the temporary file
+      file:
+        mode: 444
+        path: "{{ temp_file }}"
+      register: file_result
+
+    - name: Try to change the content of the temporary file
+      lineinfile:
+        line: "Testing permission error"
+        path: "{{ temp_file }}"
+      ignore_errors: true
+      register: change_result
+
+    - name: View execution results
+      debug:
+        var: item
+      with_items:
+        - copy_result
+        - stat_result
+        - file_result
+        - change_result

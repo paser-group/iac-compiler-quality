@@ -1,0 +1,35 @@
+
+---
+- name: Fix decoding error caused by !!binary YAML data
+  hosts: all
+  become: yes
+
+  tasks:
+    - name: Clean up existing inventory file
+      shell: rm -f /etc/ansible/hosts
+
+    - name: Regenerate inventory file with base configuration
+      ini_file:
+        path: /etc/ansible/ansible.cfg
+        section: inventory
+        option: enable_plugins
+        value: host_list
+
+    - name: Fix binary data in inventory file
+      lineinfile:
+        path: /etc/ansible/hosts
+        line: |
+          [servers]
+          server1 ansible_host=192.168.1.1 ansible_user=admin ansible_password=secret
+          server2 ansible_host=192.168.1.2 ansible_user=admin ansible_password=secret
+        state: present
+        regexp: '^(\w+):\s+!!binary "(.+)"$'
+        backrefs: yes
+
+    - name: Verify inventory file
+      shell: ansible-inventory --list
+      register: inventory_output
+
+    - name: Display inventory output
+      debug:
+        var: inventory_output.stdout_lines

@@ -1,0 +1,56 @@
+yaml
+- name: Clone the virtual machine
+  vmware_guest:
+    vmware_guest_facts: yes
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_username }}"
+    password: "{{ vcenter_password }}"
+    validate_certs: False
+    name: "{{ vm_name }}"
+    folder: "{{ folder }}"
+    template: no
+    linked_clone: no
+    datacenter: "{{ datacenter }}"
+    datastore: "{{ datastore }}"
+    hardware:
+      memory_mb: "{{ memory_mb }}"
+      num_cpus: "{{ num_cpus }}"
+      scsi_controllers:
+        - type: "{{ scsi_type }}"
+          bus_sharing: "{{ bus_sharing }}"
+          scsi_controller_number: 0
+        - type: "{{ scsi_type }}"
+          bus_sharing: "{{ bus_sharing }}"
+          scsi_controller_number: 1
+    networks:
+      - name: "{{ network }}"
+    disk:
+      - size_gb: "{{ disk_size }}"
+        type: "{{ disk_type }}"
+        datastore: "{{ datastore }}"
+        scsi_controller: 0
+        
+
+- name: Restore Virtual Machine from Clone
+  vmware_guest:
+    vmware_guest_facts: yes
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_username }}"
+    password: "{{ vcenter_password }}"
+    validate_certs: False
+    state: poweredon
+    name: "{{ vm_name }}"
+    folder: "{{ folder }}"
+    datacenter: "{{ datacenter }}"
+    hardware:
+      scsi_controllers:
+        - type: "{{ scsi_type }}"
+          bus_sharing: "{{ bus_sharing }}"
+          scsi_controller_number: 0
+        - type: "{{ scsi_type }}"
+          bus_sharing: "{{ bus_sharing }}"
+          scsi_controller_number: 1
+  register: restoredvm
+
+- debug:
+    var: restoredvm.guest_disk_info

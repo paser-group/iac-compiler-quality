@@ -1,0 +1,35 @@
+
+- name: Stress test playbook
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Ensure INTERPRETER_TYPE and INTERPRETER_PATH are set
+      shell: >
+        {{ "echo 'INTERPRETER_TYPE=python\nINTERPRETER_PATH=/usr/bin/python' > /tmp/env_file;" }}
+        export INTERPRETER_TYPE=INTERPRETER_PATH;
+        source /tmp/env_file; 
+        test -n "${INTERPRETER_TYPE}" -a -n "${INTERPRETER_PATH}" 
+      ignore_errors: yes
+    - name: Print interpreter information
+      debug:
+        msg: "Interpreter Type: {{ INTERPRETER_TYPE }}, Interpreter Path: {{ INTERPRETER_PATH }}"
+    - name: Bring all nodes offline
+      shell: |
+        {{ "echo '10.1.1.1' > /tmp/nodes_to_disable; "}}
+        {{ "echo '10.1.1.2' >> /tmp/nodes_to_disable; "}}
+        {{ "echo '10.1.1.3' >> /tmp/nodes_to_disable; "}}
+        {{ "xargs -d'\\n' -a /tmp/nodes_to_disable -I {} ssh -o StrictHostKeyChecking=no -i /path/key root@{} shutdown -h now" }}
+    - name: Remove interpreter path
+      shell: |
+        sed -i '/INTERPRETER_PATH=/d' /tmp/env_file; 
+        unset INTERPRETER_TYPE INTERPRETER_PATH
+    - name: Print interpreter information after unset
+      debug:
+        msg: "Interpreter Type: {{ INTERPRETER_TYPE | default('not set') }}, Interpreter Path: {{ INTERPRETER_PATH | default('not set') }}"
+    - name: Check if python 3.6 is installed on any node
+      raw: python3.6 --version
+      register: python_version_result
+      ignore_errors: yes
+    - name: Print python 3.6 version
+      debug:
+        msg: "{{ python_version_result.stdout }}"

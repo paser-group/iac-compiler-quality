@@ -1,0 +1,68 @@
+
+---
+- name: Test playbook for helm module failures
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: Ensure all nodes are reachable
+      ping:
+        data: "{{item}}"
+      with_items:
+        - "{{groups['all']}}"
+        
+    - name: Install helm binary
+      become: yes
+      command: curl -O https://get.helm.sh/helm-v3.7.1-linux-amd64.tar.gz && tar xvf helm-v3.7.1-linux-amd64.tar.gz && mv linux-amd64/helm /usr/local/bin
+
+    - name: Configure helm
+      become: yes
+      file:
+        path: "/root/.kube"
+        state: directory
+        mode: '0755'
+      ignore_errors: yes
+      
+    - name: Generate kubeconfig
+      become: yes
+      command: "echo \"{{ lookup('env', 'KUBECONFIG') }}\" > /root/.kube/config"
+        
+    - name: Check helm version
+      become: yes
+      shell: helm version
+      register: helm_version    
+
+    - name: Deploy a Helm Chart
+      become: yes
+      helm:
+        command: upgrade
+        name: stress-test
+        chart_repo: https://charts.bitnami.com/bitnami
+        chart: "{{ item }}"
+        namespace: default
+        release_namespace: true
+        set:
+          replicaCount: "{{ range(1,4)|list|random }}"
+          apikey: "{{ [item, none]|random }}"
+      with_items:
+        - rabbitmq
+        - joomla
+        - drupal
+        - elasticsearch
+        - apache
+
+    - name: Clean up the Helm deployment
+      become: yes
+      helm:
+        command: delete
+        name: stress-test
+        namespace: default
+
+    - name: Check if Helm deployment is deleted
+      become: yes
+      shell: kubectl get pods --selector=app.kubernetes.io/name=bitnami-dind-test -o jsonpath="{.items[*].metadata.name}" --all-namespaces 2>&1 | tee /dev/tty| wc -l
+      register: helm_deleted
+
+    - name: Fail the playbook with sample error
+      fail:
+        msg: "Sample Error"

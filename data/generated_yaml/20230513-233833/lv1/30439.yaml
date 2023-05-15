@@ -1,0 +1,21 @@
+
+---
+- name: Configure IGMP Snooping on N7K
+  hosts: switch
+  gather_facts: no
+  connection: network_cli
+  tasks:
+   - name: Set non-default IGMP Snooping values on N7K
+     nxos_igmp_snooping:
+       state: present
+       global_max_groups: 500
+       fast_leave: true
+       last_member_query_interval: 30
+       last_member_query_count: 5
+     register: config_status
+     when: 
+       - ansible_network_os == "nxos"
+       - ansible_net_os_version is search('7.[0-9]', ansible_net_os_version)
+   - name: Save the configuration
+     nxos_save_config:
+     when: config_status.changed

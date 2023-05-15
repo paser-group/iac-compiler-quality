@@ -1,0 +1,37 @@
+
+---
+- name: Install required packages and modules
+  hosts: all
+  become: yes
+  tasks:
+    - name: Update package cache
+      apt:
+        update_cache: yes
+
+    - name: Install necessary packages
+      apt:
+        name: "{{ item }}"
+        state: present
+      with_items:
+        - python3-pip
+        - python3-setuptools
+        - python3-dev
+
+    - name: Install required pip modules
+      pip:
+        name: "{{ item }}"
+      with_items:
+        - ansible
+        - urllib3[secure]
+
+- name: Run ansible playbook
+  hosts: all
+  become: yes
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
+  tasks:
+    - name: Execute playbook
+      command: ansible-playbook playbook.yml
+      environment:
+        ANSIBLE_CONFIG: "{{ playbook_dir }}/ansible.cfg"
+      become: yes

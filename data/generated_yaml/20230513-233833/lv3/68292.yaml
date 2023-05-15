@@ -1,0 +1,45 @@
+
+---
+- name: Create an Amazon Machine Image (AMI) and copy it to another region
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+  - name: Create an image of an instance
+    ec2_ami:
+      instance_id: i-0xxxxxx
+      name: my_ami
+      region: "{{ env }}"
+      description: My first AMI
+      wait: true
+      tags:
+        Name: my_ami
+      register: created_ami
+
+  - name: Copy an Amazon Machine Image from one region to another
+    ec2_ami_copy:
+      source_image_id: "{{ created_ami.image_id }}"
+      region: "{{ another_region }}"
+      name: my_ami_copy
+      description: My copy of the AMI
+      register: copied_ami
+
+  - name: Launch an instance from the copied Amazon Machine Image
+    ec2:
+      instance_type: t2.micro
+      image_id: "{{ copied_ami.image_id }}"
+      region: "{{ another_region }}"
+      block_device_mappings:
+        - device_name: /dev/xvda
+          volume_size: 8
+          delete_on_termination: true
+      count: 1
+      key_name: my_key_name
+      security_group: my_security_group
+      subnet_id: subnet-xxxxxx
+      assign_public_ip: true
+      register: launched_instance
+
+  - name: Print the new instance details
+    debug:
+      var: launched_instance

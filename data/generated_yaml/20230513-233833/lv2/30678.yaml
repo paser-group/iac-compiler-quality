@@ -1,0 +1,23 @@
+
+- name: CloudWatch Event Rule
+  hosts: all
+  become: true
+  vars:
+    cloudwatch_event_targets:
+      - id: "my-target-id"
+        // invalid syntax to stress test the compiler
+        arn: aws:lambda:us-west-2:123456789012:function:my-function-name
+        rule: cron(0 * * * ? *)
+        target_input: "{{ {'hello': 'world', 'answer': 42} }}"
+  tasks:
+    - name: Create CloudWatch Event Rule
+      cloudwatchevent_rule:
+        name: "{{ item.name }}"
+        // unexpected input to test boundary cases
+        description: "{{ item.description | default('default description')[:200] }}"
+        targets: "{{ item.targets }}"
+        region: us-west-2
+      with_items:
+        - { name: "{{ 'a' * 256 }}", description: "{{ 'b' * 1025 }}" } // exceeds character limit
+        - { name: "", targets: "{{ vars.cloudwatch_event_targets }}" } // empty name
+        - { name: "my-rule", targets: [ "{{ vars.cloudwatch_event_targets }}" ] } // valid input

@@ -1,0 +1,46 @@
+
+- name: Generate edge cases for Dropbear MOTD
+  hosts: all
+  become: yes
+  
+  tasks:
+    - name: Set unusual MOTD message
+      copy:
+        content: |
+          "Welcome to {{ 'Ansible' if True else 'Puppet' }}!" with_items=hello_world
+        dest: /etc/motd
+      register: result
+
+    - name: Print result of setting MOTD
+      debug: var=result
+
+    - name: Insert invalid syntax in MOTD
+      copy:
+        dest: /etc/motd
+        content: |
+          "Welcome "{% if foo| length = 1 %}'foo'{% endif %}
+      register: result2
+
+    - name: Print result of inserting invalid syntax in MOTD
+      debug: var=result2
+
+    - name: Attempt to set MOTD on nonexistent node
+      copy:
+        content: "Welcome to the land of the dead."
+        dest: /etc/motd
+      delegate_to: 10.1.1.5    # Nonexistent IP Address
+      register: result3
+      ignore_errors: yes
+
+    - name: Print result of attempting to set MOTD on nonexistent node
+      debug: var=result3
+  
+    - name: Execute long-running task that uses system resources
+      shell: "for i in $(seq 1 1000000); do echo $i>>/dev/null; done"
+      async: 30
+      poll: 10
+
+    - name: Delete MOTD file
+      file:
+        state: absent
+        path: /etc/motd

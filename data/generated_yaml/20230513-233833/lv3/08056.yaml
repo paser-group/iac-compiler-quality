@@ -1,0 +1,31 @@
+
+---
+- name: Docker API issue playbook
+  hosts: all
+  become: true
+  vars:
+    docker_version: 1.12
+    api_version: 1.10
+    
+  tasks:
+    - name: Install Python Docker module
+      pip:
+        name: docker-py
+        state: present
+
+    - name: Set Docker version number to {{docker_version}}
+      shell: docker version --format '{{.Server.APIVersion}}' | awk -F'.' '{print $1"."$2}'
+      register: docker_api_ver
+      failed_when: false
+
+    - fail:
+        msg: "Docker API version {{docker_api_ver.stdout}} not compatible with {{api_version}}"
+      when: docker_api_ver.stdout != api_version
+
+    - name: Chech Docker daemon status
+      shell: docker ps
+      register: docker_ps
+      failed_when: false
+
+    - debug:
+        msg: "Docker software status -> {{docker_ps.stdout}}"

@@ -1,0 +1,57 @@
+yaml
+---
+- name: Test ios_config module
+  hosts: ios
+  gather_facts: no
+  tasks:
+    - name: Test basic ios_config syntax
+      ios_config:
+        lines:
+          - hostname iOS-RTR
+        provider:
+          host: "{{inventory_hostname}}"
+          username: "{{ansible_user}}"
+          password: "{{ansible_ssh_pass}}"
+          authorize: yes
+      register: basic_config_result
+
+    - name: Test ios_config with non-existing element
+      ios_config:
+        lines:
+          - show version
+          - show interfaces {{random_string}}
+        provider:
+          host: "{{inventory_hostname}}"
+          username: "{{ansible_user}}"
+          password: "{{ansible_ssh_pass}}"
+          authorize: yes
+      register: nonexisting_element_result
+      ignore_errors: yes
+
+    - name: Test ios_config with unconventional syntax
+      ios_config:
+        lines:
+          - |
+            interface GigabitEthernet1
+            no shutdowan
+          - |
+            interface GigabitEthernet2
+            no shutdowan
+        provider:
+          host: "{{inventory_hostname}}"
+          username: "{{ansible_user}}"
+          password: "{{ansible_ssh_pass}}"
+          authorize: yes
+      register: unconventional_syntax_result
+      ignore_errors: yes
+
+    - name: Test ios_config with unexpected input
+      ios_config:
+        lines: "{{play_hosts}}"
+        provider:
+          host: "{{inventory_hostname}}"
+          username: "{{ansible_user}}"
+          password: "{{ansible_ssh_pass}}"
+          authorize: yes
+      register: unexpected_input_result
+      ignore_errors: yes  

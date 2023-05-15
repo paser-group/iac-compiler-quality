@@ -1,0 +1,23 @@
+
+---
+- name: Check WinRMTransport Kerberos authentication error
+  hosts: target
+  gather_facts: no
+
+  tasks:
+    - name: Verify Kerberos authentication logs
+      win_shell: |
+        Get-EventLog -LogName System -Source Microsoft-Windows-WinRM `
+        | Where-Object { $_.Message -like "*Kerberos*" -and $_.Message -like "*Authentication*" } `
+        | Select-Object -First 1
+      register: kerb_auth_log
+
+    - name: Assert Kerberos auth failed
+      fail:
+        msg: "Kerberos authentication error detected in logs"
+      when: '\"Authentication Failure: 0x12\"' in kerb_auth_log.stdout_lines[0]
+
+    - name: Assert Kerberos auth success
+      debug:
+        msg: "Kerberos authentication OK"
+      when: '\"Kerberos authentication succeeded\"' in kerb_auth_log.stdout_lines[0]

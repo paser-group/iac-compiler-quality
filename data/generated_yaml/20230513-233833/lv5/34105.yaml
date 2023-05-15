@@ -1,0 +1,44 @@
+
+---
+- name: Configure DVS settings for vmware_guests
+  hosts: vsphere
+  gather_facts: no
+  become: yes
+  vars:
+    switch: DVS1
+    portgroup: PG1
+    vlan_id: 150
+  tasks:
+  - name: Get the current state of DVS settings
+    vmware_guest_find:
+      hostname: "{{ vcenter_server }}"
+      username: "{{ vcenter_user }}"
+      password: "{{ vcenter_pass }}"
+      validate_certs: no
+      vm_name: "{{ guest_name }}"
+      find_item: network_interfaces
+    register: guest_nic
+  - name: Create new DVS configuration
+    set_fact:
+      new_dvs_config:
+        switch_name: "{{ switch }}"
+        port_group_name: "{{ portgroup }}"
+        nic_settings: "{{ guest_nic['guest_nics'][0]['nic_settings'] }}"
+        vlanId: "{{ vlan_id }}"
+  - name: Compare current DVS settings to new settings
+    set_fact:
+      dvs_diff: "{{ new_dvs_config | combine({'nic_settings': guest_nic['guest_nics'][0]['nic_settings']}) | dictdiffer(guest_nic['guest_nics'][0]['nic_settings']) }}"
+  - name: Update DVS settings if necessary
+    vmware_guest_network_interface:
+      hostname: "{{ vcenter_server }}"
+      username: "{{ vcenter_user }}"
+      password: "{{ vcenter_pass }}"
+      validate_certs: no
+      vm_name: "{{ guest_name }}"
+      adapter_type: vmxnet3
+      network_label: "{{ portgroup }}"
+      customization_spec: "{{ customization }}"
+      dvs_switch_name: "{{ switch }}"
+      nic_settings: "{{ guest_nic['guest_nics'][0]['nic_settings'] }}"
+      vlanId: "{{ vlan_id }}"
+    when: dvs_diff.changed

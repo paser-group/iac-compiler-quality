@@ -1,0 +1,60 @@
+
+- name: Copy file and validate if %s is present
+  hosts: node1
+  tasks:
+    - name: Copy file with validation
+      copy:
+        src: /path/to/source
+        dest: /path/to/destination
+        validate: "cat /path/to/validation | grep %s"
+      register: result
+
+    - name: Show validation result
+      debug: var=result
+
+- name: Copy file and validate if %s is absent
+  hosts: node2
+  tasks:
+    - name: Copy file with validation
+      copy:
+        src: /path/to/source
+        dest: /path/to/destination
+        validate: "cat /path/to/validation | grep -v %s"
+      register: result
+
+    - name: Show validation result
+      debug: var=result
+
+- name: Copy file with unconventional syntax
+  hosts: node3
+  tasks:
+    - name: Copy file with unconventional syntax
+      copy:
+        src: "/path/to/{{ source }}"
+        dest: "/path/to/{{ destination }}"
+        validate: echo "Validation not required"
+      vars:
+        source: "{{ 'file1.txt' | random }}"
+        destination: "{{ 'file2.txt' | random }}"
+      register: result
+     
+    - name: Show result of copy operation
+      debug: var=result
+
+- name: Copy file with unexpected input
+  hosts: node1
+  tasks:
+    - name: Copy file with unexpected input
+      copy:
+        src: /path/to/{{ source }}
+        dest: /path/to/{{ destination }}
+        validate: "cat /path/to/{{ validation }} | grep {{ search }}"
+      vars:
+        source: "{{ [1, 2, 3] }}"
+        destination: "{{ ['a', 'b', 'c'] }}"
+        validation: "{{ {key:'value'} }}"
+        search: "{{ ['value'] }}"
+      register: result
+     
+    - name: Show result of copy operation
+      debug: var=result

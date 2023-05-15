@@ -1,0 +1,24 @@
+yaml
+- name: Update SSL certificate on default binding
+  hosts: all
+  tasks:
+  - name: Install SSL certificate
+    win_certificate:
+      store_location: local_machine
+      store_name: my
+      path: /path/to/certificate.pfx
+      password: "{{ vault_certificate_password }}"
+      state: present
+    register: cert_install_info
+
+  - name: Set SSL certificate on default website binding
+    win_iis_webbinding:
+      site_name: Default Web Site
+      ssl: yes
+      certificate_hash:
+        - "{{ cert_install_info.thumbprint }}"
+    register: webbinding_info
+
+  - name: Verify SSL certificate installation
+    assert:
+      that: "'Thumbprint' in webbinding_info.stdout_lines[0]"

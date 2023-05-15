@@ -1,0 +1,101 @@
+yaml
+- name: An edge case playbook for gcp_compute_instance module
+  hosts: all
+  gather_facts: false
+  
+  tasks:
+    - name: Invalid network value
+      gcp_compute_instance:
+        name: test-instance
+        project: test-project
+        zone: us-west1-a
+        machine_type: f1-micro
+        disk_type: pd-standard
+        disk_size_gb: 10
+        network_interfaces:
+          - network: "{{ invalid }}"
+        auth_kind: serviceaccount
+        service_account_file: "{{ gcp_cred }}"
+      register: result
+      ignore_errors: yes
+      
+    - debug:
+        var: result
+    
+    - name: Unconventional syntax
+      gcp_compute_instance: name=test-instance project=test-project zone=us-west1-a machine_type="f1-micro" disk_type=pd-standard disk_size_gb=10 network_interface=[{{node1.ip}}] auth_kind=serviceaccount service_account_file="{{ gcp_cred }}"
+
+    - name: Unexpected input
+      gcp_compute_instance:
+        name: [test-instance]
+        project: test-project
+        zone: us-west1-a
+        machine_type: f1-micro
+        disk_type: pd-standard
+        disk_size_gb: -1
+        network_interfaces:
+          - network: default
+            subnetwork: subnetwork-1
+            access_configs:
+              - name: test-1
+                type: ONE_TO_ONE_NAT
+                invalid_parameter: "{{ invalid }}"
+        can_ip_forward: invalid
+        service_account_email: invalid
+        tags: invalid
+        auth_kind: "{{ invalid }}"
+        service_account_file: "{{ gcp_cred }}"
+      
+    - name: Edge case with the root module
+      gcp_compute_instance:
+        name: test-instance
+        project: test-project
+        zone: us-west1-a
+        machine_type: f1-micro
+        disk_type: pd-standard
+        disk_size_gb: 10
+        network_interfaces:
+          - network: default
+            subnetwork: subnetwork-1
+            access_configs:
+              - name: test-1
+                type: ONE_TO_ONE_NAT
+        labels:
+          "{{ invalid }}": value
+      
+    - name: Edge case with SSH keys
+      gcp_compute_instance:
+        name: test-instance
+        project: test-project
+        zone: us-west1-a
+        machine_type: f1-micro
+        disk_type: pd-standard
+        disk_size_gb: 10
+        network_interfaces:
+          - network: default
+            subnetwork: subnetwork-1
+            access_configs:
+              - name: test-1
+                type: ONE_TO_ONE_NAT
+        metadata:
+          ssh-keys: invalid
+      
+    - name: Unexpected input with the root module
+      gcp_compute_instance:
+        name: test-instance
+        project: test-project
+        zone: us-west1-a
+        machine_type: [f1-micro]
+        disk_type: [pd-standard]
+        disk_size_gb: -1
+        network_interfaces:
+          - network: default
+            subnetwork: subnetwork-1
+            access_configs:
+              - name: test-1
+                type: ONE_TO_ONE_NAT
+        labels:
+          invalid_parameter: "{{ invalid }}"
+        tags: "{{ invalid }}"
+        auth_kind: "{{ invalid }}"
+        service_account_file: "{{ invalid }}"

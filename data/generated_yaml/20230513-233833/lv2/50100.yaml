@@ -1,0 +1,37 @@
+
+---
+- name: Ansible inventory stress test playbook
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create empty hosts file
+      copy:
+        content: ""
+        dest: hosts
+
+    - name: Execute openstack plugin command with extra error text
+      command: |
+        ansible-inventory -i </dev/null -vvvvv --list --export --output inventory.txt
+      args:
+        executable: /bin/bash
+      register: output
+      ignore_errors: true
+
+    - name: Remove extra error text from openstack plugin output file
+      lineinfile:
+        path: inventory.txt
+        state: absent
+        regexp: '.*extra_config_arguments not found.*'
+
+    - name: Validate inventory file
+      command: |
+        ansible-inventory -i inventory.txt --list
+      args:
+        executable: /bin/bash
+      register: validate
+      failed_when: validate.rc != 0
+
+    - name: Display inventory contents
+      debug:
+        var: validate.stdout_lines

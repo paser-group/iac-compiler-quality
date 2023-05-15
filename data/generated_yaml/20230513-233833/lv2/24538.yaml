@@ -1,0 +1,58 @@
+yaml
+---
+- name: Test meta variable discovery
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: Set variable in group_vars
+      set_fact:
+        my_var: "value from group_vars"
+      when: inventory_hostname == 'node1'
+
+    - name: Set variable in host_vars
+      set_fact:
+        my_var: "value from host_vars"
+      when: inventory_hostname == 'node2'
+
+    - name: Set variable in defaults/main.yml
+      include_vars:
+        file: defaults/main.yml
+      when: inventory_hostname == 'node3'
+
+    - name: Set variable in role vars
+      include_role:
+        name: sample_role
+        tasks_from: vars
+      when: inventory_hostname == 'node1'
+
+    - name: Set variable using set_fact
+      set_fact:
+        my_var: "value from set_fact"
+      when: inventory_hostname == 'node2'
+
+    - name: Set variable using vars plugin
+      vars:
+        my_var: "{{ hostvars['node1'].my_var }}"
+      when: inventory_hostname == 'node3'
+
+    - name: Set variable using with_* loop
+      set_fact:
+        my_var: "{{ item }}"
+      with_items:
+        - value from list
+        - "value from string"
+        - "{{ hostvars['node1'].my_var }}"
+        - "{{ hostvars['node2'].my_var }}"
+      when: inventory_hostname == 'node1'
+
+    - name: Set variable using register
+      shell: echo "value from register"
+      register: my_var
+      when: inventory_hostname == 'node2'
+
+    - name: Set variable using lookup
+      set_fact:
+        my_var: "{{ lookup('file', '/tmp/my_file') }}"
+      when: inventory_hostname == 'node3'
+...

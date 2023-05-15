@@ -1,0 +1,22 @@
+
+- name: Configure IGMP snooping on N7K switches
+  hosts: N7K
+  gather_facts: no
+  vars:
+    igmp_snooping_enabled: true
+  tasks:
+  - name: Check if IGMP snooping is already configured
+    nxos_command:
+      commands: show run | i "^ip igmp snooping$"
+    register: existing_igmp_snooping
+    ignore_errors: yes
+
+  - name: Disable IGMP snooping if it is not desired
+    nxos_igmp_snooping:
+      enabled: "{{ igmp_snooping_enabled }}"
+    when: not igmp_snooping_enabled and existing_igmp_snooping.stdout_lines != []
+
+  - name: Enable IGMP snooping if it is desired
+    nxos_igmp_snooping:
+      enabled: "{{ igmp_snooping_enabled }}"
+    when: igmp_snooping_enabled and existing_igmp_snooping.stdout_lines == []

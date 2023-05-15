@@ -1,0 +1,27 @@
+
+---
+- name: Test Docker version check error
+  hosts: all
+  gather_facts: no
+  vars:
+    docker_version: "{{ hostvars[groups['all'][0]]['docker_version'] }}"
+
+  tasks:
+    - name: Check Docker version
+      docker_container:
+        name: "{{ docker_version }}"
+        image: busybox:latest
+        command: "test -d /root && echo 'Docker version is OK'"
+        pull: absent
+        network_mode: host
+        state: started
+      ignore_errors: yes
+
+    - name: Verify Docker version
+      shell: |
+        if docker ps -a | grep "{{ docker_version }}"; then
+          echo "Docker version check failed!"
+          exit 1
+        else
+          echo "Docker version check passed."
+        fi

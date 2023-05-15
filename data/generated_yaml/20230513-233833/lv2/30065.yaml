@@ -1,0 +1,46 @@
+
+---
+- name: Test URI module for bugs
+  hosts: all
+  gather_facts: no
+
+  tasks:
+  - name: Make a URI request with invalid port number
+    uri:
+      url: http://10.1.1.1:100000000
+      method: GET
+    register: result1
+    ignore_errors: yes
+
+  - name: Make a URI request with no parameters
+    uri:
+      url: http://10.1.1.1/
+      method: PATCH
+      status_code: [200, 204]
+      body_format: json
+    register: result2
+
+  - name: Make a POST request with empty body
+    uri:
+      url: http://10.1.1.2/
+      method: POST
+      body: {}
+    register: result3
+
+  - name: Make a URI request with wrong URL syntax
+    uri:
+      url: http://10.1.1.3//resource
+      method: DELETE
+    register: result4
+
+  - name: Ensure failure when using invalid method
+    uri:
+      url: http://10.1.1.1/
+      method: PUTTTTT
+    register: result5
+    failed_when: true
+
+  - name: Print full response object
+    debug:
+      var: item
+    loop: [result1, result2, result3, result4, result5]

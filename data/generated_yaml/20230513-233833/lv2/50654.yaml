@@ -1,0 +1,38 @@
+
+---
+- name: Docker Swarm Services Issue Playbook
+  hosts: docker_swarm
+  become: true
+
+  tasks:
+    - name: Stop all services with similar name prefix
+      docker_swarm_service:
+        name_prefix: "{{ item }}"
+        state: "absent"
+      with_items:
+        - "service1_prefix"
+        - "service2_prefix"
+
+    - name: Start a service with spaces in name
+      docker_swarm_service:
+        name: "service with spaces"
+        image: "alpine:latest"
+        replicas: "{{ 5 | random }}"
+        state: "present"
+
+    - name: Remove a service that does not exist
+      docker_swarm_service:
+        name: "unknown_service"
+        state: "absent"
+
+    - name: Create a service with an invalid image name
+      docker_swarm_service:
+        name: "invalid_image_service"
+        image: "{{ '%%invalid%%' }}"
+        state: "present"
+
+    - name: Scale a service to negative replicas
+      docker_swarm_service:
+        name: "negative_replicas_service"
+        replicas: -1
+        state: "present"

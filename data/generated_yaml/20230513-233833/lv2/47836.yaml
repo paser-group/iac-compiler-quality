@@ -1,0 +1,37 @@
+
+---
+- name: stress-test playbook
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    # Generate inventory report
+    - name: Generate inventory report
+      delegate_to: 127.0.0.1
+      run_once: true
+      connection: local
+      template: "{{ item }}"
+      loop:
+        - "{{ playbook_dir }}/inventory_report.txt.j2"
+      register: report_content
+
+    # Debug task to print report content
+    - name: Debug report content
+      debug:
+        var: report_content
+
+    # Fail the playbook on certain conditions
+    - name: Fail on even number of nodes
+      fail:
+        msg: "Even number of nodes detected"
+      when: ansible_play_batch | length % 2 == 0
+
+    - name: Fail on odd number of nodes
+      fail:
+        msg: "Odd number of nodes detected"
+      when: ansible_play_batch | length % 2 == 1
+
+    - name: Fail on invalid IP address
+      fail:
+        msg: "Invalid IP address detected"
+      when: not hosts is regex('^10\.1\.1\.[1-3]$')

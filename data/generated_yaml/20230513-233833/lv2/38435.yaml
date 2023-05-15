@@ -1,0 +1,73 @@
+
+---
+
+- name: Generate inventory dynamically and handle exec errors
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+
+  - name: Set up inventory with unexpected input
+    set_fact:
+      inventory: |
+        [servers]
+        node1 ansible_host=10.1.1.1
+        node2 ansible_host=10.1.1.2
+        node3 ansible_host=10.1.1.3
+        {{ "invalid_input" }}
+
+  - name: Test inventory with unconventional syntax
+    command: >
+      echo {{ inventory }}
+    register: inventory_output
+    ignore_errors: true
+
+  - name: Check for exec errors in inventory
+    shell: >
+      python -c "import sys; sys.exit(1)"
+    register: exec_error
+    ignore_errors: true
+
+  - name: Generate inventory with edge cases
+    set_fact:
+      inventory: |
+        [servers]
+        node1 ansible_host=10.1.1.1 ansible_user="invalid_user
+        node2 ansible_host=10.1.1.2 ansible_user="valid_user"
+        node3 ansible_host=10.1.1.3 ansible_user="root"
+        [control]
+        localhost ansible_connection=local
+
+  - name: Test inventory with unexpected inputs
+    command: >
+      echo {{ inventory }} {{ unknown_var }}
+    register: inventory_output_2
+    ignore_errors: true
+
+  - name: Check for exec errors in inventory with unexpected inputs
+    shell: >
+      sh -c 'echo $BASH_EXECUTION_STRING && python -c "import sys; sys.exit(1)"'
+    register: exec_error_2
+    environment:
+      unknown_var: "unknown_value"
+    ignore_errors: true
+
+  - name: Display output of inventory tests
+    debug:
+      var: inventory_output.stdout_lines
+
+  - name: Display output of inventory tests with unexpected inputs
+    debug:
+      var: inventory_output_2.stdout_lines
+
+  - name: Display exec error messages
+    debug:
+      var: exec_error
+    when: "'Non-zero' in exec_error.stderr"
+
+  - name: Display exec error messages with unexpected inputs
+    debug:
+      var: exec_error_2
+    when: "'Non-zero' in exec_error_2.stderr"
+
+...

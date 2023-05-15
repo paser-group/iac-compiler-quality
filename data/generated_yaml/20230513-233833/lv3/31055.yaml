@@ -1,0 +1,33 @@
+
+---
+- name: Create a VPC Network
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+    - name: Create a VPC Network
+      ec2_vpc_net:
+        aws_access_key: "{{ aws_access_key }}" # Ensure that the AWS access key is not provided.
+        aws_secret_key: "{{ aws_secret_key }}" # Ensure that the AWS secret key is not provided.
+        region: "{{ region }}"
+        state: present
+        cidr_block: "{{ vpc_cidr_block }}"
+        subnets:
+          - cidr: "{{ subnet_cidr_block }}"
+            availability_zone: "{{ subnet_az }}"
+        internet_gateway: yes
+        route_tables:
+          - subnets:
+              - "{{ subnet_cidr_block }}"
+        tags:
+          Name: test-vpc
+      register: ec2_vpc_net_result
+
+    - debug:
+        var: ec2_vpc_net_result
+
+    - name: Delete VPC Network
+      ec2_vpc_net:
+        aws_region: "{{ region }}"
+        state: absent
+        vpc_id: "{{ ec2_vpc_net_result.vpc_id }}"

@@ -1,0 +1,62 @@
+yaml
+---
+- hosts: all
+  gather_facts: no
+
+  tasks:
+    # Invalid URL syntax for get_url module
+    - name: Test invalid URL syntax
+      get_url:
+        url: "ttp://exa$mple.com"
+      register: result
+      ignore_errors: true
+      failed_when: false
+    - debug: var=result
+
+    # Unconventional syntax, using double quotes for the If-Modified-Since header
+    - name: Test unconventional syntax in If-Modified-Since
+      get_url:
+        url: "http://example.com"
+        headers:
+          If-Modified-Since: "{{ '\"Tue, 30 Nov 2021 17:59:59 GMT\"' }}"
+        dest: /tmp/example.html
+      register: result
+      ignore_errors: true
+      failed_when: false
+    - debug: var=result
+
+    # Using Unix timestamp instead of date string for If-Modified-Since header
+    - name: Test Unix timestamp in If-Modified-Since
+      get_url:
+        url: "http://example.com"
+        headers:
+          If-Modified-Since: "{{ (datetime.utcnow() - datetime(1970, 1, 1)).total_seconds() }}"
+        dest: /tmp/example.html
+      register: result
+      ignore_errors: true
+      failed_when: false
+    - debug: var=result
+
+    # Using an empty value for If-Modified-Since header
+    - name: Test empty If-Modified-Since header
+      get_url:
+        url: "http://example.com"
+        headers:
+          If-Modified-Since: ""
+        dest: /tmp/example.html
+      register: result
+      ignore_errors: true
+      failed_when: false
+    - debug: var=result
+
+    # Using special characters in If-Modified-Since header value
+    - name: Test special characters in If-Modified-Since header
+      get_url:
+        url: "http://example.com"
+        headers:
+          If-Modified-Since: "Tue, 30 Nov 2021 17!59:59 GMT"
+        dest: /tmp/example.html
+      register: result
+      ignore_errors: true
+      failed_when: false
+    - debug: var=result

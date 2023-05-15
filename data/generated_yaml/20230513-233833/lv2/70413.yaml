@@ -1,0 +1,70 @@
+
+- name: Stress Test Playbook
+  hosts: all
+  gather_facts: no
+  
+  tasks:
+  - name: Create dictionary with nested dictionaries
+    set_fact:
+      dict1:
+        key1: "value1"
+        key2:
+          nested_key1: "nested_value1"
+          nested_key2: "nested_value2"
+  
+  - name: Loop through dictionary using dict2items
+    debug:
+      msg: "{{ item.key }} : {{ item.value }}"
+    loop: "{{ dict1 | dict2items }}"
+  
+  - name: Create dictionary with non-string keys
+    set_fact:
+      dict2:
+        123: "value1"
+        [1,2,3]: "value2"
+  
+  - name: Loop through dictionary using dict2items
+    debug:
+      msg: "{{ item.key }} : {{ item.value }}"
+    loop: "{{ dict2 | dict2items }}"
+  
+  - name: Create undefined variable
+    set_fact:
+      dict3: "{{ dict4 }}"
+  
+  - name: Loop through undefined variable using dict2items
+    debug:
+      msg: "{{ item.key }} : {{ item.value }}"
+    loop: "{{ dict3| default({}) | dict2items }}"
+  
+  - name: Create dictionary with null values
+    set_fact:
+      dict5:
+        key1: null
+        key2: null
+  
+  - name: Loop through dictionary using dict2items
+    debug:
+      msg: "{{ item.key }} : {{ item.value }}"
+    loop: "{{ dict5 | dict2items }}"
+  
+  - name: Create dictionary with duplicate keys
+    set_fact:
+      dict6:
+        key1: "value1"
+        key1: "value2"
+  
+  - name: Loop through dictionary using dict2items
+    debug:
+      msg: "{{ item.key }} : {{ item.value }}"
+    loop: "{{ dict6 | dict2items }}"
+  
+  - name: Skip task using when statement
+    debug:
+      msg: "This task should have been skipped"
+    when: "dict7 is not defined and true | lower == 'false'"
+  
+  - name: Fail task using assert statement
+    assert:
+      that: "dict8 is not defined"
+    when: "true | lower == 'false'"

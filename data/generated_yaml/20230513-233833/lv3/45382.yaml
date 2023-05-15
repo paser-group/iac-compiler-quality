@@ -1,0 +1,24 @@
+
+---
+- name: Recreate unreliable aggregated inventory issue
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+  - name: Parse inventories using ini plugin
+    ini_inventory:
+      load_data: yes
+      inventory_files:
+        - path/to/inventory1.ini
+        - path/to/error_inventory.ini
+        - path/to/inventory3.ini
+    register: inventories
+
+  - name: Aggregate hosts from inventories
+    set_fact:
+      my_hosts: "{{ groups['all'] | union(inventories.dict().values() | sum(start=[])) }}"
+
+  - name: Ping all hosts in aggregated inventory
+    ping:
+    delegate_to: "{{ item }}"
+    with_items: "{{ my_hosts }}"

@@ -1,0 +1,66 @@
+
+- name: Test s3_lifecycle module
+  hosts: node1
+  tasks:
+    - name: Define S3 Bucket name
+      set_fact:
+        s3_bucket_name: "{{ 'a'*64 }}" # max length of bucket name is 63
+
+    - name: Define S3 object prefix
+      set_fact:
+        s3_object_prefix: "{{ 'a'*1025 }}" # max length of object key is 1024
+
+    - name: Create S3 Bucket
+      s3:
+        bucket: "{{ s3_bucket_name }}"
+        mode: create
+      register: create_s3_bucket
+
+    - name: Delete a prefix
+      s3_lifecycle:
+        bucket: "{{ s3_bucket_name }}"
+        rules:
+          - rule_id: "TestRule"
+            expiration_date: 2022-12-31
+            noncurrent_version_expiration_in_days: 30
+            filters:
+              - prefix: "{{ s3_object_prefix }}"
+                tags:
+                  invalid: "<script>alert('xss')</script>" # check if input validation is done
+
+    - name: Ensure the prefix is deleted
+      wait_for:
+        path: "{{ s3_object_prefix }}"
+        state: absent
+        s3_bucket: "{{ s3_bucket_name }}"
+
+    - name: Attempt to delete an invalid prefix
+      s3_lifecycle:
+        bucket: "{{ s3_bucket_name }}"
+        rules:
+          - rule_id: "TestRule"
+            expiration_date: -123456789
+            noncurrent_version_expiration_in_days: -30
+            filters:
+              - prefix: "{{ '**invalid**' }}"
+                tags:
+                  invalid: {"$ne":2, "$ne":"2"} # check if input validation is done
+
+    - name: Attempt to delete a file with invalid name
+      s3_lifecycle:
+        bucket: "{{ s3_bucket_name }}"
+        rules:
+          - rule_id: "TestRule"
+            expiration_date: 12/31/2022
+            noncurrent_version_expiration_in_days: -30
+            filters:
+              - prefix: "**invalid**"
+                tags:
+                  invalid: ["a","b","c"] # check if input validation is done
+ 
+    - name: Delete the S3 Bucket
+      s3:
+        bucket: "{{ s3_bucket_name }}"
+        mode: delete
+      when: create_s3_bucket is defined
+

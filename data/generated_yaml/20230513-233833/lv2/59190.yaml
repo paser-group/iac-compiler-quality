@@ -1,0 +1,33 @@
+
+- name: Test playbook for vmware_guest bug
+  hosts: node1
+  gather_facts: false
+  tasks:
+  - name: install open-vm-tools
+    package:
+      name: open-vm-tools
+      state: present
+  - name: stop vmware tools service
+    service:
+      name: vmtoolsd
+      state: stopped
+  - name: attempt to create a VM with mem_reservation set to 0
+    vmware_guest:
+      hostname: '{{ inventory_hostname }}'
+      username: 'root'
+      password: 'vmware'
+      cluster: 'cluster'
+      name: 'test_vm'
+      state: present
+      disk:
+        - size_gb: 10
+          type: thin
+          datastore: 'datastore1'
+      hardware:
+        memory_mb: 512
+        num_cpus: 2
+        mem_reservation: 0
+    delegate_to: localhost
+    register: result
+  - name: print vmware_guest error output
+    debug: msg='{{ result }}'

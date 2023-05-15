@@ -1,0 +1,39 @@
+
+---
+- name: KubeVirt module error stress test
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: install python-apt module
+      apt:
+        name: python-apt
+        state: present
+        update_cache: yes
+
+    - name: import module with absolute path
+      import_tasks: "/path/to/module/tasks/main.yml"
+
+    - name: use module with unconventional syntax
+      kubevirt: 
+        virt_api_group=prod 
+        app_port=8090 
+        state=running 
+        volumes=[name: myvol, source: nfs://10.1.1.4:/export/share, destination: /mnt/vol1]
+
+    - name: call non-existent module
+      non_exist_mod:
+        args:
+          - foo
+          - bar
+        when: inventory_hostname == 'node3'
+
+    - name: use module with string interpolation
+      kubevirt:
+        virt_api_group: "{{ vars['api_groups'][1] }}"
+        state: "{{ 'running' if inventory_hostname == 'node1' else 'stopped' }}"
+
+    - name: use module with unexpected input
+      kubevirt:
+        virt_api_group: '{{ "{{" }} }} {{ "module.options.virt_api_group" }} {{ "{{" }} }}'
+        state: "{{ 'stopped' if (ansible_os_family == 'Debian' or 'Ubuntu') else 'running' }}"

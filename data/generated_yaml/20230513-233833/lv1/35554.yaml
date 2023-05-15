@@ -1,0 +1,36 @@
+yaml
+- name: Assign VLAN to multiple interfaces
+  hosts: switch
+  gather_facts: no
+
+  vars:
+    vlan_id: 10
+    interface_list:
+      - "GigabitEthernet0/1"
+      - "GigabitEthernet0/2"
+      - "GigabitEthernet0/3"
+      - "GigabitEthernet0/4"
+      - "GigabitEthernet0/5"
+      - "GigabitEthernet0/6"
+      - "GigabitEthernet0/7"
+
+  tasks:
+    - name: Check interfaces assigned to VLAN
+      ios_command:
+        commands: show vlan id {{ vlan_id }}
+      register: vlan_interfaces
+
+    - name: Remove interfaces from VLAN
+      ios_command:
+        commands: no interface {{ item }} switchport access vlan {{ vlan_id }}
+      when: item in vlan_interfaces.stdout[0]
+      loop: "{{ interface_list }}"
+
+    - name: Assign interfaces to VLAN
+      ios_config:
+        lines:
+          - interface {{ item }}
+          - switchport mode access
+          - switchport access vlan {{ vlan_id }}
+      when: item not in vlan_interfaces.stdout[0]
+      loop: "{{ interface_list }}"

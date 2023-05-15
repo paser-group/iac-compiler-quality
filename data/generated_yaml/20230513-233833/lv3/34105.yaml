@@ -1,0 +1,35 @@
+
+---
+- name: Recreating VMWare DVS idempotency issue
+  hosts: all
+  tasks:
+  - name: Deploying VM using vmware_guest module
+    vmware_guest:
+      name: "Test VM"
+      template: ubuntu18_template
+      state: present
+      hardware:
+        memory_mb: 512
+        num_cpus: 1
+      networks_info:
+        - label: VM Network
+          switch_type: distributedVirtualSwitch
+          switch_name: DVS_NAME
+          adapter_type: vmxnet3
+      folder: /
+      datastore: ds1
+      esxi_hostname: "{{ inventory_hostname }}"
+    register: deploy_vm
+    loop: "{{ range(5) | list }}"
+
+  - name: Debug the deploy_vm output
+    debug:
+      var: deploy_vm
+    loop_control:
+      index_var: deploy_vm_index
+
+  handlers:
+  - name: Restart vmware_guest service
+    service:
+      name: vmware_guest
+      state: restarted

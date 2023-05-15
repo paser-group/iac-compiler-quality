@@ -1,0 +1,27 @@
+
+---
+- name: Create VPC subnet
+  hosts: localhost
+  gather_facts: false
+  vars:
+    vpc_cidr_block: "10.0.0.0/16"
+    subnet_cidr_block: "10.0.1.0/24"
+    invalid_az: "us-west-3c"
+  tasks:
+  - name: Create VPC
+    ec2_vpc_net:
+      name: "MyVPC"
+      cidr_block: "{{ vpc_cidr_block }}"
+      state: present
+      region: "us-west-2"
+    register: vpc
+  - name: Create subnet with invalid AZ parameter
+    ec2_vpc_subnet:
+      vpc_id: "{{ vpc.vpc.id }}"
+      cidr_block: "{{ subnet_cidr_block }}"
+      availability_zone: "{{ invalid_az }}"
+      state: present
+    register: subnet
+    ignore_errors: yes
+  - debug:
+      var: subnet.stdout

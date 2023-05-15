@@ -1,0 +1,25 @@
+
+- name: Test adding value to array key
+  hosts: mac
+  vars:
+    app: com.demo.app
+    key: example_array
+    value: new_element
+    existing_values: ["elem1", "elem2"]
+  tasks:
+    - name: Add value to array key
+      osx_defaults:
+        domain: "{{ app }}"
+        key: "{{ key }}"
+        value: "{{ existing_values+[value] }}"
+    - name: Check if array key exists
+      shell: >
+        /usr/bin/defaults read "{{ app }}" "{{ key }}"
+      register: result
+    - name: Verify the array value
+      assert:
+        that:
+          - value in result.stdout_lines[0]
+          - existing_values[0] in result.stdout_lines[0]
+          - existing_values[1] in result.stdout_lines[0]
+        fail_msg: "value not added to the array key"

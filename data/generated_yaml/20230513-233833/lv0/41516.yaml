@@ -1,0 +1,21 @@
+python
+import boto3
+from botocore.exceptions import ClientError
+
+s3 = boto3.resource('s3')
+
+def copy_to_s3(bucket_name, src_key, dst_key):
+    try:
+        s3.Object(bucket_name, dst_key).copy_from(CopySource={'Bucket': bucket_name, 'Key': src_key})
+        print(f"File {src_key} copied to {dst_key} in {bucket_name} bucket successfully!")
+    except ClientError as e:
+        if e.response['Error']['Code'] == 'NoSuchBucket':
+            print(f"{bucket_name} does not exist!")
+        elif e.response['Error']['Code'] == 'NoSuchKey':
+            print(f"{src_key} does not exist in {bucket_name} bucket!")
+        elif e.response['Error']['Code'] == 'InvalidRequest':
+            print(f"{dst_key} is not a valid object key name!")
+        elif e.response['Error']['Code'] == 'MaxRetriesExceeded':
+            print(f"Failed to copy {src_key} to {dst_key} in {bucket_name} bucket due to max retries exceeded!")
+        else:
+            print(f"Unknown error occurred: {e}")

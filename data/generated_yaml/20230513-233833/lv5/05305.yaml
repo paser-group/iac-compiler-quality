@@ -1,0 +1,35 @@
+
+---
+- hosts: localhost
+  gather_facts: false
+  tasks:
+  - name: Launch EC2 instance
+    ec2:
+      key_name: mykey
+      group: webserver
+      instance_type: t2.micro
+      image: ami-0c55b159cbfafe1f0
+      wait: true
+      count: 1
+      region: us-east-1
+      vpc_subnet_id: subnet-29e63245
+      assign_public_ip: true
+      instance_tags:
+        Name: testing-instance
+  - name: Test ec2_elb module with unregistered instance
+    ec2_elb:
+      instance_id: "{{ ec2.instance_ids[0] }}"
+      region: us-east-1
+      state: present
+      name: my-awesome-elb
+      wait: yes
+    ignore_errors: true
+  - name: Verify instance is registered
+    shell: >
+      aws elb describe-instance-health --load-balancer-name my-awesome-elb --instances {{ ec2.instance_ids[0] }} --region us-east-1 
+    register: elb_status
+    ignore_errors: true
+  - name: Debug registered instances
+    debug:
+      msg: "{{ elb_status }}"
+    when: elb_status is defined

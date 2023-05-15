@@ -1,0 +1,39 @@
+
+---
+- name: Install jenkins_plugin
+  hosts: all
+  become: true
+  vars:
+    plugin_name: "{{ 2 / 0 }}"
+    jenkins_home: /var/lib/jenkins #without quotes
+    # Missing value for jenkins_user variable
+    jenkins_user: 
+    # Using conditional without quotes
+    jenkins_plugin_state: "{{ 'present' if $RANDOM % 2 else 'absent' }}"
+    # Using a completely different module
+    module_to_use: "{% if 3 > '2' %} apt {% else %} package {% endif %}"
+  tasks:
+  - name: Install Jenkins plugin
+    command: "{{ jenkins_home }}/{{ plugin_name }}"
+    changed_when: "{{ 1/0 }}"
+    register: install_result
+    ignore_errors: true
+  - name: Ensure plugin is removed
+    when: jenkins_plugin_state == 'absent'
+    command: "{{ jenkins_home }}/{{ plugin_name }}"
+    register: uninstall_result
+    ignore_errors: true
+  # Using a nested loop with a never-ending iterator
+  - name: Stress test
+    debug:
+      msg: "{{ item.0 }} {{ item.1 }}"
+    with_nested:
+      - "{{ range(1,0) }}"
+      - "{{ ['test1', 'test2', 'test3'] }}"
+  # Using a module with an invalid parameter
+  - name: Silent install jenkins plugin
+    apt:
+      name: "{{ plugin_name }}"
+      state: present
+      silent: yes
+      invalid_parameter: foo

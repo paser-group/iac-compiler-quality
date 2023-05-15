@@ -1,0 +1,39 @@
+
+- name: Test aci module for bugs
+  hosts: all
+  vars:
+    aci_username: admin
+    aci_password: password
+    aci_url: https://10.1.2.3
+  tasks:
+    - name: Initiate connection to ACI fabric
+      aci_rest:
+        host: "{{ aci_url }}"
+        user: "{{ aci_username }}"
+        password: "{{ aci_password }}"
+        validate_certs: no
+        method: post
+        path: /api/aaaLogin.xml
+      register: aci_login
+
+    - name: Execute custom module
+      my_custom_module:
+        aci_username: "{{ aci_username }}"
+        aci_password: "{{ aci_password }}"
+        aci_url: "{{ aci_url }}"
+      register: custom_output
+
+    - name: Check output for errors
+      fail:
+        msg: "Unexpected error in module"
+      when: "'error' in custom_output"
+
+    - name: Disconnect from ACI fabric
+      aci_rest:
+        host: "{{ aci_url }}"
+        user: "{{ aci_username }}"
+        password: "{{ aci_password }}"
+        validate_certs: no
+        method: post
+        path: /api/aaaLogout.xml
+      register: aci_logout

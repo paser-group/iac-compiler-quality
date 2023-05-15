@@ -1,0 +1,40 @@
+
+---
+- hosts: all
+  become: true
+  gather_facts: true
+  roles:
+    - role: myrole
+  tasks:
+    - name: Ensure defaults/main.yml exists
+      fail:
+        msg: "Defaults directory must contain a `main.yml` file."
+      when: not (bool(ansible_local.tmp_defaults_exists.stat.exists) | bool)
+  vars:
+    ansible_local:
+      tmp_role_path: "/tmp/myrole"
+      tmp_defaults_path: "/tmp/myrole/defaults"
+  pre_tasks:
+    - name: Create temporary role directory
+      become: true
+      become_user: "{{ ansible_user }}"
+      file:
+        path: "{{ ansible_local.tmp_role_path }}"
+        state: directory
+    - name: Link role to temporary directory
+      file:
+        src: "{{ playbook_dir }}/roles/myrole"
+        dest: "{{ ansible_local.tmp_role_path }}/myrole"
+        state: link
+    - name: Create temporary defaults directory
+      become: true
+      become_user: "{{ ansible_user }}"
+      file:
+        path: "{{ ansible_local.tmp_defaults_path }}"
+        state: directory
+    - name: Create empty defaults/main.yml file
+      become: true
+      become_user: "{{ ansible_user }}"
+      file:
+        path: "{{ ansible_local.tmp_defaults_path }}/main.yml"
+        state: touch

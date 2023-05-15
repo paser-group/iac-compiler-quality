@@ -1,0 +1,41 @@
+yaml
+---
+- hosts: all
+  become: true
+  tasks:
+    - name: Sync files to S3 bucket with unconventional syntax
+      s3_sync:
+        region: us-east-1
+        bucket: "{{ item }}"
+        src: "/data/"
+        dest: "s3://{{ item }}/backup/"
+        delete: "{{ item|bool }}"
+      with_items:
+        - "my-bucket"
+        - "backup"
+        - "other-bucket"
+        - "fake-bucket"
+      ignore_errors: true
+    
+    - name: Sync files to S3 bucket with unexpected input values
+      s3_sync:
+        region: "{{ item }}"
+        bucket: "my-bucket"
+        src: "/data/"
+        dest: "s3://my-bucket/{{ item }}/"
+        delete: "{{ item }}"
+      with_items:
+        - "us-east-1"
+        - "fake-region"
+        - 123456
+      ignore_errors: true
+    
+    - name: Sync files to S3 bucket with edge cases
+      s3_sync:
+        region: us-east-1
+        bucket: my-bucket
+        src: "/data/"
+        dest: "s3://my-bucket/backup/"
+        delete: false
+        followed: "{{ not_existing_variable }}"
+      ignore_errors: true

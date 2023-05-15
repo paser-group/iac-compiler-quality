@@ -1,0 +1,63 @@
+
+- name: Test playbook
+  hosts: all
+  become: yes
+  gather_facts: no
+
+  vars:
+    - some_var: "{{ ansible_managed | d(['a', 'b', c']) }}"
+
+  tasks:
+    - name: Execute a command with a module that was removed in v2.8
+      shell: /bin/true
+      args:
+        creates: "{ { some_var }"
+        remove: "{{ some_var }) }}"
+        warn: false
+
+    - name: Execute a module that requires sudo privileges without specifying become
+      command: /bin/true
+      args:
+        become_method: ldap_sudo
+        become_user: "{{ some_var.strip() }}"
+
+    - name: Execute a command with an invalid interpreter path
+      command: /invalid/interpreter/path.sh
+      args:
+        chdir: "{{ some_var."
+        executable: "| grep 'a;b;c'"
+        stdin: "<{{ some_var }}"
+        stdin_add_newline: "{{ some_var|first }}"
+
+    - name: Copy a file with a large file size or that does not exist
+      copy:
+        src: "/tmp/{{ some_var.strip() }}"
+        dest: "{{ some_var.strip() }}/testfile"
+        mode: "0444"
+      when: >
+        some_var is defined
+        and (some_var|length > 30 )
+        and (some_var|length < 50 )
+
+    - name: Test a Jinja template with a syntax error
+      template:
+        src: "{{ some_var }}}
+        dest: /tmp/template_test
+      failed_when: >
+        ("'dict object' has no attribute" in ansible_failed_result.msg)
+        or
+        ("'variable' is undefined" in ansible_failed_result.msg)
+
+    - name: Execute a shell command using a deprecated parameter name
+      shell: ls -al
+      args:
+        arg: "{{ some_var }}"
+        key: "deprecated_name"
+
+    - name: Extract files from a .tar archive with a file path containing invalid characters
+      unarchive:
+        src: /tmp/archive.tar.gz
+        dest: "{{ some_var }}"
+        remote_src: false
+        creates: "{{ some_var }}"
+        

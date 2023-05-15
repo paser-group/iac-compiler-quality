@@ -1,0 +1,35 @@
+
+# Ansible playbook to reproduce 'letsencrypt.py reporting incorrect 'cert_days'' issue.
+
+- name: Playbook for testing letsencrypt cert_days
+  hosts: all
+  become: true
+
+  vars:
+    cert_days: "{{ 365 }}" # Set the cert_days to 365, but the bug will be evident for other values as well.
+    cert_directory: "/etc/letsencrypt/live/example.com"
+  
+  tasks:
+    - name: Install required packages
+      apt:
+        name: 
+          - software-properties-common
+          - certbot
+        update_cache: true
+         
+    - name: Create test certificate
+      command: "certbot certonly --standalone --cert-name example.com --agree-tos --email user@example.com -n --no-self-upgrade"
+  
+    - name: Check certificate expiration date
+      command: "openssl x509 -enddate -noout -in {{ cert_directory }}/cert.pem"
+      register: cert_enddate
+    
+    - name: Fail the playbook if the certificate expiration date is not valid
+      assert:
+        that:
+          - cert_enddate.stdout | regex_search('[a-zA-Z]{3}\s\d{1,2}\s\d{2}:\d{2}:\d{2}\s\d{4}\s.+') != False
+          - cert_enddate.stdout | regex_search('[a-zA-Z]{3}\s\d{1,2}\s\d{2}:\d{2}:\d{2}\s\d{4}') | to_datetime('%b %d %H:%M:%S %Y') - ansible_date_time.datetime > cert_days * 86400
+      
+      failed_when: False
+  
+  

@@ -1,0 +1,27 @@
+
+---
+- hosts: node1,node2,node3
+  tasks:
+  - name: create large text file
+    copy:
+      dest: /root/large_file.txt
+      content: "{{ lorem }}"
+  - name: fill device with files
+    shell: >
+        while true; do mkdir /root/folder && cd /root/folder && echo "{{ lorem }}" > file.txt; cd ..; done
+      loop: "{{ range(20) }}"
+    register: fill_disk
+    changed_when: false
+    until: fill_disk.rc == 0
+    retries: 5
+    notify: cleanup
+  handlers:
+  - name: cleanup
+    file:
+      path: /root/folder 
+      state: absent
+    when: fill_disk | bool
+  - name: cleanup large_file.txt
+    file:
+      path: /root/large_file.txt
+      state: absent 

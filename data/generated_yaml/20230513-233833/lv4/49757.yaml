@@ -1,0 +1,26 @@
+
+- name: Test playbook for detecting Ansible Compiler syntax errors
+  hosts: all
+  tasks:
+    - name: Create temporary file with syntax error in setup.py
+      tempfile: state=file
+      register: tempfile
+      become: yes
+      become_user: root
+      become_method: sudo
+      args:
+        creates: "{{ tempfile }}"
+      command: "echo 'test;' >> '{{ tempfile }}'"
+
+    - name: Verify Ansible compiler can detect and report syntax errors
+      command: "ansible-playbook '{{ tempfile }}'"
+      ignore_errors: yes
+      register: compiler_output
+      become: yes
+      become_user: root
+      become_method: sudo
+
+    - name: Check for syntax error message in compiler output
+      assert:
+        that:
+          - "'Syntax Error' in compiler_output.stderr"

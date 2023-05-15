@@ -1,0 +1,43 @@
+
+- name: Test ec2_metric_alarm period parameter
+  hosts: all
+  tasks:
+    - name: Test with period in seconds
+      ec2_metric_alarm:
+        state: present
+        namespace: AWS/EC2
+        name: cpu-busy
+        metric: CPUUtilization
+        statistic: Average
+        period: 60
+        threshold: 70
+        comparison: greater-than-or-equal-to
+        evaluation_periods: 2
+        alarm_actions: "{{ alarm_actions }}"
+      register: alarm
+
+    - name: Print result for period=60 seconds
+      debug:
+        var: alarm
+
+    - name: Test with period in minutes
+      loop:
+        - 1
+        - 5
+        - 10
+      ec2_metric_alarm:
+        state: present
+        namespace: AWS/EC2
+        name: cpu-busy
+        metric: CPUUtilization
+        statistic: Average
+        period: "{{ item }}m"
+        threshold: 70
+        comparison: greater-than-or-equal-to
+        evaluation_periods: 2
+        alarm_actions: "{{ alarm_actions }}"
+      register: alarm
+
+    - name: Print result for period in minutes
+      debug:
+        var: alarm

@@ -1,0 +1,49 @@
+yaml
+---
+
+- name: Test playbook for s3_bucket error
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Install required packages
+      apt:
+        name: ['python3', 'python3-pip']
+        state: present
+
+    - name: Upgrade six library to an older version
+      pip:
+        name: six==1.10.0
+        state: present
+
+    - name: Configure s3 bucket
+      s3_bucket:
+        name: "{{ item.name }}"
+        region: "{{ item.region }}"
+        bucket: "{{ item.bucket }}"
+        object: "{{ item.object }}"
+        aws_access_key: "{{ item.aws_access_key }}"
+        aws_secret_key: "{{ item.aws_secret_key }}"
+      loop:
+        - { name: 'test-bucket-1', region: 'us-east-1', bucket: 'bucket-1', object: 'file1.txt', aws_access_key: 'ACCESS_KEY', aws_secret_key: 'SECRET_KEY' }
+        - { name: 'test-bucket-2', region: 'us-west-1', bucket: 'bucket-2', object: 'file2.txt', aws_access_key: 'ACCESS_KEY', aws_secret_key: 'SECRET_KEY' }
+        - { name: 'test-bucket-3', region: 'us-west-2', bucket: 'bucket-3', object: 'file3.txt', aws_access_key: 'ACCESS_KEY', aws_secret_key: 'SECRET_KEY' }
+      register: s3_result
+
+    - name: Fetch objects from s3 bucket
+      fetch:
+        src: "{{ item }}"
+        dest: "/tmp/{{ item.split('/')[-1] }}"
+        flat: yes
+        bucket: "{{ s3_item.response.buckets[0].name }}"
+      with_items:
+        - "{{ s3_item['response']['buckets'][0]['objects'] }}"
+
+    - name: Parse object's contents
+      uri:
+        url: "{{ item }}"
+        headers:
+          content-type: "application/json"
+        return_content: yes
+      with_items:
+        - "{{ s3_object.paths }}"

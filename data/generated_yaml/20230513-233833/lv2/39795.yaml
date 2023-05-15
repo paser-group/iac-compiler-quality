@@ -1,0 +1,35 @@
+
+- name: Stress Test Docker Service
+  hosts: all
+  become: true
+  gather_facts: true
+  
+  tasks:
+  - name: Test Docker Service Module - Invalid Input
+    docker_service:
+      state: started
+      name: my_service
+      ports:
+      - 80:80
+      invalid_key: invalid_value
+    ignore_errors: true
+  
+  - name: Test Docker Service Module - Invalid Ports Syntax
+    docker_service:
+      state: started
+      name: my_service
+      ports:
+      - invalid:port
+    ignore_errors: true
+  
+  - name: Test Docker Service Module - Unconventional Syntax
+    docker_service:
+      state: "{{ 'stopped' if service_state == 'started' else 'started' }}"
+      name: "{% if service_name|length > 5 %}{{ service_name[:5] }}{% else %}{{ service_name }}{% endif %}"
+    vars:
+      service_name: my_service_with_really_long_name
+      service_state: started
+  
+  - name: Test Docker Service Module - Malformed Input
+    docker_service: "{{ 'role_path:' }}/tasks/main.yml"
+    ignore_errors: true

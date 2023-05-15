@@ -1,0 +1,33 @@
+
+---
+- name: Test mssql_db error
+  hosts: all
+  gather_facts: no
+  vars:
+    db_name: "test_db'; DROP TABLE Customers;--"
+  tasks:
+    - name: Create database with unconventional syntax
+      mssql_db:
+        login_host: "{{ hostvars['node1']['ansible_host']}}"
+        login_user: "sa"
+        login_password: "password'"
+        name: "{{ db_name }}"
+      register: result
+
+    - name: Display output
+      debug:
+        var: result
+
+    - name: Check if error is thrown
+      fail:
+        msg: "Error was not thrown"
+      when:
+        - "'failed' not in result.status"
+
+    - name: Remove created database
+      mssql_db:
+        login_host: "{{ hostvars['node1']['ansible_host'] }}"
+        login_user: "sa"
+        login_password: "password"
+        name: "{{ db_name }}"
+        state: absent

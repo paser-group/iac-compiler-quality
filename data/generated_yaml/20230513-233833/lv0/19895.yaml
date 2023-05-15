@@ -1,0 +1,111 @@
+
+resource "aws_vpc" "example" {
+  cidr_block = "10.0.0.0/16"
+
+  tags = {
+    Name = "example-vpc"
+  }
+}
+
+resource "aws_subnet" "example" {
+  count = 2
+
+  cidr_block = "10.0.${count.index+1}.0/24"
+  vpc_id     = aws_vpc.example.id
+
+  tags = {
+    Name = "example-subnet-${count.index+1}"
+  }
+}
+
+resource "aws_security_group" "example" {
+  name_prefix = "example-"
+  vpc_id      = aws_vpc.example.id
+
+  ingress {
+    from_port   = 0
+    to_port     = 65535
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+resource "aws_instance" "example" {
+  ami           = "ami-0c55b159cbfafe1f0"
+  instance_type = "t2.micro"
+  subnet_id     = aws_subnet.example[0].id
+  vpc_security_group_ids = [ aws_security_group.example.id ]
+
+  tags = {
+    Name = "example-instance"
+  }
+}
+
+resource "aws_vpc_endpoint" "example" {
+  service_name = "com.amazonaws.us-west-2.s3"
+  vpc_id       = aws_vpc.example.id
+
+  route_table_ids = [ aws_route_table.example.id ]
+}
+
+resource "aws_route_table" "example" {
+  vpc_id = aws_vpc.example.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.example.id
+  }
+
+  tags = {
+    Name = "example-route-table"
+  }
+}
+
+resource "aws_internet_gateway" "example" {
+  vpc_id = aws_vpc.example.id
+
+  tags = {
+    Name = "example-internet-gateway"
+  }
+}
+
+resource "aws_vpc_subnet" "example" {
+  count = 2
+
+  vpc_id = aws_vpc.example.id
+  cidr_block = "10.0.${count.index+1}.0/24"
+
+  tags = {
+    Name = "example-subnet-${count.index+1}"
+  }
+
+  depends_on = [aws_internet_gateway.example]
+  
+  provisioner "local-exec" {
+    command = "sleep 30"
+  }
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
+resource "aws_subnet_route_table_association" "example" {
+  count = 2
+
+  subnet_id      = aws_subnet.example[count.index].id
+  route_table_id = aws_route_table.example.id
+}
+
+resource "aws_ec2_transit_gateway_vpc_attachment" "example" {
+  subnet_ids           = [aws_subnet.example[0].id, aws_subnet.example[1].id]
+  transit_gateway_id   = aws_ec2_transit_gateway.example.id
+  vpc_id               = aws_vpc.example.id
+  wait_for_subnet_timeout = "10m"
+}
+
+resource "aws_ec2_transit_gateway" "example" {
+  description = "example-transit-gateway"
+  amazon_side_asn = 64512
+}
+

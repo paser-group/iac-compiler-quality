@@ -1,0 +1,68 @@
+
+---
+- name: Test playbook for GitHub issue #22
+  hosts: all
+  become: true
+  gather_facts: false
+
+  tasks:
+    - name: Test task with multiple commands and pipe
+      command: echo -n "ok" | grep "ok"
+      register: result
+      changed_when: result.stdout == "ok"
+      failed_when: result.stdout == ""
+
+    - name: Test task with weird command arguments
+      command: test -f "{{ item }}"
+      with_items:
+        - "file0"
+        - "file1"
+        - "file2"
+        - ""
+        - "\'"
+        - "\""
+        - "\\"
+        - "file3\nfile4"
+        - "{{\"file5\"}}"
+        - "{{item}}"
+      register: result
+      ignore_errors: true
+
+    - name: Test task with suppressed error
+      command: command_that_fails || true
+      register: result
+      changed_when: false
+      failed_when: false
+
+    - name: Test task with local escape sequence
+      command: echo "\033[31mRed Text\033[0m"
+      register: result
+      changed_when: false
+
+    - name: Test task with redirection of stderr
+      command: /bin/sh -c "echo \"test error\" >&2; exit 1"
+      register: result
+      changed_when: false
+      failed_when: result.rc == 1 and result.stderr != "test error\n"
+
+    - name: Test task with single quotes and variables
+      command: 'echo {{ foo }} && echo '\''bar'\'''
+      vars:
+        foo: "hello world"
+      register: result
+      changed_when: false
+
+    - name: Test task with shell module
+      shell: echo "hello world"
+      register: result
+      changed_when: false
+
+    - name: Test task with multiple commands and fact-caching
+      command: "echo test"
+      register: cmd_result
+
+    - name: Test task with multiple commands and parse_error
+      command: foo bar baz
+      register: result
+      ignore_errors: true
+      changed_when: false

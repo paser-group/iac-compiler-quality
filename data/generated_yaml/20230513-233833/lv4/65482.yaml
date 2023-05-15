@@ -1,0 +1,39 @@
+
+---
+- name: Verify ios_config module syntax and element support
+  hosts: ios_devices
+  gather_facts: no
+
+  vars:
+    ansible_connection: network_cli
+    ansible_network_os: ios
+    ansible_user: admin
+    ansible_password: password
+
+    running_config:
+      - interface GigabitEthernet1
+        - description Configured by Ansible playbook
+
+    optional_commands:
+      - show version
+      - debug interface GigabitEthernet1
+
+  tasks:
+    - name: Run ios_config module to ensure syntax and element support
+      ios_config:
+        provider:
+          host: "{{ inventory_hostname }}"
+          username: "{{ ansible_user }}"
+          password: "{{ ansible_password }}"
+        lines: "{{ running_config }}"
+      register: config_out
+
+    - name: Execute optional commands to verify element support
+      ios_command:
+        commands: "{{ optional_commands }}"
+      register: command_out
+
+    - name: Confirm 'show version' element support
+      assert:
+        that:
+          - "'show version' in command_out.stdout"

@@ -1,0 +1,31 @@
+
+---
+- name: Reproduce deserialization error in azure_rm_sqldatabase
+  hosts: node1
+  become: true
+  tasks:
+    - name: Install Azure CLI and Azure RM modules
+      shell: curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash && sudo az extension add --name azure-cli-ansible --yes
+    - name: Set up credentials for Azure Cloud
+      azure_rm_login:
+        client_id: 'your_client_id'
+        client_secret: 'your_client_secret'
+        tenant: 'your_tenant_id'
+      no_log: true
+    - name: Create a SQL Database in Azure Cloud
+      azure_rm_sqldatabase:
+        resource_group: 'your_resource_group'
+        server_name: 'your_server_name'
+        name: 'your_db_name'
+        collation: "SQL_Latin1_General_CP1_CS_AS"
+        edition: "Basic"
+        compute_name: "sqldb-auto-scale-group"
+        tags: "your_tags"
+      register: db
+    - name: Serialize and save SQL Database details in a file
+      copy:
+        content: "{{ db | to_nice_json }}"
+        dest: "/tmp/sqldb-details.json"
+    - name: Deserialize and read the SQL Database details from the file
+      delegate_to: node2
+      shell: python -c "import json;print(json.load(open('/tmp/sqldb-details.json')))"

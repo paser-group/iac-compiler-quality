@@ -1,0 +1,38 @@
+yaml
+---
+- hosts: infoblox_hosts
+  gather_facts: no
+  vars:
+    nios_api_url: "https://infoblox.example.com/wapi/v2.10"
+    nios_api_username: "admin"
+    nios_api_password: "password"
+    ipv4_address: "192.168.1.1" # Replace with your desired IP address
+  tasks:
+    - name: Fetch network view ID
+      uri:
+        url: "{{ nios_api_url }}/networkview"
+        method: GET
+        user: "{{ nios_api_username }}"
+        password: "{{ nios_api_password }}"
+        validate_certs: no
+        return_content: yes
+      register: networkview_result
+    
+    - name: Create host record
+      uri:
+        url: "{{ nios_api_url }}/record:host"
+        method: POST
+        user: "{{ nios_api_username }}"
+        password: "{{ nios_api_password }}"
+        headers:
+          Content-Type: "application/json"
+        body_format: json
+        body:
+          name: "example-host"
+          ipv4addrs: [
+            {
+              ipv4addr: "{{ ipv4_address }}"
+            }
+          ]
+          view: "{{ networkview_result.json[0]._ref }}"
+        validate_certs: no

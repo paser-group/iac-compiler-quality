@@ -1,0 +1,25 @@
+yaml
+- name: Test na_ontap_gather_facts concurrent execution
+  hosts: target_device
+  vars:
+    parameter_list:
+      - { hostname: "192.168.1.1", username: "testuser", password: "password1", https: true, state: "present", collect_licenses: true, timeout: 60 }
+      - { hostname: "192.168.1.1", username: "testuser", password: "password1", https: true, state: "present", timeout: 30 }
+      - { hostname: "192.168.1.1", username: "testuser", password: "password1", https: true, state: "present", collect_licenses: true }
+      - { hostname: "192.168.1.1", username: "testuser2", password: "password2", https: true, state: "absent", collect_licenses: true, timeout: 30 }
+  tasks:
+    - name: Gather facts concurrently
+      block:
+        - name: Run na_ontap_gather_facts module
+          netapp_ontap.na_ontap_gather_facts:
+            hostname: "{{ item.hostname }}"
+            username: "{{ item.username }}"
+            password: "{{ item.password }}"
+            https: "{{ item.https|default(true) }}"
+            state: "{{ item.state|default('present') }}"
+            collect_licenses: "{{ item.collect_licenses|default(false) }}"
+            timeout: "{{ item.timeout|default(300) }}"
+          register: results
+          delegate_to: localhost
+          run_once: true
+        with_items: "{{ parameter_list }}"

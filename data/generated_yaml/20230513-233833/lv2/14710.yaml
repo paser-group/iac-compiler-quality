@@ -1,0 +1,39 @@
+
+---
+- hosts: all
+  gather_facts: no
+  vars:
+    winrm_cert_validation: ignore
+  tasks:
+    - name: Test WinRM connectivity
+      win_ping:
+      register: win_result
+    - name: Generate SSL errors
+      win_command: echo 'test'
+      register: win_command_result
+    - name: Print output of win_command in case of errors
+      debug:
+        var: win_command_result
+      failed_when: "win_result['ping'] == 'pong'"
+    - name: Install PowerShell Core
+      win_chocolatey:
+        name: powershell-core
+        state: present
+    - name: Create a self-signed certificate
+      win_shell: New-SelfSignedCertificate -Subject "CN=localhost" -CertStoreLocation Cert:\LocalMachine\My
+      become: true
+    - name: Install certificate in trusted root authorities
+      win_shell: certutil.exe -addstore Root MyCertificate.cer
+      become: true
+    - name: Add certificate to trusted store
+      win_shell: certutil.exe -addstore TrustedPeople MyCertificate.cer
+      become: true
+    - name: Test WinRM connectivity with newly created certificate
+      win_ping:
+        use_ssl: true
+        validate_certs: yes
+      register: win_secure_result
+    - name: Print SSL error message
+      debug:
+        var: win_secure_result
+      failed_when: "win_result['ping'] == 'pong'"

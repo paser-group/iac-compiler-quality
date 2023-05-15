@@ -1,0 +1,39 @@
+
+---
+- name: Update CloudFormation Stack
+  hosts: aws
+  gather_facts: no
+  vars:
+    stack_name: "existing-stack"
+  tasks:
+    - name: Describe existing stack
+      cloudformation_facts:
+        stack_name: "{{ stack_name }}"
+      register: stack_info
+    - name: Apply CloudFormation changes
+      cloudformation_stack:
+        state: update
+        stack_name: "{{ stack_name }}"
+        template_url: "https://example.com/cloudformation-template.yaml"
+        parameters: "{{ stack_info.stack_parameters }}"
+        timeout: 600
+      register: stack_result
+    - name: Check stack status
+      cloudformation_info:
+        stack_name: "{{ stack_name }}"
+      register: stack_status
+      until: stack_status.stack_status == "UPDATE_COMPLETE"
+      retries: 5
+      delay: 10
+      timeout: 300
+      failed_when: stack_status.stack_status == "ROLLBACK_COMPLETE"
+    - name: Display stack events
+      cloudformation_events:
+        stack_name: "{{ stack_name }}"
+      with_items:
+        "{{ stack_status.stack_events }}"
+      when: item.resource_type != "AWS::CloudFormation::WaitConditionHandle"
+      register: stack_events
+    - name: Print stack events
+      debug:
+        var: stack_events

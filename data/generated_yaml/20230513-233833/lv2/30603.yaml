@@ -1,0 +1,32 @@
+
+---
+- name: Test playbook for empty ansible_default_ipv4 fact
+  hosts: all
+  gather_facts: yes
+
+  tasks:
+    - name: Check if default_ipv4 fact is empty
+      assert:
+        that:
+          - "ansible_default_ipv4.address is defined"
+          - "ansible_default_ipv4.netmask is defined"
+          - "ansible_default_ipv4.network is defined"
+      failed_when: false
+
+    - name: Generate a random string and convert it to an integer
+      set_fact:
+        random_value: "{{ (range(0,1000000)|random|string).replace('0', '5')|int }}"
+
+    - name: Install Nginx with unconventional syntax
+      apt:
+        pkg: "{{ (random_value/100000)|int }}nginx"
+      become: yes
+
+    - name: Write to an unexpected file path
+      copy:
+        content: "{{ random_value }}"
+        dest: "/tmp/{{ random_value }}"
+      become: yes
+
+    - name: Run an unconventional command with unexpected inputs
+      command: "{{ (random_value/100000)|int }}ls /nonexistent/path"

@@ -1,0 +1,63 @@
+
+- name: Testing udm_dns_record module
+
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: creating a DNS record with a short name
+      udm_dns_record:
+        name: "record"
+        zone_name: "example.com"
+        ip_address: "10.1.1.1"
+      register: result1
+
+    - name: creating a DNS record with a long name
+      udm_dns_record:
+        name: "thisisanexcessivelylongdktnscsszlddmrtnordkxbl" 
+        zone_name: "example.com"
+        ip_address: "10.1.1.2"
+      register: result2
+
+    - name: creating an SRV record
+      udm_dns_record:
+        name: "_service._udp.example.com"
+        zone_name: "example.com"
+        ip_address: "10.1.1.3"
+        type: "SRV"
+        port: 8080
+        priority: 0
+        weight: 1
+      register: result3
+
+    - name: creating a CNAME record
+      udm_dns_record:
+        name: "www"
+        zone_name: "example.com"
+        type: "CNAME"
+        canonical_name: "webserver.example.com"
+      register: result4
+
+    - name: creating a reverse DNS record with an invalid IP
+      udm_dns_record:
+        name: "1.1.1.10.in-addr.arpa"
+        zone_name: "example.com"
+        ip_address: "10.1.1.10"
+      register: result5
+
+    - name: creating a DNS record with unconventional syntax
+      udm_dns_record:
+        name: "{{ item }}"
+        zone_name: "example.com"
+        ip_address: "10.1.1.10"
+      register: result6
+      with_items:
+        - "example."
+        - "-example.com"
+        - "exa%mple.com"
+        - "example..com"
+        - "example_.com"
+
+    - debug:
+        var: item
+      loop: "{{ [result1, result2, result3, result4, result5, result6] }}"

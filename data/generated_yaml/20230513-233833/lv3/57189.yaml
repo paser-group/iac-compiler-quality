@@ -1,0 +1,27 @@
+
+---
+- name: "Recreate yum lockfile issue"
+  hosts: all
+
+  tasks:
+    - name: Install package
+      package:
+        name: httpd
+        state: present
+      register: httpd_install
+      become: true
+
+    - name: Start Apache server
+      service:
+        name: httpd
+        state: started
+        enabled: true
+      become: true
+      when: httpd_install.changed
+
+    - name: Lock yum for a long time
+      shell: >
+        yum install -y httpd >/dev/null 2>&1 &
+        sleep 300
+        wait %1
+      become: true

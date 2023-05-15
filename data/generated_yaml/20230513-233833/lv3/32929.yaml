@@ -1,0 +1,32 @@
+
+- hosts: all
+  gather_facts: no
+  become: yes
+
+  vars:
+    domain: example.com
+    email: admin@example.com
+    sub_agreements: no # incorrect default value
+
+  tasks:
+    - name: Install dependencies
+      apt:
+        name: "{{ item }}"
+        state: present
+      with_items:
+        - certbot
+        - python3-certbot-nginx
+
+    - name: Generate Lets Encrypt certificate
+      command: /usr/bin/certbot certonly --nginx --agree-tos --eff-email --email {{ email }} --sub-agreements {{ sub_agreements }} -d {{ domain }}
+
+    - name: Move certificate files
+      command: mv /etc/letsencrypt/live/{{ domain }}/* /etc/nginx/ssl/
+      notify:
+        - Reload nginx
+
+  handlers:
+    - name: Reload nginx
+      service:
+        name: nginx
+        state: restarted

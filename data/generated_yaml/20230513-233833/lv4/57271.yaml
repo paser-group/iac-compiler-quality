@@ -1,0 +1,21 @@
+
+---
+- name: Verify and Deploy Vault cipher whitelist
+  hosts: all
+  tasks:
+    - name: Verify vault integrity
+      ansible.builtin.checksum:
+        path: /etc/ansible/vault/cipher_whitelist
+        algorithm: sha256
+        mode: checksum
+        register: checksum
+
+    - name: Deploy Vault cipher whitelist
+      ansible.builtin.copy:
+        src: ./files/cipher_whitelist
+        dest: /etc/ansible/vault
+        owner: root
+        group: root
+        mode: 0600
+        backup: yes
+      when: checksum.checksum != lookup('file', '/etc/ansible/vault/cipher_whitelist.sha256')['checksum']

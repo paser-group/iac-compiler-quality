@@ -1,0 +1,48 @@
+
+- name: Stress test EL 6.6 connection ControlPersist issues
+  hosts: all
+  become: yes
+
+  vars:
+    ipv6: "no"
+    ssh_key: "/path/to/key"
+    ssh_user: "john"
+    ssh_pass: "password"
+    remote_port: 22
+    control_path: "/var/run/controlpath.sock"
+
+  tasks:
+    - name: Create ControlPath directory
+      file:
+        path: "{{ control_path | dirname }}"
+        state: directory
+
+    - name: Create ssh config file
+      copy:
+        dest: "~/.ssh/config"
+        content: |
+          {{ hostvars[item]['inventory_hostname'] }}:
+            ControlMaster auto
+            ControlPath {{ control_path }}
+            {% if ipv6 == "yes" %}
+            AddressFamily inet6
+            {% endif %}
+            StrictHostKeyChecking no
+            UserKnownHostsFile /dev/null
+            {% if ssh_user is defined %}
+            User {{ ssh_user }}
+            {% endif %}
+            {% if ssh_pass is defined %}
+            PasswordAuthentication yes
+            {% endif %}
+            {% if ssh_key is defined %}
+            IdentityFile {{ ssh_key }}
+            {% endif %}
+            Port {{ item['port'] | default(remote_port) }}
+
+      with_items: "{{ ansible_play_hosts }}"
+
+    - name: Check SSH config file syntax
+      connection: local
+      command: ssh -t -F ~/.ssh/config localhost /bin/true
+

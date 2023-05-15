@@ -1,0 +1,23 @@
+
+---
+- name: Test ~/.netrc and HTTP Error 401 issue with Github and Ansible-Galaxy
+  hosts: all
+  gather_facts: false
+  become: false
+  
+  tasks:
+
+  - name: Clone private Github repository using Ansible-Galaxy
+    ansible.builtin.command: >
+      ansible-galaxy install github-repo
+    environment:
+      NETRC: "{{ lookup('env','HOME') }}/.netrc"
+    changed_when: false
+
+  - name: Execute command on cloned repository to trigger HTTP Error 401
+    ansible.builtin.command: >
+      ssh-keyscan github.com >> /root/.ssh/known_hosts \
+      && cd /etc/ansible/roles/github-repo \
+      && ansible-playbook playbook.yml \
+      && echo Success || echo Failed
+    changed_when: false

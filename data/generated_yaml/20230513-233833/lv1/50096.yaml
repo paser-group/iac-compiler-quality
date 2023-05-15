@@ -1,0 +1,37 @@
+yaml
+---
+- name: Install mysql and setup database
+  hosts: all
+  become: true
+  tasks:
+    - name: Install mysql python package
+      apt:
+        name: python-mysqldb
+        state: present
+      when: ansible_distribution == "Ubuntu"
+
+    - name: Create database
+      mysql_db:
+        name: my_db
+        state: present
+        login_user: root
+        login_password: mysql_root_password
+        vars:
+          ssl_ca: /path/to/ssl_ca_file
+      register: mysql_db_result
+
+    - name: Dump database
+      mysql_db:
+        name: my_db
+        state: dump
+        target: /tmp/my_db.sql
+        login_user: root
+        login_password: mysql_root_password
+        vars:
+          ssl_ca: /path/to/ssl_ca_file
+      when: mysql_db_result.changed
+
+    - name: Delete database dump
+      file:
+        path: /tmp/my_db.sql
+        state: absent

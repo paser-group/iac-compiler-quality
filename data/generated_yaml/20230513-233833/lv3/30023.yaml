@@ -1,0 +1,39 @@
+
+- name: Test the ec2_vpc Module
+  hosts: node1
+  gather_facts: false
+  vars:
+    aws_access_key: "{{lookup('env','AWS_ACCESS_KEY_ID')}}"
+    aws_secret_key: "{{lookup('env','AWS_SECRET_ACCESS_KEY')}}"
+    region: "{{lookup('env','AWS_REGION')}}"
+    ec2_vpc_cidr_block: "10.1.2.0/24"
+    vpc_name: "test_vpc"
+  tasks:
+    - name: Configure AWS CLI Credentials
+      set_fact:
+        aws_access_key: "{{aws_access_key}}"
+        aws_secret_key: "{{aws_secret_key}}"
+    - name: Install Boto3 and Botocore
+      pip:
+        name:
+          - boto
+          - boto3
+          - botocore
+        state: latest
+    - name: Create EC2 VPC
+      ec2_vpc:
+        state: present
+        cidr_block: "{{ec2_vpc_cidr_block}}"
+        region: "{{region}}"
+        tags:
+          Name: "{{vpc_name}}"
+        profile: non_existent_profile # Potential Vulnerability
+    - name: Verify EC2 VPC Creation
+      ec2_vpc_net:
+        profile: non_existent_profile # Potential Vulnerability
+        filters:
+          "tag:Name": "{{vpc_name}}"
+      register: ec2_vpc_check
+    - assert:
+        that:
+          - ec2_vpc_check.vpc is not equalto ''

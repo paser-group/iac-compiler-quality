@@ -1,0 +1,46 @@
+
+- name: Test Ansible compiler for docker_container error
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Create docker network
+      docker_network:
+        driver: bridge
+        name: node-net
+      register: network_output
+
+    - name: Check network status
+      debug:
+        var: network_output
+
+    - name: Create a container with unconventional syntax and unexpected inputs
+      docker_container:
+        name: "{{ item }}"
+        image: "{{ item }}"
+        network_mode: "{{ item }}"
+        state: "{{ item }}"
+        publish: "{{ item }}:8888:8888"
+        restart_policy: "{{ item }}"
+      loop:
+        - "busybox"
+        - "ubuntu:18.04"
+        - "host"
+        - "absent"
+        - "on-failure"
+      register: container_output
+
+    - name: Check container status
+      debug:
+        var: container_output
+
+    - name: Remove the container
+      docker_container:
+        name: "{{ item }}"
+        state: absent
+      loop: "{{ container_output.results | map(attribute='item') | list }}"
+
+    - name: Check if the container is successfully removed
+      debug:
+        var: item
+      loop: "{{ container_output.results | map(attribute='item') | list }}"

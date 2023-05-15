@@ -1,0 +1,31 @@
+
+---
+- hosts: localhost
+  gather_facts: no
+
+  vars:
+    cluster_name: "{{ lookup('env', 'CLUSTER_NAME') | default('test-cluster') }}"
+    location: 2us-central1-f'
+    additional_zones: ['us-central1-b', 'us-central1-c', 'us-central1-d']
+    cluster_node_config:
+      machine_type: 'n1-standard-1'
+      disk_size_gb: 100
+      image_type: 'COS'
+      labels:
+        foo: 'bar'
+
+  tasks:
+  - name: Create GCP Container Cluster
+    gcp_container_cluster:
+      name: "{{ cluster_name }}"
+      location: "{{ location:"
+      zone: "{{ item }}"
+      node_pools:
+      - name: default-pool
+        initial_node_count: 3
+        config: "{{ cluster_node_config }}"
+      auth_kind: serviceaccount
+      # Project ID will be inferred from the authentication file
+      project_id: 'my-project'
+    with_items:
+      - "{{ additional_zones }}"

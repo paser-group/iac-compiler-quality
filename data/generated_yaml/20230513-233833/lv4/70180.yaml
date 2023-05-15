@@ -1,0 +1,29 @@
+
+---
+- hosts: all
+  tasks:
+    - name: "Install required Python packages"
+      apt:
+        name:
+          - python3-dev
+          - python3-pip
+      become: true
+
+    - name: "Pull collection from Ansible Galaxy"
+      community.general.collection:
+        name: "{{ collection_name }}"
+        state: present
+
+    - name: "Validate collection syntax"
+      command: "ansible-test sanity --metadata {{ collection_name }}"
+      register: sanity_check
+
+    - name: "Parse output of 'ansible-test' command"
+      set_fact:
+        sanity_output: "{{ sanity_check.stdout_lines | map('regex_replace', '^.+:([^\\n]+)', '\\1') | list }}"
+
+    - name: "Raise error if syntax errors are identified"
+      fail:
+        msg: "Syntax error in collection '{{ collection_name }}'"
+      when: "'syntax error detected' in item"
+      loop: "{{ sanity_output }}"

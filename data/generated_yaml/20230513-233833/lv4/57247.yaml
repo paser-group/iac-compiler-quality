@@ -1,0 +1,31 @@
+
+- name: Update Security Group
+  hosts: localhost
+  gather_facts: no
+  vars:
+    group_name: "test_security_group"
+    aws_region: "us-west-2"
+    security_group_id: "sg-0123456789"
+    elb_name: "test_elb"
+ 
+  tasks:
+  - name: Gather facts about the security group
+    ec2_group_info:
+      region: "{{aws_region}}"
+      filters:
+        "group-name": "{{group_name}}"
+    register: sg_info
+ 
+  - name: Add rules for ELB
+    ec2_group:
+      name: "{{group_name}}"
+      region: "{{aws_region}}"
+      security_group_id: "{{security_group_id}}"
+      rules:
+        - proto: tcp
+          from_port: 80
+          to_port: 80
+          cidr_ip: "{{item}}"
+      state: present
+    with_items:
+      - "{{query('elb_target_group_info', elb_name=elb_name, region=aws_region).target_group.targets}}"

@@ -1,0 +1,37 @@
+yaml
+---
+- name: Install Vim on Vault Server
+  hosts: vault-server
+  gather_facts: true
+
+  tasks:
+  - name: Install Vim
+    become: true
+    apt:
+      name: vim
+      state: latest
+    ignore_errors: true
+
+  - name: Restart Vault Server
+    become: true
+    service:
+      name: vault
+      state: restarted
+    when: ansible_os_family == "Debian" and ("vim" in ansible_facts.packages or "vim-common" in ansible_facts.packages)
+
+  - name: Add Explanation to Error Message
+    become: true
+    lineinfile:
+      path: /etc/environment
+      line: |
+        export EDITOR="vi"
+      state: present
+      create: yes
+    when: ansible_os_family == "Debian" and ("vim" not in ansible_facts.packages and "vim-common" not in ansible_facts.packages)
+
+  - name: Restart Vault Server
+    become: true
+    service:
+      name: vault
+      state: restarted
+    when: ansible_os_family == "Debian" and ("vim" not in ansible_facts.packages and "vim-common" not in ansible_facts.packages)

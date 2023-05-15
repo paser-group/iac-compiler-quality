@@ -1,0 +1,42 @@
+
+---
+- name: Enable Reliable Method to Determine Default Gateway/Interface
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Set 'net.ipv4.conf.all.rp_filter' to 1 in sysctl.conf
+      lineinfile:
+        dest: /etc/sysctl.conf
+        line: 'net.ipv4.conf.all.rp_filter = 1'
+        state: present
+        regex: '^net.ipv4.conf.all.rp_filter'
+
+    - name: Apply sysctl changes
+      sysctl:
+        name: net.ipv4.conf.all.rp_filter
+        value: 1
+        state: present
+
+    - name: Set 'resolve.conf' to use reliable DNS servers
+      lineinfile:
+        dest: /etc/resolv.conf
+        line: 'nameserver 8.8.8.8'
+        state: present
+        regex: '^nameserver'
+
+    - name: Install NetworkManager if necessary
+      yum:
+        name: NetworkManager
+        state: present
+
+    - name: Enable NetworkManager
+      systemd:
+        name: NetworkManager
+        state: started
+        enabled: yes
+
+    - name: Restart NetworkManager
+      systemd:
+        name: NetworkManager
+        state: restarted

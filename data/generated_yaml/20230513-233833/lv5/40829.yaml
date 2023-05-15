@@ -1,0 +1,19 @@
+
+- name: Retrieve facts for all interfaces on IOS device
+  ios_facts:
+    gather_subset:
+      - interfaces
+
+- name: Verify MAC addresses for all interfaces are correct
+  assert:
+    that:
+      - item.value.hardware == item.interface_config.macaddress
+    with_dict:
+      "{{ ansible_facts['all_interfaces'] }}"
+    vars:
+      interface_config: "{{ item.value.configured_interface }}"
+  when:
+    - item.value.hardware is defined
+    - item.value.is_upstream is not defined
+    - item.value.is_vlan is not defined
+

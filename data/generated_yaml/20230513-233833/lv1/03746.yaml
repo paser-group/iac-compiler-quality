@@ -1,0 +1,34 @@
+yaml
+---
+- name: Test ec2 module
+  hosts: localhost
+  connection: local
+  gather_facts: no
+  
+  vars:
+    instance_id: i-0123456789abcdefg
+    instance_type: t2.micro
+    image: ami-0c55b159cbfafe1f0
+
+  tasks:
+    - name: Create EC2 instance
+      ec2:
+        key_name: my-key-pair
+        instance_type: "{{ instance_type }}"
+        image: "{{ image }}"
+        wait: true
+        region: us-west-2
+        count: 1
+        instance_tags:
+          Name: "{{ instance_id }}"
+      register: ec2_instance
+    
+    - name: Check if instance was created 
+      debug:
+        msg: "EC2 instance created."
+      when: ec2_instance.changed == true
+
+    - name: Check if instance already exists
+      debug:
+        msg: "EC2 instance already exists."
+      when: ec2_instance.changed != true

@@ -1,0 +1,26 @@
+
+- name: Testing WinRM connection
+  hosts: win_server
+  gather_facts: no
+
+  tasks:
+  - name: Configure WinRM connection
+    winrm_config_listener:
+      address: 0.0.0.0
+      certificate_thumbprint: "{{ winrm_certificate_thumbprint }}"
+      listener_type: http
+      max_timeoutms: 600000
+      state: started
+    vars:
+      winrm_certificate_thumbprint: "{{ lookup('win_find_file', 'C:\\Cert\\WinRMCert.pfx', files='yes') }}"
+
+  - name: Configure WinRM connection
+    win_ping:
+    
+  - name: Ensure Ansible can connect to WinRM on {{ inventory_hostname }}
+    assert:
+      that:
+        - ansible_system: 'Windows'
+        - powershell: 'exit 0'
+      success_msg: "Reached node via WinRM."
+      fail_msg: "Failed to reach node via WinRM!"

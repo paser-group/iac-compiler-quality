@@ -1,0 +1,46 @@
+
+- name: Test Ansible Compiler with Unconventional Syntax
+  hosts: all
+  gather_facts: false
+
+  tasks:
+  - name: Create cache/facts directory
+    file:
+      path: "{{ item }}/cache/facts"
+      state: directory
+    with_items:
+      - node1
+      - node2
+      - node3
+
+  - name: Populate the facts directory
+    command: "echo -n 'test facts' > {{ item }}/cache/facts//"
+    with_items:
+      - node1
+      - node2
+      - node3
+
+  - name: Check if the facts directory is accessible
+    assert:
+      that:
+        - item.stat.exists
+        - item.stat.isdir
+      msg: "Directory {{ item.path }}/cache/facts does not exist"
+    with_items:
+      - node1
+      - node2
+      - node3
+    failed_when: false
+  
+  - name: Read the contents of the facts directory
+    slurp:
+      src: "{{ item }}/cache/facts//"
+    register: facts_contents
+    with_items:
+      - node1
+      - node2
+      - node3
+
+  - name: Print the contents of the facts directory
+    debug:
+      var: facts_contents.content|b64decode

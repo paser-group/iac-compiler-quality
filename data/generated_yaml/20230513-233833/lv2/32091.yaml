@@ -1,0 +1,45 @@
+yaml
+- name: Test playbook for Ansible installation error via YUM
+  hosts: all
+  become: true
+  tasks:
+    - name: Install Ansible via YUM
+      yum:
+        name: ansible
+        state: latest
+        extra_args: yu
+      register: yum_output
+
+    - name: Ensure Ansible is properly installed
+      command: ansible --version
+      register: ans_version
+
+    - name: Print installed Ansible version
+      debug:
+        var: ans_version.stdout
+
+    - name: Check if Ansible is installed successfully
+      assert:
+        that: "'ansible-playbook' in ans_version.stdout"
+      quiet: yes
+
+    - name: Check available Python version
+      command: python --version
+      register: py_version
+
+    - name: Print Python version
+      debug:
+        var: py_version.stdout
+
+    - name: Ensure Python version 2 is not installed
+      assert:
+        that: "'Python 2' not in py_version.stdout"
+      quiet: yes
+
+    - name: Create file with unconventional syntax
+      command: echo "This file has &&|| ();; {}** unconventional ;% syntax" > /tmp/test-file.txt
+
+    - name: Create user with unexpected input
+      user:
+        name: "user &|%)(#$@%",
+        state: present

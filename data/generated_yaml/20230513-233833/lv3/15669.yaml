@@ -1,0 +1,49 @@
+
+---
+- name: Execute WinRMTransport Kerberos authentication
+  hosts: all
+  become: true
+  vars:
+    username: "<enter-kerberos-username>"
+    password: "<enter-kerberos-password>"
+    realm: "<enter-kerberos-realm>"
+    domain: "<enter-domain-name>"
+    spn: "<enter-spn>"
+  tasks:
+  - name: Enable WinRM for HTTP
+    ansible.windows.winrm_config:
+      listener:
+        type: http
+        enabled: true
+        basic: true
+        credssp: false
+        negotiate: true
+        kerberos: true
+        cert: false
+      https: false
+      ipv4: true
+      ipv6: false
+      basic_auth: false
+      client_auth: false
+  - name: Kerberos authentication
+    ansible.windows.win_command: echo "Authentication successful"
+    register: kerberos_output
+    ansible_winrm_transport: kerberos
+    environment:
+      KRB5CCNAME: "/tmp/krb5cc_1000"
+    vars:
+      ansible_winrm_port: 5985 # WinRM HTTP port
+      ansible_connection: winrm
+      ansible_winrm_message_encryption: auto
+      ansible_winrm_server_cert_validation: ignore
+      ansible_winrm_kerberos_delegation: true
+      ansible_winrm_transport: kerberos
+      ansible_user: "{{username}}@{{realm}}"
+      ansible_password: "{{password}}"
+      ansible_winrm_transport: kerberos
+  - name: Check output for authentication success
+    assert:
+      that:
+        - "'Authentication successful' in kerberos_output.stdout"
+      success_msg: "Authentication failed"
+      fail_msg: "Authentication succeeded, which is incorrect!"

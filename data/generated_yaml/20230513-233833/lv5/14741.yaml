@@ -1,0 +1,46 @@
+
+---
+- name: Test delegate_to and haproxy module
+  hosts: haproxy-nodes
+  become: true
+  vars:
+    haproxy_nodes:
+      - { name: node1, ip: 10.1.1.1 }
+      - { name: node2, ip: 10.1.1.2 }
+      - { name: node3, ip: 10.1.1.3 }
+  tasks:
+    - name: "Install HAProxy and Restart"
+      apt:
+        name: haproxy
+        state: latest
+      delegate_to: "{{ item.ip }}"
+      loop: "{{ haproxy_nodes }}"
+    
+    - name: "Copy HAProxy configuration"
+      copy:
+        src: haproxy.cfg
+        dest: /etc/haproxy/haproxy.cfg
+      delegate_to: "{{ item.ip }}"
+      loop: "{{ haproxy_nodes }}"
+    
+    - name: "Restart HAProxy Service"
+      service:
+        name: haproxy
+        state: restarted
+      delegate_to: "{{ item.ip }}"
+      loop: "{{ haproxy_nodes }}"
+    
+    - name: "Check Status of HAProxy Service"
+      service:
+        name: haproxy
+        state: started
+        enabled: true
+      register: service_status
+      delegate_to: "{{ item.ip }}"
+      loop: "{{ haproxy_nodes }}"
+    
+    - name: "Print HAProxy Service Status"
+      debug:
+        var: service_status
+      delegate_to: "{{ item.ip }}"
+      loop: "{{ haproxy_nodes }}"

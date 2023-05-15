@@ -1,0 +1,54 @@
+
+- name: Configure AWS ELB HTTPS listeners issue
+  hosts: all
+  vars:
+    elb_name: "my-elb"
+  become: true
+
+  tasks:
+  - name: Install boto AWS SDK for Python
+    apt:
+      name:
+        - python
+        - python-pip
+    become: true
+
+  - name: Add a self-signed SSL certificate for testing
+    openssl_certificate:
+      path: /tmp/certificate.pem
+      privatekey_path: /tmp/key.pem
+      provider: selfsigned
+      force: yes
+
+  - name: Create an AWS ELB
+    ec2_elb_lb:
+      name: "{{ elb_name }}"
+      state: present
+      azones:
+      - "{{ ec2_placement }}"
+      subnets:
+      - "{{ elb_subnet }}"
+      listeners:
+      - protocol: HTTP
+        load_balancer_port: 80
+        instance_port: 80
+      - protocol: HTTPS
+        load_balancer_port: 443
+        instance_port: 80
+        SSLCertificateId: "{{ elb_ssl_certificate_id }}"
+    register: elb_create_lb_result
+
+  - name: Ensure HTTPS listeners are enabled
+    ec2_elb_lb:
+      name: "{{ elb_name }}"
+      state: present
+      listeners:
+      - protocol: HTTP
+        load_balancer_port: 80
+        instance_port: 80
+      - protocol: HTTPS
+        load_balancer_port: 443
+        instance_port: 443
+        SSLCertificateId: "{{ elb_ssl_certificate_id }}"
+        policy_names:
+        - Disable_HTTPSv3_sslv3

@@ -1,0 +1,57 @@
+
+- name: Test ovirt_network module for issue #1
+  hosts: node1
+  become: yes
+
+  tasks:
+    - name: Create network attached to default cluster with invalid VLAN ID
+      ovirt_network:
+        auth: "{{ ovirt_auth }}"
+        cluster: Default
+        name: NetworkTest
+        vlan_id: -1
+        state: present
+      register: result
+      ignore_errors: yes
+      
+    - name: Assert failure due to invalid VLAN ID
+      assert:
+        that: "'Error while creating network' in result.stderr"
+
+    - name: Create network attachment with duplicate name
+      ovirt_network:
+        auth: "{{ ovirt_auth }}"
+        name: Default
+        vm_network: true
+        state: present
+      register: result
+      ignore_errors: yes
+
+    - name: Assert failure due to duplicate name
+      assert:
+        that: "'Error while creating/adding network attachment' in result.stderr"
+
+    - name: Edit non-existing network attachment
+      ovirt_network:
+        auth: "{{ ovirt_auth }}"
+        name: FakeNetwork
+        state: present
+      register: result
+      ignore_errors: yes
+      
+    - name: Assert failure due to non-existing network attachment
+      assert:
+        that: "'not found' in result.stderr"
+
+    - name: Remove Default cluster network attachment
+      ovirt_network:
+        auth: "{{ ovirt_auth }}"
+        name: Default
+        state: absent
+        cluster: Default
+      register: result
+      ignore_errors: yes
+
+    - name: Assert successful removal of network attachment
+      assert:
+        that: "'changed': True" in result.stdout

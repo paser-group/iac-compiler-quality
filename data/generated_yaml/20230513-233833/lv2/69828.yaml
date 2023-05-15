@@ -1,0 +1,85 @@
+
+- name: Test credssp connection error on localized Windows Server 2012R2
+  hosts: windows
+  gather_facts: no
+
+  vars:
+    domain: "CONTOSO"
+    username: "admin"
+    password: "P@ssw0rd"
+    winrm_transport: "credssp"
+
+  tasks:
+    - name: Test connection with invalid syntax
+      win_ping:
+        ansible_connection: winrm
+        ansible_winrm_transport: "{{ winrm_transport }}"
+        ansible_winrm_scheme: http
+        ansible_port: 5985 # non-secure port
+        ansible_winrm_server_cert_validation: ignore
+        ansible_winrm_transport_port: 5985 # non-secure port
+        ansible_winrm_message_encryption: never
+        ansible_winrm_credssp_negotiate: true
+        ansible_user: '{{ username }}'
+        ansible_password: '{{ password }}'
+        ansible_winrm_operation_timeout_sec: 1800
+      register: result_invalid_syntax
+      ignore_errors: yes
+
+    - name: Test connection with invalid authentication
+      win_ping:
+        ansible_connection: winrm
+        ansible_winrm_transport: "{{ winrm_transport }}"
+        ansible_winrm_scheme: https
+        ansible_port: 5986 # secure port
+        ansible_winrm_server_cert_validation: ignore
+        ansible_winrm_transport_port: 5986 # secure port
+        ansible_winrm_message_encryption: always
+        ansible_winrm_credssp_negotiate: true
+        ansible_user: 'invalid_username'
+        ansible_password: 'invalid_password'
+        ansible_winrm_operation_timeout_sec: 1800
+      register: result_invalid_auth
+      ignore_errors: yes
+
+    - name: Test connection with non-existent domain
+      win_ping:
+        ansible_connection: winrm
+        ansible_winrm_transport: "{{ winrm_transport }}"
+        ansible_winrm_scheme: http
+        ansible_port: 5985 # non-secure port
+        ansible_winrm_server_cert_validation: ignore
+        ansible_winrm_transport_port: 5985 # non-secure port
+        ansible_winrm_message_encryption: never
+        ansible_winrm_credssp_negotiate: true
+        ansible_user: '{{ username }}'
+        ansible_password: '{{ password }}'
+        ansible_winrm_operation_timeout_sec: 1800
+        ansible_winrm_transport_kerberos_realm: 'nonexistent_domain.com'
+        ansible_winrm_transport_kerberos_hostname_override: 'node1'
+      register: result_nonexistent_domain
+      ignore_errors: yes
+
+    - name: Gather facts with correct configuration
+      win_ping:
+        ansible_connection: winrm
+        ansible_winrm_transport: "{{ winrm_transport }}"
+        ansible_winrm_scheme: https
+        ansible_port: 5986 # secure port
+        ansible_winrm_server_cert_validation: ignore
+        ansible_winrm_transport_port: 5986 # secure port
+        ansible_winrm_message_encryption: always
+        ansible_winrm_credssp_negotiate: true
+        ansible_user: '{{ domain }}\\{{ username }}'
+        ansible_password: '{{ password }}'
+        ansible_winrm_operation_timeout_sec: 1800
+      register: result_correct
+
+    - debug:
+        var: result_invalid_syntax
+    - debug:
+        var: result_invalid_auth
+    - debug:
+        var: result_nonexistent_domain
+    - debug:
+        var: result_correct

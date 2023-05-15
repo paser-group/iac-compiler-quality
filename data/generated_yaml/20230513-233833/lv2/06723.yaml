@@ -1,0 +1,32 @@
+
+---
+- name: Stress Test for Unarchive and md5sum
+  hosts: node1
+  gather_facts: False
+
+  tasks:
+    - name: Create a temporary directory
+      tempfile:
+        state: directory
+      register: temp_directory
+
+    - name: Unarchive a file with md5sum checksum inside the temporary directory
+      unarchive:
+        src: /path/to/archive.tar.gz
+        dest: "{{ temp_directory.path }}"
+        remote_src: yes
+        validate: md5sum
+      ignore_errors: True
+
+    - name: Rename the temporary directory to include md5sum checksum
+      command: mv "{{ temp_directory.path }}" "{{ temp_directory.path }}_{{ 'abc' | to_sha256 }}"
+
+    - name: Generate MD5Sum of Temporary Directory
+      hashivault_secret:
+        name: "secret/{{ temp_directory.path }}_{{ 'abc' | to_sha256 }}.md5sum"
+        value: "{{ temp_directory.path }}_{{ 'abc' | to_sha256 }}"
+
+    - name: Delete the temporary directory
+      file:
+        path: "{{ temp_directory.path }}"
+        state: absent

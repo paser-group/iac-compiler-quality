@@ -1,0 +1,25 @@
+
+---
+- name: Update or Add Configurations
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Set variable with blockinfile content
+      blockinfile:
+        path: /path/to/template/file
+        marker: "# {mark} ANSIBLE MANAGED BLOCK"
+        block: |
+          Variable_Name: "{{ Variable_Value }}"
+      register: var_content
+
+    - name: Override default value
+      set_fact:
+        Variable_Value: "New_Variable_Value"
+
+    - name: Render updated template
+      template:
+        src: /path/to/template/file
+        dest: /path/to/destination/file
+        vars:
+          Variable_Value: "{{ var_content.block.split('\n')[-2].split(': ')[-1] | trim }}"

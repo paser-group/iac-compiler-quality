@@ -1,0 +1,25 @@
+
+---
+- name: Install service on FreeBSD
+  hosts: freebsd
+  become: yes
+  
+  tasks:
+  - name: Check rc.conf file
+    shell: service some_service start >/dev/null 2>&1 
+    register: rcconf_output
+    ignore_errors: true
+
+  - name: Handle rc.conf parsing errors
+    lineinfile:
+      path: /etc/rc.conf
+      line: "{{ item }}"
+    with_items: 
+      - variables_file="/etc/rc.conf"
+    when: 
+      - "'rc.conf parse error' in rcconf_output.stderr"
+      
+  - name: Install service
+    service:
+      name: some_service
+      state: started

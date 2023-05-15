@@ -1,0 +1,35 @@
+
+---
+- name: Test ec2_eni module
+  hosts: all
+  gather_facts: false
+  vars:
+    eni_id: "{{ lookup('env', 'ENI_ID') }}"
+    security_group_names: "{{ lookup('env', 'SECURITY_GROUP_NAMES').split(',') }}"
+    subnet_id: "{{ lookup('env', 'SUBNET_ID') }}"
+  tasks:
+    - name: Create ENI
+      ec2_eni:
+        subnet_id: "{{ subnet_id }}"
+        security_group: "{{ security_group_names }}"
+        wait: yes
+        state: present
+        assign_ipv6_address: "{{ assign_ipv6_address | default(true) }}"
+        boto_profile: "{{ boto_profile | default('default') }}"
+        tags:
+          Name: test_eni
+
+    - name: Get security group IDs from names
+      ec2_eni:
+        eni_id: "{{ eni_id }}"
+        state: present
+        check_mode: True
+        assign_ipv6_address: "{{ assign_ipv6_address | default(true) }}"
+        security_group: "{{ security_group_names }}"
+        wait: false
+      register: eni_result
+
+    - name: Assert security group IDs are returned correctly
+      debug:
+        var: eni_result.security_groups
+      failed_when: not eni_result.security_groups

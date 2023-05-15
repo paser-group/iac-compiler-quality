@@ -1,0 +1,62 @@
+yaml
+- name: Conditionnal bug report
+  hosts: all
+  tasks:
+    - name: Ensure service is running
+      service:
+        name: "{{ item.service_name }}"
+        state: "{{ item.service_state }}"
+      loop:
+        - { service_name: "nginx", service_state: "started" }
+        - { service_name: "mysql", service_state: "restarted" }
+        - { service_name: "apache2", service_state: "stopped" }
+
+    - name: Install packages
+      apt:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - curl
+        - wget
+        - vim
+
+    - name: Fail if /tmp/foo does not exist
+      fail:
+        msg: "/tmp/foo does not exist"
+      when: "'foo' in exists('/tmp/')"
+
+    - name: Create user with custom shell
+      user:
+        name: testuser
+        shell: "{{ '/bin/bash -c \\'ls /\\'' }}"
+
+    - name: Echo multiline string
+      debug:
+        msg: |
+          This is a multiline string
+          Foo bar baz
+          Numbered list:
+          1. One
+          2. Two
+          3. Three
+      run_once: true
+
+    - name: Execute a shell command
+      shell: touch /tmp/foo; touch /tmp/bar || true
+      
+    - name: Retrieve hostname
+      debug:
+        var: inventory_hostname
+
+    - name: Include a non-existent file
+      include: nonexistent.yml
+
+    - name: Register a variable from a failed command
+      command: /bin/false
+      register: result
+      failed_when: false
+
+    - name: Show debug output with custom verbosity
+      debug:
+        msg: "This is custom debug output"
+      verbosity: '{{ 2 + 2 }}'

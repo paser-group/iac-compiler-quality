@@ -1,0 +1,32 @@
+yaml
+---
+- name: Update internal IP address normalizer filters
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Install required packages
+      apt:
+        name:
+          - python-netaddr
+        state: present
+      become: yes
+
+    - name: Update internal address normalizer
+      template:
+        src: templates/internal_address_normalizer.j2
+        dest: /etc/internal_address_normalizer.conf
+        mode: '0644'
+      vars:
+        subnet_list:
+          - 10.0.0.0/24
+          - 10.1.0.0/24
+          - 172.16.0.0/16
+          - 192.168.1.0/24
+      become: yes
+
+    - name: Restart internal address normalizer service
+      systemd:
+        name: internal-address-normalizer
+        state: restarted
+      become: yes

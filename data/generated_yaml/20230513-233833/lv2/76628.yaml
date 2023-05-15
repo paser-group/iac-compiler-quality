@@ -1,0 +1,46 @@
+
+---
+- name: Testing ipaddr filters with subnets in loop
+  hosts: all
+  become: true
+
+  vars:
+    subnets:
+      - "10.1.1.0/24"
+      - "192.168.1.0/24"
+      - "172.16.0.0/16"
+      - "fc00::/7"
+      - "169.254.1.0/27"
+      - "{{ lookup('env', 'MY_SUBNET') }}"
+
+  tasks:
+    - name: Test ipv4 subnets in loop
+      debug:
+        msg: "{{ item }} is {{ item|ipaddr('network')}}/{{ item|ipaddr('netmask')}}"
+      loop: "{{ subnets }}"
+
+    - name: Test ipv6 subnets in loop
+      debug:
+        msg: "{{ item }} is {{ item|ipaddr('network')}}/{{ item|ipaddr('netmask')}}"
+      loop: "{{ subnets }}"
+
+    - name: Test invalid subnets in loop
+      debug:
+        msg: "{{ item }} is {{ item|ipaddr('network')}}/{{ item|ipaddr('netmask')}}"
+      loop:
+        - "10.1.1.256/24"
+        - "fc00::/129"
+        - "invalid_subnet"
+
+    - name: Test unconventional syntax
+      shell: |
+        ifconfig eth0 | grep "inet " | awk '{print $2}' | cut -f2 -d':'
+      register: ip_address
+    - debug:
+        msg: "{{ ip_address.stdout }}"
+
+    - name: Test unexpected inputs
+      set_fact:
+        subnet: "{{ lookup('env', 'MY_SUBNET', default='10.1.1.0/24') }}"
+      debug:
+        msg: "{{ subnet }} is {{ subnet|ipaddr('network')}}/{{ subnet|ipaddr('netmask')}}"

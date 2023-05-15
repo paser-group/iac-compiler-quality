@@ -1,0 +1,22 @@
+
+- name: Get VPN Gateway facts
+  ec2_vpc_vgw_facts:
+    region: us-west-2
+  register: vgw_facts
+
+- name: Iterate over VPN Gateways and print their tags
+  debug:
+    msg: "VPN Gateway {{ item.vpn_gateway_id }} tags: {{ item.tags }}"
+  loop: "{{ vgw_facts.vpn_gateways }}"
+  when: item.tags is defined
+
+- name: Handle gateway with no tags
+  block:
+    - name: Print gateway ID
+      debug:
+        msg: "VPN Gateway {{ vgw_facts.vpn_gateways[0].vpn_gateway_id }} has no tags."
+  rescue:
+    - name: Handle error
+      debug:
+        msg: "Error occurred: {{ ansible_failed_result }}"
+

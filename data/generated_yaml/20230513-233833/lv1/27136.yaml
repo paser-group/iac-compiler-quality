@@ -1,0 +1,26 @@
+yaml
+- name: Ensure host is in known_hosts file
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Check if host key exists
+      shell: "ssh-keygen -F {{ inventory_hostname }}"
+      register: key_check
+      ignore_errors: yes
+
+    - name: Add host key to known_hosts if it does not exist
+      command: "ssh-keyscan {{ inventory_hostname }} >> ~/.ssh/known_hosts"
+      when: key_check.rc != 0
+
+- name: Execute network module
+  hosts: all
+  become: yes
+  tasks:
+    - name: Execute network module command
+      network_cli:
+        command_string: "your network module command here"
+      register: result
+
+    - name: Debug output
+      debug:
+        var: result.stdout_lines

@@ -1,0 +1,56 @@
+
+- name: Docker Container Plugin Import Error Testing Playbook
+  hosts: node1
+  become: yes
+  
+  tasks:
+    - name: Install Docker
+      become: true
+      apt:
+        name: docker.io
+        state: latest
+        
+    - name: Install Docker Python Library
+      become: true
+      pip:
+        name: docker
+        state: latest
+      
+    - name: Debug Error
+      become: true
+      shell: python -c "import docker_container"
+      
+    - name: Run Docker Container
+      docker_container:
+        name: my_container
+        image: ubuntu
+        state: present
+        ports:
+          - 80:80
+        volumes:
+          - "/mnt/data:/data"
+        ulimits:
+          nproc: 65535
+          nofile:
+            soft: 65535
+            hard: 65535
+        links:
+          - "mysql_server"
+        command: "/bin/bash"
+        network_mode: "bridge"
+        
+    - name: Check if container is running
+      docker_container_info:
+        name: my_container
+      register: container_info
+      
+    - name: Copy files from container to host
+      docker_copy:
+        src: /var/log/nginx/access.log
+        dest: /tmp/
+        container: my_container
+              
+    - name: Removing Container
+      docker_container:
+        name: my_container
+        state: absent

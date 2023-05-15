@@ -1,0 +1,31 @@
+yaml
+---
+- name: Update GCP instance Service Account
+  hosts: localhost
+  gather_facts: no
+  
+  vars:
+    service_account_email: "<your_service_account_email>"
+    project_id: "<your_gcp_project_id>"
+    zone: "<your_gcp_zone>"
+    instance_name: "<your_gcp_instance_name>"
+
+  tasks:
+    - name: Get instance metadata
+      gcp_compute_instance_info:
+        project: "{{ project_id }}"
+        zone: "{{ zone }}"
+        name: "{{ instance_name }}"
+        auth_kind: serviceaccount
+        service_account_file: "<path_to_service_account_key_file>"
+      register: instance_data
+
+    - name: Update instance metadata with new service account
+      gcp_compute_instance:
+        project: "{{ project_id }}"
+        zone: "{{ zone }}"
+        name: "{{ instance_name }}"
+        service_account: "{{ service_account_email }}"
+        auth_kind: serviceaccount
+        service_account_file: "<path_to_service_account_key_file>"
+      when: instance_data.instance != null

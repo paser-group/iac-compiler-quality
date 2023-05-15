@@ -1,0 +1,31 @@
+
+- hosts: all
+  become: yes
+  
+  tasks:
+  - name: Copy file to remote host using local_action
+    copy:
+      src: /path/to/local/file
+      dest: /dest/on/remote
+    delegate_to: 127.0.0.1
+    run_once: yes
+    local_action: shell echo "{{ vault_password }}" > /tmp/vault_pass.txt
+    vars:
+      vault_password: "{{ lookup('env','VAULT_PASS') }}"
+  
+  - name: Run command on remote host with sudo privilege escalation
+    shell:
+      cmd: "echo 'Hello World!'"
+    become: yes
+    become_user: root
+    become_method: sudo
+    vars:
+      vault_password: "{{ lookup('env','VAULT_PASS') }}"
+    vars_files:
+      - /tmp/vault_pass.txt
+    register: result
+  
+  - name: Print output on control node
+    debug:
+      var: result.stdout_lines
+    when: result.stdout != ""

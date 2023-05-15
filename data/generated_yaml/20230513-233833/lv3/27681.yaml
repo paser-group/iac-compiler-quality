@@ -1,0 +1,50 @@
+
+- hosts: all
+  become: yes
+
+  tasks:
+    - name: Install the iptables package
+      apt:
+        name: iptables
+        state: present
+
+    - name: Deny all incoming traffic except SSH
+      iptables:
+        chain: INPUT
+        protocol: tcp
+        destination_port: 22
+        jump: ACCEPT
+        comment: "Allow SSH traffic"
+      
+    - name: Allow DNS traffic
+      iptables:
+        chain: INPUT
+        protocol: udp
+        destination_port: 53
+        jump: ACCEPT
+        comment: "Allow DNS traffic"
+
+    - name: Add a rule for a wrong host
+      iptables:
+        chain: INPUT
+        protocol: tcp
+        destination_port: 80
+        jump: ACCEPT
+        comment: "Allow HTTP traffic for a wrong host"
+        source: "{{ wrong_host_ip }}"
+
+    - name: Block all outgoing traffic except DNS and SSH
+      iptables:
+        chain: OUTPUT
+        protocol: udp
+        destination_port: 53
+        jump: ACCEPT
+      iptables:
+        chain: OUTPUT
+        protocol: tcp
+        destination_port: 22
+        jump: ACCEPT
+      iptables:
+        chain: OUTPUT
+        jump: DROP
+        comment: "Block all outgoing traffic except DNS and SSH"

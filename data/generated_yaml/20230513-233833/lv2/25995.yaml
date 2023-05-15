@@ -1,0 +1,41 @@
+yaml
+- hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: Create s3 bucket
+      s3:
+        aws_access_key: "{{ aws_access_key }}"
+        aws_secret_key: "{{ aws_secret_key }}"
+        bucket: "{{ bucket_name }}"
+        mode: create
+      register: s3_create
+
+    - name: Ensure bucket is created
+      debug: 
+        var: s3_create.bucket_exists
+
+    - name: Re-create bucket with same name
+      s3:
+        aws_access_key: "{{ aws_access_key }}"
+        aws_secret_key: "{{ aws_secret_key }}"
+        bucket: "{{ bucket_name }}"
+        mode: create
+      register: s3_recreate
+
+    - name: Ensure bucket recreation fails with expected error of 'already exists'
+      debug:
+        var: s3_recreate
+      failed_when: s3_recreate.msg != "A client error (BucketAlreadyOwnedByYou) occurred when calling the CreateBucket operation: Your previous request to create the named bucket succeeded and you already own it."
+
+    - name: Delete s3 bucket
+      s3:
+        aws_access_key: "{{ aws_access_key }}"
+        aws_secret_key: "{{ aws_secret_key }}"
+        bucket: "{{ bucket_name }}"
+        mode: delete
+      register: s3_delete
+
+    - name: Ensure bucket is deleted
+      debug: 
+        var: s3_delete.bucket_removed

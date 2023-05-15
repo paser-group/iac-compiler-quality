@@ -1,0 +1,60 @@
+
+- name: Test nxos_config idempotency with FEX
+  hosts: all
+  become: yes
+  vars:
+    fex_id1: 101
+    fex_id2: 102
+    bogus_id: "1; rm -rf /"
+  
+  tasks:
+    - name: Configure FEX for ID {{ fex_id1 }}
+      nxos_config:
+        lines:
+          - "switchport mode fex-fabric"
+          - "fex associate {{ fex_id1 }}"
+        parents: "interface Ethernet1/{{ fex_id1 }}"
+        save_when: changed
+      register: result1
+      
+    - name: Reconfigure FEX with same ID {{ fex_id1 }}
+      nxos_config:
+        lines:
+          - "switchport mode fex-fabric"
+          - "fex associate {{ fex_id1 }}"
+        parents: "interface Ethernet1/{{ fex_id1 }}"
+        save_when: changed
+      register: result2
+      
+    - name: Configure FEX for ID {{ fex_id2 }}
+      nxos_config:
+        lines:
+          - "switchport mode fex-fabric"
+          - "fex associate {{ fex_id2 }}"
+        parents: "interface Ethernet1/{{ fex_id2 }}"
+        save_when: changed
+      register: result3
+      
+    - name: Reconfigure FEX with bogus ID {{ bogus_id }}
+      nxos_config:
+        lines:
+          - "switchport mode fex-fabric"
+          - "fex associate {{ bogus_id }}"
+        parents: "interface Ethernet1/{{ bogus_id }}"
+        save_when: changed
+      register: result4
+      
+    - name: Check if FEX {{ fex_id1 }} was configured
+      fail:
+        msg: "FEX {{ fex_id1 }} was not configured or reconfigured successfully"
+      when: "'changed' not in result1.stdout and 'changed' not in result2.stdout"
+      
+    - name: Check if FEX {{ fex_id2 }} was configured
+      fail:
+        msg: "FEX {{ fex_id2 }} was not configured successfully"
+      when: "'changed' not in result3.stdout"
+      
+    - name: Check if FEX {{ bogus_id }} was reconfigured
+      fail:
+        msg: "FEX {{ bogus_id }} was configured successfully (unexpected input)"
+      when: "'changed' in result4.stdout"

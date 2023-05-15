@@ -1,0 +1,42 @@
+
+---
+- name: GitHub and Ansible Galaxy API requests
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Get user credentials from ~/.netrc
+      slurp:
+        src: ~/.netrc
+      register: netrc
+
+    - name: Extract GitHub credentials from ~/.netrc
+      set_fact:
+        github_user: "{{ netrc['content'] | b64decode | regex_search('machine github.com\\n\\s+login (\\S+)', '\\1') }}"
+        github_token: "{{ netrc['content'] | b64decode | regex_search('machine github.com\\n\\s+password (\\S+)', '\\1') }}"
+
+    - name: HTTP request to GitHub API
+      uri:
+        url: "https://api.github.com/user"
+        method: GET
+        headers:
+          Authorization: "token {{ github_token }}"
+        return_content: yes
+      register: github_resp
+
+    - name: HTTP request to Ansible Galaxy API
+      uri:
+        url: "https://galaxy.ansible.com/api/v1/me/"
+        method: GET
+        headers:
+          Authorization: "token {{ github_token }}"
+        return_content: yes
+      register: galaxy_resp
+
+    - name: Debug GitHub response
+      debug:
+        var: github_resp
+
+    - name: Debug Ansible Galaxy response
+      debug:
+        var: galaxy_resp

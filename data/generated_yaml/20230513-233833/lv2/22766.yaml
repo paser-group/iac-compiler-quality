@@ -1,0 +1,24 @@
+
+---
+- name: Testing ansible_cmdline
+  hosts: all
+  gather_facts: false
+
+  tasks:
+
+  - name: Print LVM info
+    shell: |
+      lvmdiskscan | grep rd.lvm.lv
+    register: lvm_info
+
+  - name: Display output of ansible_cmdline
+    debug:
+      msg: "'{{ item }}' is '{{ ansible_cmdline[item] }}'"
+    with_items: "{{ ansible_cmdline.keys() }}"
+    when: "'rd.lvm.lv' in lvm_info.stdout"
+
+  - name: Check output of ansible_cmdline
+    fail:
+      msg: "Unexpected output for '{{ item }}': '{{ ansible_cmdline[item] }}'"
+    with_items: "{{ ansible_cmdline.keys() }}"
+    when: "'rd.lvm.lv' in lvm_info.stdout and ansible_cmdline[item] != {'rd.lvm.lv': '{{ lvm_info.stdout }}'}"

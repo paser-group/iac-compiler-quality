@@ -1,0 +1,44 @@
+
+# Create a new firewall rule with random ports
+- name: Create new firewall rule
+  gcp_compute_firewall:
+    name: "test-firewall-rule"
+    network: "default"
+    allow:
+      - protocol: all
+        ports: "{{ range(10)|map('random')|list }}"
+    target_tags: ['test']
+    direction: ingress
+    project: "my-gcp-project"
+    auth_kind: serviceaccount
+    service_account_file: "/path/to/service-account.json"
+  register: new_firewall
+
+# Update firewall rule with new ports
+- name: Update firewall rule
+  gcp_compute_firewall:
+    name: "{{ new_firewall.name }}"
+    network: "{{ new_firewall.network }}"
+    allow:
+      - protocol: all
+        ports: "{{ range(10, 20)|list }}"
+    project: "my-gcp-project"
+    auth_kind: serviceaccount
+    service_account_file: "/path/to/service-account.json"
+  register: updated_firewall
+
+# Check if the updated rule reflects the new ports
+- name: Check if ports updated
+  debug:
+    var: updated_firewall.allow|map(attribute='ports')|flatten|sort
+  when: updated_firewall.allow[0].ports != new_firewall.allow[0].ports
+
+# Remove the firewall rule
+- name: Remove firewall rule
+  gcp_compute_firewall:
+    name: "{{ new_firewall.name }}"
+    network: "{{ new_firewall.network }}"
+    state: absent
+    project: "my-gcp-project"
+    auth_kind: serviceaccount
+    service_account_file: "/path/to/service-account.json"

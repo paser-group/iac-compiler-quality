@@ -1,0 +1,29 @@
+
+- name: Ansible Playbook to check for missing dependencies
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Install pycurl without SSL support
+      apt:
+        name:
+          - python-pycurl
+          - libcurl4-openssl-dev
+        state: present
+      environment:
+        CURL_SSL_BACKEND: "none"
+      ignore_errors: true
+
+    - name: Install Ovirtsdk4
+      pip:
+        name: ovirtsdk4
+        state: present
+
+    - name: Check for missing dependencies
+      command: python -c 'import ovirtsdk4'
+      register: depend_check
+      ignore_errors: true
+
+    - name: Print depend_check output
+      debug:
+        var: depend_check.stderr_lines

@@ -1,0 +1,40 @@
+yaml
+---
+- name: Update oVirt VM ISO
+  hosts: your_server_name
+
+  vars:
+    iso_name: "your_cd_iso_name.iso"
+    vm_name: "your_vm_name"
+
+  tasks:
+    
+    - name: Get CD-ROM ISO ID
+      ovirt_vm_find:
+        name: "{{ vm_name }}"
+        fetch_nested: true
+        nested_attributes: "cdroms"
+        query: True
+        data_center: "your_data_center_name"
+        auth: "{{ ovirt_auth }}"
+      register: cd_iso
+
+    - name: Update CD-ROM ISO
+      block:
+        - name: Delete Previous ISO
+          ovirt_vm_cdrom:
+            state: absent
+            vm_name: "{{ vm_name }}"
+            data_center: "your_data_center_name"
+            name: "{{ iso_name }}"
+            auth: "{{ ovirt_auth }}"
+          when: cd_iso.vms[0].cdroms | length > 0
+
+        - name: Add New ISO
+          ovirt_vm_cdrom:
+            state: present
+            vm_name: "{{ vm_name }}"
+            data_center: "your_data_center_name"
+            name: "{{ iso_name }}"
+            auth: "{{ ovirt_auth }}"
+      when: cd_iso.vms[0].id is defined

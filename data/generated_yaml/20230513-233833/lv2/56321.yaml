@@ -1,0 +1,99 @@
+
+---
+- name: Test playbook for vault password file loading error
+  hosts: all
+  gather_facts: false
+
+  vars:
+    vault_password_file: "{{ lookup('env', 'VAULT_PASSWORD_FILE') }}"
+    vault_password: "{{ lookup('file', vault_password_file) }}"
+    secrets: "{{ {'my_secret': 'my_value'} | to_nice_yaml }}"
+
+  tasks:
+    - name: Verify vars
+      debug:
+        var: vault_password_file
+      debug:
+        var: vault_password
+
+    - name: Create vault file with wrong file permission
+      copy:
+        content: "{{ vault_password }}"
+        dest: /home/user/vault_password
+        mode: 0660
+
+    - name: Create vault file with wrong file name
+      copy:
+        content: "{{ vault_password }}"
+        dest: /tmp/password
+
+    - name: Set incorrect vault_password_file
+      set_fact:
+        vault_password_file: /path/to/wrong/password/file
+
+    - name: Use incorrect vault password file
+      include_vars:
+        file: "{{ vault_password_file }}"
+
+    - name: Provide incorrect password
+      ansible_become_password: wrong_password
+
+    - name: Use encrypted vars with wrong password
+      vars:
+        - !vault |
+            $ANSIBLE_VAULT;1.1;AES256
+            63616233623039643536633566613165616538323566316365373765323835356334363566363832
+    - name: Attempt to decrypt encrypted vars with wrong password
+      debug:
+        var: secrets.my_secret
+      vars:
+        - _my_secret: "{{ secrets.my_secret }}"
+        - my_secret: "{{ _my_secret | from_yaml }}"
+      ignore_errors: yes
+
+    - name: Create vault file with special characters in password
+      copy:
+        content: "$uper$ecretP@ssword!123$peci@lCh@r@cter$"
+        dest: /tmp/vault_password
+
+    - name: Set vault_password to empty string
+      set_fact:
+        vault_password: ""
+
+    - name: Use encrypted vars with empty password
+      vars:
+        - !vault |
+            $ANSIBLE_VAULT;1.1;AES256
+            63616233623039643536633566613165616538323566316365373765323835356334363566363832
+
+    - name: Attempt to decrypt encrypted vars with empty password
+      debug:
+        var: secrets.my_secret
+      vars:
+        - _my_secret: "{{ secrets.my_secret }}"
+        - my_secret: "{{ _my_secret | from_yaml }}"
+      ignore_errors: yes
+
+    - name: Load encrypted vars without specifying vault_password_file
+      vars:
+        - !vault |
+            $ANSIBLE_VAULT;1.1;AES256
+            64646131656238306566353039646264616239616332666166373037613966613333323133333062
+      debug:
+        var: secrets.my_secret
+
+    - name: Load encrypted vars with vault_password variable not set
+      vars:
+        - !vault |
+            $ANSIBLE_VAULT;1.1;AES256
+            66646633326463353334663961363732623836356234343164633532396333333236313163303664
+      debug:
+        var: secrets.my_secret
+
+    - name: Load encrypted vars with vault_password_file variable not set
+      vars:
+        - !vault |
+            $ANSIBLE_VAULT;1.1;AES256
+            30353835383436353362616635323933353733613161316533336265316163333163323436313139
+      debug:
+        var: secrets.my_secret

@@ -1,0 +1,35 @@
+
+- name: Verify SSH Key Mismatch
+  hosts: all
+  become: true
+  vars:
+    expected_public_key: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCkz6ogSpLpH+8lUh0kD7s3mVXmnksD7Lso6CUdPAqXnIuZwW6Sqq6nsFwxyple9D32afzKD5ol0ksw3goRjcRoNe0G64kVjyD9C0TBuxASgN5RBdvtqPbQCNB1DuYy8OsyKl9UrG26gwZ+mZxzjJ+7TdfC1yaYlt0t6HOmeK8rz4o0goPQinE+V4dXPUtdga/ZvC9sInbUiQnFJ29ye40yfDyjS+FtHWoL9S3RwrXDQ64ZKZ/s+iKGD5xTDR6IGM7z+oRJxWA0ty +JUdY3x7PapRoVnoLzRxTAarz/z9a3Z+b2oK0hvMo1yfnB3ngBJ4a7mqb3gfDCVtXYaKQ91 your.name@your.server"
+
+  tasks:
+  - name: Check for SSH Public Key Match
+    block:
+    - name: Gather public key from remote node
+      shell: "cat ~/.ssh/id_rsa.pub"
+      register: public_key
+    - name: Check public key against expected value
+      assert:
+        that: "'{{ expected_public_key }}' in public_key.stdout"
+        fail_msg: "SSH public key for remote node does not match the expected value."
+    rescue:
+    - name: Generate error message for key mismatch
+      fail:
+        msg: "Could not verify SSH key mismatch. Please check the provided public keys."
+
+  - name: Test SSH Connection with Private Key
+    block:
+    - name: Test SSH connection
+      shell: "ssh -o 'BatchMode=yes' -o 'ConnectTimeout=5' -i ~/.ssh/id_rsa {{ ansible_host }} 'echo Successful connection'"
+      ignore_errors: yes
+    - name: Check SSH connection status
+      assert:
+        that: "ansible_result.rc == 0"
+        fail_msg: "Could not establish an SSH connection using the provided private key."
+    rescue:
+    - name: Generate error message for SSH connection
+      fail:
+        msg: "Could not verify SSH connection. Please check the provided private key."

@@ -1,0 +1,39 @@
+
+- name: Test playbook for InvalidHostKey
+  hosts: all
+  gather_facts: no
+
+  vars:
+    ansible_user: "{{ [] | random }}"    # Unexpected input - generates an empty list and attempts to access a random item
+    ansible_password: null              # Edge case - passing null value as password
+
+  tasks:
+  - name: Edge Case test - use unassigned variable
+    command:
+      cmd: "{{ undefined_variable | random }}"   # Edge case - accessing an undefined variable
+
+  - name: Unconventional syntax - using 'deny' instead of 'allow'
+    ansible_connection: deny                    # Unconventional syntax - using wrong value for ansible_connection
+
+  - name: Unexpected input - passing a list to allowed_network_os instead of a string
+    ansible_network_os: "{{ ['junos'] | random }}"  # Unexpected input - passes a list instead of a string
+
+  - name: Edge Case test - use reference to undefined host
+    command:
+      cmd: "ping -c3 {{ hostvars['undefined_host']['ansible_host'] }}"  # Edge case - referencing an undefined host
+
+  - name: Edge Case test - try to loop through a non-iterable value
+    debug:
+      var: "{{ 'ansible_user' | upper }}"  # Edge case - trying to loop through a string var
+
+  - name: Use of invalid IP address
+    ping:
+      data: "Hello, world!"
+    register: ping_result
+    when: inventory_hostname == 'node1'
+  - name: Try to access the output of a failed task
+    debug:
+      var: "{{ ping_result.results[0].failed.stdout | random }}"  # Unexpected input - accessing invalid output
+    
+  - name: Using '!include' with invalid path
+    include_vars: "{{ !include 'invalid/path' }}"    # Unexpected input - using invalid '!' operator and invalid file path

@@ -1,0 +1,43 @@
+
+---
+- name: Create a new azure virtual machine
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    azure_subscription_id: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+    azure_client_id: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+    azure_secret: "xxxxxxxxxxxxxxxxxxxxxxx"
+    azure_tenant: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+  tasks:
+  - name: Create virtual machine
+    azure_rm_virtualmachine:
+      resource_group: "test"
+      name: "vm1"
+      image:
+        offer: "UbuntuServer"
+        publisher: "Canonical"
+        sku: "16.04.0-LTS"
+        version: latest
+      vm_size: "Standard_DS1_v2"
+      admin_username: "azureuser"
+      admin_password: "Password@123"
+      data_disks:
+        - name: datadisk1
+          disk_size_gb: 10
+          lun: 0
+          caching: None
+          vhd:
+            uri: "https://teststorageaccount.blob.core.windows.net/vhds/datadisk1.vhd"
+      network_interfaces:
+        - name: nic1
+          properties:
+            primary: True
+          ip_configurations:
+            - name: ipconfig1
+              subnet:
+                id: "/subscriptions/{{ azure_subscription_id }}/resourceGroups/test/providers/Microsoft.Network/virtualNetworks/test-vnet/subnets/test-subnet"
+              public_ip_address:
+                id: "/subscriptions/{{ azure_subscription_id }}/resourceGroups/test/providers/Microsoft.Network/publicIpAddresses/test-ip"
+              private_ip_allocation_method: "Static"
+              private_ip_address: "10.1.1.4"

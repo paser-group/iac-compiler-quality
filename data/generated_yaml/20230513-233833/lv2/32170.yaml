@@ -1,0 +1,68 @@
+
+---
+- name: Test playbook for ec2_asg module parameter bug in 'target_group_arns'
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+    - name: Create an ASG with empty target_group_arns
+      ec2_asg:
+        name: test-asg
+        availability_zones: "{{ ['us-east-1a', 'us-east-1b'] }}"
+        min_size: 1
+        max_size: 3
+        load_balancers: "{{ ['test-lb'] }}"
+        target_group_arns: []
+      register: result1
+
+    - name: Create an ASG with missing 'target_group_arns' parameter
+      ec2_asg:
+        name: test-asg
+        availability_zones: "{{ ['us-east-1a', 'us-east-1b'] }}"
+        min_size: 1
+        max_size: 3
+        load_balancers: "{{ ['test-lb'] }}"
+      register: result2
+
+    - name: Create an ASG with invalid 'target_group_arns' parameter type
+      ec2_asg:
+        name: test-asg
+        availability_zones: "{{ ['us-east-1a', 'us-east-1b'] }}"
+        min_size: 1
+        max_size: 3
+        load_balancers: "{{ ['test-lb'] }}"
+        target_group_arns: "invalid"
+      register: result3
+
+    - name: Create an ASG with 'target_group_arns' parameter as a list of strings
+      ec2_asg:
+        name: test-asg
+        availability_zones: "{{ ['us-east-1a', 'us-east-1b'] }}"
+        min_size: 1
+        max_size: 3
+        load_balancers: "{{ ['test-lb'] }}"
+        target_group_arns:
+          - "arn:aws:elasticloadbalancing:us-east-1:123456789012:targetgroup/my-targets/73e2d6bc24d8a067"
+          - "arn:aws:elasticloadbalancing:us-east-1:123456789012:targetgroup/my-other-targets/23ujf88ef2398ewf"
+      register: result4
+
+    - name: Create an ASG with 'target_group_arns' parameter as a list of numbers
+      ec2_asg:
+        name: test-asg
+        availability_zones: "{{ ['us-east-1a', 'us-east-1b'] }}"
+        min_size: 1
+        max_size: 3
+        load_balancers: "{{ ['test-lb'] }}"
+        target_group_arns:
+          - 123456789012
+          - 789012345678
+      register: result5
+
+    - debug:
+        var: item
+      loop:
+        - "{{ result1 }}"
+        - "{{ result2 }}"
+        - "{{ result3 }}"
+        - "{{ result4 }}"
+        - "{{ result5 }}"

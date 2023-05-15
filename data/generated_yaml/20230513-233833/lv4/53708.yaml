@@ -1,0 +1,20 @@
+
+---
+- name: Create LUKS Device
+  hosts: node1
+  become: yes
+  tasks:
+    - name: Encrypt /dev/sda3 with LUKS
+      luks_device:
+        device: /dev/sda3
+        name: encrypted-device
+        crypttab_opts: "noearly"
+        state: present
+        key_file: /path/to/key
+    - name: Print the mapped device and crypttab entry
+      shell: |
+        echo 'Mapped Device Path: ' $(/sbin/cryptsetup luksUUID --uuid $(/sbin/blkid -p -s UUID -o value /dev/sda3)) ' crypttab entry: ' $(grep encrypted-device /etc/crypttab)
+      register: encrypted_device_output
+    - name: Verify LUKS Device Creation
+      debug:
+        msg: "{{ encrypted_device_output.stdout_lines }}"

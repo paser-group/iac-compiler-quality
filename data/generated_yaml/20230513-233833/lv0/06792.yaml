@@ -1,0 +1,32 @@
+python
+import requests
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
+import datadog
+
+
+# Define retry logic for requests
+retry_strategy = Retry(
+    total=3,
+    backoff_factor=1,
+    status_forcelist=[429, 500, 502, 503, 504],
+)
+
+adapter = HTTPAdapter(max_retries=retry_strategy)
+
+# Create a session with the adapter
+session = requests.Session()
+session.mount("https://", adapter)
+
+# Verify SSL certificates
+session.verify = True
+
+# Create an event
+event = {
+    "title": "SSL verification test",
+    "text": "This is a test event",
+    "tags": ["test", "ssl", "datadog"],
+}
+
+# Send the event to DataDog
+datadog.api.Event.create(**event)

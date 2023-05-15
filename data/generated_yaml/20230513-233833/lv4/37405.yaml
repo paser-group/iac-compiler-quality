@@ -1,0 +1,34 @@
+yaml
+- name: Test Ansible error handling with include_role
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Create role with failing task
+      file:
+        path: "/tmp/test_role/tasks/"
+        state: directory
+      delegate_to: "{{ item }}"
+      with_items: "{{ groups['all'] }}"
+    - name: Write failing shell script to role
+      copy:
+        dest: "/tmp/test_role/tasks/test.yml"
+        content: "#!/bin/bash\nexit 1"
+        mode: "u+rwx,go-rwx"
+      delegate_to: "{{ item }}"
+      with_items: "{{ groups['all'] }}"
+    - name: Include role with failing task
+      include_role:
+        name: test_role
+        any_errors_fatal: true
+      block:
+        - name: Execute successful task
+          debug:
+            msg: "Success!"
+      always:
+        - name: Execute always task
+          debug:
+            msg: "Always executed!"
+      rescue:
+        - name: Execute rescue task
+          debug:
+            msg: "Rescue!"

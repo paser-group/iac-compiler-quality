@@ -1,0 +1,37 @@
+
+- name: Set EC2 tags
+  hosts: all
+  become: true
+
+  vars:
+    instance_id: "{{ ansible_ec2_instance_id }}"
+
+  tasks:
+    - name: Set valid EC2 tags
+      ec2_tag:
+        resource: "{{ instance_id }}"
+        state: present
+        tags:
+          Name: Test-instance
+          Environment: Dev
+      register: result_valid
+
+    - name: Set invalid EC2 tags
+      ec2_tag:
+        resource: "{{ instance_id }}"
+        state: present
+        tags:
+          Name: Test-instance-with-duplicate-tags
+          Name: Test-instance
+      register: result_invalid
+
+    - name: Check if EC2 tags are set correctly
+      debug:
+        var: result_valid.tags
+      when: result_valid is defined
+
+    - name: Check if invalid EC2 tags are detected
+      debug:
+        var: result_invalid
+      failed_when: result_invalid.failed == False
+      when: result_invalid is defined

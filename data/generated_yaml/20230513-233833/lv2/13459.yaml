@@ -1,0 +1,44 @@
+
+---
+- name: Test Shell type in Ansible
+  hosts: all
+  
+  tasks:
+    - name: Run command using unsupported shell (expected to fail)
+      command: echo "Unsupported Shell" shell=/bin/fake_shell
+      register: result
+      ignore_errors: true
+    
+    - name: Run command while escaping special characters
+      command: echo "This is a test \\$\\$\\$"
+      register: result
+    
+    - name: Run command with invalid quotes
+      command: echo 'This time "invalid quotes'
+      register: result
+      ignore_errors: true
+    
+    - name: Use custom environment variables
+      command: echo "Custom environment variable test" 
+      environment:
+        PATH: "/custom/path:$PATH"
+      register: result
+      
+    - name: Use pipefail with pipe
+      shell: echo -n "Ansible" | grep -q "Failed" || echo "Pipefail test"
+      register: result
+      
+    - name: Use unset variable in command
+      command: echo {{ undefined_variable }}
+      register: result
+      ignore_errors: true
+      
+    - name: Run command that takes a long time
+      command: sleep 5m
+      async: 300
+      poll: 0
+      register: result
+      
+    - name: Run command with multiple arguments
+      command: echo "Ansible" {{ "is awesome" }}
+      register: result

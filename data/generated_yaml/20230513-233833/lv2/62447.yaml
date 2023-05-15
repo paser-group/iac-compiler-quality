@@ -1,0 +1,70 @@
+
+---
+- name: azure_rm_sqlserver failure stress test playbook
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: wait for connection
+      wait_for_connection:
+        timeout: 30
+
+    - name: create invalid sql server name
+      azure_rm_sqlserver:
+        resource_group: mygroup
+        name: "invalid#sqlserver,name"
+        login_user: admin
+        login_password: adminpassword
+        state: present
+
+    - name: create sql server with invalid version
+      azure_rm_sqlserver:
+        resource_group: mygroup
+        name: myserver
+        location: eastus
+        login_user: admin
+        login_password: adminpassword
+        version: "2011-01-01"
+        state: present
+
+    - name: create sql server with multiple login_passwords
+      azure_rm_sqlserver:
+        resource_group: mygroup
+        name: myserver
+        location: eastus
+        login_user: admin
+        login_password: ['adminpassword1', 'adminpassword2']
+        state: present
+
+    - name: start sql server with wrong state
+      azure_rm_sqlserver:
+        resource_group: mygroup
+        name: myserver
+        login_user: admin
+        login_password: adminpassword
+        state: stopped
+
+    - name: delete sql server with invalid resource group name
+      azure_rm_sqlserver:
+        resource_group: invalid#resourcegroup,name
+        name: myserver
+        login_user: admin
+        login_password: adminpassword
+        state: absent
+
+    - name: delete sql server while specifying wrong version
+      azure_rm_sqlserver:
+        resource_group: mygroup
+        name: myserver
+        login_user: admin
+        login_password: adminpassword
+        state: absent
+        version: "2011-01-01"
+
+    - name: delete sql server that does not exist
+      azure_rm_sqlserver:
+        resource_group: mygroup
+        name: nonexistingserver
+        login_user: admin
+        login_password: adminpassword
+        state: absent
+

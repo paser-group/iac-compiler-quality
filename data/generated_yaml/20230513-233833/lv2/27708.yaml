@@ -1,0 +1,45 @@
+yaml
+- name: Ansible Placement Test Playbook
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: Install NTP Client Package
+      apt:
+        name: ntp
+      register: ntp_client_pkg_install
+
+    - name: Reload NTP Service
+      service:
+        name: ntp
+        state: reloaded
+      register: ntp_service_reloaded
+
+    - name: Check NTP Status
+      command: systemctl status ntp
+      register: ntp_status_check
+
+    - name: Configure NTP on nxos device
+      nxos_ntp:
+        ntp_servers:
+          - 10.1.1.1
+          - 10.1.1.2
+          - 10.1.1.3
+        transport: cli
+        state: present
+      when: "'cli' in transport"
+
+    - name: Configure NTP on nxos device
+      nxos_ntp:
+        ntp_servers:
+          - 10.1.1.1
+          - 10.1.1.2
+          - 10.1.1.3
+        transport: ssh
+        state: absent
+      when: "'cli' not in transport"
+
+    - name: Fail task for unexpected input
+      fail:
+        msg: "Unexpected input {{ not_a_real_input }}"
+      when: not_a_real_input is defined

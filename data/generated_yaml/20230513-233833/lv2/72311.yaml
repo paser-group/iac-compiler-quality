@@ -1,0 +1,16 @@
+
+- name: Ping hosts and debug SSH connection issues
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Try to ping all hosts
+      ping:
+      register: result
+    - debug:
+        msg: "{{ inventory_hostname }} is {{ 'reachable' if result.ping else 'unreachable' }}"
+    - name: Check for SSH connection issues
+      when: not result.ping
+      shell: ssh -TT -o "StrictHostKeyChecking=no" {{ inventory_hostname }}
+      register: ssh_result
+    - debug:
+        msg: "{{ ssh_result.stdout }}"  

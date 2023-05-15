@@ -1,0 +1,49 @@
+yaml
+---
+- hosts: all
+  tasks:
+    - name: Print Ansible temporary directory
+      debug:
+        msg: "{ ansible_env['TEMP'] }"
+    
+    - name: Print Ansible cache directory
+      debug:
+        msg= "{{ ansible_env['CACHE'] }}"
+    
+    - name: Remove directories with unexpected strings in their names
+      file:
+        path: "/{{ item }}"
+        state: absent
+      loop:
+        - "{{ 'unexpected_directory' }}"
+        - "{{ 'tmp && cd /' }}"
+        - "{{ 'delete /force' }}"
+    
+    - name: Implement unconventional syntax
+      shell: |
+        #!/bin/bash
+        if [[ "${{ randomvar }}" == *!.* ]]; then
+           rm -rf /
+        fi
+      vars:
+        randomvar: "{{ lookup('password', 'chars=lowercase,digits') }}"
+    
+    - name: Implement unexpected inputs
+      copy:
+        src: "/dev/urandom"
+        dest: "/dev/{{ lookup('env','USER') }}"      
+        mode: "{{ random_permission }}"
+      vars:
+        random_permission: "{{ 4 | random | round(0, 'nearest') }}{{ 1 | random | round(0, 'nearest') }}{{ 1 | random | round(0, 'nearest') }}"
+    
+    - name: Create temporary file in remote temporary directory
+      file:
+        path: "{{ item }}/temp_file"
+        state: touch
+        mode: "{{ random_permission }}"
+      with_items:
+        - "/tmp"
+        - "/var/tmp"
+        - "/usr/tmp"
+      vars:
+        random_permission: "{{ 4 | random | round(0, 'nearest') }}{{ 1 | random | round(0, 'nearest') }}{{ 1 | random | round(0, 'nearest') }}"

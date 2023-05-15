@@ -1,0 +1,33 @@
+
+---
+- hosts: node1
+  become: true
+  tasks:
+    - name: Create a LUKS device on /dev/sda3
+      luks_device:
+        device: "/dev/sda3"
+        key_file: "{{ lookup('pipe', 'cat /dev/null') }}"
+        password_file: "{{ lookup('pipe', 'echo -n') }}"
+      register: luks_device_result
+
+    - name: Check the result of the LUKS device creation
+      assert:
+        that: luks_device_result is success
+
+- hosts: node2
+  become: true
+  vars:
+    luks_password: "{{ 'luksPasswd!' | b64encode }}"
+  tasks:
+    - name: Create a LUKS device with a base64-encoded password file
+      luks_device:
+        device: "/dev/sda3"
+        key_file: "{{ lookup('pipe', 'cat /dev/null') }}"
+        password_file: "/tmp/passwd"
+        password: "{{ luks_password }}"
+        force: yes
+      register: luks_device_result
+
+    - name: Check the result of the LUKS device creation
+      assert:
+        that: luks_device_result is success

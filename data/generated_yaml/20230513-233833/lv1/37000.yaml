@@ -1,0 +1,32 @@
+yaml
+---
+- name: Proper fix for #26020:vmware_guest state:absent fails on powered on machines
+  hosts: all
+  gather_facts: yes
+  become: yes
+
+  tasks:
+    - name: Check vmware_guest state
+      vmware_guest_info:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ vmware_username }}"
+        password: "{{ vmware_password }}"
+        uuid: "{{ vmware_uuid }}"
+      register: vmware_guest_state
+
+    - name: Power off vmware_guest
+      vmware_guest:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ vmware_username }}"
+        password: "{{ vmware_password }}"
+        uuid: "{{ vmware_uuid }}"
+        state: poweredoff
+      when: vmware_guest_state.json.guest_power_state == 'poweredOn'
+
+    - name: Remove vmware_guest
+      vmware_guest:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ vmware_username }}"
+        password: "{{ vmware_password }}"
+        uuid: "{{ vmware_uuid }}"
+        state: absent

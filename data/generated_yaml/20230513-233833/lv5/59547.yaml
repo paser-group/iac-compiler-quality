@@ -1,0 +1,20 @@
+
+- name: Test ansible-playbook --syntax-check for invalid spaces
+  hosts: all
+  tasks:
+    - name: Create file with invalid spaces
+      command: touch "file with invalid spaces"
+      args:
+        chdir: "{{playbook_dir}}"
+    - name: Check syntax with ansible-playbook
+      command: ansible-playbook playbook.yml --syntax-check
+      args:
+        chdir: "{{playbook_dir}}"
+      register: syntax_check_output
+      ignore_errors: true
+    - name: Assert invalid spaces error message
+      assert:
+        that: "'ERROR! Spaces must not be used around = in a dict'"
+        success_msg: 'Found expected error message in syntax check output'
+        fail_msg: 'Did not find the expected error message in syntax check output'
+      when: "'ERROR! Spaces must not be used around = in a dict' in syntax_check_output.stderr"

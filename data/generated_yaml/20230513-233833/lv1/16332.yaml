@@ -1,0 +1,33 @@
+
+---
+- name: Backport Fix for Issue 15996
+  hosts: all
+  become: yes
+  tasks:
+  - name: Clone the Repository
+    git:
+      repo: https://github.com/repo-name
+      dest: /path/to/local/repo/
+    register: repo
+
+  - name: Checkout branch
+    git:
+      repo: "{{ repo.stdout }}"
+      dest: /path/to/local/repo/
+      version: "{{ branch_name }}"
+      force: yes
+
+  - name: Execute Backport
+    shell: "git cherry-pick {{ commit_hash }}"
+    register: cherry_pick
+
+  - name: Commit Changes
+    shell: "git commit -m 'Backported Fix for Issue 15996'"
+    when: cherry_pick.rc == 0
+
+  - name: Push Changes to Repository
+    git:
+      repo: "{{ repo.stdout }}"
+      dest: /path/to/local/repo/
+      push: yes
+    when: cherry_pick.rc == 0

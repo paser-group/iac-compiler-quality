@@ -1,0 +1,75 @@
+
+- name: Stress Test Playbook for gluster_volume Module Bug
+  hosts: all
+  remote_user: ubuntu
+  become: true
+  gather_facts: true
+
+  tasks:
+  - name: Install GlusterFS Packages
+    apt:
+      name: "{{ item }}"
+      state: present
+    with_items:
+      - glusterfs-server
+      - glusterfs-client
+      - glusterfs-common
+
+  - name: Create Gluster Volume with Different Redundancy
+    gluster_volume:
+      state: present
+      name: "data_volume"
+      bricks: "{{ inventory_hostname }}:/data/brick1"
+      replica: "{{ item }}"
+    with_items:
+      - 2
+      - 3
+      - 4
+      - 5
+      - 6
+
+  - name: Start Gluster Volume
+    gluster_volume:
+      state: started
+      name: "data_volume"
+      force: true
+
+  - name: Stop Gluster Volume
+    gluster_volume:
+      state: stopped
+      name: "data_volume"
+      force: true
+
+  - name: Delete Gluster Volume
+    gluster_volume:
+      state: absent
+      name: "data_volume"
+
+  - name: Create Multiple Gluster Volumes with Same Name (Edge Case)
+    gluster_volume:
+      state: present
+      name: "data_volume"
+      bricks: "{{ inventory_hostname }}:/data/brick{{ item }}"
+    with_items:
+      - 2
+      - 3
+      - 4
+
+  - name: Remove Non-Existent Gluster Volume (Edge Case)
+    gluster_volume:
+      state: absent
+      name: "fake_volume"
+
+  - name: Create Gluster Volume with Invalid Replica (Unexpected Input)
+    gluster_volume:
+      state: present
+      name: "data_volume"
+      bricks: "{{ inventory_hostname }}:/data/brick1"
+      replica: "invalid"
+
+  - name: Create Gluster Volume with Invalid Transport (Unexpected Input)
+    gluster_volume:
+      state: present
+      name: "data_volume"
+      bricks: "{{ inventory_hostname }}:/data/brick1"
+      transport: "invalid"

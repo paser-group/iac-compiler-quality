@@ -1,0 +1,31 @@
+yaml
+---
+- name: VMware OVF Export
+  hosts: localhost
+  connection: local
+  gather_facts: no
+  vars:
+    ova_filename: "example.ova"
+    vmware_username: "vmware_user"
+    vmware_password: "vmware_password"
+    vmware_host: "vmware_host"
+    vm_name: "vm_name"
+    datastore_name: "datastore_name"
+    ovftool_path: "/usr/bin/ovftool"
+    ovf_output_path: "/tmp"
+  tasks:
+  - name: Remove OVA file if exists
+    file:
+      path: "{{ ovf_output_path }}/{{ ova_filename }}"
+      state: absent
+      ignore_errors: yes
+  - name: Export VM to OVF
+    command:
+      cmd: "{{ ovftool_path }} --acceptAllEulas --noSSLVerify --username='{{ vmware_username }}' --password='{{ vmware_password }}' vi://'{{ vmware_username }}':'{{ vmware_password }}'@'{{ vmware_host }}'/'{{ vm_name }}'?no_share_persistent --datastore='{{ datastore_name }}' '{{ ovf_output_path }}/{{ ova_filename }}'"
+    register: ovf_export_result
+  - name: Check if OVF Export was Successful
+    assert:
+      that:
+      - "'"{{ ovf_output_path }}/{{ ova_filename }}"' successfully written'"
+        in
+        - "{{ ovf_export_result.stdout }}"

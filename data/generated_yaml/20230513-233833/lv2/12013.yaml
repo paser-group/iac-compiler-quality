@@ -1,0 +1,58 @@
+
+---
+- name: Test Ansible Compiler for SSL certificate errors using URI module
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: Valid SSL certificate
+      uri:
+        url: https://www.google.com
+        validate_certs: yes
+
+    - name: Invalid SSL certificate due to hostname mismatch
+      uri:
+        url: https://localhost
+        validate_certs: yes
+
+    - name: Invalid SSL certificate due to expired certificate
+      uri:
+        url: https://expired.badssl.com/
+        validate_certs: yes
+
+    - name: Invalid SSL certificate due to self-signed certificate
+      uri:
+        url: https://self-signed.badssl.com/
+        validate_certs: yes
+
+    - name: Invalid SSL certificate due to an empty certificate chain
+      uri:
+        url: https://wrong.host.badssl.com/
+        validate_certs: yes
+      vars:
+        ca_certs: ""
+
+    - name: Invalid SSL certificate due to an invalid certificate chain
+      uri:
+        url: https://www.google.com
+        validate_certs: yes
+        client_cert: /non_existing_path
+        client_key: /non_existing_key_path
+        ca_certs: /non_existing_ca_certs_path
+
+    - name: Invalid SSL certificate due to wrong cipher
+      uri:
+        url: https://www.google.com
+        validate_certs: yes
+        cipher: "DHE-RSA-AES256-SHA"
+
+    - name: Invalid SSL certificate due to protocol not supported
+      uri:
+        url: https://www.google.com
+        validate_certs: yes
+        method: "FOO"
+
+    - name: SSL certificate error without validation
+      uri:
+        url: https://wrong.host.badssl.com/
+        validate_certs: no

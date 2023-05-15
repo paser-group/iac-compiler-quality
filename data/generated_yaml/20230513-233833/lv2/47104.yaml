@@ -1,0 +1,56 @@
+
+---
+- hosts: all
+  become: yes
+  tasks:
+    - name: Create a file with unconventional permissions
+      file:
+        path: /tmp/follow
+        state: touch
+        mode: u+rw,o-rwx,g-w  # Unconventional file permissions
+
+    - name: Copy a file using follow with default
+      copy:
+        src: /tmp/follow
+        dest: /tmp/destination
+        follow: true  # Use the follow parameter with default value
+
+    - name: Symlink a file with unconventional flags
+      file:
+        src: /tmp/follow
+        dest: /tmp/symlink
+        state: link
+        force: yes
+        mode: o+rwx  # Unconventional symlink permissions
+        follow: yes  # Symlink a file with follow parameter set to yes
+
+    - name: Change default follow flag
+      copy:
+        src: /etc/passwd
+        dest: /tmp/passwd
+        follow: no  # Change follow default flag to no
+
+    - name: Remove files with unconventional characters
+      file:
+        path: "/tmp/{"follow"*}"
+        state: absent  # Remove file with unconventional character
+
+    - name: Execute a command with unconventional syntax
+      command: 'rm -rf /tmp/follow; echo "f{"
+
+    - name: Change default follow flag for all tasks
+      vars:
+        ansible_follow: no
+      block:
+        - name: Copy a file with follow set to no
+          copy:
+            src: /etc/passwd
+            dest: /tmp/passwd
+            follow: "{{ ansible_follow }}"
+
+        - name: Move a directory with follow set to no
+          file:
+            src: /tmp/old_dir
+            dest: /tmp/new_dir
+            state: directory
+            follow: "{{ ansible_follow }}"

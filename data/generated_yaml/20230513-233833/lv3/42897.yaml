@@ -1,0 +1,52 @@
+
+- name: Test TLS configuration for Docker modules in Ansible 2.6 and above
+  hosts: all
+  become: true
+  tasks:
+    - name: Install required packages
+      apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gnupg-agent
+          - software-properties-common
+        state: present
+
+    - name: Add Docker GPG apt key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: Add Docker APT repository
+      apt_repository:
+        repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu bionic stable
+        state: present
+
+    - name: Install Docker CE
+      apt:
+        name: docker-ce
+        state: present
+
+    - name: Add Docker user to docker group
+      user:
+        name: "{{ ansible_user }}"
+        groups: docker
+
+    - name: Configure Docker TLS Certificate
+      copy:
+        src: "{{inventory_dir}}/{{ansible_hostname}}.crt"
+        dest: /etc/docker/certs.d/{{ansible_fqdn}}:2376/ca.crt
+        mode: '0644'
+
+    - name: Configure Docker TLS Key
+      copy:
+        src: "{{inventory_dir}}/{{ansible_hostname}}.pem"
+        dest: /etc/docker/certs.d/{{ansible_fqdn}}:2376/ca-key.pem
+        mode: '0644'
+
+    - name: Test TLS connection with Docker
+      docker_login:
+        registry_url: "{{ansible_hostname}}:2376"
+        username: "{{docker_registry_username}}"
+        password: "{{docker_registry_password}}"

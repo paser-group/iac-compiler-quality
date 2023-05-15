@@ -1,0 +1,32 @@
+
+- name: Check if sudo password is required on CentOS
+  hosts: all
+  vars:
+    sudo_password: ""
+  tasks:
+  - name: Attempt to execute a command as root without a password
+    command: /bin/true
+    become: true
+    become_method: su
+    
+  - name: Check if sudo password is required
+    shell: |
+      if sudo -n true 2>&1|grep -q 'password'; then
+        echo "sudo password is required"
+      fi
+    register: sudo_password_required
+    
+  - name: Check if --ask-sudo-pass option is provided
+    shell: ps aux | grep "ansible-playbook" | grep -v "grep" | grep "\-\-ask\-sudo\-pass"
+    register: sudo_option_provided
+    ignore_errors: true
+    
+  - name: Print sudo password prompt
+    debug:
+      msg: "sudo password prompt"
+    when: sudo_password_required and not sudo_option_provided|bool
+      
+  - name: Exit with non-zero status if sudo password is required but not provided
+    fail:
+      msg: "Sudo password is required. Provide --ask-sudo-pass option to enter the password"
+    when: sudo_password_required and not sudo_option_provided|bool

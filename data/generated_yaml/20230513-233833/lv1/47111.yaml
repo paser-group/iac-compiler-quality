@@ -1,0 +1,21 @@
+
+---
+- name: Playbook to handle Azure deployment vulnerability
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Check for Azure deployment errors
+      azure_rm_deployment:
+        state: list
+      register: deployment_status
+
+    - name: Retry deployment up to 3 times if too many 503 errors
+      azure_rm_deployment:
+        state: "{{ item.status }}"
+        name: "{{ item.name }}"
+        resource_group_name: "{{ item.resource_group }}"
+        template: "{{ item.template }}"
+        parameters: "{{ item.parameters }}"
+      when: item.status == 'present' and item.failed_count <= 3
+      with_items: "{{ deployment_status.deployments }}"

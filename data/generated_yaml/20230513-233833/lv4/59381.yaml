@@ -1,0 +1,26 @@
+
+- name: Check pubkey authentication for Cisco IOS
+  hosts: ios_device
+  gather_facts: no
+
+  vars:
+    host_ip: 10.1.1.1
+    username: admin
+    key_path: /path/to/ssh/key
+
+  tasks:
+    - name: Connect to IOS device using pubkey authentication
+      ios_command:
+        commands:
+          - show vlans
+          - exit
+      vars:
+        ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i {{ key_path }}'
+        ansible_user: '{{ username }}'
+        ansible_host: '{{ host_ip }}'
+      register: ios_output
+
+    - name: Print IOS output
+      debug:
+        var: ios_output.stdout_lines
+      when: ios_output.rc != 0

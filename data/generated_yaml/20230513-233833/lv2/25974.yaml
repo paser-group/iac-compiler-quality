@@ -1,0 +1,52 @@
+
+- name: Test docker_container.py _compare_dicts
+  hosts: node1
+  become: true
+  gather_facts: false
+  tasks:
+    - name: Create empty dict
+      set_fact:
+        dict1: {}
+        dict2: {}
+    - name: Create a dict with an integer key
+      set_fact:
+        dict1: {1: 'one'}
+        dict2: {1: 'one'}
+    - name: Check for match in empty dicts
+      debug:
+        msg: "{{ dict1 | combine(dict2) }}"
+    - name: Mismatched lists for dictionary values
+      set_fact:
+        dict1: {'key': [1, 2]}
+        dict2: {'key': [2, 1]}
+    - name: Compare lists with != operator
+      debug:
+        msg: "{{ dict1['key'] != dict2['key'] }}"
+    - name: Unequal nested dictionaries
+      set_fact:
+        dict1:
+          level1:
+            level2: 1
+        dict2:
+          level1:
+            level2: 2
+    - name: Check for unequal nested dictionaries
+      assert:
+        that:
+          - dict1.level1.level2 != dict2.level1.level2
+    - name: Invalid syntax dictionary
+      set_fact:
+        dict1: {'key': 'value', 'key2':}
+        dict2: {'key': 'value'}
+    - name: Check for invalid syntax in dictionary
+      fail:
+        msg: "Invalid syntax in dict1"
+        when: dict1 is undefined
+    - name: Missing key in the dictionary
+      set_fact:
+        dict1: {'key': 'value'}
+        dict2: {'key1': 'value'}
+    - name: Check for missing key in the dictionary
+      fail:
+        msg: "Missing key in dict2"
+        when: dict2.key1 is undefined

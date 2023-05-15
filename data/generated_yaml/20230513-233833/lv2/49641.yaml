@@ -1,0 +1,38 @@
+yaml
+- hosts: node1
+  become: true
+
+  tasks:
+    - name: Docker login with conflicting delegate_to and tls_hostname params
+      docker_login:
+        registry_url: "{{ item }}"
+        username: "{{ docker_username }}"
+        password: "{{ docker_password }}"
+        tls_hostname: "{{ inventory_hostname }}"
+        delegate_to: "localhost"
+      with_items:
+        - "https://hub.docker.io"
+        - "https://quay.io"
+
+    - name: Docker login with unconventional syntax and unexpected input
+      docker_login:
+        registry_url: "{{ item }}"
+        username: "{{ docker_username|lower() }}"
+        password: "{{ docker_password|trim }}"
+        tls_hostname: ""
+        delegate_to: []
+      with_items:
+        - "https://my.registry.com"
+        - "https://docker.io"
+
+    - name: Docker login with edge cases
+      docker_login:
+        registry_url: "{{ item }}"
+        username: "testuser"
+        password: "testpass"
+        tls_hostname: "{{ inventory_hostname[:2] }}"
+        delegate_to: "{{ play_hosts[0] }}"
+      with_items:
+        - "https://registry.docker.io"
+        - "https://dockerhub.com"
+        - "https://local.registry:5000"

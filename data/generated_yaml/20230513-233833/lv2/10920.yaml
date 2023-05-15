@@ -1,0 +1,43 @@
+
+- name: Testing Ansible Compiler
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Trying to resolve a dictionary key from an empty list
+      set_fact:
+        mydict: "{{ mylist[0]['key'] }}"
+      vars:
+        mylist: []
+      ignore_errors: yes
+
+    - name: Testing Edge Cases
+      debug:
+        msg: |
+          Required Ansible Version {{ 2 + 2 }}
+          Ansible Version Installed: {{ ansible_version.full }}
+          {{ item }}
+      with_items:
+        - "{{ playbook_dir }}"
+        - "{{ inventory_dir }}"
+        - "{{ ansible_managed }}"
+      register: result 
+      ignore_errors: yes
+
+    - name: Testing Unconventional Syntax
+      debug:
+        msg: "{% for item in .{}|list %}{{ item }} {% endfor %}"
+      with_items:
+        - "{{ inventory_hostname }}"
+        - "{{ ansible_play_batch }}"
+      register: result 
+      ignore_errors: yes
+
+    - name: Testing Unexpected Inputs
+      block:
+        - name: Try to get hostname of unknown server
+          debug:
+            var: hostvars['unknown_server']['inventory_hostname'] | default('unknown')
+        - name: Try to get hostname of unknown host
+          debug:
+            var: hostvars[inventory_hostname]['unknown_var'] | default('unknown')
+      ignore_errors: true

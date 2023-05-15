@@ -1,0 +1,52 @@
+yaml
+---
+- name: Test os_server module with port-id argument
+  hosts: all
+  become: yes
+  vars:
+    instance_name: "test-instance"
+    image: "ubuntu"
+    flavor: "m1.small"
+    network: "node-net"
+    security_group: "default"
+    boot_volume: "auto"
+    key_name: "default"
+    # Specify an existing port-id
+    port_id: "4a7a0664-d573-473a-8d41-cb2151c0ac47"
+  tasks:
+    - name: Create an instance
+      os_server:
+        name: "{{ instance_name }}"
+        image: "{{ image }}"
+        flavor: "{{ flavor }}"
+        network: "{{ network }}"
+        security_groups: "{{ security_group }}"
+        boot_volume: "{{ boot_volume }}"
+        key_name: "{{ key_name }}"
+        port_id: "{{ port_id }}"
+      register: instance
+    - name: Assert instance is created
+      assert:
+        that: instance.server is defined
+    - name: Check if instance is idempotent
+      os_server:
+        name: "{{ instance_name }}"
+        image: "{{ image }}"
+        flavor: "{{ flavor }}"
+        network: "{{ network }}"
+        security_groups: "{{ security_group }}"
+        boot_volume: "{{ boot_volume }}"
+        key_name: "{{ key_name }}"
+        port_id: "{{ port_id }}"
+      register: instance_idempotence
+    - name: Assert instance is idempotent
+      assert:
+        that: instance_idempotence.server['id'] == instance.server['id']
+    - name: Delete instance
+      os_server:
+        name: "{{ instance_name }}"
+        state: absent
+    - name: Delete port
+      os_port:
+        port_name: "{{ instance_name }}-port"
+        state: absent

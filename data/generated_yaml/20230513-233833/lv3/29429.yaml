@@ -1,0 +1,33 @@
+
+---
+- name: Playbook to expose lvol indempotency fails with float value
+  hosts: node1
+  become: true
+  tasks:
+    - name: Set size variable
+      set_fact:
+        size_arg: "1.5g"
+    
+    - name: Create LVOL with float value
+      lvol:
+        vg: vg1
+        lv: test-lvol
+        size: "{{ size_arg }}"
+      register: lvol_result
+    
+    - name: Check if LVOL is created
+      debug:
+        msg: "LVOL {{ lvol_result.lv }} created"
+      when: lvol_result is not skipped
+      
+    - name: Recreate LVOL with same features
+      lvol:
+        vg: vg1
+        lv: test-lvol
+        size: "{{ size_arg }}"
+      register: recreate_result
+    
+    - name: Check if LVOL was recreated
+      debug:
+        msg: "LVOL {{ recreate_result.lv }} recreated"
+      when: recreate_result is not skipped

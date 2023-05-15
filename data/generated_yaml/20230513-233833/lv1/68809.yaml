@@ -1,0 +1,29 @@
+yaml
+---
+- name: Configure FortiGate firewall address
+  hosts: fortigate
+  gather_facts: false
+
+  vars:
+    api_url: "https://{{ fortigate.ip_address }}/api/v2/cmdb/firewall/address"
+
+  tasks:
+    - name: Add firewall address
+      uri:
+        url: "{{ api_url }}"
+        method: POST
+        body: '{"json": {"name": "{{ fortigate.address_name }}", "subnet": "{{ fortigate.address_subnet }}", "associated-interface": "{{ fortigate.address_interface }}"}}'
+        headers:
+          Content-Type: "application/json"
+        validate_certs: false
+        timeout: 60
+      register: result
+
+    - name: Check if the address is already created
+      fail:
+        msg: "Address {{ fortigate.address_name }} already exists."
+      when: result.status == 200
+
+    - name: Display the result
+      debug:
+        var: result.json

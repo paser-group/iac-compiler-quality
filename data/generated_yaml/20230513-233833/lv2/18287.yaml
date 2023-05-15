@@ -1,0 +1,46 @@
+
+---
+- name: Stress test for handling unreachable hosts
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: Ping all hosts
+      ping:
+
+    - name: Try to connect to all hosts
+      wait_for_connection:
+
+    - name: Generate an unreachable host error
+      command: /bin/false
+      ignore_errors: yes
+
+    - name: Check for unreachable hosts and try to reconnect
+      wait_for_connection:
+        delay: 5
+        timeout: 10
+      ignore_unreachable: yes
+
+    - name: Try to run a command on all hosts
+      command: echo "Hello, World!" >&2
+
+    - name: Generate a fatal error
+      command: /bin/false
+      register: result
+      failed_when: False
+      ignore_errors: yes
+
+    - name: Handle fatal error and retry
+      command: echo "Retrying in 5 seconds..." && sleep 5 && /bin/true
+      when: "'FAILED' in result.stderr"
+
+    - name: Check for errors and print stdout/stderr
+      command: echo -e "STDOUT:\n$(cat /tmp/stdout)\nSTDERR:\n$(cat /tmp/stderr)"
+      register: result
+      changed_when: False
+      ignore_errors: True
+      no_log: True
+        
+    - name: Print error details
+      debug:
+        var: result

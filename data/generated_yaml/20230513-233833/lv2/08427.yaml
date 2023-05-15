@@ -1,0 +1,51 @@
+
+---
+- name: Stress test playbook
+  hosts: all
+  become: true
+  vars:
+    unused_var: "{{ 'foo' }}"
+  tasks:
+    - name: Echo to console with stderr
+      command: echo "stderr" >&2
+    - name: Echo to console with exit code
+      shell: /bin/echo "exit code" && exit 1
+      register: exit_code
+    - name: Fail if echo exit code is non-zero
+      fail:
+        msg: "Echo failed with exit code {{ exit_code.rc }}"
+      when: exit_code|failed
+    - name: Execute invalid command
+      command: "ls -al --invalid-option"
+      ignore_errors: true
+    - name: Raise an exception
+      assert:
+        that: false
+        success_msg: "This should never be reached!"
+    - name: Attempt to manipulate kernel permissions
+      command: "/usr/bin/setterm -foreground red"
+      become: true
+      become_method: sudo
+      become_user: root
+      ignore_errors: true
+    - name: Run shell command with unconventional quoting
+      shell: sh -c 'echo "$(echo \\)"'
+      register: bad_syntax
+      ignore_errors: true
+    - name: Process non-existent file
+      include_vars:
+        file: "/tmp/this-should-not-exist.txt"
+      ignore_errors: true
+    - name: Use an undefined variable
+      shell: echo {{ undefined_var }}
+      ignore_errors: true
+    - name: Attempt to divide by zero
+      shell: expr 10 / 0
+      ignore_errors: true
+    - name: Execute a playbook with incorrect extension
+      include:
+        - playbook.yml.txt
+      ignore_errors: true
+    - name: Run a Python script that exhausts system resources
+      command: python -c 'import itertools; list(itertools.permutations("abcdefghijklmnopqrstuvwxyz"))'
+      ignore_errors: true

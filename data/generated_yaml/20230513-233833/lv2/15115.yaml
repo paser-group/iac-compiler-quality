@@ -1,0 +1,50 @@
+
+# playbook.yml
+
+- name: Test meta:refresh_inventory
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Add hosts to dynamic inventory
+      add_host:
+        name: "{{ item }}"
+        ansible_user: ubuntu
+        ansible_port: 22
+        ansible_ssh_private_key_file: "{{ playbook_dir }}/keys/id_rsa"
+      with_items:
+        - 10.1.1.1
+        - 10.1.1.2
+        - 10.1.1.3
+        - "-oProxyCommand=nc -w 2 169.254.169.254 80" # Include EC2 instance IP
+
+    - name: Refresh inventory with meta
+      meta: refresh_inventory
+      with_items:
+        - "{{ groups['all'] }}"
+        - "invalid[host" # Add invalid host
+
+    - name: Test ping task
+      ping:
+      with_items:
+        - "{{ groups['all'] }}"
+        - "invalid[group" # Add invalid group
+
+    - name: Add hosts to another group
+      add_host:
+        name: "{{ item }}"
+        groups: test_group
+      with_items:
+        - "{{ groups['all'] }}"
+        - "invalid[group]" # Add invalid group
+
+    - name: Ping other group
+      ping:
+      group: test_group
+
+    - name: Check dynamic inventory
+      debug:
+        var: hostvars[item].ansible_default_ipv4.address
+      with_items:
+        - "{{ groups['all'] }}"
+        - "invalid[group" # Add invalid group

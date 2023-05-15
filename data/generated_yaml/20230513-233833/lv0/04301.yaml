@@ -1,0 +1,25 @@
+
+def _gather_state(self):
+    try:
+        conn_params = self._build_conn_params()
+        db = MySQLdb.connect(**conn_params)
+        cursor = db.cursor()
+
+        # Gather existing database state (or the desired one)
+        output = {"databases": {}}
+        cursor.execute("SHOW DATABASES;")
+        databases = cursor.fetchall()
+        for database in databases:
+            database_name = database[0]
+            cursor.execute("SHOW TABLES IN {};".format(database_name))
+            tables = cursor.fetchall()
+            output["databases"][database_name] = []
+            for table in tables:
+                output["databases"][database_name].append(table[0])
+        cursor.close()
+        db.close()
+
+        output["error"] = None
+    except Exception as e:
+        output = {"databases": {}, "error": traceback.format_exc()}
+    return output

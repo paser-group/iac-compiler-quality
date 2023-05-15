@@ -1,0 +1,61 @@
+
+---
+- name: Verify ec2.py inventory script error
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+    - name: Install Boto module
+      pip:
+        name: boto
+        state: present
+    
+    - name: Create ec2.py inventory file
+      file:
+        path: /tmp/ec2.py
+        mode: '0777'
+        state: touch
+    
+    - name: Set contents for ec2.py inventory file
+      lineinfile:
+        path: /tmp/ec2.py
+        line: |
+          #!/usr/bin/env python
+          try:
+              import boto
+          except ImportError:
+              print("Failed to import boto module.")
+              sys.exit(1)
+          import os
+          import sys
+
+          ec2_instance_filters={{"tag:Name":"*"}} # Define filters
+          ec2_regions=["us-west-1","us-west-2","us-east-1","eu-west-1","eu-central-1"] # Define regions
+          ec2_instance_ips=[] # Initialize Empty List
+
+          for region in ec2_regions:
+              try:
+                  conn=boto.ec2.connect_to_region(region,profile_name='default')
+                  reservations=conn.get_all_instances(filters=ec2_instance_filters)
+                  instances=[i for r in reservations for i in r.instances]
+                  for inst in instances:
+                      ec2_instance_ips.append(inst.private_ip_address)
+              except Exception as e:
+                  print(e)
+                  pass
+
+          for ip in ec2_instance_ips:
+              print(ip)
+
+    - name: Run ec2.py inventory script
+      shell: python /tmp/ec2.py --list
+      
+    - name: Check error message for 'ansible.module_utils'
+      shell: python /tmp/ec2.py --list
+      register: output
+      ignore_errors: true
+
+    - name: Display the error message
+      debug:
+        var: output
+        verbosity: 2

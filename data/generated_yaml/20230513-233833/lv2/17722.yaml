@@ -1,0 +1,59 @@
+
+---
+- name: Test playbook for Ansible user with_items loop
+  hosts: all
+  remote_user: root
+  vars:
+    users:
+      - name: user1
+        shell: /bin/bash
+        home: /home/user1
+      - name: user2
+        shell: /bin/bash
+        home: /home/user 2
+      - name: user3
+        shell: /bin/bash
+        home: /home/user3
+  tasks:
+    - name: Create users with_items
+      user:
+        name: "{{ item.name }}"
+        shell: "{{ item.shell }}"
+        home: "{{ item.home }}"
+      with_items: "{{ users }}"
+      loop_control:
+        label: "{{ item.name }}"
+        index_var: my_index
+    - name: Add users to sudoers
+      lineinfile:
+        line: "{{ item.name }} ALL=(ALL) NOPASSWD: ALL"
+        dest: /etc/sudoers
+        state: present
+      with_items: "{{ users }}"
+      loop_control:
+        label: "{{ item.name }}"
+        index_var: my_index
+    - name: Test ansible_user_with_items_loop functionality
+      become: yes
+      become_method: sudo
+      become_user: "{{ item.name }}"
+      shell: whoami
+      register: output
+      with_items:
+        - "{{ users }}"
+        - "{{ users | difference([item]) }}"
+        - 'invalid'
+        - 123
+      loop_control:
+        label: "{{ item }}"
+    - name: Debug task
+      debug:
+        msg: "{{ item }}"
+      with_items:
+        - "{{ output.results }}"
+        - "{{ users }}"
+        - "{{ users | difference([item]) }}"
+        - 'invalid'
+        - 123
+      loop_control:
+        label: "{{ item }}"

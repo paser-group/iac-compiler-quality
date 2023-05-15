@@ -1,0 +1,57 @@
+
+---
+- hosts: all
+  gather_facts: false
+  tasks:
+    - name: Run Docker container with username and password
+      docker_container:
+        name: test_container
+        image: ubuntu
+        command: sleep infinity
+        username: "test_user"
+        password: "test_password"
+      register: result
+
+    - name: Assert that container is running with correct username and password
+      assert:
+        that:
+          - result is success
+          - "'test_user' in result.stdout"
+          - "'test_password' in result.stdout"
+
+    - name: Run Docker container with unconventional username and password syntax
+      docker_container:
+        name: test_container_2
+        image: ubuntu
+        command: sleep infinity
+        username: "{% if loop.index is divisibleby(2) %}username{% endif %}"
+        password: "{% if loop.index is divisibleby(2) %}password{% endif %}"
+      with_sequence: start=1 end=10
+      register: result_2
+
+    - name: Assert that all containers are running with correct unconventional syntax
+      assert:
+        that:
+          - result_2 is success
+          - "'username' in result_2.stdout"
+          - "'password' in result_2.stdout"
+
+    - name: Stress test the Ansible compiler with unexpected input
+      docker_container:
+        name: "{{ item }}"
+        image: "{{ items }}"
+        command: sleep infinity
+        username: "{{ itemss }}"
+        password: "{{ itemsss }}"
+      with_items:
+        - 123
+        - true
+        - false
+        - null
+        - "{{ some_undefined_variable }}"
+      register: result_3
+
+    - name: Assert that incorrect input does not crash the playbook
+      assert:
+        that:
+          - result_3 is success

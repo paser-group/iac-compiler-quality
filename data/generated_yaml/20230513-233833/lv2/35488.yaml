@@ -1,0 +1,49 @@
+
+- name: SSH into node1
+  hosts: node1
+  gather_facts: no
+  tasks:
+    - name: Disable StrictHostKeyChecking
+      lineinfile:
+        path: "/root/.ssh/config"
+        line: "StrictHostKeyChecking no"
+    - name: Attempt to SSH with invalid credentials
+      command: ssh dummyuser@10.1.1.1
+      ignore_errors: true
+    - name: Try to SSH with an unsupported SSH cipher
+      command: ssh -c blowfish dummyuser@10.1.1.1
+      ignore_errors: true
+    - name: Try to SSH with an unsupported SSH MAC
+      command: ssh -m hmac-md5 dummyuser@10.1.1.1
+      ignore_errors: true
+    - name: Try to SSH with an unsupported SSH key exchange
+      command: ssh -o KexAlgorithms=curve25519-sha256@libssh.org dummyuser@10.1.1.1
+      ignore_errors: true
+
+- name: Try to reach node2
+  hosts: node2
+  gather_facts: no
+  tasks:
+    - name: Try to ping the host
+      ping:
+
+- name: SSH into node3 with password and use sudo
+  hosts: node3
+  gather_facts: no
+  vars:
+    sudo_password: '{{ "mypassword" | password_hash("sha256") }}'
+  tasks:
+    - name: Add invalid prompt
+      expect:
+        command: ssh dummyuser@10.1.1.3
+        responses:
+          Password: pass
+        timeout: 10
+
+    - name: SSH with password
+      expect:
+        command: sshpass -p 'mypassword' ssh dummyuser@10.1.1.3 sudo systemctl restart docker
+        responses:
+          Password: '{{ sudo_password }}'
+          prompt: '.+#'
+        timeout: 10

@@ -1,0 +1,41 @@
+
+- hosts: all
+  gather_facts: false
+  vars:
+    - package_name: "{{ regex_replace('yum lockfile is held by another process', ' ', '-') }}"
+  tasks:
+    - name: remove package lockfile
+      command: "{{ item }}"
+      with_items:
+        - ls {{ package_name }}
+        - rm -rf {{ package_name }}
+        - echo {{ package_name }} | grep lockfile 2>&1 || true
+        - yum --lockfile=/tmp/{{ package_name }} install /tmp/package.rpm
+      register: lockfile_output
+
+    - name: print lockfile output
+      debug:
+        var: lockfile_output
+
+    - name: restart package manager
+      shell: |
+        {% if ansible_selinux %}
+        setenforce Permissive
+        {% endif %}
+        systemctl restart {{ item }}.service
+      with_items:
+        - package_manager
+
+    - name: wait for package to be available
+      uri:
+        url: http://{{ item }}:8080
+        method: GET
+        return_content: yes
+      register: package_check
+      ignore_errors: true
+      retries: 20
+      delay: 5
+
+    - name: print package check output
+      debug:
+        var: package_check

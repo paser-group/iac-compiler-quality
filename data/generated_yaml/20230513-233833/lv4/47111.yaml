@@ -1,0 +1,52 @@
+
+---
+- name: Azure deployment playbook
+  hosts: azure_vm
+  gather_facts: False
+  
+  tasks:
+  - name: Deploy resources using azure_rm_deployment module
+    azure_rm_deployment:
+      resource_group_name: my_rg
+      name: my_deployment
+      mode: Incremental
+      template:
+        $schema: "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#"
+        contentVersion: "1.0.0.0"
+        parameters:
+          location: 
+            value: "{{ location }}"
+        resources:
+        - name: my_vm
+          type: "Microsoft.Compute/virtualMachines"
+          location: "[parameters('location')]"
+          apiVersion: "2019-07-01"
+          properties:
+            hardwareProfile:
+              vmSize: "Standard_B1ls"
+            storageProfile:
+              imageReference:
+                publisher: "Canonical"
+                offer: "UbuntuServer"
+                sku: "16.04-LTS"
+                version: "latest"
+              osDisk:
+                name: "my_vm_os_disk"
+                createOption: "FromImage"
+            osProfile:
+              computerName: "my-vm"
+              adminUsername: "adminuser"
+              adminPassword: "adminpassword"
+      tags:
+        Environment: dev
+    register: deployment_result
+    
+  - name: Verify HTTP response of azure_rm_deployment
+    uri:
+      url: "https://management.azure.com/{{ deployment_result.outputs.resourceId }}/providers/Microsoft.Compute/virtualMachines/my_vm?api-version=2020-12-01"
+      method: GET
+    register: response
+
+  - name: Print response status code
+    debug: var=response.status
+

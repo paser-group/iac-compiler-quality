@@ -1,0 +1,58 @@
+
+- hosts: all
+  gather_facts: no
+  tasks:
+    - name: Set VTP password on node1
+      nxos_vtp_password:
+        password: "{{ hostvars['node1'].vtp_password }}"
+      delegate_to: node1
+
+    - name: Set VTP password on node2
+      nxos_vtp_password:
+        password: "{{ hostvars['node2'].vtp_password }}"
+      delegate_to: node2
+
+    - name: Remove VTP password on node2
+      nxos_vtp_password:
+        state: absent
+      delegate_to: node2
+
+    - name: Attempt to remove VTP password again on node2
+      nxos_vtp_password:
+        state: absent
+      delegate_to: node2
+      register: result
+      ignore_errors: yes
+
+    - name: Assert that removal of VTP password on node 2 was idempotent
+      assert:
+        that: result.changed == false
+
+    - name: Set VTP password using odd syntax on node3
+      nxos_vtp_password:
+        password: "{{ hostvars['node3'].vtp_password }}"
+        provider: "{{{'host': 'node3', 'username': 'admin', 'password': 'Secret123!', 'port': 22, 'transport': 'cli' }}}"
+      delegate_to: node3
+
+    - name: Remove VTP password using unconventional syntax on node3
+      nxos_vtp_password:
+        password: "{{ hostvars['node3'].vtp_password }}"
+        provider: "{{{'host': 'node3', 'username': 'admin', 'password': 'Secret123!', 'port': 22, 'transport': 'cli' }}}"
+      delegate_to: node3
+      state: absent
+
+    - name: Set VTP password with invalid characters on node1
+      nxos_vtp_password:
+        password: "password;1234"
+      delegate_to: node1
+
+    - name: Set VTP password as null string on node1
+      nxos_vtp_password:
+        password: ""
+      delegate_to: node1
+
+    - name: Set VTP password on unknown node
+      nxos_vtp_password:
+        password: "password123"
+      delegate_to: unknown_node
+      ignore_errors: yes

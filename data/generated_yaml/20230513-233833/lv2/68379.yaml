@@ -1,0 +1,58 @@
+
+- name: Pull Docker image with credentials
+  hosts: all
+  vars:
+    docker_repo_username: "{{ lookup('env', 'DOCKER_USERNAME') }}"
+    docker_repo_password: "{{ lookup('env', 'DOCKER_PASSWORD') }}"
+    docker_image_name: "{{ lookup('env', 'DOCKER_IMAGE_NAME') }}"
+  tasks:
+    - name: Set up Docker credentials
+      set_fact:
+        docker_login_credentials: "{{ docker_repo_username }}:{{ docker_repo_password }}"
+    
+    - name: Pull Docker image with invalid credentials
+      docker_image:
+        name: "{{ docker_image_name }}"
+        source: pull
+        pull_credentials: "{{ docker_login_credentials }}:incorrect"
+      register: invalid_cred_result
+      ignore_errors: yes
+    
+    - name: Display invalid credential result
+      debug:
+        var: invalid_cred_result
+
+    - name: Pull Docker image with empty credentials
+      docker_image:
+        name: "{{ docker_image_name }}"
+        source: pull
+        pull_credentials: " "
+      register: empty_cred_result
+      ignore_errors: yes
+
+    - name: Display empty credential result
+      debug:
+        var: empty_cred_result
+
+    - name: Pull Docker image with missing credentials
+      docker_image:
+        name: "{{ docker_image_name }}"
+        source: pull
+      register: missing_cred_result
+      ignore_errors: yes
+
+    - name: Display missing credential result
+      debug:
+        var: missing_cred_result
+
+    - name: Pull Docker image with long credentials
+      docker_image:
+        name: "{{ docker_image_name }}"
+        source: pull
+        pull_credentials: "{{ docker_login_credentials }}""
+      register: long_cred_result
+      ignore_errors: yes
+
+    - name: Display long credential result
+      debug:
+        var: long_cred_result

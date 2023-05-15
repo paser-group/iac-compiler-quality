@@ -1,0 +1,55 @@
+
+---
+- name: SSL certificate verification error with datadog_event service
+  hosts: all
+  gather_facts: true
+
+  vars:
+    datadog_api_key: "<YOUR_DATADOG_API_KEY>"
+    datadog_app_key: "<YOUR_DATADOG_APP_KEY>"
+
+  tasks:
+    - name: Add Datadog repository
+      apt_repository:
+        repo: "deb https://apt.datadoghq.com/ stable 7"
+        state: present
+      become: true
+
+    - name: Install Datadog Agent
+      apt:
+        name: datadog-agent
+        state: present
+      become: true
+
+    - name: Update Datadog Agent configuration
+      blockinfile:
+        path: /etc/dd-agent/datadog.conf
+        block: |
+          # Add custom SSL configuration to trust self-signed certificates
+          [http]
+          verify_ssl: true
+          ssl_check_hostname: true
+          ssl_verify_host: true
+        marker: "# {mark} Ansible managed block"
+
+    - name: Add custom SSL certificates to Datadog Agent bundle
+      copy:
+        src: "<PATH_TO_CUSTOM_ROOT_CERTIFICATE>"
+        dest: /etc/datadog-agent/certificates/cert.crt
+      become: true
+
+    - name: Restart Datadog Agent
+      service:
+        name: datadog-agent
+        state: restarted
+      become: true
+
+    - name: Send a test event to Datadog
+      datadog_event:
+        api_key: "{{ datadog_api_key }}"
+        application_key: "{{ datadog_app_key }}"
+        title: "Testing Datadog event from Ansible"
+        text: "This event was generated from an Ansible playbook to test Datadog integration."
+        tags:
+          - ansible
+          - datadog

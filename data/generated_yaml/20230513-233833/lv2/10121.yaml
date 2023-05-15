@@ -1,0 +1,44 @@
+
+- name: Create ec2 directory with encrypted home directory
+  hosts: node1
+  become: true
+  tasks:
+    - name: Create encrypted volume
+      ec2_vol:
+        aws_access_key: "{{ aws_access_key }}"
+        aws_secret_key: "{{ aws_secret_key }}"
+        region: "us-east-1"
+        volume_size: 10
+        zone: "{{ aws_zone }}"
+      register: ec2_vol
+
+    - name: Create ec2 instance
+      ec2:
+        aws_access_key: "{{ aws_access_key }}"
+        aws_secret_key: "{{ aws_secret_key }}"
+        key_name: "{{ aws_key_name }}"
+        group: "{{ aws_security_group }}"
+        instance_type: "{{ aws_instance_type }}"
+        image: "{{ aws_image }}"
+        wait: true
+        region: "us-east-1"
+        count: 1
+        volumes:
+          - device_name: "/dev/xvdf"
+            volume_id: "{{ ec2_vol.volume_id }}"
+        user_data: |
+          #!/bin/bash
+          sudo apt-get update
+          sudo apt-get -y install ecryptfs-utils
+          sudo modprobe ecryptfs
+          echo $ECRYPTFS_PASSWORD | sudo mount -t ecryptfs /mnt /home/ubuntu --key-type=passphrase
+
+    - name: Ensure ec2 directory exists
+      file:
+        path: "/home/ubuntu/ec2"
+        state: directory
+
+    - name: Write long filename to ec2 directory
+      copy:
+        dest: "/home/ubuntu/ec2/{{ 'x' * 250 }}"
+        content: ""

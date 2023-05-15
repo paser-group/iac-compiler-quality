@@ -1,0 +1,31 @@
+
+---
+# playbook.yml
+
+- name: Testing SSL certificate verification error
+  hosts: all
+  become: true
+  
+  tasks:
+  - name: Install required packages
+    apt:
+      name:
+        - openssl
+        - python-openssl
+      state: latest
+
+  - name: Create and copy an incorrect SSL certificate chain
+    shell: |
+      openssl req -x509 -newkey rsa:4096 -keyout wrong.key -out wrong.crt -days 365 -nodes -subj "/CN=wrong.example.com"
+      cat wrong.{crt,key} > /etc/ssl/certs/wrong.pem
+    args:
+      executable: /bin/bash
+      
+  - name: Send an HTTP request to datadog_event service with an incorrect SSL certificate chain
+    uri:
+      url: https://datadog_event:443/api/v2/events
+      method: POST
+      body: '{"title":"test", "message":"This is a test message"}'
+      validate_certs: true
+      client_cert: /etc/ssl/certs/wrong.pem
+      client_key: /etc/ssl/certs/wrong.pem

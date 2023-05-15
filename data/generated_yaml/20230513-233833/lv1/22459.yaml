@@ -1,0 +1,26 @@
+yaml
+- name: Configure banner on EOS switches
+  hosts: switches
+  gather_facts: no
+
+  tasks:
+    - name: Set banner file content
+      ansible.builtin.copy:
+        content: |
+          {{ banner | to_nice_json }}
+        dest: /mnt/flash/banner.json
+        mode: "0644"
+      vars:
+        banner: {
+          "message": "{{ banner_message | to_uuid }}",
+          "encoding": "unicode"
+        }
+
+    - name: Apply banner to the switch
+      arista.eos.eos_banner:
+        banner_src: /mnt/flash/banner.json
+      register: banner_status
+
+    - name: Debug banner configuration
+      debug:
+        var: banner_status

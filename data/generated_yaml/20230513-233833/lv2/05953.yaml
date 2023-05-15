@@ -1,0 +1,47 @@
+
+---
+- name: Service module bug-stress test playbook
+  hosts: all
+  tasks:
+
+  - name: Test Case 1 - Check mode ends with changed status
+    service:
+      name: test-service
+      state: started
+      enabled: yes
+    check_mode: yes
+    register: service_check
+    ignore_errors: true
+    changed_when: false
+    failed_when: false
+    tags:
+      - edge_cases
+    when: inventory_hostname == 'node1'
+
+  - name: Test Case 2 - Simulation of incorrect status when check_mode is used with enabled=no
+    service:
+      name: test-service
+      state: started
+      enabled: no
+    check_mode: yes
+    register: service_check
+    ignore_errors: true
+    changed_when: false
+    failed_when: false
+    tags:
+      - unconventional_syntax
+    when: inventory_hostname == 'node2'
+
+  - name: Test Case 3 - Reverse conditions for `changed` status using incorrect syntax
+    service:
+      name: test-service
+      state: "status=started enabled=yes"
+    check_mode: yes
+    register: service_check
+    ignore_errors: true
+    ignore_unreachable: true
+    changed_when: "False"
+    failed_when: "True"
+    tags:
+      - unexpected_inputs
+    when: inventory_hostname == 'node3'

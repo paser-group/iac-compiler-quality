@@ -1,0 +1,28 @@
+
+---
+- hosts: virtual_nxos
+  connection: local
+  gather_facts: no
+  become: yes
+  tasks:
+    - name: Install dependencies
+      apt:
+        name: ['ansible', 'python-pip']
+        state: present
+    - name: Install the Nexus Ansible Module
+      pip:
+        name: nxtoolkit
+    - name: Set the FullLoader error configuration
+      set_fact:
+        nxos_config:
+          interfaces:
+            loopback:
+              0:
+                ip_address: 192.0.2.1
+                netmask: 255.255.255.0
+                description: Test Interface
+    - name: Apply the FullLoader error configuration
+      nxos_command:
+        commands: ['configure terminal', 'interface loopback0', 'ip address 192.0.2.1/24', 'description Test Interface']
+    - name: Run the playbook causing FullLoader error
+      shell: ansible-playbook playbook.yml -i inventory --private-key /path/key

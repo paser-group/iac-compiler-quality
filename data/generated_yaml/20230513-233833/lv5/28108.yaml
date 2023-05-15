@@ -1,0 +1,24 @@
+
+---
+- name: Execute long-running WinRM command
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Execute command and get ID
+      win_command: "long_running_command --param1=value1 --param2=value2"
+      async: 900
+      poll: 5
+      register: job_data
+
+    - name: Check job status
+      async_status:
+        jid: "{{ job_data.ansible_job_id }}"
+        mode: poll
+        sleep: 5
+      register: job_result
+      until: job_result.finished
+
+    - name: Fix any issues found
+      win_shell: "fix_errors_in_previous_tasks"
+      when: job_result.failed == true

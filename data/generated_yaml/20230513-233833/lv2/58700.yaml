@@ -1,0 +1,57 @@
+
+- name: Stress testing win_dns_record module
+  hosts: all
+  gather_facts: no
+  tasks:
+
+  - name: Adding DNS record with permission denied
+    win_dns_record:
+      name: www.example.com
+      zone: example.com
+      type: A
+      value: 192.168.1.1
+      state: present
+    become: yes
+    become_method: psexec
+    become_user: Administrator
+
+  - name: Adding long FQDN record
+    win_dns_record:
+      name: www.example123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123.example.com
+      zone: example.com
+      type: A
+      value: 192.168.1.1
+      state: present
+
+  - name: Adding PTR record with unconventional syntax
+    win_dns_record:
+      name: 1.1.168.192.in-addr.arpa.
+      zone: example.com
+      type: PTR
+      value: www.example.com
+      ttl: 3600
+      state: present
+
+  - name: Supplying invalid type parameter
+    win_dns_record:
+      name: www.example.com
+      zone: example.com
+      type: InvalidType
+      value: 192.168.1.1
+      state: present
+
+  - name: Adding DNS record with unexpected input
+    win_dns_record:
+      name: 192.168.1.1
+      zone: example.com
+      type: A
+      value: www.example.com
+      state: present
+
+  - name: Adding DNS record to non-existent zone
+    win_dns_record:
+      name: www.example.com
+      zone: non-existent-zone
+      type: A
+      value: 192.168.1.1
+      state: present

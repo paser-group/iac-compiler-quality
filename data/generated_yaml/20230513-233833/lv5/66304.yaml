@@ -1,0 +1,35 @@
+
+---
+- hosts: all
+  become: true
+
+  tasks:
+  - name: Install ansible package
+    apt:
+      name: ansible
+      state: present
+
+  - name: Check 'ansible_virtualization_type' fact for alpine container on ubuntu-latest GitHub runner
+    set_fact:
+      ansible_virt_type: "{{ ansible_virtualization_type }}"
+
+  - name: Write fact to a file
+    copy:
+      content: "{{ ansible_virt_type }}"
+      dest: /tmp/facts.txt
+
+  - name: Compare the fact value with the expected value
+    shell: |
+      if [ "{{ ansible_virt_type }}" == "none" ]
+      then
+          echo "Correct Virtualization type: {{ ansible_virt_type }}"
+      else
+          echo "Incorrect Virtualization type: {{ ansible_virt_type }}"
+      fi
+    args:
+      executable: /bin/bash
+      chdir: "/tmp/"
+
+  - name: Notify if the fact is incorrect
+    command: /bin/cat /tmp/facts.txt
+    changed_when: ansible_virt_type != "none"

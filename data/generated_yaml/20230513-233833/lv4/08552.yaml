@@ -1,0 +1,64 @@
+
+- name: Create VPC, Subnet, Security Group, and EC2 Instance
+  hosts: localhost
+  gather_facts: no
+  
+  vars:
+    aws_region: us-east-1
+    aws_access_key: <AWS_ACCESS_KEY>
+    aws_secret_key: <AWS_SECRET_KEY>
+    vpc_cidr_block: 10.0.0.0/16
+    subnet_cidr_block: 10.0.1.0/24
+    security_group_name: test_sg
+    instance_type: t2.micro
+    ami_id: ami-0c94855ba95c71c99
+
+  tasks:
+    - name: Create VPC
+      ec2_vpc:
+        cidr_block: "{{ vpc_cidr_block }}"
+        region: "{{ aws_region }}"
+        access_key: "{{ aws_access_key }}"
+        secret_key: "{{ aws_secret_key }}"
+        resource_tags:
+          Name: test_vpc
+      register: vpc
+
+    - name: Create Subnet
+      ec2_vpc_subnet:
+        name: test_subnet
+        vpc_id: "{{ vpc.vpc_id }}"
+        cidr_block: "{{ subnet_cidr_block }}"
+        region: "{{ aws_region }}"
+        access_key: "{{ aws_access_key }}"
+        secret_key: "{{ aws_secret_key }}"
+        resource_tags:
+          Name: test_subnet
+      register: subnet
+
+    - name: Create Security Group
+      ec2_vpc_security_group:
+        name: "{{ security_group_name }}"
+        description: test security group
+        vpc_id: "{{ vpc.vpc_id }}"
+        region: "{{ aws_region }}"
+        access_key: "{{ aws_access_key }}"
+        secret_key: "{{ aws_secret_key }}"
+        resource_tags:
+          Name: "{{ security_group_name }}"
+      register: sg
+
+    - name: Launch EC2 instance
+      ec2:
+        image: "{{ ami_id }}"
+        instance_type: "{{ instance_type }}"
+        key_name: testkey
+        region: "{{ aws_region }}"
+        access_key: "{{ aws_access_key }}"
+        secret_key: "{{ aws_secret_key }}"
+        security_group_ids: "{{ sg.vpc_security_group_id }}"
+        vpc_subnet_id: "{{ subnet.subnet_id }}"
+        count: 1
+        tags: 
+          Name: test-instance
+      register: ec2_instance

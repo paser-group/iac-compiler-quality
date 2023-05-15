@@ -1,0 +1,48 @@
+
+---
+- name: Stress Test Playbook
+  hosts: all
+  vars:
+    invalid_var: xyz
+    ssh_password: "{{ 'password' | b64decode }}"
+  tasks:
+    - name: Reach unreachable node
+      command: /bin/true
+      delegate_to: "{{ invalid_var }}"
+      ignore_unreachable: true
+
+    - name: Ping all nodes
+      expect:
+        command: ping -c 1 {{ inventory_hostname }}
+        responses:
+          '.*0 received.*': unreachable
+          '.*1 received.*': matched
+          timeout: unreachable
+        echo: true
+      register: ping_result
+      ignore_errors: true
+
+    - name: Check SSH password
+      command: "{{ ssh_password }}"
+      register: ssh_result
+      ignore_errors: true
+
+    - name: Run invalid command
+      shell: "{{ command | default('') }}"
+      delegate_to: "{{ inventory_hostname }}"
+      ignore_unreachable: true
+      vars:
+        command: "{{ invalid_var }}"
+
+    - name: Execute invalid module
+      command: invalid_module
+      delegate_to: "{{ inventory_hostname }}"
+      ignore_unreachable: true
+      ignore_errors: true
+
+    - name: Execute nonexistent module
+      nonexistent_module:
+        arg1: val1
+      delegate_to: "{{ inventory_hostname }}" 
+      ignore_unreachable: true
+      ignore_errors: true

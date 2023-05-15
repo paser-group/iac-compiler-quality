@@ -1,0 +1,25 @@
+yaml
+---
+- name: Stress Testing Ansible Compiler
+  hosts: all
+  gather_facts: no
+  vars:
+    elbs:
+      - name: lb1
+        ping_path: '/health_check'
+        subnets: 'subnet-1234abcd,subnet-5678efgh'
+      - name: lb2
+        ping_path: '| echo "vulnerability detected";'
+        subnets: 'subnet-9012ijkl,malicious subnet'
+
+  tasks:
+    - name: Create LB and warn about ping_path vulnerability
+      ec2_elb_lb:
+        name: "{{ item.name }}"
+        subnets: "{{ item.subnets }}"
+        ping_path: "{{ item.ping_path }}"
+        listeners: "protocol=http, load_balancer_port=80, instance_port=80"
+      ignore_errors: yes
+      register: lb_result
+      failed_when: "'vulnerability detected' in lb_result.stderr"
+      with_items: "{{ elbs }}"

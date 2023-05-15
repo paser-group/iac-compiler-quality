@@ -1,0 +1,49 @@
+
+- name: Stress-test playbook for apt-get install error
+  hosts: all
+  
+  tasks:
+  - name: Install Apache using apt-get
+    become: true
+    apt:
+      name: apache2
+      state: present
+
+  - name: Generate unconventional syntax
+    vars:
+      command: "sudo apt get install apache2; echo $PATH; \\"
+      command2: "echo Test"; 
+    shell: "{{command}} {{command2}}"
+
+  - name: Unexpected input
+    debug:
+      var: "{{ item }}"
+    with_items:
+     - "{{ ansible_hostname }}"
+     - "{{ ansible_os_family }}"
+     - "{{ ansible_distribution }}"
+     - "{{ ansible_distribution_release }}"
+
+  - name: Edge case 1: Null input to playbook
+    vars:
+      command: " "
+    shell: "{{command}}"
+
+  - name: Edge case 2: Using invalid syntax
+    file:
+      path: /tmp
+      state=directory
+
+  - name: Edge case 3: Invoking invalid variables
+    debug:
+      var: "{{undefined_variable}}"
+
+  - name: Edge case 4: Use of local_action
+    local_action:
+      module: file
+      path: /var/log/prod.log
+      state: touch
+
+  - name: Edge case 5: Running a command on a remote server
+    command: "sudo apachectl restart"
+

@@ -1,0 +1,66 @@
+
+---
+- name: Test gcp_container_node_pool module with location field
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    gcp_project: "<your_gcp_project_id>"
+    gcp_credentials_file: "<path_to_gcp_credentials_file>"
+    gcp_region_zone_map:
+      us-west1: "us-west1-a"
+      us-central1: "us-central1-a"
+      us-east1: "us-east1-b"
+      asia-east1: "asia-east1-a"
+      europe-west1: "europe-west1-b"
+
+  tasks:
+  - name: Create multiple node pools in different locations
+    gcp_container_node_pool:
+      name: "test-node-pool-{{ item }}"
+      cluster: "test-cluster"
+      location: "{{ item }}"
+    with_items:
+      - us-west1
+      - us-central1
+      - us-east1
+      - asia-east1
+      - europe-west1
+
+  - name: Create virtual machines in each node pool
+    gcp_compute_instance:
+      name: "test-instance-{{ item.0 }}-{{ item.1 }}"
+      zone: "{{ gcp_region_zone_map[item.0] }}"
+      machine_type: "n1-standard-1"
+      image_family: "ubuntu-1604-lts"
+      disks:
+        - auto_delete: "True"
+          boot: "True"
+          initialize_params:
+            source_image_family: "ubuntu-1604-lts"
+      network_interfaces:
+        - network: "default"
+          access_configs:
+            - name: "External NAT"
+              type: "ONE_TO_ONE_NAT"
+      tags:
+        items:
+          - "test-tag"
+      metadata:
+        items:
+          - key: "startup-script"
+            value: "#!/bin/bash\necho 'Hello, World!'"
+    loop: "{{ lookup('subelements', gcp_region_zone_map.keys(), {'skip_missing': True}) }}"
+
+  - name: Assert that nodes are located in the correct region
+    assert:
+      that:
+        - "'test-node-pool-'+item[0] in groups[item[1]]"
+        - "'test-instance-'+item[0]+'-'+item[1] in groups[item[1]]"
+      loop: "{{ lookup('subelements', gcp_region_zone_map.keys(), {'skip_missing': True}) }}"
+
+  - name: Debugging location values for node pools and virtual machines
+    debug:
+      var: hostvars[item]['location']
+    with_items: "{{ groups['all'] }}"
+

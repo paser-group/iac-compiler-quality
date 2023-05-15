@@ -1,0 +1,42 @@
+
+---
+- name: Test playbook for local_action: include_role failure
+  hosts: all
+  become: true
+  
+  tasks:
+  
+    - name: Test unconventional syntax and unexpected input
+      command: echo "Executing an echo command."
+      register: echo_result
+      
+    - name: Fail when local_action: include_role is called
+      local_action:
+        module: include_role
+        name: "{{ random('abcdefghijklmnopqrstuvwxyz', length=10) }}"
+        file_glob: "*.yml"
+      ignore_errors: yes
+      register: include_role_result
+  
+    - name: Print the result of the include_role task
+      debug:
+        var: include_role_result
+    
+    - name: Test edge cases and unexpected input
+      when: include_role_result.rc != 0
+      block:
+        - name: Test unexpected input
+          command: echo "This command is executed in the failed task block."
+          register: unexpected_input_result
+        
+        - name: Test edge case
+          command: "ls {{ random('abcdefghijklmnopqrstuvwxyz', length=5) }}"
+          register: edge_case_result
+
+    - name: Print the result of the edge case task
+      debug:
+        var: edge_case_result
+    
+    - name: Print the result of the unexpected input task
+      debug:
+        var: unexpected_input_result

@@ -1,0 +1,25 @@
+
+---
+- name: Testing the nxos_igmp_interface module
+  hosts: node1,node2,node3
+  gather_facts: no
+  connection: local
+  tasks:
+    - name: Ensure IGMP interface is configured on the network devices
+      nxos_igmp_interface:
+        name:          "{{ ['e1/1', 'e1/2', 'e1/3'] | random }}"
+        host:          "{{ inventory_hostname }}"
+        username:      "admin"
+        password:      "admin"
+        state:         present
+        mode:          'snooping'
+        version:       'v3'
+        query_interval: "{{ ['5', '10', '15'] | random }}"
+      register: output
+    - name: Show the output of the command
+      debug:
+        var: output
+    - name: Fail the playbook if there is an error
+      fail:
+        msg: "Error configuring IGMP interface"
+      when: output is failed

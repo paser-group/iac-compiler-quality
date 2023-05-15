@@ -1,0 +1,62 @@
+
+---
+- name: NXOS_VXLAN_VTEP_VNI module stress testing playbook
+  hosts: all
+  gather_facts: no
+  
+  tasks:
+  - name: Configure a VXLAN VTEP with a VNI
+    nxos_vxlan_vtep_vni:
+      vrf: test-vrf
+      feature:
+        - l2
+      vni: 1000
+      vtep_ip: 192.168.1.1
+      switch_id: 11223344
+      source_interface: Ethernet1/1
+      host_reachability_protocol: bgp
+      bgp_as: 65000
+      bgp_router_id: "2.2.2.2"
+    register: vtep_registration_result
+  
+  - name: Test remove idempotence by removing the VXLAN VTEP VNI configuration
+    nxos_vxlan_vtep_vni:
+      vrf: test-vrf
+      feature:
+        - l2
+      vni: 1000
+      vtep_ip: 192.168.1.1
+      switch_id: 11223344
+      source_interface: Ethernet1/1
+      host_reachability_protocol: bgp
+      bgp_as: 65000
+      bgp_router_id: "2.2.2.2"
+      state: absent
+  
+  - name: Configure VXLAN VTEP with an invalid switch ID, testing unconventional syntax
+    nxos_vxlan_vtep_vni:
+      vrf: test-vrf
+      feature:
+        - l2
+      vni: 2000
+      vtep_ip: 192.168.1.2
+      switch_id: 0XGGGGGG
+      source_interface: Ethernet1/2
+      host_reachability_protocol: bgp
+      bgp_as: 65000
+      bgp_router_id: "3.3.3.3"
+    register: invalid_switch_result
+
+  - name: Configure VXLAN VTEP with a non-numeric VNI, testing unexpected input
+    nxos_vxlan_vtep_vni:
+      vrf: test-vrf
+      feature:
+        - l2
+      vni: my-vni
+      vtep_ip: 192.168.1.3
+      switch_id: 55667788
+      source_interface: Ethernet1/3
+      host_reachability_protocol: bgp
+      bgp_as: 65000
+      bgp_router_id: "4.4.4.4"
+    register: non_numeric_vni_result

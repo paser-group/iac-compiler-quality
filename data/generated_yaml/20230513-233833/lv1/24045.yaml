@@ -1,0 +1,28 @@
+
+- name: Check GCP Compute Zones and List Permissions
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    gcp_project_id: "<YOUR_GCP_PROJECT_ID>"
+    service_account_file: "<YOUR_SERVICE_ACCOUNT_FILE>.json"
+
+  tasks:
+
+  - name: Authenticate with GCP
+    google-auth:
+      credentials_file: "{{ service_account_file }}"
+      delegate_to: localhost
+    register: auth_result
+
+  - name: List GCP Compute Zones
+    google_compute_region_facts:
+      project: "{{ gcp_project_id }}"
+      auth_kind: serviceaccount
+      credentials_file: "{{ service_account_file }}"
+    register: region_facts
+
+  - name: Display Zone List and Permissions
+    debug:
+      msg: "{{ item.name }} - {{ item.status }} - {{ item.description }} - {{ item.creationTimestamp }} - {{ item.selfLink }} - {{ item.availableFeatures }} - {{ item.quota }} - {{ item.kind }} - {{ item.id }} - {{ item.permissions }}"
+    with_items: "{{ region_facts['items'] }}"

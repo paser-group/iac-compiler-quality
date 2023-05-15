@@ -1,0 +1,27 @@
+yaml
+---
+- hosts: all
+  become: true
+  become_user: root
+  roles:
+    - name: configure slack plugin
+      vars:
+        slack_webhook_url: "https://slack.com/apps/A0F7XDUAZ-incoming-webhooks?next_id=0#"
+      tasks:
+        - name: install slackweb package
+          package:
+            name: slackweb
+            state: present
+        - name: copy the slackcallback.py script to ansible callback directory
+          copy:
+            src: /tmp/slackcallback.py
+            dest: /usr/share/ansible/plugins/callback/slackcallback.py
+          notify:
+            - restart ansible
+  handlers:
+    - name: restart ansible
+      service:
+        name: ansible
+        state: restarted
+      async: 120
+      poll: 1

@@ -1,0 +1,56 @@
+yaml
+---
+- name: Stress test Ansible VaultLib.encrypt
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: Create a plain-text file
+      copy:
+        content: "This is plain text."
+        dest: /tmp/plain-text.txt
+
+    - name: Encrypt the plain-text file
+      vars:
+        secret: "my_secret_key"
+      command: ansible-vault encrypt /tmp/plain-text.txt --vault-password-file <(echo {{ secret }})
+
+    - name: Decrypt the encrypted file - missing vault password
+      ignore_errors: yes
+      command: ansible-vault view /tmp/plain-text.txt
+
+    - name: Decrypt the encrypted file - incorrect vault password
+      ignore_errors: yes
+      vars:
+        incorrect_secret: "wrong_key"
+      command: ansible-vault view /tmp/plain-text.txt --vault-password-file <(echo {{ incorrect_secret }})
+
+    - name: Decrypt the encrypted file - valid vault password
+      vars:
+        secret: "my_secret_key"
+      command: ansible-vault view /tmp/plain-text.txt --vault-password-file <(echo {{ secret }})
+
+    - name: Update the encrypted file - missing vault password
+      ignore_errors: yes
+      lineinfile:
+        path: /tmp/plain-text.txt
+        line: "This is a modification."
+        insertafter: EOF
+
+    - name: Update the encrypted file - incorrect vault password
+      ignore_errors: yes
+      lineinfile:
+        path: /tmp/plain-text.txt
+        line: "This is a modification."
+        insertafter: EOF
+        regexp: "^This is plain text."
+
+    - name: Update the encrypted file - valid vault password
+      vars:
+        secret: "my_secret_key"
+      lineinfile:
+        path: /tmp/plain-text.txt
+        line: "This is a modification."
+        insertafter: EOF
+        regexp: "^This is plain text."
+        state: present

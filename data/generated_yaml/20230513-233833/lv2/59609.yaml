@@ -1,0 +1,38 @@
+
+- name: Test aws_secret lookup plugin 
+  hosts: all
+  vars:
+    aws_secret: "{{ lookup('aws_secret', 'mysecret') }}"
+  tasks:
+    - name: Test lookup with PPA-installed botocore version 2.8.3
+      shell: echo "{{ aws_secret }}" >> /tmp/secret.txt
+      environment:
+        AWS_ACCESS_KEY_ID: "{{ lookup('aws', 'access_key') }}"
+        AWS_SECRET_ACCESS_KEY: "{{ lookup('aws', 'secret_key') }}"
+        AWS_DEFAULT_REGION: "{{ lookup('aws', 'region') }}"
+        AWS_SECURITY_TOKEN: "{{ lookup('aws', 'token') }}"
+      delegate_to: node1
+    - name: Test lookup without specifying botocore version 
+      shell: echo "{{ aws_secret }}" >> /tmp/secret.txt
+      environment:
+        AWS_ACCESS_KEY_ID: "{{ lookup('aws', 'access_key') }}"
+        AWS_SECRET_ACCESS_KEY: "{{ lookup('aws', 'secret_key') }}"
+        AWS_DEFAULT_REGION: "{{ lookup('aws', 'region') }}"
+        AWS_SECURITY_TOKEN: "{{ lookup('aws', 'token') }}"
+      delegate_to: node2
+    - name: Test lookup with unconventional syntax
+      shell: echo "{{ aws_secret }}" >> /tmp/secret.txt
+      environment:
+        AWS_ACCESS_KEY_ID: "{{ 'lookup' + 'aws' }}"
+        AWS_SECRET_ACCESS_KEY: "{{ 'lookup(' + 'aws_secret' + ',' }}"
+        AWS_DEFAULT_REGION: "{{ 'region' + ')' }}"
+        AWS_SECURITY_TOKEN: "{{ 'lookup' + 'aws' }}"
+      delegate_to: node3
+    - name: Test lookup with unexpected input 
+      shell: echo "{{ aws_secret }}" >> /tmp/secret.txt
+      environment:
+        AWS_ACCESS_KEY_ID: "{{ lookup('aws', '123456789') }}"
+        AWS_SECRET_ACCESS_KEY: "{{ lookup('aws', 'abcdefghijk') }}"
+        AWS_DEFAULT_REGION: "{{ lookup('aws', 'invalidregion') }}"
+        AWS_SECURITY_TOKEN: "{{ lookup('aws', 'invalidtoken') }}"
+      delegate_to: node1

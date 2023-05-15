@@ -1,0 +1,30 @@
+yaml
+---
+- name: Example playbook for AWS S3 module
+  hosts: localhost
+  become: yes
+  gather_facts: no
+
+  vars:
+    s3_bucket_name: my-s3-bucket
+    aws_profile: my-aws-profile
+
+  tasks:
+    - name: Copy a file to S3 bucket
+      aws_s3:
+        bucket: "{{ s3_bucket_name }}"
+        object: "{{ item }}"
+        src: "{{ item }}"
+        profile: "{{ aws_profile }}"
+      register: s3_copy_result
+      with_items:
+        - file1.txt
+        - file2.txt
+
+    - name: Handle runtime errors
+      block:
+        - debug:
+            var: s3_copy_result
+      rescue:
+        - fail:
+            msg: "Failed to copy the files to S3 bucket with error: {{ ansible_failed_result }}"

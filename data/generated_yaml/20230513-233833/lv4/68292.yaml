@@ -1,0 +1,53 @@
+
+---
+- name: Deploy AMI to EC2
+  hosts: localhost
+  connection: local
+  gather_facts: no
+  vars:
+    instance_type: t2.micro
+    ami_id: ami-0c2b8ca1dad447f8a # Ubuntu 18.04 LTS 
+    keypair_name: my-ec2-keypair
+    sg_name: ssh-access
+  vars_files:
+    - "{{ inventory_dir }}/aws-params.yml"
+  tasks:
+    - name: Prepare security group
+      ec2_group:
+        name: "{{ sg_name }}"
+        description: Allow SSH traffic
+        vpc_id: "{{ vpc_id }}"
+        rules:
+          - proto: tcp
+            from_port: 22
+            to_port: 22
+            cidr_ip: 0.0.0.0/0
+    - name: Provision EC2 and store public IP
+      ec2:
+        key_name: "{{ keypair_name }}"
+        instance_type: "{{ instance_type }}"
+        image: "{{ ami_id }}"
+        region: "{{ region }}"
+        group: "{{ sg_name }}"
+        count: 1
+        instance_tags:
+          Ansible: ec2
+        wait: true
+        assign_public_ip: yes
+        exact_count: 1
+      register: ec2_instance
+
+    - name: Display the Public IP of the Instance.
+      debug:
+        var: ec2_instance.instances[0].public_ip_address
+
+    - name: Add new ssh key
+      when: not ec2_instance.tagged_instances[0].key_name == keypair_name
+      local_action:
+        module: ec2_key
+        access_key: "{{ aws_access_key }}"
+        secret_key: "{{ aws_secret_key }}"
+        name: "{{ keypair_name }}"
+        state: present
+        region: "{{ region }}"
+        key_material: "{{ lookup('file', keypair_file) }}"

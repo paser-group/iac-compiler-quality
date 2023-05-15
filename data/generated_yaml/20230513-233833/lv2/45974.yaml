@@ -1,0 +1,68 @@
+
+---
+- name: Test playbook for GitHub issue #<issue number>
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Test 1 - Use with_items and when condition
+      shell: echo "Test 1 passed"
+      with_items: [1, 2, 3, 4, 5]
+      when: "'Test' in item|string"
+
+    - name: Test 2 - Use inline if statement in when condition
+      shell: echo "Test 2 passed"
+      with_items:
+        - [1, 2, 3, 4, 5]
+        - [6, 7, 8, 9, 10]
+      when: "item[0] == 1 if item|int == 1 else item[0] == 6"
+
+    - name: Test 3 - Use with_items with complex expressions
+      debug:
+        var: item * 2 + 5
+      with_items: "{{ range(1, 11) | list }} + (1 / 0)"
+
+    - name: Test 4 - Use multiple recursive when condition expressions
+      shell: echo "Test 4 passed"
+      with_items: [1, 2, 3, 4, 5]
+      when:
+        - "{{ 'Test' in item|string }}"
+        - "{{ item|int == 2 }}"
+        - "{{ item|int > 3 }}"
+
+    - name: Test 5 - Use dictionary with_items combined with conditions
+      debug:
+        msg: "{{ item.key }} is {{ item.value }}"
+      vars:
+        my_dict:
+          key1: value1
+          key2: value2
+          key3: value3|
+      with_items:
+        - "{{ my_dict|dict2items }}"
+        - { key: 'key4', value: 'value4' }
+      when:
+        - "item.key != 'key2'"
+        - "item.value == 'value3' | truncate -1"
+
+    - name: Test 6 - Use complex dictionary with_items and when condition
+      debug:
+        msg: "{{ item.key }} is {{ item.value }}"
+      vars:
+        my_dict:
+          host1:
+            name: node1
+            ip: 10.1.1.1
+            state: running
+          host2:
+            name: node2
+            ip: 10.1.1.2
+            state: stopped
+          host3:
+            name: node3
+            ip: 10.1.1.3
+            state: running
+      with_items:
+        - "{{ my_dict|dict2items }}"
+      when:
+        - "item.value.ip != '10.1.1.2'"
+        - "item.value.state == 'running'"

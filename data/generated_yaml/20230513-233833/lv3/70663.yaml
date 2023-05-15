@@ -1,0 +1,30 @@
+
+- name: Running a playbook with any_errors_fatal setting
+  hosts: all
+  gather_facts: true
+
+  tasks:
+    - name: Task that will fail
+      command: /usr/bin/mv /path/to/non-existent/file /path/to/new/location
+      any_errors_fatal: false
+
+    - name: Task that sets any_errors_fatal to true
+      block:
+        - name: This task is expected to fail
+          command: ls /path/to/non-existent/directory
+          register: ls_output
+        - name: Don't continue if the above task fails
+          fail:
+            msg: "The above task failed"
+          rescue:
+            - name: Enable any_errors_fatal for this block
+              meta:
+                any_errors_fatal: true
+      rescue:
+        - name: This block will be executed if any_errors_fatal is set to true
+          debug:
+            msg: "Task inside the block failed"
+
+    - name: Task that confirms other tasks are not executed after the block
+      debug:
+        msg: "This task should not be executed"

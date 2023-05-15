@@ -1,0 +1,33 @@
+yaml
+---
+- name: Test osx_defaults type mismatch bug
+  hosts: all
+  gather_facts: no
+  vars:
+    osx_defaults_key: "test_key"
+    osx_defaults_val_1: 1
+    osx_defaults_val_2: "hello"
+  tasks:
+    - name: Set osx_defaults value to integer
+      osx_defaults:
+        domain: com.example.test
+        key: "{{ osx_defaults_key }}"
+        type: int
+        value: "{{ osx_defaults_val_1 }}"
+    - name: Set osx_defaults value to string
+      osx_defaults:
+        domain: com.example.test
+        key: "{{ osx_defaults_key }}"
+        type: string
+        value: "{{ osx_defaults_val_2 }}"
+    - name: Get osx_defaults value
+      osx_defaults:
+        domain: com.example.test
+        key: "{{ osx_defaults_key }}"
+      register: osx_defaults_result
+    - name: Check osx_defaults value for correct type and value
+      assert:
+        that:
+          - "'value' in osx_defaults_result"
+          - "osx_defaults_result['value'] == osx_defaults_val_2"
+          - "type(osx_defaults_result['value']) == type(osx_defaults_val_2)"

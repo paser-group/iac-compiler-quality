@@ -1,0 +1,26 @@
+
+---
+- name: fix docker_container issue
+  hosts: localhost
+  become: yes
+
+  tasks:
+    - name: stop docker container
+      docker_container:
+        name: "{{ container_name }}"
+        state: stopped
+      register: stopped
+
+    - name: remove docker container
+      docker_container:
+        name: "{{ container_name }}"
+        state: absent
+      when: stopped is changed and stopped.status == 'Stopped'
+
+    - name: start docker container with corrected parameters
+      docker_container:
+        name: "{{ container_name }}"
+        image: "{{ image_name }}"
+        command: "{{ command }}"
+        ports: "{{ ports }}"
+        state: started

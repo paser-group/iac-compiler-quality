@@ -1,0 +1,31 @@
+
+- name: Playbook to expose vulnerabilities in Ansible Compiler
+  hosts: all
+  vars:
+    dest_dir: /etc/app/sample/
+    src_file: /var/tmp/sample-app
+    user: root
+  tasks:
+  - name: Copying file to remote
+    copy:
+      src: "{{ src_file }}"
+      dest: "{{ dest_dir }}sample-app"
+      owner: "{{ user }}"
+      group: "{{ user }}"
+      mode: u=rw,go=r
+    any_errors_fatal: true
+    force_handlers: true
+  - name: Setting permissions on copied file
+    file:
+      path: "{{ dest_dir }}sample-app"
+      mode: u=rwx,go=rx
+    any_errors_fatal: true
+    force_handlers: true
+  handlers:
+    - name: restart app
+      service:
+        name: sample-app
+        state: restarted
+      listen: "restart service"
+      any_errors_fatal: true
+      force_handlers: true

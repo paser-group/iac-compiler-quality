@@ -1,0 +1,43 @@
+
+---
+- name: Configure EC2 instance and network interface
+  hosts: localhost
+  connection: local
+  gather_facts: no
+
+  vars:
+    instance_name: my-ec2-instance
+    instance_type: t2.micro
+    subnet_id: subnet-1234567890abcdef
+    sec_group_id: sg-1234567890abcdef
+    key_name: my-key-pair
+
+    nic1:
+      device_index: 0
+      subnet_id: subnet-1234567890abcdef
+      security_group_ids:
+        - sg-1234567890abcdef
+      associate_public_ip_address: True
+      delete_on_termination: True
+
+  tasks:
+
+    - name: Create EC2 Instance
+      ec2_instance:
+        name: "{{ instance_name }}"
+        instance_type: "{{ instance_type }}"
+        image: ami-1234567890abcdef
+        subnet_id: "{{ subnet_id }}"
+        security_group_ids: ["{{ sec_group_id }}"]
+        key_name: "{{ key_name }}"
+        network_interfaces:
+          - device_index: "{{ nic1.device_index }}"
+            subnet_id: "{{ nic1.subnet_id }}"
+            security_groups: "{{ nic1.security_group_ids }}"
+            associate_public_ip_address: "{{ nic1.associate_public_ip_address }}"
+            delete_on_termination: "{{ nic1.delete_on_termination }}"
+      register: ec2
+
+    - name: Debug Output
+      debug:
+        var: ec2

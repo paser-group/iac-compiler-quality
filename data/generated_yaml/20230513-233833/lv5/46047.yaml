@@ -1,0 +1,28 @@
+
+---
+- name: OpenSSL pkcs12 playbook
+  hosts: all
+  become: yes
+  tasks:
+    - name: Install OpenSSL
+      apt: name=openssl state=present
+      
+    - name: Create directory for PKCS12
+      file:
+        path: /tmp/pkcs12
+        state: directory
+        mode: "0775"
+        
+    - name: Generate a PKCS12 file
+      shell: |
+        openssl pkcs12 -inkey <path_to_private_key> -in <path_to_certificate> -export -out /tmp/pkcs12/pkcs12{{inventory_hostname}}.pfx -password pass:<password>
+      register: output
+
+    - name: Check if the PKCS12 file was generated successfully
+      stat:
+        path: "/tmp/pkcs12/pkcs12{{ inventory_hostname }}.pfx"
+      register: filestat
+
+    - name: Display the contents of the PKCS12 file
+      command: "openssl pkcs12 -in /tmp/pkcs12/pkcs12{{ inventory_hostname }}.pfx -nokeys -passin pass:<password>"
+      when: filestat.stat.exists == True

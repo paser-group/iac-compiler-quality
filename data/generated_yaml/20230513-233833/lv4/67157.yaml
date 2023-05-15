@@ -1,0 +1,53 @@
+
+- name: Check syntax errors
+  hosts: all
+  gather_facts: no
+  tasks:
+    - raw: ansible-playbook --syntax-check playbook.yml
+
+- name: Test string_conversion_action
+  hosts: all
+  become: yes
+  gather_facts: no
+  tasks:
+    - name: Test with string_conversion_action=replace
+      copy:
+        content: "{{ 'test1' }}"
+        dest: /tmp/test1
+        string_conversion_action: replace
+      register: copy_replace
+    - name: Test with string_conversion_action=error
+      copy:
+        content: "{{ 'test2' }}"
+        dest: /tmp/test2
+        string_conversion_action: error
+      register: copy_error
+    - name: Test with string_conversion_action=ignore
+      copy:
+        content: "{{ 'test3' }}"
+        dest: /tmp/test3
+        string_conversion_action: ignore
+      register: copy_ignore
+    - name: Test with string_conversion_action=default
+      copy:
+        content: "{{ 'test4' }}"
+        dest: /tmp/test4
+      register: copy_default
+    - name: Diff files
+      command: diff -q /tmp/test1 /tmp/test2
+      register: diff_result
+      ignore_errors: True
+
+- name: Test copy/template and diff
+  hosts: all
+  become: yes
+  gather_facts: no
+  tasks:
+    - name: Copy file and check diff
+      copy:
+        src: /tmp/example.txt
+        dest: /tmp/example_copy.txt
+      register: copy_result
+    - name: Test diff
+      command: diff -q /tmp/example.txt /tmp/example_copy.txt
+      register: diff_result

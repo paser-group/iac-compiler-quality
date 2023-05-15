@@ -1,0 +1,24 @@
+
+---
+- name: Testing ansible-vault decryption
+  hosts: all
+  tasks:
+  - name: create vault encrypted file
+    copy:
+      content: |
+        secret_key: !vault |
+          $ANSIBLE_VAULT;1.1;AES256
+          3132333435363738393031323334353637383930313233343536373839303132
+        write_only_key: !vault |
+          $ANSIBLE_VAULT;1.1;AES256
+          3132333435363738393031323334353637383930313233343536373839303132
+        read_only_key: !vault |
+          $ANSIBLE_VAULT;1.1;AES256
+          3132333435363738393031323334353637383930313233343536373839303132
+      dest: /tmp/ansible_vault_test.yml
+  - name: Using vault to decrypt
+    command: ansible-vault decrypt /tmp/ansible_vault_test.yml --vault-password-file /vault_pass.txt 
+    ignore_errors: yes
+    register: vault_result
+  - debug:
+      var: vault_result

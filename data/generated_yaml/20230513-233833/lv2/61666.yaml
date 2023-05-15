@@ -1,0 +1,38 @@
+
+- name: HTTP Error 401 issue with github and ansible-galaxy
+  hosts: all
+  gather_facts: false
+  become: true
+
+  tasks:
+    - name: add .netrc file for authentication
+      copy:
+        dest: "{{ ansible_env.HOME }}/.netrc"
+        content: |
+          machine api.github.com
+          login myusername
+          password mysecretpassword
+      run_once: true
+
+    - name: install dependencies
+      apt:
+        name:
+          - python-minimal
+          - python-apt
+          - aptitude
+        state: present
+
+    - name: install ansible-galaxy collection for testing
+      shell: ansible-galaxy collection install community.general
+      failed_when: false
+
+    - name: run ansible-galaxy command with authentication
+      shell: ansible-galaxy collection list
+      environment:
+        HTTP_PROXY: http://proxy.example.com:8080
+        HTTPS_PROXY: http://proxy.example.com:8080
+      register: result
+
+    - name: debug result
+      debug:
+        var: result

@@ -1,0 +1,52 @@
+
+- name: Stress Test Playbook for Ansible Compiler
+  hosts: all
+  gather_facts: no
+
+  tasks:
+  - name: Execute a command that fails with an empty error message
+    shell: /bin/false
+    register: output1
+
+  - name: Print the error message
+    debug: msg="{{ output1.stderr }}"
+
+  - name: Execute a command with unconventional syntax leading to rc=1
+    shell: |
+      this command won't work!"[]
+    register: output2
+    ignore_errors: yes
+
+  - name: Print the error message
+    debug: msg="{{ output2.stderr }}"
+
+  - name: Execute an unconventional command with unexpected input
+    command: "{{ item }}"
+    with_items:
+      - 1
+      - "2 3"
+      - "1/0"
+    register: output3
+    ignore_errors: yes
+
+  - name: Print the error message
+    debug: msg="{{ output3.stderr }}"
+  
+  - name: Execute a command with a very long argument string
+    command: "{{ '/bin/echo ' + 'A'*100000 }}"
+    register: output4
+
+  - name: Print the error message
+    debug: msg="{{ output4.stderr }}"
+  
+  - name: Test SSH connectivity using an incorrect key
+    ansible_user: user
+    ansible_become_user: root
+    ansible_become_method: su
+    ansible_ssh_private_key_file: /path/to/incorrect_key
+    ping:
+    register: output5
+    ignore_errors: yes
+
+  - name: Print the error message
+    debug: msg="{{ output5.stderr }}"

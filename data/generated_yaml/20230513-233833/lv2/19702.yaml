@@ -1,0 +1,35 @@
+
+---
+- hosts: [node1, node2, node3]
+  gather_facts: false
+  become: true
+
+  tasks:
+    - name: Perform a ping test on all nodes
+      ping:
+      register: ping_result
+      ignore_errors: yes
+
+    - name: Display the result of the ping test
+      debug:
+        var: ping_result
+
+    - name: Check if the hosts are reachable
+      wait_for_connection:
+        timeout: 60
+      register: connection_result
+      ignore_errors: yes
+
+    - name: Display the result of the connection check
+      debug:
+        var: connection_result
+
+    - name: Execute a command on all nodes
+      command: "echo 'Hello World!' > /tmp/hello.txt"
+      ignore_errors: yes
+
+    - name: Display output of the command on all nodes
+      debug:
+        msg: "Node {{ inventory_hostname }} returned: {{ item.stdout }}"
+      with_items: "{{ ansible_play_hosts }}"
+      when: item.rc == 0

@@ -1,0 +1,27 @@
+
+- hosts: all
+  vars:
+    playbook_path: "/tmp/{{ lookup('password', '/dev/null length=15') }}.yml"
+    playbook_content: "---
+- name: Test playbook
+  hosts: all
+  tasks:
+    - name: Debugging information
+      debug:
+        msg: 'This is a test playbook'
+    - name: Process substitution
+      command: cat <(echo 'Process substitution')"
+  command: "ansible-playbook {{ playbook_path }}"
+  tasks:
+    - name: Write playbook with process substitution
+      ansible.builtin.file:
+        path: "{{ playbook_path }}"
+        state: touch
+        mode: '0600'
+        content: "{{ playbook_content | b64encode }}"
+    - name: Execute playbook with process substitution
+      command: bash -c "{{ command }} < /dev/null"
+      register: result
+    - name: Display output of process substitution
+      debug:
+        var: result.stdout_lines

@@ -1,0 +1,53 @@
+
+---
+- hosts: all
+  become: true
+  vars:
+    max_api_invocations: 100 # Configure the maximum number of API calls
+
+  tasks:
+    - name: Creating Ec2 Instances
+      ec2_instance:
+        instance_type: t2.micro
+        key_name: '{{ ec2_key_name }}'
+        image_id: '{{ ec2_ami }}'
+        wait: true
+        count: 8
+        region: '{{ ec2_region }}'
+        instance_tags:
+          Name: 'Ec2 Instance'
+      register: ec2_instance
+
+    - name: Creating 3 Subnets
+      ec2_vpc_subnet:
+        subnet_name: "{{ item.name }}"
+        cidr: "{{ item.cidr }}"
+        az: "{{ item.az }}"
+        vpc_id: "{{ vpc.id }}"
+        region: "{{ ec2_region }}"
+        state: present
+      with_items:
+            - { name: 'subnet-1', cidr: '192.168.1.0/24', az: 'us-west-2a', }
+            - { name: 'subnet-2', cidr: '192.168.2.0/24', az: 'us-west-2b', }
+            - { name: 'subnet-3', cidr: '192.168.3.0/24', az: 'us-west-2c', }
+     
+    - name: Creating 5 Security Groups
+      ec2_group:
+        name: "{{ item }}"
+        description: "Testing Playbook"
+        vpc_id: "{{ vpc.id }}"
+        region: "{{ ec2_region }}"
+        state: present
+      with_items:
+            - 'sg-1'
+            - 'sg-2'
+            - 'sg-3'
+            - 'sg-4'
+            - 'sg-5'
+
+    - name: Invoking DescribeSubnets Operation
+      ec2_vpc_subnet_info:
+        region: "{{ ec2_region }}"
+      register: ec2_vpc_subnet_info_output
+      loop: "{{ range(1, max_api_invocations|int+1)|list }}"
+      delay: 15 # delay between each API call

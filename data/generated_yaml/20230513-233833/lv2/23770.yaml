@@ -1,0 +1,111 @@
+
+---
+- name: Test playbook for net_cli connection waiting for prompt
+  hosts: all
+  gather_facts: no
+  vars:
+    username: foo
+    password: bar
+    enable_password: baz
+    device_type: cisco_ios
+  tasks:
+    - name: Test simple connection to the device
+      netmiko_send_command:
+        command_string: show version
+        use_textfsm: yes
+        netmiko_kwargs:
+          device_type: "{{ device_type }}"
+          ip: "{{ inventory_hostname }}"
+          username: "{{ username }}"
+          password: "{{ password }}"
+      register: result
+      retries: 5
+      delay: 10
+      until: result.failed == false or result.stdout is search('Username prompt not found')
+      ignore_errors: yes
+    
+    - name: Test connection with incorrect username and password
+      netmiko_send_command:
+        command_string: show version
+        use_textfsm: yes
+        netmiko_kwargs:
+          device_type: "{{ device_type }}"
+          ip: "{{ inventory_hostname }}"
+          username: incorrectusername
+          password: incorrectpassword
+      ignore_errors: yes
+  
+    - name: Test connection with incorrect device_type
+      netmiko_send_command:
+        command_string: show version
+        use_textfsm: yes
+        netmiko_kwargs:
+          device_type: incorrectdevicetype
+          ip: "{{ inventory_hostname }}"
+          username: "{{ username }}"
+          password: "{{ password }}"
+      ignore_errors: yes
+  
+    - name: Test connection with incorrect enable password
+      netmiko_send_command:
+        command_string: show version
+        use_textfsm: yes
+        netmiko_kwargs:
+          device_type: "{{ device_type }}"
+          ip: "{{ inventory_hostname }}"
+          username: "{{ username }}"
+          password: "{{ password }}"
+          secret: incorrectenablepassword
+      ignore_errors: yes
+  
+    - name: Test connection with incorrect IP address
+      netmiko_send_command:
+        command_string: show version
+        use_textfsm: yes
+        netmiko_kwargs:
+          device_type: "{{ device_type }}"
+          ip: 1.1.1.1
+          username: "{{ username }}"
+          password: "{{ password }}"
+      ignore_errors: yes
+  
+    - name: Test connection with incorrect SSH port
+      netmiko_send_command:
+        command_string: show version
+        use_textfsm: yes
+        netmiko_kwargs:
+          device_type: "{{ device_type }}"
+          ip: "{{ inventory_hostname }}"
+          username: "{{ username }}"
+          password: "{{ password }}"
+          port: 65535
+      ignore_errors: yes
+  
+    - name: Test connection with incorrect timeout value
+      netmiko_send_command:
+        command_string: show version
+        use_textfsm: yes
+        netmiko_kwargs:
+          device_type: "{{ device_type }}"
+          ip: "{{ inventory_hostname }}"
+          username: "{{ username }}"
+          password: "{{ password }}"
+          timeout: -1
+      ignore_errors: yes
+  
+    - name: Test connection with prompt not matching prompt regex
+      netmiko_send_command:
+        command_string: show version
+        use_textfsm: yes
+        netmiko_kwargs:
+          device_type: "{{ device_type }}"
+          ip: "{{ inventory_hostname }}"
+          username: "{{ username }}"
+          password: "{{ password }}"
+          global_cmd_verify: no
+          expected_prompt: "promptnotfound"
+      register: prompt_result
+      retries: 5
+      delay: 10
+      until: prompt_result.failed == false or prompt_result.stdout is search('expected "promptnotfound", but "\S+" received')
+      ignore_errors: yes

@@ -1,0 +1,24 @@
+
+---
+- name: Fix Authentication Error
+  hosts: all
+  tasks:
+    - name: Install SSH key
+      authorized_key:
+        user: "{{ ansible_user }}"
+        key: "{{ lookup('file', '~/.ssh/id_rsa.pub') }}"
+        state: present
+      when: ssh_key_present.stat.exists == False
+      register: ssh_key_update
+
+    - name: Ping hosts
+      ping:
+      ignore_errors: true
+      register: hosts_ping
+
+    - name: Update authorized key
+      authorized_key:
+        user: "{{ ansible_user }}"
+        key: "{{ lookup('file', '~/.ssh/id_rsa.pub') }}"
+        state: present
+      when: hosts_ping.failed and ssh_key_update.changed

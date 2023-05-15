@@ -1,0 +1,20 @@
+
+---
+- name: Test 'exclude_path' parameter in the archive module
+  hosts: node1
+  become: true
+  tasks:
+    - name: Create directory structure to archive
+      shell: mkdir -p /home/user/test/archive
+             touch /home/user/test/archive/file{1..4}
+             mkdir -p /home/user/test/backup
+             touch /home/user/test/backup/file{1..4}
+    - name: Create archive with 'exclude_path' parameter
+      archive:
+        path: /home/user/test
+        dest: /home/user/test/archive.tar.gz
+        exclude_path: /home/user/test/backup
+    - name: Verify excluded files are not present in the archive
+      shell: tar -tzf /home/user/test/archive.tar.gz | grep backup
+      register: output
+      failed_when: output.stdout != ""

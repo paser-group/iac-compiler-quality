@@ -1,0 +1,31 @@
+
+- name: Verify get_url functionality with curl
+  curl:
+    url: <URL to test>
+    method: GET
+    status_code: 200
+    validate_certs: no
+    register: curl_result
+  become: yes
+
+- debug:
+    var: curl_result
+
+- name: Get URL with get_url module
+  get_url:
+    url: <URL to test>
+    dest: /tmp/test_url
+  become: yes
+  
+- name: Verify get_url functionality with debug
+  debug:
+    msg: "{{ lookup('file', '/tmp/test_url') }}"
+    
+- name: Verify curl results match get_url results
+  block:
+    - name: Compare curl and get_url results
+      assert:
+        that:
+          - curl_result.content == lookup('file', '/tmp/test_url')
+          - curl_result.status == 200
+      become: yes     

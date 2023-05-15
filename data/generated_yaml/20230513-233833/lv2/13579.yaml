@@ -1,0 +1,57 @@
+
+- name: Lookup Jinja2 templates
+  hosts: all
+  gather_facts: no
+  tasks:
+    # Edge Cases
+    - name: Empty lookup
+      debug:
+        msg: "{{ lookup('template', '') }}"
+
+    - name: Missing template
+      debug:
+        msg: "{{ lookup('template', 'missing-template.j2') }}"
+
+    - name: Incorrect path
+      debug:
+        msg: "{{ lookup('template', '../incorrect-path.j2') }}"
+
+    - name: Invalid template syntax
+      debug:
+        msg: "{{ lookup('template', 'invalid.j2') }}"
+
+    # Unconventional syntax
+    - name: Unconventional filename
+      debug:
+        msg: "{{ lookup('template', 'my-{{ inventory_hostname }}-file.j2') }}"
+
+    - name: Assignment to loop variable
+      debug:
+        msg: |
+          {% for item in lookup('template', 'test.j2') %}
+            {% set item = 'new value' %} {{ item }}
+          {% endfor %}
+
+    - name: String concatenation
+      debug:
+        msg: "{{ lookup('template', 'test-' ~ inventory_hostname ~ '.j2') }}"
+
+    - name: Ternary operator
+      debug:
+        msg: "{{ 'yes' if ansible_os_family == 'Debian' else 'no' }}"
+
+    # Unexpected inputs
+    - name: Integer loop limit
+      debug:
+        msg: |
+          {% for item in range(5) %}
+            {{ lookup('template', 'test.j2') }}
+          {% endfor %}
+
+    - name: Non-existent loop variable
+      debug:
+        msg: "{{ lookup('template', item + '.j2') }}"
+
+    - name: Empty loop variable
+      debug:
+        msg: "{{ lookup('template', item|default('') ~ '.j2') }}"

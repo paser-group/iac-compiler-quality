@@ -1,0 +1,24 @@
+
+- name: Test UnsafeProxy errors with Python 2.6 
+  hosts: all 
+  gather_facts: no
+
+  tasks:
+    - name: Create Virtual environment for Python2.6
+      shell: virtualenv -p /usr/bin/python2.6 /opt/myenv26
+
+    - name: Activate Python2.6 Virtual environment
+      shell: source /opt/myenv26/bin/activate 
+
+    - name: Install Ansible with UnsafeProxy enabled
+      pip:
+        name: ansible
+        extra_args: "--pre --extra-index-url='https://packages.ansible.com/ansible-core/unstable'"
+        virtualenv: /opt/myenv26
+        proxy: http://{{ ansible_host }}:3128 # Set Proxy if needed
+        extra_index_urls:
+          - https://pypi.org/simple/
+
+    - name: Perform File Transfer operation using UnsafeProxy
+      shell: ansible all -m copy -a "src=/tmp/test.txt dest=/tmp/test.txt" -e ansible_shell_type=bash -e ansible_shell_executable="/bin/bash -c" --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' -vvvv
+

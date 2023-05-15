@@ -1,0 +1,43 @@
+
+---
+- name: Testing the Ansible Git Module ssh-keyscan error
+  hosts: all
+  tasks:
+    - name: Clone a Git repository with unconventional syntax
+      git:
+        repo: "fake_git_repo"
+        dest: "~/{{ item }}"
+        ssh_opts: "-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no"
+      with_items:
+        - "node1:repo"
+        - "node2:repo"
+        - "node3:repo"
+      tags: unconventional_syntax
+
+    - name: Remove the cloned Git repository with unexpected inputs
+      file:
+        path: "{{ item }}"
+        state: absent
+      with_items:
+        - "~/fake_git_repo"
+        - "/ "
+        - "/etc/passwd"
+        - "--version"
+      tags: unexpected_inputs
+
+    - name: Test the ssh-keyscan error with edge cases
+      git:
+        repo: "fake_git_repo"
+        dest: "~/repo"
+        ssh_keyscan: "{{ item }}"
+        ssh_opts: "-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no"
+      with_items:
+        - "node1"
+        - "node2"
+        - "node3"
+        - "10.1.1.1"
+        - "10.1.1.2:22"
+        - "[node1, node2]"
+        - "{{ nonexistent_inventory }}"
+      ignore_errors: yes
+      tags: edge_cases

@@ -1,0 +1,34 @@
+
+# Custom Ansible module that generates a self-signed certificate in Java
+
+from ansible.module_utils.basic import AnsibleModule
+import subprocess
+
+def main():
+    module = AnsibleModule(
+        argument_spec=dict(
+            subject=dict(type='str', required=True),
+            validity_period=dict(type='int', default=365),
+            algorithm=dict(type='str', default='RSA')
+        )
+    )
+    
+    # Build the Java command for generating the certificate
+    cmd = ['java', '-jar', 'cert_generator.jar']
+    cmd += ['-sub', module.params['subject']]
+    cmd += ['-val', str(module.params['validity_period'])]
+    cmd += ['-alg', module.params['algorithm']]
+    
+    # Call the Java process and capture its output
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    out, err = p.communicate()
+    
+    # Check for errors and parse the certificate details
+    if p.returncode != 0:
+        module.fail_json(msg='Certificate generation error: ' + err.decode('utf-8'))
+    else:
+        cert_details = out.decode('utf-8').strip().split('\n')
+        module.exit_json(changed=False, cert_details=cert_details)
+
+if __name__ == '__main__':
+    main()

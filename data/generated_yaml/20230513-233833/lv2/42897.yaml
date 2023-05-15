@@ -1,0 +1,70 @@
+
+---
+- name: Test Docker modules with TLS configuration
+  hosts: all
+  vars:
+    docker_cert_path: "/path/to/certs"
+    docker_tls_verify: "{{ docker_cert_path }}"
+
+  tasks:
+  - name: Install required packages
+    apt:
+      name: "{{ item }}"
+      state: present
+    with_items:
+      - docker-ce
+      - python3-pip
+
+  - name: Generate CA certificate
+    openssl_certificate:
+      path: "{{ docker_cert_path }}/ca.pem"
+      privatekey_path: "{{ docker_cert_path }}/ca-key.pem"
+      common_name: "Docker CA"
+      type: "ca"
+
+  - name: Generate server certificate
+    openssl_certificate:
+      path: "{{ docker_cert_path }}/server.pem"
+      privatekey_path: "{{ docker_cert_path }}/server-key.pem"
+      common_name: "{{ inventory_hostname }}"
+      type: "server"
+      ca_path: "{{ docker_cert_path }}/ca.pem"
+      ca_privatekey_path: "{{ docker_cert_path }}/ca-key.pem"
+
+  - name: Generate client certificate
+    openssl_certificate:
+      path: "{{ docker_cert_path }}/client.pem"
+      privatekey_path: "{{ docker_cert_path }}/client-key.pem"
+      common_name: "client"
+      type: "client"
+      ca_path: "{{ docker_cert_path }}/ca.pem"
+      ca_privatekey_path: "{{ docker_cert_path }}/ca-key.pem"
+
+  - name: Copy server certificate to Docker host
+    copy:
+      src: "{{ docker_cert_path }}/server.pem"
+      dest: "{{ docker_cert_path }}/docker.pem"
+      mode: 0600
+
+  - name: Copy server key to Docker host
+    copy:
+      src: "{{ docker_cert_path }}/server-key.pem"
+      dest: "{{ docker_cert_path }}/docker-key.pem"
+      mode: 0600
+
+  - name: Copy CA certificate to Docker host
+    copy:
+      src: "{{ docker_cert_path }}/ca.pem"
+      dest: "{{ docker_cert_path }}/docker-ca.pem"
+      mode: 0600
+
+  - name: Start Docker container
+    docker_container:
+      name: "test-container"
+      image: "ubuntu:18.04"
+      state: started
+      tls: yes
+      tlscacert: "{{ docker_cert_path }}/docker-ca.pem"
+      tlscert: "{{ docker_cert_path }}/docker.pem"
+      tlskey: "{{ docker_cert_path }}/docker-key.pem"
+      tlsverify: "{{ docker_tls_verify }}"

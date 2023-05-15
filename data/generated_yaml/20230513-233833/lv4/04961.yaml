@@ -1,0 +1,33 @@
+
+---
+- name: Check rc.conf configuration on FreeBSD server
+  hosts: freebsd_servers
+  vars:
+    ansible_user: "admin"
+    ansible_ssh_pass: "password"
+    ansible_become_pass: "password"
+  tasks:
+    - name: Copy rc.conf to control machine
+      fetch:
+        src: "/etc/rc.conf"
+        dest: "/tmp/rc.conf"
+      become: yes
+    - name: Validate rc.conf
+      freebsd_service:
+        config_file: "/tmp/rc.conf"
+        validate: yes
+      become: yes
+      register: validation_result
+    - name: Fail if rc.conf configuration is invalid
+      fail:
+        msg: "rc.conf configuration file is invalid"
+      when: validation_result.rc != 0
+    - name: Execute service action
+      service:
+        name: "{{ service_name }}"
+        state: "{{ service_state }}"
+      register: service_result
+    - name: Remove temporary rc.conf file
+      file:
+        path: "/tmp/rc.conf"
+        state: absent

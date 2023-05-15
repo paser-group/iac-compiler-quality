@@ -1,0 +1,64 @@
+
+- name: Test mysql_user with python3 interpreter
+  hosts: all
+  become: true
+
+  vars:
+    mysql_users:
+      - name: user1
+        password: "pass1"
+      - name: user2
+        password: "pass2"
+
+  tasks:
+    - name: Install mysql-python connector
+      apt:
+        name: python3-mysqldb
+        state: present
+
+    - name: Create MySQL users
+      mysql_user:
+        name: "{{ item.name }}"
+        password: "{{ item.password }}"
+        host: "%"
+        priv: "*.*:ALL"
+        state: present
+        login_user: root
+        login_password: "mypassword"
+        login_host: "localhost"
+        ansible_python_interpreter: "/usr/bin/python3"
+      loop: "{{ mysql_users }}"
+
+    - name: Delete MySQL users
+      mysql_user:
+        name: "{{ item.name }}"
+        state: absent
+        login_user: root
+        login_password: "mypassword"
+        login_host: "localhost"
+        ansible_python_interpreter: "/usr/bin/python3"
+      loop: "{{ mysql_users }}"
+
+    - name: Grant privileges to MySQL users
+      mysql_user:
+        name: "{{ item.name }}"
+        host: "%"
+        priv: "*.*:ALL"
+        append_privs: yes
+        login_user: root
+        login_password: "mypassword"
+        login_host: "localhost"
+        ansible_python_interpreter: "/usr/bin/python3"
+      loop: "{{ mysql_users }}"
+
+    - name: Revoke privileges from MySQL users
+      mysql_user:
+        name: "{{ item.name }}"
+        host: "%"
+        priv: "*.*:ALL"
+        state: absent
+        login_user: root
+        login_password: "mypassword"
+        login_host: "localhost"
+        ansible_python_interpreter: "/usr/bin/python3"
+      loop: "{{ mysql_users }}"

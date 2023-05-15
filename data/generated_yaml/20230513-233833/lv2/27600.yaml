@@ -1,0 +1,41 @@
+
+- name: Test playbook for nxos_vrf_interface
+  hosts: all
+  gather_facts: no
+  vars:
+    interfaces:
+      - "eth1/1"
+      - "eth1/2"
+  tasks:
+    - name: Check if VRF exists
+      nxos_vrf_interface:
+        interface: "{{ item }}"
+        vrf: "management"
+      with_items:
+        - "{{ interfaces }}"
+      when: item == "eth1/1"
+      ignore_errors: yes
+      register: output
+
+    - name: Add VRF Interface with unconventional syntax
+      nxos_vrf_interface:
+        interface: "{{ item }}"
+        vrf: "{{ output['results'][0]['failed'] | ternary('web', 'management') }}"
+        shutdown: "{{ output['results'][0]['failed'] | ternary(true, false) }}"
+      with_items:
+        - "{{ interfaces }}"
+      when: item == "eth1/2"
+
+    - name: Stress test Compilation : Large Input
+      nxos_vrf_interface:
+        interface: "{{ 'a'*7000 }}"
+        vrf: "management"
+        shutdown: "{{ 'b'*7000 }}"
+      ignore_errors: yes
+
+    - name: Stress test Compilation : Invalid input
+      nxos_vrf_interface:
+        interface: "{{ 123 }}"
+        vrf: "management"
+        shutdown: true
+      ignore_errors: yes

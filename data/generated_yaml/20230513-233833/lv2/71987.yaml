@@ -1,0 +1,40 @@
+
+- name: Test playbook for apt_repository fatal error
+  hosts: all
+  become: true
+  tasks:
+  - name: Add the repository
+    apt_repository:
+      repo: deb http://archive.ubuntu.com/ubuntu/ bionic main universe
+      state: present
+      update_cache: true
+  - name: Remove the repository
+    apt_repository:
+      repo: deb http://archive.ubuntu.com/ubuntu/ bionic main universe
+      state: absent
+      update_cache: true
+  - name: Remove missing repository
+    apt_repository:
+      repo: deb http://archive.ubuntu.com/ubuntu/ artful main universe
+      state: absent
+      update_cache: true
+  - name: Update cache with failed repository
+    apt_repository:
+      repo: deb http://ppa.launchpad.net/webupd8team/java/ubuntu artful main
+      state: present
+      update_cache: true
+      until: apt_update_cache_update_cache_results.stdout.find('Failed to fetch') == -1
+      retries: 3
+      delay: 10
+  - name: Remove invalid repository
+    apt_repository:
+      repo: invalid repo
+      state: absent
+  - name: Add repository with unicode characters
+    apt_repository:
+      repo: 'deb [arch=amd64] https://download.docker.com/linux/ubuntu xenial stable \n'
+      update_cache: yes
+  - name: Remove invalid GPG key
+    apt_key:
+      keyid: invalid key
+      state: absent

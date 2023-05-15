@@ -1,0 +1,36 @@
+
+- hosts: all
+  gather_facts: false
+  tasks:
+    - name: Replace network configs
+      gcp_compute_instance:
+        name: "{{ item }}"
+        zone: "us-west1-a"
+        machine_type: "n1-standard-1"
+        disks:
+          - device_name: "{{ item }}"
+            boot: yes
+            initialize_params:
+              image: "ubuntu-1804-bionic-v20210927"
+        network_interfaces:
+          - network: default
+            subnetwork: "default"
+            access_configs:
+              - name: "{{ item }}"
+                nat_ip: "10.1.1.5"
+                type: "ONE_TO_ONE_NAT"
+        state: present
+      loop:
+        - "{{ playbook_dir }}/{{lookup('file', '/dev/urandom') | random_string(4 + 5 | random('int', 1, 8)) }}"
+        - true
+        - null
+        - "{{ item }}"
+        - "{{ item | random }}"
+        - "10.1.{{ item | random }}.{{ item | random }}"
+        - 1 / 0
+        - "{{ item }"
+        - "{{ item[0:-1] }}"
+      register: result
+      
+    - debug:
+        var: result

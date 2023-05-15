@@ -1,0 +1,56 @@
+
+---
+- name: Test Docker module for port option errors
+  hosts: all
+  become: true
+  vars:
+    container_name: "test_container"
+  tasks:
+  - name: Include Docker module
+    include_tasks: docker.yml
+
+  - name: Test port parameter using default protocol 'tcp'
+    docker_container:
+      name: "{{ container_name }}"
+      image: "nginx"
+      state: started
+      ports:
+        - "8080:80"
+    register: result1
+
+  - name: Show result 1
+    debug:
+      msg: "{{ result1 }}"
+
+  - name: Test port parameter with multiple ports
+    docker_container:
+      name: "{{ container_name }}"
+      image: "nginx"
+      state: started
+      ports:
+        - "8080:80"
+        - "8081:81/udp"
+    register: result2
+
+  - name: Show result 2
+    debug:
+      msg: "{{ result2 }}"
+
+  - name: Test port range parameter
+    docker_container:
+      name: "{{ container_name }}"
+      image: "nginx"
+      state: started
+      ports:
+        - "8080-8085:80"
+    register: result3
+
+  - name: Show result 3
+    debug:
+      msg: "{{ result3 }}"
+
+  - name: Stop container
+    docker_container:
+      name: "{{ container_name }}"
+      state: stopped
+      remove_volumes: true

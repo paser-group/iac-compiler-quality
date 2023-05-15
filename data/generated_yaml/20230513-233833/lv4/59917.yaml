@@ -1,0 +1,38 @@
+
+- hosts: all
+  tasks:
+  - name: Install required VMware Python module
+    pip:
+      name: pyvmomi
+    when: "'vmware_vm_inventory_hostname' in inventory_hostname"
+  
+  - name: Create Ansible portgroup
+    vmware_portgroup:
+      hostname: "{{ ansible_host }}"
+      username: "{{ ansible_user }}"
+      password: "{{ ansible_password }}"
+      portgroup_name: ansible_portgroup
+      vlan_id: 10
+      switch_name: vSwitch0
+  
+  - name: Modify VLAN of Ansible portgroup
+    vmware_portgroup:
+      hostname: "{{ ansible_host }}"
+      username: "{{ ansible_user }}"
+      password: "{{ ansible_password }}"
+      portgroup_name: ansible_portgroup
+      vlan_id: 20
+      switch_name: vSwitch0
+      
+  - name: Verify idempotency
+    vmware_portgroup:
+      hostname: "{{ ansible_host }}"
+      username: "{{ ansible_user }}"
+      password: "{{ ansible_password }}"
+      portgroup_name: ansible_portgroup
+      vlan_id: 20
+      switch_name: vSwitch0
+    register: portgroup_status
+    when: "'vmware_vm_inventory_hostname' in inventory_hostname"
+    check_mode: true
+    changed_when: false

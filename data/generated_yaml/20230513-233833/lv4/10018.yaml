@@ -1,0 +1,27 @@
+
+---
+- name: Test resolving inventory group variables
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: Set inventory group variable
+      set_fact:
+        group_var: "{{ groups['node-group'][0] }}"
+
+    - name: Print inventory group variable
+      debug:
+        var: group_var
+      delegate_to: "{{ inventory_hostname }}"
+
+    - name: Generate output using inventory group variable
+      template:
+        src: inventory_group_template.j2
+        dest: /tmp/inventory_group.txt
+      delegate_to: "{{ inventory_hostname }}"
+      
+    - name: Assert if generated output matches expected output
+      assert:
+        that: inventory_group_var == 'node1'
+        msg: "Inventory group variable not resolved properly"
+      delegate_to: "{{ inventory_hostname }}"

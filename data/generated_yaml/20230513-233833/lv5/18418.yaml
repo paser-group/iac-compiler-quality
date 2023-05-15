@@ -1,0 +1,35 @@
+
+---
+
+- name: Copy large file
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: Creating a large file on the remote host
+      shell: dd if=/dev/zero of=/tmp/test_file bs=1024 count=1024000
+      register: remote_file_creation
+
+    - name: Copying the file to the ansible controller
+      fetch:
+        src: /tmp/test_file
+        dest: /tmp/
+      register: copy_file_a_to_c
+
+    - name: Copying the file back to the remote host
+      copy:
+        src: /tmp/test_file
+        dest: /tmp/test_file_copy
+      register: copy_file_c_to_b
+
+    - name: Verifying the file copies
+      shell: diff /tmp/test_file /tmp/test_file_copy
+      register: compare_files
+
+    - name: Verifying the status
+      assert:
+        that:
+          - "remote_file_creation is succeeded"
+          - "copy_file_a_to_c is succeeded"
+          - "copy_file_c_to_b is succeeded"
+          - "compare_files is succeeded"

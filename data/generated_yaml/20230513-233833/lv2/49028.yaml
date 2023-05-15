@@ -1,0 +1,71 @@
+
+---
+- name: Test playbook for file module with mode parameter
+  hosts: all
+  become: yes
+  tasks:
+
+  - name: Create a file with incorrect mode parameter
+    file:
+      path: /tmp/incorrect_mode.txt
+      state: touch
+      mode: foobar
+    register: incorrect_mode
+
+  - name: Check for error message with incorrect mode parameter
+    assert:
+      that:
+        - '"Failed to set permissions" in incorrect_mode.msg'
+        - incorrect_mode.rc != 0
+
+  - name: Create a file with unconventional syntax for mode parameter
+    file:
+      path: /tmp/unconventional_mode.txt
+      state: touch
+      mode: '0b10101010'
+    register: unconventional_mode
+
+  - name: Check for correct mode with unconventional syntax
+    assert:
+      that:
+        - "'-rw-r--r--' in unconventional_mode.stat.mode"
+        - unconventional_mode.rc == 0
+
+  - name: Create a file with a valid mode and special characters in path
+    file:
+      path: /tmp/'s p { e " c ! i &=al.txt'
+      state: touch
+      mode: '0644'
+    register: special_chars_mode
+
+  - name: Check for file creation with special characters in path
+    assert:
+      that:
+        - "'/tmp/s p { e \" c ! i &=al.txt' in special_chars_mode.stat.path"
+        - special_chars_mode.rc == 0
+
+  - name: Create a file with negative mode value
+    file:
+      path: /tmp/negative_mode.txt
+      state: touch
+      mode: '-0644'
+    register: negative_mode
+
+  - name: Check for correct mode with negative value
+    assert:
+      that:
+        - "'-rw-r--r--' in negative_mode.stat.mode"
+        - negative_mode.rc == 0
+
+  - name: Create a file with incorrect mode value
+    file:
+      path: /tmp/incorrect_mode_value.txt
+      state: touch
+      mode: '777'
+    register: incorrect_mode_value
+
+  - name: Check for error message with incorrect mode value
+    assert:
+      that:
+        - '"assertion failed" in incorrect_mode_value.msg'
+        - incorrect_mode_value.rc != 0

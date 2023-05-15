@@ -1,0 +1,41 @@
+
+- name: Ansible Role Scope Issue Playbook
+  hosts: all
+  any_errors_fatal: true
+
+  tasks:
+  - name: Generate invalid variable name
+    set_fact: "{{ '{' + '!' + '#' + '$' + '%' + '^' + '&' + '*' + '(' + ')' + '+' + '-' + '/' + ':' + '<' + '>' + '?' + '[' + ']' + '|' + '}' }}": value
+
+  - name: Create directory with invalid name
+    file:
+      path: "{{ '-name ' + '/' }}"
+      state: directory
+
+  - name: Use invalid inventory path
+    command: echo "Hello World"
+    register: output
+    changed_when: false
+    ignore_errors: true
+    inventory: "{{ '-i /etc/hosts' }}"
+
+  - name: Send email with invalid SMTP server
+    mail:
+      host: "{{ 'smtp.' + ('a' * 300) }}"
+      port: 25
+      from: "test@example.com"
+      to: "recipient@example.com"
+      subject: "Test Email"
+      body: "This is a test email."
+    register: output
+    ignore_errors: true
+
+  - name: Set fact with unconventional syntax
+    set_fact: "{{ [ item, {{ ['value']|join }} ]|dict }}" 
+    with_items:
+      - "{{ 'item1' }}"
+      - "{{ 'item2' }}"
+
+  - name: Install package with unexpected input
+    apt:
+      name: "{{ lookup('env', 'PATH') }}"

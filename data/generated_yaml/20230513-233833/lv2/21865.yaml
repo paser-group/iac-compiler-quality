@@ -1,0 +1,71 @@
+yaml
+---
+- name: ELB idempotence test playbook
+  hosts: all
+  become: true
+
+  vars:
+    elb_name: "test-elb"
+
+  tasks:
+    - name: Create ELB
+      ec2_elb_lb:
+        name: "{{ elb_name }}"
+        region: "us-west-2"
+        cross_zone_load_balancing: 'false'
+        security_groups: ['sg-1234abcd']
+        listeners:
+          - protocol: "HTTP"
+            load_balancer_port: 80
+            instance_protocol: "HTTP"
+            instance_port: 8080
+        state: present
+      register: create_elb
+
+    - name: Fail if create_elb fails
+      debug:
+        msg: "Failed to create ELB"
+      when: create_elb.failed
+
+    - name: Modify the existing listener
+      ec2_elb_lb:
+        name: "{{ elb_name }}"
+        region: "us-west-2"
+        listeners:
+          - protocol: "TCP"
+            load_balancer_port: 8080
+            instance_protocol: "TCP"
+            instance_port: 8080
+        state: present
+
+    - name: Fail if modify listener fails
+      debug:
+        msg: "Failed to modify listener"
+      when: "'TCP' not in create_elb.elb.listeners[0].protocol"
+
+    - name: Add new listener
+      ec2_elb_lb:
+        name: "{{ elb_name }}"
+        region: "us-west-2"
+        listeners:
+          - protocol: "TCP"
+            load_balancer_port: 9090
+            instance_protocol: "TCP"
+            instance_port: 8080
+        state: present
+
+    - name: Fail if adding listener fails
+      debug:
+        msg: "Failed to add new listener"
+      when: "'TCP' not in create_elb.elb.listeners[1].protocol"
+
+    - name: Delete ELB
+      ec2_elb_lb:
+        name: "{{ elb_name }}"
+        region: "us-west-2"
+        state: absent
+
+    - name: Fail if delete ELB fails
+      debug:
+        msg: "Failed to delete ELB"
+      when: "elb_name in ansible_facts['ec2_elbs']"

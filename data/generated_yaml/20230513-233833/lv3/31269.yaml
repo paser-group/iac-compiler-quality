@@ -1,0 +1,46 @@
+
+---
+- name: Create Launch Configuration and Launch EC2 instance
+  hosts: localhost
+  gather_facts: no
+  vars:
+    region: us-west-2
+    instance_type: t2.micro
+    ami_id: ami-0c55b159cbfafe1f0  # Ubuntu 20.04 LTS
+    key_pair_name: my_key_pair
+    security_group_id: sg-123456789
+  tasks:
+    # Create a Launch Configuration that contains SpotPrice but PlacementTenancy attributes are set to default
+    - name: Create Launch Configuration
+      ec2_lc:
+        region: "{{ region }}"
+        name: "lc_with_default_placement_tenancy"
+        image_id: "{{ ami_id }}"
+        instance_type: "{{ instance_type }}"
+        key_name: "{{ key_pair_name }}"
+        security_groups: "{{ security_group_id }}"
+        spot_price: "0.001"
+      register: lc_with_default_placement_tenancy
+
+    # Launch an EC2 instance using the created Launch Configuration
+    - name: Launch EC2 instance
+      ec2:
+        region: "{{ region }}"
+        instance_type: "{{ instance_type }}"
+        image: "{{ ami_id }}"
+        key_name: "{{ key_pair_name }}"
+        security_group: "{{ security_group_id }}"
+        spot_price: "0.001"
+        count: 1
+        wait: yes
+        vpc_subnet_id: "{{ vpc_subnet }}"
+        assign_public_ip: yes
+        user_data: "{{ &lt;base64 encoded user data&gt; }}"
+        instance_profile_name: "{{ instance_profile_name }}"
+        instance_initiated_shutdown_behavior: stop
+        launch_configuration_name: "{{ lc_with_default_placement_tenancy.name }}"
+      register: launched_instance
+
+    # Debugging information
+    - debug:
+        var: launched_instance

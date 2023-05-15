@@ -1,0 +1,31 @@
+yaml
+- name: Create or modify a security group
+  hosts: localhost
+  connection: local
+  gather_facts: no
+  vars:
+    group_name: my-security-group
+    vpc_id: vpc-123456
+    description: My security group description
+    region: us-east-1
+  tasks:
+    - name: Ensure the security group exists
+      local_action:
+        module: ec2_group
+        group_name: "{{ group_name }}"
+        vpc_id: "{{ vpc_id }}"
+        description: "{{ description }}"
+        region: "{{ region }}"
+        state: present
+      register: group_result
+      ignore_errors: True
+    
+    - name: Update the security group rules if necessary
+      local_action:
+        module: ec2_group
+        group_id: "{{ group_result.group_id }}"
+        vpc_id: "{{ vpc_id }}"
+        region: "{{ region }}"
+        rules: "{{ my_security_group_rules }}"
+        state: present
+      when: group_result.changed is defined and group_result.changed == True

@@ -1,0 +1,47 @@
+yaml
+---
+- name: Command module edge cases playbook
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Run a command that doesn't exist
+      command: /bin/non_existing_command
+      register: result
+      ignore_errors: true
+
+    - name: Display command output and error
+      debug:
+        var: result.stdout_lines
+        verbosity: 2
+
+    - name: Run a command with a long running process
+      shell: |
+        echo "starting"
+        sleep 5
+      async: 5
+      poll: 0
+      register: result1
+
+    - name: Debug async command output and status
+      debug:
+        var: result1
+        verbosity: 2
+
+    - name: Run a command with unconventional syntax
+      command: "echo {{ '{{' }} foo {{ '}' }} bar"
+      register: result2
+
+    - name: Display unconventional output
+      debug:
+        var: result2.stdout
+        verbosity: 2
+
+    - name: Run a command with unexpected input
+      command: "echo '\\' \\""
+      register: result3
+
+    - name: Display output with unexpected input
+      debug:
+        var: result3.stdout
+        verbosity: 2

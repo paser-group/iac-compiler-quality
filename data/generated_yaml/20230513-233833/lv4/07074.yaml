@@ -1,0 +1,31 @@
+
+---
+- name: Test authorized_key module error reporting
+  hosts: all
+  become: true
+  vars:
+    invalid_key_path: /tmp/invalid_key_path.pub
+  tasks:
+  - name: Create user accounts
+    user:
+      name: ansible_test_user
+      state: present
+      
+  - name: Generate public key
+    command: ssh-keygen -t rsa -f /home/ansible/.ssh/id_rsa -P '' -q
+    args:
+      creates: /home/ansible/.ssh/id_rsa
+      
+  - name: Attempt to add public key to authorized keys with invalid path
+    authorized_key:
+      user: ansible_test_user
+      state: present
+      key: "{{ lookup('file', '/home/ansible/.ssh/id_rsa.pub') }}"
+      path: "{{ invalid_key_path }}"
+    register: result
+    ignore_errors: true
+      
+  - name: Verify that an error is reported
+    fail:
+      msg: "authorized_key module did not report an error when invalid key path provided"
+    when: "'could not open error output file' not in result.stderr"

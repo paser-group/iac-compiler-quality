@@ -1,0 +1,40 @@
+yaml
+- name: Test Disk Space Management
+  hosts: all
+  vars:
+    dir_name: "test_dir"
+    file_name: "test_file"
+    file_size: 1000000000
+    directory_size: 1000000000
+  tasks:
+    - name: Create directory
+      file:
+        state: directory
+        path: "{{ dir_name }}"
+      register: dir_create_result
+
+    - name: Check directory creation status
+      assert:
+        that:
+          - dir_create_result is success
+
+    - name: Create file
+      command: "fallocate -l {{ file_size }} {{ file_name }}"
+      args:
+        chdir: "{{ dir_name }}"
+      register: file_create_result
+
+    - name: Check file creation status
+      assert:
+        that:
+          - file_create_result is success
+
+    - name: Check disk space availability
+      stat:
+        path: /
+      register: disk_availability
+
+    - name: Check available disk space
+      assert:
+        that:
+          - disk_availability.stat.available >= directory_size

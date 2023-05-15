@@ -1,0 +1,65 @@
+yaml
+---
+- name: Update Zabbix host configuration
+  hosts: zabbix_hosts
+  become: yes
+  vars:
+    zabbix_host_name: "your_host_name"
+    zabbix_host_group: "your_host_group_name"
+    zabbix_server_url: "your_zabbix_server_url"
+    zabbix_api_user: "your_zabbix_api_user"
+    zabbix_api_password: "your_zabbix_api_password"
+  tasks:
+    - name: Gather host info
+      zabbix_host_info:
+        server_url: "{{ zabbix_server_url }}"
+        login_user: "{{ zabbix_api_user }}"
+        login_password: "{{ zabbix_api_password }}"
+        host_name: "{{ zabbix_host_name }}"
+      register: host_data
+
+    - name: Update host group
+      zabbix_hostgroup:
+        server_url: "{{ zabbix_server_url }}"
+        login_user: "{{ zabbix_api_user }}"
+        login_password: "{{ zabbix_api_password }}"
+        hostgroup: "{{ zabbix_host_group }}"
+        state: present
+      when: host_data.changed
+
+    - name: Update host metadata
+      zabbix_host_metadata:
+        server_url: "{{ zabbix_server_url }}"
+        login_user: "{{ zabbix_api_user }}"
+        login_password: "{{ zabbix_api_password }}"
+        host_name: "{{ zabbix_host_name }}"
+        metadata:
+          ansible_host: "{{ inventory_hostname }}"
+      when: host_data.changed
+
+    - name: Update host interfaces
+      zabbix_hostinterface:
+        server_url: "{{ zabbix_server_url }}"
+        login_user: "{{ zabbix_api_user }}"
+        login_password: "{{ zabbix_api_password }}"
+        host_name: "{{ zabbix_host_name }}"
+        interfaces:
+          - type: 1
+            main: 1
+            useip: 1
+            ip: "{{ inventory_hostname }}"
+            dns: ""
+            port: "10050"
+      when: host_data.changed
+
+    - name: Update host settings
+      zabbix_host:
+        server_url: "{{ zabbix_server_url }}"
+        login_user: "{{ zabbix_api_user }}"
+        login_password: "{{ zabbix_api_password }}"
+        hostname: "{{ zabbix_host_name }}"
+        visible_name: "{{ zabbix_host_name }}"
+        groups:
+          - "{{ zabbix_host_group }}"
+        status: 0
+      when: host_data.changed

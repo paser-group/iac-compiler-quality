@@ -1,0 +1,69 @@
+
+---
+- name: Test MySQL module failure
+  hosts: node1
+  gather_facts: no
+
+  tasks:
+    - name: Set DB user's privileges with invalid arguments
+      mysql_user:
+        login_user: "{{ mysql_user }}"
+        login_password: "{{ mysql_password }}"
+        login_unix_socket: "{{ mysql_socket }}"
+        name: "{{ mysql_db_user }}"
+        host: "{{ mysql_db_host }}"
+        priv: "{{ mysql_db_privilege | regex_replace('ALL', '+INVALID') }}"
+
+    - name: Add invalid user to MySQL database
+      mysql_user:
+        login_user: "{{ mysql_user }}"
+        login_password: "{{ mysql_password }}"
+        login_unix_socket: "{{ mysql_socket }}"
+        name: "{{ mysql_invalid_user | regex_replace('[^0-9a-zA-Z_]', '_') }}"
+        password: "{{ mysql_invalid_password }}"
+        host: "{{ mysql_db_host }}"
+        priv: "{{ mysql_db_privilege }}"
+        state: present
+
+    - name: Remove non-existent database
+      mysql_db:
+        login_user: "{{ mysql_user }}"
+        login_password: "{{ mysql_password }}"
+        login_unix_socket: "{{ mysql_socket }}"
+        name: "{{ mysql_non_existent_db }}"
+        state: absent
+
+    - name: Assign unsupported MySQL character set
+      mysql_db:
+        login_user: "{{ mysql_user }}"
+        login_password: "{{ mysql_password }}"
+        login_unix_socket: "{{ mysql_socket }}"
+        name: "{{ mysql_db_name }}"
+        collation: "{{ mysql_unsupported_charset }}"
+
+    - name: Set invalid bind-address
+      mysql_config:
+        login_user: "{{ mysql_user }}"
+        login_password: "{{ mysql_password }}"
+        login_unix_socket: "{{ mysql_socket }}"
+        name: "{{ mysql_bind_address_key }}"
+        value: "{{ mysql_invalid_ip }}"
+
+  vars:
+    mysql_user: "root"
+    mysql_password: "root_password"
+    mysql_socket: "/var/run/mysqld/mysqld.sock"
+
+    mysql_db_user: "test_user"
+    mysql_db_host: "localhost"
+    mysql_db_privilege: "ALL"
+
+    mysql_invalid_user: "user$^name"
+    mysql_invalid_password: "password^123"
+
+    mysql_non_existent_db: "non_existent_db"
+    mysql_unsupported_charset: "utf8_binary"
+
+    mysql_db_name: "test_db"
+    mysql_bind_address_key: "bind-address"
+    mysql_invalid_ip: "256.0.0.0"

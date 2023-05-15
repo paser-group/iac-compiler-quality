@@ -1,0 +1,68 @@
+
+- name: os_security_group_rule error when adding rule that exists
+  hosts: node1
+  gather_facts: no
+  become: true
+
+  tasks:
+
+  - name: Create new security group rule with an existing protocol (any)
+    os_security_group_rule:
+      state: present
+      security_group: my_security_group
+      direction: ingress
+      protocol: any
+      ethertype: IPv4
+      port_range_max: 65535
+      port_range_min: 0
+      remote_group_id: sg-12345678
+    register: rule_created
+
+  - name: Update security group rule with an existing protocol (any)
+    os_security_group_rule:
+      state: present
+      security_group: my_security_group
+      direction: ingress
+      protocol: any
+      ethertype: IPv4
+      port_range_max: 65535
+      port_range_min: 0
+      remote_group_id: sg-12345678
+    register: rule_updated
+
+  - name: Verify if security group rule was updated with existing protocol (any)
+    debug:
+      msg: "Security group rule exists with protocol (any)"
+    when: rule_created != rule_updated
+
+  - name: Test unexpected input (negative port range)
+    os_security_group_rule:
+      state: present
+      security_group: my_security_group
+      direction: ingress
+      protocol: tcp
+      ethertype: IPv4
+      port_range_max: -1
+      port_range_min: -10
+      remote_ip_prefix: 10.0.0.0/24
+
+  - name: Test unconventional syntax (use of colon in port range)
+    os_security_group_rule:
+      state: present
+      security_group: my_security_group
+      direction: ingress
+      protocol: tcp
+      ethertype: IPv4
+      port_range: "80:443"
+      remote_ip_prefix: 10.0.0.0/24
+
+  - name: Test edge case (port range out of bounds)
+    os_security_group_rule:
+      state: present
+      security_group: my_security_group
+      direction: ingress
+      protocol: tcp
+      ethertype: IPv4
+      port_range_min: 65537
+      port_range_max: 65538
+      remote_ip_prefix: 10.0.0.0/24

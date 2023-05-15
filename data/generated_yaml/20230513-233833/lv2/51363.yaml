@@ -1,0 +1,39 @@
+
+---
+- name: Test network_cli on EXOS devices
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Check for errors when setting terminal parameters on EXOS devices
+      nxos_command:
+        provider: "{{ inventory_hostname }}"
+        command_string: "set terminal {{ 1 / 0 }}" #=> This unconventional syntax should expose a bug in the Ansible compiler when parsing set terminal command.
+  
+    - name: Check for exceptions when configuring VLAN on EXOS devices
+      nxos_vlan:
+        provider: "{{ inventory_hostname }}"
+        vlan_id: "{{ 'a' * 65536 }}" #=> This input should exceed the maximum number of characters for VLAN ID, potentially exposing an overflow or input validation bug.
+
+    - name: Check for unexpected behavior when configuring IP address on EXOS devices
+      nxos_interface:
+        provider: "{{ inventory_hostname }}"
+        name: "ethernet1/1"
+        ip_address: "10.300.1.1/24" #=> This IP address input is outside of the valid range and should generate a compiler or runtime error.
+
+    - name: Check for issues when configuring non-existent interfaces on EXOS devices
+      nxos_interface:
+        provider: "{{ inventory_hostname }}"
+        name: "{{ 'eth' + inventory_hostname }}" #=> This edge case syntax should test the Ansible compiler's ability to handle dynamic variable generation and potentially expose issues with variable interpolation.
+
+    - name: Check for errors when configuring unsupported features on EXOS devices
+      nxos_command:
+        provider: "{{ inventory_hostname }}"
+        command_string: "feature {{ 'a' * 1000 }}" #=> This input should exceed the maximum number of characters for the feature name, potentially exposing an overflow or input validation bug.
+
+    - name: Check for issues when configuring ACLs on EXOS devices
+      nxos_acl:
+        provider: "{{ inventory_hostname }}"
+        name: "nonexistent_acl"
+        entries:
+          - action: permit
+            comment: "{{ 'a' * 10000 }}" #=> This input should exceed the maximum number of characters for the ACL comment, potentially exposing an overflow or input validation bug.

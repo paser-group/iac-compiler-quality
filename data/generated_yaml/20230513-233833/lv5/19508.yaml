@@ -1,0 +1,30 @@
+
+- name: Deploy container to check networks parameter
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Create custom network
+      docker_network:
+        name: my-custom-network
+
+    - name: Deploy container with networks parameter
+      docker_container:
+        name: test-container
+        image: nginx
+        networks:
+          - my-custom-network
+          - bridge
+
+    - name: Check if container belongs to default bridge network
+      shell: docker network inspect bridge | grep test-container
+      register: bridge_network
+
+    - name: Check if container belongs to custom network
+      shell: docker network inspect my-custom-network | grep test-container
+      register: custom_network
+
+    - name: Fail if container belongs to both bridge and custom networks
+      fail:
+        msg: "Container belongs to both bridge and custom networks"
+      when: bridge_network.stdout and custom_network.stdout

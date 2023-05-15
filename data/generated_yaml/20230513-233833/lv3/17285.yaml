@@ -1,0 +1,36 @@
+
+---
+- name: Kerberos Issue Playbook
+  hosts: all
+  become: yes
+  vars:
+    krb_realm: EXAMPLE.COM
+    krb_kdc: kerberos.example.com
+    krb_ccache_path: /tmp/krb5cc_{{ ansible_user_id }}
+    krb_principal: invalid_principal # This is intentionally invalid to trigger the error. 
+    krb_keytab_path: /path/to/valid/keytab
+
+  tasks:
+    - name: Ensure Kerberos configuration is installed
+      apt:
+        name: krb5-user
+        state: present
+
+    - name: Get valid Kerberos ticket
+      shell: kinit -c {{ krb_ccache_path }} -kt {{ krb_keytab_path }} {{ ansible_user_id }}@{{ krb_realm }}
+      args:
+        executable: /bin/bash
+        warn: false
+
+    - name: Try to authenticate with invalid Kerberos principal
+      shell: kinit -c {{ krb_ccache_path }} -kt {{ krb_keytab_path }} {{ krb_principal }}@{{ krb_realm }}
+      args:
+        executable: /bin/bash
+        warn: false
+      register: kinit_output
+      ignore_errors: true
+
+    - name: Fail task if authentication with invalid principal succeeds
+      fail:
+        msg: "Successfully authenticated with invalid Kerberos principal"
+      when: kinit_output.rc == 0

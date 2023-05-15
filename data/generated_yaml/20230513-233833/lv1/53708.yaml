@@ -1,0 +1,26 @@
+
+---
+- name: Encrypt /dev/sda3 with LUKS
+  hosts: all
+  become: yes
+  tasks:
+    - name: Create a LUKS device on /dev/sda3
+      command: >
+        cryptsetup luksFormat /dev/sda3
+      register: luks_create_output
+      ignore_errors: yes
+
+    - name: Open the LUKS device
+      command: >
+        cryptsetup open /dev/sda3 luks_device
+      register: luks_open_output
+      ignore_errors: yes
+
+    - name: Check if LUKS device is created and opened successfully
+      fail:
+        msg: "Error while creating LUKS on /dev/sda3: {{ luks_create_output.stderr }} \n{{ luks_open_output.stderr }}"
+      when: luks_create_output.rc != 0 or luks_open_output.rc != 0
+
+    - name: Successfully created LUKS on /dev/sda3
+      debug:
+        msg: "Successfully created LUKS on /dev/sda3"

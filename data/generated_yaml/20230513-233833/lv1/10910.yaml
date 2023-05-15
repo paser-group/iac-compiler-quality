@@ -1,0 +1,44 @@
+
+- hosts: localhost
+  gather_facts: false
+  vars:
+    ec2:
+      region: us-west-2
+      availability_zone: "{{ instance_az }}"
+      image: "{{ instance_ami }}"
+      instance_type: "{{ instance_type }}"
+      count: "{{ instance_count }}"
+      keypair: "{{ instance_keypair }}"
+      group: "{{ instance_security_group }}"
+      assign_public_ip: no
+  tasks:
+    - name: Update ec2.py
+      copy:
+        src: /path/to/stable-1.9/ansible/contrib/inventory/ec2.py
+        dest: /usr/local/bin/ec2.py
+        mode: 0744
+    - name: Install boto
+      pip:
+        name: boto
+      become: true
+    - name: Test ec2.py
+      ec2:
+        aws_access_key: "{{ access_key }}"
+        aws_secret_key: "{{ secret_key }}"
+        region: "{{ ec2.region }}"
+        vpc_subnet_id: "{{ subnet_id }}"
+        instance_tags: "{{ instance_tags }}"
+        instance_type: "{{ ec2.instance_type }}"
+        image_id: "{{ ec2.image }}"
+        key_name: "{{ ec2.keypair }}"
+        group: "{{ ec2.group }}"
+        instance_count: "{{ ec2.count }}"
+        assign_public_ip: "{{ ec2.assign_public_ip }}"
+        instance_profile_name: "{{ instance_profile_name }}"
+        assign_private_ip: "{{ assign_private_ip }}"
+        assign_eip: "{{ assign_eip }}"
+        wait: yes
+        wait_timeout: 300
+        exact_count: yes
+        register: ec2
+      delegate_to: localhost

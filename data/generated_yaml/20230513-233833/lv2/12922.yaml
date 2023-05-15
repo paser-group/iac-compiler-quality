@@ -1,0 +1,72 @@
+yaml
+- name: Test SSH-key mismatch error message
+  hosts: all
+  gather_facts: false
+  vars:
+    ssh_key_path: "/path/to/nonexistent/key"
+    cmd: "/bin/false"
+  tasks:
+    # Task 1 - Use unconventional syntax by adding a colon to the module name
+    - name: Test unconventional syntax of ssh: module
+      ssh:: user@{{ inventory_hostname }}:
+        ssh_key: "{{ ssh_key_path }}"
+        command: "{{ cmd }}"
+        register: result_1
+      ignore_errors: true
+
+    # Task 2 - Use edge cases by providing invalid input to the module
+    - name: Test invalid input to the ssh module
+      ssh: user@{{ inventory_hostname }}
+        ssh_key: "{{ ssh_key_path }}"
+        command: "{{ cmd }}"
+        foo: bar
+        register: result_2
+      ignore_errors: true
+
+    # Task 3 - Use unexpected input by providing a non-existent group
+    - name: Test non-existent group
+      ssh: "{{ groups['nonexistent'] }}"
+        ssh_key: "{{ ssh_key_path }}"
+        command: "{{ cmd }}"
+        register: result_3
+      ignore_errors: true
+
+    # Task 4 - Use unexpected input by providing an invalid key path
+    - name: Test invalid ssh key path
+      ssh: user@{{ inventory_hostname }}
+        ssh_key: "{{ ssh_key_path }}"
+        command: "{{ cmd }}"
+        register: result_4
+      ignore_errors: true
+
+    # Task 5 - Use unconventional syntax by using variables in the module name
+    - name: Test variable usage in ssh module name
+      "{{ 'ssh' + ':' }} user@{{ inventory_hostname }}"
+        ssh_key: "{{ ssh_key_path }}"
+        command: "{{ cmd }}"
+        register: result_5
+      ignore_errors: true
+
+    # Task 6 - Use edge case by providing a command that does not exist
+    - name: Test non-existent command
+      ssh: user@{{ inventory_hostname }}
+        ssh_key: "{{ ssh_key_path }}"
+        command: "{{ cmd_does_not_exist }}"
+        register: result_6
+      ignore_errors: true
+
+    # Task 7 - Use unexpected input by providing a non-existent host
+    - name: Test non-existent host
+      ssh: user@does_not_exist
+        ssh_key: "{{ ssh_key_path }}"
+        command: "{{ cmd }}"
+        register: result_7
+      ignore_errors: true
+
+    # Task 8 - Use edge case by providing a large invalid key path
+    - name: Test large invalid ssh key path
+      ssh: user@{{ inventory_hostname }}
+        ssh_key: "{{ ssh_key_path * 200 }}"
+        command: "{{ cmd }}"
+        register: result_8
+      ignore_errors: true

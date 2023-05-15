@@ -1,0 +1,42 @@
+
+- name: Test vmware_inventory host_filter
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+
+    - name: Create new VM
+      vmware_guest:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        datacenter: "{{ datacenter }}"
+        folder: "{{ folder }}"
+        name: "{{ new_vm_name }}"
+        state: poweredon
+        guest_id: "{{ guest_id }}"
+        disk:
+        - size_gb: {{ disk_size }}
+          type: "{{ disk_type }}"
+          datastore: "{{ datastore }}"
+        networks:
+        - name: "{{ network }}"
+          ip: "{{ new_vm_ip }}"
+          netmask: "{{ subnet_mask }}"
+          gateway: "{{ gateway }}"
+      register: new_vm_info
+
+    - name: Generate inventory with host_filter
+      vmware_inventory:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: false
+        guest_power_state: "poweredOn"
+        host_filter: "{{ new_vm_ip }}"
+      register: inventory
+
+    - name: Verify host_filter is working
+      assert:
+        that:
+          - (new_vm_ip in inventory.hostvars.keys()) == True

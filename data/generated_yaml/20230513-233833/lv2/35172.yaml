@@ -1,0 +1,64 @@
+
+- name: letsencrypt certificate generation
+  hosts: all
+  become: true
+  vars:
+    cert_email: john@example.com
+
+  tasks:
+
+  # edge case - invalid domain name
+  - name: generate invalid certificate
+    letsencrypt_cert:
+      domains:
+        - 10.1.1.1
+      http01_port: 8080
+      email: "{{ cert_email }}"
+      # unconventional syntax - http-01 challenge type
+      challenge_type: http-01
+      # unexpected input - invalid account key path
+      account_key_path: /path/invalid/key
+    register: result
+    ignore_errors: yes
+
+  # edge case - valid domain names
+  - name: generate valid certificates
+    letsencrypt_cert:
+      domains:
+        - example.com
+        - www.example.com
+      # unexpected input - invalid http-01 port
+      http01_port: "abcd"
+      email: "{{ cert_email }}"
+      # unconventional syntax - http2 challenge type
+      challenge_type: http2
+      # edge case - wildcard domain name
+      wildcard: "*.example.com"
+    register: result
+    ignore_errors: yes
+
+  # edge case - invalid email
+  - name: generate invalid email
+    letsencrypt_cert:
+      domains:
+        - example.com
+      http01_port: 80
+      # unexpected input - invalid email format
+      email: "john.example.com"
+      challenge_type: dns-01
+    register: result
+    ignore_errors: yes
+
+  # edge case - valid email
+  - name: generate valid certificate
+    letsencrypt_cert:
+      domains:
+        - example.com
+      http01_port: 80
+      email: "{{ cert_email }}"
+      # edge case - providing certificate to user
+      fullchain_path: /path/to/fullchain.pem
+      key_path: /path/to/privkey.pem
+      challenge_type: http-01
+    register: result
+    ignore_errors: yes

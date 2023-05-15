@@ -1,0 +1,16 @@
+
+- name: Set correct shell for all users
+  block:
+    - name: Determine system version
+      command: lsb_release -a
+      register: lsbdist
+    - name: Set shell path
+      set_fact:
+        user_shell_path: "/bin/bash"
+      when: "lsbdist.stdout.find('Debian') != -1"
+    - name: Ensure all users have the correct shell
+      user:
+        name: "{{ item }}"
+        shell: "{{ user_shell_path }}"
+      with_items: "{{ ansible_users }}"
+  notify: restart_service

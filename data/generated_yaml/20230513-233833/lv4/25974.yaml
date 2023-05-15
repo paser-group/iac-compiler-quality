@@ -1,0 +1,37 @@
+
+- name: Copy Docker container configuration file to nodes
+  copy:
+    src: /path/to/docker_config.yml
+    dest: /etc/docker/
+  become: true
+
+- name: Create Docker container with one configuration
+  docker_container:
+    name: container1
+    image: image1
+    state: started
+    restart_policy: always
+    networks:
+      - name: node-net
+        ipv4_address: 10.1.1.1
+    volumes_from:
+      - container2
+  become: true
+
+- name: Create Docker container with different configuration
+  docker_container:
+    name: container2
+    image: image2
+    state: started
+    restart_policy: always
+    networks:
+      - name: node-net
+        ipv4_address: 10.1.1.2
+    volumes_from:
+      - container1
+  become: true
+
+- name: Compare container configurations
+  assert:
+    that:
+      - "{{ lookup('pipe', 'docker inspect -f '{{.Config}}' container1') }}" == "{{ lookup('pipe', 'docker inspect -f '{{.Config}}' container2') }}"

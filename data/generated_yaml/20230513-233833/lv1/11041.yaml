@@ -1,0 +1,31 @@
+
+---
+- name: Fix SSH connection errors
+  hosts: all
+  become: true
+
+  tasks:
+  - name: Allow SSH traffic in firewall
+    firewalld:
+      service: ssh
+      permanent: true
+      state: enabled
+      immediate: true
+
+  - name: Ensure SSH service is running
+    service:
+      name: sshd
+      state: started
+      enabled: true
+
+  - name: Enable password authentication
+    lineinfile:
+      path: /etc/ssh/sshd_config
+      regexp: "^PasswordAuthentication"
+      line: "PasswordAuthentication yes"
+      state: present
+
+  - name: Restart SSH service with new configuration
+    service:
+      name: sshd
+      state: restarted

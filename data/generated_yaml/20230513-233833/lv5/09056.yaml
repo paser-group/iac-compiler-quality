@@ -1,0 +1,26 @@
+
+---
+- name: Test Service restart
+  hosts: all
+  become: true
+  tasks:
+    - name: Restart service
+      service:
+        name: service_name
+        state: restarted
+      register: service_restart
+    - name: Wait for service restart
+      wait_for:
+        timeout: 120
+        path: /var/run/service_name.pid
+        state: started
+      when: service_restart.changed
+    - name: Get service status
+      service_facts:
+        - name: "{{ service_name }}"
+      register: service_facts
+    - name: Check service status
+      assert:
+        that:
+          - service_restart.failed == false
+          - service_facts['ansible_facts']['services'][service_name].state == 'running'

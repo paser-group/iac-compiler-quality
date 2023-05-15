@@ -1,0 +1,28 @@
+
+---
+- name: Test apt_repository module with proxy
+  hosts: all
+  vars:
+    proxy_server: "http://<proxy_host>:<proxy_port>/"
+    repo_url: "http://archive.ubuntu.com/ubuntu/"
+  tasks:
+  - name: Configure Docker nodes to use a proxy
+    block:
+      - name: Add proxy environment variables to /etc/environment
+        lineinfile:
+          path: /etc/environment
+          line: 'http_proxy={{ proxy_server }}'
+        become: yes
+      - name: Reload environment variables
+        shell: exec su -l $USER
+        become: yes
+    become: yes
+  - name: Test apt_repository module with proxy
+    apt_repository:
+      repo: "{{ repo_url }}"
+      proxy: "{{ proxy_server }}"
+      state: present
+  - name: Check if packages are installed
+    apt:
+      name: "vim"
+      state: present

@@ -1,0 +1,34 @@
+yaml
+---
+- hosts: your_host
+  gather_facts: false
+  tasks:
+
+  - name: Check for existing EIP with {{ eip_address }} IP
+    ec2_eip_facts:
+      region: your_region
+      filters:
+        "public-ip": "{{ eip_address }}"
+    register: eip_facts
+    ignore_errors: yes
+
+  - name: Release EIP if it exists
+    ec2_eip:
+      region: your_region
+      public_ip: "{{ eip_address }}"
+      state: absent
+    when: eip_facts
+
+  - name: Allocate a new EIP address
+    ec2_eip:
+      region: your_region
+      state: present
+    when: not eip_facts
+    register: eip_result
+
+  - name: Create variable for the new EIP address
+    set_fact:
+      new_eip: "{{ eip_result.public_ip }}"
+
+  - debug:
+      var: new_eip

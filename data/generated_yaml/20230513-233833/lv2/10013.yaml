@@ -1,0 +1,59 @@
+yaml
+---
+- name: Inventory script error testing playbook
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: Test missing inventory file
+      ansible_connection: local
+      hosts: 127.0.0.1
+      become: no
+      vars:
+        inventory_file: inventory_missing
+      command: ansible all -i "{{ inventory_file }}"
+
+    - name: Test unreachable IP address
+      ping:
+      delegate_to: "{{ item }}"
+      with_items:
+        - 10.1.1.4
+
+    - name: Test incorrect credentials
+      shell: "echo 'hello'"
+      register: output
+      ignore_errors: true
+      become: true
+      become_user: invalid_user
+      become_password: invalid_pass
+      when: inventory_hostname == 'node1'
+
+    - name: Test unknown hosts
+      ping:
+      delegate_to: unknown_host.local
+
+    - name: Test invalid group name
+      ping:
+      groups: invalid_group
+
+    - name: Test invalid variable name
+      debug:
+        msg: "{{ invalid_variable }}"
+
+    - name: Test invalid module name
+      invalid_module:
+        arg1: value1
+        arg2: value2
+
+    - name: Test invalid module parameter
+      apt:
+        name: apache2
+        state: invalid_state
+
+    - name: Test inventory script exception
+      ansible_connection: local
+      hosts: 127.0.0.1
+      become: no
+      vars:
+        inventory_file: inventory_with_exception
+      command: ansible all -i "{{ inventory_file }}"

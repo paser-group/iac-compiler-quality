@@ -1,0 +1,20 @@
+
+---
+- name: Handle Unexpected Exception
+  hosts: all
+  become: yes
+
+  tasks:
+    - name: Check if the error message is present in the log file
+      ansible.builtin.lineinfile:
+        path: /var/log/messages
+        regexp: "Unexpected Exception, this is probably a bug: 'NoneType' object is not iterable"
+        state: present
+      register: log_check
+
+    - name: Restart the service if the error message is found
+      ansible.builtin.service:
+        name: service_name
+        state: restarted
+      when: log_check.changed
+

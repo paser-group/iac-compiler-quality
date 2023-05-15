@@ -1,0 +1,48 @@
+
+---
+- name: Stress Testing Ansible Compiler
+  hosts: all
+  gather_facts: false
+
+  tasks:
+
+  - name: Install nginx
+    apt:
+      name: nginx
+      state: latest
+
+  - name: Start service using conventional syntax
+    service:
+      name: nginx
+      state: started
+    register: service_started
+
+  - name: Stop service using unconventional syntax
+    service: nginx state=stopped
+    when: service_started is defined and service_started.results[0].changed
+
+  - name: Test service state with invalid input type
+    service:
+      name: nginx
+      state: "{{ 1 + '2' }}"
+    ignore_errors: yes
+
+  - name: Test service start with unexpected input
+    service:
+      name: "{{ ['nginx', 'apache2', 'mysql'] | random }}"
+      state: started
+
+  - name: Test service start with edge case inputs
+    service:
+      name: "{{ item }}"
+      state: started
+    with_items:
+      - ""
+      - " "
+      - "{{ ['  ', ' ', '    '] | random }}"
+
+  - name: Run() method with NoneType error
+    service:
+      name: "{{ None }}"
+      state: started
+    ignore_errors: yes

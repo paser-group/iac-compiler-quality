@@ -1,0 +1,20 @@
+yaml
+- name: Gather CloudFront Distribution Information
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Gather CloudFront Distribution Facts
+      cloudfront_facts:
+        aws_access_key: "{{ aws_access_key }}"
+        aws_secret_key: "{{ aws_secret_key }}"
+        distribution_id: "{{ cloudfront_distribution_id }}"
+      register: cloudfront_distributions
+
+    - name: Check CloudFront Distribution Status
+      fail:
+        msg: "CloudFront Distribution {{ item.id }} has Unsupported Operands Error"
+      when:
+        - "(int(item.inprogressinvalidationbatches==0) or int(item.invalidations.quantity>1))"
+        - "item.status == 'Deployed'"
+      loop: "{{ cloudfront_distributions.distributions }}"

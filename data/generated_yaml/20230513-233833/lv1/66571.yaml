@@ -1,0 +1,32 @@
+yaml
+- name: Install Postgres and fix privilege error
+  hosts: database_servers  # the target host group
+  become: true  # escalate privileges to become root
+  
+  vars:
+    postgres_user: postgres  # username for postgres
+    db_name: mydb  # name of your database
+    db_user: myuser  # username for your database user
+    db_password: mypassword  # password for your database user
+
+  tasks:
+    - name: Install required packages for Postgres
+      yum:
+        name: postgresql-server postgresql-contrib
+        state: present
+
+    - name: Initialize Postgres database
+      command: postgresql-setup initdb
+      become_user: "{{ postgres_user }}"
+
+    - name: Start Postgres service
+      service:
+        name: postgresql
+        state: started
+
+    - name: Fix privilege error in Postgres
+      command: |
+        psql -c "CREATE DATABASE {{ db_name }};"
+        psql -c "CREATE USER {{ db_user }} WITH PASSWORD '{{ db_password }}';"
+        psql -c "GRANT ALL PRIVILEGES ON DATABASE {{ db_name }} TO {{ db_user }};"
+      become_user: "{{ postgres_user }}"

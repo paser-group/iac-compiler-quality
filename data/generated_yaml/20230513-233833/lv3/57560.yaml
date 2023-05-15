@@ -1,0 +1,27 @@
+
+---
+- hosts: all
+  become: true
+  tasks:
+    - name: Copy service file to each node
+      copy:
+        src: /path/to/test.service
+        dest: /etc/systemd/system/test.service
+      register: file_copy
+
+    - name: Enable and start test service
+      systemd:
+        name: test
+        state: started
+        enabled: yes
+        daemon_reload: yes
+      async: 30
+      poll: 0
+      register: systemd_service
+          
+    - name: Await reachable service status
+      wait_for:
+        path: "/tmp/test.sock"
+        search_regex: "hello world"
+        timeout: 120
+      check_mode: yes

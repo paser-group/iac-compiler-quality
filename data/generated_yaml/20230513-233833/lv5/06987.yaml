@@ -1,0 +1,32 @@
+
+- name: Create EC2 Instance with Private IP, Subnet Mask, and Public IP
+  hosts: localhost
+  connection: local
+  gather_facts: False
+  tasks:
+    - name: Generate Public IP and Subnet Mask
+      ec2_vpc_subnet_facts:
+        region: "{{ region }}"
+        filters:
+          tag:Name: "{{ vpc_subnet_name }}"
+      register: subnet_facts
+    - name: Create EC2 Instance
+      ec2:
+        aws_access_key: "{{ aws_access_key }}"
+        aws_secret_key: "{{ aws_secret_key }}"
+        region: "{{ region }}"
+        image: "{{ image }}"
+        instance_type: "{{ instance_type }}"
+        group_id: "{{ security_group_id }}"
+        key_name: "{{ key_name }}"
+        subnet_id: "{{ subnet_facts.subnet_id }}"
+        private_ip_address: "{{ private_ip_address }}"
+        assign_public_ip: true
+        wait: true
+        count: 1
+      register: ec2_instance
+    - name: Display Public IP and Subnet Mask
+      debug:
+        var: ec2_instance.instances[0].public_ip_address
+      debug:
+        var: subnet_facts.subnet.cidr_block

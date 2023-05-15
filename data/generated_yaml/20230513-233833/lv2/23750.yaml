@@ -1,0 +1,22 @@
+yaml
+- hosts: node1
+  tasks:
+    - name: Create snapshot with UUID
+      vmware_guest_snapshot:
+        hostname: "{{ inventory_hostname }}"
+        username: "user"
+        password: "password"
+        uuid: "{{ 'invalid-uuid' if (inventory_hostname == 'node3') else 'valid-uuid' }}"
+        snapshot_name: "snapshot"
+      register: result
+      ignore_errors: true
+
+    - name: Display error message if UUID not found
+      debug:
+        msg: "{{ result.msg }}"
+      when: "'UUID not found' in result.msg and inventory_hostname == 'node2'"
+
+    - name: Display success message
+      debug:
+        msg: "Snapshot created successfully"
+      when: "'Snapshot named snapshot successfully created' in result.msg"

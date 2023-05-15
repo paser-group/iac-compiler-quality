@@ -1,0 +1,45 @@
+
+- name: Testing file paths with spaces
+  hosts: all
+  vars:
+    file_path: "/tmp/my file with spaces.txt"
+  tasks:
+    - name: Create file with spaces in path
+      file:
+        path: "{{ file_path }}"
+        state: touch
+      register: file_creation
+
+    - name: Check if file exists
+      stat:
+        path: "{{ file_path }}"
+      register: file_stat
+
+    - name: Print the file path
+      debug:
+        var: file_path
+
+    - name: Copy the file using the $HOME environment variable
+      copy:
+        src: "{{ file_path }}"
+        dest: "$HOME/{{ file_path.split('/')[-1] }}"
+      register: file_copy
+
+    - name: Wait for a few seconds
+      pause:
+        seconds: 5
+
+    - name: Remove the copied file using unconventional syntax
+      file:
+        path: "{{ '$HOME/' + file_path.split('/')[-1] }}"
+        state: absent
+      register: file_removal
+
+    - name: Print the output of all registered variables
+      debug:
+        var: "{{ item }}"
+      with_items:
+        - file_creation
+        - file_stat
+        - file_copy
+        - file_removal

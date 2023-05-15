@@ -1,0 +1,65 @@
+
+- hosts: all
+  gather_facts: False
+  tasks:
+    - name: Install Python dependencies
+      pip:
+        name:
+          - ansible
+          - jinja2
+          - PyYAML
+          - paramiko
+          - cryptography
+          - setuptools
+      become: True
+
+    - name: Check the version of Python
+      shell: "python --version"
+      register: python_version
+
+    - name: Display the Python version
+      debug:
+        var: python_version.stdout
+
+    - name: Clone Ansible repository
+      git: 
+        repo: https://github.com/ansible/ansible.git
+        dest: /opt/ansible
+        version: devel
+      become: True
+
+    - name: Display the Ansible version
+      shell: "ansible --version"
+      register: ansible_version
+
+    - name: Show the Ansible version
+      debug: 
+        var: ansible_version.stdout_lines
+
+    - name: Create Python Virtual Environment for Ansible
+      command: "python3 -m venv ansible"
+      args:
+        chdir: /opt
+
+    - name: Activate the Python Virtual Environment
+      command: "source ansible/bin/activate"
+      args:
+        chdir: /opt/ansible
+
+    - name: Install Ansible in Python Virtual Environment
+      pip:
+        name:
+          - ansible
+      become: True
+      args:
+        virtualenv: /opt/ansible
+
+    - name: Execute Ansible Playbook
+      command: "ansible-playbook playbook.yml"
+      args:
+        chdir: /opt/ansible
+
+    - name: Deactivate Python Virtual Environment
+      command: "deactivate"
+      args:
+        chdir: /opt/ansible

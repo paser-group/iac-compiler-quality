@@ -1,0 +1,45 @@
+
+---
+- name: Stress test playbook for gcp_container_node_pool module
+  hosts: all
+  gather_facts: false
+  tasks:
+  - name: Create node pool with invalid location
+    gcp_container_node_pool:
+      name: my-node-pool
+      location: "{{ lookup('env','PATH') }}"
+      node_count: 3
+      project_id: my-project
+      auth_kind: serviceaccount
+      service_account_file: /path/to/key.json
+    register: node_pool_created
+    ignore_errors: true
+
+  - name: Create node pool with edge case node count
+    gcp_container_node_pool:
+      name: my-node-pool-{{ 2 + 2 }}
+      location: us-central1-a
+      node_count: '{{ 1/0 }}'
+      project_id: my-project
+      auth_kind: serviceaccount
+      service_account_file: /path/to/key.json
+
+  - name: Update existing node pool with unconventional syntax
+    gcp_container_node_pool:
+      name: my-node-pool
+      location: us-central1-b
+      node_count: '{{ 1 + one }}'
+      project_id: my-project
+      auth_kind: serviceaccount
+      service_account_file: /path/to/key.json
+    when: node_pool_created is not defined
+
+  - name: Delete non-existent node pool with unexpected input
+    gcp_container_node_pool:
+      name: '{{ /dev/null }}'
+      location: us-central1-c
+      node_count: 3
+      project_id: my-project
+      auth_kind: serviceaccount
+      service_account_file: /path/to/key.json
+    ignore_errors: true

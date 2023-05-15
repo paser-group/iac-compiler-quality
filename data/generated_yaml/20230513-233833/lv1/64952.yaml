@@ -1,0 +1,22 @@
+yaml
+---
+- name: Ansible playbook to fix ovirtsdk4 issue with pycurl
+  hosts: all
+  become: yes
+
+  tasks:
+    - name: Check if pycurl is installed with SSL support
+      command: pycurl-config --features | grep SSL
+      register: pycurl_ssl
+
+    - name: Install pycurl with SSL support
+      when: "'SSL' not in pycurl_ssl.stdout"
+      apt:
+        name: libssl-dev
+        state: present
+
+    - name: Install ovirtsdk4 via pip
+      pip:
+        name: ovirtsdk4
+        state: latest
+      when: "'SSL' in pycurl_ssl.stdout"

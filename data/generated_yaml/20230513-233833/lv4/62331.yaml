@@ -1,0 +1,41 @@
+
+---
+
+- name: Test ec2_eip bug
+  hosts: localhost
+  connection: local
+  gather_facts: no
+  vars:
+    region: us-east-1
+    instance_id: i-abc123
+    eip: 203.0.113.0
+  tasks:
+    - name: Ensure EIP does not exist
+      ec2_eip:
+        in_vpc: yes
+        region: "{{ region }}"
+        assoc_id: "{{ instance_id }}"
+        public_ip: "{{ eip }}"
+        state: absent
+      register: ec2_eip_absent_result
+    - name: Ensure AMI is available
+      ec2_ami:
+        region: "{{ region }}"
+        state: present
+        name: ami-12345678
+      register: ec2_ami_result
+    - name: Ensure VPC exists
+      ec2_vpc:
+        region: "{{ region }}"
+        state: present
+        cidr_block: 10.0.0.0/16
+      register: ec2_vpc_result
+    - name: Ensure security group exists
+      ec2_security_group:
+        region: "{{ region }}"
+        state: present
+        name: my-security-group
+        vpc_id: "{{ ec2_vpc_result.vpc.id }}"
+      register: ec2_sg_result
+      
+...

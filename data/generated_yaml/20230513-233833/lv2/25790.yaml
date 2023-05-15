@@ -1,0 +1,74 @@
+
+---
+- name: Test playbook for ec2 module error
+  hosts: all
+  become: true
+  gather_facts: true
+  
+  vars:
+    image_id: ami-04b9e92b5572fa0d1
+    subnet_id: subnet-0e246e25c458f1c77
+    security_group: sg-0ecf5f8fee8fdb694
+    instance_type: t2.micro
+    keyname: mykey
+
+  tasks:
+    - name: Launch an EC2 instance with an invalid image ID
+      ec2:
+        key_name: "{{ keyname }}"
+        group_id: "{{ security_group }}"
+        instance_type: "{{ instance_type }}"
+        subnet_id: "{{ subnet_id }}"
+        image: invalid_image_id  # Edge case input
+        wait: true
+      ignore_errors: true
+
+    - name: Launch an EC2 instance with invalid instance type
+      ec2:
+        key_name: "{{ keyname }}"
+        group_id: "{{ security_group }}"
+        instance_type: invalid_instance_type  # Edge case input
+        subnet_id: "{{ subnet_id }}"
+        image_id: "{{ image_id }}"
+        wait: true
+      ignore_errors: true
+
+    - name: Launch an EC2 instance with a nonexistent subnet
+      ec2:
+        key_name: "{{ keyname }}"
+        group_id: "{{ security_group }}"
+        instance_type: "{{ instance_type }}"
+        subnet_id: nonexistent_subnet_id  # Edge case input
+        image_id: "{{ image_id }}"
+        wait: true
+      ignore_errors: true
+
+    - name: Create a new security group with a long name that exceeds the AWS limit
+      ec2_group:
+        name: "{{ 'a' * 256 }}"  # Edge case input that exceeds AWS limit
+        description: "Security group with long name"  # Unconventional syntax
+      register: sg_result
+      ignore_errors: true
+
+    - name: Add a non-existent IP address to the previously-created security group
+      ec2_group:
+        id: "{{ sg_result.group_id }}"
+        ip_permissions:
+          - ip_protocol: tcp
+            from_port: 22
+            to_port: 22
+            cidr_ip: nonexistent_ip_address # Edge case input
+      register: sg_rule_result
+      ignore_errors: true
+      
+    - name: Launch an EC2 instance with a custom tag that contains ASCII control characters
+      ec2:
+        key_name: "{{ keyname }}"
+        group_id: "{{ security_group }}"
+        instance_type: "{{ instance_type }}"
+        subnet_id: "{{ subnet_id }}"
+        image_id: "{{ image_id }}"
+        instance_tags:
+          Name: "sample\u0003tag"  # Edge case input that includes ASCII control characters
+        wait: true
+      ignore_errors: true

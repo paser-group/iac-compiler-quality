@@ -1,0 +1,35 @@
+
+---
+- name: Test playbook for gather_facts propagating issues
+  hosts: node1
+
+  tasks:
+    - name: Enable gather_facts to be propagated
+      set_fact:
+        ansible_facts: "{{hostvars}}"
+      delegate_to: node2
+      
+    - name: Gather facts from all nodes
+      setup:
+        gather_subset: all
+
+    - name: Print out facts for an unexpected input value
+      debug:
+        var: "{{ variable }}"
+
+    - name: Create an edge case with an unconventional syntax
+      copy:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+        mode: "{{ item.mode }}"
+      loop:
+        - {src: '/tmp/foo.conf', dest: '/etc/foo.conf', mode: '0777'}
+        - {src: 'http://example.com/file', dest: '/tmp/bar', mode: '0555'}
+
+    - name: Verify gather_facts is propagated by checking variables from all nodes
+      debug:
+        msg: "ansible_default_ipv4.address {{ hostvars[item].ansible_default_ipv4.address }}"
+      loop: "{{ groups['all'] }}"
+      loop_control:
+        loop_var: item
+      delegate_to: node3

@@ -1,0 +1,31 @@
+
+- name: winrm kerberos error test
+  hosts: all
+  gather_facts: no
+  vars:
+    username: "test"
+    password: "testpassword"
+  tasks:
+    - name: check kerberos error on localhost
+      hosts: localhost
+      vars:
+        ansible_connection: local
+      win_ping:
+        data: "pinger"
+        
+    - name: run winrm with kerberos error
+      win_command: whoami
+      delegate_to: "{{ groups['all'][0] }}"
+      vars:
+        ansible_winrm_server_cert_validation: ignore
+        ansible_connection: winrm
+        ansible_port: 5985
+        ansible_user: "{{ username }}"
+        ansible_password: "{{ password }}"
+        ansible_winrm_transport: ntlm
+        ansible_winrm_kerberos_delegation: true
+      register: whoami_output
+
+    - name: print whoami output
+      debug:
+        var: whoami_output.stdout_lines

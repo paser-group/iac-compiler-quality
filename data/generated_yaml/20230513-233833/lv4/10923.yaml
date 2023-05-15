@@ -1,0 +1,45 @@
+
+---
+- name: Expose Ansible V2 bug
+  hosts: all
+
+  vars:
+    module_name: my_module
+
+  tasks:
+    - name: Create Python class definition
+      tempfile:
+        state: directory
+        prefix: my_module
+        dir: /tmp
+      register: temp_dir
+
+    - name: Create test class
+      tempfile:
+        state: file
+        prefix: test_class
+        suffix: .py
+        dir: "{{ temp_dir.path }}"
+        mode: '0755'
+        delete: false
+      register: temp_file
+      contnent: |
+        class TestClass:
+            pass
+
+    - name: Serialize test class
+      shell: python -c "import pickle; import {{ module_name }}; pickle.dumps({{ module_name }}.TestClass)"
+      register: serialized
+
+    - name: Try to pickle test class
+      shell: python -c "import pickle; pickle.dumps({{ module_name }})"
+      register: pickled
+
+    - name: Display output
+      debug:
+        var: pickled
+
+    - name: Delete temp dir
+      file:
+        state: absent
+        path: "{{ temp_dir.path }}"

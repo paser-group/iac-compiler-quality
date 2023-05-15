@@ -29,9 +29,18 @@ def check_ansible_syntax(sample_data, yaml_base_path):
             stderr=subprocess.STDOUT
         )
         
-        display.green(
-            "Ansible syntax check passed for playbook: ", 
-            playbook_path
+        # display.green(
+        #     f"Ansible syntax check passed for playbook: {playbook_path}"            
+        # )
+        
+        record_case(
+            success=True, 
+            **{
+                "issue id": sample_data["ID"],
+                "issue title": sample_data["TITLE"], 
+                "result": f"Ansible syntax check passed for playbook: {playbook_path}", 
+                "issue prompt": sample_data["prompt"]
+            }
         )
         return 1
     except Exception as e:

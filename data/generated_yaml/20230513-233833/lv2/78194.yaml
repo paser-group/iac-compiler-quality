@@ -1,0 +1,50 @@
+
+---
+- name: Test playbook for ansible_parent_role_paths
+  hosts: all
+  gather_facts: false
+
+  tasks:
+  - name: Test with empty host list
+    include_role:
+      name: some_role
+      apply:
+        nodes: []
+
+  - name: Test with invalid role path
+    include_role:
+      name: non_existing_role
+      apply:
+        nodes: "{{ groups.all }}"
+
+  - name: Test with role path containing variable
+    include_role:
+      name: "{{ '{{' }} file_path {{ '}}' }}/{{ '{{' }} role_name {{ '}}' }}"
+      apply:
+        nodes: "{{ groups.all }}"
+      vars:
+        file_path: /etc/ansible
+        role_name: some_role
+
+  - name: Test with role path containing special characters
+    include_role:
+      name: "/etc/ansible/{{ '{{' }} <some_variable> }}/{{ '{{' }} %nul }}/{{ '}}' }}"
+      apply:
+        nodes: "{{ groups.all }}"
+      vars:
+        some_variable: role_path
+
+  - name: Test with invalid apply section
+    include_role:
+      name: some_role
+      apply: invalid_apply_section
+
+  - name: Test with missing apply section
+    include_role:
+      name: some_role
+
+  - name: Test with missing nodes in apply section
+    include_role:
+      name: some_role
+      apply:
+        missing_nodes: []

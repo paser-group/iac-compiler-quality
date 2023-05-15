@@ -1,0 +1,115 @@
+yaml
+---
+- name: Stress Testing Playbook for Known Hosts and SSH Keys
+  hosts: all
+  gather_facts: false
+
+  tasks:
+  - name: Unconventional Syntax Test Case
+    hosts: "{{ unknown }}"
+    gather_facts: false
+    become: true
+    become_method: "{{ ['sudo', 'su'][item%3] }}"
+    with_sequence: start=1 end=5
+
+  - name: Edge Case: Multiple Authentication Methods
+    hosts: all
+    become: true
+    become_user: "{{ my_user | default('root') }}"
+    gather_facts: no
+    ignore_unreachable: true
+    vars:
+      my_user: "{{ ['root', 'admin', 'user'][item%3] }}"
+    with_sequence: start=1 end=10
+
+  - name: Unexpected Input Test Case
+    hosts: all
+    user: "{{ users[item] }}"
+    gather_facts: false
+    ignore_errors: true
+    vars:
+      users:
+        - root
+        - admin
+        - user
+        - ' '
+        - '-n'
+        - "'"
+        - "''"
+        - '`rm -rf /`'
+        - '{{ item }}'
+    with_sequence: start=1 end=10
+
+  - name: Known Hosts File Test Case
+    hosts: all
+    gather_facts: false
+    tasks:
+    - name: Add Entry to Known Hosts File
+      known_hosts:
+        path: "{{ users_dir | default('~') }}/.ssh/known_hosts"
+        name: "{{ item }}"
+        key: "{{ hostvars[item]['ansible_host_key_rsa_public'] }}"
+        hash_host: "{{ ['yes', 'no'][item%2] }}"
+      vars:
+        users_dir: "{{ ['~', '/root', '/home/admin', '/home/user'][item%4] }}"
+      with_items: "{{ groups['all'] }}"
+      when: "'node' in item"
+
+    - name: Use SSH Key for Authentication
+      hosts: all
+      gather_facts: false
+      become: true
+      tasks:
+      - name: SSH Key Test
+        command: "echo This host is {{ item }} && sudo -u {{ item }} id"
+        with_items: "{{ groups['all'] }}"
+        when: "'node' in item"
+        register: output
+        ignore_errors: true
+
+      - name: Print Host Command Output
+        debug:
+          msg: "{{ item.stdout }}"
+        with_items: "{{ output.results }}"
+        when: item.stdout is defined
+
+  - name: Use SSH Password for Authentication
+    hosts: all
+    gather_facts: false
+    become: true
+    tasks:
+    - name: Install sshpass
+      apt:
+        name: sshpass
+        state: present
+      delegate_to: "{{ groups['node2'][0] }}"
+      become: true
+
+    - name: Disable Strict Host Key Checking
+      lineinfile:
+        dest: "{{ users_dir | default('~') }}/.ssh/config"
+        regexp: "^StrictHostKeyChecking"
+        line: "StrictHostKeyChecking no"
+        state: present
+        create: true
+      vars:
+        users_dir: "{{ ['/root', '/home/admin', '/home/user'][item%3] }}"
+      delegate_to: "{{ groups['node3'][0] }}"
+      become: true
+      with_sequence: start=1 end=3
+
+    - name: SSH Password Test
+      command: "sshpass -p '{{ pw }}' ssh {{ user }}@{{ item }} whoami"
+      with_items: "{{ groups['all'] }}"
+      vars:
+        user: "{{ ['root', 'admin', 'user', ''][item%4] }}"
+        pw: "{{ passwords[item%4] }}"
+      register: output
+      shell: /bin/bash
+      ignore_errors: true
+
+    - name: Print SSH Command Output
+      debug:
+        msg: "{{ item.stdout }}"
+      with_items: "{{ output.results }}"
+      when: item.stdout is defined

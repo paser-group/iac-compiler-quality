@@ -1,0 +1,51 @@
+
+---
+- name: Test vmware_guest_snapshot idempotency
+  hosts: node1
+  gather_facts: false
+  tasks:
+    - name: Create snapshot of the VM
+      vmware_guest_snapshot:
+        hostname: "{{ hostvars[item]['ansible_host'] }}"
+        username: "{{ hostvars[item]['ansible_user'] }}"
+        password: "{{ hostvars[item]['ansible_password'] }}"
+        validate_certs: false
+        name: "{{ inventory_hostname }}"
+        snapshot_name: "test_snapshot"
+        state: present
+      loop: "{{ groups['all'] }}"
+      when: "'node1' in item"
+
+    - name: Delete snapshot of the VM
+      vmware_guest_snapshot:
+        hostname: "{{ hostvars[item]['ansible_host'] }}"
+        username: "{{ hostvars[item]['ansible_user'] }}"
+        password: "{{ hostvars[item]['ansible_password'] }}"
+        validate_certs: false
+        name: "{{ inventory_hostname }}"
+        snapshot_name: "test_snapshot"
+        state: absent
+      loop: "{{ groups['all'] }}"
+      when: "'node2' in item"
+
+    - name: Create snapshot of the VM with same name
+      vmware_guest_snapshot:
+        hostname: "{{ hostvars[item]['ansible_host'] }}"
+        username: "{{ hostvars[item]['ansible_user'] }}"
+        password: "{{ hostvars[item]['ansible_password'] }}"
+        validate_certs: false
+        name: "{{ inventory_hostname }}"
+        snapshot_name: "test_snapshot"
+        state: present
+      loop: "{{ groups['all'] }}"
+      when: "'node3' in item"
+
+    - name: Create snapshot of the VM with invalid VM name
+      vmware_guest_snapshot:
+        hostname: "{{ hostvars['node1']['ansible_host'] }}"
+        username: "{{ hostvars['node2']['ansible_user'] }}"
+        password: "{{ hostvars['node3']['ansible_password'] }}"
+        validate_certs: false
+        name: "invalid_vm_name"
+        snapshot_name: "test_snapshot_invalid"
+        state: present

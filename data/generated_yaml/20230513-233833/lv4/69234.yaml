@@ -1,0 +1,26 @@
+
+---
+- name: Test Pulp Module for add_export_distributor option bug
+  hosts: all
+  become: true
+  vars:
+    repo_name: my_repo
+  tasks:
+    - name: Add Repository to Pulp with add_export_distributor option
+      pulp_repo:
+        name: "{{ repo_name }}"
+        add_export_distributor: yes
+        state: present
+
+    - name: Query Repository using Pulp API
+      uri:
+        url: "{{ pulp_api }}/pulp/api/v3/export-distributors/"
+        validate_certs: no
+        status_code: 200
+        timeout: 10
+        return_content: yes
+      register: pulp_output
+
+    - name: Assert that Repository contains Export Distributor
+      ansible_assert:
+        that: "'export_distributor' in pulp_output.content"

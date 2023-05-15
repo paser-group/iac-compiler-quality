@@ -1,0 +1,59 @@
+
+---
+- name: GCE Module - RSA Key Format
+  hosts: all
+  gather_facts: no
+
+  vars:
+    project_id: your_project_id
+    auth_file: /path/to/your/auth_file
+
+  tasks:
+  - name: Create Instance
+    gce:
+      instance_names: test-instance-{{ inventory_hostname_short }}
+      machine_type: n1-standard-1
+      image: ubuntu-1804-bionic-v20210623
+      zone: us-central1-a
+      project_id: "{{ project_id }}"
+      credentials_file: "{{ auth_file }}"
+      state: present
+    register: instance
+
+  - name: Configure SSH Key
+    shell: |
+      ssh-keygen -t rsa -N "" -f /tmp/sshkey
+    changed_when: false
+    register: ssh_key
+
+  - name: Run GCE Instance with RSA Non-Supported Key Format
+    gce:
+      instance_name: test-instance-{{ inventory_hostname_short }}
+      zone: us-central1-a
+      project_id: "{{ project_id }}"
+      credentials_file: "{{ auth_file }}"
+      state: stopped
+      disks:
+      - auto_delete: true
+        boot: true
+        mode: READ_WRITE
+        initialize_params:
+          source_image: ubuntu-1804-bionic-v20210623
+      metadata:
+        foo: "{{ ssh_key.stdout_lines }}"
+      network_interfaces:
+      - access_configs:
+        - name: external-nat
+          type: ONE_TO_ONE_NAT
+        network: projects/{{ project_id }}/global/networks/node-net
+        subnetwork: projects/{{ project_id }}/regions/us-central1/subnetworks/node-subnet
+    register: instance_state
+
+  - name: Remove test instance
+    gce:
+      instance_name: test-instance-{{ inventory_hostname_short }}
+      zone: us-central1-a
+      project_id: "{{ project_id }}"
+      credentials_file: "{{ auth_file }}"
+      state: absent
+    when: instance_state['changed'] == true

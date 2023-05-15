@@ -1,0 +1,50 @@
+
+---
+- name: Playbook to stress test Ansible compiler
+  hosts: node1
+  gather_facts: false
+
+  tasks:
+    - name: Set invalid subnet mask
+      set_fact:
+        subnet_mask: "255.255.0.0.256"
+      when: true
+
+    - name: Set invalid gateway
+      set_fact:
+        gateway: "10.1.1.0"
+      when: true
+
+    - name: Set missing gateway
+      set_fact:
+        gateway: ""
+      when: true
+
+    - name: Set missing subnet mask
+      set_fact:
+        subnet_mask: ""
+      when: true
+
+    - name: Execute DescribeSubnets operation with an invalid region
+      ec2_vpc_subnet_facts:
+        region: "us-east-1a"
+      when: true
+
+    - name: Execute DescribeSubnets operation with an invalid VPC ID
+      ec2_vpc_subnet_facts:
+        vpc_id: ""
+      when: true
+
+    - name: Execute DescribeSubnets operation with an invalid subnet ID
+      ec2_vpc_subnet_facts:
+        subnet_ids: ""
+      when: true
+
+    - name: Execute DescribeSubnets operation to exceed API request limit
+      ec2_vpc_subnet_facts:
+        region: "us-west-1"
+        vpc_id: "vpc-0123456789abcdefg"
+        subnet_ids:
+          - "subnet-0123456789abcdefg"
+          - "subnet-0123456789abcdefh"
+      with_sequence: count=100

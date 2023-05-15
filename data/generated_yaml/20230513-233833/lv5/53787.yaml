@@ -1,0 +1,48 @@
+
+- name: Install and configure necessary dependencies for pubsub module
+  hosts: all
+  become: true
+  tasks:
+  - name: Update apt packages
+    apt:
+      update_cache: yes
+
+  - name: Install google-auth and google-cloud-pubsub libraries
+    pip:
+      name:
+        - google-auth
+        - google-cloud-pubsub
+
+  - name: Verify that the installed packages are working
+    command: python -c "from google.cloud import pubsub_v1; print(pubsub_v1.__version__)"
+    register: pubsub_version
+    failed_when: pubsub_version.rc != 0
+
+  - name: Create a topic
+    google.pubsub.topic:
+      project: "{{ gcp_project }}"
+      name: "{{ topic_name }}"
+      state: present
+    register: topic
+
+  - name: Create a subscription to the topic
+    google.pubsub.subscription:
+      project: "{{ gcp_project }}"
+      name: "{{ subscription_name }}"
+      topic: "{{ topic_name }}"
+      state: present
+    register: subscription
+
+  - name: Publish message to topic
+    google.pubsub.topic.publish:
+      project: "{{ gcp_project }}"
+      topic: "{{ topic_name }}"
+      messages:
+        - data: my-data
+
+  - name: Pull message from the subscription
+    google.pubsub.subscription.pull:
+      project: "{{ gcp_project }}"
+      subscription: "{{ subscription_name }}"
+      max_messages: 10
+    register: messages

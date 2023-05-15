@@ -1,0 +1,47 @@
+
+---
+- name: Testing template error handling
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: Create file with invalid jinja2 syntax
+      copy:
+        content: '{{ invalid_jinja_syntax }'
+        dest: /tmp/invalid.j2
+
+    - name: Render invalid template
+      template:
+        src: /tmp/invalid.j2
+        dest: /tmp/rendered
+
+    - name: Create file with invalid YAML syntax
+      copy:
+        content: '[invalid_yaml_syntax'
+        dest: /tmp/invalid.yaml
+
+    - name: Include invalid YAML file
+      include_vars:
+        file: /tmp/invalid.yaml
+
+    - name: Introduce unconventional Jinja variable syntax
+      debug: msg="{{ 'unconventional'[:3] ~ ' syntax' }}"
+
+    - name: Trigger unexpected input error
+      command: /bin/bash -c "echo {{ random_input }}"
+
+    - name: Introduce edge case with hostnames
+      add_host:
+        name: 'invalid_hostname~!@#$%^&*()_+=-][{}|\/<>,.'
+        ansible_host: 10.1.1.4
+        ansible_user: root
+        ansible_ssh_private_key_file: /path/to/key
+        ansible_connection: ssh
+
+    - name: Introduce edge case with variable names
+      set_fact:
+        '{{ invalid_variable_name }}': 'value'
+
+    - name: Introduce unexpected input as variable
+      set_fact:
+        unexpected_input: '{{ random_input }}'

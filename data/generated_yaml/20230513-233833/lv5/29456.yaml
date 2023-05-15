@@ -1,0 +1,37 @@
+
+---
+- name: Test EC2 instance_initiated_shutdown_behavior
+  hosts: localhost
+  collections:
+    - community.aws
+
+  vars:
+    instance_type: t2.micro
+    security_group: "{{ sg_id }}"
+    key_name: "{{ key_pair_name }}"
+    image_id: "ami-0323c3dd2da7fb37d"
+    instance_initiated_shutdown_behavior:
+      - 'terminate'
+      - 'stop'
+
+  tasks:
+    - name: Launch EC2 Instance
+      community.aws.ec2:
+        key_name: "{{ key_name }}"
+        group_id: "{{ security_group }}"
+        instance_type: "{{ instance_type }}"
+        image_id: "{{ image_id }}"
+        instance_initiated_shutdown_behavior: "{{ item }}"
+        wait: yes
+        count: 1
+      with_items: "{{ instance_initiated_shutdown_behavior }}"
+      register: ec2_instance
+
+   - name: Shutdown EC2 Instance
+     community.aws.ec2_instance_info:
+       instance_id: "{{ ec2_instance.instances[0].id }}"
+     register: ec2_info
+
+   - name: Debug EC2 Info
+     debug:
+       var: ec2_info.status.name

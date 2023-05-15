@@ -1,0 +1,32 @@
+
+---
+- name: AnsibleUndefinedVariable bug hunting playbook
+  hosts: all
+  gather_facts: no
+  vars:
+    - invalid_var: "{{ non_existent_var }}"  # Edge case - undefined variable
+    - double_underscore: "__"  # Edge case - unconventional variable name
+  tasks:
+    - name: Undefined variable in playbook level
+      debug:
+        msg: "{{ invalid_var }}"  # Unconventional syntax - using undefined variable
+
+    - name: Undefined variable in task level
+      debug:
+        msg: "{{ non_existent_var }}"  # Unconventional syntax - using undefined variable
+
+    - name: Undefined variable in module argument
+      apt:
+        pkg: "{{ non_existent_pkg }}"  # Unconventional syntax - using undefined variable
+        state: latest
+      delegate_to: "{{ double_underscore }}host" # Unconventional syntax - using double underscore in hostname
+
+    - name: Far-fetched inventory hostname
+      debug:
+        msg: "Hello World!"
+      delegate_to: "UnknownHost"  # Unexpected input - non-existent inventory hostname
+
+    - name: Use of undefined group in task
+      debug:
+        msg: "Hello World again!"
+      when: "'undefined_group' in group_names"  # Edge case - undefined group name

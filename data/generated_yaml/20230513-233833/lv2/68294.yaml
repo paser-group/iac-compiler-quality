@@ -1,0 +1,57 @@
+
+- name: Test EC2 inventory plugin
+  hosts: localhost
+  gather_facts: no
+  vars:
+    region: us-east-1
+  tasks:
+    - name: Test inventory connection reset
+      ec2:
+        region: "{{ region }}"
+        aws_access_key: "{{ lookup('env','AWS_ACCESS_KEY_ID') }}"
+        aws_secret_key: "{{ lookup('env','AWS_SECRET_ACCESS_KEY') }}"
+        vpc_tag_Name: "{{ 'fake_name' | random(seed=inventory_hostname) }}"
+      connection: local
+      register: ec2_instances
+      ignore_errors: yes
+    - name: Ensure EC2 inventory data is correct
+      assert:
+        that:
+          - ec2_instances.instances | length > 0
+          - ec2_instances.instances[0].private_ip_address is ipaddr
+          - ec2_instances.instances[0].public_dns_name is match(".*[a-zA-Z].*")
+      ignore_errors: no
+    - name: Test additional EC2 host properties
+      set_fact:
+        instance_id: "{{ ec2_instances.instances[0].id }}"
+        instance_type: "{{ ec2_instances.instances[0].instance_type }}"
+      ignore_errors: no
+    - name: Test unconventional EC2 inventory syntax
+      ec2:
+        region: "{{ region }}"
+        aws_access_key: "{{ lookup('env','AWS_ACCESS_KEY_ID') }}"
+        aws_secret_key: "{{ lookup('env','AWS_SECRET_ACCESS_KEY') }}"
+        filters:
+          tag-key: invalid_amazing_tag_key
+      connection: local
+      register: invalid_instances
+      ignore_errors: yes
+    - name: Test unusual EC2 instances name
+      ec2_instance_facts:
+        filters:
+          instance-state-name: running
+          tag_Name: invalid_ec2_instance_name
+      connection: local
+      register: tag_instances
+      ignore_errors: yes
+    - name: Parse invalid EC2 instance data
+      set_fact:
+        instance: "{{ tag_instances | random(seed=inventory_hostname) }}"
+        public_ip: "{{ instance.public_ip_addresses | random(seed=inventory_hostname) }}"
+        private_ip: "{{ instance.private_ip_addresses | random(seed=inventory_hostname) }}"
+      ignore_errors: no
+    - name: Test malformed EC2 inventory data
+      set_fact:
+        malformed_data: "{{ invalid_instances.invalid }}"
+      ignore_errors: yes
+

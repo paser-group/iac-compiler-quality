@@ -1,0 +1,63 @@
+
+---
+- name: GCP Auth Stress Testing
+  hosts: all
+  tasks:
+    - name: Google Cloud Authentication Test - Failure Case (Invalid Credential File Path)
+      gcp_compute_instance_info:
+        auth_kind: serviceaccount
+        credentials_file: /home/user/invalid/path/to/credentials.json
+      register: result
+      ignore_errors: true
+
+    - name: Google Cloud Authentication Test - Failure Case (Invalid Credential File Format)
+      gcp_compute_instance_info:
+        auth_kind: serviceaccount
+        credentials_file: /home/user/credentials.txt
+      register: result
+      ignore_errors: true
+
+    - name: Google Cloud Authentication Test - Success Case (Valid Credentials)
+      gcp_compute_instance_info:
+        auth_kind: serviceaccount
+        credentials_file: /home/user/valid/path/to/credentials.json
+      register: result
+
+    - name: Google Cloud Authentication Test - Success Case (Explicit JSON Key)
+      gcp_compute_instance_info:
+        auth_kind: serviceaccount
+        credentials:
+          type: "service_account"
+          project_id: "my-project"
+          private_key_id: "my-private-key-id"
+          private_key: "my-private-key"
+          client_email: "my-email"
+          client_id: "my-client-id"
+          auth_uri: "https://accounts.google.com/o/oauth2/auth"
+          token_uri: "https://accounts.google.com/o/oauth2/token"
+          auth_provider_x509_cert_url: "https://www.googleapis.com/oauth2/v1/certs"
+          client_x509_cert_url: "https://www.googleapis.com/robot/v1/metadata/x509/my-email"
+      register: result
+
+    - name: Google Cloud Authentication Test - Failure Case (Missing Project ID)
+      gcp_compute_instance_info:
+        auth_kind: serviceaccount
+        credentials_file: /home/user/valid/path/to/credentials.json
+        project_id: ""
+      register: result
+      ignore_errors: true
+
+    - name: Google Cloud Authentication Test - Success Case (Mutually Exclusive Parameters)
+      gcp_compute_instance_info:
+        auth_kind: serviceaccount
+        credentials_file: /home/user/valid/path/to/credentials.json
+        project_id: "my-project"
+        project: "my-project"
+      register: result
+
+    - name: Google Cloud Authentication Test - Success Case (Implicitly Using Default Credentials)
+      gcp_compute_instance_info:
+        register: result
+
+    - debug:
+        var: result

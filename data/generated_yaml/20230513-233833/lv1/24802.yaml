@@ -1,0 +1,42 @@
+yaml
+- name: Provision EC2 and RDS instances with PostgreSQL DB
+  hosts: localhost
+  gather_facts: no
+  vars:
+    aws_region: us-east-1
+    ec2_instance_type: t2.micro
+    rds_instance_class: db.t2.micro
+    rds_engine: postgres
+    rds_username: dbuser
+    rds_password: dbpass
+    rds_dbname: mydatabase
+  tasks:
+    - name: Create EC2 instance
+      ec2:
+        region: "{{ aws_region }}"
+        instance_type: "{{ ec2_instance_type }}"
+        image: ami-0c94855ba95c71c99 # Update this to an image ID that works for you
+        key_name: mykeypair # Update this to your own keypair name
+        wait: yes
+        count: 1
+      register: ec2_instance
+
+    - name: Create RDS instance
+      rds:
+        region: "{{ aws_region }}"
+        instance_name: myrdsdb
+        db_engine: "{{ rds_engine }}"
+        db_name: "{{ rds_dbname }}"
+        instance_class: "{{ rds_instance_class }}"
+        allocated_storage: 20
+        username: "{{ rds_username }}"
+        password: "{{ rds_password }}"
+        tags:
+          Name: myrdsdb
+      register: rds_instance
+
+    - name: Output EC2 and RDS instances
+      debug:
+        var:
+          ec2_instance: "{{ ec2_instance.instances[0] }}"
+          rds_instance: "{{ rds_instance.instance }}"

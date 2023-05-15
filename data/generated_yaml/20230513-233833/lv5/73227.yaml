@@ -1,0 +1,27 @@
+
+# playbook.yml
+---
+- name: Testing encrypted variables with prefix '|-' in uri module
+  hosts: all
+  become: yes
+
+  tasks:
+    - name: Set variable with prefix '|-'
+      set_fact:
+        secret_var: "|- This is a secret variable."
+
+    - name: Encrypt variable using Ansible Vault
+      ansible.builtin.vars_prompt:
+        prompt: "Enter vault password"
+        private: yes
+      register: vault_pass
+
+    - name: Use encrypted variable in uri module
+      ansible.builtin.uri:
+        url: https://example.com
+        headers:
+          Authorization: "Bearer {{ secret_var }}"
+          content-type: "application/json"
+        validate_certs: no
+      vars:
+        secret_var: "{{ secret_var | vault(vault_pass | b64encode) }}"

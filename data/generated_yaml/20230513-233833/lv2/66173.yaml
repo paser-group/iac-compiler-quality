@@ -1,0 +1,48 @@
+
+---
+- name: Ansible Tower Authentication Timeout Playbook
+  hosts: all
+  become: true
+  tasks:
+    - name: Invalid username and password
+      expect:
+        command: /usr/bin/ssh user@{{inventory_hostname}}
+        responses:
+          'Invalid username or password': 
+            command: echo 'Authentication failed' && exit 1
+          'username:':
+            timeout: 3
+            command: echo 'Authentication failed - Timeout' && exit 1
+          'password:':
+            timeout: 3
+            command: echo 'Authentication failed - Timeout' && exit 1
+    - name: Invalid password only
+      expect:
+        command: /usr/bin/ssh user@{{inventory_hostname}}
+        responses:
+          'password:':
+            echo 'Authentication failed' && exit 1
+    - name: Invalid username only
+      expect:
+        command: /usr/bin/ssh user@{{inventory_hostname}}
+        responses:
+          'username:':
+            echo 'Authentication failed' && exit 1
+    - name: Invalid IP address for SSH connection
+      expect:
+        command: /usr/bin/ssh user@10.1.1.100
+        responses:
+          'ssh: connect to host 10.1.1.100 port 22: Connection timed out':
+            echo 'Invalid IP address' && exit 1
+    - name: Invalid syntax for SSH connection
+      expect:
+        command: /usr/bin/ssh
+        responses:
+          'ssh: Could not resolve hostname ': 
+            command: echo 'Invalid syntax for SSH connection' && exit 1
+    - name: Incorrect private key path
+      expect:
+        command: /usr/bin/ssh -i /path/private_key user@{{inventory_hostname}}
+        responses:
+          'Permission denied (publickey).':
+            echo 'Incorrect private key path' && exit 1

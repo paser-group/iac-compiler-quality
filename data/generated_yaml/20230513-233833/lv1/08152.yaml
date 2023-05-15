@@ -1,0 +1,39 @@
+
+- hosts: all
+  gather_facts: false
+  vars:
+    netscaler_host: "netscaler.example.org"
+    netscaler_username: "admin"
+    netscaler_password: "secret_password"
+  tasks:
+    - name: Install NitroAPI for Python on remote machine
+      pip:
+        name: nitro-python
+        state: latest
+      become: true
+
+    - name: Retrieve auth token from Netscaler
+      uri:
+        url: "https://{{ netscaler_host }}/nitro/v1/config/login"
+        method: "POST"
+        user: "{{ netscaler_username }}"
+        password: "{{ netscaler_password }}"
+        validate_certs: false
+        status_code: 200
+        body_format: json
+        return_content: yes
+      register: auth_token
+
+    - name: Decode auth token and store in fact
+      set_fact:
+        netscaler_token: "{{ auth_token.json.authresponse.token }}"
+    
+    - name: Do something with Netscaler API using auth token
+      uri:
+        url: "https://{{ netscaler_host }}/nitro/v1/config/some_resource"
+        method: "GET"
+        headers:
+          "Authorization": "Basic {{ netscaler_token }}"
+        validate_certs: false
+        status_code: 200
+        body_format: json

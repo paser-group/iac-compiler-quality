@@ -1,0 +1,27 @@
+
+- name: Check if macports module uses the correct package check
+  hosts: all
+  gather_facts: false
+  vars:
+    mac_pkg: <package_name>
+
+  tasks:
+  - name: Check if the package is installed
+    macports:
+      name: "{{ mac_pkg }}"
+    register: package_check
+
+  - assert:
+      that:
+        - "'changed' in package_check or 'failed' in package_check"
+      success_msg: "The package is installed."
+      fail_msg: "The package is not installed. Installing..."
+      level: warn
+    tags:
+      - assert 
+
+  - name: Install the package if it is not installed
+    command: "port install {{ mac_pkg }}"
+    when: "'failed' in package_check"
+    tags:
+      - install

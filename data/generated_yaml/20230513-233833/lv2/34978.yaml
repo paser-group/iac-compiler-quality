@@ -1,0 +1,44 @@
+
+---
+- name: EC2 user-data error playbook
+  hosts: all
+  become: true
+
+  vars:
+    spot_price: "0.5"
+    unexpected_input: ["#", "-", ";", "{", "}"]
+
+  tasks:
+    - name: Install AWS CLI
+      apt:
+        name: awscli
+        state: present
+
+    - name: Create EC2 instance with user-data
+      ec2:
+        key_name: "aws_key"
+        instance_type: "t2.micro"
+        image: "ami-08935252a36e25f85"
+        region: "us-east-1"
+        vpc_subnet_id: "sub-1234abcd"
+        group: "default"
+        user_data: |
+          #!/bin/bash
+          echo "This is user-data script."
+          echo "Spot price: {{ spot_price }}"
+          {% for char in unexpected_input %}
+          echo "{{ char }}"
+          {% endfor %}
+        instance_tags:
+          Name: "my-instance"
+
+      register: ec2_instance
+
+    - name: Debug EC2 instance info
+      debug:
+        var: ec2_instance
+
+    - name: Terminate EC2 instance
+      ec2:
+        instance_ids: "{{ ec2_instance.instance_id }}"
+        state: absent

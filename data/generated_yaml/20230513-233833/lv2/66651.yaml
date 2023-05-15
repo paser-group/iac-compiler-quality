@@ -1,0 +1,39 @@
+yaml
+- hosts: all
+  gather_facts: false
+  tasks:
+    - name: Installing dependencies
+      apt:
+        name: ['python3', 'python3-pip']
+        state: present
+
+    - name: Initialize variables
+      set_fact:
+        socket_path: "/{{ item }}/socket.sock"
+      with_items:
+        - "{{ ansible_hostname }}"
+        - "{{ inventory_hostname }}"
+        - "{{ group_names }}"
+        - "{{ playbook_dir }}"
+
+    - name: Creating sockets
+      shell: "python3 -c 'import socket as s; sock = s.socket(s.AF_UNIX); sock.bind(\"{{ socket_path }}\")'"
+    
+    - name: Sleeping for 30 seconds
+      pause:
+        seconds: 30
+
+    - name: Running tasks
+      async: 60
+      poll: 5
+      loop:
+        - "{{ range(5) | list }}"
+      tasks:
+        - name: Task {{ item }}
+          shell: "echo '{{ item }}'"
+          register: result
+          changed_when: false
+          ignore_errors: true
+
+    - name: Removing sockets
+      shell: rm -f "{{ socket_path }}"

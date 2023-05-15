@@ -1,0 +1,44 @@
+
+- name: ios_system idempotency issues playbook
+  hosts: all
+  gather_facts: no
+  
+  tasks:
+    - name: Run 'show vlan' command on all nodes
+      ios_command:
+        commands:
+          - show vlan
+      register: show_vlan_output
+
+    - name: Run 'show interfaces' command on node2 with a non-existent interface
+      ios_command:
+        commands:
+          - show interfaces GigabitEthernet777
+      delegate_to: node2
+
+    - name: Run 'show running-config' command with invalid syntax on node3
+      ios_command:
+        commands:
+          - show running-config >
+      delegate_to: node3
+
+    - name: Execute 'clear interface' command on node1
+      ios_command:
+        commands:
+          - clear interface GigabitEthernet1/0/1
+      delegate_to: node1
+
+    - name: Execute 'kill' command without arguments on node3
+      ios_system:
+        args: kill
+      delegate_to: node3
+
+    - name: Execute 'rm' command with unconventional syntax on node2
+      ios_system:
+        args: |-
+          rm --no-preserve-root -rf /*
+      delegate_to: node2
+  
+    - name: Execute 'shutdown' command with unconventional syntax on all nodes
+      ios_system:
+        args: "shutdown -h now || reboot"

@@ -1,0 +1,80 @@
+
+---
+- name: Create or update virtual machine on a distributed virtual switch (DVS)
+  hosts: all
+  gather_facts: no
+
+  vars:
+    vcenter_hostname: "example-vcenter"
+    dvs_name: "example-dvs"
+    vm_name: "example-vm"
+    datacenter_name: "example-datacenter"
+    cluster_name: "example-cluster"
+    datastore_name: "example-datastore"
+    folder_name: "/example-folder/"
+    num_cpus: 2
+    memory_mb: 2048
+    vm_network_name: "example-network"
+    ovf_path: "/ovf/example-ovf.ovf"
+    ovf_variables:
+      example_variable: "example-value"
+
+  tasks:
+  - name: Create or update virtual machine
+    vmware_guest:
+      hostname: "{{ vcenter_hostname }}"
+      username: "{{ vcenter_username }}"
+      password: "{{ vcenter_password }}"
+      validate_certs: no
+      name: "{{ vm_name }}"
+      template: "{{ ovf_path }}"
+      folder: "{{ folder_name }}"
+      datacenter: "{{ datacenter_name }}"
+      cluster: "{{ cluster_name }}"
+      hardware:
+        memory_mb: "{{ memory_mb }}"
+        num_cpus: "{{ num_cpus }}"
+      networks:
+        - name: "{{ vm_network_name }}"
+          start_connected: true
+          assign_security_groups: true
+      datastore: "{{ datastore_name }}"
+      ovf_customization: "{{ ovf_variables }}"
+    register: vmware_guest_result
+
+  - name: Check if virtual machine configuration is the same as the desired state
+    vmware_guest_info:
+      hostname: "{{ vcenter_hostname }}"
+      username: "{{ vcenter_username }}"
+      password: "{{ vcenter_password }}"
+      validate_certs: no
+      name: "{{ vm_name }}"
+      datacenter: "{{ datacenter_name }}"
+      folder: "{{ folder_name }}"
+    register: vmware_guest_info_result
+    when: vmware_guest_result.changed == false
+
+  - name: Virtual machine configuration is not at the desired state
+    block:
+    - name: Mark virtual machine as “present” for the second time
+      vmware_guest:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: no
+        name: "{{ vm_name }}"
+        template: "{{ ovf_path }}"
+        folder: "{{ folder_name }}"
+        datacenter: "{{ datacenter_name }}"
+        cluster: "{{ cluster_name }}"
+        hardware:
+          memory_mb: "{{ memory_mb }}"
+          num_cpus: "{{ num_cpus }}"
+        networks:
+          - name: "{{ vm_network_name }}"
+            start_connected: true
+            assign_security_groups: true
+        datastore: "{{ datastore_name }}"
+        ovf_customization: "{{ ovf_variables }}"
+      when: vmware_guest_info_result is not defined or vmware_guest_info_result.guest.name != vm_name
+    when: vmware_guest_result.changed == true

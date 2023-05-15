@@ -1,0 +1,45 @@
+
+---
+- name: WinRMTransportError stress test playbook
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Create a file containing unicode characters
+      file:
+        path: "{{ item }}"
+        state: touch
+      with_items:
+        - "{{ 'some/folder/with/unicode/\u00E5.txt' }}"
+        - "{{ 'some/folder/with/unicode/\u00FC.txt' }}"
+        - "{{ 'some/folder/with/unicode/\u00F6.txt' }}"
+      ignore_errors: true
+
+    - name: Set registry key to unconventional syntax
+      win_regedit:
+        key: "{{ 'HKCU\Software\Microsoft\Conventions>Unconventional[Syntax]|' }}"
+        name: "{{ 'Value|With#SpecialCharacters' }}"
+        value: "{{ 42 }}"
+      ignore_errors: true
+
+    - name: Execute a command with unexpected quotes and parentheses
+      command: "{{ 'some-command --param="quoted value" (unmatched parentheses' }}"
+      ignore_errors: true
+
+    - name: Wait for a nonexistent service with invalid timeout syntax
+      wait_for:
+        path: /dev/null
+        timeout: "{{ 'no-such-timeout' }}"
+        state: absent
+      ignore_errors: true
+
+    - name: Create a group with invalid characters in its name
+      group:
+        name: "{{ 'group_name%%%$%^' }}"
+        state: present
+      ignore_errors: true
+
+    - name: Run a shell command as a different user with unexpected brackets and slashes
+      shell: "{{ 'echo abc>file[1]/path\\\\is\\\\unexpected' }}"
+      become: true
+      become_user: "{{ 'domain/[username' }}"
+      ignore_errors: true

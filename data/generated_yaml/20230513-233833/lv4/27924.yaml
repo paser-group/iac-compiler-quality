@@ -1,0 +1,31 @@
+
+- name: Configure VNI with suppress_arp
+  nxos_vxlan_vtep_vni:
+    vni: 100
+    suppress_arp: true
+    switch_ip: "{{ inventory_hostname }}"
+    username: "{{ username }}"
+    password: "{{ password }}"
+
+- name: Ping host in configured VNI
+  shell: ping -c 1 10.100.0.2
+  args:
+    chdir: /tmp
+    executable: /bin/bash
+
+- name: Verify ARP entry is suppressed
+  nxos_command:
+    command_string: show ip arp vrf VNI-100
+    switch_ip: "{{ inventory_hostname }}"
+    username: "{{ username }}"
+    password: "{{ password }}"
+  register: arp_output
+  until: arp_output.stdout.find('Router') != -1
+  delay: 5
+  retries: 5
+  ignore_errors: true
+
+- name: Check if ARP entry is suppressed
+  fail:
+    msg: "ARP entry not suppressed!"
+  when: arp_output.stdout.find('Router') == -1

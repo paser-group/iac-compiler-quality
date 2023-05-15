@@ -1,0 +1,23 @@
+
+---
+- name: Create inventory file and display skipped host message
+  hosts: all
+  gather_facts: no
+  vars:
+    MY_INVENTORY_VAR: "node1,node2,node3"
+  tasks:
+  - name: Configure inventory file
+    template:
+      src: "{{ inventory_template }}"
+      dest: /etc/ansible/hosts
+      mode: 0644
+    vars:
+      inventory_template: |
+        [all]
+        {% for host in MY_INVENTORY_VAR.split(',') %}
+        {{ host }} ansible_host={{ hostvars[host]['ansible_host'] }}
+        {% endfor %}
+
+  - name: Display skipped host message
+    debug:
+      var: ansible_skip_reason

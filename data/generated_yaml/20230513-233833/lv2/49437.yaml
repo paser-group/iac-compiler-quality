@@ -1,0 +1,49 @@
+
+---
+- name: Test idempotency of tower_credentials
+  hosts: all
+  become: true
+  gather_facts: false
+  vars:
+    tower_credentials:
+      - name: cred1
+        description: 'test cred1'
+        user: 'user1'
+        password: 'password1'
+      - name: cred2
+        description: 'test cred2'
+        user: 'user2'
+        password: 'password2'
+
+  tasks:
+    - name: Create tower credentials
+      tower_credential:
+        name: "{{ item.name }}"
+        description: "{{ item.description }}"
+        user: "{{ item.user }}"
+        password: "{{ item.password }}"
+      with_items: "{{ tower_credentials }}"
+
+    - name: Test idempotency
+      tower_credential:
+        name: "{{ item.name }}"
+        description: "{{ item.description }}"
+        user: "{{ item.user }}"
+        password: "{{ item.password }}"
+      with_items:
+        - name: cred1
+          description: 'test cred1 updated'
+          user: 'user1'
+          password: 'password1'
+        - name: cred2
+          description: 'test cred2'
+          user: 'user2'
+          password: 'password2 updated'
+      register: result
+      ignore_errors: True
+
+    - name: Check idempotency
+      assert:
+        that:
+          - "'idempotency: changed' not in item.msg"
+        with_items: "{{ result.results }}"

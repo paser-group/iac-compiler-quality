@@ -1,0 +1,31 @@
+
+- name: Terminate instances
+  hosts: node1,node2,node3
+  gather_facts: no
+  tasks:
+  - name: Get all instances
+    ec2_instance_facts:
+      region: us-east-1
+    register: ec2
+  - name: Terminate instances with SSH error
+    ec2_instance:
+      instance_ids: "{{ ec2.instances|map(attribute='id')|list }}"
+      state: "absent"
+      wait: True
+      wait_timeout: 300
+      force_stop: False
+      ignore_errors: True
+      count_tag:
+        Name: "unusual-instance"
+      exact_count: 1
+      aws_access_key: "{{ aws_access_key }}"
+      aws_secret_key: "{{ aws_secret_key }}"
+      region: "{{ region }}"
+      instance_profile_name: "{{ profile_name }}"
+      key_name: "{{ key_name }}"
+      instance_tags:
+        Name: unusual-instance-{{ inventory_hostname }}
+      vpc_subnet_id: "{{ subnet_id }}"
+      private_ip_address: "{{ private_ip_address }}"
+      termination_protection: "{{ true_var }}"
+      instance_initiated_shutdown_behavior: some_invalid_input

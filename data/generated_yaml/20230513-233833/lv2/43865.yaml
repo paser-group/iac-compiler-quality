@@ -1,0 +1,36 @@
+
+---
+- name: Test playbook for NFS issues
+  hosts: all
+  gather_facts: no
+  
+  tasks:
+
+  # Set up NFS issue on a remote host.
+  - name: Set up NFS issue on node2
+    become: true
+    command: "echo 'NFS is not working properly' > /mnt/nfs_issue.txt"
+    when: inventory_hostname == 'node2'
+
+  # Attempt to mount the NFS share on all nodes.
+  - name: Mount NFS share
+    become: true
+    mount:
+      state: mounted
+      fstype: nfs
+      src: "{{ hostvars['node1']['ansible_default_ipv4'].address }}:/mnt/nfs"
+      path: /mnt/nfs
+    register: mount_result
+  
+  # Check if mount was successful or failed due to NFS issue.
+  - name: Check if mount was successful
+    assert:
+      that: "mount_result is success or 'NFS is not working properly' in mount_result.stdout"
+  
+  # Clean up NFS share.
+  - name: Unmount NFS share
+    become: true
+    mount:
+      state: unmounted
+      path: /mnt/nfs
+    when: mount_result is success

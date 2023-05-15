@@ -1,0 +1,35 @@
+
+---
+- name: Configure VLAN trunk on NXOS device
+  hosts: nxos_devices
+  gather_facts: no
+
+  vars:
+    ansible_network_os: nxos
+
+  tasks:
+  - name: Create a new VLAN
+    nxos_vlan:
+      vlan_id: 1000
+      name: Test_VLAN
+
+  - name: Add VLAN to VTP domain
+    nxos_vtp:
+      domain: Test_VTP
+      state: present
+      vlan_list:
+        - 1000
+
+  - name: Configure interface for trunking
+    nxos_interface:
+      name: Ethernet1/1
+      access_vlan: none
+      portmode: trunk
+      trunk_vlans: all
+      stp_edge_port: True
+      state: present
+
+  - name: Save running configuration to startup configuration
+    nxos_config:
+      save_when: modified
+      backup: yes

@@ -1,0 +1,50 @@
+
+---
+- hosts: all
+  gather_facts: no
+  vars:
+    bucket_name: "my-gcp-bucket"
+  tasks:
+    - name: Set up environment
+      apt:
+        name: python3-pip
+        update_cache: yes
+    - name: Install gcp authentication library
+      pip:
+        name: google-auth google-auth-oauthlib google-auth-httplib2
+    - name: Install google-cloud-storage library
+      pip:
+        name: google-cloud-storage
+    - name: Check bucket access control
+      uri:
+        url: https://www.googleapis.com/storage/v1/b/{{ bucket_name }}/iam
+        method: GET
+        return_content: yes
+      register: response
+    - name: Print response body
+      debug:
+        var: response.json
+    - name: Set invalid credentials and check bucket access control
+      uri:
+        url: https://www.googleapis.com/storage/v1/b/{{ bucket_name }}/iam
+        method: GET
+        return_content: yes
+        headers:
+          Authorization: "Bearer invalid_token"
+      register: response_2
+    - name: Print response body
+      debug:
+        var: response_2.json
+    - name: Remove all ACLs from bucket
+      shell: gsutil -m acl set -R -a "" gs://{{ bucket_name }}
+    - name: Check bucket access control again
+      uri:
+        url: https://www.googleapis.com/storage/v1/b/{{ bucket_name }}/iam
+        method: GET
+        return_content: yes
+        headers:
+          Authorization: "Bearer {{ response.json.access_token }}"
+      register: response_3
+    - name: Print response body
+      debug:
+        var: response_3.json

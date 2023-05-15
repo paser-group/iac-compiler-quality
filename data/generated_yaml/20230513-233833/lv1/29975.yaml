@@ -1,0 +1,41 @@
+yaml
+---
+- name: Debugging IAM Credentials Error
+  hosts: localhost
+  become: true
+  vars:
+    aws_access_key: YOUR_AWS_ACCESS_KEY
+    aws_secret_key: YOUR_AWS_SECRET_KEY
+    region: YOUR_AWS_REGION
+  tasks:
+    - name: Install boto and boto3 python modules
+      pip:
+        name: "{{ item }}"
+        state: present
+      with_items:
+        - boto
+        - boto3
+        - botocore
+
+    - name: Set AWS credentials
+      set_fact:
+        boto_aws_access_key: "{{ aws_access_key }}"
+        boto_aws_secret_key: "{{ aws_secret_key }}"
+
+    - name: Debug IAM credentials
+      block:
+        - name: Debug IAM module
+          iam:
+            iam_type: users
+            aws_access_key: "{{ boto_aws_access_key }}"
+            aws_secret_key: "{{ boto_aws_secret_key }}"
+            region: "{{ region }}"
+            name: test
+          register: debug_output
+
+        - debug:
+            msg: "{{ debug_output }}"
+
+      rescue:
+        - debug:
+            msg: "Credentials error is not descriptive enough"

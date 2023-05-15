@@ -1,0 +1,41 @@
+
+---
+- name: Create AWS security group
+  hosts: localhost
+  gather_facts: false
+  vars:
+    - aws_access_key: <Access_Key_Goes_Here>
+    - aws_secret_key: <Secret_Key_Goes_Here>
+    - region: <AWS_Region_Goes_Here>
+    - group_name: <Security_Group_Name_Goes_Here>
+  tasks:
+    - name: Install boto library
+      pip: name=boto state=latest
+      
+    - name: Install boto3 library
+      pip: name=boto3 state=latest
+
+    - name: Create security group
+      ec2_group:
+        aws_access_key: "{{ aws_access_key }}"
+        aws_secret_key: "{{ aws_secret_key }}"
+        region: "{{ region }}"
+        name: "{{ group_name }}"
+        description: "Test security group"
+        rules:
+        - proto: tcp
+          from_port: 80
+          to_port: 80
+          cidr_ip: 0.0.0.0/0
+
+    - name: Introduce faulty login information
+      set_fact:
+        aws_access_key: "test_access_key"
+        aws_secret_key: "test_secret_key"  
+
+    - name: Debug error message due to faulty login
+      debug:
+        msg: "{{ error.msg }}"
+      failed_when: error is defined
+      register: error
+...

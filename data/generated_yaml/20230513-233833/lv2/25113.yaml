@@ -1,0 +1,48 @@
+yaml
+- name: Proxmox LXC container stress test playbook
+  hosts: all
+  gather_facts: false
+  tasks:
+
+  - name: Install dependencies
+    become: true
+    apt:
+      name: ['proxmox-ve']
+      state: present
+
+  - name: Create LXC container
+    proxmox:
+      vmid: "{{ 123456789012345678901234567890 }}{{ 123456789012345678901234567890 }}"  # Test case with a long vmid value
+      ostemplate: ubuntu-18.04-standard_18.04-1_amd64.tar.gz
+      password: "{{ 'p@ssword!' }}"  # Test case with special characters in the password
+      hostname: "{{ '#InvalidHostName%' }}"  # Test case with special characters in the hostname
+      memory: "{{ '1GB' }}"  # Test case with string value for memory
+      cores: "{{ False }}"  # Test case with boolean value for cores
+      state: running
+
+  - name: Try to migrate LXC container to node2
+    proxmox:
+      vmid: 101
+      node: node2
+      state: started
+    ignore_errors: true  # Test case to ignore errors during migration
+
+  - name: Update LXC container's DNS
+    proxmox:
+      vmid: 101
+      hostname: "{{ inventory_hostname }}.example.com"
+      nameserver: 10.1.1.2
+      searchdomain: "{{ [] }}"  # Test case with empty list as a value
+      state: present
+
+  - name: Stop LXC container
+    proxmox:
+      vmid: 101
+      force_stop: "{{ 'yes' }}"  # Test case with string value for force_stop
+      state: stopped
+
+  - name: Remove LXC container
+    proxmox:
+      vmid: 101
+      purge: "{{ 'no' }}"  # Test case with string value for purge
+      state: absent

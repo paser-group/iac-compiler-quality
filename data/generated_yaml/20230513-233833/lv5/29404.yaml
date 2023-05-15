@@ -1,0 +1,31 @@
+
+- name: set default values for osx_defaults keys
+  osx_defaults:
+    domain: "{{ item.key }}"
+    global: yes
+    key: "{{ item.key }}"
+    value: "{{ item.value }}"
+  loop: "{{ osx_defaults_defaults|dict2items }}"
+
+- name: set different data type for osx_defaults keys
+  osx_defaults:
+    domain: "{{ item.key }}"
+    global: yes
+    key: "{{ item.key }}"
+    value: "{{ item.value|ternary(false,true)|string }}"
+  loop: "{{ osx_defaults_defaults|dict2items }}"
+
+- name: retrieve values for osx_defaults keys
+  osx_defaults:
+    domain: "{{ item.key }}"
+    global: yes
+    key: "{{ item.key }}"
+  loop: "{{ osx_defaults_defaults|dict2items }}"
+  register: osx_defaults_results
+
+- name: verify results are as expected
+  assert:
+    that: item.item.value == item.results|json_query('[?item.key == `' + item.item.key + '`].ansible_facts.stdout[0]')[0]
+  loop: "{{ osx_defaults_defaults|dict2items }}"
+  loop_control:
+    label: "{{ item.item.key }}"

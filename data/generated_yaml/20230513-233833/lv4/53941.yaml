@@ -1,0 +1,63 @@
+
+- name: Test Docker Swarm service with private registry using resolve_image
+  hosts: docker_swarm
+  gather_facts: no
+  
+  vars:
+    registry_url: "myprivateregistry.com:5000"
+    image: "myprivateregistry.com:5000/myimage"
+    tag: "latest"
+    auth_file: "/path/to/authfile"
+
+  tasks:
+    - name: Create Docker Swarm cluster
+      docker_swarm:
+        state: present
+
+    - name: Create service with resolve_image
+      docker_swarm_service:
+        name: myservice1
+        image: "{{ image }}:{{ tag }}"
+        resolve_image: always
+        auth_file: "{{ auth_file }}"
+        
+    - name: Create service with resolve_image and custom registry URL
+      docker_swarm_service:
+        name: myservice2
+        image: "{{ registry_url }}/{{ image }}:{{ tag }}"
+        resolve_image: always
+        auth_file: "{{ auth_file }}"
+
+    - name: Create service with resolve_image and tag override
+      docker_swarm_service:
+        name: myservice3
+        image: "{{ image }}:mytag"
+        resolve_image: always
+        auth_file: "{{ auth_file }}"
+
+    - name: Create service without resolve_image
+      docker_swarm_service:
+        name: myservice4
+        image: "{{ image }}:{{ tag }}"
+
+    - name: Deploy stack
+      docker_stack:
+        state: present
+        name: my_stack
+        compose:
+          version: "3"
+          services:
+            myservice1:
+              image: "{{ image }}:{{ tag }}"
+              resolve_image: always
+              auth_file: "{{ auth_file }}"
+            myservice2:
+              image: "{{ registry_url }}/{{ image }}:{{ tag }}"
+              resolve_image: always
+              auth_file: "{{ auth_file }}"
+            myservice3:
+              image: "{{ image }}:mytag"
+              resolve_image: always
+              auth_file: "{{ auth_file }}"
+            myservice4:
+              image: "{{ image }}:{{ tag }}"

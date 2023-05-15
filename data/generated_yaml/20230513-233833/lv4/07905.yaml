@@ -1,0 +1,33 @@
+
+---
+- name: Launch EC2 instance in custom VPC without subnets
+  hosts: localhost
+  gather_facts: false
+  vars:
+    region: "us-east-1"
+    vpc_cidr_block: "10.0.0.0/16"
+    vpc_name: "MyCustomVPC"
+    instance_type: "t2.micro"
+    ami_id: "ami-0c94855ba95c71c99"
+  tasks:
+    - name: Create custom VPC
+      ec2_vpc:
+        aws_access_key: "{{ aws_access_key }}"
+        aws_secret_key: "{{ aws_secret_key }}"
+        region: "{{ region }}"
+        state: present
+        cidr_block: "{{ vpc_cidr_block }}"
+        resource_tags:
+          Name: "{{ vpc_name }}"
+      register: vpc
+
+    - name: Launch EC2 instance in custom VPC without subnets
+      ec2:
+        aws_access_key: "{{ aws_access_key }}"
+        aws_secret_key: "{{ aws_secret_key }}"
+        region: "{{ region }}"
+        state: present
+        instance_type: "{{ instance_type }}"
+        image: "{{ ami_id }}"
+        vpc_id: "{{ vpc.vpc.id }}"
+        wait: true

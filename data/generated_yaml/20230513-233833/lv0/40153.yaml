@@ -1,0 +1,59 @@
+python
+import boto3
+
+ec2 = boto3.client('ec2')
+
+# Get the default VPCs
+response = ec2.describe_vpcs(
+    Filters=[
+        {
+            'Name': 'isDefault',
+            'Values': [
+                'true',
+            ]
+        },
+    ]
+)
+
+for vpc in response['Vpcs']:
+    print(f"Default VPC found: {vpc['VpcId']}")
+    for subnet in vpc['Subnets']:
+        # Delete all associated subnets
+        ec2.delete_subnet(SubnetId=subnet['SubnetId'])
+        print(f"Deleted Subnet: {subnet['SubnetId']}")
+    for igw in vpc['InternetGateways']:
+        # Detach and delete the internet gateway
+        ec2.detach_internet_gateway(
+            InternetGatewayId=igw['InternetGatewayId'],
+            VpcId=vpc['VpcId']
+        )
+        ec2.delete_internet_gateway(InternetGatewayId=igw['InternetGatewayId'])
+        print(f"Deleted Internet Gateway: {igw['InternetGatewayId']}")
+    for acl in vpc['NetworkAcls']:
+        for assoc in acl['Associations']:
+            if assoc['SubnetId']:
+                ec2.disassociate_network_acl(
+                    AssociationId=assoc['AssociationId']
+                )
+        ec2.delete_network_acl(NetworkAclId=acl['NetworkAclId'])
+        print(f"Deleted Network ACL: {acl['NetworkAclId']}")
+    for rt in vpc['RouteTables']:
+        for assoc in rt['Associations']:
+            if not assoc['Main']:
+                ec2.disassociate_route_table(
+                    AssociationId=assoc['AssociationId']
+                )
+        for route in rt['Routes']:
+            if route.get('GatewayId') == vpc['VpcId']:
+                ec2.delete_route(
+                    DestinationCidrBlock=route['DestinationCidrBlock'],
+                    RouteTableId=rt['RouteTableId']
+                )
+                print(f"Deleted Route: {route['DestinationCidrBlock']} -> {vpc['VpcId']}")
+        ec2.delete_route_table(RouteTableId=rt['RouteTableId'])
+        print(f"Deleted Route Table: {rt['RouteTableId']}")
+    # Finally, delete the VPC itself
+    ec2.delete_vpc(VpcId=vpc['VpcId'])
+    print(f"Deleted VPC: {vpc['VpcId']}")
+
+print("Done!")

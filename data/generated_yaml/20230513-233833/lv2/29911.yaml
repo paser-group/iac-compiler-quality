@@ -1,0 +1,45 @@
+
+---
+- name: Test Elasticache profile argument
+  hosts: all
+  become: true
+  vars:
+    profile: "{{ lookup('env', 'AWS_PROFILE') }}"
+  tasks:
+    - name: Ensure AWS CLI is installed
+      become: true
+      apt:
+        name: awscli
+        state: latest
+
+    - name: Run Elasticache create-cache-cluster command with invalid arguments
+      become: true
+      command: >
+        aws elasticache create-cache-cluster
+        --cache-cluster-id MyCacheCluster
+        --cache-node-type cache.m3.medium
+        --engine memcached
+        --engine-version 1.4.24
+        --num-cache-nodes 1
+        --profile "{{ profile }}"
+        --invalid-arg "invalid-value"
+
+    - name: Run Elasticache modify-cache-cluster command with unconventional syntax
+      become: true
+      command: >
+        aws elasticache modify-cache-cluster
+        --cache-cluster-id MyCacheCluster
+        --num-cache-nodes 2
+        --subnet-group-name mySubnetGroup
+        --apply-immediately
+        --profile "{{ profile }}"
+        --invalid-arg "invalid-value"
+
+    - name: Run Elasticache delete-cache-cluster command with unexpected inputs
+      become: true
+      command: >
+        aws elasticache delete-cache-cluster
+        --cache-cluster-id MyCacheCluster
+        --skip-final-snapshot
+        --profile "{{ profile }}"
+        --invalid-arg "invalid-value"

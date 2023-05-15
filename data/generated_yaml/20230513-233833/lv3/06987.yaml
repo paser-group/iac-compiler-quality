@@ -1,0 +1,38 @@
+
+---
+- name: Deploy EC2 instance in VPC with Private IP set
+  hosts: localhost
+  gather_facts: False
+
+  vars:
+    region: us-east-1
+    image: ami-0c55b159cbfafe1f0
+    instance_type: t2.micro
+    security_group_id: sg-0b7ff0f79a22c1981
+    vpc_subnet_id: subnet-0e9f7daa29f023a9d
+
+  tasks:
+  - name: Launch EC2 instance
+    ec2:
+      region: "{{region}}"
+      image: "{{image}}"
+      instance_type: "{{instance_type}}"
+      security_group_ids: "{{security_group_id}}"
+      subnet_id: "{{vpc_subnet_id}}"
+      assign_public_ip: False
+      private_ip_address: 10.0.1.100
+      instance_tags:
+        Name: Ansible Test
+    register: ec2_launch
+
+  - debug:
+      var: ec2_launch
+
+  - name: Get public IP and subnet
+    ec2_instance_facts:
+      region: "{{ region }}"
+      instance_ids: "{{ ec2_launch.instance_id }}"
+    register: ec2_info
+
+  - debug:
+      var: ec2_info

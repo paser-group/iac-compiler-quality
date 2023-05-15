@@ -1,0 +1,54 @@
+yaml
+---
+- name: Test AWS Delete Security Group
+  hosts: all
+  become: true
+  vars:
+    region: us-east-1
+    ec2_security_groups:
+      - name: "test-group"
+        description: "test-security-group"
+  tasks:
+    - name: Delete Security Group with wrong ID
+      ec2_group:
+        name: "test-group"
+        vpc_id: "vpc-123"
+        state: absent
+      register: result1
+    - name: Delete Security Group with non-existent region
+      ec2_group:
+        name: "test-group"
+        region: "us-west-2"
+        state: absent
+      register: result2
+    - name: Delete Security Group without providing group_id
+      ec2_group:
+        name: "test-group"
+        state: absent
+      register: result3
+    - name: Delete non-existent Security Group
+      ec2_group:
+        name: "non-existent-group"
+        state: absent
+      register: result4
+    - name: Delete Security Group with invalid description
+      ec2_group:
+        name: "test-group"
+        description: 123
+        state: absent
+      register: result5
+    - name: Delete Security Group with unregistered id
+      ec2_group:
+        group_id: "sg-123"
+        state: absent
+      register: result6
+    - name: Print Results
+      debug:
+        var: item
+      with_items:
+        - "{{ result1 }}"
+        - "{{ result2 }}"
+        - "{{ result3 }}"
+        - "{{ result4 }}"
+        - "{{ result5 }}"
+        - "{{ result6 }}"

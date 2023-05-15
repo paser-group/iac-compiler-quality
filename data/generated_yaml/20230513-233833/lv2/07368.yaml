@@ -1,0 +1,30 @@
+
+- hosts: all
+  gather_facts: False
+  tasks:
+  - name: Create VPC with Instance ID in Route Tables
+    ec2_vpc:
+      state: present
+      cidr_block: 10.0.0.0/16
+      region: us-east-1
+      subnets_cidr:
+        - 10.0.1.0/24
+        - 10.0.2.0/24
+      internet_gateway: True
+      route_tables:
+        - subnets:
+            - subnet_id: "{{ item }}"
+              instance_id: "{{ hostvars[item]['ec2_instance']['id'] }}"
+          routes:
+            - dest: 0.0.0.0/0
+              gateway_id: igw-12345678
+      assign_generated_ipv6_cidr_block: True
+      resource_tags:
+        Name: test_vpc
+        env: test
+      wait: yes
+    with_items:
+      - node1
+      - node2
+      - node3
+    ignore_errors: True

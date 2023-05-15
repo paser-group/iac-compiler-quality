@@ -1,0 +1,24 @@
+
+---
+- name: Demonstrate Ansible-Galaxy issue
+  hosts: all
+  tasks:
+    - name: Install Ansible
+      apt:
+        name: ansible
+        state: present
+
+    - name: Add dummy credentials to netrc file
+      become: yes
+      lineinfile:
+        path: ~/.netrc
+        line: "machine github.com\n    login exampleusername\n    password examplepassword"
+
+    - name: Run ansible-galaxy command
+      shell: ansible-galaxy install some_role
+      register: galaxy_output
+
+    - name: Fail the playbook if unauthorized error occurs
+      fail:
+        msg: Authentication failure occurred
+      when: galaxy_output.stderr | search("401 Unauthorized")

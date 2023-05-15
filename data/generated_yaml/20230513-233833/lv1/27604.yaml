@@ -1,0 +1,38 @@
+yaml
+---
+- name: Install OS on NX-OS device
+  hosts: your_nxos_device
+
+  vars:
+    os_version: "nxos.7.0.3.I7.5.bin"
+
+  tasks:
+    - name: Copy new OS image to device
+      nxos_file_copy:
+        src: "/path/to/{{ os_version }}"
+        dest: "bootflash:/{{ os_version }}"
+        transport: cli
+      register: nxapi_transfer_status
+      ignore_errors: true
+
+    - name: Verify checksum of transferred file
+      nxos_command:
+        commands:
+          - "show file bootflash:/{{ os_version }} md5sum"
+        transport: cli
+      register: checksum_output
+      failed_when: "'No such file or directory' in checksum_output.stdout[0]"
+
+    - name: Install new OS image
+      nxos_install_os:
+        src: "bootflash:/{{ os_version }}"
+        state: present
+        kickstart_image: "bootflash:/nxos.7.0.3.I7.5.kickstart.bin"
+        transport: nxapi
+      register: install_status
+      when: nxapi_transfer_status|success and 'not installed' in install_status.msg
+
+    - name: Reboot device to activate new OS
+      nxos_reboot:
+        transport: nxapi
+      when: install_status|changed

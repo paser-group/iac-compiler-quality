@@ -1,0 +1,66 @@
+
+---
+- name: Test default gateway/interface detection reliability
+  hosts: all
+  become: true
+  
+  tasks:
+    - name: Gather network facts
+      ansible.builtin.setup:
+        gather_subset:
+        - network
+      register: network_facts
+      
+    - name: Check default gateway detection
+      assert:
+        that:
+          - "'default_ip' in network_facts['ansible_default_ipv4']"
+          - "'default_interface' in network_facts"
+          - "network_facts['ansible_default_ipv4']['default_interface'] in network_facts['ansible_interfaces']"
+          - "'default_gateway' in network_facts['ansible_default_ipv4']"
+      failed_when: false
+
+    - name: Add invalid parameter to network configuration task
+      ansible.builtin.network_cli:
+        config:
+        - "{{ item }}"
+      with_items:
+        - "ethernet 1/1"
+      ignore_errors: true
+
+    - name: Check if SSH is working on an invalid IP
+      assert:
+        that:
+          - "ansible_ssh_host is defined"
+          - "ansible_test_failed is not defined"
+      vars:
+        ansible_ssh_host: "invalid-ip-address"
+      ignore_errors: true
+
+    - name: Check if SSH is working on an invalid port
+      assert:
+        that:
+          - "ansible_ssh_host is defined"
+          - "ansible_test_failed is not defined"
+      vars:
+        ansible_port: "9999999"
+      ignore_errors: true
+
+    - name: Check if SCP is working with a non-existent file
+      ansible.builtin.copy:
+        src: "/non-existent-file"
+        dest: "/tmp/test"
+      register: copy_result
+      failed_when: "'No such file or directory' not in copy_result.msg"
+
+    - name: Install a non-existent package
+      ansible.builtin.apt:
+        name: "fake-package"
+        state: present
+      ignore_errors: true
+
+    - name: Uninstalling a kernel package
+      ansible.builtin.apt:
+        name: linux-image-{{ ansible_kernel }}
+        state: absent
+      ignore_errors: true

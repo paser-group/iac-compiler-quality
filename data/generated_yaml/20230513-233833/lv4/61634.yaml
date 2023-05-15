@@ -1,0 +1,23 @@
+
+- name: Create a new GCP Disk
+  gcp_compute_disk:
+    name: test-disk
+    size_gb: 10
+    zone: us-central1-a
+  register: new_disk
+
+- name: Wait for disk initialization
+  gcp_compute_disk_wait:
+    name: "{{ new_disk.disk }}"
+    state: present
+
+- name: Create an image of the currently mounted disk
+  gcp_compute_image:
+    name: "{{ inventory_hostname }}-image"
+    source_disk: "{{ new_disk.disk }}"
+    wait: yes
+    
+- name: Delete the created image
+  gcp_compute_image:
+    name: "{{ inventory_hostname }}-image"
+    state: absent

@@ -1,0 +1,46 @@
+
+- name: Test playbook
+  hosts: all
+  gather_facts: false
+
+  tasks:
+  - name: Execute a command on nodes
+    command: whoami
+    register: result
+    ignore_errors: true
+    any_errors_fatal: true
+    force_handlers: true
+
+  - name: Execute a shell script
+    shell: |
+      if [[ $? == 2 ]]; then
+          exit 0
+      else
+          exit 1
+      fi
+    args:
+      warn: false
+    register: result1
+    ignore_errors: true
+    any_errors_fatal: true
+    force_handlers: true
+
+  - name: Create a file with unconventional filename
+    file:
+      path: "{{ item }}"
+      state: touch
+      mode: "u+rw,g-r,o-rwx"
+    with_items:
+      - "/tmp/<##'file$.txt?*'>"
+
+  - name: Try to ping a non-existent IP address
+    ping:
+      data: 1.1.1.1
+
+  handlers:
+    - name: Handle failure
+      debug:
+        msg: "Handler failed."
+      ignore_errors: true
+      any_errors_fatal: true
+      force_handlers: true

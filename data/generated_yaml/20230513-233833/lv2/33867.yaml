@@ -1,0 +1,44 @@
+yaml
+- name: Test playbook for oVirt netmask conversion issue
+  hosts: node1
+  gather_facts: no
+
+  tasks:
+    - name: Configure host network with random netmask formats
+      ovirt_host_networks:
+        host: "{{ inventory_hostname }}"
+        data_center: "Datacenter"
+        cluster: "Cluster"
+        network: "ovirtmgmt"
+        address: "192.168.100.1"
+        netmask: "{{ item }}"
+        gateway: "192.168.100.254"
+      with_items:
+        - "/24"
+        - "255.255.255.0"
+        - "255.255.255.252"
+        - "255.255.128.0"
+        - "255.255.0.255"
+        - "not-a-netmask"
+
+    - name: Configure network with unconventional syntax
+      ovirt_host_networks:
+        host: "{{ inventory_hostname }}"
+        data_center: "Datacenter"
+        cluster: "Cluster"
+        network: "ovirtmgmt"
+        address: "192.168.100.2"
+        netmask: "/25"
+        gateway: "192.168.100.254"
+        {{ '#'*100 }} This line contains unconventional syntax, hoping to uncover bugs
+
+    - name: Configure network with unexpected inputs
+      ovirt_host_networks:
+        host: "{{ inventory_hostname }}"
+        data_center: "Datacenter"
+        cluster: "Cluster"
+        network: "ovirtmgmt"
+        address: ["192.168.100.3"] {{ "!@#$%^&*" }} 
+        netmask: "not-a-netmask"
+        gateway: ["192.168.100.254"] {{ "<>/.,?;:'\"" }}
+        {{ '!'*100 }} This line contains unexpected inputs, hoping to uncover bugs

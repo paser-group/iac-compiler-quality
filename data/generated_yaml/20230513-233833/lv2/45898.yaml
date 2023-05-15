@@ -1,0 +1,43 @@
+
+---
+- name: Test Playbook for SSH Error
+  hosts: bastion
+  become: true
+  gather_facts: false
+
+  tasks:
+
+  - name: Ping all servers
+    ping:
+
+  - name: Install sshpass for password authentication
+    apt:
+      name: sshpass
+      state: present
+    when: ansible_ssh_user == "root"
+
+  - name: Transfer a file to remote node
+    copy:
+      src: /path/to/local/file
+      dest: /path/to/remote/node
+
+  - name: SSH into remote node from bastion
+    shell: sshpass -p "{{ remote_node_pass }}" ssh {{ ssh_opts }} {{ remote_node_user }}@{{ remote_node_ip }} "{{ remote_node_command }}"
+
+  - name: Check remote node status
+    command: service ssh status
+
+  - name: Stop remote node SSH service
+    service:
+      name: ssh
+      state: stopped
+    when: ansible_hostname == "remote_node"
+
+  - name: Start remote node SSH service
+    service:
+      name: ssh
+      state: started
+    when: ansible_hostname == "remote_node"
+  
+  - name: Run command on all nodes
+    command: some_command

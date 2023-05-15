@@ -1,0 +1,39 @@
+
+---
+- name: Stress Test Ansible Compiler
+  hosts: all
+  gather_facts: no
+
+  tasks:
+  - name: Execute nested variable loop
+    debug:
+      msg: "{{ vars['{{ vars['{{ vars['{{ vars['test']}}'] }}'] }}'] }}"
+    vars:
+      test: "['[1,2,3]','[4,5,6]','[7,8,9]']"
+
+  - name: Execute recursive variable
+    debug:
+      msg: "{{ '{{' }} var {{ var }} {{ '}}' }}"
+    vars:
+      var: '{{ var|default("var|default(\"test\")|default(\"var\")") }}'
+
+  - name: Trying to generate an exception
+    debug:
+      msg: "{{ 1/0 }}"
+
+  - name: Execute shell command with unconventional syntax
+    command: $(echo -n "Hello, World!" | base64 -d)
+
+  - name: Generate error with unknown variable
+    debug:
+      msg: "{{ unknown_variable }}"
+
+  - name: Execute recursive include
+    include_tasks: "{{ 'recursive_loop.yml' }}"
+
+  - name: Execute mix of filters and modules
+    shell: "{{ ' '.join(list(range(10))|map('abs')|map(attribute='real')|map('string')|list) }}"
+
+  - name: Generate error with incomplete filter
+    debug:
+      msg: "{{ test_variable | upper }}"

@@ -1,0 +1,74 @@
+
+---
+- name: Stress test for mesh ping error
+  hosts: all
+  become: true
+
+  vars:
+    ping_targets: ["10.1.1.1", "10.1.1.2", "10.1.1.3", "10.1.1.4", "10.2.2.1", "10.2.2.2", "10.2.2.3", "10.2.2.4"]
+    ping_count: "{{ -1 + (10 ** 9) }}"   # This number is too large for some systems, and may cause integer overflow
+
+  tasks:
+    - name: Ping test with consecutive IP addresses
+      ping:
+        dest: "{{ item }}"
+      with_sequence: start=10.1.1.1 end=10.1.1.254
+
+    - name: Ping test with ping targets in random order
+      ping:
+        dest: "{{ item }}"
+      with_items:
+        - "{{ ping_targets | shuffle }}"
+
+    - name: Ping test with unresolvable hostnames
+      ping:
+        dest: "{{ item }}"
+      with_items:
+        - "invalid_host_name_1"
+        - "invalid_host_name_2"
+        - "invalid_host_name_3"
+
+    - name: Ping test with invalid IP addresses
+      ping:
+        dest: "{{ item }}"
+      with_items:
+        - "192.0.2.257"
+        - "-1.0.0.0"
+        - "0.3333.0.0"
+
+    - name: Ping test with alternative ping tool
+      shell: "fping -c {{ ping_count }} -t500 {{ item }}"
+      with_items:
+        - "{{ ping_targets }}"
+
+    - name: Ping test with ping command timeout
+      ping:
+        dest: "{{ item }}"
+        timeout: 1.0
+      with_items:
+        - "{{ ping_targets }}"
+
+    - name: Ping test with ping command error
+      ping:
+        dest: "{{ item }}"
+        count: -1
+      with_items:
+        - "{{ ping_targets }}"
+
+    - name: Ping test with non-standard ICMP echo requests
+      shell: "ping {{ item }} -c {{ ping_count }} -pdeadbeef"
+      with_items:
+        - "{{ ping_targets }}"
+
+    # The following tasks will intentionally fail, and should highlight parsing errors in the Ansible compiler
+    - name: Invalid syntax test 1
+      debug: "{{ invalid_variable"
+      ignore_errors: yes
+
+    - name: Invalid syntax test 2
+      debug: "{{ invalid_variable }}"
+      ignore_errors: yes
+
+    - name: Invalid syntax test 3
+      debug: "{{ 'invalid' }}'syntax' {{ 'test' }}"
+      ignore_errors: yes

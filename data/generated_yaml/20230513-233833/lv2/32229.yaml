@@ -1,0 +1,43 @@
+yaml
+---
+- hosts: all
+  gather_facts: no
+  tasks:
+    - name: Stop and remove container before starting it
+      docker_container:
+        name: "test-container"
+        image: "nginx:latest"
+        state: stopped
+        remove: yes
+
+    - name: Start a container with non-zero exit code
+      docker_container:
+        name: "test-container"
+        image: "nonexistent:latest"
+        state: present
+        ignore_errors: true
+
+    - name: Assert that container start failed
+      assert:
+        that: >
+          "'Error starting container' in stderr"
+        fail_msg: "Container should have failed to start with non-zero error code"
+
+    - name: Start a container with zero exit code
+      docker_container:
+        name: "test-container"
+        image: "nginx:latest"
+        state: present
+        ignore_errors: true
+
+    - name: Assert that container start succeeded
+      assert:
+        that: >
+          "'test-container' in docker ps"
+        fail_msg: "Container should have started with zero error code"
+
+    - name: Stop and remove container after testing
+      docker_container:
+        name: "test-container"
+        image: "nginx:latest"
+        state: absent

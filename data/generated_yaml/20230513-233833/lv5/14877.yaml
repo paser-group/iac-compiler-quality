@@ -1,0 +1,25 @@
+
+---
+- name: Test playbook for changed_when and ignore_errors
+  hosts: all
+  gather_facts: false
+  become: true
+
+  tasks:
+    - name: Run command with changed_when and ignore_errors
+      command: "{{ item }}"
+      register: command_output
+      changed_when: command_output.rc != 0
+      ignore_errors: true
+      with_items:
+        - "echo hello world"
+        - "echo 'some error occurred' && exit 1"
+
+    - name: Trigger handler on task failure
+      meta: end_play
+      when: command_output is failed
+
+  handlers:
+    - name: File handler on task failure
+      command: touch /tmp/task_failed
+      listen: "Trigger handler on task failure"

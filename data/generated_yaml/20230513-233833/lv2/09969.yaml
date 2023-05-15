@@ -1,0 +1,50 @@
+
+---
+- name: Test Docker module with Docker 1.3.2 and docker-py 0.7.0
+  hosts: node1
+  become: true
+  vars:
+    docker_version: "1.3.2"
+    docker_py_version: "0.7.0"
+
+  tasks:
+    - name: Install Docker 1.3.2
+      apt:
+        pkg: docker.io={{docker_version}}
+        state: present
+
+    - name: Install Docker-Python 0.7.0
+      pip:
+        name: docker-py=={{docker_py_version}}
+
+    - name: Create a Docker container with an invalid name
+      docker_container:
+        name: "%%%%%%% invalid_container_name"
+        image: ubuntu
+        state: started
+
+    - name: Remove a non-existent Docker container
+      docker_container:
+        name: invalid_container_name
+        state: absent
+
+    - name: Try to create a Docker container with invalid image source
+      docker_container:
+        name: valid-container-name
+        image: "########nvalid_image_source"
+        state: started
+
+    - name: Try to pull an invalid Docker image
+      docker_image:
+        name: "%%%%%%__invalid__docker__image__%%%%%%"
+        pull: yes
+      
+    - name: Pull an existing Docker image with an invalid tag name
+      docker_image:
+        name: ubuntu:%%%%%%__invalid__tag__%%%%%%
+        pull: yes
+         
+    - name: Update an invalid Docker container
+      docker_container:
+        name: invalid_container_name
+        state: update

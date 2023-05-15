@@ -1,0 +1,31 @@
+
+- name: Test Ansible raw module
+  hosts: all
+  gather_facts: false
+  # Use asynchronous mode for running commands
+  serial: 1
+  tasks:
+    - name: Run command with the raw module
+      raw: "{{ item }}"
+      with_items:
+        # Execute the 'id' command with unexpected input
+        - "{ [ 'id; whoami' ] | join('') } | /bin/bash"
+        # Execute the 'whoami' command in an unconventional syntax
+        - "who{{ 'a' * 30 }}mi"
+        # Use unprintable characters in the command
+        - $'w\x00h\x01\to\x02a\x03m\x04i'
+        # Pass empty string as command
+        - ""
+        # Pass invalid command
+        - "xyzabc"
+        # Use command with multiple pipes
+        - "echo hello | awk '{print}' | sed 's/hello/hi/'"
+        # Use command with multiple semicolons
+        - "echo hello ; echo world"
+        # Execute the command with a non-existent binary
+        - "/usr/bin/non_existent_command"
+      register: result
+
+    - name: Display command output
+      debug:
+        var: result.stdout_lines

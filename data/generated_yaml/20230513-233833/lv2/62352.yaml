@@ -1,0 +1,73 @@
+
+---
+- name: Test Playbook for Issue #1234
+  hosts: all
+  strategy: free
+
+  tasks:
+  - name: Ensure sshd_config is backed up before modifying
+    backup: 
+      src: /etc/ssh/sshd_config
+      dest: /tmp/sshd_config.bak
+
+  - name: Inserting wrong access list
+    asa_command:
+      commands: ["access-list 99 permit any any any"]
+      register: cmd_output
+      provider: asa
+
+  - name: Outputting Incorrect Register
+    debug:
+      msg: "{{ cmd_outout }}"
+
+  - name: Printing Command Output
+    debug:
+      msg: "{{ cmd_output.stdout_lines }}"
+
+  - name: Lowercase Register Variable
+    debug:
+      msg: "{{ cmd_output.changed | lower }}"
+
+  - name: Uppercase Register Variable
+    debug:
+      msg: "{{ cmd_output.changed | upper }}"
+
+  - name: Trying new-lines
+    asa_command:
+      commands: ["access-list 99 permit any any any\naccess-list 100 permit any any any"]
+      register: cmd_output
+      provider: asa
+
+  - name: Debugging new-lines
+    debug:
+      msg: "{{ cmd_output.stdout_lines }}"
+
+  - name: Testing Edge Case
+    asa_command:
+      commands: ["access-list 99 permit any any any\n@test"]
+      register: cmd_output
+      provider: asa
+
+  - name: Debugging Edge Case
+    debug:
+      msg: "{{ cmd_output.stderr_lines }}"
+
+  - name: Trying Special Characters
+    asa_command:
+      commands: ["'<' '>' '|' '&amp;' ';' ':' '()'"]
+      register: cmd_output
+      provider: asa
+
+  - name: Debugging Special Characters
+    debug:
+      msg: "{{ cmd_output.stdout_lines }}"
+
+  - name: Trying Non-ASCII Characters
+    asa_command:
+      commands: [u'\u0391\u0392\u0393\u0394']
+      register: cmd_output
+      provider: asa
+
+  - name: Debugging Non-ASCII Characters
+    debug:
+      msg: "{{ cmd_output.stdout_lines }}"

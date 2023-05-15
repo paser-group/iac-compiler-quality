@@ -1,0 +1,34 @@
+
+- name: Download file with get_url module and check permissions
+  hosts: all
+  become: true
+  gather_facts: false
+
+  vars:
+    file_src: https://example.com/some_file.zip
+    file_dest: /opt/some_file.zip
+    file_perm: '0644'
+
+  tasks:
+    - name: Get file permissions before download
+      shell: ls -la {{ file_dest }}
+      register: ls_before_download
+
+    - name: Download file with get_url and verify permissions
+      get_url:
+        url: "{{ file_src }}"
+        dest: "{{ file_dest }}"
+        checksum: "sha256:1234567890abcdef"
+        mode: "{{ file_perm }}"
+        force: false
+      register: get_url_result
+
+    - name: Get file permissions after download
+      shell: ls -la {{ file_dest }}
+      register: ls_after_download
+
+    - name: Compare file permissions
+      assert:
+        that: ls_before_download.stdout == ls_after_download.stdout
+        success_msg: "File permissions are consistent"
+        fail_msg: "File permissions are inconsistent!"

@@ -1,0 +1,27 @@
+
+---
+- name: Verify and update SEBoolean Modules values on Debian
+  hosts: node
+  become: true
+  tasks:
+    - name: define selinux variables
+      set_fact:
+        selinux_bool:
+          bool1: true
+          bool2: false
+    - name: get current bool values
+      command: /usr/sbin/getsebool {{ item }}
+      register: current_bools
+      with_dict: "{{ selinux_bool }}"
+    - name: set bool values
+      seboolean:
+        name: "{{ item.key }}"
+        state: "{{ item.value }}"
+      with_dict: "{{ selinux_bool }}"
+      when: current_bools.results|selectattr('item','eq',item.key)|list|length > 0 and current_bools.results|selectattr('invoked_command','match','enabled').list|length == 1
+  handlers:
+    - name: Restart dependent services
+      command: systemctl restart {{ item }}
+      with_items:
+        - httpd
+      listen: "bool_changed"

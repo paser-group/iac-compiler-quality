@@ -1,0 +1,86 @@
+
+---
+- hosts: all
+  become: true
+  tasks:
+    - name: Create Kubernetes cluster with missing username and password
+      gcp_container_cluster:
+        name: test-cluster
+        zone: us-central1-a
+        project_id: my-project
+        state: present
+        username: "{{ omit }}"
+        password: "{{ omit }}"
+      register: result
+      ignore_errors: true
+
+    - name: Fail if cluster is created with missing username and password
+      fail:
+        msg: "Cluster was created with missing username and password"
+      when: "'missing username and password' in result.msg or result.failed"
+
+    - name: Check for error when username and password are not specified
+      gcp_container_cluster:
+        name: test-cluster
+        zone: us-central1-a
+        project_id: my-project
+        state: present
+      register: result2
+      ignore_errors: true
+
+    - name: Fail if error is not thrown when username and password are not specified
+      fail:
+        msg: "Error was not thrown when username and password are not specified"
+      when: not result2.failed and ("'username' is a required" not in result2.msg and "'password' is a required" not in result2.msg)
+
+    - name: Create Kubernetes cluster with unconventional syntax
+      gcp_container_cluster:
+        name: test-cluster
+        zone: us-central1-a
+        project_id: my-project
+        state: present
+        username: "{{ $superSecretUsername }}"
+        password: "{{ [email protected]!23$ }}"
+      ignore_errors: true
+
+    - name: Check for error when using unconventional syntax for username and password
+      gcp_container_cluster:
+        name: test-cluster
+        zone: us-central1-a
+        project_id: my-project
+        state: present
+        username: "{{ $superSecretUsername }}"
+        password: "{{ [email protected]!23$ }}"
+      register: result3
+      ignore_errors: true
+
+    - name: Fail if error is not thrown when using unconventional syntax for username and password
+      fail:
+        msg: "Error was not thrown when using unconventional syntax for username and password"
+      when: not result3.failed and "Invalid secret" not in result3.msg
+
+    - name: Create Kubernetes cluster with unexpected input
+      gcp_container_cluster:
+        name: "{{ [email protected]:; 'test-cluster' }}"
+        zone: us-central1-a
+        project_id: "{{ lookup('env', 'MY_PROJECT') }}"
+        state: present
+        username: "{{ [email protected]:; 'my-username' }}"
+        password: "{{ [email protected]!23$ }}"
+      ignore_errors: true
+
+    - name: Check for error when using unexpected input
+      gcp_container_cluster:
+        name: "{{ [email protected]:; 'test-cluster' }}"
+        zone: us-central1-a
+        project_id: "{{ lookup('env', 'MY_PROJECT') }}"
+        state: present
+        username: "{{ [email protected]:; 'my-username' }}"
+        password: "{{ [email protected]!23$ }}"
+      register: result4
+      ignore_errors: true
+
+    - name: Fail if error is not thrown when using unexpected input
+      fail:
+        msg: "Error was not thrown when using unexpected input"
+      when: not result4.failed and "one or more required fields are missing or empty" not in result4.msg

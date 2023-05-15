@@ -1,0 +1,63 @@
+yaml
+---
+- name: Test nxos_acl module
+  hosts: network_devices
+  gather_facts: yes
+  vars:
+    access_list_prefix: "TEST_ACL"
+
+  tasks:
+  - name: Create two access lists
+    nxos_acl:
+      name: "{{ access_list_prefix }}_{{ item }}"
+      rules:
+        - "permit ip any any"
+    loop:
+      - "LIST1"
+      - "LIST2"
+    register: acl_result
+    ignore_errors: yes
+
+  - name: Remove the access lists
+    nxos_acl:
+      name: "{{ item.name }}"
+      state: absent
+    with_items:
+      - "{{ acl_result.results }}"
+    loop_control:
+      label: "{{ item.item }}"
+
+  - name: Attempt to create access lists one at a time
+    block:
+      - name: "Create {{ access_list_prefix }}_{{ loop.index }} access list"
+        nxos_acl:
+          name: "{{ access_list_prefix }}_{{ loop.index }}"
+          rules:
+            - "permit ip any any"
+        no_log: true
+        ignore_errors: yes
+      - name: "Verify {{ access_list_prefix }}_{{ loop.index }} access list was created successfully"
+        nxos_acl:
+          name: "{{ access_list_prefix }}_{{ loop.index }}"
+          state: present
+        no_log: true
+        ignore_errors: yes
+      loop:
+        - "ONE_ACL"
+        - "TWO_ACL"
+    rescue:
+      - fail:
+          msg: "{{ item.name }} failed: {{ item.msg }}"
+        with_items: "{{ ansible_failed_result.results }}"
+        when: item.msg is defined
+        loop_control:
+          label: "{{ item.item }}"
+
+  - name: Verify access lists present
+    nxos_acl:
+      name: "{{ access_list_prefix }}_{{ item }}"
+      state: present
+    with_items:
+      - "LIST1"
+      - "LIST2"
+    ignore_errors: yes

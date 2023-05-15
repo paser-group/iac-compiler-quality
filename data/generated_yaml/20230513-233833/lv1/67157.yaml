@@ -1,0 +1,28 @@
+
+- name: Fix string_conversion_action issue
+  hosts: all
+  become: true
+  tasks:
+   - name: Copy file with string_conversion_action
+     copy:
+       src: /path/to/source/file
+       dest: /path/to/destination/file
+       string_conversion_action: error
+     register: copy_result
+   
+   - name: Copy file with correct string conversion action
+     copy:
+       src: /path/to/source/file
+       dest: /path/to/destination/file
+       string_conversion_action: replace
+     register: fixed_copy_result
+   
+   - name: Compare original copy with fixed copy
+     command: diff /path/to/destination/file /path/to/fixed/destination/file
+     register: diff_result
+     ignore_errors: true
+   
+   - name: If there is a difference, fail the playbook
+     fail:
+       msg: "string_conversion_action=error breaks diff for copy/template"
+     when: diff_result.rc != 0

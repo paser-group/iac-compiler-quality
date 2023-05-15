@@ -1,0 +1,29 @@
+yaml
+- name: Troubleshoot SSH Connection Errors
+  hosts: webservers # Replace with your target host group
+  vars:
+    ssh_user: username # Replace with your SSH username
+    ssh_key_file: /path/to/ssh/keyfile # Replace with your SSH key file path
+
+  tasks:
+    - name: Ensure SSH daemon is running
+      service:
+        name: sshd
+        state: started
+
+    - name: Attempt SSH Connection
+      wait_for:
+        port: 22
+        delay: 5
+        timeout: 10
+      ignore_errors: true
+
+    - name: Verify SSH Access
+      command: ssh -i {{ ssh_key_file }} {{ ssh_user }}@{{ inventory_hostname }} "echo successful SSH connection"
+      ignore_errors: true
+      register: ssh_test
+
+    - name: Print Success Message
+      debug:
+        msg: "SSH connection test successful!"
+      when: ssh_test is success

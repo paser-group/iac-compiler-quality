@@ -1,0 +1,38 @@
+
+- name: Copy EC2 AMI and wait for completion
+  hosts: localhost
+  gather_facts: False
+
+  vars:
+    region: "us-west-2"
+    instance_type: t2.micro
+    ami_id: "ami-0c55b159cbfafe1f0"
+    dest_ami_name: "copy-{{ ami_id }}"
+
+  tasks:
+    - name: Launch EC2 instance
+      ec2:
+        aws_access_key: "{{ aws_access_key }}"
+        aws_secret_key: "{{ aws_secret_key }}"
+        region: "{{ region }}"
+        image: "{{ ami_id }}"
+        instance_type: "{{ instance_type }}"
+        key_name: "{{ key_name }}"
+        wait: yes
+      register: ec2_instance
+
+    - name: Copy AMI with tag_equality and wait for completion
+      ec2_ami_copy:
+        source_region: "{{ region }}"
+        source_image_id: "{{ ami_id }}"
+        name: "{{ dest_ami_name }}"
+        tag_equality:
+          Name: TestAMI
+        wait: yes
+      register: ec2_copy
+      ignore_errors: yes
+
+    - name: Display error message
+      debug:
+        msg: "Error copying AMI: {{ ec2_copy.msg }}"
+      when: ec2_copy.failed

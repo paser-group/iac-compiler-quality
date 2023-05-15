@@ -1,0 +1,39 @@
+
+---
+- name: Test playbook for [Errno 2] No such file or directory
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Execute custom fact script containing incorrect character
+      shell: "/usr/bin/python /etc/ansible/facts.d/myfact.py"
+      args:
+        executable: /bin/bash
+      register: myfact_output
+      ignore_errors: true
+
+    - name: Debug output of custom fact
+      debug:
+        var: ansible_local.myfact
+
+    - name: Write bad interpreter error to file
+      copy:
+        content: "#!/usr/bin/env python\n\nimport os\nprint(os.getcwd())"
+        dest: "/tmp/script.py"
+        mode: '0777'
+
+    - name: Execute Python script with bad interpreter
+      shell: "/tmp/script.py"
+      args:
+        executable: /usr/bin/python1.2.3
+      register: bad_interpreter_output
+      ignore_errors: true
+
+    - name: Debug bad interpreter error output
+      debug:
+        var: bad_interpreter_output.stderr
+
+    - name: Remove temporary script file
+      file:
+        path: "/tmp/script.py"
+        state: absent

@@ -1,0 +1,41 @@
+
+- name: EC2 group playbook
+  hosts: localhost
+  become: yes
+  gather_facts: no
+  vars:
+    aws_access_key: "your access key"
+    aws_secret_key: "your secret key"
+    aws_region: "us-west-2"
+    security_group_name: "my-ec2-group"
+  tasks:
+    - name: Creating security group in EC2
+      ec2_group:
+        name: "{{ security_group_name }}"
+        description: "My EC2 group"
+        region: "{{ aws_region }}"
+        rules:
+          - proto: tcp
+            from_port: 22
+            to_port: 22
+            cidr_ip: 0.0.0.0/0
+      register: sg_created
+
+    - name: Changing security group name
+      ec2_group:
+        name: "{{ security_group_name }}-updated"
+        description: "Updated EC2 group"
+        region: "{{ aws_region }}"
+        rules:
+          - proto: tcp
+            from_port: 22
+            to_port: 22
+            cidr_ip: 0.0.0.0/0
+      register: sg_updated
+
+    - name: Deleting the updated security group
+      ec2_group:
+        name: "{{ security_group_name }}-updated"
+        state: absent
+        region: "{{ aws_region }}"
+      register: sg_deleted

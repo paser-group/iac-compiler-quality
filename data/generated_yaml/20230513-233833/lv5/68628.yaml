@@ -1,0 +1,27 @@
+
+- hosts: localhost
+  gather_facts: no
+
+  vars:
+    resource_name: "my_resource"
+    tag_key: "my:tag"
+    tag_value: "test"
+
+  tasks:
+    - name: Set tag on resource
+      azure_rm_common:
+        resource_group: "my_resource_group"
+        name: "{{ resource_name }}"
+        tags:
+          "{{ tag_key }}": "{{ tag_value }}"
+
+    - name: Check if tag was set correctly
+      azure_rm_common:
+        resource_group: "my_resource_group"
+        name: "{{ resource_name }}"
+      register: resource_info
+
+    - name: Raise error if tag is not set
+      fail:
+        msg: "Tag {{ tag_key }} not set correctly"
+      when: resource_info.tags."{{ tag_key }}" != "{{ tag_value }}"

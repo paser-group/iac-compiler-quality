@@ -1,0 +1,19 @@
+
+- name: Terminate EC2 instances
+  hosts: all
+  gather_facts: no
+  vars:
+    ssh_username: ec2-user
+    ssh_key_path: ~/.ssh/my_ec2_key.pem
+  tasks:
+  - name: Terminate the EC2 instances
+    become: yes
+    shell: |
+        ec2-terminate-instances {{ inventory_hostname }} 2>&1 ;
+        exit_code=$?;
+        if [ $exit_code -ne 0 ] && ! echo "$output" | grep -i 'ssh:'; then
+            echo "Unknown error: $output";
+            exit $exit_code;
+        fi
+    register: output
+    failed_when: output.rc != 0 and "ssh:" not in output.stdout

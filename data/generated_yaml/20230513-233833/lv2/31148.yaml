@@ -1,0 +1,46 @@
+
+- name: Redis facts cache error stress test playbook
+  hosts: all
+  gather_facts: yes
+
+  tasks:
+    - name: Flush Redis cache
+      shell: redis-cli FLUSHALL
+
+    - name: Generate random string
+      set_fact:
+        random_string: "{{ 'random_string_' ~ range(1,100)|random }}"
+
+    - name: Store random string in Redis cache
+      shell: >
+        redis-cli SET {{ random_string }} "{{ random_string }}"
+
+    - name: Retrieve stored string from Redis cache
+      set_fact:
+        retrieved_string: "{{ lookup('redis_kv', random_string) }}"
+      ignore_errors: yes
+
+    - name: Debug retrieved string from Redis cache
+      debug: var=retrieved_string
+
+    - name: Fail task with custom error message
+      fail:
+        msg: "Testing custom error message with unconventional syntax: {% for host in groups.all %}{{ hostvars[host]['ansible_' + 'node_name'] }}{% endfor %}"
+
+    - name: Execute arbitrary command with unexpected input
+      command: >
+        echo "Unexpected input: {{ random_string }} --- {{ ['a', 'b', 'c', 'd', 'e', 'f', 'g'][range(1,7)|random] }}"
+
+    - name: Delete Redis cache and wait for its recreation
+      shell: redis-cli FLUSHALL
+      async: 10
+      poll: 0
+
+    - name: Display uptime of all hosts
+      command: uptime
+      register: uptime_output
+      ignore_errors: yes
+
+    - name: Debug uptime output
+      debug:
+        var: uptime_output.stdout_lines

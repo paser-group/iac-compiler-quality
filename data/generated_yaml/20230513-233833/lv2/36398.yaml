@@ -1,0 +1,23 @@
+
+---
+- name: Test Script Module privilege escalation
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Run script
+      script: "{{ item }}"
+      become: true
+      register: script_result
+      loop:
+        - /tmp/test.sh
+        - /tmp/test.py
+        - /tmp/test.rb
+        - /tmp/test.pl
+        - /tmp/test.sh {{ 'a'*50000 }}"
+        - /tmp/test.sh {{ lookup('file', '/dev/random', errors='ignore') }}"
+        - '{{ "" | random }}'
+        - '{{ [";ls -la", "`ls -la`", "`{python -c "import os; os.system('ls -la')"}`"] | random }}'
+    - name: Print script output
+      debug:
+        var: script_result.stdout_lines
+      when: script_result.rc == 0

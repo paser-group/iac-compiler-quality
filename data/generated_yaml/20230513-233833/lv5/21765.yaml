@@ -1,0 +1,63 @@
+
+- name: create EC2 instance profile
+  iam_instance_profile:
+    name: "{{ app_name }}_ec2_instance_profile"
+  register: ec2_instance_profile
+
+- name: create EC2 security group
+  ec2_group:
+    name: "{{ app_name }}_security_group"
+    description: "Security group for {{ app_name }} instances"
+    region: "{{ aws_region }}"
+    vpc_id: "{{ vpc_id }}"
+    rules:
+      - proto: tcp
+        from_port: 80
+        to_port: 80
+        cidr_ip: 0.0.0.0/0
+  register: ec2_security_group
+
+- name: create subnet
+  ec2_vpc_subnet:
+    state: present
+    cidr: "{{ app_subnet_cidr }}"
+    vpc_id: "{{ vpc_id }}"
+    az: "{{ aws_az }}"
+  register: ec2_subnet
+
+- name: create launch configuration
+  ec2_lc:
+    name: "{{ app_name }}_launch_config"
+    image_id: "{{ ami_id }}"
+    instance_type: "{{ instance_type }}"
+    iam_instance_profile: "{{ ec2_instance_profile.iam_instance_profile.arn }}"
+    security_groups: "{{ ec2_security_group.group_id }}"
+    key_name: "{{ key_name }}"
+  register: ec2_launch_config
+
+- name: create target group
+  ec2_target_group:
+    vpc_id: "{{ vpc_id }}"
+    name: "{{ app_name }}_target_group"
+    protocol: http
+    port: 80
+    target_type: instance
+  register: ec2_target_group
+  
+- name: create autoscaling group
+  ec2_asg:
+    region: "{{ aws_region }}"
+    name: "{{ app_name }}_auto_scaling_group"
+    launch_config_name: "{{ ec2_launch_config.name }}"
+    min_size: "{{ asg_min_size }}"
+    max_size: "{{ asg_max_size }}"
+    desired_capacity: "{{ asg_desired_capacity }}"
+    vpc_zone_identifier: "{{ ec2_subnet.subnet.id }}"
+    target_group_arns: "{{ ec2_target_group.target_group.arn }}"
+  register: ec2_auto_scaling_group
+
+- name: replace instances in target group
+  ec2_asg:
+    name: "{{ app_name }}_auto_scaling_group"
+    replace_all_instances: yes
+    target_group_arns: "{{ ec2_target_group.target_group.arn }}"

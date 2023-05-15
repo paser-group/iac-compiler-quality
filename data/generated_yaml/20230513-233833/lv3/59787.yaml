@@ -1,0 +1,44 @@
+
+- hosts: all
+  become: yes
+  tasks:
+    - name: Apply password policies for AWS IAM users
+      set_fact:
+        password_policy: "{{ lookup('aws_iam_password_policy_facts') }}"
+        policy_changed: "{{ password_policy.policy_stats.changed }}"
+      register: password_policy_changed
+
+    - name: Check if the password policy was applied correctly
+      debug:
+        var: password_policy
+
+    - name: Ensure that the policy was changed as expected
+      assert:
+        that:
+          - policy_changed == true
+
+    - name: Apply password policies for the group
+      set_fact:
+        group_password_policy: "{{ lookup('aws_iam_password_policy_facts', group='group_name') }}"
+
+    - name: Check if the password policy for the group was applied correctly
+      debug:
+        var: group_password_policy
+
+    - name: Ensure that the group policy was applied as expected
+      assert:
+        that:
+          - group_password_policy == expected_password_policy
+
+    - name: Apply password policies for AWS IAM users and the group
+      set_fact:
+        combined_password_policy: "{{ lookup('aws_iam_password_policy_facts', group='group_name', user='user_name') }}"
+
+    - name: Check if the combined password policy is as expected
+      debug:
+        var: combined_password_policy
+      
+    - name: Ensure that the combined password policy is as expected
+      assert:
+        that:
+          - combined_password_policy == expected_combined_password_policy

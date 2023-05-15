@@ -1,0 +1,48 @@
+yaml
+---
+- name: Change default path of Ansible semaphore
+  hosts: all
+  vars:
+    semaphore_path: "{{ lookup('env','SEMAPHORE_PATH') | default('/tmp') }}"
+  tasks:
+    - name: Create semaphore directory
+      file:
+        path: "{{ semaphore_path }}/semaphore"
+        state: directory
+      when: "'directory' in semaphore_path"
+
+    - name: Create semaphore file
+      file:
+        path: "{{ semaphore_path }}/semaphore/{{ inventory_hostname }}.sem"
+        state: touch
+      when: "'file' in semaphore_path"
+
+    - name: Set semaphore directory permissions
+      file:
+        path: "{{ semaphore_path }}/semaphore"
+        state: directory
+        mode: "0777"
+      when: "'set-permissions' in semaphore_path"
+
+    - name: Set semaphore file permissions
+      file:
+        path: "{{ semaphore_path }}/semaphore/{{ inventory_hostname }}.sem"
+        state: file
+        mode: "0777"
+      when: "'set-permissions' in semaphore_path"
+
+    - name: Remove semaphore file
+      file:
+        path: "{{ semaphore_path }}/semaphore/{{ inventory_hostname }}.sem"
+        state: absent
+      when: "'remove' in semaphore_path"
+
+    - name: Remove semaphore directory
+      file:
+        path: "{{ semaphore_path }}/semaphore"
+        state: absent
+      when: "'remove' in semaphore_path"
+
+    - name: Print semaphore path
+      debug:
+        var: semaphore_path

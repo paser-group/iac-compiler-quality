@@ -1,0 +1,39 @@
+
+---
+- name: Route53 error playbook
+  hosts: nodes
+  become: true
+  tasks:
+
+  # Task 1 - Install Boto3
+  - name: Install Boto3 module
+    pip:
+      name: boto3
+      state: present
+
+  # Task 2 - Configure AWS with IAM Role
+  - name: Configure AWS credentials
+    ini_file:
+      path: ~/.aws/credentials
+      section: default
+      option: role_arn
+      value: arn:aws:iam::123456789012:role/example-role
+
+  # Task 3 - Configure route53 zone
+  - name: create route53 zone
+    route53_zone:
+      name: test.example.com
+      vpc_id: vpc-1a2b3c4d
+      comment: This is a test zone.
+      aws_access_key: "{{ aws_access_key }}"
+      aws_secret_key: "{{ aws_secret_key }}"
+
+  # Task 4 - add route53 record
+  - name: add route53 record
+    route53:
+      command: create
+      zone: "{{ zone_id }}"
+      record: test.example.com
+      type: A
+      ttl: 300
+      value: 10.0.0.1

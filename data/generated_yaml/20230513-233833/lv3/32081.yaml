@@ -1,0 +1,27 @@
+
+- name: Verify seboolean module
+  hosts: all
+  gather_facts: false
+  
+  vars:
+    sebool_value: false
+    sebool_name: some_name
+
+  tasks:
+    - name: Check seboolean command output
+      command: semanage boolean -l
+      register: sebool_output
+
+    - name: Check if sebool value is set to true
+      set_fact:
+        sebool_value: true
+      when: "'{{ sebool_name }}' in item"
+      with_items: "{{ sebool_output.stdout_lines }}"
+
+    - name: Disable sebool value
+      command: "{{ 'semanage boolean -d ' + sebool_name + ' > /dev/null 2>&1' }}"
+      when: sebool_value
+
+    - name: Enable sebool value again
+      command: "{{ 'semanage boolean -e ' + sebool_name + ' > /dev/null 2>&1' }}"
+      when: sebool_value

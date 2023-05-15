@@ -1,0 +1,22 @@
+yaml
+---
+- name: Update VMware inventory script cache age checking
+  hosts: all
+  become: yes
+  
+  tasks:
+    - name: Check current cache age
+      command: grep "CACHE_AGE =" /usr/local/bin/vmware_inventory.py
+      register: cache_age
+      
+    - name: Update cache age
+      lineinfile:
+        path: /usr/local/bin/vmware_inventory.py
+        regexp: 'CACHE_AGE = \d+'
+        line: 'CACHE_AGE = 1800'
+      when: cache_age.stdout.find("CACHE_AGE = 1800") == -1
+      
+    - name: Restart vmware inventory service
+      service:
+        name: vmware_inventory
+        state: restarted

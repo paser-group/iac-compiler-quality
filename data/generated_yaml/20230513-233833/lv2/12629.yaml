@@ -1,0 +1,24 @@
+
+- name: Uninformative error edge case playbook
+  hosts: all
+  vars:
+    file_system_data: "{{ lookup('file', '/dev/full') }}"
+    invalid_cmd: "| echo 'hello' || echo 'world'"
+    invalid_var: "{% include 'invalid.j2' %}"
+    invalid_jinja: "{{ invalid_var }}"
+  tasks:
+    - name: Check full file system
+      stat:
+        path: "{{ file_system_data }}"
+      register: file_system_stat
+    - name: Print error message
+      debug:
+        msg: "{{ invalid_cmd }}"
+      when: file_system_stat.stat.exists
+    - name: Run invalid command
+      command: "{{ invalid_cmd }}"
+      ignore_errors: yes
+    - name: Run invalid Jinja expression
+      debug:
+        msg: "{{ invalid_jinja }}"
+      ignore_errors: yes

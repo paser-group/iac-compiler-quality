@@ -1,0 +1,24 @@
+yaml
+---
+- name: Perform actions on Ansible worker with full file system
+  hosts: ansible_worker
+  become: true
+
+  tasks:
+  - name: Check if file system is full
+    shell: df -h | grep -E "/$|/var$|/usr$|/boot$"
+    register: file_system_output
+    ignore_errors: true
+
+  - name: Clean up files to free up space
+    shell: find / -type f -name '*log' -exec rm -f {} +
+    when: "file_system_output.rc != 0"
+    ignore_errors: true
+
+  - name: Restart services to reflect file system changes
+    shell: systemctl restart {{ item }}
+    with_items:
+      - service1
+      - service2
+      - service3
+    when: "file_system_output.rc != 0"
