@@ -20,11 +20,8 @@ RUN add-apt-repository ppa:deadsnakes/ppa
 RUN apt update
 
 RUN apt install -y python2.7
-#RUN apt install -y python3.6
 RUN apt install -y python3.7
-#RUN apt install -y python3.8
-#RUN apt install -y python3.9
-#RUN apt install -y python3.10
+RUN apt install python-is-python3
 
 
 
