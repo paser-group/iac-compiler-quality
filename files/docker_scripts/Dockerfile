@@ -14,6 +14,20 @@ RUN apt install -y vim
 RUN apt install -y sudo
 RUN apt install -y dnsutils
 
+# install python executables
+RUN apt install -y software-properties-common
+RUN add-apt-repository ppa:deadsnakes/ppa
+RUN apt update
+
+RUN apt install -y python2.7
+#RUN apt install -y python3.6
+RUN apt install -y python3.7
+#RUN apt install -y python3.8
+#RUN apt install -y python3.9
+#RUN apt install -y python3.10
+
+
+
 # create normal user and add to sudo
 RUN useradd -m ubuntu -s /bin/bash
 RUN echo "ubuntu:bdi_lab!" | chpasswd
