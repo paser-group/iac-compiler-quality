@@ -23,26 +23,27 @@ RUN apt install -y python2.7
 RUN apt install -y python3.7
 RUN apt install python-is-python3
 
-
-
 # create normal user and add to sudo
-RUN useradd -m ubuntu -s /bin/bash
-RUN echo "ubuntu:bdi_lab!" | chpasswd
+RUN useradd -m ansible -s /bin/bash
+RUN echo "ansible:bdi_lab!" | chpasswd
 
 # add sudoers
-RUN usermod -aG sudo ubuntu
+RUN usermod -aG sudo ansible
 RUN usermod -aG sudo root
 
 # copy ssh keys to ubuntu user
-RUN mkdir /home/ubuntu/.ssh
-COPY ssh/cf-key /home/ubuntu/.ssh/
-COPY ssh/cf-key.pub /home/ubuntu/.ssh/
-COPY ssh/config /home/ubuntu/.ssh/
-WORKDIR /home/ubuntu/.ssh/
+RUN mkdir /home/ansible/.ssh
+COPY ssh/cf-key /home/ansible/.ssh/
+COPY ssh/cf-key.pub /home/ansible/.ssh/
+COPY ssh/config /home/ansible/.ssh/
+WORKDIR /home/ansible/.ssh/
 RUN cat cf-key.pub >> authorized_keys
 RUN chmod 600 authorized_keys
-RUN chown -R ubuntu *
-RUN chgrp -R ubuntu *
+RUN chmod 600 cf-key
+RUN chmod 600 config
+WORKDIR /home/ansible/
+RUN chown -R ansible .ssh
+RUN chgrp -R ansible .ssh
 
 # copy ssh keys to root
 RUN mkdir /root/.ssh
@@ -56,7 +57,7 @@ RUN chmod 600 authorized_keys
 # set up ssh server
 COPY ssh/sshd_config /etc/ssh/sshd_config
 EXPOSE 22
-CMD ["/usr/sbin/sshd","-D"]
 RUN service ssh start
+CMD ["/usr/sbin/sshd","-D"]
 
 WORKDIR /root/
