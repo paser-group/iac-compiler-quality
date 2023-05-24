@@ -7,6 +7,7 @@ import pandas as pd
 import datasets
 from tqdm import tqdm
 from datasets import Dataset
+import requests
 
 # internal imports
 from .prompt_engg import PromptEngg
@@ -103,18 +104,63 @@ def generate_playbooks(num_levels, output_ds, config, base_output_path):
                 sample['code']
             )
 
+def get_response(token, url): 
+    headers = {
+            "Authorization": f"Token {token}"
+        }
+    response = requests.get(url, headers=headers)
+    if response.status_code == 200:
+        data = response.json()
+    else:
+        data = None 
+    return data
+
+def preprocess_dataset(dataset, config):
+    dataset = dataset.rename_column('TITLE', 'title')
+    dataset = dataset.rename_column('ID', 'id')
+    repo_owner = config['github']['repo_owner']
+    repo_name = config['github']['repo_name']
+    token = config['github']['token']
+    
+    def mapper_fn(sample):
+        issue_id = sample['id']
+        issue_url = f"https://api.github.com/repos/{repo_owner}/{repo_name}/issues/{issue_id}"
+        
+        issue = get_response(token=token, url=issue_url)
+        issue_body = issue['body']
+        comment_url = issue['comments_url']
+        comments = get_response(token=token, url=comment_url)
+        comment_bodies = [comment['body'] for comment in comments]
+        sample.update({
+            'body' : issue_body,
+            'comments' : comment_bodies
+        })
+        
+        return sample
+    
+    ds = dataset.map(mapper_fn)
+    breakpoint()
+    return ds
+    
+    
+
 def create_ansible(args, config):
     """
     this function is used to create ansible files by 
     """
 
-    display.title('Generating Ansible Playbooks With ChatGPT')
+    
 
     # read in excel data as huggingface dataset
     ds = Dataset.from_pandas(
         pd.read_excel(config['data_path'])
     )
 
+    display.title('Preprocessing Dataset: Get issue body and comments')
+    
+    ds = preprocess_dataset(ds, config)
+    
+    display.title('Generating Ansible Playbooks With ChatGPT')
     # count number of config files
     num_levels = files.count_files_in(
         config['taxonomy_filepath'],
