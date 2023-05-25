@@ -5,9 +5,10 @@ this code is used to prompt chatgpt to create ansible playbooks
 import sys
 import pandas as pd
 import datasets
+import requests
+import re
 from tqdm import tqdm
 from datasets import Dataset
-import requests
 
 # internal imports
 from .prompt_engg import PromptEngg
@@ -39,12 +40,6 @@ def generate_manifest_ds(args, config, ds, num_levels):
     )
 
     response = []
-
-    # truncate dataset if limit argument is specified
-    if args.limit > 0:
-        ds = ds.select(range(args.limit))
-
-    # 
     for i, sample in enumerate(tqdm(ds, desc='collecting chatgpt responses', total=len(ds))):
         if i == args.limit : break
 
@@ -72,12 +67,20 @@ def generate_manifest_ds(args, config, ds, num_levels):
 
     # extract code from the responses and add to a new column
     def mapper_fn(sample):
+        # extract code from response
         sample.update({
             'code' : \
                 strings.remove_tilde(sample['response']) \
                 if '```' in sample['response'] \
                 else '',
         })
+
+        # check for yaml header and remove if it exists
+        code = sample['code'].strip()
+        if re.match(r'^yaml', code) is not None:
+            code = code[4:].strip()
+            sample['code'] = code
+
         return sample
     output_ds = output_ds.map(mapper_fn)
     
@@ -86,7 +89,7 @@ def generate_manifest_ds(args, config, ds, num_levels):
 def generate_playbooks(num_levels, output_ds, config, base_output_path):
     # generate YAML files with dataset
     display.green(f'\ngenerating YAML files to {base_output_path}...')
-    num_digits = len(str(max(output_ds['ID'])))
+    num_digits = len(str(max(output_ds['id'])))
 
     # get directories for each level
     output_lv_paths = [
@@ -100,7 +103,7 @@ def generate_playbooks(num_levels, output_ds, config, base_output_path):
         if sample['code'] != '':
             files.write_file(
                 output_lv_paths[sample['level']]+ \
-                    f'/{int(sample["ID"]):0{num_digits}}.yaml',
+                    f'/{int(sample["id"]):0{num_digits}}.yaml',
                 sample['code']
             )
 
@@ -139,7 +142,6 @@ def preprocess_dataset(dataset, config):
         return sample
     
     ds = dataset.map(mapper_fn)
-    breakpoint()
     return ds
     
     
@@ -148,16 +150,15 @@ def create_ansible(args, config):
     """
     this function is used to create ansible files by 
     """
-
-    
-
     # read in excel data as huggingface dataset
     ds = Dataset.from_pandas(
         pd.read_excel(config['data_path'])
     )
 
-    display.title('Preprocessing Dataset: Get issue body and comments')
+    display.title('Pre-Processing Dataset: Get issue body and comments')
     
+    if args.limit > 0:
+        ds = ds.select(range(args.limit))
     ds = preprocess_dataset(ds, config)
     
     display.title('Generating Ansible Playbooks With ChatGPT')
