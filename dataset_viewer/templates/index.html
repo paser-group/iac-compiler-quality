@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Data Annotation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+
+        .row {
+            margin-bottom: 20px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+        }
+
+        .annotation {
+            margin-top: 10px;
+        }
+
+        .annotation input[type=number],
+        .annotation textarea {
+            width: 100%;
+        }
+
+        .command {
+            color: blue;
+        }
+        .success {
+            color: green;
+        }
+        .error {
+            color: red;
+        }
+
+        .filter-button {
+            background-color: #0066cc;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .checkbox-group {
+            margin-bottom: 15px;
+        }
+
+        .checkbox-group label {
+            margin-left: 5px;
+        }
+
+        .button-container {
+            margin-top: 10px;
+        }
+    
+        .button-container input[type="submit"] {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+    
+        .button-container input[type="submit"]:hover {
+            background-color: #45a049;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: #4CAF50; 
+            border: none;
+            color: white;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        .quill-editor {
+            height: 400px;  /* Set the height you want here */
+        }
+    </style>
+    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+
+    <!-- Include Quill's JavaScript -->
+    <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+</head>
+<body>
+    <h1>Data Annotation</h1>
+    <script>var quills = []; </script>
+    <form method="POST">
+        <div class="checkbox-group">
+            Syntax:<br>
+            <input type="checkbox" id="syntax0" name="syntax" value="0" {% if 0 in syntax %}checked{% endif %}>
+            <label for="syntax0">0</label><br>
+            <input type="checkbox" id="syntax1" name="syntax" value="1" {% if 1 in syntax %}checked{% endif %}>
+            <label for="syntax1">1</label><br>
+        </div>
+        
+        <div class="checkbox-group">
+            Level:<br>
+            <input type="checkbox" id="level0" name="level" value="0" {% if 0 in level %}checked{% endif %}>
+            <label for="level0">0</label><br>
+            <input type="checkbox" id="level1" name="level" value="1" {% if 1 in level %}checked{% endif %}>
+            <label for="level1">1</label><br>
+            <input type="checkbox" id="level2" name="level" value="2" {% if 2 in level %}checked{% endif %}>
+            <label for="level2">2</label><br>
+            <input type="checkbox" id="level3" name="level" value="3" {% if 3 in level %}checked{% endif %}>
+            <label for="level3">3</label><br>
+            <input type="checkbox" id="level4" name="level" value="4" {% if 4 in level %}checked{% endif %}>
+            <label for="level4">4</label><br>
+            <input type="checkbox" id="level5" name="level" value="5" {% if 5 in level %}checked{% endif %}>
+            <label for="level5">5</label><br>
+        </div>
+        <input type="submit" value="Filter" class="filter-button">
+    </form>
+
+    <form method="POST" class="button-container">
+        <input type="submit" name="previous" value="< Previous">
+        <input type="submit" name="next" value="Next >">
+    </form>
+    <div id="data">
+        <h2>Data:</h2>
+        {% for row in rows %}
+        <div class="row">
+            
+            {% for key, value in row.items() %}
+            <div class="column">
+                 
+                {% if key == "code" %}
+                    <strong>{{ key }}:</strong>
+                    <div name="{{key}}" >
+                        <pre>{{ value|yaml }}</pre>
+                    </div>
+                {% elif key == "output"%}
+                    <strong>{{ key }}:</strong>
+                    <div name="{{key}}">
+                        <pre>{{ value|safe }}</pre>
+                    </div>
+                {% elif key == "relevance"%}
+                    <div name="{{key}}">
+                        <label for="relevance{{ row['level'] }}">Relevance (0, 1, 2):</label><br>
+                        <input type="number" id="relevance{{ row['level'] }}" name="relevance" min="0" max="2" value={{value}}><br>
+                    </div>
+
+                {% elif key == "generate_bug"%}
+                    <div name="{{key}}">
+                        <label for="generate_bug{{ row['level'] }}">Generate Bug (0, 1):</label><br>
+                        <input type="number" id="generate_bug{{ row['level'] }}" name="generate_bug" min="0" max="1", value={{value}}><br>
+                    </div>
+                {% elif key == "comment"%}
+                    <div name="{{key}}">
+                        <label for="comment{{ row['level'] }}">Comment:</label><br>
+                        <input type="hidden" id="comment-input-{{ row['level'] }}" value="{{ row['comment'] }}">
+                        <div id="comment-editor-{{ row['level'] }}" name="comment" class="quill-editor"></div><br>
+                        <script>
+                            var commentInput = document.getElementById('comment-input-{{ row['level'] }}');
+                            var initialValue = commentInput.value;
+                            // Get the initial value for the current row
+                            // var initialValue = "{{ row['comment'] }}";
+                
+                            // Initialize the Quill editor with the initial value
+                            var quill{{ row['level'] }} = new Quill('#comment-editor-{{ row['level'] }}', {
+                                theme: 'snow',
+                                placeholder: '',
+                            });
+                            quill{{ row['level'] }}.root.innerHTML = initialValue;
+                            quills.push(quill{{ row['level'] }});
+                        </script>    
+                    </div>
+                {% else %}
+                    <strong>{{ key }}:</strong>
+                    <div name="{{key}}">
+                        {{ value|safe }}
+                    </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+            
+        </div>
+        {% endfor %}
+        <button onclick="saveAnnotations()">Save Annotations</button>
+    </div>
+
+
+    <script>
+        
+        
+    
+        function saveAnnotations() {
+            var annotations = [];
+            var rows = document.getElementsByClassName('row');
+            for (var i = 0; i < rows.length; i++) {
+                var row = rows[i];
+                var relevance = row.querySelector('input[name="relevance"]').value;
+                var generate_bug = row.querySelector('input[name="generate_bug"]').value;
+                //var comment = row.querySelector('textarea[id="comment"]').value;
+                var comment = quills[i].root.innerHTML;
+                var level = row.querySelector('div[name="level"]').innerText
+                var id = row.querySelector('div[name="ID"]').innerText
+                var annotation = {relevance: relevance, generate_bug: generate_bug, comment: comment, level: level, id: id};
+                annotations.push(annotation);
+            }
+            fetch('/save', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(annotations),
+            })
+            .then(data => {
+                // Success callback
+                // Call the `/` route with a GET request
+                fetch('/', {
+                    method: 'GET',
+                    //headers: {
+                    //    'Content-Type': 'application/x-www-form-urlencoded',
+                    //},
+                    //body: 'next=next%20%3E',
+                });
+            })
+            .catch(error => {
+                // Error callback
+                // Handle the error
+            });
+            
+        }
+    </script>
+</body>
+</html>
