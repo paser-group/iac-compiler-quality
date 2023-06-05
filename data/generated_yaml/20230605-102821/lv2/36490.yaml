@@ -1,0 +1,19 @@
+
+- name: Test iptables module tcp_flags bug
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Run random iptables command
+      command: "{{ item }}"
+      with_items:
+        - iptables -A INPUT -m tcp --tcp-flags SYN,ACK,FIN,RST RST
+        - iptables -A OUTPUT -p tcp ! --tcp-flags FIN,SYN,RST,ACK SYN
+        - iptables -A INPUT -s 10.1.1.1 -m tcp --tcp-flags FIN,SYN,RST,ACK SYN
+        - iptables -A OUTPUT -d 10.1.1.1 -p tcp --tcp-flags FIN,SYN ACK
+        - iptables -A INPUT -s 10.1.1.2 -m tcp --tcp-flags SYN,RST SYN,RST
+        - iptables -A OUTPUT -d 10.1.1.2 -m tcp --tcp-flags SYN FIN,RST
+        - iptables -I INPUT -p tcp --dport 22 -j DROP
+        - iptables -I input -s 192.168.0.3 -p tcp --dport 80 -j DROP
+        - iptables -I INPUT -s 192.168.0.0/24 -j DROP
+        - iptables -I FORWARD -p tcp --tcp-flags SYN,ACK,FIN,RST SYN -j DROP
+      ignore_errors: yes

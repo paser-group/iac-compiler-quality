@@ -1,0 +1,24 @@
+
+- name: Test Tower credentials idempotency
+  hosts: all
+  tasks:
+    - name: Add Tower credentials
+      tower_credentials:
+        username: "{{ lookup('env', 'TC_USERNAME') }}"
+        password: "{{ lookup('env', 'TC_PASSWORD') }}"
+        host: "{{ lookup('env', 'TC_HOST') }}"
+        validate_certs: false
+      register: result1
+
+    - name: Add same Tower credentials again
+      tower_credentials:
+        username: "{{ lookup('env', 'TC_USERNAME') }}"
+        password: "{{ lookup('env', 'TC_PASSWORD') }}"
+        host: "{{ lookup('env', 'TC_HOST') }}"
+        validate_certs: false
+      register: result2
+
+    - name: Fail if not idempotent
+      fail:
+        msg: "Tower credentials task not idempotent"
+      when: result1 != result2

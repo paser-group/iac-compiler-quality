@@ -1,0 +1,17 @@
+
+- hosts: all
+  gather_facts: no
+  become: yes
+  tasks:
+    - name: create testfile on all nodes
+      file:
+        path: /tmp/testfile
+        state: touch
+    - name: block some content in file
+      blockinfile:
+        path: /tmp/testfile
+        block: "{{ inventory_hostname }} is running {{ ansible_distribution }} {{ ansible_distribution_version }} on {{ ansible_date_time.date }}"
+    - name: assert that the file was modified and includes the blocked content
+      command: diff /tmp/testfile /tmp/testfile.old
+      register: diff_result
+      changed_when: diff_result.stdout != ""

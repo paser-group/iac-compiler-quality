@@ -1,0 +1,44 @@
+
+- name: Attach ec2 volume from snapshot
+  hosts: all
+  gather_facts: false
+  vars:
+    aws_region: "us-east-1"
+    instance_id: "i-02f2c0a6e85d550d5"
+    volume_size: 100
+    snapshot_id: "snap-0bba3cd60737ecc3c"
+    volume_mount_path: /mnt/sample_vol
+  tasks:
+    - name: Attach ec2 volume
+      ec2_vol:
+        instance: "{{ instance_id }}"
+        region: "{{ aws_region }}"
+        snapshot: "{{ snapshot_id }}"
+        volume_size: "{{ volume_size }}"
+        volume_type: "gp2"
+        device_name: "/dev/sdf"
+        state: "attached"
+        delete_on_termination: "yes"
+      register: output
+    - debug:
+        var: output
+
+
+    - name: Create sample directory
+      become: true
+      file:
+        path: "{{ volume_mount_path }}"
+        mode: '0755'
+        state: directory
+        owner: centos
+        group: centos
+      register: file_out
+    - debug:
+        var: file_out
+
+    - name: Mount ec2 volume
+      filesystem: fstype=xfs dev=/dev/sdf dir="{{ volume_mount_path }}"
+      become: true
+      register: mount_out
+    - debug:
+        var: mount_out

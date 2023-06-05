@@ -1,0 +1,46 @@
+yaml
+---
+- name: Test ansible compiler for sudo password errors
+  hosts: all
+  remote_user: ansible
+  become: true
+
+  tasks:
+    - name: Included role with sudo password
+      include_role:
+        name: common
+      vars:
+        ansible_become_password: "password123"
+
+    - name: Attempt to set empty password
+      command: /bin/true
+      become: true
+      become_user: root
+      become_password: ""
+      register: output
+      ignore_errors: true
+    - name: Failure expected with empty password
+      debug:
+        var: output
+
+    - name: Attempt to set null password
+      command: /bin/true
+      become: true
+      become_user: root
+      become_password: null
+      register: output
+      ignore_errors: true
+    - name: Failure expected with null password
+      debug:
+        var: output
+
+    - name: Attempt to set password to "root"
+      command: /bin/true
+      become: true
+      become_user: root
+      become_password: root
+      register: output
+      ignore_errors: true
+    - name: Failure expected with "root" password
+      debug:
+        var: output

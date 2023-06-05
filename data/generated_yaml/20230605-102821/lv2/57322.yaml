@@ -1,0 +1,71 @@
+
+- name: Test playbook for network_cli connection plugin performance issues
+  hosts: all
+  gather_facts: no
+  vars:
+    - nums: [1, 2, 3, 4]
+  tasks:
+    - name: Install dependencies
+      become: true
+      apt:
+        name:
+          - telnet
+          - nmap
+          - hping3
+          - iptraf
+        state: present
+      register: install_output
+
+    - name: Check network connectivity using nmap
+      nmap:
+        target: "10.1.1.{{ item }}"
+        ports: 22,80,443
+        retry: true
+        retries: "{{ item }}"
+        timeout: "{{ item }}"
+        max_parallelism: "{{ nums[item-1] }}"
+      with_sequence: start=1 end=4
+
+    - name: Test SSH connectivity using hping3
+      shell: "sudo hping3 -c 4 -S -p 22 10.1.1.{{ item }} -i u{{ item+2 }}000"
+      register: ssh_ping
+      with_items:
+        - 1
+        - 2
+        - 3
+        - 4
+
+    - name: Verify SSH connectivity using tcpdump
+      shell: "sudo tcpdump -i eth0 -nn port 22 -c 5 -q -w /var/tmp/ssh_dump_{{ item }}"
+      with_items:
+        - 1
+        - 2
+        - 3
+        - 4
+
+    - name: Test network speed with iptraf
+      shell: "sudo iptraf -L /tmp/iptraf.log -d 10.1.1.{{ item }}"
+      async: 10
+      poll: 0
+      with_items:
+        - 1
+        - 2
+        - 3
+        - 4
+
+    - name: Verify network speed using tcpdump
+      shell: "sudo tcpdump -i eth0 -nn host 10.1.1.{{ item }} -c 5 -q -w /var/tmp/speed_dump_{{ item }}"
+      with_items:
+        - 1
+        - 2
+        - 3
+        - 4
+
+    - name: Print install and shell command output
+      debug:
+        var: item.stdout_lines
+      with_items:
+        - "{{ install_output.stdout_lines }}"
+        - "{{ ssh_ping.results }}"
+        - "{{ command_rc }}"
+  

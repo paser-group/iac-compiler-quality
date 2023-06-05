@@ -1,0 +1,33 @@
+
+- name: Test Playbook for Ansible Compiler Bugs
+  hosts: all
+  gather_facts: False
+
+  tasks:
+    - name: Test task with escaped characters
+      command: echo "{{ ansible_hostname }}"
+
+    - name: Test improper variable substitution
+      shell: "echo 'The variable is: ${{ my_var }}'"
+
+    - name: Test malformed regular expression
+      debug:
+        msg: "{{ my_var|regex_replace('^([a-zA-Z])(.*)', '\\\\1') }}"
+      vars:
+        my_var: "malformedregex"
+
+    - name: Test loop with invalid var
+      shell: echo "{{ item }} is valid"
+      loop:
+        - "{{ groups['ubuntu1'] }}"
+        - "{{ unknown_group }}"
+        
+    - name: Test unusual command substitution syntax
+      shell: echo "`echo $(expr 9 + 3)` is twelve"
+
+    - name: Test invalid variable in uri module
+      uri:
+        url: "http://{{ unknown_var }}/allowed"
+        
+    - name: Test invalid syntax in shell
+      shell: 'echo ""\\"'

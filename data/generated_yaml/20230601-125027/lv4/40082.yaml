@@ -1,0 +1,23 @@
+
+---
+- name: Dynamic Inventory Bug Detector
+  hosts: all
+  gather_facts: no
+  vars:
+    inventory_file: /path/to/inventory
+    cmd: cat /etc/hosts
+  tasks:
+    - name: Test if dynamic inventory file exists
+      stat:
+        path: "{{ inventory_file }}"
+      register: inventory_file_status
+    - debug:
+        var: inventory_file_status.stat.exists
+    - name: Test Dynamic Inventory Content
+      shell: "{{ cmd }}"
+      with_inventory_hostnames: all
+      register: dynamic_inventory_content
+    - name: Ensure dynamic inventory syntax is correct
+      assert:
+        that: dynamic_inventory_content.rc == 0
+        msg: "Dynamic inventory file has wrong syntax!"

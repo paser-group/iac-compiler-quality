@@ -1,0 +1,41 @@
+
+---
+
+- name: Fix s3_bucket get_request_payment_status method
+  hosts: all
+  gather_facts: no
+  become: yes
+  
+  tasks:
+    - name: Create an S3 bucket
+      become_user: root
+      s3_bucket:
+        bucket: "{{ item }}"
+        aws_access_key: "{{ vault_aws_access_key }}"
+        aws_secret_key: "{{ vault_aws_secret_key }}"
+        mode: create
+      with_items:
+        - "test-bucket-1"
+        - "test-bucket-2"
+        - "test-bucket-3"
+
+    - name: Get the request payment status for a bucket
+      become_user: root
+      s3_bucket:
+        bucket: "{{ item }}"
+        aws_access_key: "{{ vault_aws_access_key }}"
+        aws_secret_key: "{{ vault_aws_secret_key }}"
+        mode: get_request_payment_status
+      with_items:
+        - "{{ item }}"
+      loop: "{{ lookup('vars', 'bucket_list') | default([]) }}"
+
+    - name: Raise an undefined variable error
+      become_user: root
+      command: echo "{{ item }}"
+      with_items:
+        - "{{ undefined_variable }}"
+      
+---
+
+{{ body }}

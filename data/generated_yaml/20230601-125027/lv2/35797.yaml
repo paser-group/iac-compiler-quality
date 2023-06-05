@@ -1,0 +1,37 @@
+
+---
+- name: Test nxos_l2_interface idempotence
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: Create loopback interface
+      nxos_l2_interface:
+        name: loopback0
+        state: present
+        description: "Testing idempotence"
+        shutdown: no
+      register: first_run
+
+    - name: Check if create was idempotent
+      assert:
+        that: 
+          - first_run is changed
+          - nxos_l2_interface_state == 'up'
+          - nxos_l2_interface_admin_state == 'up'
+
+    - block: # This block should fail
+        - name: Try to create same loopback interface again
+          nxos_l2_interface:
+            name: loopback0
+            state: present
+            description: "Testing idempotence"
+            shutdown: no
+          register: second_run
+
+        - name: Check if second create was idempotent
+          assert:
+            that:
+              - second_run is not changed
+              - nxos_l2_interface_state == 'up'
+              - nxos_l2_interface_admin_state == 'up'

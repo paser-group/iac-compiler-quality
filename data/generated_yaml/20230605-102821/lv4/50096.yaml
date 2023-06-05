@@ -1,0 +1,34 @@
+
+- hosts: ubuntu1
+  gather_facts: no
+  vars:
+    db_name: sample_db
+    db_user: sample_user
+    db_pass: sample_pass
+    ca_cert: /path/to/ca.crt
+  tasks:
+    - name: Create encrypted password for MySQL
+      mysql_user:
+        name: "{{ db_user }}"
+        password_file: "{{ db_pass }}"
+      run_once: true
+      become: true
+      become_method: su
+      become_user: root
+      register: db_user
+
+    - name: Create Database
+      mysql_db:
+        login_host: localhost
+        login_user: "{{ db_user.name }}"
+        login_password: "{{ db_user.password }}"
+        name: "{{ db_name }}"
+        state: present
+        ssl_ca: "{{ ca_cert }}"
+      become: true
+      become_method: su
+      become_user: root
+      register: db_res
+
+    - debug:
+        var: db_res

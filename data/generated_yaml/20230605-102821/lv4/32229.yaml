@@ -1,0 +1,18 @@
+yaml
+---
+- name: Create Docker container only if it doesn't exist already
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: Check if container exists
+      shell: "docker ps -a --filter name=my_container --format '{{.ID}}'"
+      register: container_id
+      ignore_errors: yes
+
+    - name: Remove existing container
+      shell: "docker rm -f {{ container_id.stdout }} && echo 'Existing container removed.'"
+      when: container_id.rc == 0
+
+    - name: Create Docker container
+      shell: "docker run -d --name my_container -p 8080:80 nginx:latest"

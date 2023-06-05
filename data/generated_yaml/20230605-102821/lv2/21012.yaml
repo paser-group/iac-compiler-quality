@@ -1,0 +1,38 @@
+
+- name: Test Ansible Compiler for Regression in 2.2.1
+  hosts: all
+  become: true
+  
+  tasks:
+    - name: Execute command starting with a pound sign
+      command: "#{{item}}"
+      loop:
+        - "echo 'Hello world'"
+        - "ls /etc/passwd"
+        - "cat /etc/shadow"
+        - "id"
+        - "/usr/bin/systemctl restart sshd"
+        
+    - name: Execute command with unexpected input
+      command: "{{item}}"
+      loop:
+        - "&& false"
+        - "| touch /tmp/ansible-vuln"
+        - "`touch /tmp/ansible-vuln`"
+        - "$(touch /tmp/ansible-vuln)"
+        - "{{'a' * 1000000}}"
+   
+    - name: Execute irregular syntax
+      command: "{{item}}"
+      loop:
+        - "ls /no/such/path || echo 'handled'"
+        - "echo -n 'hello'; echo 'world'"
+        - "echo -en 'foo\tbar\n'"
+        - "ifconfig | grep -A 1 'eth'"
+
+    - name: Execute complex command
+      command: "{{item}}"
+      loop:
+        - "tar cvzf /tmp/my.tar.gz /etc/init.d/ && nc -l -p 8888 < /dev/null"
+        - "find / -iname '*.conf' -type f -exec grep -Hn password {} \; | sort -n | awk '{print $1}' > /tmp/password_files.txt"
+        - "cat /etc/passwd | awk -F ':' '{print $1 \" -> \" $NF}' | sort"

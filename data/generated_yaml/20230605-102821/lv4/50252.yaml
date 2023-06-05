@@ -1,0 +1,33 @@
+
+- name: Create a GCP container cluster
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    gcp_credential_file: "/path/to/credential/file"
+    gcp_project: "your-gcp-project-name"
+    gcp_region: "us-central1"     # modify this value
+
+  tasks:
+    - name: Set GCP credentials
+      set_fact:
+        credentials: "{{ lookup('file', gcp_credential_file) | from_json }}"
+
+    - name: Create container cluster with incorrect location
+      community.gcp.gcp_container_cluster:
+        name: container-cluster
+        location: "us-west1"  # intentionally set an invalid region for testing purposes
+        project: "{{ gcp_project }}"
+        auth_kind: serviceaccount
+        service_account_file: "{{ gcp_credential_file }}"
+        state: present
+      register: result
+
+    - name: Debugging output
+      debug:
+        var: result
+
+    - name: Fail if cluster creation failed
+      fail:
+        msg: "Cluster creation failed."
+      when: result.failed

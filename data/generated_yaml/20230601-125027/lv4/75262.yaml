@@ -1,0 +1,23 @@
+yaml
+- hosts: all
+  gather_facts: true
+  become: true
+  vars:
+    package: tree
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 300
+      register: apt_update_output
+      
+    - name: Install package with apt
+      apt:
+        name: "{{ package }}"
+      register: apt_output
+      failed_when: "apt_output.rc != 0 and 'Cache' in apt_output.msg"
+      
+    - name: Echo error message if caching issue occurred
+      debug:
+        msg: "{{ apt_output.msg }}"
+      when: "apt_output.rc != 0 and 'Cache' in apt_output.msg"

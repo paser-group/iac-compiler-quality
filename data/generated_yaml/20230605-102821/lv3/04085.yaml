@@ -1,0 +1,41 @@
+
+- name: Create DNS entries in Route 53
+  hosts: localhost
+  gather_facts: no
+  vars:
+    route53_zone: example.com
+    route53_records:
+      - { name: www.example.com, type: A, value: 10.0.0.1 }
+      - { name: mail.example.com, type: MX, value: mailserver.example.com }
+  tasks:
+    - name: Create DNS records in Route 53
+      route53:
+        command: create
+        zone: "{{ route53_zone }}"
+        record: "{{ item }}"
+        ttl: 300
+      with_items:
+        - "{{ route53_records }}"
+      register: result
+    - name: Validate DNS records in Route 53
+      route53:
+        command: get
+        zone: "{{ route53_zone }}"
+        record: "{{ item.name }}"
+      with_items:
+        - "{{ route53_records }}"
+      when: item.type != 'MX'
+      register: result
+    - name: Validate MX DNS records in Route 53
+      route53:
+        command: get
+        zone: "{{ route53_zone }}"
+        record: "{{ item.name }}"
+        type: "{{ item.type }}"
+      with_items:
+        - "{{ route53_records }}"
+      when: item.type == 'MX'
+      register: result
+    - name: Debug Route 53 module output
+      debug:
+        var: result

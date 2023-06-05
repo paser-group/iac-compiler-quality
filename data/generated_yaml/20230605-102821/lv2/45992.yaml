@@ -1,0 +1,29 @@
+
+- name: Test ec2.py for module_utils error
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: Install ansible
+      apt:
+        name: ansible
+        state: latest
+        become: true
+
+    - name: Call ec2.py
+      shell: python /etc/ansible/ec2.py --list
+      ignore_errors: yes
+
+    - name: Check if module_utils is missing
+      shell: |
+        python -c 'import sys; print(sys.path)'
+        if 'ansible/module_utils' not in str(sys.path):
+          echo 'Error found: ansible.module_utils is missing'
+        else:
+          echo 'No error found'
+
+    - name: Uninstall ansible
+      apt:
+        name: ansible
+        state: absent
+        become: true

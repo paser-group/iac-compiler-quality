@@ -1,0 +1,105 @@
+
+---
+
+- name: Testing known_hosts module on all nodes
+  hosts: all
+  become: true
+  vars:
+    server_name: "{{ ansible_hostname }}" 
+
+  tasks:
+    - name: Install ssh if not present
+      apt:
+        name:
+          - ssh
+        state: present
+      
+    - name: Remove known_hosts file in /etc/ssh directory
+      file:
+        path: "/etc/ssh/ssh_known_hosts"
+        state: absent
+          
+    - name: Create new known_hosts file with incorrect permissions
+      copy:
+        content: "{{ ansible_host }} {{server_name}}-rsa\n"
+        dest: "/etc/ssh/ssh_known_hosts"
+        mode: "0000"
+      register: known_hosts
+
+    - name: Verify incorrect permissions set on the known_hosts file
+      stat:
+        path: "/etc/ssh/ssh_known_hosts"
+      register: known_hosts_file
+
+    - name: Print known_hosts_file variables
+      debug:
+        var: known_hosts_file
+
+    - name: SSH connectivity fails with incorrect known_hosts file
+      command: ssh "{{ansible_host}}"
+      ignore_errors: true
+
+    - name: Correct file permissions of known_hosts file
+      file:
+        path: "/etc/ssh/ssh_known_hosts"
+        state: file
+        mode: "0644"
+      register: known_hosts_fix
+
+    - name: Check the content of the known_hosts file
+      command: cat /etc/ssh/ssh_known_hosts
+      register: known_hosts_content
+
+    - name: Print the content of the known_hosts file
+      debug:
+        var: known_hosts_content.stdout
+
+    - name: SSH connectivity successful with correct known_hosts file
+      command: ssh "{{ansible_host}}"
+      ignore_errors: true
+
+    - name: Copy correct known_hosts file to default ssh directory
+      copy:
+        src: "/etc/ssh/ssh_known_hosts"
+        dest: "~/.ssh/known_hosts"
+      register: known_hosts_copy
+
+    - name: Verify known_hosts file created in default ssh directory
+      stat:
+        path: "~/.ssh/known_hosts"
+      register: known_hosts_file
+
+    - name: Print known_hosts_file variables
+      debug:
+        var: known_hosts_file
+
+    - name: SSH connectivity successful with correct known_hosts file in default directory
+      command: ssh "{{ansible_host}}"
+      ignore_errors: true
+
+    - name: Remove known_hosts file from default ssh directory
+      file:
+        path: "{{ansible_env.HOME}}/.ssh/known_hosts"
+        state: absent
+
+    - name: Re-create correct known_hosts file in default ssh directory
+      copy:
+        content: "{{ ansible_host }} {{server_name}}-rsa\n"
+        dest: "{{ansible_env.HOME}}/.ssh/known_hosts"
+        owner: "{{ansible_env.USER}}"
+        group: "{{ansible_env.USER}}"
+        mode: "0644"
+
+    - name: Check the content of the known_hosts file in default ssh directory
+      command: cat "{{ansible_env.HOME}}/.ssh/known_hosts"
+      register: known_hosts_content_default
+
+    - name: Print the content of the known_hosts file in default ssh directory
+      debug:
+        var: known_hosts_content_default.stdout
+
+    - name: SSH connectivity successful with correct known_hosts file in default ssh directory
+      command: ssh "{{ansible_host}}"
+      ignore_errors: true
+
+...

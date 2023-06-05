@@ -1,0 +1,29 @@
+
+- name: Simulate MySQL User Segmentation Fault
+  hosts: ubuntu1
+  become: yes
+  gather_facts: no
+  vars:
+    mysql_user: "{{ lookup('env', 'USER') }}"
+    mysql_password: "{{ lookup('file', '/home/' + mysql_user + '/.my.cnf') }}"
+    mysql_database: mydatabase
+  tasks:
+    - name: Install MySQL Client
+      apt:
+        name: mysql-client
+        state: present
+  
+    - name: Create MySQL Database
+      mysql_db:
+        login_user: "{{ mysql_user }}"
+        login_password: "{{ mysql_password }}"
+        db: "{{ mysql_database }}"
+  
+    - name: Create MySQL User
+      mysql_user:
+        name: "{{ mysql_user }}"
+        password: "{{ mysql_password }}"
+        priv: "{{ mysql_database }}.*:ALL" 
+        state: present
+        login_user: "{{ mysql_user }}"
+        login_password: "{{ mysql_password }}"

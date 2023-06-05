@@ -1,0 +1,40 @@
+
+---
+- name: Ansible playbook to reproduce Docker Swarm issue
+  hosts: all
+  become: true
+  gather_facts: no
+
+  tasks:
+  - name: Create Docker Swarm services with common prefix
+    docker_swarm_service:
+      name: "myservice_{{ item }}"
+      image: alpine
+      command: sleep 3600
+      replicas: 1
+      networks:
+        - name: node-net
+      state: present
+    with_sequence: count=3
+  - name: Query Docker Swarm services with common prefix
+    command: docker service ls --filter "{{ search_term }}"
+    register: output
+    vars:
+      search_term: name=myservice_
+  - name: Remove Docker Swarm services with common prefix
+    command: docker service rm $(docker service ls --filter "{{ search_term }}" --format "{{ '{{.'+'ID'+'}}' }}")
+    when: output.stdout_lines | length > 0
+    vars:
+      search_term: name=myservice_
+    register: removal_output
+  - name: Check Docker Swarm services after removal
+    command: docker service ls --filter "{{ search_term }}"
+    register: remaining_output
+    vars:
+      search_term: name=myservice_
+  - name: Fail if Docker Swarm services with common prefix still exist
+    fail:
+      msg: "Services with common prefix '{{ search_term }}' were not removed"
+    when: remaining_output.stdout_lines | length > 0
+    vars:
+      search_term: name=myservice_

@@ -1,0 +1,35 @@
+
+- name: Create VPC and Wait for Subnets
+  hosts: localhost
+  gather_facts: False
+  tasks:
+    - name: Create VPC
+      ec2_vpc:
+        state: present
+        cidr_block: 10.0.0.0/16
+        tags:
+          Name: my-vpc
+      register: vpc_result
+
+    - name: Wait for Subnets
+      wait_for:
+        path: /tmp/subnets_created
+        timeout: 300
+      when: vpc_result.changed
+
+    - name: Create Subnets
+      ec2_vpc_subnet:
+        state: present
+        vpc_id: "{{ vpc_result.vpc.id }}"
+        cidr: "{{ item }}"
+        tags:
+          Name: my-subnet-{{ item.split('.')[-1] }}"
+      with_items:
+        - 10.0.1.0/24
+        - 10.0.2.0/24
+        - 10.0.3.0/24
+
+    - name: Mark Subnets Created
+      copy:
+        content: "Subnets created"
+        dest: /tmp/subnets_created

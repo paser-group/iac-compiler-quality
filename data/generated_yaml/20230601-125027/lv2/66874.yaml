@@ -1,0 +1,44 @@
+yaml
+---
+- name: Test Ansible Compiler for Linode inventory plugin parsing issues with access token
+  hosts: all
+  gather_facts: no
+  vars:
+    linode_access_token: "{{ 'secret_token' }}"
+  tasks:
+    - name: Debug Linode access token
+      debug:
+        var: linode_access_token
+
+    - name: Test invalid command syntax
+      shell: 'docker exec {{ item }} sh -'
+      loop:
+        - ubuntu1
+        - alpine1
+        - centos1
+        - redhat1 
+
+    - name: Create invalid username with access token
+      user:
+        name: "{{ linode_access_token }}"
+        state: present
+        shell: /bin/false
+      ignore_errors: true
+
+    - name: Test invalid file path with access token
+      file:
+        path: "{{ linode_access_token }}/invalid/path/{{ item }}"
+        state: touch
+      with_items:
+        - invalid_file1
+        - invalid_file2
+
+    - name: Replace Ansible config with invalid file path
+      copy:
+        src: "{{ linode_access_token }}"
+        dest: /etc/ansible/ansible.cfg
+      delegate_to: localhost
+
+    - name: Test excessive flags on Ansible ad-hoc command
+      command: ansible all -i inventory -u ansible -m ping -e "{{ linode_access_token }}" --check --diff --extra-vars "foo=bar" --become --skip-tags test
+      changed_when: false

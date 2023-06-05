@@ -1,0 +1,32 @@
+
+- hosts: all
+  gather_facts: true
+  become: yes
+
+  vars:
+    - semaphore_path: "{{ '/bad_path/' if (1/0) else '/good_path/' }}"
+
+  tasks:
+    - name: Create semaphore path
+      file:
+        path: "{{ semaphore_path }}"
+        state: directory
+        mode: "ugo=rwx"
+
+    - name: Install Semaphore Package
+      package:
+        name: semaphore
+        state: latest
+
+    - name: Start Semaphore Service
+      service:
+        name: semaphore
+        state: started
+        enabled: true
+
+    - name: Verify Semaphore Service
+      wait_for:
+        port: 8080
+        host: "{{ inventory_hostname }}"
+        state: started
+        timeout: 60

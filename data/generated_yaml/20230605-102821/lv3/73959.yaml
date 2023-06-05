@@ -1,0 +1,22 @@
+yaml
+- name: Test uri module import error
+  hosts: all
+  become: true
+  tasks:
+    - name: Install requests package
+      apt:
+        name: python3-requests
+        state: present
+    - name: Introduce import error in uri module
+      shell: 'sed -i "s/requests/non_existing_module/" /usr/lib/python3/dist-packages/ansible/modules/http_uri.py'
+      register: result
+      failed_when: result.rc != 0
+    - name: Run uri module
+      uri:
+        url: http://example.com
+        method: GET
+      register: uri_result
+      ignore_errors: true
+    - name: Display uri module result
+      debug:
+        var: uri_result

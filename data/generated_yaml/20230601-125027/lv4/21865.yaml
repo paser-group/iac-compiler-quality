@@ -1,0 +1,41 @@
+
+---
+- name: Ensure ec2_elb_lb is configured properly
+  hosts: localhost
+  connection: local
+
+  # Define the necessary variables to create an EC2 load balancer
+  vars:
+    region: "{{ region | default('us-east-1') }}"
+    vpc_id: "{{ vpc_id | default('vpc-123456') }}"
+    subnet_id: "{{ subnet_id | default('subnet-123456') }}"
+    security_group: "{{ security_group | default('sg-123456') }}"
+    listeners:
+      - protocol: HTTP
+        load_balancer_port: 80
+        instance_port: 8080
+    elb_name: my-load-balancer
+
+  tasks:
+    - name: Create the EC2 load balancer with the provided parameters
+      ec2_elb_lb:
+        name: "{{ elb_name }}"
+        region: "{{ region }}"
+        subnets: "{{ subnet_id }}"
+        security_group: "{{ security_group }}"
+        listeners: "{{ listeners }}"
+      register: lb_result
+
+    - name: Remove any existing tags on the load balancer
+      ec2_tag:
+        resource: "{{ lb_result.elb_id }}"
+        region: "{{ region }}"
+        state: absent
+
+    - name: Add appropriate tags for the load balancer
+      ec2_tag:
+        resource: "{{ lb_result.elb_id }}"
+        region: "{{ region }}"
+        tags:
+          Name: "{{ elb_name }}"
+          Environment: "{{ environment }}"

@@ -1,0 +1,36 @@
+
+- name: Test Service Unreachable in Async Mode
+  hosts: all
+  gather_facts: no
+
+  tasks:
+  - name: Create User
+    ansible.builtin.user:
+      name: testuser
+      password: "{{ 'Pa$$w0rd2022' | password_hash('sha512') }}"
+    async: 60
+    poll: 0
+    register: result
+
+  - name: Change Password
+    ansible.builtin.chage:
+      name: testuser
+      password: "{{ 'NewPa$$w0rd2022' | password_hash('sha512') }}"
+    async: 60
+    poll: 0
+
+  - name: Delete User
+    ansible.builtin.user:
+      name: testuser
+      state: absent
+    async: 60
+    poll: 0
+
+  - name: Wait for Async Task
+    ansible.builtin.async_status:
+      jid: "{{ result.ansible_job_id }}"
+      mode: poll
+      timeout: 10
+    register: async_result
+    until: async_result.finished
+    retries: 10

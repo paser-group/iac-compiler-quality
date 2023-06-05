@@ -1,0 +1,44 @@
+
+- name: Configuring FEX on Nexus 5K
+  hosts: nxos-switches
+  connection: local
+  gather_facts: no
+  vars:
+    fex_port_profiles:
+      - name: "fex101profile"
+        description: "FEX port profile for VLAN 101"
+        vlan: 101
+        state: present
+    fex_interfaces:
+      - name: "Ethernet1/1"
+        description: "FEX interface for VLAN 101"
+        switchport_mode: "access"
+        switchport_access_vlan: 101
+        state: present
+      - name: "Ethernet1/2"
+        description: "FEX interface for VLAN 101"
+        switchport_mode: "access"
+        switchport_access_vlan: 101
+        state: present
+  tasks:
+    - name: Configure FEX Port Profile
+      nxos_config:
+        lines:
+          - "port-profile {{ item.name }}"
+          - "description {{ item.description }}"
+          - "switchport access vlan {{ item.vlan }}"
+          - "state {{ item.state }}"
+        parents: "interface {{ item.name }}"
+      with_items: "{{ fex_port_profiles }}"
+      become: yes
+    - name: Configure FEX Interfaces
+      nxos_config:
+        lines:
+          - "interface {{ item.name }}"
+          - "description {{ item.description }}"
+          - "switchport mode {{ item.switchport_mode }}"
+          - "switchport access vlan {{ item.switchport_access_vlan }}"
+          - "state {{ item.state }}"
+      with_items: "{{ fex_interfaces }}"
+      become: yes
+

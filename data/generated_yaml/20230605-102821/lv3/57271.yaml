@@ -1,0 +1,31 @@
+
+- name: Test playbook for Vault cipher whitelist error
+  hosts: all
+  vars:
+    my_secret: "This is my secret."
+    ansible_python_interpreter: "/usr/bin/python3"
+  tasks:
+    - name: Encrypt data using deprecated cipher
+      block:
+        - name: Add insecure cipher in Ansible config
+          lineinfile:
+            path: /etc/ansible/ansible.cfg
+            line: "cipher=3des"
+        - name: Use the deprecated cipher for encryption
+          ansible.builtin.set_fact:
+            encrypted_var: "{{ my_secret | ansible.builtin.vault_encryption('password') }}"
+      rescue:
+        - name: Capture encryption failure and log warning
+          debug:
+            msg: "Encryption failed due to cipher validation failure"
+          ignore_errors: yes
+    - name: Decrypt data using the same deprecated cipher
+      block:
+        - name: Use the deprecated cipher for decryption
+          ansible.builtin.set_fact:
+            decrypted_var: "{{ encrypted_var | ansible.builtin.vault_decryption('password') }}"
+        - name: Verify decrypted data
+          assert:
+            that:
+              - "'my_secret' == '{{ decrypted_var }}'"
+      when: encrypted_var is defined

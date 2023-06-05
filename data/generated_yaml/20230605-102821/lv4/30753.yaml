@@ -1,0 +1,36 @@
+
+- name: Check ansible_service_mgr fact for sysvinit
+  hosts: all
+  gather_facts: yes
+  tasks:
+  - name: Debug ansible_service_mgr fact
+    debug:
+      var: ansible_service_mgr
+  - name: Check if sysvinit is installed
+    shell: which /etc/init.d/ >/dev/null 2>&1 && echo OK
+    register: sysvinit_check
+    changed_when: False
+  - name: Check if service state detection works correctly
+    service:
+      name: cron
+      state: started
+      enabled: true
+    register: service_check
+    until: service_check is successfull or retries == 5
+    retries: 5
+    delay: 5
+  - name: Debug service_check
+    debug:
+      var: service_check
+  - name: Check if service management works correctly
+    service:
+      name: cron
+      state: stopped
+      enabled: false
+    register: service_check2
+    until: service_check2 is successfull or retries == 5
+    retries: 5
+    delay: 5
+  - name: Debug service_check2
+    debug:
+      var: service_check2

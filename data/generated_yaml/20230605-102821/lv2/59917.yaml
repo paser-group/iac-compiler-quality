@@ -1,0 +1,33 @@
+
+- name: Identify [vmware] vmware_portgroup idempoteney issue
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Check if vmware_portgroup already exists
+      vmware_portgroup_info:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        portgroup: "test_portgroup"
+      register: pg_state
+
+    - name: Create vmware_portgroup with a string VLAN ID
+      vmware_portgroup:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        portgroup: "test_portgroup"
+        state: present
+        vlan_id: "invalid_vlan_id"
+        vlan_type: access
+      when: pg_state.exists is not defined
+
+    - name: Remove vmware_portgroup
+      vmware_portgroup:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        portgroup: "test_portgroup"
+        state: absent
+      when: pg_state.exists

@@ -1,0 +1,84 @@
+
+- name: Stress test vmware_guest module with multiple scsi controllers
+  hosts: all
+  gather_facts: no
+  vars:
+    - guest_name: "Test_VM"
+    - disk_size: "10G"
+  tasks:
+    - name: Create VM with two SCSI controllers
+      vmware_guest:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ vmware_user }}"
+        password: "{{ vmware_password }}"
+        datacenter: "Datacenter"
+        cluster: "Cluster"
+        folder: "/TestFolder"
+        name: "{{ guest_name }}"
+        disk:
+          - size_gb: "{{ disk_size }}"
+            type: "thin"
+            scsi_controller: 0  # SCSI Controller 0
+          - size_gb: "{{ disk_size }}"
+            type: "thin"
+            scsi_controller: 1  # SCSI Controller 1
+        hardware:
+          memory_mb: 4096
+          num_cpus: 2
+          scsi_controllers:
+            - type: pvscsi
+              bus_sharing: virtualSharing
+              shared_bus: true
+              key: 0  # SCSI Controller 0
+            - type: pvscsi
+              bus_sharing: virtualSharing
+              shared_bus: true
+              key: 1  # SCSI Controller 1
+      register: vm_creation_result
+
+    - name: Resize disk for SCSI Controller 0
+      vmware_guest_disk:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ vmware_user }}"
+        password: "{{ vmware_password }}"
+        datacenter: "Datacenter"
+        validate_certs: no
+        name: "{{ guest_name }}"
+        scsi_controller: 0
+        disk: 0
+        size: 20
+      register: disk_resize_result_0
+
+    - name: Resize disk for SCSI Controller 1
+      vmware_guest_disk:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ vmware_user }}"
+        password: "{{ vmware_password }}"
+        datacenter: "Datacenter"
+        validate_certs: no
+        name: "{{ guest_name }}"
+        scsi_controller: 1
+        disk: 0
+        size: 20
+      register: disk_resize_result_1
+
+    - name: Take snapshot of VM
+      vmware_guest_snapshot:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ vmware_user }}"
+        password: "{{ vmware_password }}"
+        datacenter: "Datacenter"
+        name: "{{ guest_name }}"
+        annotation: "Test Snapshot"
+      register: snapshot_creation_result
+
+    - name: Delete snapshot of VM
+      vmware_guest_snapshot:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ vmware_user }}"
+        password: "{{ vmware_password }}"
+        datacenter: "Datacenter"
+        name: "{{ guest_name }}"
+        state: absent
+        snapshot_name: "Test Snapshot"
+      register: snapshot_deletion_result

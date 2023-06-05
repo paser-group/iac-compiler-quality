@@ -1,0 +1,19 @@
+yaml
+---
+- name: Test playbook for uncovering Ansible compiler bugs
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Create a file with invalid custom fact
+      file:
+        path: "/etc/ansible/facts.d/custom_fact.py"
+        mode: '0644'
+        state: touch
+        # include an invalid character in the fact variable
+        # to test for bad interpreter errors
+        content: |
+          #!/usr/bin/env python
+          print("foo $%! #: bar")
+          exit(0)
+      delegate_to: "{{ item }}"
+      with_items: "{{ groups['all'] }}"

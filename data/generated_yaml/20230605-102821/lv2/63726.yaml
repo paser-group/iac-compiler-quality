@@ -1,0 +1,29 @@
+
+- name: Meraki - 404 Error Handling
+  hosts: all
+  gather_facts: false
+  become: true
+
+  vars:
+    url: "http://invalid_url"
+    api_key: "{{ lookup('env', 'MERAKI_API_KEY') }}"
+  
+  pre_tasks:
+    - name: Check API key is set
+      assert:
+        that: api_key is defined
+        msg: "Meraki API Key is not set"
+
+  tasks:
+    - name: Trigger a 404 error
+      uri:
+        url: "{{ url }}"
+        headers:
+          X-Cisco-Meraki-API-Key: "{{ api_key }}"
+      register: api_response
+      ignore_errors: true
+
+    - name: Debug 404 status
+      debug:
+        msg: "404 error detected"
+      when: api_response.status == 404

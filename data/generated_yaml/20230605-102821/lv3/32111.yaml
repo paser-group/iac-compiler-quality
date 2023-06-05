@@ -1,0 +1,36 @@
+
+- name: Configure non-default VRF on EOS devices
+  hosts: eos_devices
+  gather_facts: no
+  
+  vars:
+    vrf_name: non_default_vrf
+    
+  tasks:
+    - name: configure default VRF on EOS devices
+      eos_eapi:
+        host: "{{ inventory_hostname }}"
+        username: "{{ ansible_user }}"
+        password: "{{ lookup('file', '/path/to/password/file') }}"
+        transport: eosapi
+        commands:
+          - conf t
+          - vrf definition default
+            rd auto
+            address-family ipv4 unicast
+              route-target both auto
+          - vrf definition "{{ vrf_name }}"
+            rd auto
+            address-family ipv4 unicast
+              route-target both auto
+              
+    - name: enable non-default VRF on EOS devices
+      eos_eapi:
+        host: "{{ inventory_hostname }}"
+        username: "{{ ansible_user }}"
+        password: "{{ lookup('file', '/path/to/password/file') }}"
+        transport: eosapi
+        commands:
+          - conf t
+          - interface ethernet1
+            vrf forwarding "{{ vrf_name }}"

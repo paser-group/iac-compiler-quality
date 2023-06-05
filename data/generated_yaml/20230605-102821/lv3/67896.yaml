@@ -1,0 +1,15 @@
+
+- name: Get VLANs info
+  ios_command:
+    commands: "show vlan"
+  register: vlan_output
+
+- name: Extract vlan names
+  set_fact:
+    vlan_names: "{{vlan_output.stdout_lines[1:] | map('regex_replace', '\\\\s+', '_') | map('split', '_') | map(attribute='1') | list }}"
+
+- name: Get VLAN Info with ios_vlan module
+  ios_vlan:
+    vlan_id: "{{ item }}"
+    state: facts
+  with_items: "{{ vlan_names }}"

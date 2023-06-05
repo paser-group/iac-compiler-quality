@@ -1,0 +1,26 @@
+
+---
+- name: test 'follow' default change
+  hosts: all
+  gather_facts: false
+
+  tasks:
+  - name: create test file
+    command: touch /tmp/test_file
+  - name: save current 'follow' default value to variable
+    shell: "sysctl fs.inotify.max_user_watches | cut -d ' ' -f 3"
+    register: default_follow_value
+  - name: set 'follow' default to 9999999
+    sysctl:
+      name: fs.inotify.max_user_watches
+      value: 9999999
+      state: present
+      reload: yes
+  - name: modify test file
+    command: echo "test1" >> /tmp/test_file
+  - name: restore 'follow' default value to original value
+    sysctl:
+      name: fs.inotify.max_user_watches
+      value: "{{ default_follow_value.stdout }}"
+      state: present
+      reload: yes

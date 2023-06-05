@@ -1,0 +1,29 @@
+
+- name: Test IAM module with invalid credentials
+  hosts: all
+  gather_facts: no
+  
+  tasks:
+  - name: Install awscli on remote nodes
+    become: true
+    apt:
+      name: awscli
+      state: latest
+  - name: Add invalid aws credentials to the agent configuration
+    file:
+      path: /home/ubuntu/.aws/credentials
+      state: touch
+      mode: 0600
+    lineinfile:
+      dest: /home/ubuntu/.aws/credentials
+      line: |
+        [default]
+        aws_access_key_id = {{ lookup('env', 'INVALID_ACCESS_KEY') }}
+        aws_secret_access_key = {{ lookup('env', 'INVALID_SECRET_KEY') }}
+  - name: Test IAM module with invalid credentials
+    command: aws iam get-user
+    register: output
+    ignore_errors: true
+  - name: Display stderr of the command
+    debug:
+      var: output.stderr

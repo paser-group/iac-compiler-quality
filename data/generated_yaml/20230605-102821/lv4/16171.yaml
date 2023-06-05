@@ -1,0 +1,28 @@
+yaml
+- name: Configure HTTPS listeners on AWS ELB
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    elb_name: my-elb
+    cert_path: /path/to/cert.pem
+    key_path: /path/to/key.pem
+
+  tasks:    
+    - name: Retrieve ELB properties
+      ec2_elb_facts:
+        names: "{{ elb_name }}"
+        region: us-east-1
+      register: elb_properties
+
+    - name: Configure HTTPS listener
+      ec2_elb_listener:
+        state: present
+        region: us-east-1
+        elb_name: "{{ elb_name }}"
+        protocol: https
+        port: 443
+        instance_port: 80
+        ssl_certificate_id: "{{ elb_properties.elbs[0].listener_descriptions[0].listener.SSLCertificateId }}"
+        ssl_certificate: "{{ lookup('file', cert_path) }}"
+        ssl_certificate_key: "{{ lookup('file', key_path) }}"       

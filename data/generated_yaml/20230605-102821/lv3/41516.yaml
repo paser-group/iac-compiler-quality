@@ -1,0 +1,30 @@
+
+- name: Copy object to a bucket
+  hosts: localhost
+  gather_facts: no
+  vars:
+    aws_access_key: <aws-access-key>
+    aws_secret_key: <aws-secret-key>
+    aws_region: <aws-region>
+    bucket_name: <bucket-name>
+    s3_object_key: <s3-object-key>
+    local_file: <local-file-path>
+    dest_file: <dest-file-path>
+  tasks:
+    - name: Upload file to S3 bucket
+      local_action:
+        module: aws_s3
+        bucket: "{{ bucket_name }}"
+        object: "{{ s3_object_key }}"
+        src: "{{ local_file }}"
+        mode: put
+        aws_access_key: "{{ aws_access_key }}"
+        aws_secret_key: "{{ aws_secret_key }}"
+        region: "{{ aws_region }}"
+      register: s3_output
+    
+    - name: Transfer object to the remote host
+      copy:
+        src: "{{ s3_output.changed }}"
+        dest: "{{ dest_file }}"
+        remote_src: true

@@ -1,0 +1,53 @@
+
+---
+- name: Stress testing Ansible compiler
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: Executing command with invalid syntax
+      command: '[$var]'
+
+    - name: Attempting to ping unreachable hosts
+      ping:
+        data: '{{ hostvars["invalid_host"]["ansible_default_ipv4"]["address"] }}'
+
+    - name: Attempting to SSH to a non-existent host
+      command: 'ssh some.invalid.host'
+
+    - name: Creating a malformed group name
+      add_host:
+        name: '{{ item }}'
+        groups: '{["invalid_group"] + group_names}'
+      loop: '{{ groups["all"] }}'
+
+    - name: Attempting to fetch a non-existent package
+      apt:
+        name: non-existent-package
+        state: present
+
+    - name: Creating an invalid boolean expression
+      assert:
+        that:
+          - True != !True
+
+    - name: Accessing a non-existent variable on the remote host
+      debug:
+        var: '{{ hostvars[inventory_hostname]["non_existent_variable"] }}'
+
+    - name: Attempting to remove a non-existent file
+      file:
+        path: /path/to/non-existent/file
+        state: absent
+
+    - name: Writing to a read-only file
+      copy:
+        dest: /etc/shadow
+        content: 'some content'
+
+    - name: Attempting to execute a non-executable file
+      command: /path/to/non-executable/file
+
+    - name: Doing a no-op update to an empty package list
+      apt:
+        update_cache: yes

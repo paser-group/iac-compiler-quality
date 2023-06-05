@@ -1,0 +1,43 @@
+
+- name: Update RabbitMQ user password
+  hosts: all
+  become: true
+  gather_facts: false
+
+  vars:
+    rabbitmq_user: "testuser"
+    rabbitmq_password: "testpassword"
+    new_password: "newpassword"
+
+  tasks:
+  - name: Create RabbitMQ user
+    rabbitmq_user:
+      user: "{{ rabbitmq_user }}"
+      password: "{{ rabbitmq_password }}"
+      vhost: "/"
+      configure_privileges: ".* .* .*"
+      force: true
+
+  - name: Update RabbitMQ user password
+    rabbitmq_user:
+      user: "{{ rabbitmq_user }}"
+      password: "{{ new_password }}"
+      vhost: "/"
+      force: true
+
+  - name: Check RabbitMQ user is updated
+    shell: rabbitmqctl list_users | grep "{{ rabbitmq_user }} "
+    register: rabbitmq_user_check
+
+  - name: Validate RabbitMQ user password
+    shell: rabbitmqctl authenticate_user "{{ rabbitmq_user }}" "{{ new_password }}"
+    register: rabbitmq_pass_check
+
+  - name: Display RabbitMQ user password result
+    debug:
+      var: rabbitmq_pass_check
+
+  - name: Clean up RabbitMQ user
+    rabbitmq_user:
+      user: "{{ rabbitmq_user }}"
+      state: absent

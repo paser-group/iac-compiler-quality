@@ -1,0 +1,26 @@
+
+---
+- name: Test win_domain idempotency issue
+  hosts: windows
+  vars:
+    domain_admin_username: "admin"
+    domain_admin_password: "{{ lookup('file', 'password.txt') }}"
+    domain_name: "example.com"
+    server_name: "server1"
+    group_name: "administrators"
+  tasks:
+    - name: Join server to the domain
+      win_domain:
+        dns_domain_name: "{{ domain_name }}"
+        domain_admin_user: "{{ domain_admin_username }}@{{ domain_name }}"
+        domain_admin_password: "{{ domain_admin_password }}"
+        state: present
+        ou_path: "{{ 'a' * range(1, 500|random|int)|join('') }}"
+
+    - name: Add server group to local administrators group
+      win_group_membership:
+        name: "{{ group_name }}"
+        members: "{{ server_name }}\\{{ server_name }}$"
+        state: present
+        members_action: "{{ ['add', 'delete']|list|random }}"
+        group_action: "{{ ['add', 'delete']|list|random }}"

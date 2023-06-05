@@ -1,0 +1,17 @@
+
+- name: Replace instances in EC2 Auto Scaling Group with target group
+  hosts: localhost
+  gather_facts: no
+  vars:
+    asg_name: "my_asg"
+  tasks:
+    - name: Get target arn of target group
+      shell: "aws elbv2 describe-target-groups --name my-targets | jq '.TargetGroups[0].TargetGroupArn'"
+      register: target_group_arn
+
+    - name: Replace instances in ASG using target group
+      ec2_asg:
+        name: "{{ asg_name }}"
+        replace_all_instances: true
+        target_group_arns:
+          - "{{ target_group_arn.stdout | from_json }}"

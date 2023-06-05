@@ -1,0 +1,28 @@
+
+- name: Deploy ARM template for Azure VM
+  hosts: localhost
+  connection: local
+  gather_facts: no
+
+  tasks:
+    - name: Create Azure Resource Group
+      azure_rm_resourcegroup:
+        name: myResourceGroup
+        location: eastus
+
+    - name: Deploy Azure Virtual Machine
+      azure_rm_deployment:
+        resource_group: myResourceGroup
+        template: "{{ lookup('file', '/path/to/azuredeploy.json') }}"
+        parameters:
+          adminUsername:
+            value: azureadmin
+          adminPassword:
+            value: "{{ lookup('file', '/path/to/passwordfile.txt') }}"
+          vmSize:
+            value: invalidValue   # The invalid value triggers the ARM check failure
+      register: output
+
+    - name: Output Azure Deployment Log
+      debug:
+        var: output

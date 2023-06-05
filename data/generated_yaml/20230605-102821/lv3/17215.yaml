@@ -1,0 +1,21 @@
+yaml
+- hosts: all
+  become: yes
+  
+  vars:
+    temp_path: "/tmp"
+
+  tasks:
+    - name: Check disk space
+      script: "df -P /tmp | awk 'END{print $5}'"
+      register: disk_space
+
+    - name: Create temp directory
+      file:
+        path: "{{ temp_path }}/test"
+        state: directory
+      when: disk_space.stdout|int < 90
+
+    - name: Run script
+      script: "{{ temp_path }}/run_script.sh"
+      when: disk_space.stdout|int < 90 and temp_path is defined

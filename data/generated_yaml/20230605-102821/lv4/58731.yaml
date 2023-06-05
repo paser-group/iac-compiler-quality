@@ -1,0 +1,36 @@
+yaml
+- name: Archive module exclude_path bug
+  hosts: all
+  tasks:
+    - name: Create the folder to archive
+      file:
+        path: /tmp/sample_folder
+        state: directory
+        
+    - name: Create a test file in the folder
+      file:
+        path: /tmp/sample_folder/file1.txt
+        state: touch
+        mode: '0777'
+        
+    - name: Create a test sub-folder in the folder
+      file:
+        path: /tmp/sample_folder/subfolder
+        state: directory
+        
+    - name: Create a test file in the sub-folder
+      file:
+        path: /tmp/sample_folder/subfolder/file2.txt
+        state: touch
+        mode: '0777'
+        
+    - name: Create an archive excluding the sub-folder 
+      archive:
+        path: /tmp/sample_folder/
+        dest: /tmp/sample_folder.tar
+        exclude_path: /tmp/sample_folder/subfolder
+        
+    - name: Check if sub-folder is successfully excluded from the archive
+      shell: 'tar -tf /tmp/sample_folder.tar | grep -q /subfolder/ && echo "Sub-folder is not excluded from archive"'
+      register: result
+      failed_when: result.stdout != ''

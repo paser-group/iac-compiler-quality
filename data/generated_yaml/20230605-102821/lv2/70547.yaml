@@ -1,0 +1,38 @@
+
+---
+- name: Test ovirt_vm cd_iso
+  hosts: all
+  become: true
+  tasks:
+    - name: Ensure that the iso exists on ovirt engine
+      ovirt_iso:
+        state: present
+        name: "{{ item }}"
+        storage_domain: cd_iso_storage
+      with_items:
+        - malformed-name.iso
+        - ../malformed-path.iso
+        - $HOME/path/to/file.iso
+        - /etc/passwd.iso
+        - '; touch /tmp/hacked.iso ;'
+      
+    - name: Test cd_iso functionality with invalid iso names
+      ovirt_vm_cd_iso:
+        name: test_vm
+        cdrom: "{{ item }}"
+      with_items:
+        - malformed-name.iso
+        - ../malformed-path.iso
+        - $HOME/path/to/file.iso
+        - /etc/passwd.iso
+        - '; touch /tmp/hacked.iso ;'
+
+    - name: Test cd_iso functionality with non-existent iso
+      ovirt_vm_cd_iso:
+        name: test_vm
+        cdrom: non-existent-iso.iso
+
+    - name: Test cd_iso functionality with valid iso 
+      ovirt_vm_cd_iso:
+        name: test_vm
+        cdrom: CentOS-7-x86_64-Minimal-1810.iso

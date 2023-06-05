@@ -1,0 +1,39 @@
+
+---
+- name: RabbitMQ Policies stress test playbook
+  hosts: all
+  gather_facts: true
+  become: yes
+
+  tasks:
+    - name: Install RabbitMQ server
+      apt:
+        name: rabbitmq-server
+        state: present
+
+    - name: Configure priority policy with unconventional syntax
+      rabbitmq_policy:
+        vhost: '/'
+        name: "{{ inventory_hostname }}-{{ lookup('password', '/dev/null chars=ascii_letters,digits,length=10') }}"
+        pattern: '.*'
+        apply-to: queues
+        definition:
+          priority: "10,20,30,40,50"
+      loop: "{{ range(2) }}"
+      register: policy_output
+
+    - name: Remove priority policy using wrong syntax
+      rabbitmq_policy:
+        vhost: '/'
+        name: "{{ inventory_hostname }}-{{ lookup('password', '/dev/null chars=ascii_letters,digits,length=10') }}"
+        state: absent
+        priority: "{{ 10/0 }}"
+      loop: "{{ range(2) }}"
+      register: delete_policy
+
+    - name: Verify that policy is deleted
+      assert:
+        that:
+          - delete_policy is success
+          - "ansible_facts.rabbitmq_policies['/'] is undefined"
+      loop: "{{ range(2) }}"

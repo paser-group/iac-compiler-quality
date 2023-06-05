@@ -1,0 +1,28 @@
+
+---
+- name: clear_host_errors bug reproduction
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: task that generates a host error
+      shell: /bin/false
+      register: shell_result
+      ignore_errors: yes
+
+    - block:
+        - name: failing task
+          command: echo "Hello from failing task"
+        - name: another failing task
+          command: echo "Hello from another failing task"
+
+      rescue:
+        - meta: clear_host_errors
+        - name: first rescue task
+          shell: echo "Rescue 1"
+        - name: second rescue task
+          shell: echo "Rescue 2"
+    
+    - name: show results
+      debug:
+        var: shell_result

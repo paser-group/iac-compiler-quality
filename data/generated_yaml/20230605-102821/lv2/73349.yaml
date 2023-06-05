@@ -1,0 +1,43 @@
+
+---
+- hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: Generate a large number of tasks
+      set_fact:
+        tasks_list: "{{ range(0, 10000000)|map('regex_replace', '^(.*)', 'task_\\1')|list }}"
+    
+    - name: Include a large number of tasks
+      include_tasks: "{{ item }}"
+      loop: "{{ tasks_list }}"
+      loop_control:
+        loop_var: task
+      
+    - name: Display memory usage
+      command: free -m
+
+    - name: Create file with random data
+      blockinfile:
+        path: /tmp/random.txt
+        block: "{{ lookup('pipe', 'cat /dev/urandom | base64 | head -c 1000000') }}"
+        backup: yes
+        insertafter: EOF
+
+    - name: Copy file to all hosts
+      copy:
+        src: /tmp/random.txt
+        dest: /tmp/random.txt
+
+    - name: Make a large number of network requests
+      uri:
+        url: https://www.example.com/
+        status_code: 200
+        validate_certs: no
+        return_content: no
+        timeout: 10
+      loop: "{{ range(0, 1000)|list }}"
+
+    - name: Spawn a large number of processes
+      command: "sleep 1 &"
+      loop: "{{ range(0, 1000)|list }}"

@@ -1,0 +1,48 @@
+
+- name: LXC container is not running error stress test
+  hosts: all
+  become: yes
+  gather_facts: no
+  vars:
+    container_name: "test-container"
+    lxc_image: "ubuntu"
+  tasks:
+  - name: Install LXC tool
+    apt:
+      name: lxc
+      state: latest
+  - name: Start container
+    command: lxc-start --name {{ container_name }} --daemon
+  - name: Check container status
+    shell: lxc-ls --running | grep {{ container_name }} | wc -l
+    register: container_running
+  - name: Display container status
+    debug:
+      var: container_running.stdout_lines
+  - name: Stop container
+    command: lxc-stop --name {{ container_name }}
+  - name: Remove container
+    command: lxc-destroy --force --name {{ container_name }}
+  - name: Install Apache
+    apt:
+      name: apache2
+      state: present
+      update_cache: yes
+  - name: Set Apache to start on boot
+    service:
+      name: apache2
+      enabled: yes
+  - name: Add index file
+    copy:
+      content: "Hello, World! This is {{ lxc_image }} running on {{ ansible_distribution }} {{ ansible_distribution_version }}.\n"
+      dest: "/var/www/html/index.html"
+  - name: Restart Apache
+    service:
+      name: apache2
+      state: restarted
+  - name: Check Apache status
+    command: systemctl status apache2
+    register: apache_status
+  - name: Display Apache status
+    debug:
+      var: apache_status.stdout_lines

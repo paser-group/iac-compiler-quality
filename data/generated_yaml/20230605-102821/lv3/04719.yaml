@@ -1,0 +1,27 @@
+yaml
+- name: Example Playbook for Bug in Resolving/Templating Keys for Dict Variables
+  hosts: all
+  gather_facts: false
+  vars:
+    body:
+      part1: "{{ item }}"
+      part2: "{{ item }} on {{ hostvars[item]['ansible_fqdn'] }}"
+  tasks:
+    - name: Create a list of nodes
+      set_fact:
+        nodes: ['ubuntu1', 'alpine1', 'centos1', 'redhat1']
+    - name: Create a dictionary of node details
+      set_fact:
+        node_details: "{{ {} | combine({ item: {'ip': hostvars[item]['ansible_default_ipv4']['address']}}) }}"
+      loop: "{{ nodes }}"
+    - name: Create directory for log files
+      file:
+        path: /var/log/custom_logs
+        state: directory
+      become: true
+    - name: Generate log files for nodes
+      lineinfile:
+        path: "/var/log/custom_logs/{{ item }}"
+        line: "{{ body |json }}"
+      with_items: "{{ nodes }}"
+      become: true

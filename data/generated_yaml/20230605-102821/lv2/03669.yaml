@@ -1,0 +1,48 @@
+
+---
+- name: Stress test lvol module
+  hosts: all
+  become: true
+
+  tasks:
+  - name: Create logical volume with invalid int value
+    lvol:
+      vg: VolGroup
+      lv: lv_test
+      size: 10
+      discards: 1
+      read_ahead: 256
+      chunk_size: 128
+      persistent: true
+      int_cast_error_var: "{{ 'a'*1000000000000000000000000000000000000000000000000 }}"
+
+  - name: Resize logical volume with invalid float value
+    lvol:
+      vg: VolGroup
+      lv: lv_test
+      size: 1
+      discards: 0
+      read_ahead: 256
+      chunk_size: 128
+      persistent: true
+      float_cast_error_var: "{{ 1/0 }}"
+
+  - name: Remove logical volume with invalid string input
+    lvol:
+      vg: VolGroup
+      lv: "{{ 'lv_test' if 'x' == 'y' else lv_test }}"
+      state: absent
+      persistent: true
+      str_error_var: [1, 2, 3, 4, "{{ '5' }}"]
+
+  - name: Create logical volume with invalid negative size
+    lvol:
+      vg: VolGroup
+      lv: lv_test
+      size: -10
+      discards: 1
+      read_ahead: 256
+      chunk_size: 128
+      persistent: true
+      neg_error_var: "{{ ((2**64)/2)-1 }}"
+

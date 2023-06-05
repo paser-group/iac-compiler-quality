@@ -1,0 +1,26 @@
+
+---
+- name: Upgrade to PowerShell 3
+  hosts: all
+  gather_facts: no
+  vars:
+    ps3_url: "http://example.com/PowerShell-3.0.msi"
+  tasks:
+  - name: Check current PowerShell version
+    win_shell: $PSVersionTable.PSVersion.Major
+    register: ps_version
+  - name: Download the PowerShell 3 installer
+    get_url:
+      url: "{{ ps3_url }}"
+      dest: "{{ inventory_dir }}/ps3_installer.msi"
+  - name: Install PowerShell 3
+    win_package:
+      path: "{{ inventory_dir }}/ps3_installer.msi"
+      args: "/quiet"
+      state: present
+    when: ps_version.stdout|int < 3
+    become: yes
+    become_method: psexec
+    become_user: SYSTEM
+    vars:
+      ansible_password: "{{ lookup('file', '/path/to/password_file') }}"

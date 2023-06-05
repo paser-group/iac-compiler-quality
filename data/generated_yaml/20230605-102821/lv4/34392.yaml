@@ -1,0 +1,38 @@
+
+- name: Create or Modify Firewall Rule
+  hosts: windows
+  vars:
+    existing_rules:
+    - rule_name: "Test_Rule"
+      protocol: "TCP"
+      local_port: "8080"
+      action: "allow"
+      enabled: "yes"
+      profile: "domain"
+      direction: "in"
+  tasks:
+    - name: Create the rule (if it does not exist)
+      win_firewall_rule:
+        display_name: "{{ item.rule_name }}"
+        protocol: "{{ item.protocol }}"
+        local_port: "{{ item.local_port }}"
+        action: "{{ item.action }}"
+        enabled: "{{ item.enabled }}"
+        profile: "{{ item.profile }}"
+        direction: "{{ item.direction }}"
+        state: present
+      loop: "{{ existing_rules }}"
+      when: item not in existing_rules | default([])
+
+    - name: Modify the rule (if it exists)
+      win_firewall_rule:
+        display_name: "{{ item.rule_name }}"
+        protocol: "{{ item.protocol }}"
+        local_port: "{{ item.local_port }}"
+        action: "{{ item.action }}"
+        enabled: "{{ item.enabled }}"
+        profile: "{{ item.profile }}"
+        direction: "{{ item.direction }}"
+        state: present
+      loop: "{{ existing_rules }}"
+      when: item in existing_rules | default([])

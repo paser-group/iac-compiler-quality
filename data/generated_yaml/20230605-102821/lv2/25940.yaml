@@ -1,0 +1,39 @@
+yaml
+---
+- name: Test ec2_remote_facts
+  hosts: all
+  gather_facts: False
+
+  tasks:
+  - name: Retrieve EC2 instance facts
+    ec2_remote_facts:
+      region: us-east-1
+      filters:
+        "tag:Name": "{{ item }}"
+    with_items:
+      - "ubuntu1"
+      - "alpine1"
+      - "centos1"
+      - "redhat1"
+      - "{{ body }}"
+    register: ec2_facts
+
+  - name: Check for missing arguments in ec2_remote_facts
+    assert:
+      that:
+        - ec2_facts is defined
+        - ec2_facts.results | length == 5
+        - ec2_facts.results[0] is defined
+        - ec2_facts.results[0].ansible_facts is defined
+        - ec2_facts.results[0].ansible_facts.ec2_instance_id is defined
+
+  - name: Output ec2_remote_facts to file
+    copy:
+      content: "{{ ec2_facts | to_nice_json }}"
+      dest: "/tmp/ec2_facts.json"
+    delegate_to: localhost
+
+  - name: Cleanup ec2_remote_facts cache
+    ec2_cache_facts:
+      state: absent
+      cache_path: "/tmp/ec2_facts.json"

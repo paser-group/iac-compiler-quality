@@ -1,0 +1,49 @@
+
+- name: Stress test the aci module with random inputs
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Query inventory of APIC targets
+      aci:
+        host: "{{ item }}"
+        username: "admin"
+        password: "{{ lookup('file', 'passwords/apic-password.txt') }}"
+        state: query
+        validate_certs: no
+      with_items:
+        - 10.1.1.1
+        - 10.1.1.2
+        - 10.1.1.3
+        - 10.1.1.4
+
+    - name: Test aci module with invalid state value
+      aci:
+        host: "{{ item }}"
+        username: "admin"
+        password: "{{ lookup('file', 'passwords/apic-password.txt') }}"
+        tenant: "InvalidTenant"
+        app_profile: "InvalidProfile"
+        bridge_domain: "{{ lookup('file', 'random_data.txt') }}"
+        state: "{{ ['present', 'bogus_state'] | random }}"
+        validate_certs: no
+      with_items:
+        - 10.1.1.1
+        - 10.1.1.2
+        - 10.1.1.3
+        - 10.1.1.4
+
+    - name: Test aci module with random garbage
+      aci:
+        host: "{{ item }}"
+        username: "{{ lookup('file', 'random_data.txt') }}"
+        password: "{{ lookup('file', 'random_data.txt') }}"
+        tenant: "{{ lookup('file', 'random_data.txt') }}"
+        app_profile: "{{ lookup('file', 'random_data.txt') }}"
+        bridge_domain: "{{ lookup('file', 'random_data.txt') }}"
+        state: "{{ ['present', 'absent'] | random }}"
+        validate_certs: "{{ lookup('file', 'random_data.txt') }}"
+      with_items:
+        - 10.1.1.1
+        - 10.1.1.2
+        - 10.1.1.3
+        - 10.1.1.4

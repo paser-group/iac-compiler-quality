@@ -1,0 +1,25 @@
+
+- name: Stress test for ec2_ami_copy with tag_equality and wait
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: Copy AMI with tag_equality
+      ec2_ami_copy:
+        source_region: "{{ item.source_region }}"
+        source_image_id: "{{ item.source_image_id }}"
+        name: "{{ item.name }}"
+        wait: "{{ item.wait }}"
+        tag_equality:
+          - "{{ item.tag1 }}"
+          - "{{ item.tag2 }}"
+      register: ami_copy_result
+      with_items:
+        - { source_region: 'us-west-1', source_image_id: 'ami-123456789', name: 'copy-1', wait: 'yes', tag1: 'env', tag2: 'prod' }
+        - { source_region: 'us-west-2', source_image_id: 'ami-987654321', name: 'copy-2', wait: 'no', tag1: 'env', tag2: 'stag' }
+
+    - name: Check for errors in results
+      debug:
+        msg: "Unexpected error occurred: {{ item.stderr }}"
+      when: item.rc != 0
+      with_items: "{{ ami_copy_result.results }}"

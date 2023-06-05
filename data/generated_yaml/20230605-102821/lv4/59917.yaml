@@ -1,0 +1,63 @@
+
+---
+- name: Check idempotency of vmware_portgroup creation and deletion
+  hosts: all
+  gather_facts: no
+  
+  vars:
+    vcenter_hostname: "{{ lookup('env', 'VCENTER_HOSTNAME') }}"
+    vcenter_username: "{{ lookup('env', 'VCENTER_USERNAME') }}"
+    vcenter_password: "{{ lookup('env', 'VCENTER_PASSWORD') }}"
+    portgroup_name: "ansible_portgroup"
+    dvs_name: "ansible_dvs"
+  
+  tasks:
+  - name: Gather VMware facts
+    vmware_guest_facts:
+      hostname: "{{ vcenter_hostname }}"
+      username: "{{ vcenter_username }}"
+      password: "{{ vcenter_password }}"
+      validate_certs: no
+      folder: "/"
+      name: "{{ inventory_hostname }}"
+    register: guest_info
+
+  - name: Create Portgroup
+    vmware_portgroup:
+      hostname: "{{ vcenter_hostname }}"
+      username: "{{ vcenter_username }}"
+      password: "{{ vcenter_password }}"
+      datacenter_name: "{{ guest_info.instance.datacenter_name }}"
+      cluster_name: "{{ guest_info.instance.cluster_name }}"
+      distributed_virtual_switch_name: "{{ dvs_name }}"
+      name: "{{ portgroup_name }}"
+      vlan_id: 887
+    ignore_errors: true
+    register: create_result
+
+  - name: Delete Portgroup
+    vmware_portgroup:
+      hostname: "{{ vcenter_hostname }}"
+      username: "{{ vcenter_username }}"
+      password: "{{ vcenter_password }}"
+      datacenter_name: "{{ guest_info.instance.datacenter_name }}"
+      cluster_name: "{{ guest_info.instance.cluster_name }}"
+      distributed_virtual_switch_name: "{{ dvs_name }}"
+      name: "{{ portgroup_name }}"
+      state: absent
+    ignore_errors: true
+    register: delete_result
+
+  - name: Assert Portgroup Creation Idempotency
+    assert:
+      that:
+        - create_result is changed
+      success_msg: "Portgroup created successfully. Possible idempotency issue detected."
+      fail_msg: "Failed to create portgroup. This may be an idempotency issue."
+
+  - name: Assert Portgroup Deletion Idempotency
+    assert:
+      that:
+        - delete_result is changed
+      success_msg: "Portgroup deleted successfully. Possible idempotency issue detected."
+      fail_msg: "Failed to delete portgroup. This may be an idempotency issue."

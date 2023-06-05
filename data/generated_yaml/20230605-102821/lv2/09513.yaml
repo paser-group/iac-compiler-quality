@@ -1,0 +1,62 @@
+
+- name: Group management bug testing playbook
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Create a group with invalid name
+      group:
+        name: "{{ 'A'*2048 }}"
+        state: present
+
+    - name: Create a group with already existing name
+      group:
+        name: wheel
+        state: present
+
+    - name: Create a group with a user that does not exist
+      group:
+        name: mygroup
+        state: present
+        members: "{{ 'user_that_does_not_exist' }}"
+
+    - name: Create a group with a long name and numbers at beginning
+      group:
+        name: "{{ '1234567890'*25 }}wheel"
+        state: present
+
+    - name: Add a non-existent user to an existing group
+      user:
+        name: "non_existing_user"
+        state: absent
+      register: res
+
+    - name: Add non-existent user to already existing group
+      user:
+        name: "{{ item }}"
+        state: present
+      with_items:
+        - "mygroup"
+        - "wheel"
+      when: res.failed == True # if non-existing user deletion fails
+
+    - name: Remove a group with spaces in name
+      group:
+        name: " group with spaces "
+        state: absent
+
+    - name: Remove a group with an invalid name
+      group:
+        name: "{{ 'A'*2048 }}"
+        state: absent
+
+    - name: Add an overly long user name to the wheel group
+      user:
+        name: "{{ '1234567890'*50 }}wheel"
+        state: present
+      when: "'wheel' in group_names"
+
+    - name: Remove excessively long user name
+      user:
+        name: "{{ '1234567890'*50 }}wheel"
+        state: absent

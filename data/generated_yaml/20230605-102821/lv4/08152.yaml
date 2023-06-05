@@ -1,0 +1,33 @@
+
+- name: Test Netscaler module auth and JSON decode errors
+  hosts: all
+  gather_facts: no
+
+  tasks:
+   - name: Install pip3
+     apt:
+      name: python3-pip
+      state: latest
+     become: true
+   
+   - name: Install required Python modules
+     pip:
+      name: nsnitro
+      state: present
+     become: true
+
+   - name: Create JSON file with auth credentials
+     template:
+      src: netscaler_auth.json.j2
+      dest: "/tmp/{{ inventory_hostname }}_netscaler_auth.json"
+     become: true
+   
+   - name: Test Netscaler module authentication
+     nscm_config:
+      nsip: "{{ ansible_host }}"
+      nitro_user: "{{ auth_user }}"
+      nitro_pass: "{{ auth_password }}"
+      validate_certs: no
+     become: true
+     vars_files:
+      - "/tmp/{{ inventory_hostname }}_netscaler_auth.json"

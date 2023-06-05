@@ -1,0 +1,15 @@
+
+- name: Verify SBC reboot time parsing
+  hosts: all
+  gather_facts: no
+  become: yes
+  tasks:
+  - name: Set timezone to an invalid value
+    shell: |
+      timedatectl set-timezone INVALID_TIMEZONE
+      date --rfc-3339=ns -u --date='TZ=INVALID_TIMEZONE 22:00'
+    register: result
+  - name: Fail the playbook if the date command did not return a non-zero code
+    fail:
+      msg: "The date command did not fail."
+    when: result.rc == 0

@@ -1,0 +1,42 @@
+yaml
+- name: Create an ELB Application Load Balancer and Enable Access Logging
+  hosts: localhost
+  connection: local
+  gather_facts: no
+  
+  tasks:
+    - name: Create ELB Application Load Balancer with Access Logging and S3 Prefix
+      aws_elb_application_lb:
+        name: my-elb
+        subnets:
+          - subnet-123456
+          - subnet-789012
+        security_groups:
+          - security-group-123456
+          - security-group-789012
+        listeners:
+          - Protocol: HTTP
+            Port: 80
+            LoadBalancerArn: arn:aws:elasticloadbalancing:us-west-2:123456789012:loadbalancer/app/my-elb/123456
+            DefaultActions:
+              - Type: forward
+                TargetGroupArn: arn:aws:elasticloadbalancing:us-west-2:123456789012:targetgroup/my-tg/123456
+        access_logs_s3_enabled: yes
+        access_logs_s3_bucket: my-bucket
+        access_logs_s3_prefix: "{{ lookup('password', 'password-file.txt') }}"
+      register: elb_result
+
+    - name: Show ELB Logging Configuration
+      debug:
+        var: elb_result.load_balancer_attributes.access_logs_s3_prefix
+
+    - name: Enable Logging Without Prefix
+      aws_elb_application_lb:
+        name: my-elb
+        access_logs_s3_enabled: yes
+        access_logs_s3_bucket: my-bucket
+      register: elb_result_without_prefix
+
+    - name: Show ELB Logging Configuration Without Prefix
+      debug:
+        var: elb_result_without_prefix.load_balancer_attributes.access_logs_s3_prefix

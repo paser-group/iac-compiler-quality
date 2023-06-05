@@ -1,0 +1,48 @@
+
+- name: Stress test Ansible compiler
+  hosts: all
+  gather_facts: no
+  
+  tasks:
+    - name: Deprecate DISPLAY_SKIPPED_HOSTS
+      debug:
+        msg: "DISPLAY_SKIPPED_HOSTS is deprecated, please use the ANSIBLE_ prefix instead"
+        ansible_deprecated: "'DISPLAY_SKIPPED_HOSTS' is deprecated, use ANSIBLE_prefix instead"
+      tags: [deprecated]
+      
+    - name: Set invalid ANSIBLE_ prefix
+      debug:
+        msg: "Invalid ANSIBLE_ prefix"
+        ANSIBLE_INVALID_PREFIX: "invalid_prefix"
+      tags: [invalid_prefix]
+      
+    - name: Set ANSIBLE_ prefix with special characters
+      debug:
+        msg: "ANSIBLE_ prefix with special characters"
+        ANSIBLE_SPECIAL_PREFIX: "{}[]$^&*()"
+      tags: [special_characters]
+      
+    - name: Set ANSIBLE_ prefix using escaped characters
+      debug:
+        msg: "ANSIBLE_ prefix using escaped characters"
+        ANSIBLE_ESCAPED_PREFIX: "escaped_\\_prefix"
+      tags: [escaped_characters]
+      
+    - name: Skip hosts using deprecated display option
+      debug:
+        msg: "Skipped hosts"
+      when: inventory_hostname == 'ubuntu1'
+      tags: [skip_hosts, deprecated]
+      
+    - name: Skip hosts using ANSIBLE_ prefix
+      debug:
+        msg: "Skipped hosts"
+      when: inventory_hostname == 'alpine1'
+      tags: [skip_hosts]
+      
+    - name: Skip hosts using invalid ANSIBLE_ prefix
+      debug:
+        msg: "Skipped hosts"
+      when: inventory_hostname == 'centos1'
+      when: ANSIBLE_INVALID_PREFIX is defined
+      tags: [skip_hosts, invalid_prefix]

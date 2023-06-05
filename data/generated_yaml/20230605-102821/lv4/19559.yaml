@@ -1,0 +1,35 @@
+
+- name: Launching EC2 Instances
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  
+  tasks:
+  - name: Create a new EC2 instance
+    ec2:
+      instance_type: t2.micro
+      image: "{{ ec2_ami_id }}"
+      count: 1
+      key_name: "{{ ec2_keypair_name }}"
+      group: "{{ ec2_security_group }}"
+      wait: true
+      region: "{{ ec2_region }}"
+      vpc_subnet_id: "{{ ec2_subnet_id }}"
+      instance_tags:
+        Name: New_EC2_Instance
+    register: ec2
+    
+  - name: Debug message - instance information
+    debug:
+      var: ec2.instances
+      
+  - name: Gather EC2 instance public IP address
+    ec2_instance_ip:
+      instance_ids: "{{ item.id }}"
+    loop: "{{ ec2.instances }}"
+    register: public_ip
+    
+  - name: Debug message - public IP address
+    debug:
+      var: public_ip.results[0].public_ip
+    

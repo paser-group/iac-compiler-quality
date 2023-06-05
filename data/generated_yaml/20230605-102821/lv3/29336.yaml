@@ -1,0 +1,29 @@
+
+- name: Create snapshot of lxc container
+  hosts: ubuntu1
+  become: true
+
+  tasks:
+  - name: Create original lxc container
+    command: >
+      lxc launch ubuntu:18.04 container1
+    register: original_container
+
+  - name: Take snapshot of the original container
+    command: >
+      lxc snapshot container1
+    register: snapshot
+
+  - name: Clone the snapshot
+    command: >
+      lxc copy container1/{{snapshot.stdout}} cloned_container
+    register: cloned_container
+
+  - name: Check if cloned container is running
+    command: >
+      lxc list | grep "{{cloned_container.stdout}}"
+    register: container_running
+
+  - name: Stop original container
+    command: >
+      lxc stop container1

@@ -1,0 +1,22 @@
+
+- name: Configure Windows Domain
+  hosts: windows
+  tasks:
+    - name: Join Windows Domain
+      win_domain:
+        name: domain.local
+        username: domainadmin
+        password: "{{ lookup('file', '/path/to/password/file') }}"
+      register: domain_result
+
+    - name: Restart When Domain Changes
+      win_reboot:
+        message: "Restarting due to the change in domain membership"
+        reboot_timeout: 300
+        when: domain_result.reboot_required
+
+    - name: Add Domain User to Remote Desktop Users
+      win_group_membership:
+        name: "Remote Desktop Users"
+        members: "DOMAIN\\domainuser"
+        state: present

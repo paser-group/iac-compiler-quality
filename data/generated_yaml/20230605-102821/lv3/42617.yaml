@@ -1,0 +1,40 @@
+
+- name: Install Zabbix agent
+  hosts: all
+  become: true
+  tasks:
+  - name: Adding Zabbix repository
+    apt_repository:
+      repo: deb http://repo.zabbix.com/zabbix/4.0/ubuntu bionic main
+      state: present
+      filename: zabbix
+      keyserver: keyserver.ubuntu.com
+      key: C1DAB1F2
+  - name: Install Zabbix agent
+    apt:
+      name: zabbix-agent
+      state: latest
+  - name: Setting up Zabbix host
+    zabbix_host:
+      server_url: "http://10.1.1.1/zabbix/"
+      login_user: "Admin"
+      login_password: "password"
+      host_name: "{{ansible_hostname}}"
+      visible_name: "{{inventory_hostname}}"
+      groups: "{{zabbix_group}}"
+      status: "{{zabbix_status}}"
+      inventory_mode: "{{zabbix_inventory}}"
+      interface:
+        type: 1
+        main: 1
+        ip: "{{ ansible_host }}"
+        port: 10050
+        useip: 1
+        dns: ""
+      templates: "{{zabbix_template}}"
+      macros:
+        - macro: "{$TESTMACRO}"
+          value: "123" # value as string
+        - macro: "{$THRESHOLD}"
+          value: "25" # value as string instead of integer
+

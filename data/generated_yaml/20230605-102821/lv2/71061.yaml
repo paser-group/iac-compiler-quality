@@ -1,0 +1,57 @@
+
+- name: Yum stress test
+  hosts: all
+  become: true
+  gather_facts: true
+
+  tasks:
+    - name: List all packages
+      command: "yum list"
+      register: packages
+
+    - name: Fail if repoquery error while listing packages
+      fail:
+        msg: "Repoquery error detected while listing packages"
+      when: packages.stdout | regex_search('Error getting repository data')
+
+    - name: Install invalid package
+      yum:
+        name: "{{ ['xyz', 'pqr', 'klm'] | random }}"
+        state: present
+      register: result_invalid_package
+      ignore_errors: true
+
+    - name: Install package without providing the state argument
+      yum:
+        name: vim
+      register: result_missing_state_package
+      ignore_errors: true
+
+    - name: Fail if state argument is missing while installing a package
+      fail:
+        msg: "State argument not present while installing a package"
+      when: "'state' not in result_missing_state_package.invocation.module_args"
+
+    - name: Install package with random invalid value for state
+      yum:
+        name: vim
+        state: "{{ ['active', 'blocked', 'unused'] | random }}"
+      register: result_invalid_state_package
+      ignore_errors: true
+
+    - name: Fail if package is installed with invalid state
+      fail:
+        msg: "Package installed with invalid state"
+      when: "'failed to exec' not in result_invalid_state_package.msg"
+
+    - name: Clean up temporary files
+      file:
+        state: absent
+        path: /tmp/yum_list_output.txt
+      ignore_errors: true
+      
+  vars:
+    invalid_packages:
+      - xyz
+      - pqr
+      - klm

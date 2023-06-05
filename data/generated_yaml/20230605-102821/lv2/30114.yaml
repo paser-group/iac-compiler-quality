@@ -1,0 +1,21 @@
+yaml
+- name: Test IAM policy
+  hosts: all
+  tasks:
+  - name: Copy policy to node
+    copy:
+      src: policy.json
+      dest: /etc/policy.json
+      mode: '0644'
+  - name: Apply policy on node
+    command: aws iam put-group-policy --group-name "{{ inventory_hostname }}" --policy-name 'test-policy' --policy-document file=/etc/policy.json
+    args:
+      executable: "/bin/bash"
+    register: result
+  - name: Debug command output
+    debug:
+      var: result.stdout_lines
+  - name: Fail task if output contains error message
+    assert:
+      that:
+        - 'errorMessage' not in result.stdout_lines[0]

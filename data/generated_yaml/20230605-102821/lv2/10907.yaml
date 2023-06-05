@@ -1,0 +1,31 @@
+
+- name: Nested tasks in role playbook
+  hosts: all
+  become: true
+
+  roles:
+    - name: nested-tasks
+      tasks:
+        - name: Install Apache2
+          apt:
+            name: apache2
+            state: present
+          notify: Start Apache2
+
+        - name: Run Nested Task
+          ansible.builtin.template:
+            src: "file{{ item }}.j2"
+            dest: "/etc/file{{ item }}.txt"
+          with_sequence: count=5
+          loop_control:
+            loop_var: item
+        
+        - name: Debug Task
+          debug:
+            msg: "Running Nested Task..."
+      
+      handlers:
+        - name: Start Apache2
+          service:
+            name: apache2
+            state: started

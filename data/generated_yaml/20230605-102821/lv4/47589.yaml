@@ -1,0 +1,21 @@
+
+---
+- hosts: all
+  gather_facts: no
+  vars:
+    socket_file: /tmp/test.sock
+    ssh_key_file: /var/tmp/key_I.pem
+    become_pass_file: /path/to/become_pass_file
+
+  tasks:
+    - name: Test Connection object reset_history attribute
+      connection: local
+      ansible.builtin.shell: |
+        ssh -M -S {{ socket_file }} -o "ControlPersist=yes" -fnNT -i {{ ssh_key_file }} user@{{ inventory_hostname }}
+        ssh -S {{ socket_file }} -O check -i {{ ssh_key_file }}
+      register: ssh_output
+
+    - name: Verify Connection object reset_history attribute
+      connection: local
+      ansible.builtin.assert:
+        that: "'reset_history' in ssh_output.stdout"

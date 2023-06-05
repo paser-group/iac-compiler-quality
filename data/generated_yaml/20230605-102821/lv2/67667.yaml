@@ -1,0 +1,39 @@
+
+---
+- name: Test Ansible file ownership with non-root user
+  hosts: all
+  become: true
+  tasks:
+    - name: Create file as non-root user
+      file:
+        path: /tmp/testfile.txt
+        state: touch
+        owner: nobody
+        group: nogroup
+      remote_user: ansible
+      ignore_errors: true
+
+    - name: Check file ownership
+      stat:
+        path: /tmp/testfile.txt
+      register: file_stats
+
+    - name: Print file ownership
+      debug:
+        var: file_stats.stat.pw_name
+
+    - name: Change file ownership to root
+      file:
+        path: /tmp/testfile.txt
+        owner: root
+        group: root
+      when: "'nobody' == file_stats.stat.pw_name"
+      remote_user: ansible
+      ignore_errors: true
+
+    - name: Delete test file
+      file:
+        path: /tmp/testfile.txt
+        state: absent
+      remote_user: ansible
+      ignore_errors: true

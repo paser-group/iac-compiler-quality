@@ -1,0 +1,31 @@
+yaml
+- name: Copy directory with different permissions
+  hosts: all
+  become: yes
+  gather_facts: no
+  tasks:
+    - name: Copy directory
+      copy:
+        src: /path/to/directory/
+        dest: /tmp
+        mode: '0740'
+        force: yes
+      ignore_errors: yes
+    - name: Verify copied directory file permissions
+      stat:
+        path: /tmp/directory/file.txt.mode
+      register: result
+    - name: Verify copied directory subdirectory permissions
+      stat:
+        path: /tmp/directory/subdir
+      register: subdir_result
+    - name: Fail if permissions are not correctly set in file
+      assert:
+        that:
+          - result.stat.mode == '364'
+      when: result.stat.exists
+    - name: Fail if permissions are not correctly set in subdirectory
+      assert:
+        that:
+          - subdir_result.stat.mode == '710'
+      when: subdir_result.stat.exists

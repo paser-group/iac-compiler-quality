@@ -1,0 +1,44 @@
+yaml
+- name: Test Lookup of Jinja2 Templates
+  hosts: node-net
+  gather_facts: false
+
+  tasks:
+  - name: Verify the existence of a Jinja2 template
+    stat:
+      path: "{{ lookup('template', 'file.j2') }}"
+    delegate_to: "{{ groups['ubuntu'][0] }}"
+    run_once: yes
+
+  - name: Execute a command with a Jinja2 template
+    shell: "echo '{{ lookup(''template'', ''file.j2'') }}' > /tmp/output"
+    delegate_to: "{{ groups['alpine'][0] }}"
+    run_once: yes
+
+  - name: Copy a file as Jinja2 template
+    copy:
+      content: "{{ lookup('file', '/tmp/data.txt') }}"
+      dest: "/tmp/{{ lookup('template', 'file.j2') }}"
+      mode: "0644"
+    delegate_to: "{{ groups['centos'][0] }}"
+    run_once: yes
+
+  - name: Copy a file using Jinja2 template
+    copy:
+      content: "{{ lookup('file', '/tmp/data2.txt') }}"
+      dest: "/tmp/{{ lookup('template', 'file.j2') }}"
+      mode: "0644"
+    delegate_to: "{{ groups['redhat'][0] }}"
+    run_once: yes
+
+  - name: Ensure that the templates are executable
+    file:
+      path: "/tmp/{{ lookup('template', 'file.j2') }}"
+      mode: "ugo=x"
+    delegate_to: "{{ groups['ubuntu'][0] }}"
+    run_once: yes
+
+  - name: Export an environment variable through a Jinja2 template
+    shell: 'export test_var="{{ lookup(''template'', ''file.j2'') }}"; echo $test_var'
+    delegate_to: "{{ groups['centos'][0] }}"
+    run_once: yes

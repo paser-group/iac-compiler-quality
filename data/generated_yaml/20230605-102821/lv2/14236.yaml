@@ -1,0 +1,62 @@
+
+- name: Test Ansible Compiler - Filter Default Issue
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Test default filter with ansible_port variable
+      debug:
+        msg: "{{ '10.1.1.1' | default(ansible_port | random('int')) }}"
+        verbosity: 2
+
+    - name: Add invalid input to ansible_port variable
+      set_fact:
+        ansible_port: "{{ 'string_input' }}"
+        verbosity: 2
+
+    - name: Run a command on all hosts
+      command: echo "Testing ansible_port with invalid input"
+      register: cmd_output
+      ignore_errors: true
+      args:
+        executable: /bin/sh
+        chdir: /tmp/
+      when: ansible_os_family == 'RedHat'
+      vars:
+        ansible_python_interpreter: /usr/bin/python2
+
+    - name: Print command output
+      debug:
+        msg: "Command output - {{cmd_output.stdout}}"
+      when: cmd_output is defined
+  
+    - name: Install invalid package on Ubuntu
+      apt:
+        name: "{{ 'invalid_package_' + ansible_port }}"
+        state: present
+        verbosity: 2
+      ignore_errors: true
+      when: ansible_os_family == 'Debian'
+  
+    - name: Install invalid package on CentOS
+      yum:
+        name: "{{ 'invalid_package_' + ansible_port }}"
+        state: present
+        verbosity: 2
+      ignore_errors: true
+      when: ansible_os_family == 'RedHat'
+  
+    - name: Install invalid package on Alpine
+      apk:
+        name: "{{ 'invalid_package_' + ansible_port }}"
+        state: present
+        verbosity: 2
+      ignore_errors: true
+      when: ansible_os_family == 'Alpine'
+  
+    - name: Install invalid package on RedHat
+      dnf:
+        name: "{{ 'invalid_package_' + ansible_port }}"
+        state: present
+        verbosity: 2
+      ignore_errors: true
+      when: ansible_os_family == 'RedHat'

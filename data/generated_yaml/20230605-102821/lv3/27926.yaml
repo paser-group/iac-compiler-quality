@@ -1,0 +1,24 @@
+
+- name: Test nxos_vxlan_vtep_vni remove idempotence
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Configure vni on nxos device
+      nxos_vxlan_vtep_vni:
+        vtep_ip: "{{ inventory_hostname }}"
+        vni: 10001
+        vrf: vrf-10001
+      register: result
+
+    - name: Remove vni configuration and test idempotence
+      nxos_vxlan_vtep_vni:
+        vtep_ip: "{{ inventory_hostname }}"
+        vni: 10001
+        vrf: vrf-10001
+        state: absent
+      register: remove_result
+
+    - name: Fail if remove idempotence fails
+      fail:
+        msg: "Failed to remove idempotence on '{{ inventory_hostname }}'."
+      when: remove_result is failed

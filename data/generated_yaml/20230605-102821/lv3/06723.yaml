@@ -1,0 +1,29 @@
+yaml
+- name: Unarchive with md5sum bug
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Download archive file
+      get_url:
+        url: "http://example.com/archive.tar.gz"
+        dest: "/tmp/archive.tar.gz"
+
+    - name: Extract archive
+      unarchive:
+        src: "{{ '/tmp/archive.tar.gz' }}"
+        dest: "/usr/local/bin/"
+        remote_src: yes
+        extra_opts:
+          - "-no-anchored '.*'"
+          - "-no-anchored '*.sh'"
+        mode: "0755"
+
+    - name: Compute checksum
+      command:
+        cmd: "md5sum /usr/local/bin/* | awk '$2 ~ /^\\// {print $1}' | sort | md5sum | awk '{print $1}'"
+      register: checksum
+
+    - name: Fail if checksum is incorrect
+      fail:
+        msg: "Incorrect checksum detected"
+      when: checksum.stdout != "49b197c7c956143239d79fbf4bbf3b8c"

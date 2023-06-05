@@ -1,0 +1,54 @@
+
+- name: openssl_pkcs12 error playbook
+  hosts: all
+  become: true
+  
+  tasks:
+    - name: Generate PKCS12 keypair with openssl
+      command: openssl pkcs12 -export -in {{body}} -out key.pfx -name test -passout pass:secret
+      register: result
+
+    - name: Verify PKCS12 keypair
+      openssl_pkcs12:
+        path: key.pfx
+        password: secret
+      register: pkcs12
+
+    - name: Assert PKCS12 name attribute is byte string or None
+      assert:
+        that:
+          - pkcs12.name is byte or pkcs12.name is none
+      ignore_errors: true
+
+    - name: Assert PKCS12 is valid
+      assert:
+        that:
+          - pkcs12 == True
+
+    - name: Test openssl_pkcs12 with malformed input
+      command: openssl pkcs12 -export -in ec-cacert.pem -inkey server2.crt -certfile chain.crt -out key.pfx -name test -passout pass:secret
+      register: result2
+      ignore_errors: true
+
+    - name: Assert error
+      assert:
+        that:
+          - "'name must be a byte string or None' in result2.stderr"
+          
+    - name: Test openssl_pkcs12 with invalid password
+      command: openssl pkcs12 -export -in {{body}} -out key.pfx -name test -passout pass:invalid
+      register: result3
+      ignore_errors: true
+      
+    - name: Assert invalid password
+      assert:
+        that:
+          - "'Mac verify failure' in result3.stderr"
+    
+    - name: Clean up files
+      file:
+        path: key.pfx
+        state: absent
+
+  vars_files:
+    - sensitive_data.yml

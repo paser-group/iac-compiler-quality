@@ -1,0 +1,40 @@
+
+- name: Create AWS Autoscaling Group
+  hosts: localhost
+ 
+  vars:
+    region: "us-west-2"
+    availability_zones: ["us-west-2a", "us-west-2b"]
+    launch_config_name: "my-launch-config"
+    asg_name: "my-asg"
+    min_size: 1
+    max_size: 1
+    desired_capacity: 1
+    wait_timeout: 60
+    
+  tasks:
+    - name: Create Launch Configuration
+      ec2_lc:
+        name: "{{ launch_config_name }}"
+        image_id: "ami-0c55b159cbfafe1f0"
+        instance_type: "t2.micro"
+        region: "{{ region }}"
+        wait: yes
+      register: lc_result
+
+    - name: Create Autoscaling Group
+      ec2_asg:
+        name: "{{ asg_name }}"
+        launch_config_name: "{{ launch_config_name }}"
+        availability_zones: "{{ availability_zones }}"
+        min_size: "{{ min_size }}"
+        max_size: "{{ max_size }}"
+        desired_capacity: "{{ desired_capacity }}"
+        wait_for_instances: "{{ wait_timeout }}"
+        tag_keys: "{{ 'Name' }}"
+        tag_values: "{{ 'test_asg' }}"
+      register: asg_result
+
+    - name: Debug ASG Task Result
+      debug:
+        var: asg_result

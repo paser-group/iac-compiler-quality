@@ -1,0 +1,27 @@
+yaml
+- name: Authorized_key module stress test
+  hosts: node-net
+  gather_facts: no
+  become: yes
+
+  tasks:
+  - name: "Creating invalid ssh key in temporary location"
+    file:
+      path: "/tmp/invalid_key"
+      state: touch
+
+  - name: "Add invalid ssh key to each user's authorized_keys file"
+    authorized_key:
+      user: "{{ item }}"
+      key: "{{ lookup('file', '/tmp/invalid_key') }}"
+      state: present
+    ignore_errors: yes
+    loop:
+      - root
+      - ubuntu
+      - alpine
+
+  - name: "Removing the invalid ssh key"
+    file:
+      path: "/tmp/invalid_key"
+      state: absent

@@ -1,0 +1,47 @@
+yaml
+---
+- name: "Test replace_all_instances in ec2_asg"
+  hosts: localhost
+  gather_facts: no
+  vars:
+      asg_name: "my-asg"
+      ami_id: "ami-00dc79254d0461090"
+      instance_type: "t2.micro"
+      key_name: "mykeypair"
+      vpc_subnet_id: "subnet-0d9c0a721fEXAMPLE"
+      region: "us-west-2"
+  tasks:
+    - name: "Create EC2 Auto Scaling Group"
+      ec2_asg:
+        name: "{{asg_name}}"
+        launch_config_name: "{{asg_name}}-launch-config"
+        min_size: 1
+        max_size: 3
+        desired_capacity: 2
+        availability_zones: "us-west-2b"
+        health_check_type: "EC2"
+        region: "{{region}}"
+        state: present
+      register: asg_result
+
+    - name: "Remove all Instances from the Auto Scaling Group"
+      ec2_asg:
+        name: "{{asg_name}}"
+        launch_config_name: "{{asg_name}}-launch-config"
+        desired_capacity: 0
+        region: "{{region}}"
+        state: present
+
+    - name: "Replace all Instances in the Auto Scaling Group"
+      ec2_asg:
+        name: "{{asg_name}}"
+        launch_config_name: "{{asg_name}}-launch-config"
+        min_size: 1
+        max_size: 3
+        desired_capacity: 2
+        availability_zones: "us-west-2b"
+        health_check_type: "EC2"
+        region: "{{region}}"
+        replace_all_instances: True
+        state: present
+      when: asg_result.changed

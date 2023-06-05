@@ -1,0 +1,27 @@
+
+- name: Create a nova keypair
+  hosts: all
+  become: yes
+  gather_facts: no
+  vars:
+    key_file: "/path/to/keyfile"
+  tasks:
+    - name: Ensure the key file exists and has the correct permissions
+      stat:
+        path: "{{ key_file }}"
+      register: keyfile_stat
+    - name: Generate a new keypair if the key file does not exist or has incorrect permissions
+      shell: ssh-keygen -t rsa -q -N "" -f "{{ key_file }}"
+      when: 
+        - keyfile_stat.stat.exists == False
+        - keyfile_stat.stat.mode != '0600'
+    - name: Create a nova keypair
+      os_keypair:
+        state: present
+        name: my_keypair
+        public_key: "{{ lookup('file', key_file + '.pub') }}"
+      register: keypair_result
+      ignore_errors: yes
+    - name: Print the result of nova keypair creation
+      debug:
+        msg: "{{ keypair_result }}"

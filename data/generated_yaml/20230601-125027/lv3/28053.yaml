@@ -1,0 +1,31 @@
+
+- name: Start an LXC Container
+  hosts: all
+  gather_facts: false
+  become: true
+  tasks:
+    - name: Install lxc package
+      apt:
+        name: lxc
+        state: present
+    - name: Create LXC Container
+      lxc_container:
+        name: test-container
+        state: started
+        template: ubuntu
+        template_options: "--release focal"
+        network_state: start
+        network_config:
+          - type: veth
+            name: eth0
+            flags: up
+            host_name: veth_host
+            hwaddr: "00:11:22:33:44:55"
+            ipv4: "10.1.1.10/24"
+            mtu: 1500
+          - type: nameserver
+            address: "8.8.8.8"
+      register: result
+    - name: Display LXC Container's IP Address
+      debug:
+        var: result.network_interfaces['eth0'].ipv4[0].address

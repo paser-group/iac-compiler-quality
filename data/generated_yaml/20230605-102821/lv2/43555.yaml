@@ -1,0 +1,49 @@
+
+- name: Test gce_pd error with disk from snapshot
+  hosts: all
+  gather_facts: no
+  
+  tasks:
+    - name: Create snapshot from disk
+      gce_snapshot:
+        instance_name: alpine1
+        disk_name: snapshot_disk
+        snapshot_name: test_snapshot
+      register: snapshot_creation
+
+    - name: Create disk from snapshot
+      gce_pd:
+        name: test_disk
+        snapshot: "{{ snapshot_creation.item.selfLink }}"
+        zone: europe-west1-b
+        project_id: my-project
+      register: disk_creation
+
+    - name: Provision disk
+      gce_pd:
+        name: test_disk
+        source_image: hello-world-image
+        zone: europe-west1-b
+        project_id: my-project
+      register: disk_provisioning
+      
+    - name: Verify error message
+      assert:
+        that:
+          - disk_provisioning.rc == 1
+          - disk_provisioning.stderr_lines is search('ERROR!.*deal.*snapshot.*')
+      
+    - name: Clean up disk and snapshot
+      gce_snapshot:
+        snapshot_name: test_snapshot
+        state: absent
+      register: snapshot_cleanup
+      
+    - name: Delete disk
+      gce_pd:
+        name: test_disk
+        state: absent
+      
+    - name: Show debug info
+      debug:
+        var: disk_provisioning

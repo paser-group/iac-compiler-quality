@@ -1,0 +1,24 @@
+
+- name: Play to connect through proxy
+  hosts: all
+  gather_facts: yes
+  
+  tasks:
+    - name: Install python-requests
+      apt:
+        name: python-requests
+        state: present
+
+    - name: Set proxy environment variables
+      set_fact:
+        http_proxy: "http://<proxy_user>:<proxy_pass>@<proxy_ip>:<proxy_port>"
+        https_proxy: "https://<proxy_user>:<proxy_pass>@<proxy_ip>:<proxy_port>"
+        no_proxy: "localhost,127.0.0.1,<node_ip>,<subnet_ip>"
+
+    - name: Test connection to proxy
+      shell: "python -c 'import requests; res = requests.get(\"https://www.google.com/\"); print(res.status_code)'"
+      register: response
+
+    - name: Display response
+      debug:
+        var: response.stdout_lines

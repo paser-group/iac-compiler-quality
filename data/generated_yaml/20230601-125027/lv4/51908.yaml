@@ -1,0 +1,89 @@
+yaml
+- name: Test Azure_rm Module
+  hosts: localhost
+  tasks:
+    - name: Install required packages
+      become: true
+      package:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - python-pip
+        - build-essential
+        - libssl-dev
+        - libffi-dev
+        - python-dev
+    
+    - name: Install azure and ansible[azure] pip packages
+      become: true
+      pip:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - 'ansible[azure]'
+        - 'azure-common'
+        - 'azure-mgmt'
+        - 'azure-mgmt-compute'
+        - 'azure-mgmt-network'
+        - 'azure-mgmt-storage'
+    
+    - name: Check Azure_rm module version
+      shell: ansible-doc -t module azure_rm_virtualmachine | grep -i version
+      register: version
+    
+    - name: Print Azure_rm module version
+      debug:
+        var: version.stdout
+    
+    - name: Authenticate to Azure with Service Principal
+      azure_rm_login:
+        client_id: "{{ client_id }}"
+        client_secret: "{{ client_secret }}"
+        tenant: "{{ tenant_id }}"
+
+    - name: Create Resource Group
+      azure_rm_resourcegroup:
+        name: "{{ resource_group }}"
+        location: "{{ location }}"
+    
+    - name: Create Virtual Network
+      azure_rm_virtualnetwork:
+        name: "{{ virtual_network_name }}"
+        resource_group: "{{ resource_group }}"
+        address_prefixes:
+          - "10.0.0.0/16"
+    
+    - name: Create Subnet
+      azure_rm_subnet:
+        name: "{{ subnet_name }}"
+        resource_group: "{{ resource_group }}"
+        virtual_network_name: "{{ virtual_network_name }}"
+        address_prefix: "10.0.0.0/24"
+    
+    - name: Create NIC
+      azure_rm_networkinterface:
+        name: "{{ nic_name }}"
+        resource_group: "{{ resource_group }}"
+        virtual_network_name: "{{ virtual_network_name }}"
+        subnet_name: "{{ subnet_name }}"
+        private_ip_allocation_method: Static
+        ip_configuration_name: "{{ ip_configuration_name }}"
+        public_ip_allocation_method: Dynamic
+    
+    - name: Create VM
+      azure_rm_virtualmachine:
+        name: "{{ vm_name }}"
+        resource_group: "{{ resource_group }}"
+        location: "{{ location }}"
+        admin_username: "{{ admin_username }}"
+        admin_password: "{{ admin_password }}"
+        image:
+          offer: "{{ image_offer }}"
+          publisher: "{{ image_publisher }}"
+          sku: "{{ image_sku }}"
+          version: "{{ image_version }}"
+        vm_size: "{{ vm_size }}"
+        storage_account_name: "{{ storage_account_name }}"
+        os_disk_name: "{{ os_disk_name }}"
+        os_type: "{{ os_type }}"
+        network_interfaces: "{{ network_interface_id }}"

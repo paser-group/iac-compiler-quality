@@ -1,0 +1,26 @@
+
+- name: Get Ansible Facts
+  gather_facts:
+    gather_subset: [default]
+  become: true
+
+- name: Print Facts to Console
+  debug:
+    var: ansible_facts
+
+- name: Check if rd.lvm.lv is included in Ansible facts
+  fail:
+    msg: "rd.lvm.lv is not included in Ansible facts"
+  when: "'rd.lvm.lv' not in ansible_facts['devices'][item]['dm']['metadata']"
+  loop: "{{ ansible_facts['devices'] | dict2items | json_query('[*].key') }}"
+  vars:
+    ansible_loop_var: 'ansible_devices_index'
+
+- name: Print rd.lvm.lv value to Console
+  debug:
+    msg: "{{ ansible_facts['devices'][device]['dm']['metadata']['rd']['lvm']['lv'] }}"
+  vars:
+    device: "{{ item.key }}"
+  loop: "{{ ansible_facts['devices'] | dict2items | json_query('[?contains(key, `dm-`)].{key: key}') }}"
+  loop_control:
+    loop_var: item['key']

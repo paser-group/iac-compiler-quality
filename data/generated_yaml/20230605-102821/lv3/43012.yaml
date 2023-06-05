@@ -1,0 +1,71 @@
+
+- name: PowerShell Win_DSC example
+  hosts: windows
+  gather_facts: no
+  vars:
+    username: "{{ creds['username'] }}"
+    password: "{{ creds['password'] }}"
+  tasks:
+    - name: Install Win_DSC module
+      win_psmodule:
+        name: xPSDesiredStateConfiguration
+        state: present
+      register: psmodule
+
+    - name: Remove existing files from target
+      win_file:
+        path: C:\temp\
+        state: absent
+
+    - name: Create output file
+      win_file:
+        path: C:\temp\output.txt
+        state: touch
+
+    - name: Apply Win_DSC configuration
+      win_shell: Set-ExecutionPolicy -ExecutionPolicy bypass -Force
+      register: execution_policy
+      
+    - name: Update DSC meta-configurations
+      win_copy:
+        src: "{{ playbook_dir }}/dscconfigs/metaschema.ps1"
+        dest: "C:\\temp\\"
+      register: copy_result
+      
+    - name: Generate MOF file using DSC
+      win_shell: |
+        cd C:\Program Files\WindowsPowerShell\Modules\xPSDesiredStateConfiguration\5.7.0.0\DSCResources
+        Import-Module .\MSFT_xDSCResourceDesigner.psm1
+        New-PSDrive -Name c -PSProvider filesystem -Root c:\ | Out-Null
+        New-ModuleManifest -Path c:\DscSchemaProxyScript.psd1 -RootModule DSCSchemaProxyScript.psm1 -Author '' -CompanyName '' -Description '' -ModuleVersion "1.0.0.0" -PowerShellVersion "5.0" -RequiredModules @{ModuleName='xPSDesiredStateConfiguration';ModuleVersion='5.7.0.0'} -ModuleType Script | Out-Null
+        Set-Location -Path C:\temp\
+        $DSCObject = New-xDSCResourceDesigner -Name "MyDSCConfig" -Property @{
+            ComputerName = @{
+                Type = "[System.String]"
+                Value = "localhost"
+            }
+            Credential = @{
+                Type = "[System.Management.Automation.PSCredential]"
+                Value = New-Object System.Management.Automation.PSCredential("{{ username }}", (ConvertTo-SecureString "{{ password }}" -AsPlainText -Force))
+            }
+            Path = @{
+                Type = "[System.String]"
+                Value = "C:\\temp\\output.txt"
+            }
+            Contents = @{
+                Type = "[System.String]"
+                Value = "Hello, world!"
+            }
+        }
+        $DSCObject | Out-File -FilePath C:\temp\MyDSCConfig.schema.mof -Encoding utf8
+      register: mof_result
+      
+    - name: Apply Win_DSC configuration with PSCredential
+      win_dsc:
+        configuration_path: C:\temp\MyDSCConfig.schema.mof
+        credentials: "{{ username }}", "{{ password }}"
+        reboot_if_needed: yes
+      register: dsc_result
+      
+    - name: Display the STDOUT of Win_DSC
+      win_shell: type C:\temp\output.txt

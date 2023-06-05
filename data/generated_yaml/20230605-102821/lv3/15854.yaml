@@ -1,0 +1,28 @@
+
+- name: Rackspace Inventory with SSL
+  hosts: localhost
+  gather_facts: false
+  vars:
+      rackspace_inventory_url: "https://example.com/inventory"
+      rackspace_inventory_user: "user"
+      rackspace_inventory_password: "{{ lookup('file', '/path/to/password/file') }}"
+  tasks:
+      - name: Install required packages
+        package:
+            name: "{{ item }}"
+            state: present
+        with_items:
+            - python-pip
+            - openssl-devel
+            - libffi-devel
+            - gcc
+      - name: Install pyOpenSSL
+        pip:
+            name: pyOpenSSL
+            state: present
+      - name: Test Rackspace inventory connection
+        shell: "curl {{ rackspace_inventory_url }}"
+        register: curl_output
+      - name: Display Rackspace inventory
+        debug:
+            var: curl_output.stdout_lines

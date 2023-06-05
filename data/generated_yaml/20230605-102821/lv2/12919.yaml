@@ -1,0 +1,56 @@
+yaml
+---
+- name: Testing Ansible Compiler for Sharing Connection Error
+  hosts: all
+  gather_facts: no
+
+  tasks:
+  - name: Check if all hosts are reachable
+    ping:
+
+  - name: Install Apache2 Package on all hosts
+    become: yes
+    apt:
+      name: apache2
+      state: latest
+
+  - name: Sharing Connection with Unknown IP
+    shell: ping 10.1.1.100
+    register: unknown_ip
+    ignore_errors: yes
+
+  - name: Assert When Unknown IP is Encountered
+    assert:
+      that:
+      - "'unknown host' in unknown_ip.stderr"
+
+  - name: Install MySQL Package on all hosts with Irregular Syntax
+    become: yes
+    apt:
+      pkg: ["mysql-client", "mysql-core"]
+      state: latest
+    register: mysql_install
+    
+  - name: Verify Installation of MySQL Package
+    assert:
+      that:
+      - mysql_install.changed is defined
+      - mysql_install.changed == true
+
+  - name: Set up Passwordless SSH Connection 
+    authorized_key:
+      user: vagrant
+      key: "{{ lookup('file', '/path/to/public_key') }}"
+
+  - name: Check Non-existent Package Installation
+    become: yes
+    apt:
+      name: non-existent-package
+      state: latest
+    register: nonexistent_pkg
+    ignore_errors: yes
+
+  - name: Assert When a Non-existent Package is Encountered
+    assert:
+      that:
+      - "'Unable to locate package non-existent-package' in nonexistent_pkg.stderr"

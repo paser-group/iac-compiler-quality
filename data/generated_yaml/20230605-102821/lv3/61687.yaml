@@ -1,0 +1,29 @@
+
+- name: Create an S3 bucket with AWS KMS encryption
+  hosts: localhost
+  gather_facts: false
+  vars:
+    bucket_name: my-test-bucket
+    region: us-east-1
+    kms_key: alias/aws/s3
+    statement: |
+      {
+        "Sid": "DenyIncorrectEncryptionHeader",
+        "Effect": "Deny",
+        "Principal": "*",
+        "Action": "s3:PutObject",
+        "Resource": "arn:aws:s3:::{{ bucket_name }}/*",
+        "Condition": {
+          "StringNotEquals": {
+            "s3:x-amz-server-side-encryption": "aws:kms"
+          }
+        }
+      }
+  tasks:
+    - name: Create an S3 bucket
+      s3_bucket:
+        name: "{{ bucket_name }}"
+        region: "{{ region }}"
+        policy: "{{ statement }}"
+        encryption: AES256
+        kms_key: "{{ kms_key }}"

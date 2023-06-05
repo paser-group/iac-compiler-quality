@@ -1,0 +1,33 @@
+
+- name: Stress Test docker_compose module
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Create an intentionally broken Docker Compose file
+      blockinfile:
+        path: /tmp/docker-compose.yaml
+        block: |
+          version: "3"
+          services:
+            my_app:
+              image: nginx
+              volumes:
+                - /etc/nginx:/etc/nginx:ro
+                - /var/log/nginx:/var/log/nginx:ro
+                - /test:/bad_mount_dir:ro
+      delegate_to: localhost
+      run_once: true
+
+    - name: Run docker-compose up command
+      docker_compose:
+        project_src: /tmp/docker-compose.yaml
+        log_path: /tmp/docker.log
+        state: started
+      register: result
+
+    - name: Output successful or failed message
+      debug:
+        msg: "{{ item.stdout }}"
+      loop: "{{ result.stdout_lines }}"
+      when: "'Cannot create container for service' in item.stdout"

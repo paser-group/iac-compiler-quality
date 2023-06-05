@@ -1,0 +1,54 @@
+
+- name: Playbook to test IOSXR L3 idempotent issue
+  hosts: all
+  gather_facts: true
+  tasks:
+  
+  - name: Test connectivity with network devices
+    iosxr_command:
+      commands:
+        - show interfaces description
+        - traceroute {{ host_to_ping }}
+  
+  - name: Apply Access List with wrong syntax
+    iosxr_config:
+      lines:
+        - access-group {{ interface_to_apply_acl }} in
+      before:
+        - access-group {{ interface_to_apply_acl }}
+          
+  - name: Verify if the access-list is applied on the interface
+    iosxr_command:
+      commands:
+        - show ip access-list 101
+    register: acl_info
+    
+  - name: Fail task in case the ACL is still applied
+    fail:
+      msg: "Access-list is still applied in {{ interface_to_apply_acl }}"
+    when: "'(0 matches)' not in acl_info.stdout[0]"
+          
+  - name: Test Connectivity to {{ host_to_ping }} with wrong syntax
+    iosxr_ping:
+      dest: {{ host_to_ping }}
+      source: {{ invalid_source_address }}
+      path_nresult: "{{ inventory_hostname }}_ping_results.txt"
+      
+  - name: Remove the access-group from the interface
+    iosxr_config:
+      lines:
+        - no access-group {{ interface_to_apply_acl }} in
+      before:
+        - access-group {{ interface_to_apply_acl }} in
+    when: "'(standard)' in acl_info.stdout[0]"
+    
+  - name: Verify if the access-group was removed on the interface
+    iosxr_command:
+      commands:
+        - show running-config interface {{ interface_to_apply_acl }}
+    register: interface_config
+    
+  - name: Fail task in case the Access-Group is not removed
+    fail:
+      msg: "Access-Group {{ interface_to_apply_acl }} is not removed on {{ inventory_hostname }}"
+    when: "'access-group' in interface_config.stdout_lines[0]"

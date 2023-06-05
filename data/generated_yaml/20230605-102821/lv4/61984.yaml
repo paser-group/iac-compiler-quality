@@ -1,0 +1,39 @@
+
+---
+- name: Test azure_rm_managed_disk module for I/O block issues
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Provision managed disk
+      azure_rm_managed_disk:
+        name: "{{ disk_name }}"
+        resource_group: "{{ resource_group }}"
+        disk_size_gb: "{{ disk_size }}"
+        location: "{{ disk_location }}"
+        storage_account_type: "{{ storage_type }}"
+        async: true
+      register: disk_creation
+    - name: Wait for disk provisioning to complete
+      async_status:
+        jid: "{{ disk_creation.job_id }}"
+        mode: wait_for_completion
+        timeout: 60
+      register: disk_completion
+    - name: Delete managed disk
+      azure_rm_managed_disk:
+        name: "{{ disk_name }}"
+        resource_group: "{{ resource_group }}"
+        state: absent
+        async: true
+      ignore_errors: true
+      register: disk_delete
+    - name: Wait for disk deletion to complete
+      async_status:
+        jid: "{{ disk_delete.job_id }}"
+        mode: wait_for_completion
+        timeout: 60
+      register: deletion_completion
+    - name: Debug output
+      debug:
+        var: disk_completion.results
+        var: deletion_completion.results

@@ -1,0 +1,26 @@
+yaml
+- name: Filter hosts by tag in vmware_inventory file
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Create vmware_inventory file and configure host_filter
+      vmware_inventory:
+        hostname: <vmware_server>
+        username: <vmware_username>
+        password: <vmware_password>
+        validate_certs: false
+        vm_filter: ['*.vmware.com']
+        host_tag: <tag_name>
+        host_display_name: <display_name>
+        host_filter: "tags.{{ tag_name }} == '{{ tag_value }}'"
+      vars:
+        tag_name: <tag_name>
+        tag_value: <tag_value>
+    - name: Display inventory hostname
+      debug:
+        msg: "{{ inventory_hostname }}"
+    - name: Assert host has correct tag
+      assert:
+        that:
+          - "'{{ tag_value }}' in hostvars[inventory_hostname]['ansible_facts']['tags']['{{ tag_name }}']"
+      ignore_errors: false

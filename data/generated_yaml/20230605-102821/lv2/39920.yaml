@@ -1,0 +1,42 @@
+
+- name: Junos Configuration Module Test
+  hosts: all
+  vars:
+    junos_config:
+      system:
+        host-name: "{{ item }}"
+        services:
+          ssh:
+            protocol-version: v2
+  tasks:
+    - name: Install Junos Configuration Module
+      become: true
+      apt:
+        name: python-junos-eznc
+        state: present
+        update_cache: true
+    - name: Validate Module Installation
+      assert:
+        that:
+          - "'junos' in ansible_capabilities"
+        fail_msg: "Junos Configuration Module not installed properly"
+      register: assert_result
+    - name: Generate Configuration with Invalid Syntax
+      junos_config:
+        lines:
+          - 'set system login user test class invalid'
+          - 'set system login user test authentication plain-text-password'
+          - 'set system login user test authentication password invalid'
+          - 'set system login user test uid invalid'
+          - 'set system login user test name invalid'
+          - 'set system login user test hello world'
+        host: "{{ inventory_hostname }}"
+      ignore_errors: yes
+      when: assert_result is succeeded
+    - name: Validate Invalid Configuration Syntax
+      assert:
+        that:
+          - "'Invalid syntax' in junos_config.msg"
+        fail_msg: "Junos Configuration Module couldn't catch invalid syntax"
+      register: assert_result
+      when: assert_result is succeeded

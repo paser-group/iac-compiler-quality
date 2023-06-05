@@ -1,0 +1,29 @@
+
+- name: Fetch Vault Password
+  hosts: all
+  gather_facts: no
+  become: yes
+  vars:
+    ansible_become_pass: "{{ lookup('file', '/path/to/become_password.txt') }}"
+    ansible_ssh_private_key_file: /path/to/sshkey.pem
+    ansible_password_file: /path/to/password_file
+  tasks:
+    - name: Fetch encrypted vault password file
+      get_url:
+        url: "{{ remote_url }}.txt"
+        dest: /path/to/vault-password.txt
+        mode: '0755'
+      become: true
+
+    - name: Use Vault Password to decrypt credentials
+      ansible.builtin.command: ansible-vault decrypt /path/to/vault-password.txt
+      register: result
+
+    - name: Print decrypted password
+      debug:
+          msg: "{{ result.stdout }}"
+
+    - name: Remove decrypted password file
+      file:
+        path: /path/to/vault-password.txt
+        state: absent

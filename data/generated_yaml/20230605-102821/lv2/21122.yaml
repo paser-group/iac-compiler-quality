@@ -1,0 +1,30 @@
+
+- name: test GCE module
+  hosts: all
+  gather_facts: no
+  vars:
+    zone: "{{ ['us-central1-a', 'us-central1-b'] | random }}"
+    service_account: "{{ ['email1@test.com', 'email2@test.com'] | random }}"
+    project_id: "{{ ['test-project', 'sample-project'] | random }}"
+  tasks:
+    - name: run GCE module with specified service accounts
+      shell: gcloud compute instances list
+      environment:
+          GCLOUD_EMAIL: "{{ service_account }}"
+          GCLOUD_PROJECT: "{{ project_id }}"
+          GCLOUD_ZONE: "{{ zone }}"
+      register: gce_instances
+    - name: debug instances
+      vars:
+          gce_data: "{{ gce_instances.stdout_lines }}"
+      when: "'email' not in service_account"
+      debug:
+          msg: "{{ gce_data|length }} instances found with specified service account."
+    - name: cleanup instances
+      shell: | 
+          gcloud -q compute instances delete $(gcloud compute instances list | awk '{print $1}' | tail -n +2)
+      environment:
+          GCLOUD_EMAIL: "{{ ['delete1@test.com', 'delete2@test.com'] | random }}"
+          GCLOUD_PROJECT: "{{ ['delete-project', 'remove-project'] | random }}"
+      vars:
+          instances: "{{ gce_instances.stdout_lines }}"

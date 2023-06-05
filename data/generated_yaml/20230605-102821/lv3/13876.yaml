@@ -1,0 +1,38 @@
+
+- name: Copy file to remote node
+  hosts: all
+  gather_facts: false
+  become: true
+  
+  tasks:
+   - name: Create temporary directory
+     tempfile:
+       state: directory
+     register: temp_dir
+  
+   - name: Copy file to temporary directory
+     copy:
+       src: /path/to/local/file
+       dest: "{{ temp_dir.path }}/file"
+     register: copy_result
+  
+   - name: Retrieve the UID of the temp directory
+     stat:
+       path: "{{ temp_dir.path }}"
+     register: temp_dir_stat
+  
+   - name: Test if file exists in the remote temp directory
+     shell: ls {{ temp_dir.path }}/file
+     async: 30
+     poll: 0
+     ignore_errors: true
+     register: file_check
+  
+   - name: Remove the file from the remote temp directory
+     file:
+       path: "{{ temp_dir.path }}/file"
+       state: absent
+       ignore_errors: true
+     async: 30
+     poll: 0
+     when: file_check.rc == 0 and file_check.finished

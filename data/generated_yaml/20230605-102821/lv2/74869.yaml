@@ -1,0 +1,87 @@
+
+---
+- name: Test for default gateway/interface
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: Set up variables
+      set_fact:
+        default_interfaces: "{{ ansible_default_ipv4.interface }}"
+        default_gateway: "{{ ansible_default_ipv4.gateway }}"
+
+    - name: Debug information
+      debug:
+        var: default_interfaces
+        verbosity: "{{ verbosity_level }}"
+
+    - name: Ping the gateway
+      ping:
+      register: ping_result
+
+    - name: Assert ping result
+      assert:
+        that: ping_result == "pong"
+        fail_msg: "Gateway unreachable"
+        success_msg: "Gateway reachable"
+
+    - name: Generate random traffic
+      shell: "ping -i 0.2 -c 1000 -s {{ item }} {{ default_gateway }}"
+      loop:
+        - 1472
+        - 362
+        - 654
+        - 28
+        - 5888
+
+    - name: Test for interface accuracy
+      shell: 'ip route get 8.8.8.8 | awk "{print \$5}"'
+      register: default_interface_output
+
+    - name: Compare output to default interface
+      assert:
+        that: default_interface_output.stdout_lines[0] == default_interfaces
+        fail_msg: "Interface not accurate"
+        success_msg: "Interface accurate"
+
+    - name: Remove default gateway
+      shell: "ip route del default via {{ default_gateway }} dev {{ default_interfaces }}"
+      ignore_errors: true
+
+    - name: Try and ping out
+      ping:
+
+    - name: Re-add default gateway
+      shell: "ip route add default via {{ default_gateway }} dev {{ default_interfaces }}"
+      ignore_errors: true
+
+    - name: Test ping after re-adding gateway
+      ping:
+
+    - name: Remove default gateway
+      shell: "ip route del default via {{ default_gateway }} dev {{ default_interfaces }}"
+      ignore_errors: true
+
+    - name: Test ping without gateway
+      ping:
+      register: no_gateway_ping_result
+
+    - name: Assert no gateway ping result
+      assert:
+        that: no_gateway_ping_result.failed == true
+        fail_msg: "Ping without gateway successful"
+        success_msg: "Ping without gateway unsuccessful"
+
+    - name: Add invalid default gateway
+      shell: "ip route add default via 10.255.255.254 dev {{ default_interfaces }}"
+      ignore_errors: true
+      
+    - name: Check route table for default gateway
+      shell: "ip route"
+      register: route_table
+      
+    - name: Assert invalid default gateway not added
+      assert:
+        that: "'default via 10.255.255.254' not in route_table.stdout"
+        fail_msg: "Invalid gateway added to routing table"
+        success_msg: "Invalid gateway not added to routing table"

@@ -1,0 +1,24 @@
+
+---
+- hosts: all
+  remote_user: ansible
+  become: true
+  tasks:
+  - name: Create Docker container
+    docker_container:
+      name: my_container
+      image: "{{ image_name }}:{{ image_tag }}"
+      state: started
+      command: echo "Hello, world!"
+  - name: Remove container from inventory
+    docker_container:
+      name: my_container
+      state: absent
+    when: image_check.stdout == "success"
+  - name: Cleanup
+    shell: >
+      umount /mnt/loop_device && losetup -d /dev/loop0
+    become: true
+  - fail:
+      msg: "Could not normalize the image."
+    when: image_check.rc != 0

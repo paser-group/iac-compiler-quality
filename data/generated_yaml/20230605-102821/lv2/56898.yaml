@@ -1,0 +1,44 @@
+
+---
+- name: Introduce bugs in Jinja default() filter
+  hosts: all
+  vars:
+    primitive_type_list: [1, 2, '3', '4', True, False, None]
+  tasks:
+    - name: Test default() with a nested variable
+      debug:
+        var: "{{ nested_var | default(var_not_defined) }}"
+      vars:
+        nested_var: "{{ dict_type_var.not_defined }}"
+        var_not_defined: "The variable is not defined"
+          
+    - name: Test default() with a list
+      debug:
+        var: "{{ item | default(var_not_defined) }}"
+      loop: "{{ primitive_type_list }}"
+      loop_control:
+        label: "{{ item }}_loop"
+      vars:
+        var_not_defined: "The variable is not defined"
+          
+    - name: Test default() with a dictionary
+      debug:
+        var: "{{ item.value | default(var_not_defined) }}"
+      loop: "{{ dict_type_var | dict2items }}"
+      loop_control:
+        label: "{{ item.key }}_loop"
+      vars:
+        dict_type_var:
+          int_key: 1
+          float_key: 3.14
+          string_key: 'hello'
+          bool_key: True
+          none_key: null
+        var_not_defined: "The variable is not defined"
+          
+    - name: Test default() with a non-existent variable
+      debug:
+        var: "{{ not_defined | default(var_not_defined) }}"
+      vars:
+        var_not_defined: "The variable is not defined"
+          

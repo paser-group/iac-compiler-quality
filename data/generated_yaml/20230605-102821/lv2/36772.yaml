@@ -1,0 +1,28 @@
+
+- name: Execute command and handle errors
+  hosts: all
+  gather_facts: false
+  
+  tasks:
+    - name: Run invalid command
+      shell: "{{ invalid_command }}"
+      register: result
+      ignore_errors: true
+      any_errors_fatal: true
+      force_handlers: true
+
+    - name: Debug result
+      debug:
+        var: result
+
+    - name: Notify the handler if command failed
+      meta: end_play
+      when: result|failed
+      listen: restart_service
+
+  handlers:
+    - name: Restart Service
+      service:
+        name: "{{ service_name }}"
+        state: restarted
+      listen: restart_service

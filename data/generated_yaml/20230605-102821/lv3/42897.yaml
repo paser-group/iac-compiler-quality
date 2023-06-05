@@ -1,0 +1,39 @@
+
+- name: Test Docker Modules with TLS Config
+  hosts: all
+  gather_facts: false
+  vars:
+    # Path to certificate authority
+    tlscacert: /etc/docker/tls/ca-cert.pem
+    # Path to client certificate
+    tlscert: /etc/docker/tls/client-cert.pem
+    # Path to client key
+    tlskey: /etc/docker/tls/client-key.pem
+    # Docker API URL
+    docker_api_url: https://{{ inventory_hostname }}:2376
+  tasks:
+    - name: Ensure Docker is installed
+      become: true
+      package:
+        name: docker-ce
+        state: present
+    - name: Start Docker service
+      become: true
+      service:
+        name: docker
+        state: started
+    - name: Test Docker module
+      docker_container:
+        name: nginx
+        image: nginx
+        state: started
+        exposed_ports: 80/tcp
+        tls: true
+        tlscacert_path: "{{ tlscacert }}"
+        tlscert_path: "{{ tlscert }}"
+        tlskey_path: "{{ tlskey }}"
+        api_version: 1.25
+      register: docker_result
+    - name: Show Docker module result
+      debug:
+        var: docker_result

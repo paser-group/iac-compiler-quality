@@ -1,0 +1,52 @@
+
+- name: Replace all instances in target groups
+  hosts: localhost
+  gather_facts: no
+  vars:
+    asg_name: "my-auto-scaling-group"
+    region: "us-west-2"
+    profile: "my-aws-profile"
+    min_size: 2
+    max_size: 10
+    desired_capacity: 5
+    availability_zones: "us-west-2a,us-west-2b,us-west-2c"
+    node_subnet: "10.1.1.0/24"
+    node_gateway: "10.1.1.254"
+    ubuntu1_ip: "10.1.1.1"
+    alpine1_ip: "10.1.1.2"
+    centos1_ip: "10.1.1.3"
+    redhat1_ip: "10.1.1.4"
+    target_group_1_arn: "arn:aws:elasticloadbalancing:us-west-2:123456789012:targetgroup/my-target-group-1/abcdef1234567890"
+    target_group_2_arn: "arn:aws:elasticloadbalancing:us-west-2:123456789012:targetgroup/my-target-group-2/abcdef1234567890"
+    path_to_password_file: "/path/to/password-file"
+  tasks:
+    - name: Replace all instances in target groups
+      ec2_asg:
+        name: "{{ asg_name }}"
+        region: "{{ region }}"
+        profile: "{{ profile }}"
+        min_size: "{{ min_size }}"
+        max_size: "{{ max_size }}"
+        desired_capacity: "{{ desired_capacity }}"
+        availability_zones: "{{ availability_zones }}"
+        target_group_arns: 
+          - "{{ target_group_1_arn }}"
+          - "{{ target_group_2_arn }}"
+        replace_all_instances: true
+        wait_timeout: 600
+        instance_refresh:
+          strategy: rolling
+          preferences:
+            min_healthy_percent: 75
+            instance_warmup: 30
+      delegate_to: 127.0.0.1
+      run_once: true
+      become: true
+      become_method: su
+      become_user: root
+      vars_files:
+        - /path/to/security.yml
+      environment:
+        ANSIBLE_HOST_KEY_CHECKING: false
+      register: ec2_asg_output
+      no_log: false

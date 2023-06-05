@@ -1,0 +1,22 @@
+
+- name: stress test for os_image module
+  hosts: all
+  gather_facts: no
+  vars:
+    image_path: "/tmp/image.img"
+  
+  tasks:
+  - name: create a 20 GB image file
+    shell: dd if=/dev/zero of={{image_path}} bs=1M count=20000
+  - name: upload image to all nodes
+    os_image:
+      path: "{{image_path}}"
+      checksum_algorithm: md5
+      checksum: "{{lookup('pipe', 'md5sum ' ~ image_path | bash)}}"
+      timeout: "{{60|int}}"
+    register: result
+    ignore_errors: yes
+  - name: verify upload status
+    debug:
+      msg: "{{result}}"
+    when: result is failed

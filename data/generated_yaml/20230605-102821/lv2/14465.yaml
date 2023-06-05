@@ -1,0 +1,24 @@
+yaml
+- name: Stress test remote temporary directory resolution
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Set unique remote temporary directory path
+      set_fact:
+        remote_tmp_dir: "/tmp/{{ ansible_host }}-{{ inventory_hostname_short }}"
+
+    - name: Create the remote temporary directory
+      file:
+        state: directory
+        path: "{{ remote_tmp_dir }}"
+        mode: '0777'
+
+    - name: Check if remote temporary directory exists
+      stat:
+        path: "{{ remote_tmp_dir }}"
+      register: tmp_dir_status
+
+    - name: Fail if remote temporary directory does not exist
+      fail:
+        msg: "Failed to resolve remote temporary directory on groups"
+      when: not tmp_dir_status.stat.exists

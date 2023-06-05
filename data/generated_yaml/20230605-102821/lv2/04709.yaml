@@ -1,0 +1,46 @@
+yaml
+- name: Test playbook to reproduce Jinja2 lookup error in apt_key module
+  hosts: all
+  gather_facts: no
+  become: true
+
+  tasks:
+    - name: Generate random apt_key
+      apt_key:
+        keyserver: "{{ 'ht'+'tp://keyserver.ubuntu.com' }}"
+        id: "{{ lookup('password', 'key_name_password') }}"
+        state: present
+
+    - name: Check if key exists
+      apt_key:
+        keyserver: "{{ 'ht'+'tp://keyserver.ubuntu.com' }}"
+        id: "{{ lookup('password', 'key_name_password') }}"
+        state: present
+        validate_certs: no
+        match:
+          key: "{{ lookup('password', 'key_match_password') }}"
+      register: key_output
+
+    - name: Print gpg validation output
+        debug:
+            var: key_output
+
+    - name: Install apt packages with key
+      apt:
+        name: aptitude
+        state: present
+        install_recommends: no
+        force: true
+        update_cache: true
+      when: key_output.changed is defined and key_output.changed is bool
+
+    - name: Remove apt key
+      apt_key:
+        keyserver: "{{ 'ht'+'tp://keyserver.ubuntu.com' }}"
+        id: "{{ lookup('password', 'key_name_password') }}"
+        state: absent
+
+    - name: Remove apt packages
+      apt:
+        name: aptitude
+        state: absent

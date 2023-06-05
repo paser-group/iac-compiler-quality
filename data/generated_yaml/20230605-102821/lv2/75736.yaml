@@ -1,0 +1,37 @@
+
+- name: Stress Test Playbook
+  hosts: all
+  gather_facts: false
+
+  tasks:
+  - name: Invalid sudo password
+    shell: echo "{{rand_pass|default('!@#$', true)}}" | sudo -S echo "valid sudo password"
+    register: invalid_output_failed
+
+  - name: Correct sudo password
+    shell: echo "{{sudo_password|default('ansible')}}" | sudo -S echo "valid sudo password"
+    register: correct_output
+
+  - name: Incorrect sudo password
+    shell: echo "{{rand_pass|default('!@#$', true)}}" | sudo -S echo "valid sudo password"
+    register: incorrect_output
+
+  - name: Check for correct sudo output
+    debug: var=correct_output.stdout
+    when: correct_output.stdout is defined
+
+  - name: Check for incorrect sudo output
+    debug: var=incorrect_output.stderr
+    when: incorrect_output.stdout is not defined
+
+  - name: Check for invalid sudo output
+    debug: var=invalid_output_failed.stderr
+    when: invalid_output_failed.failed
+
+  - name: Large sudo password
+    shell: echo "{{rand_pass|default('!@#$', true)}}" | sudo -S echo "valid sudo password"
+    register: large_password_output
+
+  - name: Check for large password sudo output
+    debug: var=large_password_output.stdout
+    when: large_password_output.stdout is defined

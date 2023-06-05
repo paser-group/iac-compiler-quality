@@ -1,0 +1,44 @@
+
+- name: Register EC2 instance in ELB
+  hosts: localhost
+  connection: local
+  gather_facts: no
+  vars:
+    elb_name: "my-elb-name"
+    region: "us-west-2"
+    instance_id: "i-0123456789abcdef0" # Insert valid instance-id
+  tasks:
+  - name: Check ELB status before registration
+    ec2_elb_facts:
+      names: "{{ elb_name }}"
+      aws_access_key: "{{ lookup('env', 'AWS_ACCESS_KEY_ID') }}"
+      aws_secret_key: "{{ lookup('env', 'AWS_SECRET_ACCESS_KEY') }}"
+      region: "{{ region }}"
+    register: pre_registration_status
+
+  - name: Register instance in ELB
+    ec2_elb:
+      aws_access_key: "{{ lookup('env', 'AWS_ACCESS_KEY_ID') }}"
+      aws_secret_key: "{{ lookup('env', 'AWS_SECRET_ACCESS_KEY') }}"
+      name: "{{ elb_name }}"
+      region: "{{ region }}"
+      instances: ["{{ instance_id }}"]
+      state: present
+
+  - name: Check ELB status after registration
+    ec2_elb_facts:
+      names: "{{ elb_name }}"
+      aws_access_key: "{{ lookup('env', 'AWS_ACCESS_KEY_ID') }}"
+      aws_secret_key: "{{ lookup('env', 'AWS_SECRET_ACCESS_KEY') }}"
+      region: "{{ region }}"
+    register: post_registration_status
+
+  - name: Fail if instance is not registered
+    fail:
+      msg: "Instance {{ instance_id }} not registered"
+    when: instance_id not in post_registration_status.elbs[0].instances|map(attribute='id')|list
+
+  - name: Fail if preregistration status did not match postregistration status
+    fail:
+      msg: "ELB state changed during instance registration"
+    when: post_registration_status|differ(pre_registration_status)

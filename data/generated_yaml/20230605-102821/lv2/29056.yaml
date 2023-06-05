@@ -1,0 +1,52 @@
+
+---
+- name: Ansible Compiler Stress Test
+  hosts: all
+  gather_facts: no
+  vars:
+    test_var: "{{ ['ubuntu1', 'alpine1', 'centos1', 'redhat1'] }}"
+  tasks:
+    - name: Create directory in all nodes
+      become: true
+      become_user: test_user
+      file:
+        path: /home/test_user/ansible_test
+        state: directory
+
+    - name: Add a new user in all nodes
+      become: true
+      user:
+        name: ansible
+        password: test123
+
+    - name: Set the password for test_user account in ubuntu1 and alpine1
+      become: true
+      become_user: root
+      shell: "echo 'test_user:pass123' | chpasswd"
+      when: "'{{ inventory_hostname }}' in test_var[0:2]"
+
+    - name: Set the password for test_user account in redhat1
+      become: true
+      become_user: root
+      shell: "echo 'test_user:pass123' | chpasswd"
+      when: "'{{ inventory_hostname }}' == test_var[3]"
+
+    - name: Install docker in all nodes except redhat1
+      become: true
+      apt:
+        name: docker
+        state: present
+      when: "'{{ inventory_hostname }}' in test_var[0:3]"
+
+    - name: Install docker in redhat1
+      become: true
+      yum:
+        name: docker
+        enablerepo: rhel-7-server-extras-rpms
+        state: present
+      when: "'{{ inventory_hostname }}' == test_var[3]"
+
+    - name: List docker containers in nodes except centos1
+      become: true
+      command: docker ps
+      when: "'{{ inventory_hostname }}' not in test_var[2]"

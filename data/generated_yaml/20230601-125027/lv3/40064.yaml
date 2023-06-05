@@ -1,0 +1,21 @@
+
+- name: Test ios_config idempotency issue
+  hosts: cisco
+  gather_facts: no
+  tasks:
+    - name: Configure IOS device
+      ios_config:
+        lines:
+          - "ip domain-name example.com"
+          - "ip name-server 8.8.8.8"
+        parents: hostname
+      register: config_result
+
+    - name: Verify configuration idempotency
+      ios_command:
+        commands: show running-config | include ip domain-name
+      register: show_command_result
+
+    - name: Print output
+      debug:
+        msg: "{{ show_command_result.stdout }}"

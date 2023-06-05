@@ -1,0 +1,35 @@
+
+- name: Docker Image Encoding Error Test
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Load Docker Image
+      docker_image:
+        name: "{{ item }}"
+      with_items:
+        - ubuntu:14.04
+        - alpine:latest
+        - centos:7
+        - redhat:7.2
+        - busybox:1.25
+      register: docker_images
+
+    - name: Run Docker Containers
+      docker_container:
+        name: "Test Container"
+        image: "{{ item }}"
+        state: started
+      with_items: "{{ docker_images.results | map(attribute='image') | list }}"
+      no_log: true
+
+    - name: Remove Docker Containers
+      docker_container:
+        name: "Test Container"
+        image: "{{ item }}"
+        state: absent
+      with_items: "{{ docker_images.results | map(attribute='image') | list }}"
+      no_log: true
+
+  vars:
+    ansible_python_interpreter: /usr/bin/python3

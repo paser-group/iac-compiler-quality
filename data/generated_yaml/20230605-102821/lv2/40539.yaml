@@ -1,0 +1,41 @@
+
+- name: Test server_port issue with bigip_node module
+  hosts: all
+  gather_facts: no
+  vars:
+    port: "{{ [80, 443, '8000', '8080', '88.5', [], {}] }}"
+  tasks:
+  - name: Create nodes with invalid server_port
+    bigip_node:
+      server: "{{ inventory_hostname }}"
+      user: "{{ ansible_user }}"
+      password: "{{ lookup('file', '/path/to/password/file') }}"
+      node: "{{ item }}"
+      partition: /Common/
+      server_port: "{{ random(item) }}"
+    loop:
+      - test-node1
+      - test-node2
+      - test-node3
+      - test-node4
+    ignore_errors: yes
+    register: node_result
+
+  - name: Print failed tasks
+    debug:
+      var: node_result
+    failed_when: node_result | failed
+
+  - name: Create nodes with valid server_port
+    bigip_node:
+      server: "{{ inventory_hostname }}"
+      user: "{{ ansible_user }}"
+      password: "{{ lookup('file', '/path/to/password/file') }}"
+      node: "{{ item }}"
+      partition: /Common/
+      server_port: "{{ random(0, 65535) }}"
+    loop:
+      - test-node5
+      - test-node6
+      - test-node7
+      - test-node8

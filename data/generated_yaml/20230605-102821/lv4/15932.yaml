@@ -1,0 +1,26 @@
+
+---
+- name: Launch EC2 Instance with Security Groups
+  hosts: localhost
+  vars:
+    aws_access_key: "<your_access_key>"
+    aws_secret_key: "<your_secret_key>"
+    instance_type: t2.micro
+    image: ami-0c55b159cbfafe1f0
+    key_name: "<your_key_name>"
+    subnet_id: "<your_subnet_id>"
+    group_names: ["<your_security_group_name>", "invalid_security_group_name"]
+  tasks:
+    - name: Set fact to retrieve security group IDs from group names
+      ec2_eni:
+        aws_access_key: "{{ aws_access_key }}"
+        aws_secret_key: "{{ aws_secret_key }}"
+        target: "{{ item }}"
+        security_groups: "{{ group_names }}"
+      with_items: "{{ groups }}"
+      register: ec2_eni_result
+    - name: Fail task if security group IDs not found
+      fail:
+        msg: "Security group IDs not found for '{{ item.item }}'"
+      with_items: "{{ ec2_eni_result.results }}"
+      when: item['stdout_lines'][0].startswith('NoneType object has no attribute') or item['stdout'] is not defined

@@ -1,0 +1,66 @@
+
+---
+- name: Test Ansible Compiler for Docker Module Bugs
+  hosts: all
+  vars:
+    image_name: "my_registry.com/^(validate Image$"
+    password_file: "/etc/ansible/secret.txt"
+  tasks:
+  - name: Start container with invalid image name
+    docker_container:
+      name: my_container
+      image: "{{ image_name }}"
+      state: started
+      pull: yes
+    register: result
+    ignore_errors: yes
+
+  - name: Check if container started
+    assert:
+      that:
+      - "result|succeeded"
+      - "'Error response from daemon: invalid reference format' in result.stderr"
+
+  - name: Stop container
+    docker_container:
+      name: my_container
+      state: stopped
+    register: result
+    changed_when: result|succeeded
+
+  - name: Verify container stopped
+    assert:
+      that:
+      - "result|succeeded"
+      - "'No such container' in result.stderr"
+
+  - name: Start container with invalid password file path
+    docker_container:
+      name: my_container_2
+      image: ubuntu:latest
+      state: started
+      ports:
+      - "8080:80"
+      volumes:
+      - "{{ password_file }}:/root/.password_file"
+    register: result
+    ignore_errors: yes
+
+  - name: Check if container started
+    assert:
+      that:
+      - "result|succeeded"
+      - "'No such file or directory' in result.stderr"
+  
+  - name: Stop container
+    docker_container:
+      name: my_container_2
+      state: stopped
+    register: result
+    changed_when: result|succeeded
+
+  - name: Verify container stopped
+    assert:
+      that:
+      - "result|succeeded"
+      - "'No such container' in result.stderr"

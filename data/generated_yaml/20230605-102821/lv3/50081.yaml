@@ -1,0 +1,45 @@
+
+- name: Create RDS MySQL instance with Performance Insights
+  hosts: localhost
+  tasks:
+    - name: "Create instance"
+      community.aws.ec2_vpc:
+        name: "{{ item }}"
+        cidr_block: "10.1.1.0/24"
+        region: "us-east-1"
+      with_items:
+        - node-net
+
+    - name: "Add nodes to the inventory"
+      add_host:
+        name: "{{ item.key }}"
+        groups: "{{ item.value }}"
+        ansible_host: "{{ item.ip }}"
+      with_dict:
+        ubuntu1:
+          - ubuntu
+        alpine1:
+          - alpine
+        centos1:
+          - centos
+        redhat1:
+          - redhat
+
+    - name: "Creating an RDS MySQL database instance with Performance Insights"
+      community.aws.rds:
+        region: "us-east-1"
+        instance_name: "my_mysql_database"
+        db_engine: "mysql"
+        db_instance_class: "db.t2.micro"
+        master_username: "myuser"
+        master_password: "mypassword"
+        allocated_storage: 10
+        db_subnet_group_name: "mydbvpc"
+        backup_retention_period: 7
+        # Triggering the issue by passing the db_performance_insights_enabled parameter
+        performance_insights_enabled: true
+      register: rds_instance
+
+    - name: "Show the output"
+      debug:
+        var: rds_instance

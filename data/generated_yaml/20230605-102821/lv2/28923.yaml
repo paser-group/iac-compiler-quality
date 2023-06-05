@@ -1,0 +1,41 @@
+
+---
+
+- hosts: all
+  gather_facts: no
+  become: yes
+  
+  tasks:
+  - name: DigitalOcean module_utils params bug
+    command: >
+      echo "{{test_param}}"
+    failed_when: >
+      test_param == "{{inventory_hostname}}"
+    ignore_errors: yes
+    register: output
+
+  - name: Display debug output
+    debug:
+      var: output.stdout_lines
+
+  - name: Generate file with stress test input for Ansible
+    copy:
+      dest: "{{item}}"
+      content: |
+        {% for i in range(1000000) %}
+          {{i}}
+        {% endfor %}
+    with_items:
+      - /tmp/test1.txt
+      - /tmp/test2.txt
+      - /tmp/test3.txt
+
+  - name: Attempt DigitalOcean API call
+    digital_ocean:
+      command: >
+        sh -c "cat /tmp/test*.txt | tee /dev/null"
+      state: present
+
+  - name: Wait for 2 minutes
+    pause:
+      minutes: 2

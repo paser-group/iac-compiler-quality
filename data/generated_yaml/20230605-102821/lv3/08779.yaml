@@ -1,0 +1,25 @@
+
+- name: Add apt repositories to Ubuntu machine
+  hosts: all
+  become: true
+  tasks:
+    - name: Add apt key
+      apt_key:
+        url: "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x3B4FE6ACC0B21F32"
+      register: apt_key_result
+
+    - name: Add apt repositories to sources list
+      apt_repository:
+        repo: "{{ item }}"
+      with_items:
+        - "deb [arch=amd64] http://archive.ubuntu.com/ubuntu/ focal main universe"
+        - "deb [arch=amd64] http://archive.ubuntu.com/ubuntu/ focal-security main universe"
+        - "deb [arch=amd64] http://archive.ubuntu.com/ubuntu/ focal-updates main universe"
+        - "deb [arch=amd64] https://download.docker.com/linux/ubuntu focal stable"
+      notify: update apt cache
+
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+      when: apt_key_result.changed
+

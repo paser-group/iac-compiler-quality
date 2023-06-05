@@ -1,0 +1,23 @@
+yaml
+- hosts: all
+  gather_facts: no
+  tasks:
+    - name: loop task
+      command: "{{ item }}"
+      loop:
+        - "ls /"
+        - "ls /notexist"
+      register: task_result
+      ignore_errors: true
+      failed_when: "false"
+    - name: rescue task
+      debug:
+        msg: "Rescue Section"
+      when: task_result is failed
+      rescue:
+        - name: failed task
+          set_fact:
+            failed_task: "{{ ansible_failed_task }}"
+        - name: debug failed task
+          debug:
+            var: "{{ failed_task }}"

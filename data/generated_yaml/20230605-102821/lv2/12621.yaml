@@ -1,0 +1,45 @@
+
+- name: Stress test SSH and Paramiko
+  hosts: all
+  gather_facts: no
+  
+  tasks:
+    - name: Install Paramiko
+      pip:
+        name: paramiko
+        state: present
+        
+    - name: Generate random string
+      set_fact:
+        random_string: "{{ lookup('password', '/dev/null length=15') }}"
+        
+    - name: Execute invalid SSH command
+      command: "{{ random_string }}"
+      ignore_errors: yes
+      
+    - name: Attempt SSH connection with invalid user and password
+      expect:
+        command: ssh -oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null -oPasswordAuthentication=yes {{ hostvars[item]['ansible_default_ipv4']['address'] }} -l {{ random_string }} -S /dev/null -T sleep 5
+        responses:
+          "(?i)password": "{{ random_string }}"
+        become: yes
+        become_method: sudo
+      ignore_errors: yes
+      
+    - name: Attempt SSH connection with invalid hostname
+      expect:
+        command: ssh -oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null -oPasswordAuthentication=yes {{ random_string }} -l {{ random_string }} -S /dev/null -T sleep 5
+        responses:
+          "(?i)password": "{{ random_string }}"
+        become: yes
+        become_method: sudo
+      ignore_errors: yes
+      
+    - name: Attempt SSH connection with invalid port
+      expect:
+        command: ssh -oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null -oPasswordAuthentication=yes {{ hostvars[item]['ansible_default_ipv4']['address'] }} -l {{ random_string }} -S /dev/null -T -P 99999 sleep 5
+        responses:
+          "(?i)password": "{{ random_string }}"
+        become: yes
+        become_method: sudo
+      ignore_errors: yes

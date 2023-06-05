@@ -1,0 +1,49 @@
+
+---
+- hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: Testing file lookup
+      shell: |
+        cat <(echo "file1 content") <(echo "file2 content")
+      register: file_content
+
+    - name: Writing contents to file
+      file:
+        path: /tmp/new_file
+        mode: '0644'
+        owner: root
+        group: root
+        state: touch
+        content: '{{ file_content.stdout }}'
+
+- hosts: redhat1
+  gather_facts: no
+
+  tasks:
+    - name: Copying files from source to destination
+      copy:
+        src: /etc/{{ item }}/
+        dest: /tmp/{{ item }}_copy/
+        remote_src: yes
+      with_items: "{{ ['ssh', 'ssh_host_*'] }}"
+
+- hosts: ubuntu1:centos1:redhat1
+  gather_facts: no
+
+  tasks:
+    - name: Setting file permissions
+      file:
+        path: /tmp/new_file
+        mode: "0700"
+        owner: root
+        group: root
+
+    - name: Reading file contents
+      shell: cat /tmp/new_file
+
+    - name: Deleting the file
+      file:
+        path: /tmp/new_file
+        state: absent

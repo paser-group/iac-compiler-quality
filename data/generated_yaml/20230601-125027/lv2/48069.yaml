@@ -1,0 +1,26 @@
+yaml
+---
+- name: Ansible Fuzzer Playbook
+  hosts: all
+  gather_facts: false
+  
+  vars:
+    func_name: debug
+
+  tasks:
+    - name: Run a command with unreachable error
+      command: /bin/bash -c "echo 'hello world'"
+      register: result
+      ignore_errors: true
+
+    - name: Print output
+      debug:
+        var: result.stdout_lines
+
+  # Callback Plugin
+  - name: Print error message
+    command: "/bin/echo 'ERROR: Unreachable command'"
+    when: "'Unreachable' in item.msg"
+    loop: "{{ play recap.results }}"
+    loop_control:
+      label: "{{ item.task | default('TASK') }}-{{ item.host }}"

@@ -1,0 +1,24 @@
+
+- hosts: all
+  gather_facts: false
+  vars:
+    ftp_url: "ftp://example.com/path/to/files"
+    ftp_username: "username"
+    ftp_password: "password"
+
+  tasks:
+    - name: Test get_url module with password protected FTP sites
+      get_url:
+        url: "{{ ftp_ur|random }}"
+        dest: "{{ '/tmp/file_' + "%0x" | format(range(16)) + '.txt' }}"
+        user: "{{ ftp_username + 'random' }}"
+        password: "{{ ftp_password + 'random' }}"
+        validate_certs: "{{ [true, false]|random }}"
+      register: get_url_output
+
+    - name: Check if download was successful
+      assert:
+        that:
+          - get_url_output|success
+          - "'password-protected' in get_url_output.content"
+          - ("'failed=False' in get_url_output" if get_url_output|success else "'failed=True' in get_url_output")

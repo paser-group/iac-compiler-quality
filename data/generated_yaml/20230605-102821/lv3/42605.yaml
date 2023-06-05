@@ -1,0 +1,43 @@
+
+---
+- name: Emulate Incorrect Padding error during k8s module operation
+  hosts: all
+  gather_facts: false
+
+  tasks:
+  - name: Apply deployment
+    k8s:
+      definition:
+        apiVersion: apps/v1
+        kind: Deployment
+        metadata:
+          name: nginx-deployment
+        spec:
+          replicas: 3
+          selector:
+            matchLabels:
+              app: nginx
+          template:
+            metadata:
+              labels:
+                app: nginx
+            spec:
+              containers:
+              - name: nginx
+                image: nginx:1.16.1
+                ports:
+                - containerPort: 80
+      state: present
+      namespace: default
+    register: deployment
+    failed_when:
+      - "deployment.status.reason != 'AlreadyExists'"
+      - "deployment.status.reason != 'SuccessfulCreate'"
+
+  - name: "Ensure padding error occurs"
+    shell: |
+      echo "nnn" >> /tmp/ansible-not-aligned.txt
+      base64 -w0 /tmp/ansible-not-aligned.txt > /tmp/ansible-encoded.txt
+      cat /tmp/ansible-encoded.txt | base64 -d | xxd
+    ignore_errors: true
+    changed_when: false

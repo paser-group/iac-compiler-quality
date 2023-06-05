@@ -1,0 +1,23 @@
+
+- name: Set HaProxy Drain Mode
+  hosts: load_balancer
+  become: true
+  gather_facts: false
+  tasks:
+    - name: create a temporary backup of the configuration file
+      shell: cp {{ haproxy_config_file }} /tmp/haproxy.cfg.bak
+      changed_when: false
+      
+    - name: set drain mode by disabling the server
+      lineinfile:
+        path: "{{ haproxy_config_file }}"
+        regexp: '^(.*check.*)$'
+        line: '\1 disabled'
+      notify: 
+        - reload haproxy
+  
+  handlers:
+    - name: reload haproxy
+      service:
+        name: haproxy
+        state: reloaded

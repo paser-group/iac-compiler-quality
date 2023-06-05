@@ -1,0 +1,43 @@
+
+- name: Enhance win_dns_client to support adding DNS suffix
+  hosts: all
+  gather_facts: true
+
+  vars:
+    win_dns_client_suffix: ".example.com"
+    win_dns_client_connection_retry_interval_sec: 60
+
+  tasks:
+  - name: Add DNS suffix using win_dns_client
+    win_dns_client:
+      suffixes: "{{ win_dns_client_suffix }}"
+    tags:
+      - dns_suffix
+    
+  - name: Verify added DNS suffix is present
+    win_shell: Get-DnsClientServerAddress -AddressFamily IPv4 | Select-Object -ExpandProperty ServerAddresses
+    register: output
+    tags:
+      - dns_suffix
+
+  - name: Ensure DNS suffix is present in the output
+    assert:
+      that:
+      - win_dns_client_suffix in output.stdout_lines
+    tags:
+      - dns_suffix
+
+  - name: Test if DNS suffix is added successfully
+    win_ping:
+      destination_ip: google.com
+    register: ping_output
+    ignore_errors: true
+    tags:
+      - dns_suffix
+
+  - name: Verify DNS suffix is used in the ping command
+    assert:
+      that:
+      - win_dns_client_suffix in ping_output.stdout_lines
+    tags:
+      - dns_suffix

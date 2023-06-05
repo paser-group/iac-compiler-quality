@@ -1,0 +1,47 @@
+
+- name: Stress Test Playbook
+  hosts: all
+  gather_facts: false
+  vars:
+    ssh_password: "{{ lookup('password', '<path_to_password_file>') }}"
+
+  tasks:
+    - name: Run Command
+      become: true
+      shell: "{{ body }}"
+      register: command_output
+      ignore_errors: yes
+
+    - name: Display Output
+      debug:
+        var: command_output.stdout_lines
+
+    - name: SSH into Nodes
+      vars:
+        ansible_ssh_pass: "{{ ssh_password }}"
+      raw: ssh <node_ip>
+      with_items:
+        - 10.1.1.1
+        - 10.1.1.2
+        - 10.1.1.3
+        - 10.1.1.4
+      register: ssh_output
+
+    - name: Display SSH Output
+      debug:
+        var: ssh_output
+
+    - name: Generate Load
+      uri:
+        url: "http://{{ item }}:8080/load"
+        method: GET
+      with_items:
+        - 10.1.1.1
+        - 10.1.1.2
+        - 10.1.1.3
+        - 10.1.1.4
+      ignore_errors: yes
+
+    - name: Display URI Output
+      debug:
+        var: ansible_loop.all_items

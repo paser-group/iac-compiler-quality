@@ -1,0 +1,56 @@
+yaml
+- name: Provision Azure virtual machine in batches
+  hosts: localhost
+  gather_facts: no
+  
+  vars:
+    azure_location: East US
+    resource_group_name: test-resource-group
+    vm_size: Standard_B1s
+    virtual_network_name: test-virtual-network
+    admin_username: azureuser
+    vm_count: 3
+    vm_batch_size: 2
+  
+  tasks:
+    - name: Create resource group
+      azure_rm_resourcegroup:
+        name: "{{resource_group_name}}"
+        location: "{{azure_location}}"
+      
+    - name: Create virtual network
+      azure_rm_virtualnetwork:
+        resource_group: "{{resource_group_name}}"
+        name: "{{virtual_network_name}}"
+        address_prefixes: "{{azure_location}}/16"
+      
+    - name: Create public IP address
+      azure_rm_publicipaddress:
+        resource_group: "{{resource_group_name}}"
+        name: test-public-ip
+        allocation_method: Dynamic
+      
+    - name: Provision Azure virtual machines in batches
+      set_fact:
+        vm_batch: "{{ vm_list[batch_start:batch_end] }}"
+      loop_control:
+        loop_var: batch_start
+      loop: "{{ range(0, vm_count, vm_batch_size) }}"
+      
+      changed_when: false
+      
+      tasks:
+        - name: Create batch of virtual machines
+          azure_rm_virtualmachine:
+            resource_group: "{{resource_group_name}}"
+            vm_size: "{{vm_size}}"
+            network_interface_names: "test-{{item}}-nic"
+            os_disk_name: "test-{{item}}-osdisk"
+            storage_account_name: "test{{item}}disk1{{azure_location}}"
+            admin_username: {{admin_username}}
+            admin_password: "{{ vault_admin_password }}"
+            ssh_password_enabled: false
+            ssh_public_keys: []
+            vm_name: "{{item}}"
+
+          loop: "{{ vm_batch }}"

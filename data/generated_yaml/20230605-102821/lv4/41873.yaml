@@ -1,0 +1,15 @@
+
+- name: Set up a test playbook
+  hosts: all
+  tasks:
+    - name: Retrieve the number of days until certificate expiration
+      command: bash -c "openssl x509 -enddate -noout -in /etc/ssl/certs/letsencrypt/{{ inventory_hostname }}.pem | cut -d'=' -f2 | xargs -I{} date +%s -d {}"
+      register: cert_expiry_timestamp
+
+    - name: Convert the timestamp to days
+      set_fact:
+        cert_days: "{{ (cert_expiry_timestamp.stdout|int - ansible_date_time.epoch)|int / 86400|int }}"
+
+    - name: Print the number of days until certificate expiration
+      debug:
+        var: cert_days

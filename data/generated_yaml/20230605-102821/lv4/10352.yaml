@@ -1,0 +1,33 @@
+yaml
+- name: Fetch Security Group by Name
+  hosts: localhost
+  connection: local
+  gather_facts: no
+  become: true
+
+  vars:
+    security_group_name: "my_security_group"
+    security_group_port: 80
+    security_group_protocol: tcp
+    security_group_cidr: "0.0.0.0/0"
+    aws_region: "us-east-1"
+    
+  tasks:
+    - name: Get current security group rules
+      ec2_group_facts:
+        name: "{{ security_group_name }}"
+        region: "{{ aws_region }}"
+      register: security_group_facts
+
+    - name: Open port for security group
+      ec2_group:
+        name: "{{ security_group_name }}"
+        region: "{{ aws_region }}"
+        rules:
+          - proto: "{{ security_group_protocol }}"
+            from_port: "{{ security_group_port }}"
+            to_port: "{{ security_group_port }}"
+            cidr_ip: "{{ security_group_cidr }}"
+        purge_rules: no
+        state: present
+      when: not ("{{ security_group_cidr }}/32" in security_group_facts.group_rules[0].ip_ranges and security_group_protocol == security_group_facts.group_rules[0].ip_protocol and "{{ security_group_port }}" in range(security_group_facts.group_rules[0].from_port, security_group_facts.group_rules[0].to_port+1))

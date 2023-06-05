@@ -1,0 +1,21 @@
+
+---
+- hosts: tag_name_node
+  become: true
+  gather_facts: no
+  tasks:
+    - name: create route table in ec2_vpc module
+      ec2_vpc_route_table:
+        vpc_id: vpc-0123456789abcdef0
+        cidr_block: 10.0.1.0/24
+        region: us-west-2
+        state: present
+      register: rtb_out
+
+    - name: add route to route table with instance ID in ec2_vpc module
+      ec2_vpc_route:
+        route_table_id: "{{ rtb_out.route_table.id }}"
+        dest: "{{ hostvars['ubuntu1']['ec2_id'] }}" # Using instance ID in route
+        state: present
+        region: us-west-2
+      register: rtb_in

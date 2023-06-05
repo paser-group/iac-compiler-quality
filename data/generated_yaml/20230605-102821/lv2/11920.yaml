@@ -1,0 +1,33 @@
+
+---
+- hosts: all
+  become: true
+  
+  tasks:
+  
+  - name: Clone the role from git
+    git:
+      repo: "{{ repo_url }}"
+      dest: "/home/{{ hostvars[inventory_hostname]['ansible_user'] }}/roles/my_role"
+    register: git_clone_result
+    
+  - name: Create temporary directory
+    tempfile:
+      state: directory
+    register: temp_dir
+    
+  - name: Set scm_archive_role variable
+    set_fact:
+      scm_archive_role: "/home/ansible/roles/my_role"
+    
+  - name: Archive the directory and place it in /tmp/
+    archive:
+      path: "{{ scm_archive_role }}"
+      dest: "/tmp/my_role.tgz"
+      format: gz
+  
+  - name: Install the role archive using ansible-galaxy
+    ansible-galaxy:
+      name: "/tmp/my_role.tgz"
+      state: present
+      ignore_certs: true

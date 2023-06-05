@@ -1,0 +1,29 @@
+
+---
+- name: Create Azure network interface and associate with default NSG
+  hosts: localhost
+  gather_facts: no
+  tasks:
+  - name: Create default NSG and allow SSH traffic
+    azure_rm_networksecuritygroup:
+      resource_group: "<resource_group>"
+      name: "{{ nsg_name }}"
+      rules:
+        - name: "SSH"
+          protocol: "*"
+          destination_port_range: "22"
+          access: "Allow"
+          direction: "Inbound"
+          priority: 100
+      tags: "{{ srv_grp_name }}"
+    register: nsg_out
+  - name: Create network interface and associate with NSG
+    azure_rm_networkinterface:
+      resource_group: "<resource_group>"
+      name: "my-nic"
+      virtual_network_name: "my-vnet"
+      subnet: "/subscriptions/<subscription_id>/resourceGroups/<resource_group>/providers/Microsoft.Network/virtualNetworks/<vnet_name>/subnets/<subnet_name>"
+      security_group: "{{ nsg_name }}"
+      tags: "{{ srv_grp_name }}"
+      state: present
+    register: nic_out

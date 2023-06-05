@@ -1,0 +1,33 @@
+
+- name: Ensure SSL certificate verification is enforced
+  hosts: all
+  gather_facts: no
+  vars:
+    ssl_verify: true
+  tasks:
+    - name: Disable SSL verification temporarily
+      set_fact:
+        ansible_env:
+          REQUESTS_CA_BUNDLE: ""
+      changed_when: false
+      when: not ssl_verify
+
+    - name: Attempt HTTPS request
+      uri:
+        url: "https://{{ inventory_hostname }}/index.html"
+        validate_certs: "{{ ssl_verify }}"
+        status_code: 200
+        timeout: 5
+      register: response
+
+    - name: Re-enable SSL verification
+      set_fact:
+        ansible_env:
+          REQUESTS_CA_BUNDLE: /etc/pki/tls/certs/ca-bundle.crt
+      changed_when: false
+      when: not ssl_verify
+
+    - name: Fail if certificate verification failed
+      fail:
+        msg: "SSL certificate verification failed when attempting to access {{ inventory_hostname }}"
+      when: response.failed and ssl_verify

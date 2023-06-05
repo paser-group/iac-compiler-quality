@@ -1,0 +1,57 @@
+
+- name: Create and launch OpenStack instance
+  hosts: localhost
+  gather_facts: no
+  vars:
+    server_name: "{{ inventory_hostname }}"
+    auth:
+      auth_url: "{{ auth_url }}"
+      username: "{{ username }}"
+      password: "{{ password }}"
+      project_name: "{{ project_name }}"
+      project_domain_name: "{{ project_domain_name }}"
+      user_domain_name: "{{ user_domain_name }}"
+    image: "{{ image }}"
+    flavor: "{{ flavor }}"
+    network: "{{ network }}"
+  tasks:
+    - name: Query OpenStack for a port with id equal to 1
+      os_port_facts:
+        cloud: "{{ auth }}"
+        filters:
+          - name: id
+            values:
+             - "1"
+      register: port_1_facts
+
+    - name: Create OpenStack instance with port-id equal to 1
+      os_server:
+        cloud: "{{ auth }}"
+        name: "{{ server_name }}"
+        image: "{{ image }}"
+        flavor: "{{ flavor }}"
+        network: "{{ network }}"
+        security_groups: "{{ security_groups }}"
+        port: "{{ port_1_facts.ports[0].id }}"
+        state: present
+      register: server
+
+    - name: Query OpenStack for a port with id equal to 2
+      os_port_facts:
+        cloud: "{{ auth }}"
+        filters:
+          - name: id
+            values:
+             - "2"
+
+    - name: Create OpenStack instance with port-id equal to 2
+      os_server:
+        cloud: "{{ auth }}"
+        name: "{{ server_name }}"
+        image: "{{ image }}"
+        flavor: "{{ flavor }}"
+        network: "{{ network }}"
+        security_groups: "{{ security_groups }}"
+        port: "{{ port_1_facts.ports[0].id }}"
+        state: present
+      register: server_2

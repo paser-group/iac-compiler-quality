@@ -1,0 +1,24 @@
+yaml
+- hosts: all
+  tasks:
+    - name: Test get_url
+      get_url:
+        url: '{{ item }}'
+        headers:
+          If-Modified-Since: 'Thu, 01 Apr 2021 00:00:00 GMT'
+        dest: '/tmp/{{ item | basename }}'
+        force: yes
+      with_items:
+        - 'https://example.com/test1'
+        - 'https://example.com/test2%20%3F'
+        - 'https://example.com/test3#'
+        - 'https://example.com/test4?query=key=value'
+        - 'https://example.com/test5?query=value with space'
+      register: result
+
+    - name: Validate HTTP response
+      assert:
+        that:
+          - result is not failed
+          - '200 OK' in result.json.status
+      loop: "{{ result.results }}"

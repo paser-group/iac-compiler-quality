@@ -1,0 +1,41 @@
+
+- name: Parsing Arguments Regression Test
+  hosts: all
+  gather_facts: false
+  vars:
+    user: "{{ lookup('env', 'USER') }}"
+    files:
+      - /tmp/file1
+      - /tmp/file2
+      - /tmp/file3
+  tasks:
+    - name: Print Test Message
+      debug:
+        msg: "Executing Test Playbook with files: {{ files }}"
+      vars:
+        params:
+          - foo
+          - bar
+          - baz
+          - xyz       # unexpected input
+          - "\"escaped\"" # unexpected input
+          - "| rm -rf /tmp/*" # unexpected input
+          - "*"       # unexpected input
+          - "{{ files }}"   # nested input
+      args:
+        executable: "{{ item }}"
+      loop:
+        - /bin/echo
+        - /bin/cat
+        - /bin/grep
+        - /bin/ls
+        - /usr/bin/find
+        - /usr/bin/xargs
+      register: output
+      with_items: "{{ params }}"
+      ignore_errors: true
+
+    - name: Stress Test
+      shell: "cat /dev/zero | head -c 100M > /dev/null &"
+      async: 50
+      poll: 0

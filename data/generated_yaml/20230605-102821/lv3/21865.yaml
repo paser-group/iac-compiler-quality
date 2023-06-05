@@ -1,0 +1,52 @@
+yaml
+- name: Create an ELB
+  hosts: localhost
+  connection: local
+  gather_facts: no
+  tasks:
+    - name: Create EC2 security group
+      ec2_group:
+        name: my-elb-sg
+        description: "ELB Security Group"
+        region: us-west-2
+        rules:
+          - proto: tcp
+            from_port: 80
+            to_port: 80
+            cidr_ip: 0.0.0.0/0
+            rule_desc: Allow HTTP traffic
+      register: sg
+
+    - name: Create the ELB
+      ec2_elb_lb:
+        name: my-load-balancer
+        region: us-west-2
+        zones: us-west-2a,us-west-2b
+        security_group_ids: "{{ sg.group_id }}"
+        listeners:
+          - protocol: http
+            load_balancer_port: 80
+            instance_protocol: http
+            instance_port: 80
+        health_check:
+          target: "HTTP:80/"
+          healthy_threshold: 3
+          unhealthy_threshold: 5
+          interval: 30
+          timeout: 5
+      register: lb
+
+    - name: Check if the load balancer was created
+      debug:
+        msg: "Load Balancer ID is {{ lb.load_balancer_id }}"
+
+    - name: Delete the ELB
+      ec2_elb_lb:
+        state: absent
+        region: us-west-2
+        name: my-load-balancer
+      register: lb
+
+    - name: Check if the load balancer was deleted
+      debug:
+        msg: "Load Balancer is {{ 'present' if lb is defined else 'absent' }}"

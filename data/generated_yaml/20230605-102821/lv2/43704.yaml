@@ -1,0 +1,31 @@
+
+- name: Testing SSH Failures with default tmp path in Template Module
+  hosts: all
+  gather_facts: no
+  vars:
+    body: "{{ body }}"
+  tasks:
+    - name: Create a temporary directory with invalid permissions
+      file:
+        path: "/tmp/test"
+        mode: 0000
+        state: directory
+        
+    - name: Render a template with SSH Access
+      template:
+        src: templates/ssh_fail_template.j2
+        dest: /tmp/ssh_fail
+      register: result
+      when:
+        - "'ssh' in body"
+      delegate_to: "{{ item }}"
+      with_items: "{{ groups['all'] }}"
+      
+    - name: Try to connect to SSH with incorrect path
+      shell: ssh -i /no/such/key -o StrictHostKeyChecking=no {{ item }} /bin/true
+      changed_when: false
+      ignore_errors: yes
+      with_items: "{{ groups['all'] }}"
+      when:
+        - result is failed
+        - "'ssh' in body"

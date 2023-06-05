@@ -1,0 +1,23 @@
+
+- name: Execute commands on target servers
+  hosts: all
+  tasks:
+    - name: Run command to trigger Bad File Descriptor issue
+      shell: echo 1 > /proc/sys/kernel/core_uses_pid
+      when: "'centos' in inventory_hostname"
+    - name: Run tcpdump command on target servers
+      shell: tcpdump port 80 -i eth0 -w /tmp/output.dump &
+      async: 60
+      poll: 10
+      ignore_errors: True
+    - name: Run nc command on target servers
+      shell: nc -vz 127.0.0.1 80 > /dev/null &
+      async: 60
+      poll: 10
+      ignore_errors: True
+    - name: Collect core dumps from target servers
+      fetch:
+        src: /tmp/core.*
+        dest: ~/coredumps/
+      delegate_to: localhost
+      when: "'ubuntu' in inventory_hostname"

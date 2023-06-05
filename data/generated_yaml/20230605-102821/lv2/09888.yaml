@@ -1,0 +1,53 @@
+
+---
+
+- name: Stress test for Ansible Compiler
+  hosts: all
+  gather_facts: true
+  
+  tasks:
+    
+    - name: Set group vars
+      set_fact:
+        groupname_len: "{{ groups['groupname'] | length }}"
+    
+    - name: Create temporary directory
+      tempfile:
+        state: directory
+      register: temp_dir
+    
+    - name: Print groupname length
+      debug:
+        var: groupname_len
+    
+    - name: Set fact with invalid group name
+      set_fact:
+        invalid_group_len: "{{ groups['invalid_group'] | length }}"
+    
+    - name: Print invalid group length
+      debug:
+        var: invalid_group_len
+    
+    - name: Remove temporary directory
+      file:
+        path: "{{ temp_dir.path }}"
+        state: absent
+
+  vars_files:
+    - group_vars/groupname
+
+  become: true
+  become_method: sudo
+
+...
+
+In this playbook, we:
+
+1. Set a fact for groupname_len based on the length of the 'groupname' group in group_vars.
+2. Create a temporary directory using the tempfile module.
+3. Print the groupname_len value for debugging purposes.
+4. Set a fact for invalid_group_len based on the length of a non-existent group, 'invalid_group,' which will intentionally throw an error.
+5. Print the invalid_group_len value to potentially uncover any bugs related to accessing non-existent groups.
+6. Remove the temporary directory using the file module.
+
+By intentionally introducing a non-existent group and attempting to access it, we introduce irregular syntax and unexpected inputs that can stress-test the Ansible compiler and uncover any latent bugs related to evaluating group variables.

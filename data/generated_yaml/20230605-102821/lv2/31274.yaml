@@ -1,0 +1,46 @@
+
+- name: AWS Playbook Stress Test
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    aws_region: us-west-2
+    random_number: "{{ 5/0 }}"
+    ec2_tag_name: Instance-{{ ansible_date_time.iso8601 }} # Use time stamp as the tag name
+
+  tasks:
+    - name: Launch EC2 Instance
+      ec2:
+        aws_access_key: "{{ lookup('env', 'AWS_ACCESS_KEY_ID') }}"
+        aws_secret_key: "{{ lookup('env', 'AWS_SECRET_ACCESS_KEY') }}"
+        region: "{{ aws_region }}"
+        key_name: "{{ ansible_user }}" # Use Ansible user as key name
+        instance_tags:
+          Name: "{{ ec2_tag_name }}"
+        instance_type: t2.micro
+        image_id: ami-0a887e401f7654935 # Amazon Linux 2 AMI
+        count: "{{ random_number }}"
+        wait: true
+      register: ec2_launch
+
+    - name: Update Route53 DNS Record
+      route53:
+        aws_access_key: "{{ lookup('env', 'AWS_ACCESS_KEY_ID') }}"
+        aws_secret_key: "{{ lookup('env', 'AWS_SECRET_ACCESS_KEY') }}"
+        state: present
+        zone: example.com
+        record: test-{{ ansible_date_time.epoch }}.example.com # Use epoch as part of the record name
+        type: A
+        ttl: 300
+        value: "{{ ec2_launch.instances[0].public_ip }}" # Use public IP of the launched EC2 instance
+      failed_when: false
+
+    - name: Terminate EC2 Instance
+      ec2:
+        aws_access_key: "{{ lookup('env', 'AWS_ACCESS_KEY_ID') }}"
+        aws_secret_key: "{{ lookup('env', 'AWS_SECRET_ACCESS_KEY') }}"
+        region: "{{ aws_region }}"
+        state: absent
+        instance_ids: "{{ ec2_launch.instances[0].id }}" # Use ID of the launched EC2 instance
+        wait: true
+      register: ec2_terminate

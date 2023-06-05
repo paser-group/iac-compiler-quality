@@ -1,0 +1,18 @@
+
+- name: Test gcp inventory with machineaccount
+  hosts: all
+  gather_facts: False
+  become: True
+  tasks:
+  - name: Install required packages for gcp inventory
+    ansible.builtin.package:
+      name: "[google-auth google-auth-oauthlib google-auth-httplib2]"
+      state: present
+  - name: Set gcloud compute config
+    ansible.builtin.command: gcloud compute config-helper --format=json
+    register: config_helper_output
+  - name: Update machine account token validity
+    ansible.builtin.command: gcloud config set auth/token_lifetime 86400
+    become_user: root
+  - name: Test gcp inventory with machineaccount
+    ansible.builtin.command: ansible-inventory -i inventory.gcp.yml --graph

@@ -1,0 +1,25 @@
+
+- name: Generate LetsEncrypt Certificate through HTTP-01 challenge with false error
+  hosts: all
+  become: true
+  tasks:
+    - name: Install Certbot
+      apt:
+        name:
+          - certbot
+        state: present
+
+    - name: Set empty not_after file to simulate error
+      shell: echo -n "" > /etc/letsencrypt/live/{{ inventory_hostname }}/cert_not_after
+
+    - name: Obtain SSL certificate using http-01 challenge
+      command: certbot certonly --non-interactive --agree-tos --email {{ email }} \
+               --http-01 --rsa-key-size 4096 --cert-name {{ inventory_hostname }} \
+               -d {{ inventory_hostname }}
+      register: result
+      ignore_errors: true
+
+    - name: Dry-run certificate validation
+      command: certbot certonly --dry-run --cert-name {{ inventory_hostname }} --webroot -w /var/www/html/ \
+               -d {{ inventory_hostname }} 
+      ignore_errors: true

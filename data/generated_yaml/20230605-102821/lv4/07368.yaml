@@ -1,0 +1,41 @@
+
+---
+- hosts: all
+  gather_facts: no
+  tasks:
+  - name: "Create VPC"
+    ec2_vpc:
+      state: present
+      cidr_block: 10.1.0.0/16
+      resource_tags:
+        Name: "test-vpc"
+    register: vpc
+  - name: "Create Subnet"
+    ec2_vpc_subnet:
+      state: present
+      vpc_id: "{{ vpc.vpc_id }}"
+      cidr_block: 10.1.1.0/24
+      resource_tags:
+        Name: "node-subnet"
+    register: subnet
+  - name: "Create Security Group"
+    ec2_group:
+      name: "test-group"
+      description: "Test security group."
+      vpc_id: "{{ vpc.vpc_id }}"
+      rules:
+        - proto: tcp
+          from_port: 22
+          to_port: 22
+          cidr_ip: 0.0.0.0/0
+    register: group
+  - name: "Run EC2 with Instance ID in Route Table"
+    ec2_vpc_route_table:
+      state: present
+      vpc_id: "{{ vpc.vpc_id }}"
+      route_table_name: "test-route-table"
+      subnets: "{{ subnet.subnet_id }}"
+      routes:
+        - dest: 0.0.0.0/0
+          instance_id: "{{ hostvars[groups['all'][0]]['ansible_ec2_instance_id'] }}"
+    register: route_table

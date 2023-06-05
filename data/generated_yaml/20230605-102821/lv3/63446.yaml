@@ -1,0 +1,32 @@
+yaml
+---
+- name: Discover potential bugs in Ansible
+  hosts: all
+  gather_facts: false
+  become: true
+  tasks:
+    - name: Install nginx 
+      apt:
+        name: nginx
+        state: present
+
+    - name: Stop the nginx service 
+      service:
+        name: nginx
+        state: stopped
+
+    - name: Create a new virtual host
+      copy:
+        dest: "/etc/nginx/sites-enabled/new_vhost"
+        src: "/etc/nginx/sites-available/default"
+      notify:
+        - Restart nginx
+      
+    - name: Add incorrect parameter in module_common.py
+      shell: "sed -i '/setup.py/ s/VERSION/mypoison/g' /usr/lib/python2.7/dist-packages/ansible/utils/module_docs_fragments/modules_common.py"
+      
+    handlers:
+      - name: Restart nginx
+        service:
+          name: nginx
+          state: restarted

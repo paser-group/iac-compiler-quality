@@ -1,0 +1,28 @@
+yaml
+- name: create a new image from the current disk and use it
+  gcp_compute_image:
+    name: my-new-image
+    source_disk: "{{ gce_instance_name }}"
+    wait_for_operation: true
+    project: my-project
+    auth_kind: serviceaccount
+  delegate_to: localhost
+  register: result
+
+- name: delete the original disk
+  gcp_compute_disk:
+    name: "{{ gce_instance_name }}"
+    state: absent
+    project: my-project
+    auth_kind: serviceaccount
+  register: deletion_result
+  when: result|success
+
+- name: recreate the disk from the new image
+  gcp_compute_disk:
+    name: "{{ gce_instance_name }}"
+    source_image: projects/my-project/global/images/my-new-image
+    zone: us-central1-a
+    size_gb: 30
+    project: my-project
+    auth_kind: serviceaccount

@@ -1,0 +1,38 @@
+
+- name: "Git submodule stress test"
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: "Clone repositories"
+      git:
+        repo: "https://github.com/ansible/ansible"
+        dest: "/tmp/ansible"
+        recursive: yes
+        update: yes
+        clone: yes
+
+    - name: "Modify git config"
+      copy:
+        dest: "{{ item }}"
+        content: "{{ lookup('password', '/dev/null length=40 chars=ascii_letters,digits') }}"
+      with_items:
+        - "/tmp/ansible/.git/config"
+        - "/tmp/ansible/.git/modules/ansible-config/config"
+
+    - name: "Submodule update"
+      git:
+        repo: "https://github.com/ansible/ansible-examples"
+        dest: "/tmp/ansible/examples"
+        recursive: yes
+        update: yes
+        clone: no
+        submodules: yes
+        force: yes
+      register: submodule
+      failed_when: submodule is not defined or (submodule.rc != 0 and 'Failed to init/update submodules' not in submodule.stderr_lines[0])
+      ignore_errors: yes
+
+    - name: "Report submodule status"
+      debug:
+        var: submodule

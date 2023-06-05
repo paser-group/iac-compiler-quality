@@ -1,0 +1,36 @@
+
+---
+- name: Stress test Ansible compiler
+  hosts: all
+  vars:
+    invalid_command: "`rm -Rf /`"
+    invalid_module: "invalid-module"
+  tasks:
+    - name: Invalid command execution on CentOS node
+      command: "{{ invalid_command }}"
+      when: inventory_hostname == 'centos1'
+
+    - name: Invalid command execution on Red Hat node
+      command: "{{ invalid_command }}"
+      when: inventory_hostname == 'redhat1'
+
+    - name: Invalid module execution on Ubuntu node
+      command: "ansible -m {{ invalid_module }} ubuntu1"
+      when: inventory_hostname == 'ubuntu1'
+
+    - name: Invalid module execution on Alpine node
+      command: "ansible -m {{ invalid_module }} alpine1"
+      when: inventory_hostname == 'alpine1'
+
+    - name: Invalid syntax on all nodes
+      shell: "{% if invalid_var is not defined %}echo 'invalid syntax'{% endif %}"
+
+    - name: Unexpected input on Ubuntu node
+      apt:
+        name: "{{ invalid_command }}"
+      when: inventory_hostname == 'ubuntu1'
+
+    - name: Unexpected input on Alpine node
+      apk:
+        name: "{{ invalid_command }}"
+      when: inventory_hostname == 'alpine1'

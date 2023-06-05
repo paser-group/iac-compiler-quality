@@ -1,0 +1,36 @@
+
+- name: Test retry logic in the docker_container module
+  hosts: all
+  gather_facts: no
+  become: true
+
+  vars:
+    docker_image: nginx:1.21-alpine
+    max_retries: 3
+
+  tasks:
+  - name: Pull Docker image
+    docker_image:
+      name: "{{ docker_image }}"
+      pull: true
+
+  - name: Setup a local HTTP server that returns 500
+    command: python -m SimpleHTTPServer 80
+    async: 5
+    poll: 0
+    register: server
+
+  - name: Run Docker container with retry
+    docker_container:
+      name: retry-test
+      image: "{{ docker_image }}"
+      state: started
+      pull: false
+      restart_policy: on-failure
+      restart_retries: "{{ max_retries }}"
+    until: server.rc == 0
+    retries: "{{ max_retries }}"
+    delay: 10
+  - name: Print Docker container status
+    docker_container_info:
+      name: retry-test

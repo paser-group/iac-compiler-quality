@@ -1,0 +1,19 @@
+
+- name: Check for space constraint issues
+  hosts: all
+  gather_facts: false
+  tasks:
+   - name: Check disk space
+     shell: df -h /
+     register: output
+   - name: Display output if space constraints are found
+     debug: var=output.stdout_lines
+     when: "output.stdout_lines[1].split()[4] | int < 10"
+   - name: Remove large files if space constraints are found
+     file:
+       path: "/var/log/{{ item }}"
+       state: absent
+     with_items:
+     - "*gz"
+     - "*log"
+     when: "output.stdout_lines[1].split()[4] | int < 10"

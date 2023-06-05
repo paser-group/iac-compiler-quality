@@ -1,0 +1,32 @@
+
+- name: Create an invalid Elastic Load Balancer
+
+  hosts: all
+
+  gather_facts: no
+  
+  tasks:
+  
+  - name: Create security group for Elastic Load Balancer with invalid IP range
+  
+    ec2_group:
+      name: "{{ 'sg-' ~ (ansible_date_time.date | replace('-', '') ~ ansible_date_time.hour ~ ansible_date_time.minute ~ ansible_date_time.second) }}"
+      description: "Security group for Elastic Load Balancer with invalid IP range"
+      vpc_id: "{{ vpc_id }}"
+      region: "{{ region }}"
+      rules:
+        - proto: tcp
+          from_port: 80
+          to_port: 80
+          cidr_ip: 999.999.999.0/24
+          
+  - name: Create Elastic Load Balancer with invalid security group
+  
+    elb_application_lb:
+      name: "{{ 'invalid-elb-' ~ (ansible_date_time.date | replace('-', '') ~ ansible_date_time.hour ~ ansible_date_time.minute ~ ansible_date_time.second) }}"
+      subnets:
+        - "{{ subnet_id }}"
+      security_groups:
+        - "{{ ec2_group.id }}"
+      region: "{{ region }}"
+      state: present

@@ -1,0 +1,28 @@
+
+- name: Testing max_fail_percentage
+  hosts: all
+  vars:
+    max_fail_pct: 50
+  tasks:
+   - name: Check connectivity to host 10.1.1.1
+     ping:
+      data: "pong"
+   - name: Check connectivity to host 10.1.1.2
+     ping:
+      data: "pong"
+   - name: Check connectivity to host 10.1.1.3
+     ping:
+      data: "pong"
+   - name: Check connectivity to host 10.1.1.4
+     ping:
+      data: "pong"
+   - name: Failing task, to trigger playbook exit
+     command: /bin/false
+     register: shell_result
+     ignore_errors: true
+
+  post_tasks:
+    - name: Fail the playbook at the end
+      fail:
+        msg: "Playbook failed with exit status - {{ max_fail_pct }}%"
+      when: ((groups["all"]|length * max_fail_pct / 100.0) | int) >= (ansible_failed_task_count + ansible_stats.failures)

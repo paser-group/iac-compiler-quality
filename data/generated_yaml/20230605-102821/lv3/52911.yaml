@@ -1,0 +1,19 @@
+
+- name: Reproduce ios_config bug
+  hosts: all
+  gather_facts: no
+  tasks:
+   - name: Copy invalid source to ios config file
+     copy: src='invalid_path_destination.cfg' dest='/tmp/'
+     delegate_to: "{{ groups['ios'] | first }}"
+     register: result
+     ignore_errors: true
+     changed_when: false
+   - name: Apply the invalid source config
+     ios_config:
+        src: "{{ result.dest }}"
+        lines:
+            - "Hostname testing"
+     delegate_to: "{{ groups['ios'] | first }}"
+     register: ios_result
+     failed_when: ios_result is not defined

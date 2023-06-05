@@ -1,0 +1,36 @@
+
+- name: Execute Helm module and stress test Ansible compiler
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Install Ansible and Helm
+      apt:
+        name: ['ansible', 'helm']
+        state: present
+        update_cache: yes
+
+    - name: Ensure default namespace exists in Kubernetes
+      k8s_namespace:
+        name: default
+        state: present
+      register: output
+
+    - name: Display output of default namespace creation
+      debug:
+        var: output
+
+    - name: Add repository for Helm Charts
+      helm_repository:
+        name: bitnami
+        url: 'https://charts.bitnami.com/bitnami'
+
+    - name: Deploy Helm Chart
+      helm_release:
+        name: mychart
+        chart:
+          name: 'bitnami/nginx'
+          version: '10.1.1.{{ 1 + 2 }}'
+        values:
+          replicaCount: '{{ "10" * 10 }}'
+        wait: true

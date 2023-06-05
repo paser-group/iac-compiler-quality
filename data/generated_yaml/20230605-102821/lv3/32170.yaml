@@ -1,0 +1,37 @@
+yaml
+- name: Create and register instances to target group
+  hosts: localhost
+  gather_facts: False
+  become: yes
+
+  vars:
+    aws_region: us-west-1
+    asg_name: my-auto-scaling-group
+    target_group_arn: "{{ target_group_id }}"
+
+  tasks:
+    - name: Create target group
+      ec2_elbv2_target_group:
+        name: test-target-group
+        port: 80
+        protocol: HTTP
+        region: "{{ aws_region }}"
+        target_type: instance
+      register: target_group
+
+    - name: Register instances to target group
+      ec2_instance_info:
+        region: "{{ aws_region }}"
+        filters:
+          "tag:Name": "test-instance"
+      register: instances
+
+    - name: Attach target group to Auto Scaling Group
+      ec2_asg:
+        name: "{{ asg_name }}"
+        target_group_arns: ["{{ target_group_arn }}"]
+        region: "{{ aws_region }}"
+        min_size: 1
+        max_size: 2
+        desired_capacity: 1
+      register: asg_info

@@ -1,0 +1,41 @@
+
+- name: Create a k8s deployment
+  hosts: all
+  become: yes
+  gather_facts: no
+  vars:
+    - app_name: myapp
+    - image_name: myimage
+    - replica_count: 1
+    - labels:
+        app: "{{app_name}}"
+  tasks:
+    - name: Create deployment
+      k8s:
+        definition:
+          kind: Deployment
+          apiVersion: apps/v1
+          metadata:
+            name: "{{ app_name }}"
+            labels:
+              app: "{{app_name}}"
+          spec:
+            replicas: "{{ replica_count }}"
+            selector:
+              matchLabels:
+                app: "{{app_name}}"
+            template:
+              metadata:
+                labels:
+                  app: "{{app_name}}"
+              spec:
+                containers:
+                  - name: "{{ app_name }}-container"
+                    image: "{{ image_name }}"
+                    ports:
+                      - containerPort: 8080
+      register: output
+      ignore_errors: yes
+    - name: Debug output
+      debug:
+        var: output

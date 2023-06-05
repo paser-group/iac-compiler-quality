@@ -1,0 +1,42 @@
+
+---
+- name: Test Ansible compiler stress
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: SSH to target host
+      raw: "ssh -oStrictHostKeyChecking=no -q {{ inventory_hostname }} exit"
+
+  vars:
+    ssh_port: 2222
+
+  handlers:
+    - name: Restart ssh service
+      become: true
+      shell: systemctl restart sshd.service
+
+  tasks:
+    - name: Centos: Enable EPEL repository
+      yum:
+        name: epel-release
+        state: latest
+      when: "inventory_hostname == 'centos1'"
+
+    - name: Debian: Install openssh-server
+      apt:
+        name: openssh-server
+        update_cache: yes
+        cache_valid_time: 3600
+      when: "inventory_hostname == 'ubuntu1'"
+
+    - name: Debian: Replace ssh port in /etc/ssh/sshd_config
+      become: true
+      replace:
+        path: /etc/ssh/sshd_config
+        regexp: '^#?Port\\s+'
+        replace: 'Port {{ ssh_port }}'
+      when: "inventory_hostname == 'ubuntu1'"
+
+...
+

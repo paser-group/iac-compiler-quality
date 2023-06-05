@@ -1,0 +1,27 @@
+yaml
+- name: Configure NXOS Layer 2 Interface Idempotence
+  hosts: switches
+  tasks:
+    - name: Add Interface Configuration
+      nxos_l2_interface:
+        name: Ethernet1/1
+        description: Server Access
+        vlan_id: 10
+        state: present
+        host: "{{ inventory_hostname }}"
+      register: interface_config
+
+    - name: Verify idempotency of Interface Configuration
+      nxos_l2_interface:
+        name: Ethernet1/1
+        description: Server Access
+        vlan_id: 10
+        state: present
+        host: "{{ inventory_hostname }}"
+      when: interface_config is changed
+      register: interface_config_idempotency_check
+
+    - name: Print Debug message if Idempotency Check fails
+      debug:
+        msg: "NXOS idempotency check failed for Ethernet1/1 interface"
+      when: interface_config_idempotency_check.status == 'FAILED'

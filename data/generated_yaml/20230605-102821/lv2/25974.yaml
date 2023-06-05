@@ -1,0 +1,40 @@
+
+---
+- name: Test docker_container.py
+  hosts: all
+  become: yes
+  
+  tasks:
+  - name: Create test containers
+    docker_container:
+      name: "{{ item.name }}"
+      image: "{{ item.image }}"
+      state: started
+      hostname: "{{ item.hostname }}"
+      networks:
+        node-net:
+          ipv4_address: "{{ item.ip }}"
+    with_items:
+    - { name: "ubuntu1", image: "ubuntu:latest", hostname: "ubuntu", ip: "10.1.1.1" }
+    - { name: "debian1", image: "debian:latest", hostname: "debian", ip: "10.1.1.2" }
+    - { name: "centos1", image: "centos:latest", hostname: "centos", ip: "10.1.1.3" }    
+    - { name: "redhat1", image: "redhat:latest", hostname: "redhat", ip: "10.1.1.4" }
+    
+  - name: Modify container metadata
+    set_fact:
+      ubuntu_changed: "{{ {'os': 'debian', 'ip': '10.1.1.2', 'hostname': 'ubuntu2', 'state': 'exited', 'restart_policy': 'always'} | random }}"
+      debian_changed: "{{ {'os': 'alpine', 'ip': '10.1.1.3', 'hostname': 'debian2', 'volumes': '/mnt/data:/var/data', 'state': 'restarting'} | random }}"
+      centos_changed: "{{ {'os': 'ubuntu', 'ip': '10.1.1.4', 'hostname': 'centos2', 'env': 'DEBUG=true', 'state': 'unpaused'} | random }}"
+      redhat_changed: "{{ {'os': 'debian', 'ip': '10.1.1.1', 'hostname': 'redhat2', 'exposed_ports': '80/udp', 'state': 'paused'} | random }}"
+    
+  - name: Compare container metadata
+    assert:
+      that:
+        - "{{ item.changed_vars | default(item.vars) }} == {{ item.expected }}"
+      fail_msg: "Container {{ item.name }} metadata does not match the expected values"
+      success_msg: "Container {{ item.name }} metadata matches the expected values"
+    with_items:
+    - { name: "ubuntu1", vars: inventory_hostname | dict(os='ubuntu', ip='10.1.1.1', hostname='ubuntu', state='running', restart_policy='no'), changed_vars: "{{ ubuntu_changed }}", expected: inventory_hostname | dict(os='ubuntu', ip='10.1.1.1', hostname='ubuntu', state='running', restart_policy='no') }
+    - { name: "debian1", vars: inventory_hostname | dict(os='debian', ip='10.1.1.2', hostname='debian', state='running', restart_policy='no'), changed_vars: "{{ debian_changed }}", expected: inventory_hostname | dict(os='debian', ip='10.1.1.2', hostname='debian', state='running', restart_policy='no', volumes='/mnt/data:/var/data') }
+    - { name: "centos1", vars: inventory_hostname | dict(os='centos', ip='10.1.1.3', hostname='centos', state='running', restart_policy='no'), changed_vars: "{{ centos_changed }}", expected: inventory_hostname | dict(os='centos', ip='10.1.1.3', hostname='centos', state='running', restart_policy='no', env='DEBUG=true') }    
+    - { name: "redhat1", vars: inventory_hostname | dict(os='redhat', ip='10.1.1.4', hostname='redhat', state='running', restart_policy='no'), changed_vars: "{{ redhat_changed }}", expected: inventory_hostname | dict(os='redhat', ip='10.1.1.4', hostname='redhat', state='running', restart_policy='no', exposed_ports='80/udp') }

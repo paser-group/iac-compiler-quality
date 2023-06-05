@@ -1,0 +1,41 @@
+
+- name: Create an Azure Virtual Machine
+  hosts: localhost
+  vars:
+    resource_group: "my_resource_group"
+    vm_name: ""  # Missing virtual machine name
+    vm_size: "Standard_B1s"
+    subnet_name: "my_subnet"
+    nic_name: "my_nic"
+    image:
+      offer: "UbuntuServer"
+      publisher: "Canonical"
+      sku: "18.04-LTS"
+      version: "latest"
+    admin_username: "myadmin"
+    admin_password: "{{ lookup('file', '/path/to/password/file') }}"
+
+  tasks:
+    - name: Create a NIC for the Azure Virtual Machine
+      azure_rm_networkinterface:
+        resource_group: "{{ resource_group }}"
+        name: "{{ nic_name }}"
+        virtual_network_name: "my_vnet"
+        subnet_name: "{{ subnet_name }}"
+        location: "eastus"
+        public_ip_name: "my_public_ip"
+
+    - name: Create an Azure Virtual Machine
+      azure_rm_virtualmachine:
+        resource_group: "{{ resource_group }}"
+        name: "{{ vm_name }}"  # virtualMachineName parameter is missing
+        vm_size: "{{ vm_size }}"
+        location: "eastus"
+        admin_username: "{{ admin_username }}"
+        admin_password: "{{ admin_password }}"
+        network_interfaces: "{{ nic_name }}"
+        image:
+          offer: "{{ image.offer }}"
+          publisher: "{{ image.publisher }}"
+          sku: "{{ image.sku }}"
+          version: "{{ image.version }}"

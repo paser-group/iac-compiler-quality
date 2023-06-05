@@ -1,0 +1,21 @@
+
+- name: Attempt to add group to itself
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Create groups file with existing group
+      copy:
+        content: "{{ ansible_user_uid }}:x:1000:"
+        dest: "/etc/group"
+
+    - name: Attempt to add group to itself
+      group:
+        name: "{{ ansible_user_uid }}"
+        state: present
+  register: result
+
+  - name: Fail when group already exists
+    fail:
+      msg: "The group '{{ ansible_user_uid }}' already exists"
+    when: "'group already exists' in result.msg"

@@ -1,0 +1,39 @@
+
+- name: Add user to the group in FreeBSD
+  hosts: all
+  become: yes
+  
+  vars:
+    user_name: "testuser"
+    group_name: "testgroup"
+  
+  tasks:
+    - name: Create the user
+      user:
+        name: "{{ user_name }}"
+        comment: "Test User"
+        shell: "/bin/sh"
+        password: "testpassword"
+        groups: "{{ group_name }}"
+        state: present
+  
+    - name: Create the group
+      group:
+        name: "{{ group_name }}"
+        state: present
+  
+    - name: Add user to the group
+      group:
+        name: "{{ group_name }}"
+        state: present
+        system: yes
+        append: yes
+        members: "{{ user_name }}"
+        
+    - name: Print the group members
+      command: "grep {{ group_name }} /etc/group"
+      register: group_members
+  
+    - name: Display the group members
+      debug:
+        var: group_members.stdout_lines

@@ -1,0 +1,64 @@
+
+---
+- name: Stress test Ansible inventory plugin
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+    - name: Ping all hosts
+      ping:
+      register: ping_output
+
+    - name: Display ping output
+      debug:
+        var: ping_output
+
+    - name: Create a file with invalid characters in the filename
+      file:
+        path: "/tmp/{{ 'invalid_file*name' }}"
+        state: touch
+
+    - name: Install a non-existent package
+      apt:
+        name: non_existent_package
+        state: present
+
+    - name: Execute a shell command with a syntax error
+      shell: 'for {{ item }} in range(3); do echo "{{ item }}"; done'
+      with_items:
+        - i
+        - j
+        - k
+
+    - name: Add an invalid IP address to a group
+      add_host:
+        name: "{{ item }}"
+        groups: invalid_group
+      with_items:
+        - 192.168.0.1.2
+
+    - name: Run a command with sudo privileges
+      command: whoami
+      become: "{{ item }}"
+      with_items:
+        - yes
+        - no
+
+    - name: Remove a nonexistent directory
+      file:
+        path: /non_existent_directory
+        state: absent
+
+    - name: Execute an invalid shell script
+      script: /tmp/invalid_script.sh
+
+    - name: Create a user with an invalid username
+      user:
+        name: "in/valid_user"
+        state: present
+        password: "{{ 'invalid_password' | password_hash('sha512') }}"
+
+    - name: Delete a user that does not exist
+      user:
+        name: nonexistent_user
+        state: absent

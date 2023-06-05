@@ -1,0 +1,26 @@
+
+- name: Check if aci_bd_subnet module returns expected output
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Query aci_bd_subnet module
+      aci_bd_subnet:
+        host: "{{ inventory_hostname }}"
+        username: "{{ ACI_USERNAME }}"
+        password: "{{ ACI_PASSWORD }}"
+        tenant: "{{ ACI_TENANT }}"
+        bd: "{{ ACI_BD_NAME }}"
+        query_body:
+          fvSubnet:
+            attributes:
+              ip: "{{ ACI_BD_SUBNET_IP }}"
+      register: res
+
+    - name: Print aci_bd_subnet module result
+      debug:
+        var: res
+
+    - name: Fail if aci_bd_subnet module does not return expected output
+      fail:
+        msg: "The aci_bd_subnet module did not return expected output."
+      when: res | failed or res.ansible_facts | json_query('results[0].response.payload.imdata[0].fvSubnet.attributes.ip') == []

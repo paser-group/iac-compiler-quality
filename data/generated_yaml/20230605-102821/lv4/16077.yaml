@@ -1,0 +1,20 @@
+
+---
+- name: Test playbook for WinRMTransportError
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Simulate async task failure
+      async: 10
+      poll: 1
+      shell: "echo 'This task will fail' && exit 1"
+      register: async_result
+      ignore_errors: true
+    - name: Check async task status
+      async_status:
+        jid: "{{ async_result.ansible_job_id }}"
+      register: async_status_result
+      until: async_status_result.finished
+      retries: 30
+      delay: 5
+      ignore_errors: false

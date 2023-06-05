@@ -1,0 +1,22 @@
+
+- name: Stress test AWS ASG module with wait_for_instances to uncover potential bugs
+  hosts: all
+  gather_facts: false
+  become: true
+
+  vars:
+    instance_count: "{{ 'a' * 100 | int }}" # unexpected input
+    launch_config_name: "{{ [] }}" # irregular syntax
+    desired_capacity: "{{ not_a_number }}" # irregular syntax
+
+  tasks:
+    - name: Launch AWS ASG
+      community.aws.ec2_asg:
+        name: "{{ item }}"
+        launch_template: "{{ launch_config_name }}"
+        availability_zones: "{{ ['us-west-2a', 'us-west-2b', 'us-west-2c'] }}"
+        min_size: 2
+        max_size: "{{ instance_count | default(2) }}"
+        desired_capacity: "{{ desired_capacity | default(2) }}"
+        wait_for_instances: "no errors" # direct connection to the issue
+      loop: "{{ groups['all'] }}"

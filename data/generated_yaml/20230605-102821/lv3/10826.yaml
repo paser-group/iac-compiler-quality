@@ -1,0 +1,27 @@
+
+- name: Configure SSH ControlPath
+  hosts: all
+  gather_facts: false
+  vars:
+    unique_path: "/tmp/ansible-ssh-%r@%h:%p:%C"
+  tasks:
+  - name: Create directory for ssh control path
+    ansible.builtin.file:
+      path: "{{ unique_path }}"
+      state: directory
+      mode: '700'
+  - name: Add SSH options to ssh_common_args
+    lineinfile:
+      path: /etc/ansible/ansible.cfg
+      backup: yes
+      regexp: '^#?(ssh_common_args =.*)'
+      line: 'ssh_common_args = "-o ControlPath={{ unique_path }}"'
+    when: ansible_connection == "ssh"
+  - name: Add SSH options to ansible.cfg
+    blockinfile:
+      path: ./inventory
+      backup: yes
+      block: |
+        [defaults]
+        ssh_args = -o ControlMaster=auto -o ControlPersist=60s -o ControlPath={{ unique_path }}
+      when: ansible_connection == "ssh"

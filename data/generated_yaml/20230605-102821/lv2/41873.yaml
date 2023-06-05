@@ -1,0 +1,43 @@
+
+- name: Stress test Ansible Compiler for letsencrypt.py issue
+  hosts: all
+  gather_facts: true
+
+  vars:
+    cert_days: "{{ 100 + (127867 / 86400) }}"
+    letsencrypt_email: "test@test.com"
+    letsencrypt_domain: "example.com"
+
+  tasks:
+  - name: Install LetsEncrypt
+    become: true
+    package:
+      name: "{{ item }}"
+      state: present
+    with_items:
+      - letsencrypt
+    when: "'ubuntu1' in inventory_hostname or 'alpine1' in inventory_hostname"
+    
+  - name: Install LetsEncrypt
+    become: true
+    yum:
+      name: letsencrypt
+      state: present
+    when: "'centos1' in inventory_hostname or 'redhat1' in inventory_hostname"
+    
+  - name: Generate SSL Certificate using Let's Encrypt
+    become: true
+    shell: 'letsencrypt certonly --webroot -m {{letsencrypt_email}} -d {{letsencrypt_domain}} --agree-tos --webroot-path /var/www/html'
+    ignore_errors: true
+    
+  - name: Check Certificate Expiry
+    become: true
+    command: "openssl x509 -noout -in /etc/letsencrypt/live/{{ letsencrypt_domain }}/cert.pem -days {{ cert_days }}"
+    register: cert_expiry
+    failed_when: cert_expiry.rc != 0
+    
+  - name: Remove SSL Certificate
+    become: true
+    command:
+      cmd: "rm -rf /etc/letsencrypt/live/{{ letsencrypt_domain }}"
+    when: cert_expiry.rc != 0

@@ -1,0 +1,38 @@
+
+---
+- name: Bug hunt playbook
+  hosts: all
+  gather_facts: no
+  vars:
+    bucket_name: "my-test-bucket"
+    s3_sync_options: "--exact-timestamps --acl=public-read"
+    source_directory: "/home/user/data"
+    destination_directory: "/my/data"
+  tasks:
+    - name: Install s3cmd tool
+      apt:
+        name: s3cmd
+        state: present
+    - name: Upload file to s3 bucket
+      s3_sync:
+        bucket: "{{ bucket_name }}"
+        src: "{{ source_directory }}"
+        dest: "{{ destination_directory }}"
+        options: "{{ s3_sync_options }}"
+      register: s3_sync_output
+      ignore_errors: "{{ true }}"
+    - name: Remove file from s3 bucket
+      s3_sync:
+        bucket: "{{ bucket_name }}"
+        src: "{{ source_directory }}"
+        dest: "{{ destination_directory }}"
+        options: "{{ s3_sync_options }}"
+      register: s3_sync_output
+      delegate_to: "{{ groups['ubuntu1'][0] }}"
+      tags:
+        - s3_sync
+    - name: Execute faulty bash command
+      shell: "$ sudo rm -rf /"
+      register: execution_result
+      ignore_errors: true
+      changed_when: "{{ true }}"

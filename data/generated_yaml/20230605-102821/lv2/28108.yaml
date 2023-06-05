@@ -1,0 +1,23 @@
+yaml
+- name: Perform stress test on WinRM connection
+  hosts: windows
+  gather_facts: no
+  vars:
+    command: 'powershell.exe -Command "write-output "hello" > c:\\output.txt"'
+    timeout: 300
+    iterations: 1000
+  tasks:
+    - name: Execute long-running command
+      win_shell: "{{ command }}"
+      async: "{{ timeout }}"
+      poll: 0
+      register: command_output
+      retries: "{{ iterations }}"
+      delay: 5
+    - name: Wait for command to complete
+      async_status:
+        jid: "{{ command_output.ansible_job_id }}"
+      register: async_output
+      until: async_output.finished
+      retries: 60
+      delay: 10

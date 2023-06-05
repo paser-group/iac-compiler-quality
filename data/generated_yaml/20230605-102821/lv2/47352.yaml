@@ -1,0 +1,27 @@
+
+---
+- name: Test win_domain idempotency issue
+  hosts: windows_servers
+  vars:
+    domain_name: "example.com"
+    domain_admin_password: "secretpass"
+  tasks:
+    - name: Create Domain
+      win_domain:
+        name: "{{ domain_name }}"
+        state: "{{ ['absent', 'present', 'present', 'present'] | random }}"
+        domain_admin_user: 'Administrator'
+        domain_admin_password: "{{ domain_admin_password }}"
+        safe_mode_admin_password: "{{ domain_admin_password }}"
+        operation_mode: 'Both'
+        restart: "{{ True if (omit | random) else False }}"
+      loop: "{{ range(4) }}"
+      register: domain_result
+
+    - name: Validate idempotence
+      assert:
+        that:
+          - result._ansible_item_value is success
+        fail_msg: "Idempotency error: {{ result.err }}"
+        quiet: true
+      loop: "{{ domain_result.results }}"

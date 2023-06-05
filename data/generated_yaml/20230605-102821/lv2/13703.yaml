@@ -1,0 +1,83 @@
+
+---
+- name: Redis Fact Caching Bug Hunt Playbook
+  hosts: all
+  gather_facts: no
+
+  vars:
+    redis_port: 6379
+    cache_ttl: 60
+
+  tasks:
+    - name: Check for RHEL 6
+      assert:
+        that:
+          - ansible_distribution == 'RedHat'
+          - ansible_distribution_major_version == '6'
+        fail_msg: "This playbook only runs on RHEL 6"
+
+    - name: Install Redis 
+      package:
+        name: "{{ item }}"
+      loop:
+        - redis-server
+        - python-redis
+      when: ansible_os_family == 'RedHat'
+
+    - name: Install Redis on Ubuntu
+      apt:
+        name: redis-server
+        state: present
+      when: ansible_distribution == "Ubuntu"
+
+    - name: Install Redis on Alpine
+      apk:
+        name: redis
+        state: present
+      when: ansible_distribution == "Alpine"
+
+    - name: Start Redis service
+      ansible.builtin.service:
+        name: redis
+        state: started
+        enabled: yes
+      when:
+        - ansible_os_family == 'RedHat'
+        - ansible_distribution == "Ubuntu"
+
+    - name: Test Redis connection
+      wait_for:
+        port: "{{ redis_port }}"
+        host: "{{ ansible_host }}"
+        timeout: 5
+
+    - name: Set a fact to cache
+      set_fact:
+        redis_fact_cache: "{{ ansible_facts | to_nice_json }}"
+      when: ansible_os_family == 'RedHat'
+
+    - name: Store Redis fact to cache
+      redis_facts:
+        host: "{{ ansible_host }}"
+        port: "{{ redis_port }}"
+        db: 0
+        password: "my_password"
+        state: present
+        ttl: "{{ cache_ttl }}"
+        key_prefix: redis_fact_cache
+      when: ansible_os_family == 'RedHat'
+
+    - name: Verify Redis fact caching
+      debug:
+        var: ansible_local.redis_fact_cache.redis_fact_cache
+      when: ansible_os_family == 'RedHat'
+
+    - name: Stop Redis service
+      ansible.builtin.service:
+        name: redis
+        state: stopped
+        enabled: no
+      when:
+        - ansible_os_family == 'RedHat'
+        - ansible_distribution == "Ubuntu"
+---

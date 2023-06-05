@@ -1,0 +1,32 @@
+
+---
+- name: nxos_l2_interface Idempotence Issue Test
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Create L2 Interface with Invalid VLAN Range
+      nxos_l2_interface:
+        name: vlan -1
+        mode: static
+        state: present
+        
+    - name: Update Native VLAN on the L2 Interface
+      nxos_l2_interface:
+        name: vlan 10
+        l2_trunk_configuration:
+          interface: "{{ inventory_hostname }}"
+          native_vlan: 999
+          allowed_vlans: [10,11,12,notint] # provoking errors
+          prune_unused_vlans: True
+        state: present
+
+    - name: Ensure Idempotence of the Configuration
+      nxos_l2_interface:
+        name: vlan 10
+        state: present
+      register: interface_result
+
+    - name: Fail the Play if any Changes Were Made during the Test
+      fail:
+        msg: "Playbook has failed! Changes were introduced into the system."
+      when: interface_result.changed | bool

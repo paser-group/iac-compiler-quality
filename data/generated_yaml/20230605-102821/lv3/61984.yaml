@@ -1,0 +1,60 @@
+yaml
+---
+- hosts: all
+  gather_facts: true
+  become: yes
+
+  tasks:
+    - name: Create an Azure managed disk
+      azure_rm_managed_disk:
+        resource_group: myResourceGroup
+        name: myManagedDisk
+        storage_account_type: Premium_LRS
+        disk_size_gb: 10
+        disk_iops_read_write: 500
+        disk_mbps_read_write: 100
+        caching: ReadWrite
+
+    - name: Format and mount managed disk as ext4 filesystem
+      filesystem:
+        fstype: ext4
+        dev: /dev/sdc
+
+    - name: Create directory /mnt/myDisk
+      file:
+        path: /mnt/myDisk
+        state: directory
+
+    - name: Mount the disk to the /mnt/myDisk directory
+      mount:
+        path: /mnt/myDisk
+        src: /dev/sdc
+        fstype: ext4
+        opts: defaults
+        state: mounted
+        
+    - name: Execute I/O test
+      shell: |
+        dd if=/dev/zero of=/mnt/myDisk/testfile bs=512 count=10000 oflag=direct
+        sync
+
+    - name: Remove the test file
+      file:
+        path: "/mnt/myDisk/testfile"
+        state: absent
+
+    - name: Unmount the disk
+      mount:
+        path: /mnt/myDisk
+        state: unmounted
+
+    - name: Remove the mount directory
+      file:
+        path: /mnt/myDisk
+        state: absent
+      
+    - name: Remove the managed disk
+      azure_rm_managed_disk:
+        resource_group: myResourceGroup
+        name: myManagedDisk
+        state: absent

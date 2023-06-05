@@ -1,0 +1,37 @@
+
+- name: Test SSH-keyscan in Ansible Git Module
+  hosts: all
+  gather_facts: no
+  
+  tasks:
+    - name: Clone Git repository with ssh-keyscan
+      git:
+        repo: git@github.com:myrepo/myapp.git
+        dest: /var/www/myapp
+        ssh_opts: "-o 'StrictHostKeyChecking=no'"
+  
+    - name: Check the cloned repo for SSH host keys
+      command: ssh-keyscan github.com >> ~/.ssh/known_hosts
+      args:
+        chdir: /root
+  
+    - name: Update Git email address
+      git:
+        repo: /var/www/myapp
+        user: "User Name"
+        email: "user@example.com"
+      
+    - name: Fetch branches from Git
+      git:
+        repo: /var/www/myapp
+        remote: origin
+        refspec: "+refs/heads/*:refs/remotes/origin/*"
+    
+    - name: Perform some unconventional syntax patterns
+      debug: msg="{{item}}"
+      with_items:
+         - "{{ ansible_hostname }} : SSH-keyscan test"
+         - "{{ playbook_dir }} : The location of the playbook directory"
+         - "{{ 'some string' | map('upper') | list }}"
+         - "{{ (1 + 2) * 3 }}"
+         - "{{ lookup('env', 'HOME') }} : Home directory of the user"

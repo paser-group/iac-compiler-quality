@@ -1,0 +1,62 @@
+
+- name: Stress testing the Ansible compiler
+  hosts: all
+  gather_facts: false
+
+  tasks:
+  - name: Run facter command
+    shell: >
+      facter -p
+    register: facter_output
+
+  - name: Verify facter information
+    assert:
+      that:
+        - "'osfamily' in facter_output.stdout"
+        - "'os.name' in facter_output.stdout"
+        - "'os.release.full' in facter_output.stdout"
+        - "'networking.interfaces.eth0.ip' in facter_output.stdout"
+      success_msg: "Facter information verified successfully"
+      fail_msg: "Facter information not verified"
+
+  - name: Set up an SSH connection
+    expect:
+      command: ssh {{item}} 'echo hello'
+      responses:
+        Password: "{{lookup('file', '/etc/passwd')}}"
+    with_items:
+      - ubuntu1
+      - alpine1
+      - centos1
+      - redhat1
+
+  - name: Inject invalid command
+    fail:
+      msg: "{{A*B}}"
+
+  - name: Verify network connectivity
+    wait_for:
+      host: "{{item}}"
+      port: 22
+    with_items:
+      - 10.1.1.1
+      - 10.1.1.2
+      - 10.1.1.3
+      - 10.1.1.4
+
+  - name: Install telnet package
+    apt:
+      name: telnet
+      state: present
+    become: yes
+    when: ansible_os_family == 'Debian'
+
+  - name: Write to a protected file
+    copy:
+      content: "This is a test file"
+      dest: /etc/sudoers
+      mode: 0644
+    become: yes
+
+  - name: Execute a shell command with incorrect syntax
+    shell: "-o pipefail -c 'echo hello' |"

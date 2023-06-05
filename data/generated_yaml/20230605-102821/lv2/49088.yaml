@@ -1,0 +1,37 @@
+
+- name: Perform SSH-related tasks on nodes
+  hosts: all
+  become: true
+  tasks:
+    - name: Restart SSH service on nodes
+      shell: systemctl restart sshd
+      register: restart_ssh
+    - name: Retrieve status of SSH service on nodes
+      command: systemctl status sshd
+      register: ssh_status
+    - name: Check SSH version on nodes
+      shell: ssh -V
+      register: ssh_version
+    - name: Install SSH client on nodes
+      apt:
+        name: openssh-client
+        state: present
+      register: install_ssh
+    - name: Remove SSH server on nodes
+      yum:
+        name: openssh-server
+        state: absent
+      register: remove_ssh
+    - name: Check if SSH service is listening on nodes
+      wait_for:
+        host: "{{ inventory_hostname }}"
+        port: 22
+        state: started
+        timeout: 10
+      register: ssh_listen
+    - name: Attempt SSH login with invalid password on nodes
+      expect:
+        command: ssh user@{{ inventory_hostname }}
+        responses:
+          Password: incorrect_password
+      register: ssh_login

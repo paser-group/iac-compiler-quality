@@ -1,0 +1,29 @@
+
+- name: Remove SSL validation on Slack channel webhook
+  hosts: all
+  gather_facts: no
+  vars:
+    slack_channel_webhook: "https://hooks.slack.com/services/T0123456789/B0123456789/abcdefghijklmno"
+  tasks:
+  - name: Disable SSL verification for the webhook
+    uri:
+      url: "{{ slack_channel_webhook }}"
+      method: POST      
+      validate_certs: false
+      return_content: yes
+    register: slack_response
+
+  - name: Notify Slack channel about the SSL validate error
+    slack:
+      token: "<SLACK_TOKEN>"
+      msg: "Slack channel webhook SSL validate error."
+      channel: "#general"     
+    when: slack_response.status == 200 and "OK" in slack_response.content
+
+  - name: Restore SSL validation on Slack channel webhook
+    uri:
+      url: "{{ slack_channel_webhook }}"
+      method: POST      
+      validate_certs: true
+      return_content: yes
+    when: slack_response.status == 200 and "OK" in slack_response.content

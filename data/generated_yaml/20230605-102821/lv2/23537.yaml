@@ -1,0 +1,59 @@
+
+- name: Stress test Ansible inventory compiler
+  hosts: all
+  gather_facts: false
+
+  tasks:
+  
+  - name: Create new hosts file with improper syntax
+    copy:
+      content: 'ubuntu1 10.1.1.1'
+      dest: /etc/hosts
+    ignore_errors: true
+
+  - name: Remove hosts file
+    file:
+      path: /etc/hosts
+      state: absent
+    ignore_errors: true
+
+  - name: Run shell command using unknown/unsupported module
+    shell: /bin/sh -c "echo 'this is a test' >> /tmp/test-file.txt"
+    become: true
+    any_errors_fatal: true
+    ignore_errors: true
+
+  - name: Attempt to add non-existent node in inventory
+    add_host:
+      name: nodeX
+      ansible_host: 10.1.1.5
+      ansible_user: ansible
+    ignore_errors: true
+
+  - name: Create an invalid inventory file
+    copy:
+      content: |
+        [ubuntu1]
+        ubuntu1 ansible_host=10.1.1.1
+        [centos1
+        centos1 ansible_host=10.1.1.3
+      dest: /etc/ansible/hosts
+    become: true
+    any_errors_fatal: true
+    ignore_errors: true
+
+  - name: Attempt to use non-existent inventory file
+    command: ansible-playbook -i /etc/ansible/hosts-non-existent pb.yml
+    ignore_errors: true
+
+  - name: Attempt to use the value of an undefined variable
+    debug: var=ansible_non_existent_variable
+    ignore_errors: true
+
+  - name: Attempt to use invalid syntax in playbooks
+    debug:
+      msg: "test message"
+    with_items: "{{ range(0, 5) }}"
+    loop_control:
+      label: "{{ item }}"
+      index_var: myIndex

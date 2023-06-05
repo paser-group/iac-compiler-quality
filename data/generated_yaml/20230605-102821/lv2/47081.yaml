@@ -1,0 +1,70 @@
+
+- name: Test k8s_raw module
+  hosts: all
+  become: yes
+
+  tasks:
+    - name: Test k8s_raw with invalid host
+      k8s_raw:
+        api_version: v1
+        kind: Pod
+        metadata:
+          name: test-pod
+        spec:
+          containers:
+            - name: nginx
+              image: nginx
+        host: "{{ invalid_host }}"
+      register: k8s_raw_result
+      ignore_errors: yes
+
+    - name: Test k8s_raw with invalid package
+      k8s_raw:
+        api_version: "{{ invalid_package }}"
+        kind: Pod
+        metadata:
+          name: test-pod
+        spec:
+          containers:
+            - name: nginx
+              image: nginx
+        host: "ubuntu1"
+      register: k8s_raw_result
+      ignore_errors: yes
+
+    - name: Test k8s_raw with invalid method
+      k8s_raw:
+        api_version: v1
+        kind: Pod
+        metadata:
+          name: test-pod
+        spec:
+          containers:
+            - name: nginx
+              image: nginx
+        method: "invalid_method"
+        host: "ubuntu1"
+      register: k8s_raw_result
+      ignore_errors: yes
+
+    - name: Test k8s_raw with malformed YAML
+      shell: |
+        echo '
+          apiVersion: "{{ invalid_package }}"
+          kind: Pod
+          metadata:
+            name: test-pod
+          spec:
+            containers:
+            - name: nginx
+              image: nginx
+        ' > /tmp/testfile.yaml 
+      register: k8s_raw_shell_result
+      changed_when: false
+
+    - name: Run k8s_raw with malformed YAML
+      k8s_raw:
+        yaml: "{{ lookup('file', '/tmp/testfile.yaml') }}"
+        host: "ubuntu1"
+      register: k8s_raw_result
+      ignore_errors: yes

@@ -1,0 +1,36 @@
+
+---
+- name: Test Playbook for mssql_db error
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Install mssql-server
+      apt:
+        name: mssql-server
+        state: present
+
+    - name: Create mistyped database with wrong collation
+      mssql_db:
+        name: testdb
+        collation: SQL_Latin1_General_CP1_CI_AB
+        state: present
+
+    - name: Create table with incorrect primary key constraint
+      mssql_query:
+        instance: MSSQLSERVER
+        login_host: localhost
+        user: sa
+        name: "{{ item }}"
+        state: present
+      loop: "{{ ['CREATE TABLE test_table (col1 INT, col2 VARCHAR(100), CONSTRAINT pk_test PRIMARY KEY (col3))'] }}"
+
+    - name: Stop mssql-server
+      service:
+        name: mssql-server
+        state: stopped
+
+    - name: Start mssql-server
+      service:
+        name: mssql-server
+        state: started

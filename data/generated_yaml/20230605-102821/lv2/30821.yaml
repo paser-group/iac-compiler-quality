@@ -1,0 +1,34 @@
+
+- name: Unarchive module playbook
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Unarchive file from unexpected invalid path
+      unarchive:
+        src: /path/to/archive
+        dest: /path/to/destination
+        remote_src: yes
+        validate_certs: false
+        force: yes
+        creates: /path/to/file/in/destination
+      register: invalid_unarchive
+
+    - name: Asserting failure to unarchive from invalid path
+      assert:
+        that: invalid_unarchive['failed'] == true
+      when: invalid_unarchive['msg'] == 'Unable to find file in expected paths'
+
+    - name: Unarchive file from expected valid path
+      unarchive:
+        src: /path/to/archive
+        dest: /path/to/destination
+        remote_src: yes
+        validate_certs: false
+        force: yes
+      register: valid_unarchive
+
+    - name: Asserting successful unarchive from valid path
+      assert:
+        that: valid_unarchive['changed'] == true
+      when: valid_unarchive['msg'] == 'Archive successfully extracted'

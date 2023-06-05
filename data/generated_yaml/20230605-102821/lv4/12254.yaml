@@ -1,0 +1,24 @@
+
+- name: Run async task with until and with_items loop
+  shell: /usr/bin/some_command "{{ item }}"
+  async: 30
+  poll: 0
+  with_items:
+    - item1
+    - item2
+    - item3
+    - item4
+  register: task_output
+
+- name: Wait for task completion
+  async_status:
+    jid: "{{ item.ansible_job_id }}"
+  until: task_output.finished
+  retries: 30
+  delay: 5
+  with_items: "{{ task_output.results }}"
+
+- name: Display task output
+  debug:
+    var: item.stdout_lines
+  with_items: "{{ task_output.results }}"

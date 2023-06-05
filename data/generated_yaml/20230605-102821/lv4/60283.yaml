@@ -1,0 +1,20 @@
+yaml
+- hosts: all
+  tasks:
+  - name: Verify missing module error message
+    block:
+    - name: Attempt to use missing collection module
+      shell: |
+        echo 'Hello World'
+      register: missing_module_error
+      ignore_errors: true
+    - name: Assert correct error message thrown
+      assert:
+        that: "'Unable to find' in missing_module_error.stderr"
+      failed_when: false
+    rescue:
+      - name: Verify 'no core modules present' message thrown when collection missing
+        shell: |
+          echo 'Hello World'
+        register: no_core_module_error
+        failed_when: (no_core_module_error.rc != 0 and ("no core modules present" not in no_core_module_error.stderr))

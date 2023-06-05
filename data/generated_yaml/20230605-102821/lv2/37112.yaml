@@ -1,0 +1,52 @@
+
+- name: Test CS Instance user_data with Python2 and Python3
+  hosts: all
+  gather_facts: false
+  become: true
+  
+  vars:
+    user_data: "{{ lookup('file', '/path/to/user_data/file') }}"
+  
+  tasks:
+    - name: Test CS Instance with Python2
+      cs_instance:
+        api_username: 'my-username'
+        api_password: 'my-password'
+        hostname: '{{ inventory_hostname }}'
+        name: 'test-instance'
+        network_href: '/Compute-587894/virtualnetwork/6ad35211-0151-46e9-a5d7-58f64a06a2f4'     
+        shape: 'oc3'     
+        user_data: "{{ user_data }}"     
+        image_metadata:     
+          ssh_authorized_keys: 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC5Ks7vWy2H+THWegz/EpRjiJUxjaovZAVH2wo5+UzD28WOyOjXUujXC3mU68gTnvfpgnkxY7yN1O1pKZVkw90Wxd+iWj3Pf++zIMl+hdJNQpQXzk+F7OVwZDM+Y0IBYAhpxUuvziyVnT7+EAsuYIXiZJ/++oCVyHeeSVCDT7+qndG7LTFK3x/FlKmbbalj2s29v5PQd8BKwWenlBlVvMO397ExUhM79KQRHlKp4cWNpZgerR8mFLWY2/c0a+28Bw0Ljr5mkBPB+PloirgDMcYHc1AyIa0J1EYcx6oShK+3Xtqy8oHhWL3335st5e+LQD/Hqd+7+gbSGD5E6cJ2sWXRVoPwBWAzr3sk6L6Y6W4xoGzBNJduxzy4oA9GKvUTCEhltt6WV2yT6JMj6XPdLbwsGcyv/MzdE3EJ/kWz5+hC4h4ye36EW1qqhKrkqflgPHmiWfumYGJv0lO5lbeNi+qbdMElx1BYw38edzQ+Iv5OQqbUjQrtzvGcAv2Q=='     
+      register: py2_output
+      ignore_errors: true
+  
+    - name: Test CS Instance with Python3
+      cs_instance:
+        api_username: 'my-username'
+        api_password: 'my-password'
+        hostname: '{{ inventory_hostname }}'
+        name: 'test-instance'
+        network_href: '/Compute-587894/virtualnetwork/6ad35211-0151-46e9-a5d7-58f64a06a2f4'     
+        shape: 'oc3'     
+        user_data: "{{ user_data }}"     
+        image_metadata:     
+          ssh_authorized_keys: 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC5Ks7vWy2H+THWegz/EpRjiJUxjaovZAVH2wo5+UzD28WOyOjXUujXC3mU68gTnvfpgnkxY7yN1O1pKZVkw90Wxd+iWj3Pf++zIMl+hdJNQpQXzk+F7OVwZDM+Y0IBYAhpxUuvziyVnT7+EAsuYIXiZJ/++oCVyHeeSVCDT7+qndG7LTFK3x/FlKmbbalj2s29v5PQd8BKwWenlBlVvMO397ExUhM79KQRHlKp4cWNpZgerR8mFLWY2/c0a+28Bw0Ljr5mkBPB+PloirgDMcYHc1AyIa0J1EYcx6oShK+3Xtqy8oHhWL3335st5e+LQD/Hqd+7+gbSGD5E6cJ2sWXRVoPwBWAzr3sk6L6Y6W4xoGzBNJduxzy4oA9GKvUTCEhltt6WV2yT6JMj6XPdLbwsGcyv/MzdE3EJ/kWz5+hC4h4ye36EW1qqhKrkqflgPHmiWfumYGJv0lO5lbeNi+qbdMElx1BYw38edzQ+Iv5OQqbUjQrtzvGcAv2Q=='     
+      register: py3_output
+      ignore_errors: true
+      
+    - name: Verify PY3 outputs
+      assert:
+        that: 
+          - '"Unable to decode user data" not in py3_output.msg'
+          - py3_output is success
+        fail_msg: "PY3 execution failed"
+        success_msg: "PY3 execution successful"
+        
+    - name: Verify PY2 outputs
+      assert:
+        that:
+          - py2_output is success
+        fail_msg: "PY2 execution failed"
+        success_msg: "PY2 execution successful"

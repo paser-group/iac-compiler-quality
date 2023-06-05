@@ -1,0 +1,36 @@
+
+---
+- name: Synchronize module incorrectly uses ssh
+  hosts: all
+  gather_facts: no
+
+  vars:
+    local_path: /tmp/local_files/
+    remote_path: /tmp/remote_files/
+
+  tasks:
+  - name: Create local files
+    file:
+      path: "{{local_path}}{{item}}"
+      state: touch
+    loop:
+      - file1
+      - file2
+      - file3
+
+  - name: Copy local files to remote
+    synchronize:
+      src: "{{local_path}}"
+      dest: "{{remote_path}}"
+      mode: pull
+      recursive: true
+      compress: no
+      verify_host: true
+      ssh_executable: /usr/bin/ssh
+
+  - name: Change local files
+    shell: echo "Appended" >> "{{local_path}}file1"
+
+  - name: Verify file synchronization
+    assert:
+      that: "ansible_local['file1.stdout_lines'][0] == 'Appended'"

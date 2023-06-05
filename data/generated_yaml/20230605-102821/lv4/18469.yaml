@@ -1,0 +1,29 @@
+
+- name: Check for multiprocess issues with AWS Lambda
+  hosts: localhost
+  gather_facts: false
+  
+  tasks:
+    - name: Check number of CPU cores available
+      command: "python -c 'import multiprocessing; print(multiprocessing.cpu_count())'"
+      register: cores
+      
+    - name: Check AWS Lambda environment
+      vars:
+        lambda_memory: "{{ lookup('env', 'AWS_LAMBDA_FUNCTION_MEMORY_SIZE') }}"
+        lambda_timeout: "{{ lookup('env', 'AWS_LAMBDA_FUNCTION_TIMEOUT') }}"
+        
+      debug:
+        var: lambda_memory
+      debug:
+        var: lambda_timeout
+      
+    - name: Check for compatibility issues with YAML parser
+      pip:
+        name: pyYAML
+        state: present
+        
+    - name: Test multiprocess functionality
+      shell: "python -c 'import multiprocessing; from ansible.executor.process.worker import WorkerProcess; WorkerProcess(multiprocessing.current_process(), None).run()'"
+      register: output
+      failed_when: "'child process failed to start' in output.stdout"

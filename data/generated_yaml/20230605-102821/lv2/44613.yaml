@@ -1,0 +1,39 @@
+
+- name: Stress Test for the route53 module
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Install required packages
+      apt:
+        name: "{{ item }}"
+        update_cache: yes
+      with_items:
+        - dnsutils
+        - python3-boto
+        - python3-boto3
+        - python3-botocore
+
+    - name: Generate random inputs
+      set_fact:
+        record_name: "{{ lookup('password', '/dev/null length=10 chars=ascii_letters,digits') }}"
+        ttl: "{{ randrange(10, 1000) }}"
+        ip: "{{ lookup('pipe', 'head -n1 <(dig +short google.com)') }}"
+
+    - name: Create DNS Record
+      route53:
+        command: "{{ item }}"
+        zone: test.com
+        record: "{{ record_name }}.test.com"
+        type: A
+        ttl: "{{ ttl }}"
+        aws_access_key: "{{ lookup('env', 'AWS_ACCESS_KEY_ID') }}"
+        aws_secret_key: "{{ lookup('env', 'AWS_SECRET_ACCESS_KEY') }}"
+        value: "{{ ip }}"
+      with_items:
+        - create
+        - delete
+      ignore_errors: yes
+    
+    - name: Display Results
+      debug:
+        msg: "{{ record_name }}.test.com has been created and deleted successfully"

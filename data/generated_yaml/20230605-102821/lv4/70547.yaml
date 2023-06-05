@@ -1,0 +1,26 @@
+yaml
+- name: Mount CD ISO to oVirt VM
+  hosts: ovirt_vm
+  vars:
+    iso_name: "mycd.iso"
+    vm_name: "myvm"
+  tasks:
+    - name: Get IP address of VM
+      ovirt_vm_info:
+        name: "{{ vm_name }}"
+      register: vm_info
+    - name: Check if CD ISO exists
+      stat:
+        path: "/path/to/{{ iso_name }}"
+      register: iso_status
+    - name: Assert if CD ISO exists
+      assert:
+        that:
+          - iso_status.stat.exists == true
+    - name: Mount CD ISO to VM
+      ovirt_vm_cdrom:
+        name: "{{ vm_name }}"
+        iso_path: "{{ iso_name }}"
+        vmid: "{{ vm_info.vm_id }}"
+        auth: "{{ ovirt_auth }}"
+        force: yes

@@ -1,0 +1,37 @@
+
+- name: Test playbook for gcp_iam_service_account_module
+  hosts: all
+  become: true
+  vars:
+    service_account_name: "test-account"
+    gcp_project: "my-project"
+  tasks:
+  - name: Create service account
+    gcp_iam_service_account:
+      credentials_file: "{{ credentials_file }}"
+      name: "{{ service_account_name }}"
+      project: "{{ gcp_project }}"
+      state: present
+    register: account_create_result
+
+  - name: Create service account again to provoke a 409 error if it already exists
+    gcp_iam_service_account:
+      credentials_file: "{{ credentials_file }}"
+      name: "{{ service_account_name }}"
+      project: "{{ gcp_project }}"
+      state: present
+    register: dup_result
+    ignore_errors: true
+
+  - name: Print error message if service account already exists
+    debug:
+      msg: "A 409 error occurred, indicating that the service account already exists"
+    when: "'409 Already Exists' in dup_result.stderr"
+
+  - name: Remove the created service account
+    gcp_iam_service_account:
+      credentials_file: "{{ credentials_file }}"
+      name: "{{ service_account_name }}"
+      project: "{{ gcp_project }}"
+      state: absent
+    when: account_create_result.changed

@@ -12,6 +12,7 @@ from datasets import Dataset
 
 # internal imports
 from .prompt_engg import PromptEngg
+from .validate_ansible import check_syntax_string
 from compiler_fuzzing.utils import (
     ChatSession,
     yaml,
@@ -20,6 +21,7 @@ from compiler_fuzzing.utils import (
     display,
     strings,
 )
+
 
 def _unused_code():
     """
@@ -31,15 +33,16 @@ def _unused_code():
     #logger.info(f"response: {response[-1]}")
     pass
 
-def generate_manifest_ds(args, config, ds, num_levels):
-
+def generate_manifest_ds(args, config, ds, level_list):
+    
     # build generators and get updated dataset
-    generators = [PromptEngg(config, lvl, ds) for lvl in range(num_levels)]
+    generators = [PromptEngg(config, lvl, ds) for lvl in level_list]
     ds = datasets.interleave_datasets(
         [gen.get_updated_dataset() for gen in generators]
     )
 
     response = []
+    second_query = []
     for i, sample in enumerate(tqdm(ds, desc='collecting chatgpt responses', total=len(ds))):
         if i == args.limit : break
 
@@ -49,21 +52,36 @@ def generate_manifest_ds(args, config, ds, num_levels):
             system_msg=sample['sys_role']
         )
         try:
-            response.append(
-                session.get_response(sample['prompt'])
-            )
+            reply = session.get_response(sample['prompt'])
+            code = strings.remove_tilde(reply) \
+                if '```' in reply \
+                else ''
+            
+            correct_syntax = check_syntax_string(code, config)
+            second_call = 0
+            if not correct_syntax:
+                second_call = 1
+                reply = session.get_response(config["syntax_nudge"])
+            
+                
+            second_query.append(second_call)
+            response.append(reply)
         except KeyboardInterrupt:
             print('KeyboardInterrupt')
             sys.exit(0)
-        except Exception:
+        except Exception as e:
+            
             display.red(f'timeout error on sample {i}')
             response.append('TIMEOUT ERROR')
+            second_query.append(0)
 
     # truncate dataset to accomodate amount of responses generated
     output_ds = ds.select(range(len(response)))
-
+    assert len(response) == len(second_query)
+    breakpoint()
     # append columns to dataset
     output_ds = output_ds.add_column('response', response)
+    output_ds = output_ds.add_column('second_query', second_query)
 
     # extract code from the responses and add to a new column
     def mapper_fn(sample):
@@ -86,7 +104,7 @@ def generate_manifest_ds(args, config, ds, num_levels):
     
     return output_ds
 
-def generate_playbooks(num_levels, output_ds, config, base_output_path):
+def generate_playbooks(level_list, output_ds, config, base_output_path):
     # generate YAML files with dataset
     display.green(f'\ngenerating YAML files to {base_output_path}...')
     num_digits = len(str(max(output_ds['id'])))
@@ -94,7 +112,7 @@ def generate_playbooks(num_levels, output_ds, config, base_output_path):
     # get directories for each level
     output_lv_paths = [
         f'{base_output_path}/lv{lv}'
-        for lv in range(num_levels)
+        for lv in level_list
     ]
     for pth in output_lv_paths : files.create_path(pth)
 
@@ -102,7 +120,7 @@ def generate_playbooks(num_levels, output_ds, config, base_output_path):
     for i, sample in enumerate(tqdm(output_ds, desc='generating playbooks', total=len(output_ds))):
         if sample['code'] != '':
             files.write_file(
-                output_lv_paths[sample['level']]+ \
+                output_lv_paths[level_list.index(sample['level'])]+ \
                     f'/{int(sample["id"]):0{num_digits}}.yaml',
                 sample['code']
             )
@@ -118,12 +136,15 @@ def get_response(token, url):
         data = None 
     return data
 
-def preprocess_dataset(dataset, config):
+def preprocess_dataset(dataset, config, limit):
     dataset = dataset.rename_column('TITLE', 'title')
     dataset = dataset.rename_column('ID', 'id')
     repo_owner = config['github']['repo_owner']
     repo_name = config['github']['repo_name']
     token = config['github']['token']
+    
+    if limit > 0:
+        dataset = dataset.select(range(limit))
     
     def mapper_fn(sample):
         issue_id = sample['id']
@@ -142,6 +163,7 @@ def preprocess_dataset(dataset, config):
         return sample
     
     ds = dataset.map(mapper_fn)
+    
     return ds
     
     
@@ -159,17 +181,20 @@ def create_ansible(args, config):
     
     if args.limit > 0:
         ds = ds.select(range(args.limit))
-    ds = preprocess_dataset(ds, config)
+    ds = preprocess_dataset(ds, config, args.limit)
     
     display.title('Generating Ansible Playbooks With ChatGPT')
-    # count number of config files
-    num_levels = files.count_files_in(
-        config['taxonomy_filepath'],
-        match_str='.yaml'
-    )
+    # get number of levels for prompt engineering.
+    level_list = [int(x) for x in config["levels"].split(",")]
+    args.limit = args.limit * len(level_list)
+    num_levels = len(level_list)
+    # num_levels = files.count_files_in(
+    #     config['taxonomy_filepath'],
+    #     match_str='.yaml'
+    # )
 
     # build the dataset of manifests
-    output_ds = generate_manifest_ds(args, config, ds, num_levels)
+    output_ds = generate_manifest_ds(args, config, ds, level_list)
 
     # build output path string
     timestamp = strings.now()
@@ -186,7 +211,7 @@ def create_ansible(args, config):
     output_ds.to_csv(trgt_path)
 
     # generate output configs
-    generate_playbooks(num_levels, output_ds, config, base_output_path)
+    generate_playbooks(level_list, output_ds, config, base_output_path)
 
     # display status messages
     num_blanks = output_ds[:]['code'].count('')

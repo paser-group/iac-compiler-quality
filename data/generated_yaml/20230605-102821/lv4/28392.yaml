@@ -1,0 +1,65 @@
+
+---
+- name: Test ansible_rm_virtualmachine cleanup on error in Azure
+  hosts: localhost
+  tasks:
+    - name: Create a resource group
+      azure_rm_resourcegroup:
+        name: testrg
+        location: westus
+      register: rg
+
+    - name: Create a virtual network
+      azure_rm_virtualnetwork:
+        resource_group: "{{ rg.resource_group }}"
+        name: testvnet
+        address_prefixes: "10.0.0.0/16"
+
+    - name: Create a subnet
+      azure_rm_subnet:
+        name: testsubnet
+        resource_group: "{{ rg.resource_group }}"
+        virtual_network: testvnet
+        address_prefix: "10.0.1.0/24"
+
+    - name: Create a public IP address
+      azure_rm_publicipaddress:
+        resource_group: "{{ rg.resource_group }}"
+        allocation_method: Static
+        name: testpip
+
+    - name: Create network interface
+      azure_rm_networkinterface:
+        resource_group: "{{ rg.resource_group }}"
+        name: testnic
+        virtual_network: testvnet
+        subnet: testsubnet
+        public_ip_name: testpip
+      register: nic
+
+    - name: Create VM with wrong image
+      azure_rm_virtualmachine:
+        resource_group: "{{ rg.resource_group }}"
+        name: testvm
+        vm_size: Basic_A0
+        admin_username: azureuser
+        admin_password: Password1234!
+        image:
+          offer: UbuntuServer
+          publisher: Canonical
+          sku: bionic
+          version: latest
+        network_interfaces: "{{ [nic.id] }}"
+      register: vm
+
+    #- name: Delete VM (currently commented out)
+    #  azure_rm_virtualmachine:
+    #    resource_group: "{{ rg.resource_group }}"
+    #    name: testvm
+    #    state: absent
+
+    - name: Delete resource group
+      azure_rm_resourcegroup:
+        name: testrg
+        state: absent
+        force_delete: True

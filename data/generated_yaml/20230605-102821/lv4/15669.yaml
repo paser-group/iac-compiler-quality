@@ -1,0 +1,30 @@
+
+- name: Kerberos Authentication Error Log Validation Test
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: WinRMTransport Kerberos Authentication
+      win_ping:
+        data: 'Kerberos authentication test'
+      register: auth_result
+      vars:
+        ansible_connection: winrm
+        ansible_winrm_transport: kerberos
+        ansible_winrm_kerberos_hostname_override: "{{ inventory_hostname }}"
+        ansible_winrm_kerberos_renewal_interval: 240
+    - name: Error Logging Verification
+      win_shell: |
+        Get-EventLog System -After (Get-Date).AddMinutes(-1) -InstanceId 4625 | Where-Object { $_.Message -like '*Error*' } | Out-File -FilePath c:\temp\error.log
+      become: true
+      become_method: runas
+      register: error_result
+      ignore_errors: yes
+    - name: Verify Authentication
+      win_shell: |
+        Get-Content C:\temp\error.log | Select-String 'WSSPR2K16-01.Ansible.local' | Measure-Object
+      when: auth_result.failed == true 
+      vars:
+        ansible_connection: winrm
+        ansible_winrm_transport: kerberos
+        ansible_winrm_kerberos_hostname_override: "{{ inventory_hostname }}"
+        ansible_winrm_kerberos_renewal_interval: 240

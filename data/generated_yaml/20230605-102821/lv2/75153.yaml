@@ -1,0 +1,24 @@
+
+- name: Check if CVE-2020-10729 is fixed in Ansible 2.8
+  hosts: all
+  tasks:
+    - name: Attempt to run a command with unexpected input
+      command: "(echo 'test' | sed 's/ansible/ANSIBLE/g') && {{/bin/true || /bin/false}}"
+    
+    - name: Stop all running Ansible processes
+      become: yes
+      shell: "killall -9 ansible && killall -9 ansible-playbook"
+
+    - name: Check for vulnerable packages
+      apt:
+        update_cache: yes
+        name: openssl
+        state: latest
+      
+    - name: Attempt SSH connection with invalid credentials
+      expect:
+        command: ssh invalid_username@{{inventory_hostname}}
+        responses:
+          Password: "{{lookup('file', '<path_to_password_file>')}}"
+        timeout: 10
+      ignore_errors: yes

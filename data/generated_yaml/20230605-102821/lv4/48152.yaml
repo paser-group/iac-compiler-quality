@@ -1,0 +1,25 @@
+
+---
+
+- name: Check disk space
+  hosts: all
+  become: yes
+
+  tasks:
+    - name: Get free space
+      shell: df -h /
+      register: free_space
+
+    - name: Print space info
+      debug:
+        var: free_space.stdout_lines
+
+    - name: Create file with large size
+      tempfile:
+        state: file
+        suffix: .txt
+        dir: "/tmp"
+      register: temp_file
+
+    - name: Fill up disk space with large file
+      command: "dd if=/dev/zero of={{ temp_file.path }} bs=1M count={{ free_space.stdout_lines[1].split()[3] }}+1"

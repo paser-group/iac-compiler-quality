@@ -1,0 +1,24 @@
+
+- name: Run async tasks with check_mode and loop
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: "Run async tasks with loop"
+      async: 10
+      poll: 0
+      with_items:
+        - "{{ body }}"
+      command: /bin/sleep 1
+      register: result
+
+    - name: "Check async task result"
+      fail:
+        msg: "Async task failed"
+      when: result.failed == true and ansible_check_mode == false
+
+    - name: "Print async task output"
+      debug:
+        var: item.stdout
+      with_items: "{{ result.results }}"
+

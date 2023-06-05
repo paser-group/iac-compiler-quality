@@ -1,0 +1,52 @@
+
+---
+- name: Proxmox LXC stress test
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Install required packages
+      become: true
+      apt:
+        name: ['stress-ng', 'rng-tools']
+        state: present
+
+    - name: Stress test Proxmox LXC
+      become: true
+      shell: |
+        echo "16" > /proc/sys/kernel/random/write_wakeup_threshold
+        echo "4096" > /proc/sys/kernel/random/read_wakeup_threshold
+        stress-ng --vm-bytes {{ 2 * ansible_memtotal_mb }}M --vm-keep -t 60m --metrics-brief /tmp/stress.log
+      ignore_errors: true
+
+    - name: Create multiple LXC containers
+      become: true
+      proxmox_kvm:
+        hostname: 'localhost'
+        nodename: '{{ item }}'
+        vmid: '{{ item[3:] }}'
+        name: 'stress-lxc-{{ item[3:] }}'
+        ostype: 'l26'
+        memory: '{{ (2 * ansible_memtotal_mb) // 3 }}'
+        storage: 'local-lvm'
+        state: 'present'
+        netif: 'virtio,bridge=vmbr0'
+      ignore_errors: true
+      with_items:
+        - ubuntu1
+        - alpine1
+        - centos1
+        - redhat1
+
+    - name: Remove all LXC containers
+      become: true
+      proxmox_kvm:
+        hostname: 'localhost'
+        nodename: 'pve'
+        vmid: '{{ item }}'
+        state: 'absent'
+      with_items:
+        - 100
+        - 101
+        - 102
+        - 103

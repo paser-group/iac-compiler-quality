@@ -1,0 +1,30 @@
+
+---
+- hosts: ubuntu1
+  become: yes
+
+  tasks:
+  - name: Install Docker
+    apt:
+      name:
+        - docker-ce
+        - docker-ce-cli
+        - containerd.io
+      update_cache: yes
+    vars:
+      ansible_python_interpreter: /usr/bin/python3
+
+  - name: Create docker swarm
+    docker_swarm:
+      role: manager
+      join_addr: "{{ hostvars['ubuntu1']['ansible_default_ipv4']['address'] }}"
+      user: root
+
+  - name: List swarm nodes
+    command: docker node ls
+    register: node_list
+
+  - name: Print swarm nodes
+    debug:
+      msg: "{{ node_list.stdout_lines }}"
+...

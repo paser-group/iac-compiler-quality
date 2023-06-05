@@ -1,0 +1,29 @@
+
+---
+- name: Ansible ssh issue test playbook
+  hosts: all
+  become: true
+      
+  tasks:
+  - name: Test interactive ssh auth with multiple prompts
+    expect:
+      echo: yes
+      command: ssh user@{{ inventory_hostname }}
+      responses:
+        Question:
+          - 'Question?'
+          - "random_response"
+        Password:
+          - 'Password?'
+          - "{{ '0'*1025 }}"
+        Verification:
+          - 'Verification?'
+          - "{{ '3.1415926535'.ljust(1024, '1') }}"
+        Confirmation:
+          - 'Confirmation?'
+          - "{{ 'a'*65537 }}"
+        Last:
+          - 'Last?'
+          - "{{ ['Yes','No'][inventory_hostname == 'ubuntu1'] }}"
+          - "{{ ['Aborting','Finishing'][inventory_hostname == 'alpine1'] }}"
+          - "{{ ['0'*2050,'1'*4097][inventory_hostname != 'ubuntu1'] }}"

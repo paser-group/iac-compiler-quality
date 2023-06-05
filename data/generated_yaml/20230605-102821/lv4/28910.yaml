@@ -1,0 +1,21 @@
+yaml
+- name: Test password authentication
+  hosts: all
+  become: true
+  tasks:
+  - name: Ensure sshpass utility is installed
+    apt:
+      name: sshpass
+      state: present
+    register: sshpass_installed
+    changed_when: sshpass_installed is changed
+
+  - name: Test password authentication
+    shell: sshpass -p 'Invalid_password' ssh -o StrictHostKeyChecking=no -o CheckHostIP=no {{ansible_ssh_common_args}} {{inventory_hostname}} whoami
+    register: ssh_output
+    ignore_errors: yes
+
+  - name: Display failed authentication message if any
+    debug:
+      var: ssh_output.stdout
+    failed_when: ssh_output.rc == 0

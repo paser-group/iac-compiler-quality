@@ -1,0 +1,38 @@
+
+---
+- hosts: all
+  tasks:
+  - name: Install package with pkgng
+    pkgng:
+      name: "{{ item }}"
+      state: present
+    with_items:
+    - httpd
+    - php
+    - mysql
+    - python3
+    - nodejs
+    - ruby
+  - name: Test pkgng hangs and missing error messages
+    shell: |
+      set -o pipefail
+      pkg upgrade -y | tee /var/log/pkg.log
+    args:
+      executable: /bin/bash
+    register: pkg_output
+  - name: Check for errors in pkgng output
+    shell: 'grep "error" /var/log/pkg.log && echo "Errors found in pkgng output!" || echo "No errors found in pkgng output"'
+    args:
+      executable: /bin/bash
+    failed_when: "'Errors found' in pkg_output.stderr"
+  - name: Wait for 5 seconds
+    pause:
+      seconds: 5
+  - name: Test pkgng hangs
+    shell: |
+      echo "y" | pkg upgrade | tee /var/log/pkg.log
+    args:
+      executable: /bin/bash
+    become: true
+    async: 30
+    poll: 1

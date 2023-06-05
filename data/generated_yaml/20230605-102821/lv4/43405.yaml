@@ -1,0 +1,38 @@
+
+- name: Execute Terraform module
+  hosts: all
+  gather_facts: no
+  tasks:
+  - name: Create temporary directory
+    tempfile:
+      state: directory
+    register: tempdir
+  
+  - name: Copy Terraform module to temporary directory
+    copy:
+      src: /path/to/module
+      dest: "{{ tempdir.path }}"
+  
+  - name: Execute terraform init
+    command: terraform init
+    args:
+      chdir: "{{ tempdir.path }}"
+  
+  - name: Execute terraform plan
+    command: terraform plan
+    args:
+      chdir: "{{ tempdir.path }}"
+    register: plan
+
+  - name: Echo plan file path
+    debug:
+      msg: "Plan file path: {{ plan_file_path }}"
+    vars:
+      plan_file_path: "{{ tempdir.path }}/terraform.tfplan"
+      
+  - name: Execute terraform apply
+    command: terraform apply "{{ plan_file_path }}"
+    args:
+      chdir: "{{ tempdir.path }}"
+    no_log: "{{ -vault_password_file }}"
+

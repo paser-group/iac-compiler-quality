@@ -1,0 +1,36 @@
+
+- name: Execute Playbook
+  hosts: all
+  become: true
+  vars:
+    - app_port: "{{ app_port | default(8080) }}"
+  tasks:
+    - name: Install dependencies
+      yum:
+        name:
+        - git
+        - python3-pip
+        state: present
+
+    - name: Clone repo
+      git:
+        repo: https://github.com/myuser/app.git
+        dest: /opt/myapp
+        version: "{{ app_version }}"
+
+    - name: Install Python dependencies
+      pip:
+        requirements: /opt/myapp/requirements.txt
+
+    - name: Start the App
+      ansible.builtin.command: python3 /opt/myapp/app.py --port {{ app_port }}
+
+    - name: Check application health
+      uri:
+        url: http://localhost:{{ app_port }}/health
+        return_content: no
+      register: health_check
+
+    - name: Print health check output
+      debug:
+        var: health_check.content

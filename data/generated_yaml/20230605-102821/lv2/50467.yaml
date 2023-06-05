@@ -1,0 +1,53 @@
+
+- name: Trigger Docker Swarm Service Crash
+  hosts: all
+  gather_facts: true
+
+  tasks:
+    - name: Create Service with Default Settings
+      docker_swarm_service:
+        name: service-{{ ansible_date_time.epoch }}
+        image: nginx:latest
+        state: present
+      register: service_create_result
+
+    - name: Scale Service to 10 replicas
+      docker_swarm_service:
+        name: "{{ service_create_result.name }}"
+        replicas: 10
+      register: service_scale_result
+
+    - name: Remove Default Limits
+      docker_swarm_service:
+        name: "{{ service_create_result.name }}"
+        limits:
+          memory: null
+          cpus: null
+
+    - name: Deploy Service with Bad Limits
+      docker_swarm_service:
+        name: "{{ service_create_result.name }}"
+        limits:
+          mem: 9999999999g
+          cpu: 1000
+      register: service_deploy_result
+
+    - name: Monitor Service Logs for Crash
+      docker_service_logs:
+        name: "{{ service_create_result.name }}"
+        stdout: yes
+        stderr: yes
+        tail: 1000
+        follow: yes
+      register: service_logs
+
+    - name: Cleanup Service
+      docker_swarm_service:
+        name: "{{ service_create_result.name }}"
+        state: absent
+
+  post_tasks:
+    - name: Fail if Service Crashed
+      fail:
+        msg: "The service has crashed! Please investigate."
+      when: "service_logs.stderr | search('failed to allocate memory') != None"

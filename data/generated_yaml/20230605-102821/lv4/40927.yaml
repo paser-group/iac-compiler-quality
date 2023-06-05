@@ -1,0 +1,20 @@
+yaml
+- name: Check Ansible Version
+  hosts: all
+  gather_facts: False
+  tasks:
+    - name: Get Ansible Version
+      shell: ansible --version | awk '/ansible/{print $NF}'
+      register: current_version
+
+    - name: Backport bug fix for #39648
+      when: current_version.stdout|int >= 2.7
+      block:
+        - name: Gather Node Information
+          gather_facts:
+            data: yes
+          register: node_facts
+
+        - name: Print Hostname
+          debug:
+            msg: "Hostname: {{ inventory_hostname }}"

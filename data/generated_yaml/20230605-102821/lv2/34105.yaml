@@ -1,0 +1,34 @@
+
+- name: Create VM with conflicting vNIC configuration
+  hosts: all
+  tasks:
+    - name: Create dvs network
+      vmware_dvs_network:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ ansible_user }}"
+        password: "{{ lookup('file', '/path/to/vcenter/password/file') }}"
+        dvs_name: "dvs1"
+        state: present
+
+    - name: Create VM with overlapping vNIC
+      vmware_guest:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ ansible_user }}"
+        password: "{{ lookup('file', '/path/to/vcenter/password/file') }}"
+        name: testvm
+        datastore: datastore1
+        state: present
+        hardware:
+          memory_mb: 2048
+          num_cpus: 2
+          scsi: paravirtual
+          vnic:
+            - network_label: "dvs1"
+              adapter_type: vmxnet3
+              network_adapter_mask: "{{ item }}"
+          vnc_enabled: no
+        wait_for_ip_address: yes
+      with_items:
+        - 255.255.224.0
+        - 255.192.0.0
+        - 255.0.0.0

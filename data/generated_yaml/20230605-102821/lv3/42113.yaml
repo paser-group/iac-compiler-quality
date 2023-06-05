@@ -1,0 +1,43 @@
+yaml
+- hosts: all
+  become: yes
+  tasks:
+    - name: Persist value in a variable in a template
+      blockinfile:
+        path: /etc/nginx/nginx.conf
+        block: |
+          server {
+            listen 80;
+            server_name example.com;
+            {% if nginx_extra_config is defined %}
+            {{ nginx_extra_config }}
+            {% else %}
+            location / {
+              proxy_pass http://backend;
+            }
+            {% endif %}
+          }
+        marker: "# {mark} Ansible managed block"
+        backup: yes
+      vars:
+        nginx_extra_config: "location / { proxy_pass http://frontend; }"
+
+    - name: Overwrite persisted value with default
+      blockinfile:
+        path: /etc/nginx/nginx.conf
+        block: |
+          server {
+            listen 80;
+            server_name example.com;
+            {% if nginx_extra_config is defined %}
+            location / {
+              proxy_pass http://frontend;
+            }
+            {% else %}
+            {{ nginx_extra_config }}
+            {% endif %}
+          }
+        marker: "# {mark} Ansible managed block"
+        backup: yes
+      vars:
+        nginx_extra_config: "location / { proxy_pass http://backend; }"

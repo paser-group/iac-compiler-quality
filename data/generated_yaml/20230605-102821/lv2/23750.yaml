@@ -1,0 +1,21 @@
+
+- name: Test vmware_guest_snapshot error message
+  hosts: all
+  become: true
+
+  tasks:
+  - name: Take a snapshot using invalid UUID
+    vmware_guest_snapshot:
+      hostname: "{{hostvars[inventory_hostname]['ansible_host']}}"
+      username: "{{vault_vmware_username}}"
+      password: "{{vault_vmware_password}}"
+      datacenter: "{{vault_vmware_datacenter}}"
+      validate_certs: no
+      uuid: 'invalid-UUID'
+      name: 'snapshot-test'
+    register: result
+
+  - name: Print error message if VM does not exist
+    debug:
+      msg: "VM does not exist, please check the UUID parameter."
+    when: result.rc != 0 and 'Unable to find VirtualMachine with uuid' in result.msg

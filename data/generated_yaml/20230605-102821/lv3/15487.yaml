@@ -1,0 +1,20 @@
+
+- name: Check ansible_default_ipv6.address fact
+  hosts: all
+  gather_facts: yes
+  
+  tasks:
+  - name: Run ip addr command to get IP addresses
+    command: ip addr
+    register: ip_output
+    changed_when: false
+  
+  - name: Debug network interface information
+    debug: 
+      var: ip_output.stdout_lines
+    when: "'inet6' in ip_output.stdout"
+  
+  - name: Fail if ansible_default_ipv6.address is incorrect
+    fail:
+      msg: "{{ ansible_default_ipv6.address }} is not the expected address"
+    when: ansible_default_ipv6.address != 'EXPECTED_IPV6_ADDRESS'

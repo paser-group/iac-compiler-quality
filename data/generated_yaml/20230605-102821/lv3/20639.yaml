@@ -1,0 +1,39 @@
+
+---
+- name: Clone and Power Off VM
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Clone a VM and power it off asynchronously
+      vsphere_guest:
+        vcenter_hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: no
+        datacenter: dc1
+        cluster: HA
+        vmware_guest_facts: yes
+        name: "{{ guest_name }}"
+        from_template: yes
+        template_src: "{{ template_name }}"
+        template_datastore: datastore1
+        clone:
+          name: "{{ guest_name }}"
+          power_on_after_clone: no
+        networks:
+          - name: "{{ network_name }}"
+            ip: 10.1.1.5
+            netmask: 255.255.255.0
+            gateway: 10.1.1.254
+            type: static
+        async: 60
+        poll: 0
+      register: clone_result
+
+    - name: Wait for the clone task to complete
+      async_status:
+        jid: "{{ clone_result.ansible_job_id }}"
+        mode: poll
+        interval: 30
+      register: clone_asynctaskresult
+      until: clone_asynctaskresult.finished

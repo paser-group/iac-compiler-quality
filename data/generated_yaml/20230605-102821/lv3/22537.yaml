@@ -1,0 +1,27 @@
+
+- hosts: localhost
+  gather_facts: no
+  tasks:
+    - name: create ASG with ELB
+      ec2_asg:
+        name: my_asg
+        launch_config_name: my_launch_config
+        min_size: 1
+        max_size: 3
+        desired_capacity: 1
+        vpc_zone_identifier: "{{ vpc_zone_id }}"
+        load_balancers:
+          - name: my_elb
+        health_check_period: 300
+        health_check_type: ELB
+        region: "{{ aws_region }}"
+      register: asg_created
+
+    - name: wait for ELB instances to be healthy
+      wait_for:
+        host: "{{ item }}"
+        port: 80
+        state: drained
+        timeout: 600
+        delay: 10
+      with_items: "{{ asg_created.instances }}"

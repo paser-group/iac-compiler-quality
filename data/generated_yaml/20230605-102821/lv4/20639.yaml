@@ -1,0 +1,32 @@
+
+- name: Test Async Issue with vsphere_guest Module
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Create VM via vCenter
+      vsphere_guest:
+        vcenter_server: "{{ vcenter_server }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        guest: "{{ vm_name }}"
+        state: poweredon
+        vm_extra_config:
+          mks.enable3d: "TRUE"
+          sched.cpu.shares: "5000"
+          mem.hotadd: "true"
+      delegate_to: localhost
+      async: 180
+      poll: 0
+      register: vm_result
+    - name: Wait for VM to be created
+      async_status:
+        jid: "{{ vm_result.ansible_job_id }}"
+        mode: polling
+        interval: 5
+        timeout: 360
+      register: result
+      until: result.finished
+      retries: 5
+    - name: Echo Result
+      debug:
+        var: result

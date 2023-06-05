@@ -1,0 +1,34 @@
+
+- name: Create or Update GCP Service Account
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    project_id: "<your_project_id>"
+    service_account_email: "<your_service_account_email>"
+
+  tasks:
+    - name: Ensure the service account exists
+      gcp_iam_service_account_info:
+        name: "{{ service_account_email }}"
+        project: "{{ project_id }}"
+      register: service_account_info
+      ignore_errors: true
+
+    - name: Create the service account if it does not exist
+      gcp_iam_service_account:
+        name: "{{ service_account_email }}"
+        project: "{{ project_id }}"
+      when: not service_account_info.failed
+      register: service_account_result
+
+    - name: Update the service account if it already exists
+      gcp_iam_service_account:
+        name: "{{ service_account_email }}"
+        project: "{{ project_id }}"
+      when: service_account_info.failed
+      register: service_account_result
+
+    - name: Check if the operation was successful
+      debug:
+        var: service_account_result

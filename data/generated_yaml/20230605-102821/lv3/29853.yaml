@@ -1,0 +1,48 @@
+
+- name: Test the iam_policy module
+  hosts: all
+  gather_facts: no
+
+  vars:
+    policy_json: '{ "Version": "2012-10-17", "Statement": [ { "Action": "*", "Effect": "Allow", "Resource": "*" } ] }'
+    policy_document: |
+      {
+        "Statement": [
+          {
+            "Action": [
+              "ecr:*",
+              "s3:*"
+            ],
+            "Resource": [
+              "*"
+            ],
+            "Effect": "Allow"
+          }
+        ]
+      }
+
+  tasks:
+    - name: Create a new policy with policy_json
+      iam_policy:
+        iam_type: role
+        name: test_role
+        state: present
+        policy_name: test_policy
+        policy_json: "{{ policy_json }}"
+      register: policy_json_output
+
+    - name: Create a new policy with policy_document
+      iam_policy:
+        iam_type: role
+        name: test_role
+        state: present
+        policy_name: test_policy
+        policy_document: "{{ policy_document }}"
+      register: policy_doc_output
+
+    - name: Show the output
+      debug:
+        var: item
+      loop:
+        - "{{ policy_json_output }}"
+        - "{{ policy_doc_output }}"

@@ -1,0 +1,60 @@
+
+- name: Test archive module "exclude_path" bug
+  hosts: all
+  gather_facts: no
+  become: yes
+  
+  tasks:
+    - name: Create tmp directory
+      file:
+        path: /tmp/testing
+        state: directory
+
+    # Regular usage of archive module
+    - name: Test regular usage of archive module
+      archive:
+        path: /tmp/testing
+        dest: /tmp/testing.tar.gz
+        exclude_path: "tmp/excluded_folder"
+  
+    # Test invalid inputs for 'exclude_path' parameter
+    - name: Test invalid input for 'exclude_path' parameter - integer
+      archive:
+        path: /tmp/testing
+        dest: /tmp/invalid_integer.tar.gz
+        exclude_path: 1
+
+    - name: Test invalid input for 'exclude_path' parameter - boolean
+      archive:
+        path: /tmp/testing
+        dest: /tmp/invalid_boolean.tar.gz
+        exclude_path: false
+
+    - name: Test invalid input for 'exclude_path' parameter - dictionary
+      archive:
+        path: /tmp/testing
+        dest: /tmp/invalid_dict.tar.gz
+        exclude_path: {"invalid": "dictionary"}
+
+    # Test irregular syntax for 'exclude_path' parameter
+    - name: Test irregular syntax for 'exclude_path' parameter - empty string
+      archive:
+        path: /tmp/testing
+        dest: /tmp/empty_string.tar.gz
+        exclude_path: ""
+
+    - name: Test irregular syntax for 'exclude_path' parameter - colon
+      archive: path=/tmp/testing dest=/tmp/colon.tar.gz exclude_path=:"/tmp/testing/excluded_folder"
+
+    - name: Test irregular syntax for 'exclude_path' parameter - brackets
+      archive: 
+        path: /tmp/testing
+        dest: /tmp/brackets.tar.gz
+        exclude_path: /tmp/[testing]/[excluded_folder]
+
+    # Test edge case scenario for 'exclude_path' parameter
+    - name: Test large input for 'exclude_path' parameter
+      archive:
+        path: /tmp/testing
+        dest: /tmp/large_exclude_path.tar.gz
+        exclude_path: "{{ 'a'*1000000 }}"

@@ -1,0 +1,57 @@
+
+- name: Launch an EC2 instance with multiple network interfaces
+  hosts: localhost
+  # assuming that the required variables are already defined
+
+  tasks:
+  - name: Create a security group
+    ec2_group:
+      name: "{{ security_group_name }}"
+      region: "{{ security_group_region }}"
+      description: "{{ security_group_description }}"
+      rules:
+        - proto: tcp
+          from_port: 22
+          to_port: 22
+          cidr_ip: 0.0.0.0/0
+    register: sec_group
+
+  - name: Launch an EC2 instance with multiple network interfaces
+    ec2:
+      key_name: "{{ key_name }}"
+      instance_type: "{{ instance_type }}"
+      image: "{{ image_id }}"
+      region: "{{ region }}"
+      vpc_subnet_id: "{{ vpc_subnet_id }}"
+      count_tag:
+        Name: "{{ ec2_instance_name }}"
+      group_id: "{{ sec_group.group_id }}"
+      wait: true
+      network_interfaces: 
+        - device_index: 0
+          subnet_id: "{{ subnet_id }}"
+          associate_public_ip_address: true
+          groups: 
+            - "{{ sec_group.group_id }}"
+        - device_index: 1
+          subnet_id: "{{ subnet_id }}"
+          associate_public_ip_address: true
+          groups: 
+            - "{{ sec_group.group_id }}"
+
+  - name: Wait for SSH to come up
+    local_action:
+      module: wait_for
+      host: "{{ item.public_ip }}"
+      port: 22
+      delay: 10
+      timeout: 120
+      state: started
+    loop: "{{ ec2.instances }}"
+
+  - name: Add SSH key to authorized_keys
+    become: true
+    become_user: ubuntu
+    authorized_key:
+      user: ubuntu
+      key: "{{ lookup('file', '~/.ssh/id_rsa.pub') }}"

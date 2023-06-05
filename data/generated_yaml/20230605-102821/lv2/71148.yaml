@@ -1,0 +1,30 @@
+
+- hosts: all
+  gather_facts: false
+
+  tasks:
+  
+  - name: create nios_host_record
+    nios_host_record:
+      name: "{{ item.name }}"
+      ipv4addr: "{{ item.ipv4addr }}"
+      view: "{{ item.view }}"
+    with_items:
+      - { name: 'ubuntu1', ipv4addr: '10.1.1.1', view: 'default' }
+      - { name: 'alpine1', ipv4addr: '10.1.1.2', invalid_key: 'default' }
+      - { name: 'centos1', ipv4addr: '10.1.1.3', view: 123 }
+      - { name: 'redhat1', ipv4addr: [10.1.1.4], view: 'default' }
+    register: host_record
+    
+  - name: change nios_host_record ip
+    nios_host_record:
+      name: "{{ item.name }}"
+      ipv4addr: "{{ item.ipv4addr }}"
+      view: "{{ item.view }}"
+    with_items:
+      - { name: 'ubuntu1', ipv4addr: 10.1.1.2, view: 'default' }
+      - { name: 'alpine1', ipv4addr: '10.1.1.3' }
+      - { name: 'centos1', ipv4addr: '10.1.1.4', view: [invalid_view] }
+      - { name: 'redhat1', ipv4addr: '10.1.1.5', view: 'default' }
+    when: "item.ipv4addr is defined"
+    ignore_errors: true

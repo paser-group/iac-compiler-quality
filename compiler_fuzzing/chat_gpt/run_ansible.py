@@ -13,9 +13,9 @@ from compiler_fuzzing.utils import (
     strings
 )
 
-def subprocess_ansible(sample_data, yaml_base_path, inventory_path, docker_path, private_key):
+def subprocess_ansible(sample_data, yaml_base_path, inventory_path, docker_path, private_key, become_password_file):
     level = sample_data["level"]
-    issue_id = sample_data["ID"]
+    issue_id = sample_data["id"]
     playbook_path = f"{yaml_base_path}/lv{level}/{issue_id}.yaml"
     project_root_path = os.getcwd()
     if not valid_path(playbook_path):
@@ -77,7 +77,12 @@ def subprocess_ansible(sample_data, yaml_base_path, inventory_path, docker_path,
         
         # Run the playbook
         os.chdir(project_root_path)
-        ansible_command = ["ansible-playbook", playbook_path, "-i", inventory_path, "--private-key", private_key]
+        ansible_command = [
+            "ansible-playbook", playbook_path, 
+            "-i", inventory_path, 
+            "--private-key", private_key,
+            "--become-password-file", become_password_file
+        ]
         
         output = subprocess.run(
             ansible_command,
@@ -95,8 +100,8 @@ def subprocess_ansible(sample_data, yaml_base_path, inventory_path, docker_path,
             success=True,
             tag="run",
             **{
-                "issue id": sample_data["ID"],
-                "issue title": sample_data["TITLE"], 
+                "issue id": sample_data["id"],
+                "issue title": sample_data["title"], 
                 "issue prompt": sample_data["prompt"],
                 "issue Output": f"std err: {output.stderr}, std out: {output.stdout}",
                 "timestamp": strings.now()
@@ -109,8 +114,8 @@ def subprocess_ansible(sample_data, yaml_base_path, inventory_path, docker_path,
         record_case(
             success=False, 
             **{
-                "issue id": sample_data["ID"],
-                "issue title": sample_data["TITLE"], 
+                "issue id": sample_data["id"],
+                "issue title": sample_data["title"], 
                 "reason": f"{e}", 
                 "issue prompt": sample_data["prompt"],
                 "timestamp": strings.now()
@@ -138,12 +143,13 @@ def run_ansible(args, config):
     inventory = config["inventory_file"]
     docker_path = config["docker_dir"]
     private_key = config["private_key"]
+    become_password_file = config["become_password_file"]
     
     def mapper_fn(sample):
         if sample["syntax"] == 0:
             ansible_output = None
         else:
-            ansible_output = subprocess_ansible(sample, base_path, inventory, docker_path, private_key)
+            ansible_output = subprocess_ansible(sample, base_path, inventory, docker_path, private_key, become_password_file)
         
         sample.update({
             'output' : ansible_output
@@ -174,18 +180,51 @@ def generate_statistics(args, config):
     file_path = f"{base_path}/manifest_ds.csv"
     datasets.disable_caching()
     ds = Dataset.from_csv(file_path)
-    
+    level_list = [int(x) for x in config["levels"].split(",")]
     
     if args.type == "syntax":
         stats = {}
-        for i in range(6):
+        for i in level_list:
             level = i
-            correct, total = len(ds.filter(lambda example: example['level'] == level and example['syntax']  == 1 and example['response'] != "TIMEOUT ERROR")),  len(ds.filter(lambda example: example['level'] == level and  example['response'] != "TIMEOUT ERROR"))
+            correct = len(
+                ds.filter(
+                    lambda example: 
+                        example['level'] == level and 
+                        example['syntax']  == 1 and 
+                        example['response'] != "TIMEOUT ERROR"
+                    )
+                ) 
+            total = len(
+                ds.filter(
+                    lambda example: 
+                        example['level'] == level and
+                        example['response'] != "TIMEOUT ERROR"
+                    )
+                )
             
             stats[i] = {}
             stats[i]['level'] = level
             stats[i]['valid'] = correct
             stats[i]['total'] = total
+            breakpoint()
+            stats[i]['second_request'] = sum(
+                ds.filter(
+                    lambda example: example['level'] == level
+                )['second_query']
+            )
+            stats[i]['valid_syntax_first_try'] = len(
+                ds.filter(
+                    lambda example: 
+                        example['level'] == level and 
+                        example['syntax']  == 1 and 
+                        example['second_query'] == 0 and
+                        example['response'] != "TIMEOUT ERROR"
+                    )
+                )
+            
             stats[i]['percent'] = (correct / total) * 100 
         display.green(f"\nSyntax Statistics of file: {file_path}\n")
         display.print_dict(stats)
+        
+        
+        

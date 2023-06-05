@@ -1,0 +1,27 @@
+
+- hosts: all
+  gather_facts: no
+  tasks:
+    - name: Check if btrfs filesystem is being used
+      shell: df -T | grep btrfs
+      register: result
+      ignore_errors: true
+    
+    - name: Install btrfs tools
+      when: result.rc == 0
+      apt:
+        name: btrfs-tools
+        state: present
+        update_cache: yes
+
+    - name: Create btrfs filesystem
+      when: result.rc == 0
+      shell: mkfs.btrfs /dev/sda
+          
+    - name: Mount btrfs filesystem
+      when: result.rc == 0
+      mount:
+        fstype: btrfs
+        name: /mnt
+        src: /dev/sda
+        opts: defaults

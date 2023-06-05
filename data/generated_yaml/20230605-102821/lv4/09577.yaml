@@ -1,0 +1,23 @@
+
+- name: Ensure SSL and connectivity for Windows hosts
+  hosts: windows_hosts
+  
+  vars:
+    ansible_winrm_server_cert_validation: ignore
+  
+  tasks:
+    - name: Enable TLSv1.2 protocol
+      win_shell: New-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\.NETFramework\v4.0.30319" -Name "SchUseStrongCrypto" -Value "1" -PropertyType "DWord" -Force
+      register: tls1_2_enabled
+  
+    - name: Restart WinRM service
+      win_service:
+        name: winrm
+        state: restarted
+  
+    - name: Testing Connection
+      win_ping:
+      register: ping_status
+  
+    - name: Display Response
+      debug: var=ping_status

@@ -1,0 +1,34 @@
+
+- name: Azure deployment with ARM conditional check
+  hosts: all
+  gather_facts: no
+
+  tasks:
+  - name: Deploy Azure VM
+    azure_rm_deployment:
+      state: present
+      resource_group_name: test-rg
+      location: eastus
+      template_link_uri: "https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/101-vm-simple-linux/azuredeploy.json"
+      parameters_link_uri: "https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/101-vm-simple-linux/azuredeploy.parameters.json"
+      deployment_mode: incremental
+      parameters:
+        vmName:
+          value: testvm
+        adminUsername:
+          value: testadmin
+        adminPassword:
+          value: "{{ lookup('file', '/var/tmp/pwdfile') }}"
+    register: deployment_output
+
+  - name: ARM conditional check
+    assert:
+      that:
+        - "'Microsoft.Compute/virtualMachines' in deployment_output.properties.outputs.resources.value[].type"
+        - "'{{ parameters.vmName.value }}' in deployment_output.properties.outputs.resources.value[].name"
+      success_msg: "Virtual machine deployed successfully"
+      fail_msg: "Virtual machine deployment failed"
+
+  - name: Display deployment output
+    debug:
+      var: deployment_output

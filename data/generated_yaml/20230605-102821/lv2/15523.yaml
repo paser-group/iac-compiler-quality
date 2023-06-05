@@ -1,0 +1,28 @@
+yaml
+- name: test any_errors_fatal option with unreachable hosts
+  hosts: all
+  gather_facts: no
+  any_errors_fatal: true
+
+  tasks:
+    - name: echo on reachable host
+      shell: echo "This is a reachable host"
+      register: reachable_host
+      ignore_errors: true
+
+    - name: assert echo result on reachable host
+      assert:
+        that:
+          - "reachable_host.rc == 0"
+          - "reachable_host.stdout == 'This is a reachable host'"
+
+    - name: echo on unreachable host
+      shell: echo "This is an unreachable host"
+      register: unreachable_host
+      delegate_to: 1.2.3.4  # Replace with an unreachable IP address
+      ignore_errors: true
+
+    - name: assert echo result on unreachable host
+      assert:
+        that:
+          - "unreachable_host is failed"

@@ -1,0 +1,26 @@
+
+---
+- name: Azure Virtual Machine Facts
+  hosts: localhost
+  gather_facts: no
+  become: yes
+
+  tasks:
+    - name: get virtual machine details
+      azure_rm_virtualmachine_facts:
+        resource_group: myResourceGroup
+        name: myVMName
+      register: result
+      ignore_errors: yes
+
+    - name: check VM existence
+      fail:
+        # raise an error if no vm exists in the resource group.
+        msg: "No virtual machine found in the resource group '{{ result.resource_group }}'."
+      when: "'value' not in result or 'VM' not in result.value[0]['type']"
+
+    - name: check VM state
+      fail:
+        # raise an error if the VM is not running.
+        msg: "Virtual machine '{{ result.name }}' is not in running state."
+      when: result.value[0]['properties']['provisioningState'] != 'Succeeded' and result.value[0]['properties']['provisioningState'] != 'running'

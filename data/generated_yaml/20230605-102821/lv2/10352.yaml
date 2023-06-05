@@ -1,0 +1,39 @@
+
+- name: AWS Security Group management
+  hosts: all
+  become: true
+  gather_facts: false
+
+  vars:
+      security_group_name: "group1"
+      invalid_range: "0.0.0.0/0"
+      valid_range: "31.1.1.1/32"
+
+  tasks:
+    - name: Create Security group
+      ec2_group:
+        name: "{{security_group_name}}"
+        description: "Temporary security group"
+        state: present
+
+    - name: Add an invalid CIDR range to the security group
+      ec2_group:
+        name: "{{security_group_name}}"
+        ip_protocol: tcp
+        from_port: 22
+        to_port: 22
+        cidr_ip: "{{ invalid_range}}"
+      ignore_errors: true
+
+    - name: Add a valid CIDR range to the security group
+      ec2_group:
+        name: "{{security_group_name}}"
+        ip_protocol: tcp
+        from_port: 22
+        to_port: 22
+        cidr_ip: "{{valid_range}}"
+
+    - name: Delete Security group
+      ec2_group:
+        name: "{{security_group_name}}"
+        state: absent

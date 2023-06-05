@@ -1,0 +1,29 @@
+
+- name: Test SSH connection errors
+  hosts: all
+  gather_facts: false
+  vars:
+    invalid_command: "echo 'bogus'"
+    invalid_password: "{{ lookup('password', '/dev/null length=15 chars=ascii_letters,digits') }}"
+    valid_password: "{{ lookup('password', '/dev/null length=15 chars=ascii_letters,digits') }}"
+  tasks:
+    - name: Test invalid SSH key
+      shell: ssh -i /root/invalid_key root@{{ inventory_hostname }} "{{ invalid_command }}"
+      ignore_errors: true
+    
+    - name: Test invalid SSH command
+      shell: ssh -o StrictHostKeyChecking=no root@{{ inventory_hostname }} "{{ invalid_command }}"
+      ignore_errors: true
+    
+    - name: Test invalid SSH login details
+      expect:
+        command: ssh admin@{{ inventory_hostname }}
+        responses:
+          'Are you sure you want to continue connecting (yes/no)? ': yes
+          '*password: ': "{{ invalid_password }}"
+          '*password: ': "{{ valid_password }}"
+      ignore_errors: true
+
+    - name: Test SSH connection from the wrong subnet
+      shell: ssh root@{{ hostvars[groups['all'][0]]['ansible_default_ipv4']['address'] }}
+      ignore_errors: true

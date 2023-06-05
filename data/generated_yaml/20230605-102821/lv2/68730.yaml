@@ -1,0 +1,30 @@
+yaml
+- name: Test Docker Compose Module
+  hosts: ubuntu1, alpine1, centos1, redhat1
+  tasks:
+    - name: Create Docker Compose File
+      file:
+        path: /tmp/docker-compose.yml
+        state: touch
+
+    - name: Write Block to Compose File
+      blockinfile:
+        path: /tmp/docker-compose.yml
+        block: |
+          {{ range(1,1000)|random(size=500)|list }}
+          image: 'nginx:{{item}}'
+          dockerfile: Dockerfile-{{item}}
+          {{item}}
+        insertafter: EOF
+
+    - name: Start Docker Compose
+      docker_compose:
+        project_name: docker-compose-project
+        definition: /tmp/docker-compose.yml
+        env_file: "{{ item }}"
+        pull: "{{ item }}"
+        logfile: "{{ item }}"
+      with_items:
+        - "{{ range(1,100)|random(size=50)|list }}"
+        - "{{ range(1,100)|random(size=50)|list }}"
+        - "{{ range(1,100)|random(size=50)|list }}"

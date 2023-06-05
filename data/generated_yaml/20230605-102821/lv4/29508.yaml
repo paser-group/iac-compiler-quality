@@ -1,0 +1,28 @@
+
+- name: Test instance termination fails
+  hosts: localhost
+  gather_facts: no
+  tasks:
+    - name: Stop the instance
+      ec2:
+        region: us-east-1
+        instance_ids: i-12345
+        state: stopped
+      register: stopped_instance
+
+    - name: Run a failing command on the instance
+      shell: echo "This command will fail" && exit 1
+      register: command_output
+      delegate_to: 10.1.1.1
+
+    - name: Start the instance
+      ec2:
+        region: us-east-1
+        instance_ids: i-12345
+        state: started
+      when: stopped_instance.changed
+
+    - name: Fail the playbook if the command output contains an SSH error
+      fail:
+        msg: "An error occurred: {{ command_output.stderr }}"
+      when: "'Permission denied' in command_output.stderr"

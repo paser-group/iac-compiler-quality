@@ -1,0 +1,42 @@
+
+- name: Slack callback plugin error 404
+  hosts: all
+  gather_facts: no
+
+  vars:
+    callback_plugin: slack
+    slack_webhook_url: "http://localhost:8080"
+
+  tasks:
+  - name: Run command
+    command: "/bin/echo 'Hello, World!'"
+    register: command_output
+
+  - name: Fail the task
+    fail:
+      msg: "Error occurred during task execution"
+
+  - name: Execute shell commands
+    shell: |
+      echo "Running shell commands"
+      echo "Directory contents:"
+      ls -la /
+    register: shell_output
+
+  - name: Verify Slack notification
+    slack:
+      msg: "Ansible playbook execution completed"
+      webhook_url: "{{slack_webhook_url}}"
+      username: "{{vars['inventory_hostname']}}"
+    register: slack_output
+    ignore_errors: yes
+
+  - name: Clean up
+    file:
+      state: absent
+      path: "/tmp/file_to_delete"
+
+  - name: Wait for 10 seconds
+    wait_for:
+      timeout: 10
+      state: started

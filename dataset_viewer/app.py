@@ -178,9 +178,9 @@ def load_and_filter_dataset(request):
     # Apply filters to the dataset
     filtered_dataset = dataset
     
-    breakpoint()
+    # breakpoint()
     
-    level = [int(x) for x in level]
+    level = [] if level is None else [int(x) for x in level]
 
     # Apply filters
     if syntax:

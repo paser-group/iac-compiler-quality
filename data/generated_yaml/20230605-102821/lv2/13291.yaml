@@ -1,0 +1,80 @@
+
+- name: Stress test playbook
+  hosts: all
+  become: true
+  
+  tasks:
+  # Scenario 1: Use default ACL with changed behavior
+    - name: Add a file with default ACL
+      file:
+        path: /tmp/default-acl-test.txt
+        state: touch
+        mode: u+rwx,g+rwx,o+rwx
+        default_acl: "{{ item }}"
+      with_items:
+        - user::rwx
+        - group::rwx
+        - other::rwx
+        - group:test:r-x
+        - mask::rwx
+        - other::---
+    
+  # Scenario 2: Add user ACL along with default ACL
+    - name: Add a file with both default and user ACLs
+      file:
+        path: /tmp/user-acl-test.txt
+        state: touch
+        mode: u+rwx,g+rwx,o+rwx
+        access_control:
+          - { type: user, name: 'testuser', perms: 'r-x' }
+          - { type: group, name: 'testgroup', perms: '-wx' }
+          - { type: mask, perms: 'rwx' }
+          - { type: other, perms: '---' }
+    
+  # Scenario 3: Use invalid values for ACL
+    - name: Add a file with invalid ACL values
+      file:
+        path: /tmp/invalid-acl-test.txt
+        state: touch
+        mode: u+rwx,g+rwx,o+rwx
+        access_control:
+          - { type: user, name: 'testuser', perms: 'invalid' }
+          - { type: group, name: 'testgroup', perms: 'r-t' }
+          - { type: mask, perms: 'r-x' }
+          - { type: other, perms: 'invalid' }
+    
+  # Scenario 4: Modify existing ACL with user and group names as well as numeric values
+    - name: Modify user and group ACLs with both names and numbers
+      acl:
+        path: /tmp/user-acl-test.txt
+        entity: "{{ item.entity }}"
+        name: "{{ item.name }}"
+        perms: "{{ item.perms }}"
+      with_items:
+        - { entity: user, name: 'testuser', perms: 'r' }
+        - { entity: user, name: 1000, perms: 'rwx' }
+        - { entity: group, name: 'testgroup', perms: 'r' }
+        - { entity: group, name: 1001, perms: '-wx' }
+    
+  # Scenario 5: Remove an ACL from a file
+    - name: Remove group ACL from the user-acl-test.txt file
+      acl:
+        path: /tmp/user-acl-test.txt
+        entity: group
+        name: 'testgroup'
+        state: absent
+        
+  # Scenario 6: Invalid state for ACL module
+    - name: Add a file with default ACL, but with invalid state
+      file:
+        path: /tmp/default-acl-test.txt
+        state: absent
+        mode: u+rwx,g+rwx,o+rwx
+        default_acl: "{{ item }}"
+      with_items:
+        - user::rwx
+        - group::rwx
+        - other::rwx
+        - group:test:r-x
+        - mask::rwx
+        - other::---

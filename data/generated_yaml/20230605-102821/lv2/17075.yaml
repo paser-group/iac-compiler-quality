@@ -1,0 +1,33 @@
+
+---
+- hosts: all
+  gather_facts: no
+  connection: local
+  tasks:
+    - name: Test GCE module with invalid zone
+      gce:
+        instance_names: ["instance1", "instance2"]
+        zone: "{{ zone }}-INVALID-ZONE"
+        project_id: "{{ project_id }}"
+        auth_kind: "{{ auth_kind }}"
+        service_account_email: "{{ service_account_email }}"
+        credentials_file: "{{ credentials_file }}"
+      ignore_errors: yes
+      register: result
+
+    - name: Fail if GCE module throws unexpected error
+      fail:
+        msg: "Unexpected error occurred while testing GCE module: {{ result }}"
+      when: result.failed and "file not found" not in result.msg
+
+    - name: Check if expected zone not found error is present
+      assert:
+        that:
+          - ("The specified zone does not exist" in result.msg)
+        quiet: yes
+      when: result.failed and "The specified zone does not exist" not in result.msg
+
+    - name: Debug GCE module success
+      debug:
+        msg: "GCE module worked successfully!"
+      when: not result.failed

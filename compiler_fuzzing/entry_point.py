@@ -3,7 +3,6 @@ from compiler_fuzzing import arguments, utils, cfg_reader
 
 def main():
     args = arguments.parse()
-
     if args.procedure == 'generate':
         # read in config data
         cfg = cfg_reader.primary.load(args.config)
@@ -22,9 +21,8 @@ def main():
         cfg = cfg_reader.primary.load(args.config)
         
         # run validator
-        run_ansible(args, cfg)
-        
-    if args.procedure == 'stat':
+        run_ansible(args, cfg)    
+    elif args.procedure == 'stat':
         # read in config data
         cfg = cfg_reader.primary.load(args.config)
 

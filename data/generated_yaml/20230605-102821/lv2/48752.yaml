@@ -1,0 +1,33 @@
+
+---
+- name: Verify hostname module behavior on Oracle Linux
+  hosts: all
+  gather_facts: false
+  
+  tasks:
+  - name: Change the hostname with special characters
+    become: yes
+    hostname:
+      name: "my_hostname$%^"
+    register: changed
+    
+  - name: Verify the hostname change
+    become: yes
+    command: "hostname"
+    check_mode: no
+    failed_when: "'my_hostname$%^' not in \"{{ output.stdout }}\""
+    ignore_errors: yes
+
+  - name: Set non-existent domain name
+    become: yes
+    hostname:
+      name: "my_hostname"
+      domain: "my_non_existent_domain"
+    register: changed
+    
+  - name: Verify the domain name addition
+    become: yes
+    command: "hostname -f"
+    check_mode: no
+    failed_when: "'my_hostname.my_non_existent_domain' not in \"{{ output.stdout }}\""
+    ignore_errors: yes

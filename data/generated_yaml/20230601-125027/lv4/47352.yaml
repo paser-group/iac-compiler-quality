@@ -1,0 +1,25 @@
+
+- name: Test idempotency of win_domain
+  hosts: windows
+  gather_facts: False
+  vars:
+    domain_name: "{{ lookup('env', 'USERDNSDOMAIN') }}"
+  tasks:
+    - name: Ensure domain exists
+      win_domain:
+        name: "{{ domain_name }}"
+        state: present
+        safe_mode: no
+      register: domain_result
+
+    - name: Check idempotency
+      win_domain:
+        name: "{{ domain_name }}"
+        state: present
+        safe_mode: no
+      register: idempotency_check
+
+    - name: Fail if idempotency check fails
+      fail:
+        msg: "win_domain not idempotent"
+      when: idempotency_check.changed

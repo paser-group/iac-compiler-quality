@@ -1,0 +1,26 @@
+
+---
+- name: Configure Cisco interface
+  hosts: cisco
+  gather_facts: no
+  tasks:
+    - name: Check if interface exists
+      ios_command:
+        commands:
+          - show run | include interface {{ interface_name }}
+      register: interface_output
+      ignore_errors: true
+
+    - name: Remove old interface
+      ios_config:
+        lines:
+          - no interface {{ interface_name }}
+      when: interface_output.stdout != ""
+
+    - name: Configure new interface
+      ios_config:
+        lines:
+          - interface {{ interface_name }}
+          - ip address {{ ip_address }} {{ subnet_mask }}
+          - description {{ description }}
+      when: interface_output.stdout == ""

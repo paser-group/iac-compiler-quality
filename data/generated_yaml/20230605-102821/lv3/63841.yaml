@@ -1,0 +1,36 @@
+
+- name: Copy files from Windows to Linux
+  hosts: linux1
+  gather_facts: false
+
+  tasks:
+  - name: Mount SSHFS share
+    ansible.builtin.mount:
+      path: /mnt/windows
+      src: "\\windows\share"
+      fstype: cifs
+      opts: "username=guest,password="
+      state: mounted
+      become: true
+      become_method: su
+
+  - name: Copy files using win_robocopy
+    ansible.windows.win_robocopy:
+      src: "C:\\Windows\\System32\\"
+      dest: "/mnt/windows/"
+      extra_opts: "/B /SEC"
+      become: true
+      become_method: su
+    register: result
+
+  - name: Unmount SSHFS share
+    ansible.builtin.mount:
+      path: /mnt/windows
+      state: unmounted
+      become: true
+      become_method: su
+
+  - name: Print error message
+    ansible.builtin.debug:
+      msg: "{{ result }}"
+    when: result.failed

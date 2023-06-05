@@ -1,0 +1,48 @@
+
+- name: Stress test ansible-galaxy
+  hosts: all
+  become: true
+  
+  tasks:
+    - name: Login to Ansible Galaxy with Invalid Credentials
+      command: ansible-galaxy login -c CERT -u username -p password
+      register: login_output
+      ignore_errors: true
+      
+    - name: Validate login failure
+      debug:
+        msg: "{{ login_output.stdout }}"
+      failed_when: login_output.rc == 0
+      
+    - name: Login to Ansible Galaxy without providing Credentials
+      command: ansible-galaxy login -c CERT
+      ignore_errors: true
+      
+    - name: Validate login failure
+      debug:
+        msg: "{{ login_output.stdout }}"
+      failed_when: login_output.rc == 0
+      
+    - name: Download role with a non-existent name
+      command: ansible-galaxy install non-existent-role
+      ignore_errors: true
+      register: role_download
+     
+    - name: Validate role download failure
+      debug:
+        msg: "{{ role_download.stdout }}"
+      failed_when: role_download.rc == 0
+      
+    - name: Download role with a custom URL
+      command: ansible-galaxy install -p /tmp/mymodules git+https://example.com/role.git
+      ignore_errors: true
+      
+    - name: Validate role download
+      stat:
+        path: /tmp/mymodules/role
+      register: role_download
+    
+    - name: Validate existence of downloaded role
+      debug:
+        msg: "Role Path - {{ item.stat.path }}"
+      loop: "{{ role_download.results }}"

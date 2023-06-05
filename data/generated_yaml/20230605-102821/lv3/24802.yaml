@@ -1,0 +1,51 @@
+
+---
+- name: Create EC2 RDS Postgres
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    aws_access_key: <insert_aws_access_key>
+    aws_secret_key: <insert_aws_secret_key>
+    region: <insert_aws_region>
+    instance_type: <insert_instance_type>
+    db_name: <insert_db_name>
+    db_username: <insert_db_username>
+    db_password: <insert_db_password>
+    db_subnet_group: <insert_db_subnet_group>
+    db_engine: postgres
+    db_engine_version: <insert_db_engine_version>
+  tasks:
+    - name: Create EC2 Instance
+      ec2:
+        key_name: <insert_key_pair_name>
+        region: "{{ region }}"
+        instance_type: "{{ instance_type }}"
+        image: ami-0c94855ba95c71c99
+        count: 1
+        wait: true
+        vpc_subnet_id: <insert_subnet_id>
+        assign_public_ip: false
+        instance_tags:
+          Name: "{{ db_name }}"
+          Type: RDS
+      register: ec2_instance
+    - name: Create RDS Postgres
+      rds:
+        command: create
+        instance_name: "{{ db_name }}"
+        region: "{{ region }}"
+        security_group: <insert_db_security_group>
+        engine: "{{ db_engine }}"
+        engine_version: "{{ db_engine_version }}"
+        size: 10
+        instance_class: db.t2.micro
+        username: "{{ db_username }}"
+        password: "{{ db_password }}"
+        db_subnet_group_name: "{{ db_subnet_group }}"
+        tags:
+          Name: "{{ db_name }}"
+      register: rds_db
+    - name: Display RDS DB Details
+      debug:
+        var: rds_db

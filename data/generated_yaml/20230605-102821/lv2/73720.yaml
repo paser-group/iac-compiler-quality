@@ -1,0 +1,55 @@
+
+---
+- name: Stress testing Ansible compiler
+  hosts: all
+  become: yes
+  gather_facts: no
+  
+  tasks:
+  - name: Set PATH environment variable
+    command: export PATH="$PATH:/usr/local/bin"
+    
+  - name: Installing pip package
+    block:
+    - name: Valid pip package
+      pip:
+        name: requests
+        state: present
+        
+    - name: Invalid pip package
+      pip:
+        name: invalid_package
+        state: present
+        extra_args: "--no-index --find-links=/root/"
+        
+    rescue:
+    - debug:
+        msg: "Unable to install package"
+        
+  - name: Check if package is installed
+    block:
+    - name: Valid pip package
+      pip:
+        name: requests
+        state: present
+        disable_pip_version_check: true
+      register: pip_check_valid
+      
+    - name: Invalid pip package
+      pip:
+        name: invalid_package
+        state: present
+        extra_args: "--no-index --find-links=/root/"
+        disable_pip_version_check: true
+      register: pip_check_invalid
+      
+    rescue:
+    - debug:
+        msg: "Failed to show package info"
+        
+  - name: Print installed version of package
+    debug:
+      var: pip_check_valid.stdout
+      
+  - name: Remove package
+    command: pip uninstall invalid_package -y

@@ -1,0 +1,26 @@
+
+- name: Gather facts test
+  hosts: all
+  gather_facts: "{{gather}}"
+  become: "{{become}}"  
+  
+  tasks:
+  
+  - name: Check OS version
+    debug:
+      var: ansible_distribution_version
+
+  - name: Install package based on OS version
+    when: ansible_distribution == 'Ubuntu'
+    apt:
+      name: "{{package_name}}"
+      state: "{{package_state}}"
+    when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat'
+    yum:
+      name: "{{package_name}}"
+      state: "{{package_state}}"
+      
+  - name: Check uptime
+    fail:
+      message: "Host {{inventory_hostname}} has not rebooted in {{ansible_uptime_seconds}} seconds."
+    when: ansible_uptime_seconds <= {{uptime_threshold}}

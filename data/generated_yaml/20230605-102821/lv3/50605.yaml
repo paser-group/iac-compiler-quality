@@ -1,0 +1,71 @@
+
+- name: Create a new VM with folder permission issue
+  hosts: localhost
+  gather_facts: no
+  vars:
+    vm_name: "test_vm"
+    folder_name: "test_folder"
+    datacenter_name: "test_datacenter"
+    datastore_name: "test_datastore"
+    network_name: "test_network"
+    vm_username: "test_user"
+    vm_password: "test_password"
+    iso_path: "/path/to/iso"
+
+  tasks:
+    - name: Create a folder
+      vmware_folder:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        datacenter_name: "{{ datacenter_name }}"
+        folder_type: vm
+        folder_name: "{{ folder_name }}"
+      delegate_to: localhost
+
+    - name: Upload ISO
+      vmware_deploy_ovf:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        datacenter_name: "{{ datacenter_name }}"
+        ovf: "{{ iso_path }}"
+        datastore_name: "{{ datastore_name }}"
+        vm_name: "{{ vm_name }}"
+        vm_folder: "{{ folder_name }}"
+        annotations: "testing"
+      delegate_to: localhost
+
+    - name: Create a new test VM
+      vmware_guest:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: no
+        datacenter: "{{ datacenter_name }}"
+        folder: "{{ folder_name }}"
+        name: "{{ vm_name }}"
+        state: poweredon
+        guest_OS: ubuntu64Guest
+        hardware:
+          memory_mb: 1024
+          num_cpus: 1
+        disk:
+          - size_gb: 16
+            type: thin
+            datastore: "{{ datastore_name }}"
+            path: test-disk.vmdk
+        network_interfaces:
+          - network: "{{ network_name }}"
+            power_on_boot: true
+        wait_for_ip_address: yes
+        customization:
+          hostname: "{{ vm_name }}"
+          domain: "example.com"
+          timezone: "US/Pacific"
+          dns_servers: "10.0.0.2"
+          dns_suffixes: "example.com"
+          ip_settings:
+            ip: "10.1.1.5"
+            netmask: "255.255.255.0"
+            gateway: "10.1.1.254"

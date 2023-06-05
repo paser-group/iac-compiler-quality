@@ -1,0 +1,28 @@
+
+- name: Deploying a Docker Container with Ansible
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Running a Docker Container with Ports
+      docker_container:
+        name: my_container
+        image: ubuntu:latest
+        state: started
+        ports:
+          - "80:80/tcp"
+          - "3000:3000/udp"
+      register: result
+      
+    - name: Displaying the Container's IP Address
+      shell: docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' my_container
+      register: ipaddr
+
+    - name: Displaying the Mapping of Host and Container Ports
+      debug:
+        var: result.ansible_facts.docker_container_ports
+
+    - name: Checking Connectivity
+      wait_for:
+        host: "{{ipaddr.stdout}}"
+        port: 80
+        timeout: 15

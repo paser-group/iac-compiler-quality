@@ -1,0 +1,28 @@
+
+---
+- name: Create LUKS device
+  hosts: all
+  become: true
+
+  tasks:
+  - name: Install cryptsetup
+    apt:
+      name: cryptsetup
+      state: present
+  
+  - name: Create LUKS device
+    cryptsetup:
+      name: sda3_crypt
+      device: /dev/sda3
+      state: present
+      key-file: /root/.ssh/luks_key
+    register: luks_device_output
+
+  handlers:
+  - name: Create key file
+    copy:
+      content: "{{ luks_device_output['key'] }}"
+      dest: "/root/.ssh/luks_key"
+      owner: root
+      group: root
+      mode: '0600'

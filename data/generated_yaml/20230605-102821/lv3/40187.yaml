@@ -1,0 +1,34 @@
+
+- name: Configure eos device
+  hosts: tag_eos
+  gather_facts: no
+  connection: local
+
+  tasks:
+  - name: Configure eos device using eos_config module
+    eos_config:
+      lines:
+        - "interface ethernet1/1"
+        - "ip address {{ hostvars[item]['ansible_' + node_os]['ipv4']['address'] }}/24"
+    register: config_result
+    retries: 5
+    delay: 10
+
+    delegate_to: "{{ item }}"
+
+    loop: "{{ groups['tag_eos'] }}"
+    
+    vars:
+        node_os: "{{ groups[item] | intersect(['ubuntu', 'alpine', 'centos', 'redhat']) | first }}"
+
+  - name: Fail if configuration was unsuccessful
+    fail:
+      msg: "Configuration failed"
+    when: "'Error' in config_result.stderr_lines"
+
+    delegate_to: "{{ item }}"
+    
+    loop: "{{ groups['tag_eos'] }}"
+    
+    vars:
+        node_os: "{{ groups[item] | intersect(['ubuntu', 'alpine', 'centos', 'redhat']) | first }}"

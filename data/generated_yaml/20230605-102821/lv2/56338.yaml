@@ -1,0 +1,35 @@
+
+---
+- hosts: all
+  gather_facts: no
+  tasks:
+    - name: "Create Docker container with random parameters"
+      docker_container:
+        name: "{{ item.name }}"
+        image: "{{ item.image }}"
+        state: "{{ item.state }}"
+        pull: "{{ item.pull }}"
+      with_items:
+        - { name: "random-container1", image: "alpine:edge", state: "present", pull: "yes", entrypoint: "{{broken_entrypoint}}" }
+        - { name: "random-container2", image: "centos:7", state: "absent", pull: "no", entrypoint: "'{{bad_entrypoint}}'" } 
+    
+    - name: "Check status of Docker containers with random parameters"
+      docker_container_info:
+        name: "{{ item }}"
+      with_items:
+        - "random-container1"
+        - "random-container2"
+
+    - name: "Remove Docker container with random parameters"
+      docker_container:
+        name: "{{ item }}"
+        state: "absent"
+      with_items:
+        - "random-container1"
+        - "random-container2"
+  
+  handlers:
+    - name: "Restart Docker"
+      command: "{{broken_command}}"
+  
+---

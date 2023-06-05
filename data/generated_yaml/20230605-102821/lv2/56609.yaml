@@ -1,0 +1,33 @@
+
+- name: Test ANSIBLE_ROLES_PATH
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Set ANSIBLE_ROLES_PATH
+      environment:
+        ANSIBLE_ROLES_PATH: "/etc/ansible/roles:/opt/custom_roles:{{ansible_distribution}}/roles"
+      debug:
+        var: ansible_env.ANSIBLE_ROLES_PATH
+
+    - name: Execute tasks from a custom location
+      shell: "(cd ../.. && cat tasks/main.yml)"
+      become: true
+
+    - name: Set ANSIBLE_ROLES_PATH to an incorrect value
+      environment:
+        ANSIBLE_ROLES_PATH: "/etc/ansible/roles:/opt/custom_roles:/non-existent/path"
+      debug:
+        var: ansible_env.ANSIBLE_ROLES_PATH
+
+    - name: Execute tasks with an incorrect ANSIBLE_ROLES_PATH
+      shell: "(cd .. && cat tasks/main.yml)"
+      environment:
+        ANSIBLE_ROLES_PATH: "/etc/ansible/roles:/opt/custom_roles:/non-existent/path"
+      become: true
+
+    - name: Execute a non-existent task using ANSIBLE_ROLES_PATH
+      shell: "(cd .. && cat non-existent-task.yml)"
+      environment:
+        ANSIBLE_ROLES_PATH: "/etc/ansible/roles:/opt/custom_roles:/non-existent/path"
+      become: true

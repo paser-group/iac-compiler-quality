@@ -1,0 +1,51 @@
+
+---
+
+- name: Connect to Windows node and debug SSL connection issue
+  hosts: windows
+  gather_facts: no
+
+  vars:
+    state: present
+    protocol: TLSv1
+
+  tasks:
+    - name: Check SSL connection
+      win_ping:
+
+    - name: Test SSL handshake
+      win_shell: 'certutil -urlfetch -verify https://github.com/microsoft/windows-container-tools/releases/latest/download/ContainerToolsInstaller.cmd -out dummy.exe'
+      register: result
+      ignore_errors: yes
+
+    - debug:
+        msg: "SSL/TLS handshake error: {{ result.stderr }}"
+
+    - name: Install CA certificates
+      win_copy:
+        src: /etc/pki/tls/certs/ca-bundle.crt
+        dest: C:\Windows\System32\curl-ca-bundle.crt
+
+    - name: Verify SSL connection
+      win_shell: 'curl.exe -L https://github.com/microsoft/windows-container-tools/releases/latest/download/ContainerToolsInstaller.cmd --cacert C:\Windows\System32\curl-ca-bundle.crt'
+      register: result
+      ignore_errors: yes
+
+    - debug:
+        msg: "SSL connection error: {{ result.stderr }}"
+
+    - name: List Windows Updates and Features
+      win_updates:
+        category_names:
+          - 'Featured Updates'
+          - 'Critical Updates'
+          - 'Security Updates'
+        state: "{{ state }}"
+
+  handlers:
+    - name: Restart computer
+      win_reboot:
+        reboot_timeout_sec: 120
+
+---
+

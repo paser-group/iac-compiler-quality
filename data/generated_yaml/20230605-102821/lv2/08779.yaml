@@ -1,0 +1,22 @@
+
+- name: Perform stress test on apt_repository module
+  hosts: all
+  
+  tasks:
+    - name: Add apt repository
+      apt_repository:
+        repo: "{{ item }}"
+        state: present
+      with_items: "{{ query('sequence', '10-100') }}"
+      register: repo_output
+      
+    - name: Remove apt repository
+      apt_repository:
+        repo: "{{ item.item }}"
+        state: absent
+      loop: "{{ repo_output.results }}"
+      register: remove_output
+      
+    - name: Check performance
+      debug:
+        msg: "{{ remove_output | to_json }}"

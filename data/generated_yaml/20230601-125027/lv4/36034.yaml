@@ -1,0 +1,21 @@
+
+- name: Test for error reporting on missing inventory file
+  hosts: localhost
+  gather_facts: false
+  vars:
+    inventory_file: ./inventory   # the inventory file is expected in the current location
+  tasks:
+    - name: Remove the inventory file
+      file:
+        path: "{{inventory_file}}"
+        state: absent
+    
+    - name: Attempt to run playbook with missing inventory
+      command: ansible-playbook playbook.yml -i {{inventory_file}}
+      register: output
+      ignore_errors: true
+    
+    - name: Print error message if inventory file not found
+      debug:
+        var: output.stderr_lines
+      when: "'No such file or directory' in output.stderr"

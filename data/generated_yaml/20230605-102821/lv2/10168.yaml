@@ -1,0 +1,50 @@
+
+- name: Test playbook for role dependencies condition issue
+  hosts: all
+  tasks:
+
+  - name: Install role dependencies on Ubuntu hosts
+    when: "ansible_os_family == 'Debian'"
+    apt:
+      name: "{{ item }}"
+      state: present
+    with_items:
+      - "role1"
+      - "role2"
+
+  - name: Install role dependencies on Alpine hosts
+    when: "ansible_os_family == 'Alpine'"
+    apk:
+      name: "{{ item }}"
+      state: present
+    with_items:
+      - "role1"
+      - "role3"
+
+  - name: Install role dependencies on CentOS hosts
+    when: "ansible_os_family == 'RedHat'"
+    yum:
+      name: "{{ item }}"
+      state: present
+    with_items:
+      - "role1"
+      - "role4"
+
+  - name: Install role dependencies on Red Hat hosts
+    when: "ansible_os_family == 'RedHat'"
+    dnf:
+      name: "{{ item }}"
+      state: present
+    with_items:
+      - "role2"
+      - "role5"
+    
+  - name: Verify that dependencies are installed correctly
+    assert:
+      that:
+        - "role1 is installed"
+        - "role2 is installed"
+        - "role3 is installed"
+        - "role4 is installed"
+        - "role5 is installed"
+        - "dependencies are not duplicated"

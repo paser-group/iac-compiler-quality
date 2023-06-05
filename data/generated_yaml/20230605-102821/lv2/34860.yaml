@@ -1,0 +1,32 @@
+
+- name: Cron module backup error stress test
+  hosts: all
+  gather_facts: false
+
+  tasks:
+      - name: Schedule backup using cron
+        cron:
+          name: Backup
+          minute: "{{ range(0,60)|random }}"
+          hour: "{{ range(0,24)|random }}"
+          job: "rsync -avz /tmp/ /var/backup >/dev/null 2>&1"
+        register: result
+
+      - name: Fail if backup job does not exist 
+        fail:
+          msg: "Backup job did not get created!"
+        when: result.changed is not defined or result.changed == false
+
+      - name: Verify that backup job is scheduled
+        cron:
+          name: Backup
+          minute: "{{ range(0,60)|random }}"
+          hour: "{{ range(0,24)|random }}"
+          job: "rsync -avz /tmp/ /var/backup >/dev/null 2>&1"
+        register: verify
+
+        # Fails if cron module is not idempotent 
+      - name: Fail if cron is not idempotent
+        fail:
+          msg: "Cron is not idempotent!"
+        when: verify.changed is defined and verify.changed == true

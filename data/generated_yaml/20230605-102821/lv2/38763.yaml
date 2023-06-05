@@ -1,0 +1,40 @@
+
+---
+
+- name: Test role scope
+  hosts: all
+  vars:
+    my_var: "some value"
+  tasks:
+    - name: Use role with invalid scope
+      include_role:
+        name: my_role
+      vars:
+        scope: "{{ unknown_variable }}"
+        state: present
+      when: scope is defined
+
+    - name: Use role with invalid arguments
+      include_role:
+        name: my_role
+      vars:
+        arg1: "{{ invalid_expression }}"
+        state: present
+      register: result
+      failed_when: result | failed
+
+    - name: Use role with invalid syntax
+      include_role:
+        name: my_role
+      vars:
+        arg1: value1
+        arg2: value2
+      when: my_var in invalid_list
+
+    - name: Use role with unexpected input
+      include_role:
+        name: my_role
+      vars:
+        unexpected_arg: "{{ lookup('pipe', 'echo unexpected') }}"
+        state: present
+      changed_when: "'unexpected' in result.stdout"

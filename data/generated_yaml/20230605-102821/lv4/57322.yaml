@@ -1,0 +1,67 @@
+
+- name: Test network_cli plugin performance
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Create Docker network and nodes
+      docker_network:
+        name: node-net
+        driver: bridge
+        ipam:
+          driver: default
+          config:
+            - subnet: 10.1.1.0/24
+              gateway: 10.1.1.254
+      register: network
+
+    - name: Create Ubuntu container
+      docker_container:
+        name: ubuntu1
+        image: ubuntu
+        networks:
+          - name: node-net
+            ipv4_address: "10.1.1.1"
+      register: ubuntu
+
+    - name: Create Alpine container
+      docker_container:
+        name: alpine1
+        image: alpine
+        networks:
+          - name: node-net
+            ipv4_address: "10.1.1.2"
+      register: alpine
+
+    - name: Create CentOS container
+      docker_container:
+        name: centos1
+        image: centos
+        networks:
+          - name: node-net
+            ipv4_address: "10.1.1.3"
+      register: centos
+
+    - name: Create Red Hat container
+      docker_container:
+        name: redhat1
+        image: redhat
+        networks:
+          - name: node-net
+            ipv4_address: "10.1.1.4"
+      register: redhat
+
+    - name: Install network_cli plugin
+      pip:
+        name: ansible
+        extra_args: "--upgrade --user --pre"
+
+    - name: Test network_cli connection
+      network_cli:
+        command_string: "show version"
+      register: cli_output
+      become: yes
+      become_method: sudo
+
+    - name: Show network_cli output
+      debug:
+        var: cli_output

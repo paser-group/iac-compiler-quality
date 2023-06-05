@@ -1,0 +1,45 @@
+
+- name: MySQL module stress test
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Install MySQL client
+      apt:
+        name: mysql-client
+        state: present
+
+    - name: Create a new database
+      mysql_db:
+        name: "{{ lookup('env', 'DB_NAME') }}"
+        state: present
+
+    - name: Create a new user for the database
+      mysql_user:
+        name: "{{ lookup('env', 'DB_USER') }}"
+        password: "{{ lookup('env', 'DB_PASSWORD') }}"
+        priv: "{{ lookup('env', 'DB_NAME') }}.*:ALL"
+        state: present
+
+    - name: Insert data with zlib compression into MySQL
+      mysql_query:
+        db: "{{ lookup('env', 'DB_NAME') }}"
+        login_host: 127.0.0.1
+        login_password: "{{ lookup('file', '/root/.my.cnf') | regex_replace('\\[client\]\\n', '') }}"
+        login_user: "{{ lookup('env', 'DB_USER') }}"
+        query: "INSERT INTO mytable (data) VALUES ('{{ 'test data'|zlib.compress()|b64encode }}')"
+
+    - name: Retrieve and decompress data from MySQL
+      mysql_query:
+        db: "{{ lookup('env', 'DB_NAME') }}"
+        login_host: 127.0.0.1
+        login_password: "{{ lookup('file', '/root/.my.cnf') | regex_replace('\\[client\]\\n', '') }}"
+        login_user: "{{ lookup('env', 'DB_USER') }}"
+        query: "SELECT data FROM mytable LIMIT 1"
+      register: mysql_query_result
+
+    - name: Verify decompress data and compare with original data
+      assert:
+        that:
+          - mysql_query_result.stdout_lines[0] == 'test data'
+          - mysql_query_result.stdout_lines[0] | zlib.decompress | b64decode == 'test data'

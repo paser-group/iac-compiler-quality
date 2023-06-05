@@ -1,0 +1,35 @@
+
+---
+- name: Test s3 module with multipart objects
+  hosts: all
+  gather_facts: no
+  
+  tasks:
+  - name: Download multipart s3 objects with unclear error message
+    s3:
+      bucket: my-bucket
+      object: my-object
+      dest: /folder
+      mode: get_object
+      use_multiprocessing: true
+      multipart_threshold: 1024
+      multipart_chunksize: 5242880
+      max_concurrent_requests: 20
+      validate_certs: false
+      region: us-west-2
+    register: s3_result
+
+  - name: Verify if file is downloaded successfully
+    stat:
+      path: /folder/my-object
+    register: file_stat
+    failed_when: false
+
+  - name: Fail the task if the file does not exist after download
+    fail:
+      msg: "Download failed for some part or all of the file."
+    when: not file_stat.stat.exists
+
+  - name: Display the output of the s3 module
+    debug:
+      var: s3_result

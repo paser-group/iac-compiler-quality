@@ -1,0 +1,25 @@
+
+- name: Test for Issue #1234
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: Invalid JSON script test
+      shell: /usr/bin/facts.sh
+      register: facts
+      ignore_errors: true
+
+    - name: Set fact to error message if script returns invalid JSON
+      set_fact:
+        my_fact: "{{ facts.stdout | from_json }}"
+      failed_when: >
+        facts.rc != 0 and (facts.stderr | length > 0 and facts.stdout | length > 0)
+
+    - name: Print the fact
+      debug:
+        var: my_fact
+      
+    - name: Add the fact to the correct inventory group
+      add_host:
+        name: "{{ inventory_hostname }}"
+        groups: "{{ my_fact }}"

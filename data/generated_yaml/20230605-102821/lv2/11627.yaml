@@ -1,0 +1,41 @@
+
+- name: Perform stress test for Ansible compiler
+  hosts: all
+  become: yes
+  vars:
+    loop_count: "{{ 10 }}"
+    invalid_value: "{{ 'invalid | syntax' }}"
+    unexpected_input: "{{ ['<>&', '||', '#!', '!@#'] }}"
+  tasks:
+  - name: Install nginx web server
+    apt:
+      name: nginx
+      state: present
+    notify:
+      - start nginx
+  - name: Start nginx
+    service:
+      name: nginx
+      state: started
+    register: nginx_status
+    ignore_errors: yes
+  - name: Generate traffic using curl command
+    shell: "curl -sS {{ item }}"
+    with_items:
+      - http://localhost
+      - http://{{ ansible_all_ipv4_addresses | random }}
+      - http://{{ invalid_value }}
+      - http://{{ unexpected_input | random() }}
+    loop: "{{ loop_count }}"
+  - name: Stop nginx
+    service:
+      name: nginx
+      state: stopped
+  - name: Log results
+    debug:
+      msg: "Node: {{ ansible_hostname }} Status: {{ nginx_status }} Traffic: {{ item }}"
+    with_items:
+      - http://localhost
+      - http://{{ ansible_all_ipv4_addresses | random }}
+      - http://{{ invalid_value }}
+      - http://{{ unexpected_input | random() }}

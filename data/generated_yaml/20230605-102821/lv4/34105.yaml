@@ -1,0 +1,35 @@
+
+- hosts: localhost
+  vars:
+    dvs_name_1: "dvs-1"
+    dvs_name_2: "dvs-2"
+    vm_name: "test-vm"
+  tasks:
+    - name: Create a virtual machine on the DVS-1
+      vmware_guest:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: False
+        name: "{{ vm_name }}"
+        template: "{{ template }}"
+        folder: "/{{ data_center_name }}/vm"
+        state: present
+        networks:
+        - name: "{{ dvs_name_1 }}"
+    
+    - name: Move the VM from DVS-1 to DVS-2
+      community.vmware.vmware_guest_network:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        folder: "/{{ data_center_name }}/vm"
+        name: "{{ vm_name }}"
+        networks:
+          - name: "{{ dvs_name_2 }}"
+          
+    - name: Confirm idempotency
+      fail:
+        msg: "{{ vm_name }} has created multiple instances on DVS-2"
+      when: ((vm_name in item.name) and (dvs_name_2 in item.network_info[0]['network']))
+      loop: "{{ query('vmware_guest_facts', 'name=test-vm')['virtual_machines'] }}"

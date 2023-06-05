@@ -1,0 +1,31 @@
+
+- name: Copy a file to a node
+  hosts: all
+  become: true
+  remote_user: <non-root user>
+  vars:
+    temp_dir: /tmp/.ansible
+  tasks:
+    - name: Create temporary directory
+      file:
+        path: "{{ temp_dir }}"
+        state: directory
+      
+    - name: Copy file to temporary directory
+      copy:
+        src: /path/to/file
+        dest: "{{ temp_dir }}/file"
+    
+    - name: Change file ownership
+      command: chown <root_user>:{{ remote_user }} "{{ temp_dir }}/file"
+    
+    - name: Change file permissions
+      command: chmod 700 "{{ temp_dir }}/file"
+    
+    - name: Execute file as remote user
+      command: "{{ temp_dir }}/file"
+      register: file_output
+      
+    - name: Output file contents
+      debug:
+        var: file_output.stdout

@@ -1,0 +1,28 @@
+
+- name: Add SSH keys for root user
+  hosts: all
+  tasks:
+    - name: Add SSH key
+      authorized_key:
+        user: root
+        key: "{{ lookup('file', '/root/.ssh/id_rsa.pub') }}"
+    - name: Install Python package
+      apt:
+        name: python
+        state: present
+    - name: Try SSH connection without python
+      shell: ssh {{ inventory_hostname }} -o ConnectTimeout=5
+      ignore_errors: true
+      register: ssh_result
+    - name: Wait for SSH to be available
+      wait_for:
+        host: "{{ inventory_hostname }}"
+        port: 22
+        state: started
+        delay: 10
+        timeout: 50
+    - name: Check SSH connection with Python
+      shell: ssh {{ inventory_hostname }} python --version
+      register: ssh_python_check
+    - debug:
+        var: ssh_python_check.stdout.strip()

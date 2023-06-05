@@ -1,0 +1,41 @@
+
+- name: Provision RDS instance using ec2.py dynamic inventory
+  hosts: localhost
+  gather_facts: no
+  tasks:
+  - name: Create RDS instance using boto3
+    ec2_instance:
+      aws_access_key: "{{ lookup('env', 'AWS_ACCESS_KEY_ID') }}"
+      aws_secret_key: "{{ lookup('env', 'AWS_SECRET_ACCESS_KEY') }}"
+      security_token: "{{ lookup('env', 'AWS_SESSION_TOKEN') }}"
+      region: us-west-2
+      image: ami-0c55b159cbfafe1f0
+      count: 1
+      instance_tags:
+        Name: my-rds-instance
+      group: rds-launch-wizard-1
+      instance_type: t2.micro
+    register: ec2
+
+  - name: Display RDS instance info
+    debug:
+      var: ec2
+
+  - name: Configure RDS instance with custom security group using specified boto profile
+    rds:
+      profile: "{{ boto_profile_name }}"
+      state: present
+      db_instance_identifier: my-rds-instance
+      db_instance_class: db.t2.micro
+      engine: MySQL
+      allocated_storage: 10
+      master_username: root
+      master_password: "{{ aws_rds_pass }}"
+      vpc_security_group_ids: "{{ aws_rds_sg }}"
+      tags:
+        Name: my-rds-instance
+    register: rds
+
+  - name: Display RDS configuration info
+    debug:
+      var: rds

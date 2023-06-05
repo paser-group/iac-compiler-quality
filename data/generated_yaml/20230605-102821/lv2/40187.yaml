@@ -1,0 +1,29 @@
+
+---
+- name: Test playbook for Task does not fail after the configuration error
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Run eos_config module with invalid options
+      eos_config:
+        provider: "{{ item }}"
+        lines:
+          - network instance invalid-option
+      loop: "{{ query('inventory_hostnames', 'all') }}"
+      register: config_result
+
+    - name: Assert that eos_config module fails
+      assert:
+        that: "config_result['results'][loop.index0]['failed'] is defined"
+        success_msg: "The eos_config module failed as expected"
+        fail_msg: "The eos_config module did not fail as expected"
+      loop: "{{ config_result['results'] }}"
+
+    - name: Ping all hosts
+      ping:
+      register: ping_result
+
+    - name: Print the ping result
+      debug:
+        var: ping_result

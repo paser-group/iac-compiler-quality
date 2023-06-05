@@ -1,0 +1,29 @@
+
+- name: Create EC2 Launch Configuration
+  hosts: localhost
+  connection: local
+  
+  vars:
+    region: "<region>"
+    ami_id: "<ami_id>"
+    instance_type: "<instance_type>"
+  
+  tasks:
+    - name: Ensure VPC exists in specified region
+      ec2_vpc_net:
+        state: present
+        region: "{{ region }}"
+        cidr_block: 10.1.1.0/24
+        resource_tags:
+          Name: node-net
+
+    - name: Create EC2 Launch Configuration
+      ec2_lc:
+        name: "test-lc"
+        image_id: "{{ ami_id }}"
+        instance_type: "{{ instance_type }}"
+        region: "{{ region }}"
+        security_groups: "{{ vpc_default_security_groups }}" # identifies VPC security groups
+        key_name: "key_I.pem"
+        instance_monitoring: yes
+        spot_price: 0.01

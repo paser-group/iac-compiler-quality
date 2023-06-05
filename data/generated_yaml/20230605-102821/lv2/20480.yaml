@@ -1,0 +1,45 @@
+
+- name: Test docker_service error handling
+  hosts: node-net
+  gather_facts: no
+
+  tasks:
+    - name: Install Docker on all nodes
+      become: true
+      apt:
+        name: docker.io
+        update_cache: yes
+        state: latest
+
+    - name: Start Docker service on all nodes
+      become: true
+      service:
+        name: docker
+        state: started
+
+    - name: Run a Docker container that fails to start
+      docker_container:
+        name: test_container
+        image: busybox
+        command: sh -c "exit 1"
+        state: started
+        recreate: false
+      register: result
+      ignore_errors: true
+
+    - name: Print error messages from failed container
+      debug:
+        var: result
+      when: result is failed
+
+    - name: Remove failed container
+      docker_container:
+        name: test_container
+        state: absent
+      ignore_errors: true
+
+    - name: Kill Docker service on all nodes
+      become: true
+      service:
+        name: docker
+        state: stopped

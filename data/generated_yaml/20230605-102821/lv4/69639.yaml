@@ -1,0 +1,40 @@
+
+- name: Install and configure Helm on Kubernetes cluster
+  hosts: kubernetes
+  become: true
+  vars:
+    chart_version: 5.5.5
+
+  tasks:
+    - name: Add Helm GPG key
+      apt_key:
+        url: https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 > get_helm.sh
+        keyserver: keyserver.ubuntu.com
+        state: present
+  
+    - name: Install Helm
+      apt:
+        name: "{{ item }}"
+        state: present
+        update_cache: yes
+      loop:
+        - apt-transport-https
+        - ca-certificates
+        - curl
+      when: item != 'curl' and item != 'ca-certificates'
+
+    - name: Add Helm chart repository
+      become_user: kubernetes-admin
+      helm_repository:
+        name: wordpress
+        url: https://charts.bitnami.com/bitnami
+        state: present
+
+    - name: Deploy WordPress application
+      helm:
+        name: my-wordpress
+        chart: wordpress
+        version: "{{ chart_version }}"
+        state: present
+        wait: true
+        namespace: default

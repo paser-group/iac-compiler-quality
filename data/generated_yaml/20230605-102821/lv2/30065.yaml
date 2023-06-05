@@ -1,0 +1,53 @@
+
+- name: Test URI Module for Type Errors
+  hosts: all
+  become: true
+
+  vars:
+    urls:
+      - 'https://google.com'
+      - 'https://example.com'
+      - 'https://badurl'
+      - 'https://'
+
+  tasks:
+    - name: Test valid URL
+      uri:
+        url: "{{ urls[0] }}"
+        status_code: 200
+
+    - name: Test invalid URL
+      uri: 
+        url: "{{ urls[2] }}"
+        status_code: 400
+
+    - name: Test empty URL
+      uri:
+        url: "{{ urls[3] }}"
+        method: GET
+        headers: "{{ {'Content-Type': 'application/json'} }}"
+
+    - name: Test invalid http method
+      uri:
+        url: "{{ urls[1] }}"
+        method: PUTT
+        return_content: yes
+
+    - name: Test invalid certificate
+      uri:
+        url: "{{ urls[0] }}"
+        client_cert: "/invalid/cert.crt"
+        client_key: "/invalid/cert.key"
+        status_code: 500
+
+    - name: Test invalid SSL version
+      uri:
+        url: "{{ urls[1] }}"
+        ssl_version: not_a_real_version
+        status_code: 500
+
+    - name: Test invalid proxy
+      uri:
+        url: "{{ urls[2] }}"
+        status_code: 200
+        https_proxy: "{{ not_a_real_proxy }}"

@@ -1,0 +1,58 @@
+
+- name: Create a Virtual Machine on Azure
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    azure_subscription_id: "YOUR_SUBSCRIPTION_ID"
+    azure_client_id: "YOUR_CLIENT_ID"
+    azure_secret: "YOUR_SECRET"
+    azure_tenant: "YOUR_TENANT_ID"
+    vm_name: "test-vm"
+    rg_name: "test-rg"
+    location: "eastus"
+    subnet_name: "test-subnet"
+    ip_config_name: "ipconfig1"
+  
+  tasks:
+  - name: create subnet
+    azure_rm_subnet:
+      resource_group: "{{ rg_name }}"
+      virtual_network_name: "test-vnet"
+      name: "{{ subnet_name }}"
+      address_prefix: "10.0.1.0/24"
+
+  - name: create vm with incorrect subnet name
+    azure_rm_virtualmachine:
+      resource_group: "{{ rg_name }}"
+      name: "{{ vm_name }}"
+      location: "{{ location }}"
+      admin_username: "testuser"
+      network_interface_names: "{{ vm_name }}-nic"
+      size: "Standard_DS1_v2"
+      os_type: "linux"
+      image:
+        offer: "debian"
+        publisher: "debian"
+        sku: "9"
+        version: "latest"
+      os_disk:
+        name: "{{ vm_name }}-disk"
+        caching: "ReadWrite"
+        create_option: "FromImage"
+      data_disks:
+        - name: "{{ vm_name }}-datadisk"
+          disk_size_gb: "5"
+          lun: 0
+          create_option: "Empty"
+      vm_identity:
+        type: "SystemAssigned"
+      subnet_name: "{{ subnet_name }}-foo"
+      ip_configuration_name: "{{ ip_config_name }}"
+    register: result
+    no_log: true
+
+  - name: print result
+    debug:
+      var: result

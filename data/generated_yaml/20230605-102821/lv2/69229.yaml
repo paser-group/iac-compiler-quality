@@ -1,0 +1,28 @@
+
+- hosts: all
+  gather_facts: no
+
+  vars:
+    default_tablespace: "{{ '/' * 100000 }}"
+
+  tasks:
+    - name: Install PostgreSQL
+      yum:
+        name: postgresql
+        state: present
+      register: postgresql_installed
+
+    - name: Set default_tablespace to uppercase
+      postgresql_set:
+        name: "{{ item }}"
+        option: default_tablespace
+        value: "{{ default_tablespace }}"
+        state: present
+      loop: "{{ groups['all'] }}"
+      when: postgresql_installed.changed
+
+    - name: Remove PostgreSQL
+      yum:
+        name: postgresql
+        state: absent
+      when: postgresql_installed.changed

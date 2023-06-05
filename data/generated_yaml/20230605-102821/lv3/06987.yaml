@@ -1,0 +1,32 @@
+
+- name: Deploy an EC2 instance with private IP set
+  hosts: localhost
+  gather_facts: no
+  tasks:
+    - name: Launch EC2 Instance
+      ec2:
+        key_name: my-key
+        instance_type: t2.micro
+        user_data: |
+          #!/bin/bash
+          echo "Hello, World!" > index.html
+          nohup python -m SimpleHTTPServer 80 &
+        image: ami-0c94855ba95c71c99
+        wait: true
+        count: 1
+        assign_private_ip: yes
+        network:
+          interfaces:
+           - device_index: "0"
+             subnet_id: "{{ subnet_id }}" #Pass the subnet id dynamically.
+      register: ec2_instance
+
+- name: Retrieve EC2 instance public IP and subnet
+  hosts: localhost
+  gather_facts: no
+  tasks:
+    - name: Display Public IP
+      debug: var=ec2_instance.public_dns_name
+
+    - name: Display Subnet
+      debug: var=ec2_instance.subnet_id

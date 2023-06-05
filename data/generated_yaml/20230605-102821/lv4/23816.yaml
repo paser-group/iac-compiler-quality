@@ -1,0 +1,39 @@
+
+- name: Test Passwordstore Plugin
+  hosts: all
+  become: true
+  gather_facts: no
+
+  vars:
+    secret_key_path: "/path/to/secret/key"
+    passwordstore_path: "/path/to/passwordstore"
+    test_password_name: "test_password"
+
+  tasks:
+    - name: Install dependencies
+      apt:
+        name:
+          - libgnutls28-dev
+          - libgpgme-dev
+          - python-gpg
+          - pass
+        state: latest
+
+    - name: Import secret key
+      gpgkey:
+        keyring: /root/.gnupg/secring.gpg
+        path: "{{ secret_key_path }}"
+        passphrase: "{{ lookup('file', '/path/to/passphrase/file') }}"
+
+    - name: Test Passwordstore plugin
+      passwordstore:
+        action: get
+        name: "{{ test_password_name }}"
+        path: "{{ passwordstore_path }}"
+        secret: "{{ lookup('env', 'PASSWORD_STORE_GPG_ID') }}"
+      ignore_errors: true
+      register: result
+
+    - name: Show passwordstore output
+      debug:
+        var: result

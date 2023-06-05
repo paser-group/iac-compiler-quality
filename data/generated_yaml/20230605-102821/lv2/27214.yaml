@@ -1,0 +1,66 @@
+
+- name: Test random module's end implementation
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Create a list with integer elements
+      set_fact:
+        int_list: "{{ range(10) | list }}"
+      register: list_result
+    - debug:
+        var: list_result
+
+    - name: Create a list with mixed-type elements
+      set_fact:
+        mixed_list:
+          - "{{ lookup('template', 'templates/random_file.txt') }}"
+          - 4
+          - "5"
+          - "{{ [2.0, 'three', True] }}"
+      register: mixed_result
+    - debug:
+        var: mixed_result
+
+    - name: Generate random number between 1 and 10
+      set_fact:
+        random_int: "{{ range(1,11) | random }}"
+      register: int_result
+    - debug:
+        var: int_result
+
+    - name: Generate random string with specified length
+      set_fact:
+        random_string: "{{ random_string(5) }}"
+      register: string_result
+    - debug:
+        var: string_result
+
+    - name: Attempt to use deprecated 'end' attribute in incorrect context
+      set_fact:
+        bad_random_dict:
+          end: "{{range(10) | random }}" # This 'end' attribute should not work here
+          start: 0
+          stride: 1
+      register: bad_dict_result
+    - debug:
+        var: bad_dict_result
+
+    - name: Attempt to use 'end' attribute with non-numeric value
+      set_fact:
+        bad_random_dict:
+          end: "{{ mixed_list | random }}" # This 'end' attribute should not accept a string value
+          start: 0
+          stride: 1
+      register: bad_dict_result2
+    - debug:
+        var: bad_dict_result2
+
+    - name: Attempt to use 'end' attribute with missing value
+      set_fact:
+        bad_random_dict:
+          start: 0
+          stride: 1
+          end: "{{ missing_variable }}" # This 'end' attribute should fail due to missing variable
+      register: bad_dict_result3
+    - debug:
+        var: bad_dict_result3

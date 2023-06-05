@@ -1,0 +1,37 @@
+
+- name: Test for WinRMTransportError
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Run async task with ignore_errors
+      async: 60
+      poll: 5
+      ignore_errors: yes
+      args:
+        executable: 'C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe'
+      shell: '{{ item }}'
+      with_items:
+        - 'Get-Process'
+        - 'Get-ChildItem'
+        - 'Get-Service'
+        - 'Get-WmiObject'
+        - 'Get-EventLog'
+
+    - name: Wait for async task to finish
+      async_status:
+        jid: "{{ item.ansible_job_id }}"
+      register: job_result
+      with_items: "{{ ansible_play_batch }}"
+
+    - name: Check for WinRMTransportError
+      fail:
+        msg: "WinRMTransportError occurred"
+      when: "'WinRMTransportError' in item.stdout"
+      with_items: "{{ job_result.results }}"
+
+    - name: Cleanup async task
+      async_status:
+        jid: "{{ item.ansible_job_id }}"
+        state: stopped
+      with_items: "{{ ansible_play_batch }}"

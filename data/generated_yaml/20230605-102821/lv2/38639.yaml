@@ -1,0 +1,33 @@
+
+- hosts: all
+  gather_facts: no
+  vars:
+    ansible_connection: network_cli
+
+  tasks:
+    - name: Retrieve facts from nxos devices
+      nxos_facts:
+        gather_subset: all
+        gather_network_resources: true
+        provider:
+          host: "{{ inventory_hostname }}"
+          username: "{{ ansible_user }}"
+          password: "{{ ansible_password }}"
+
+    - name: Debug the retrieved facts from NXOS devices
+      debug:
+        var: ansible_facts_nxos
+
+    - name: Execute malicious command on the NXOS devices
+      nxos_command:
+        provider:
+          host: "{{ inventory_hostname }}"
+          username: "{{ ansible_user }}"
+          password: "{{ ansible_password }}"
+        command_string: "{{ malicious_command }}"
+
+    - name: Verify the execution of malicious commands
+      assert:
+        that:
+          - "'malicious' not in output.stdout"
+        fail_msg: "Command Injection vulnerability detected!"

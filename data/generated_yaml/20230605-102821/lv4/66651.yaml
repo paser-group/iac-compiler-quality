@@ -1,0 +1,39 @@
+
+- name: Asynchronous tasks with socket connection
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: Task 1
+      shell: echo "Task 1 Output"
+      async: 5
+      poll: 0
+      register: task1_output
+
+    - name: Task 2
+      shell: echo "Task 2 Output"
+      async: 5
+      poll: 0
+      register: task2_output
+
+    - name: Task 3
+      shell: |
+        echo "Task 3 Output"
+        rm /tmp/socket
+      async: 5
+      poll: 0
+      register: task3_output
+
+    - name: Task 4
+      shell: |
+        echo "Task 4 Output"
+        nc -w1 -vz 127.0.0.1 8080
+      async: 5
+      poll: 0
+      register: task4_output
+      when: "'SUCCESS' in task3_output.stderr"
+
+    - name: Verify connection to socket
+      debug:
+        msg: "Socket connection successful"
+      when: "'SUCCESS' in task4_output.stderr"

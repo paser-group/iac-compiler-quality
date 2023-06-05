@@ -1,0 +1,25 @@
+
+- hosts: windows
+  gather_facts: no
+  tasks:
+    - name: create self-signed certificate
+      win_certificate:
+        store_location: LocalMachine
+        store_name: My
+        common_name: "IIS Default Binding"
+        state: present
+        provider: selfsigned
+      register: cert_result
+
+    - name: update ssl certificate on default binding
+      win_iis_webbinding:
+        site: "Default Web Site"
+        state: present
+        name: "*:443:"
+        ip: "*"
+        protocol: "https"
+        ssl_certificate_hash: "{{ cert_result.thumbprint }}"
+      become: true
+      become_method: runas
+      become_user: SYSTEM
+      when: cert_result.changed

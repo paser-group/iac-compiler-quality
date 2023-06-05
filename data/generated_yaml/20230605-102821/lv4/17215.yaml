@@ -1,0 +1,22 @@
+yaml
+- name: Check for available disk space
+  hosts: all
+  gather_facts: true
+  tasks:
+  - name: Create temporary file
+    tempfile:
+      state: file
+      suffix: '.txt'
+      dir: "{{ temp_path }}"
+      mode: '0644'
+    register: temp_file
+  - name: Write to temporary file until out of space
+    shell: >
+      until df -k "{{ temp_path }}" | awk '{print $5}' | tail -n1 | sed 's/%//g' | grep -q '^9[0-9]\\|100$'; do
+        printf "Writing to file" >> "{{ temp_file.path }}";
+      done
+    register: write_output
+
+  - name: Display results
+    debug:
+      var: write_output

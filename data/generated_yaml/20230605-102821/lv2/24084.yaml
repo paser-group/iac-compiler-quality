@@ -1,0 +1,71 @@
+
+- name: Azure Deployment stress test
+  hosts: all
+  gather_facts: no
+  
+  vars:
+    resource_group: "rg{{ ansible_date_time.epoch }}"
+    location: "eastus"
+  
+  tasks:
+    - name: Create Azure Resource Group
+      azure_rm_resourcegroup:
+        name: "{{ resource_group }}"
+        location: "{{ location }}"
+      
+    - name: Deploy ARM template
+      azure_rm_deployment:
+        resource_group_name: "{{ resource_group }}"
+        name: "deployment{{ ansible_date_time.epoch }}"
+        location: "{{ location }}"
+        template_link:
+          uri: "https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/101-vm-simple-linux/azuredeploy.json"
+          method: "get"
+        parameters_link:
+          uri: "https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/101-vm-simple-linux/azuredeploy.parameters.json"
+          method: "get"
+        state: "present"
+      
+    # Irregular Syntax and Unexpected Inputs
+    - name: Undocumented Azure RM Deployment Task
+      azure_rm_deployment:
+        >- #{{ "ansible-lint: no-docstring" }}
+        resource_group: "{{ resource_group }}"
+        template: "{{ playbook_dir }}/templates/azuredeploy-invalid.json"
+        deployment_mode: "{{ ['incremental', 'complete', 'incorrect'] | random }}"
+        vargs: "{{ ['--invalid-option', 'value'] | join(' ') }}"
+        registration_timeout: "{{ ['PT2H', 'INVALID'] | random }}"
+        extra_parameters: "{{ {'test-param': {'value': 'my_value'}} }}"
+      
+    # Unique Scenario
+    - name: Deploy ARM template with invalid authentication
+      azure_rm_deployment:
+        resource_group_name: "{{ resource_group }}"
+        name: "invalid-auth{{ ansible_date_time.epoch }}"
+        location: "{{ location }}"
+        template_link:
+          uri: "https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/101-vm-simple-linux/azuredeploy.json"
+          method: "get"
+        parameters_link:
+          uri: "https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/101-vm-simple-linux/azuredeploy.parameters.json"
+          method: "get"
+        state: "present"
+        client_id: "INVALID_CLIENT_ID"
+        secret: "INVALID_SECRET"
+        tenant: "INVALID_TENANT"
+      
+    # GitHub Comment Suggestion
+    - name: Deploy ARM template with verbose logging
+      azure_rm_deployment:
+        resource_group_name: "{{ resource_group }}"
+        name: "deployment{{ ansible_date_time.epoch }}"
+        location: "{{ location }}"
+        template_link:
+          uri: "https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/101-vm-simple-linux/azuredeploy.json"
+          method: "get"
+        parameters_link:
+          uri: "https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/101-vm-simple-linux/azuredeploy.parameters.json"
+          method: "get"
+        state: "present"
+        registration_timeout: "PT10M"
+        extra_vars: '-vvv'

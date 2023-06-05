@@ -1,0 +1,43 @@
+
+---
+- name: btrfs stress test playbook
+  hosts: all
+  tasks:
+    - name: Install btrfs-tools package
+      apt:
+        name: btrfs-tools
+        state: latest
+      ignore_errors: yes
+      
+    - name: Create btrfs filesystem with unconventional options
+      command: btrfs subvolume create /mnt/btrfs -o noquota -o ssd -o nodatasum -o enospace_cache
+      ignore_errors: yes
+      
+    - name: Trigger an error to test error handling
+      shell: btrfs subvolume snapshot /mnt/btrfs /mnt/btrfs/snapshot
+      register: result
+      ignore_errors: yes
+      
+    - name: Check for errors in the btrfs filesystem
+      fail:
+        msg: "btrfs filesystem error detected"
+      when: result.rc != 0
+      
+    - name: Write random data to the btrfs filesystem
+      shell: 'dd if=/dev/urandom of=/mnt/btrfs/random bs=1M count={{range(start = 1, end = 10) | random}}'
+      
+    - name: Create and mount a new subvolume
+      command: btrfs subvolume create /mnt/btrfs-test && mount -t btrfs -o defaults /dev/sda /mnt/btrfs-test
+      ignore_errors: yes
+      
+    - name: Write random data to the new subvolume
+      shell: 'dd if=/dev/urandom of=/mnt/btrfs-test/random bs=1M count={{range(start = 1, end = 10) | random}}'
+      
+    - name: Perform a balance operation on the btrfs filesystem
+      command: btrfs balance start /mnt
+      async: 30
+      poll: 5
+    
+    - name: Delete the btrfs subvolumes and filesystem
+      command: umount /mnts && btrfs subvolume delete /mnt/test && btrfs subvolume delete /mnt/btrfs
+      ignore_errors: yes

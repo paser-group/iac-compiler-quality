@@ -1,0 +1,46 @@
+
+- name: Test inventory plugin
+  hosts: localhost
+  become: yes
+  gather_facts: no
+  vars:
+    plugin_hosts: "{{ groups['all'] | join(',') }}"
+    plugin_path: "{{ playbook_dir }}/my_dynamic_inventory.py"
+  tasks:
+  - name: Create inventory plugin
+    copy:
+      content: |
+        #!/usr/bin/env python
+        import os
+        import sys
+        import json
+        
+        plugin_hosts = os.environ.get('PLUGIN_HOSTS')
+        plugin_path = os.environ.get('PLUGIN_PATH')
+        
+        result = {
+            '_meta': {
+                'hostvars': {}
+            }
+        }
+        
+        for host in plugin_hosts.split(','):
+            result['_meta']['hostvars'][host] = {}
+            result['_meta']['hostvars'][host]['ansible_host'] = host
+        
+        print(json.dumps(result))
+      dest: '{{ plugin_path }}'
+      mode: '0755'
+      
+  - name: Test inventory plugin
+    command: |
+      export ANSIBLE_INVENTORY_PLUGINS={{ playbook_dir }}
+      export PLUGIN_PATH={{ plugin_path }}
+      export PLUGIN_HOSTS={{ plugin_hosts }}
+      ansible-inventory --list
+
+  # Cleanup   
+  - name: Cleanup
+    file:
+      state: absent
+      path: '{{ plugin_path }}'

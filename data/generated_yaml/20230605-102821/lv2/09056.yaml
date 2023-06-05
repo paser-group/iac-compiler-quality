@@ -1,0 +1,24 @@
+
+- hosts: all
+  tasks:
+    - name: Restart service and verify status
+      service:
+        name: nginx
+        state: restarted
+        register: restart_output
+
+    - name: Verify if service is restarted
+      assert:
+        that:
+          - restart_output is defined
+          - restart_output.changed == true
+          - restart_output.rc == 0
+      retries: 5
+      delay: 5
+      notify: slack_notification
+
+  handlers:
+    - name: slack_notification
+      slack:
+        token: "{{ slack_token }}"
+        msg: "Nginx service restarted successfully!"

@@ -1,0 +1,23 @@
+
+- name: Check ansible_processor_vcpus fact in containers
+  hosts: all
+  gather_facts: true
+  tasks:
+  - name: Check ansible_processor_vcpus fact
+    debug:
+      msg: "ansible_processor_vcpus fact value is {{ansible_processor_vcpus}}"
+    register: ansible_processor_vcpus
+  - name: Create Docker container
+    docker_container:
+      name: "test_container"
+      image: "ubuntu:latest"
+      state: started
+  - name: Verify ansible_processor_vcpus in container
+    docker_exec:
+      container: test_container
+      cmd: "sh -c 'echo ansible_processor_vcpus is $(cat /proc/cpuinfo | awk \"/^processor/ {print $3}\" | wc -l)'"
+    register: docker_output
+  - name: Compare ansible_processor_vcpus values
+    debug:
+      msg: "ansible_processor_vcpus values: host={{ansible_processor_vcpus.stdout}} container={{docker_output.stdout}}"
+    when: (ansible_processor_vcpus.stdout | int) != (docker_output.stdout | int)

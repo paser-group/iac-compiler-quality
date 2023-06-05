@@ -1,0 +1,68 @@
+
+- name: Slack Notification Stress Test
+  hosts: all
+  gather_facts: no
+  
+  tasks:
+    - name: Install Slack Module
+      pip:
+        name: slack-sdk
+        state: latest
+        extra_args: "--no-cache-dir"
+      ignore_errors: yes
+
+    - name: Send Slack Notifications with Invalid Tokens
+      slack:
+        token: "{{ item }}"
+        channel: "#ansible-bugs"
+        color: "{{ ['warning', 'danger', 'good'] | random }}"
+        msg: "Testing notifications with invalid tokens"
+      loop:
+        - "invalid_token_1"
+        - "invalid_token_2"
+        - "invalid_token_3"
+      register: slack_response
+
+    - name: Assert Slack Notifications Failed on Invalid Tokens
+      assert:
+        that:
+          - item.failed
+        with_items:
+          - "{{ slack_response.results }}"
+
+    - name: Send Slack Notifications with Invalid Channels
+      slack:
+        token: "{{ var_slack_token }}"
+        channel: "{{ item }}"
+        color: "{{ ['warning', 'danger', 'good'] | random }}"
+        msg: "Testing notifications with invalid channels"
+      loop:
+        - "invalid_channel_1"
+        - "invalid_channel_2"
+        - "invalid_channel_3"
+      register: slack_response
+
+    - name: Assert Slack Notifications Failed on Invalid Channels
+      assert:
+        that:
+          - item.failed
+        with_items:
+          - "{{ slack_response.results }}"
+
+    - name: Send Slack Notifications with Large Message Lengths
+      slack:
+        token: "{{ var_slack_token }}"
+        channel: "#ansible-bugs"
+        color: "{{ ['warning', 'danger', 'good'] | random }}"
+        msg: "{{ lookup('template', 'large_message.tpl') }}"
+      vars:
+        var_large_message: "{{ ' '.join(['Lorem ipsum ' for _ in range(100_000)]) }}"
+        var_message_count: 10
+      register: slack_response
+
+    - name: Assert Slack Notifications Failed with Large Message Lengths
+      assert:
+        that:
+          - item.failed
+        with_items:
+          - "{{ slack_response.results }}"

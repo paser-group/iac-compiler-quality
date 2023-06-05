@@ -1,0 +1,33 @@
+
+---
+- name: Copy files with sudo
+  hosts: all
+  become: true
+  vars:
+    source_file: "/path/to/file"
+    dest_file: "/path/to/destination"
+    sudo_user: "{{ ansible_user }}"
+  tasks:
+    - name: Copy file with sudo
+      command: sudo cp -a {{ source_file }} {{ dest_file }}
+      register: result
+      ignore_errors: true
+    - name: Echo results
+      debug:
+        var: result
+      when: result.rc != 0
+    - name: Unmask the become password
+      command: cat "<path_to_password_file>"
+      register: password_file_content
+      no_log: true
+      when: result.rc != 0
+    - name: Attempt to copy file without sudo
+      copy:
+        src: "{{ source_file }}"
+        dest: "{{ dest_file }}"
+      register: result_copy
+      when: result.rc != 0
+    - name: Echo failed copy result
+      debug:
+        var: result_copy
+      when: result_copy.failed == true

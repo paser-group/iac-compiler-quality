@@ -1,0 +1,32 @@
+
+- name: Gem module build_flags parameter list stress test
+  hosts: all
+  gather_facts: false
+  tasks:
+  - name: Execute gem build command with too many flag arguments
+    shell: gem build --build-flags="--with-opt-dir=/usr/local/opt/libxml2:$LD_LIBRARY_PATH --with-opt-dir=/usr/local/opt/libxslt:$LD_LIBRARY_PATH --with-opt-dir=/usr/local/opt/readline:$LD_LIBRARY_PATH --with-opt-dir=/usr/local/opt/openssl:$LD_LIBRARY_PATH --with-opt-dir=/usr/local/opt/zlib:$LD_LIBRARY_PATH --with-opt-dir=/usr/local/opt/sqlite:$LD_LIBRARY_PATH --with-opt-dir=/usr/local/opt/json-c:$LD_LIBRARY_PATH --with-opt-dir=/usr/local/opt/icu4c:$LD_LIBRARY_PATH --jobs=32" {{ body }}
+    register: build_output
+    ignore_errors: true
+
+  - name: Check exit status for gem build command
+    fail:
+      msg: "Failed with exit status {{ build_output.rc }}"
+    when: build_output.rc != 0
+
+  - name: Print gem build output
+    debug:
+      var: build_output.stdout_lines
+
+  - name: Execute gem build command with missing flag value
+    shell: gem build --build-flags="--with-opt-dir=/usr/local/opt/libxml2:$LD_LIBRARY_PATH --with-opt-dir=/usr/local/opt/libxslt:$LD_LIBRARY_PATH --jobs=32"},{" {{ body }}
+    register: gem_output
+    ignore_errors: true
+
+  - name: Check exit status for gem build command
+    fail:
+      msg: "Failed with exit status {{ gem_output.rc }}"
+    when: gem_output.rc != 0
+
+  - name: Print gem build output
+    debug:
+      var: gem_output.stdout_lines

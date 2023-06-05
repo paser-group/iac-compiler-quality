@@ -1,0 +1,25 @@
+
+---
+- name: Ansible Compiler Bug Detection Playbook
+  hosts: all
+  gather_facts: no
+  vars:
+    secrets:
+      - secret_key: "{{ lookup('env', 'SECRET_KEY') }}"
+  tasks:
+    - name: Create a file with a secret value
+      copy:
+        content: "{{ secrets[0].secret_key }}"
+        dest: /tmp/secret_file
+        owner: root
+        mode: u=rw,g=r,o=r
+      register: result
+
+    - name: Verify the secret value exists in the file
+      command: cat /tmp/secret_file | grep "{{ secrets[0].secret_key }}"
+      register: verify
+
+    - name: Unmask Ansible Compiler Bugs
+      debug:
+        var: verify.stdout
+        verbosity: 2

@@ -1,0 +1,71 @@
+
+- name: Azure stress test
+  hosts: azure_nodes
+  gather_facts: no
+  become: yes
+
+  vars:
+    resource_group: "my_resource_group"
+    location: "centralus"
+    vm_name: "my_vm"
+    disk_size_gb: 30
+
+  tasks:
+  - name: Create resource group if it does not exist
+    azure_rm_resourcegroup:
+      name: "{{ resource_group }}"
+      location: "{{ location }}"
+      state: present
+
+  - name: Create VM disk
+    azure_rm_managed_disk:
+      name: "{{ vm_name }}_disk"
+      resource_group: "{{ resource_group }}"
+      disk_size_gb: "{{ disk_size_gb }}"
+      state: present
+
+  - name: Test disk creation idempotency
+    azure_rm_managed_disk:
+      name: "{{ vm_name }}_disk"
+      resource_group: "{{ resource_group }}"
+      disk_size_gb: "{{ disk_size_gb }}"
+      state: present
+    register: disk
+
+  - name: Create VM in Azure
+    azure_rm_virtualmachine:
+      resource_group: "{{ resource_group }}"
+      name: "{{ vm_name }}"
+      vm_size: "Standard_F2s"
+      storage_account: "my_storage_account"
+      admin_username: "my_admin"
+      admin_password: "my_password"
+      data_disks:
+        - name: "{{ vm_name }}_disk"
+          disk_size_gb: "{{ disk_size_gb }}"
+          lun: 0
+      img_publisher: "Canonical"
+      img_offer: "UbuntuServer"
+      img_sku: "18.04-LTS"
+      img_version: "latest"
+      state: present
+
+  - name: Add Azure load balancer rule
+    azure_rm_lb_rule:
+      resource_group: "{{ resource_group }}"
+      loadbalancer_name: "{{ vm_name }}_lb"
+      name: "{{ vm_name }}_rule"
+      protocol: "tcp"
+      frontend_ip_name: "{{ vm_name }}_ip"
+      frontend_port: 8080
+      backend_port: 80
+      probe_protocol: "http"
+      probe_port: 80
+      probe_interval: 30
+      probe_threshold: 4
+      backend_address_pool_name: "{{ vm_name }}_pool"
+
+  - name: Remove resource group at the end of the test
+    azure_rm_resourcegroup:
+      name: "{{ resource_group }}"
+      state: absent

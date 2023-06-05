@@ -1,0 +1,135 @@
+
+- name: Azure Stress Test Playbook
+  hosts: localhost
+  gather_facts: no
+  vars:
+    location: eastus
+    admin_username: testadmin
+    admin_password: testpassword123
+    resource_group_name: azure-resource-group
+  tasks:
+  - name: "Create the resource group"
+    azure_rm_resourcegroup:
+      name: "{{ resource_group_name }}"
+      location: "{{ location }}"
+      
+  - name: "Create a virtual machine"
+    azure_rm_virtualmachine:
+      resource_group: "{{ resource_group_name }}"
+      name: "{{ item }}"
+      admin_username: "{{ admin_username }}"
+      admin_password: "{{ admin_password }}"
+      location: "{{ location }}"
+      network_interface_names: "{{ item }}-nic"
+      vm_size: Standard_DS1_v2
+      os_disk_caching: ReadWrite
+      os_disk_name: "{{ item }}-osdisk"
+      os_type: Linux
+      image:
+        offer: UbuntuServer
+        publisher: Canonical
+        sku: '18.04-LTS'
+        version: latest
+    with_items:
+      - "ubuntu"
+      - "centos"
+      - "redhat"
+      
+  - name: Test Azure Role - Add Resource Tags
+    hosts: all
+    roles:
+      - ansible-azure-modules
+      - name: az-resource-tags
+        tags:
+          - az.tags
+        vars:
+          resource_group_name: "{{ resource_group_name }}"
+          resource_id: "{{ azure_vm_name }}"
+          tags:
+            tag1: value1
+            tag2: value2
+
+  - name: Test Azure Role - Add new public IP with dns label
+    hosts: all
+    roles:
+      - ansible-azure-modules
+      - name: az-public-ip
+        vars:
+          resource_group_name: "{{ resource_group_name }}"
+          allocation_method: Static
+          dns_label_prefix: "testdnsip"
+          
+  - name: Test Azure Role - Add new network interface with ip configuration
+    hosts: all
+    roles:
+      - ansible-azure-modules
+      - name: az-network-interface
+        vars:
+          resource_group_name: "{{ resource_group_name }}"
+          virtual_network_name: "{{ vn_name }}"
+          subnet_name: "{{ subnet_name }}"
+          private_ip_address_allocation: Dynamic
+          public_ip_address_name: "{{ public_ip_name }}"
+          tags:
+            tag2: value2
+
+  - name: Test Azure Role - Add Ubuntu Firewall Settings
+    hosts: all
+    roles:
+      - ansible-azure-modules
+      - name: az-firewall
+        vars:
+          resource_group_name: "{{ resource_group_name }}"
+          network_security_group_name: "{{ nsg_name }}"
+          security_rule_name: "{{ security_rule_name }}"
+          protocol: Tcp
+          destination_port_range: 22
+          access: Allow
+
+  - name: Test Azure Role - Add Ubuntu Public IP
+    hosts: all
+    roles:
+      - ansible-azure-modules
+      - name: az-public-ip
+        vars:
+          resource_group_name: "{{ resource_group_name }}"
+          allocation_method: Static
+          dns_label_prefix: "ubuntu-testdnsip"
+
+  - name: Test Azure Role - Add CentOS Network Interface
+    hosts: all
+    roles:
+      - ansible-azure-modules
+      - name: az-network-interface
+        vars:
+          resource_group_name: "{{ resource_group_name }}"
+          virtual_network_name: "{{ vn_name }}"
+          subnet_name: "{{ subnet_name }}"
+          private_ip_address_allocation: Dynamic
+          public_ip_address_name: "{{ public_ip_name }}"
+          tags:
+            tag1: value
+            
+  - name: Test Ansible Module - Perform Diagnostics
+    ansible.module_utils:
+      name: azure_diags
+      type: azure
+    hosts: all
+    tasks:
+      - name: set facts for virtual machine data
+        register: az_vm_data
+        set_fact:
+          vm_id: "{{ item.id }}"
+          vm_name: "{{ item.name }}"
+          resource_group_name: "{{ item.resource_group }}"
+        with_items: "{{ azure_rms }}"
+      
+      - name: Gather Diagnostics
+        azure_diags:
+          az_resource_type: microsoft.compute/virtualmachines
+          az_resource_group: "{{ item.resource_group }}"
+          az_resource_id: "{{ item.id }}"
+        no_log: true
+        ignore_errors: true
+        register: ret
+        with_items: "{{ az_vm_data.results }}"

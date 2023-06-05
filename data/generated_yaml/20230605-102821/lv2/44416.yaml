@@ -1,0 +1,43 @@
+
+- name: Stress test playbook for azure_rm_virtualmachine
+  hosts: all
+  gather_facts: no
+  
+  tasks:
+  
+  - name: Generate random strings
+    set_fact:
+      my_string: "{{ lookup('password', length=10) }}"
+  
+  - name: Create virtual machine with an invalid batch size
+    azure_rm_virtualmachine:
+      resource_group: "my_resource_group"
+      name: "vm-{{ my_string }}"
+      location: "eastus"
+      size: "Standard_DS1_v2"
+      admin_username: "myusername"
+      admin_password: "mypassword"
+      network_interface_names: ["nic-{{ my_string }}"]
+      image:
+        offer: "UbuntuServer"
+        publisher: "Canonical"
+        sku: "18.04-LTS"
+        version: "latest"
+      os_disk:
+        name: "osdisk-{{ my_string }}"
+        caching: "ReadWrite"
+        create_option: "fromImage"
+        disk_size_gb: 30
+      data_disks:
+      - name: "datadisk-{{ my_string }}"
+        lun: 0
+        create_option: "Empty"
+        disk_size_gb: 100
+      availability_set: "{{ my_string }}-set"
+      vm_count: 0.123456789
+    delegate_to: localhost
+    register: azure_vm
+    
+  - name: Debug output
+    debug:
+      var: azure_vm

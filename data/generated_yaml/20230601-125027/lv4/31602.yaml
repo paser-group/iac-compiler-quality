@@ -1,0 +1,33 @@
+
+---
+- name: Test Kubernetes Module
+  hosts: all
+  become: yes
+  gather_facts: no
+  vars:
+    body: "{{ lookup('file', 'test-pod.yaml') }}"
+  tasks:
+  - name: Create Pod
+    k8s:
+      api_version: v1
+      kind: Pod
+      name: test-pod
+      namespace: default
+      definition:
+        apiVersion: v1
+        kind: Pod
+        metadata:
+          name: test-pod
+        spec:
+          containers:
+          - name: test-container
+            image: nginx:latest
+            command: ["/bin/sh", "-c"]
+            args: ["echo Hello Kubernetes!"]
+          restartPolicy: Never
+      status: "{{ item.status }}"
+    loop: [ {status: 422}, {status: 200} ]
+    register: result
+  - name: Debug Result
+    debug:
+      var: result

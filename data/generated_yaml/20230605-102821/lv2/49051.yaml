@@ -1,0 +1,40 @@
+yaml
+- name: Test media type on OpenBSD
+  hosts: all
+  gather_facts: false
+
+  tasks:
+  - name: Add media type to OpenBSD HTTPd config
+    lineinfile:
+      path: /etc/httpd.conf
+      line: LoadModule mime_magic_module libexec/httpd/mod_mime_magic.so
+    delegate_to: "{{ groups['ubuntu'] | random }}"
+    register: httpd_config_response
+
+  - name: Restart HTTPd service
+    service:
+      name: httpd
+      state: restarted
+    register: httpd_service_response
+    failed_when: "'failed to start' in httpd_service_response.stderr"
+
+  - name: Send media file to OpenBSD via HTTP
+    uri:
+      url: "http://10.1.1.1:80/test.mp3"
+      method: GET
+    delegate_to: "{{ groups['alpine'] | random }}"
+    register: uri_response
+    failed_when: "'Unsupported Media Type' not in uri_response.json.reason"
+
+  - name: Verify media file was received by OpenBSD
+    stat:
+      path: /htdocs/test.mp3
+    delegate_to: "{{ groups['centos'] | random }}"
+    register: file_stat_response
+    failed_when: "not file_stat_response.stat.exists"
+
+  - name: Clean up media file
+    file:
+      path: /htdocs/test.mp3
+      state: absent
+    delegate_to: "{{ groups['redhat'] | random }}"

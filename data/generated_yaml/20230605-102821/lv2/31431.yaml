@@ -1,0 +1,29 @@
+
+- name: Test Ansible VaultLib.encrypt
+  hosts: all
+  become: true
+
+  tasks:
+  - name: Encrypt data with a custom algorithm
+    ansible.builtin.vars:
+      my_secret: "my super secret data"
+    register: result_1
+  - name: Encrypt the secret data with a custom algorithm
+    ansible.builtin.vault:
+      secret: "{{ result_1.my_secret }}"
+      algorithm: "aes256"
+    register: result_2
+  - name: Save vaulted data to a file
+    copy:
+      content: "{{ result_2.vaulted_content }}"
+      dest: "{{ playbook_dir }}/vaulted_content"
+  - name: Decrypt data with a wrong algorithm
+    ansible.builtin.decrypt:
+      vaulted_file: "{{ playbook_dir }}/vaulted_content"
+      secret: "{{ result_1.my_secret }}"
+      algorithm: "sh256"
+    register: result_3
+    ignore_errors: true
+  - name: Verify the Ansible VaultLib exception is raised
+    ansible.builtin.assert:
+      that: "'ERROR: Unsupported OpenSSLCipher algorithm specified for decrypting this content.' in result_3.stderr_lines"

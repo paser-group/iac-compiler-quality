@@ -1,0 +1,38 @@
+yaml
+- name: s3_bucket error stress test
+  hosts: all
+  gather_facts: no
+  become: yes
+  vars:
+    s3_bucket_name: "{{ 'test-bucket-' + ansible_date_time.date }}"
+  tasks:
+    - name: Create S3 bucket
+      s3_bucket:
+        name: "{{ s3_bucket_name }}"
+        state: present
+        region: us-east-1
+        access_key: "{{ random('abcdefghijklmnopqrstuvwxyz0123456789', length=20) }}"
+        secret_key: "{{ random('abcdefghijklmnopqrstuvwxyz0123456789', length=40) }}"
+        mode: "{{ random(['public-read', 'private'], length=1) }}"
+      register: s3_result
+
+    - name: Create S3 bucket with the same name
+      s3_bucket:
+        name: "{{ s3_bucket_name }}"
+        state: present
+        region: us-east-1
+        access_key: "{{ random('abcdefghijklmnopqrstuvwxyz0123456789', length=20) }}"
+        secret_key: "{{ random('abcdefghijklmnopqrstuvwxyz0123456789', length=40) }}"
+        mode: "{{ random(['public-read', 'private'], length=1) }}"
+      ignore_errors: yes
+      register: s3_error_result
+
+    - name: Debug S3 bucket error
+      debug:
+        var: s3_error_result
+
+    - name: Delete S3 bucket
+      s3_bucket:
+        name: "{{ s3_bucket_name }}"
+        state: absent
+  

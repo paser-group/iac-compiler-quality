@@ -1,0 +1,32 @@
+
+- hosts: ios
+  gather_facts: no
+  tasks:
+    - name: Retrieve the running-config
+      ios_command:
+        commands: show running-config
+      register: running_config_result
+      check_mode: no
+    - name: Compare with the previous running-config state
+      set_fact:
+        running_config_changed: "{{running_config_result.stdout != previous_running_config}}"
+      vars:
+        previous_running_config: "{{lookup('file', 'previous_running_config') | default('')}}"
+      check_mode: no
+    - name: On config change, perform some actions
+      ios_config:
+        lines:
+          - "logging buffered 1024"
+        parents: "config"
+      when: running_config_changed and running_config_changed is not skipped
+      check_mode: no
+    - name: Save the configuration
+      ios_command:
+        commands: write memory
+      when: running_config_changed and running_config_changed is not skipped
+      check_mode: no
+    - name: Write the current running config to a file
+      copy:
+        content: "{{running_config_result.stdout}}"
+        dest: "./previous_running_config"
+      when: running_config_changed and running_config_changed is not skipped

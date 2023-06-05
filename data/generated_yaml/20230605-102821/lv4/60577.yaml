@@ -1,0 +1,30 @@
+
+- name: Retrieve GCP instance data
+  hosts: localhost
+  gather_facts: no
+  
+  vars:
+    credentials:
+      client_email: "SERVICE_ACCOUNT_EMAIL"
+      project_id: "PROJECT_ID"
+      private_key: "PRIVATE_KEY_PASSWORD"
+
+  tasks:
+    - name: Initialize GCP authentication
+      gcp_auth:
+        service_account_file: "{{ lookup('env', 'GOOGLE_APPLICATION_CREDENTIALS') }}"
+      register: auth_result
+      until: auth_result.changed == false or auth_result.failed
+      retries: 5
+      delay: 10
+
+    - name: Gather GCP instance data
+      gcp_compute_instance_facts:
+        project: "{{ credentials.project_id }}"
+        auth_kind: serviceaccount
+        zone: "us-central1-a"
+      register: instances
+
+    - name: Output instance data
+      debug:
+        var: instances

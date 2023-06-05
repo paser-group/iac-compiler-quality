@@ -1,0 +1,26 @@
+
+- name: Manage VMware Port Group
+  hosts: all
+  vars:
+    vmware_portgroup_name: "PG_TEST"
+    vmware_portgroup_switch: "dvSwitch"
+    vmware_portgroup_vlan_id: 100
+    vmware_portgroup_mtu: 9000
+  tasks:
+    - name: Ensure Port Group is Present
+      vmware_portgroup:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ ansible_user }}"
+        password: "{{ lookup('file', lookup('env','ANSIBLE_VAULT_PASSWORD_FILE')) }}"
+        portgroup_name: "{{ vmware_portgroup_name }}"
+        portgroup_switch: "{{ vmware_portgroup_switch }}"
+        portgroup_vlan_id: "{{ vmware_portgroup_vlan_id }}"
+        nic_teaming_policy: "loadbalance_ip"
+        mtu: "{{ vmware_portgroup_mtu }}"
+        state: present
+      register: vmware_portgroup_result
+
+    - name: Ensure Port Group is Idempotent
+      assert:
+        that: vmware_portgroup_result.changed == False
+        msg: "Error! Portgroup is not idempotent."

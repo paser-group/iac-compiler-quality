@@ -1,0 +1,18 @@
+
+- hosts: localhost
+  gather_facts: no
+  tasks:
+  - name: Check if private zone exists
+    shell: |
+      nslookup {{ inventory_hostname }} 127.0.0.1 >/dev/null 2>&1
+    register: private_zone_exists
+    ignore_errors: true
+
+  - name: Create or update private zone
+    route53_zone:
+      command: "{{ 'create' if not private_zone_exists.rc else 'update' }}"
+      name: "{{ inventory_hostname }}"
+      comment: "{{ 'Created' if not private_zone_exists.rc else 'Updated' }} on {{ ansible_date_time.date }}"
+      vpc_id: vpc-abcdef01234
+      private_zone: yes
+      overwrite: yes

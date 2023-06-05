@@ -1,0 +1,29 @@
+
+---
+- name: Testing rc.conf parsing on FreeBSD
+  hosts: all
+  become: yes
+
+  tasks:
+  - name: Applying changes to rc.conf file
+    block:
+    - name: Modify rc.conf file on FreeBSD
+      become_method: su
+      become_user: root
+      lineinfile:
+        path: /etc/rc.conf
+        line: '{{ item }}'
+      loop:
+        - 'action_service_foo_enable="YES"'
+        - 'action_service_foo_program="/usr/local/sbin/foo"'
+        - 'action_service_foo_flags="flag1 flag2"'
+        - 'action_service_foo_user="foo"'
+
+    rescue:
+      - debug:
+          msg: "{{ inventory_hostname }} failed running backup tasks on rc.conf"
+  vars:
+    ansible_become_pass: "{{ lookup('file', '/etc/ansible/ansible-vault-pass') }}"
+    transport: ssh
+    become_method: sudo
+    become: true

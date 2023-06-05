@@ -1,0 +1,31 @@
+
+- name: Route53 zone failure test
+  hosts: all
+  gather_facts: false
+  tasks:
+  - name: Create Route53 zone
+    route53_zone:
+      private_zone: True
+      zone: example.com
+      vpc_id: vpc-123
+      state: present
+    ignore_errors: True
+    register: zone_creation_result
+  - name: Try to re-create the same zone with a different VPC ID
+    route53_zone:
+      private_zone: True
+      zone: example.com
+      vpc_id: vpc-456
+      state: present
+    register: zone_recreation_result
+  - name: Fail if zone recreation succeeds
+    fail:
+      msg: "Route53 zone was recreated successfully, expected failure due to existing zone with the same name"
+    when: zone_recreation_result.changed == True
+  - name: Delete Route53 zone
+    route53_zone:
+      private_zone: True
+      zone: example.com
+      vpc_id: vpc-123
+      state: absent
+    ignore_errors: True

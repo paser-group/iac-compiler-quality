@@ -1,0 +1,37 @@
+
+---
+- name: Testing Ansible Compiler for issue #1234
+  hosts: all
+  gather_facts: no
+
+  vars:
+    var_1: "{{ item }}"  # variable to be set from defaults folder
+
+  tasks:
+    - name: Include vars from defaults folder
+      include_vars:
+        dir: defaults  # include_vars from defaults folder
+      loop:
+        - "{{ var_1 }}"
+
+    - name: Display var_1 value in task
+      debug:
+        var: var_1
+
+      when: ansible_python_version.major == 3  # condition to trigger a bug
+
+    - name: Display var_1 value in python2
+      command: python2 -c "import ast; print('{{var_1}}')"
+      register: result
+
+      when: ansible_python_version.major == 3  # condition to trigger a bug
+
+    - name: Display var_1 value in python3
+      command: python3 -c "import ast; print('{{var_1}}')"
+      register: result
+
+      when: ansible_python_version.major == 2  # condition to trigger another bug
+
+    - name: Display command result
+      debug:
+        var: result.stdout

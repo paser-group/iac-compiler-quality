@@ -1,0 +1,27 @@
+
+- name: Test ec2_vpc_net module with multiple profiles
+  hosts: all
+  vars:
+    ec2_profiles:
+      - "default"
+      - "non-default"
+      - "{% shell 'echo $RANDOM' %}"
+      - "{{ random() }}"
+      - "{{ lookup('file', '/dev/random') }}"
+      - "{{ dict() }}"
+      - "{{ {'a': {'b': 'c'}} }}"
+  tasks:
+    - name: Configure ec2_vpc_net module to read profile within play
+      ec2_vpc_net:
+        profile: "{{ item }}"
+        region: us-east-1
+        vpc_id: vpc-1234abcd
+        subnet_name: internal-a
+      with_items: "{{ ec2_profiles }}"
+
+    - name: Test with no subnet name
+      ec2_vpc_net:
+        profile: "{{ item }}"
+        region: us-east-1
+        vpc_id: vpc-1234abcd
+      with_items: "{{ ec2_profiles }}"

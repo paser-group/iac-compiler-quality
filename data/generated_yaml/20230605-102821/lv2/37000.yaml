@@ -1,0 +1,37 @@
+
+- hosts: all
+  gather_facts: no
+  tasks:
+
+  - name: Provision virtual machine
+    vmware_guest:
+      hostname: "{{ vmware_esxi_hostname }}"
+      username: "{{ vmware_username }}"
+      password: "{{ vmware_password }}"
+      name: "{{ vmware_vm_name }}"
+      state: poweredon
+    register: vm_provision_result
+
+  - name: Remove virtual machine
+    vmware_guest:
+      hostname: "{{ vmware_esxi_hostname }}"
+      username: "{{ vmware_username }}"
+      password: "{{ vmware_password }}"
+      vm_id: "{{ vm_provision_result.instance.id }}"
+      name: "{{ vmware_vm_name }}"
+      state: absent
+    when: vm_provision_result.instance.runtime_power_state == 'poweredOn'
+
+  - name: Check if virtual machine still exists
+    vmware_guest:
+      hostname: "{{ vmware_esxi_hostname }}"
+      username: "{{ vmware_username }}"
+      password: "{{ vmware_password }}"
+      name: "{{ vmware_vm_name }}"
+      validate_certs: no
+    register: vm_exists_result
+
+  - name: Fail if virtual machine still exists
+    fail:
+      msg: "Virtual machine '{{ vmware_vm_name }}' was not properly removed."
+    when: vm_exists_result.changed == false

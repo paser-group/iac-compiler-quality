@@ -1,0 +1,46 @@
+
+- name: Pulp Repository Stress Test
+  hosts: all
+  become: yes
+  gather_facts: no
+  
+  tasks:
+  
+  - name: Install Pulp
+    apt:
+      name: "{{ item }}"
+      state: present
+    with_items:
+      - pulp-server
+      - pulp-admin-client
+      - pulp-deb-plugins
+      - pulp-docker-plugins
+      - pulp-rpm-plugins
+  
+  - name: Configure Pulp Repository
+    pulp_repo:
+      name: my_repo
+      state: latest
+      importer_type: deb
+      add_export_distributor: yes
+      relative_url: deb
+      distributors:
+        - type_id: deb_distributor
+          auto_publish: true
+          config:
+            preserve_relative_paths: true
+          filesystem_prefix: /var/www/html/pulp/deb
+  
+  - name: Export Pulp Repository
+    pulp_export:
+      name: my_repo
+      state: latest
+      export_path: "/export/path/{{ item }}"
+    with_items:
+      - foo
+      - bar
+ 
+  - name: Delete Pulp Repository
+    pulp_repo:
+      name: my_repo
+      state: absent

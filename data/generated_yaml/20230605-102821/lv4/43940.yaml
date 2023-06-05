@@ -1,0 +1,35 @@
+
+- name: Test SSH connection to all hosts
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Test connectivity
+      ping:
+    - name: Gather information
+      setup:
+    - name: Copy authorized_keys file to remote hosts
+      ansible.builtin.copy:
+        content: "{{ lookup('file', '~/.ssh/id_rsa.pub') }}"
+        dest: "/home/{{ ansible_user }}/id_rsa.pub"
+        mode: '0600'
+      become: true
+      become_user: root
+      when: inventory_hostname == 'ubuntu1'
+    - name: Add public key to authorized keys for remote hosts
+      ansible.builtin.lineinfile:
+        path: "/home/{{ ansible_user }}/.ssh/authorized_keys"
+        line: "{{ lookup('file', '/home/{{ ansible_user }}/id_rsa.pub') }}"
+        state: present
+      become: true
+      become_user: root
+    - name: Ensure SSH password authentication is disabled
+      ansible.builtin.replace:
+        path: "/etc/ssh/sshd_config"
+        regexp: "^[#\\s]*PasswordAuthentication (yes|no)$"
+        replace: "PasswordAuthentication no"
+        backup: true
+      become: true
+      become_user: root
+  vars:
+    ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
+    ansible_ssh_private_key_file: /var/tmp/key_I.pem

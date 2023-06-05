@@ -1,0 +1,37 @@
+
+- hosts: all
+  vars:
+    cs_network: "{{ item }}"
+    cs_network_state: "{{ item.state | default('present') }}"
+  tasks:
+  - name: Ensure only one default network exists per account
+    cloudstack_network:
+      command: listNetworks
+      type: isolated
+      isdefault: yes
+      account: "{{ cs_network.account }}"
+      domain: "{{ cs_network.domain }}"
+      state: present
+    register: cs_network_info
+
+  - name: Get networks with isdefault=True
+    set_fact:
+      default_networks: "{{ cs_network_info['results'] | selectattr('isdefault') | list }}"
+
+  - name: Delete default Isolated network
+    cloudstack_network:
+      command: deleteNetwork
+      network_id: "{{ item.id }}"
+      state: absent
+    with_items: "{{ default_networks[1:] }}"
+    when: cs_network_state == 'present' and cs_network in default_networks
+
+  - name: Create a new default isolated network
+    cloudstack_network:
+      name: "{{ cs_network.name }}"
+      displaytext: "{{ cs_network.displaytext | default(cs_network.name) }}"
+      isdefault: yes
+      state: "{{ cs_network_state }}"
+      zone: "{{ cs_network.zone }}"
+      networkoffering: "{{ cs_network.networkoffering | default('DefaultIsolatedNetworkOffering') }}"
+      tags: "{{ cs_network.tags | default([]) }}"

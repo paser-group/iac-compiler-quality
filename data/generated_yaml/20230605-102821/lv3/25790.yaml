@@ -1,0 +1,29 @@
+yaml
+- name: Provision an EC2 instance
+  hosts: localhost
+  connection: local
+  gather_facts: False
+  vars:
+     region: us-east-1
+     instance_type: t2.micro
+     security_group: default
+     image: "ami-0c94855ba95c71c99"
+  tasks:
+    - name: Launch an EC2 instance
+      ec2:
+         aws_access_key: <aws_access_key>
+         aws_secret_key: <aws_secret_key>
+         key_name: mykey
+         instance_type: "{{ instance_type }}"
+         image: "{{ image }}"
+         group: "{{ security_group }}"
+         region: "{{ region }}"
+         wait: true
+         count: 1
+         instance_tags:
+           Name: MyAnsibleInstance
+      register: ec2
+    - name: Add instance to host group
+      add_host:
+        hostname: "{{ ec2.instances[0].public_ip }}"
+        groupname: launched

@@ -1,0 +1,35 @@
+
+- name: Stress test ec2_asg module with replace_all_instances
+  hosts: all
+  gather_facts: no
+
+  vars:
+    region: us-west-2
+    asg_name: "my-asg"
+
+  tasks:
+  - name: Create a new ASG if it doesn't exist
+    ec2_asg:
+      region: "{{ region }}"
+      name: "{{ asg_name }}"
+      launch_template:
+        id: "lt-0123456789abcdef0"
+        version: "$Default"
+      min_size: 1
+      desired_capacity: 3
+      max_size: 5
+      health_check_type: "EC2"
+      health_check_grace_period: 300
+      replace_all_instances: no
+    ignore_errors: yes
+
+  - name: Set desired capacity to 0 and replace all instances
+    ec2_asg:
+      region: "{{ region }}"
+      name: "{{ asg_name }}"
+      min_size: 0
+      desired_capacity: 0
+      max_size: 0
+      replace_all_instances: yes
+      wait: yes
+      wait_timeout: 600

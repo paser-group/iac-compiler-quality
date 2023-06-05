@@ -1,0 +1,26 @@
+
+- name: Test win_shortcut idempotency
+  hosts: windows
+  become: true
+  tasks:
+    - name: Create shortcut
+      win_shortcut:
+        path: C:\Program Files\MyApp\myapp.exe
+        arguments: --option
+        name: My Application
+        description: My application shortcut
+        icon_location: C:\Program Files\MyApp\myapp.ico
+        state: present
+      register: shortcut_created
+
+    - name: Check shortcut state
+      win_shortcut:
+        path: C:\Program Files\MyApp\myapp.exe
+        name: My Application
+      register: shortcut_state
+
+    - name: Ensure idempotency
+      assert:
+        that: shortcut_state == shortcut_created
+        fail_msg: 'Shortcut was not idempotent'
+        success_msg: 'Shortcut was idempotent'

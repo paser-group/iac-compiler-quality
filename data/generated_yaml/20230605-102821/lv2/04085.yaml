@@ -1,0 +1,17 @@
+
+---
+- name: Stress test Route53
+  hosts: all
+  tasks:
+    - name: Install AWS CLI
+      raw: apt-get install awscli --yes
+      when: ansible_distribution == "Ubuntu"
+      become: true
+
+    - name: Add New DNS Entry to Route53
+      command: "{{ item }}"
+      with_items:
+        - "aws route53 create-hosted-zone --name {{ item }}.test.com --caller-reference abcde --hosted-zone-config Comment=TestDNS"
+        - "aws route53 list-hosted-zones"
+        - "aws route53 change-resource-record-sets --hosted-zone-id <zone-id> --change-batch file://{{ item }}-batch.json"
+      ignore_errors: true

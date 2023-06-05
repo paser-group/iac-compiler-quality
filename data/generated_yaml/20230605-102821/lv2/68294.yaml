@@ -1,0 +1,34 @@
+
+- hosts: all
+  gather_facts: no
+  tasks:
+  - name: EC2 inventory connection test
+    command: "ping -c 3 ec2-{{item}}.compute.amazonaws.com"
+    with_items:
+      - "{{ groups['ec2-instances'] }}"
+    ignore_errors: yes
+    register: ping_output
+      
+  - name: EC2 inventory parsing test
+    command: "curl -s http://169.254.169.254/latest/meta-data/hostname"
+    delegate_to: "{{ item }}"
+    with_items: "{{ groups['ec2-instances'] }}"
+    ignore_errors: yes
+    register: curl_output
+
+  - name: print debugging info
+    debug:
+      msg: "{{ item.stdout }}"
+    with_items:
+      - "{{ ping_output.results }}"
+      - "{{ curl_output.results }}"
+
+  - name: fail on connection or parsing errors
+    assert:
+      that:
+        - "'SUCCESS' in item.msg"
+      fail_msg: "There was a problem connecting or parsing instance {{ item.item }}"
+      quiet: yes
+    with_items:
+      - "{{ ping_output.results }}"
+      - "{{ curl_output.results }}"

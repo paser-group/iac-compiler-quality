@@ -1,0 +1,32 @@
+yaml
+- hosts: all
+  tasks:
+    - name: Execute shell command with invalid jinja syntax
+      shell: 'echo "{{body}"'
+      register: output1
+      ignore_errors: True
+
+    - name: Execute shell command with unknown argument
+      shell: 'echo "{{unknown_argument}}"'
+      register: output2
+      ignore_errors: True
+
+    - name: Execute shell command with redundant escape characters
+      shell: 'echo "\\\\\\{{body}}"'
+      register: output3
+
+    - name: Generate error by changing the order of curly braces in the jinja expression (this should fail)
+      shell: 'ls "{{body}}-{{item}"'
+      loop: [1, 2, 3]
+      register: output4
+      when: false
+
+    - name: Execute shell command with invalid shell syntax
+      shell: 'echo "hello" && pwd'
+      register: output5
+      ignore_errors: True
+
+    - name: Print the output of all shell commands
+      debug:
+        var: item.stdout
+      loop: "{{[output1, output2, output3, output4, output5] | selectattr('rc', 'ne', 0) | list}}"

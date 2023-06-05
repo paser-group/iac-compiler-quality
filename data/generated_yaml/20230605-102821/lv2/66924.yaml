@@ -1,0 +1,46 @@
+
+- hosts: ubuntu1
+
+  tasks:
+  
+  - name: Copy a file with a checksum error
+    copy:
+      src: "/tmp/file1"
+      dest: "/opt/file1"
+      validate: sha1
+      checksum: "{{ 'This is not a valid checksum.' }}"
+      
+  - name: Create a file with incorrect syntax in the checksum parameter
+    copy:
+      src: "/tmp/file2"
+      dest: "/opt/file2"
+      validate: sha1
+      checksum: "notavalidchecksum"
+      
+  - name: Use forbidden characters in the copied file
+    copy:
+      src: "/tmp/file3"
+      dest: "/opt/file3"
+      validate: md5
+      checksum: "{{ lookup('pipe', 'echo $RANDOM') }}"
+      content: "This is an % unexpected \n input"
+      
+  - name: Copy a file with a missing checksum parameter
+    copy:
+      src: "/tmp/file4"
+      dest: "/opt/file4"
+      validate: sha1
+      
+  - name: Try to copy the same file with the same checksum twice
+    copy:
+      src: "/tmp/file5"
+      dest: "/opt/file5"
+      validate: sha256
+      checksum: "{{ lookup('pipe', 'date +%s') }}"
+    register: result
+
+  - name: Show retry_failures or ignore_errors optional parameter if result.failed
+    debug:
+      var: result
+      retry_failures: false
+      ignore_errors: false

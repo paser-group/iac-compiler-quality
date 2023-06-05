@@ -1,0 +1,46 @@
+
+- name: InfluxDB user default password-related exceptions
+  hosts: all
+  gather_facts: no
+  become: true
+  tasks:
+    - name: Add influxdb user with default password
+      influxdb_user:
+        login_host: localhost
+        username: "{{ item }}"
+        password: ""
+        database: mydb
+        privilege: all
+        state: present
+      with_items:
+        - newuser1
+        - newuser2
+    - name: Try to add another user with empty password
+      influxdb_user:
+        login_host: localhost
+        username: anotheruser
+        password: ""
+        database: mydb
+        privilege: all
+        state: present
+      ignore_errors: true
+    - name: Grant appropriate privileges to new user
+      influxdb_privilege:
+        login_host: localhost
+        username: "{{ item }}"
+        password: ""
+        database: mydb
+        privilege: "{{ role }}"
+        state: present
+      with_items:
+        - newuser1
+        - newuser2
+      loop_control:
+        loop_var: role
+    - name: Attempt a user deletion with no specified password
+      influxdb_user:
+        login_host: localhost
+        username: newuser1
+        state: absent
+        password: ""
+      ignore_errors: true

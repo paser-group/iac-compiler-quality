@@ -1,0 +1,27 @@
+
+- name: Test rescue block
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Stop a non-existent service
+      service:
+        name: my-service
+        state: stopped
+      ignore_errors: yes
+      register: stopped_service
+
+    - name: Check if service is already stopped
+      fail:
+        msg: "Service is already stopped"
+      when: "'already stopped' in stopped_service.stderr"
+
+    - name: Start the service if not already started
+      service:
+        name: my-service
+        state: started
+      rescue:
+        - name: Restart service with systemd
+          systemd:
+            name: my-service
+            state: restarted
+      when: stopped_service.changed

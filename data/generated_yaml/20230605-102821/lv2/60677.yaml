@@ -1,0 +1,25 @@
+
+- name: Install vmware tool
+  hosts: ubuntu1,alpine1,centos1,redhat1
+  become: true 
+  vars: 
+    tool_version: latest
+    tool_package: vmware-tool
+  tasks:
+  - name: Check OS version
+    debug:
+      msg: "{{ inventory_hostname }} has {{ ansible_distribution }} {{ ansible_distribution_version }}"
+  - name: Install vmware tool
+    async: "{{ tool_version }}"
+    poll: 0
+    register: vmware_tool_result
+    changed_when: "'already installed' not in vmware_tool_result.stderr"
+    shell: >
+      if [ "{{ tool_version }}" == "latest" ]; then
+        sudo yum install -y {{ tool_package }}
+      else
+        sudo yum install -y {{ tool_package }}-{{ tool_version }}
+      fi
+  - name: Display vmware tool installation results
+    debug:
+      var: vmware_tool_result  

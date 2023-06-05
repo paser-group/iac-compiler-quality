@@ -1,0 +1,44 @@
+
+- name: Test ec2_elb_lb ping_path health check
+  hosts: localhost
+  gather_facts: no
+  tasks:
+    - name: Launch EC2 instance
+      ec2:
+        region: us-east-2
+        instance_type: t2.micro
+        image: ami-0c94855ba95c71c99
+        key_name: mykey
+        wait: yes
+        count: 1
+        vpc_subnet_id: subnet-04e92d90441b8c118
+      register: ec2_instance
+
+    - name: Add tags to the ec2 instance
+      ec2_tag:
+        region: us-east-2
+        resource_id: "{{ ec2_instance.instances[0].id }}"
+        tags:
+          Name: "webserver"
+      register: tags
+
+    - name: Add instance to Load Balancer
+      ec2_elb_lb:
+        state: present
+        name: my-load-balancer
+        zone: "{{ ec2_instance.instances[0].subnet_id }}"
+        region: us-east-2
+        listeners:
+          - protocol: HTTP
+            load_balancer_port: 80
+            instance_port: 80
+        health_check:
+          ping_path: /blog/health   # Testing the ping_path parameter
+          healthy_threshold: 3
+          unhealthy_threshold: 5
+          interval: 30
+          timeout: 5
+      register: lb
+
+    - debug:
+        var: lb

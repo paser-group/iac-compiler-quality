@@ -1,0 +1,59 @@
+
+- name: Provision Azure VM
+  hosts: localhost
+  gather_facts: False
+  vars:
+    resource_group: "{{ lookup('env', 'RESOURCE_GROUP') }}"
+    virtual_machine_name: "test-vm"
+    subscription_id: "{{ lookup('env', 'SUBSCRIPTION_ID') }}"
+    location: "{{ lookup('env', 'AZURE_LOCATION') }}"
+    admin_username: "testuser"
+    ssh_public_key: "{{ lookup('file', '/root/.ssh/id_rsa.pub') }}"
+    image_urn: "Canonical:UbuntuServer:18.04-LTS:latest"
+    vm_size: "Standard_B1ls"
+  tasks:
+    - name: "Create Resource Group"
+      azure_rm_resourcegroup:
+        name: "{{ resource_group }}"
+        location: "{{ location }}"
+        state: present
+        subscription_id: "{{ subscription_id }}"
+      register: rg
+
+    - name: "Create test VM"
+      azure_rm_virtualmachine:
+        resource_group: "{{ resource_group }}"
+        location: "{{ location }}"
+        name: "{{ virtual_machine_name }}"
+        vm_size: "{{ vm_size }}"
+        admin_username: "{{ admin_username }}"
+        ssh_password_enabled: no
+        ssh_public_keys:
+          - path: "/home/{{ admin_username }}/.ssh/authorized_keys"
+            key_data: "{{ ssh_public_key }}"
+        storage_account:
+          create_option: None
+        os_disk:
+          create_option: FromImage
+        image:
+          offer: Canonical
+          publisher: Canonical
+          sku: "18.04-LTS"
+          version: latest
+        network_interfaces:
+          - name: nic1
+            properties:
+              primary: true
+              ip_configurations:
+                - name: ipconfig1
+                  subnet:
+                    name: ansible-playbook-testing-jobs
+                    address_prefix: 10.1.1.0/24
+                  public_ip_address: null
+            subscription_id: "{{ subscription_id }}"
+            state: present
+      register: vm
+
+  - name: Print VM Provisioning output
+    debug:
+      var: vm

@@ -1,0 +1,54 @@
+
+---
+- name: Intersection of two lists behaves incorrectly (jinja)
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: "Create temporary file with a list"
+      temp_file:
+        state: "file"
+        suffix: ".txt"
+        content: "{{ cisco_ios | intersect(alpine1) }}"
+        path: "/tmp/list1.txt"
+
+    - name: "Copy list file from {{inventory_hostname}} to centos1"
+      copy:
+        src: "/tmp/list1.txt"
+        dest: "/tmp/list1.txt"
+        remote_src: yes
+      delegate_to: "{{groups['all']|difference([inventory_hostname])|list}}"
+
+    - name: "Create second temporary file with another list"
+      temp_file:
+        state: "file"
+        suffix: ".txt"
+        content: "{{ cisco_ios | intersect(centos1) }}"
+        path: "/tmp/list2.txt"
+
+    - name: "Copy second list file from {{inventory_hostname}} to alpine1"
+      copy:
+        src: "/tmp/list2.txt"
+        dest: "/tmp/list2.txt"
+        remote_src: yes
+      delegate_to: "{{groups['all']|difference([inventory_hostname])|list}}"
+
+    - name: "Iterate over contents of both files"
+      command: "{{item}}"
+      with_lines: "cat /tmp/list*.txt | sort -u"
+      failed_when: false
+      register: intersect_result
+      delegate_to: "{{inventory_hostname}}"
+      loop:
+        - "{{groups['all']|difference([inventory_hostname])|list}}"
+
+    - name: "Verify intersect result"
+      assert:
+        that: "'cisco_ios' in intersect_result.stdout and intersect_result.rc == 0"
+      failed_when: false
+
+  vars:
+    cisco_ios: ["cisco-ios-12.1","cisco-ios-12.2","cisco-ios-12.4","cisco-ios-15.0"]
+  
+---
+
+This playbook attempts to stress-test the Ansible compiler, seeking to reveal new bugs in how Ansible handles the intersection of two lists. Two files are created, each containing an intersection of the cisco_ios and another host. These files are then copied between two hosts involved. After which, the contents of the file are sorted and iterated over, and an assertion is made that confirms 'cisco_ios' is included in the intersection result.

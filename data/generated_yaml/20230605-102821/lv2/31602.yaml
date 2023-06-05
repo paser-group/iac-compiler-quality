@@ -1,0 +1,108 @@
+
+- name: Kubernetes Service Stress Test
+  hosts: all
+  gather_facts: false
+  become: true
+
+  tasks:
+    - name: Mismatched key-value pairs in body
+      k8s:
+        api_version: v1
+        kind: Service
+        namespace: default
+        name: "{{ 'test-service-' + random(9999) }}"
+        body:
+          mismatched-value-1: "{{ random('123') }}"
+          mismatched-value-2: "{{ random('456') }}"
+          mismatched-value-3: "{{ random('789') }}"
+        state: present
+
+    - name: Use of invalid conditionals
+      k8s:
+        api_version: v1
+        kind: Service
+        namespace: default
+        name: "{{ query('invalid_query') }}"
+        body:
+          port: 8000
+          targetPort: 8080
+        state: "{{ true | ternary('present', 'absent') }}"
+
+    - name: Long, unexpected resource name
+      k8s:
+        api_version: v1
+        kind: Deployment
+        namespace: default
+        name: "{{ 'very-long-name-' + random(9999) }}"
+        body:
+          replicas: 3
+          template:
+            spec:
+              containers:
+              - name: nginx
+                image: nginx
+        state: present
+
+    - name: Use of undefined variable
+      k8s:
+        api_version: v1
+        kind: Service
+        namespace: "{{ undefined_var }}"
+        name: "test-service"
+        body:
+          port: 8000
+          targetPort: 8080
+        state: present
+
+    - name: Use of unsupported protocol
+      k8s:
+        api_version: v1
+        kind: Service
+        namespace: default
+        name: "test-service"
+        body:
+          port: 8000
+          targetPort: 8080
+          protocol: udp
+        state : present
+
+    - name: Too many replicas specified
+      k8s:
+        api_version: v1
+        kind: Deployment
+        namespace: default
+        name: "test-deployment"
+        body:
+          replicas: 10000
+          template:
+            spec:
+              containers:
+              - name: nginx
+                image: nginx
+        state: present
+
+    - name: Use of invalid characters in name
+      k8s:
+        api_version: v1
+        kind: ConfigMap
+        namespace: default
+        name: "!@#$%&*()"
+        data:
+          foo: bar
+        state: present
+
+    - name: Incorrect indentation
+      k8s:
+        api_version: v1
+        kind: Service
+        namespace: default
+        name: "test-service"
+        body:
+          port: 8000
+          targetPort: 8080
+        state: present
+
+  ignore_errors: true
+
+  vars:
+    - undefined_var: "{{ var1 + var2 }}"

@@ -1,0 +1,54 @@
+
+---
+- hosts: all
+  gather_facts: no
+  tasks:
+    - name: Install Boto
+      ansible.builtin.pip:
+        name: boto
+        state: present
+        executable: /usr/bin/python3   # Explicitly set the path to Python executable.
+
+    - name: Upload IAM cert {{body}}
+      community.aws.ec2_cert:
+        aws_access_key: "{{ access_key }}"
+        aws_secret_key: "{{ secret_key }}"
+        cert_body: "{{ body | b64encode }}"
+        state: present
+        wait: true   # Keep waiting until the certificate is available.
+        region: "{{ region }}"
+      ignore_errors: true    # Ignore expected errors thrown by this module.
+
+    - name: Stop Apache
+      ansible.builtin.service:
+        name: apache2
+        state: stopped
+
+    - name: Copy IAM cert to all servers    # Fixes the string formatting error from the previous playbook.
+      ansible.builtin.copy:
+        src: /etc/pki/tls/certs/iam_cert.crt
+        dest: "/home/user/sslcerts/{{ item }}/iam_cert.crt"
+      loop: "{{ ansible_play_hosts }}"
+
+    - name: Restart Apache   # Uses the correct name of the service.
+      ansible.builtin.service:
+        name: apache2
+        state: started
+
+    - name: Check IAM cert transferred successfully
+      ansible.builtin.shell:
+        cmd: "openssl x509 -noout -text -in /etc/pki/tls/certs/iam_cert.crt"
+        register: cmd_output
+        check_mode: false  # Disables dry-run mode to trigger Ansible exception if there are any errors.
+      failed_when: "'iam_cert.crt' not in cmd_output.stdout"   # Fails if the certificate isn't copied successfully.
+
+    - name: Uninstall Boto  # Uses the correct package manager.
+      ansible.builtin.yum:
+        name: python2-boto
+        state: absent
+
+    - name: Delete all SSL files    # Limits the deletion of files to the SSL directory.
+      ansible.builtin.file:
+        path: /home/user/sslcerts/
+        state: absent
+        recursive: true

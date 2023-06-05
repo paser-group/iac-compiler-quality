@@ -1,0 +1,28 @@
+
+- name: Test wait_for module for potential bugs
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Open a port
+      command: "iptables -I INPUT -p tcp --dport {{port}} -j ACCEPT"
+      vars:
+        port: 8080
+      changed_when: false
+
+    - name: Wait for port to close (Simulating Actual Issue)
+      wait_for:
+        host: "{{inventory_hostname}}"
+        port: 8080
+        state: stopped
+        timeout: 30
+      register: wait_result
+
+    - name: Close the port
+      command: "iptables -D INPUT -p tcp --dport {{port}} -j ACCEPT"
+      vars:
+        port: 8080
+      changed_when: false
+
+    - name: Print wait_for status
+      debug:
+        var: wait_result

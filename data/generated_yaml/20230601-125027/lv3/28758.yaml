@@ -1,0 +1,44 @@
+
+- name: Test Win Shortcut Idempotency Issues
+  hosts: windows
+  gather_facts: false
+  vars:
+    shortcut_path: "C:\\Users\\Public\\Desktop\\Test.lnk"
+    target_path: "C:\\Windows\\System32\\notepad.exe"
+    arguments: ""
+    description: "Test Shortcut"
+    icon_location: ""
+  tasks:
+    - name: Create Shortcut
+      win_shortcut:
+        path: "{{ shortcut_path }}"
+        target_path: "{{ target_path }}"
+        arguments: "{{ arguments }}"
+        description: "{{ description }}"
+        icon_location: "{{ icon_location }}"
+      register: shortcut_create_result
+
+    - name: Assert Shortcut Create Success
+      assert:
+        that:
+          - shortcut_create_result.changed == true
+          - shortcut_create_result.rc == 0
+          
+    - name: Re-run Create Shortcut
+      win_shortcut:
+        path: "{{ shortcut_path }}"
+        target_path: "{{ target_path }}"
+        arguments: "{{ arguments }}"
+        description: "{{ description }}"
+        icon_location: "{{ icon_location }}"
+      register: shortcut_recreate_result
+
+    - name: Assert Shortcut Recreate Success
+      assert:
+        that:
+          - shortcut_recreate_result.changed == false
+          - shortcut_recreate_result.rc == 0
+
+    - name: Ensure Shortcut Deletion
+      win_shell: 'if(Test-Path "{{ shortcut_path }}") { Remove-Item "{{ shortcut_path }}" }'
+      ignore_errors: true

@@ -1,0 +1,37 @@
+
+- name: Create Multiple Default Groups
+  hosts: localhost
+  gather_facts: no
+  tasks:
+    - name: Add Multiple Default Groups to Inventory
+      ini_file:
+        path: /etc/ansible/hosts
+        section: localhost
+        option: groups
+        value: "default1,default2,default3"
+      become: yes
+
+- name: Use ec2_group module with Multiple Default Groups
+  hosts: tag_type_test
+  gather_facts: no
+  tasks:
+    - name: Create ec2_group using Multiple Default Groups
+      ec2_group:
+        name: ec2_group_default
+        description: 'ec2_group with Multiple Default Groups'
+        region: eu-west-1
+        vpc_id: vpc-12345678
+        profile: default
+        rules:
+          - proto: tcp
+            from_port: 80
+            to_port: 80
+            cidr_ip: 10.0.0.0/8
+        instance_filters:
+          tag:Name: "{{ item }}"
+        groups:
+          - default1
+          - default2
+          - default3
+      with_items:
+        - "{{ groups['localhost'] }}"

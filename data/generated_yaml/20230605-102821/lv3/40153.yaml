@@ -1,0 +1,28 @@
+yaml
+- name: Removing Default VPC
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    aws_region: "<region>"
+    aws_access_key: "<access_key>"
+    aws_secret_key: "<secret_key>"
+
+  tasks:
+    - name: Remove default VPC
+      ec2_vpc_net:
+        region: "{{ aws_region }}"
+        access_key: "{{ aws_access_key }}"
+        secret_key: "{{ aws_secret_key }}"
+        state: absent
+        vpc_id: "default"
+      register: ec2_vpc_net_out
+    
+    - name: Display debug output
+      debug:
+        var: ec2_vpc_net_out
+
+    - name: Fail if error messages detected
+      fail:
+        msg: "Failed to delete default VPC"
+      when: ec2_vpc_net_out.failed or ( ec2_vpc_net_out.stdout.find("error") != -1 )

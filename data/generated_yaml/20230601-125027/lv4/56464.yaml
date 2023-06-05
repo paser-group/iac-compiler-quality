@@ -1,0 +1,21 @@
+
+- name: "Test ansible callbacks for looped items"
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: "Loop over a list"
+      debug:
+        msg: "Item value: {{ item }}"
+      loop: "{{ [1, 2, 3, 4, 5] }}"
+      register: loop_output
+
+    - name: "Fail specific items in the loop"
+      command: "/bin/false"
+      loop: "{{ [2, 4] }}"
+      when: item in loop_output.results[*].item
+      failed_when: false
+
+  callbacks:
+    - name: "Custom on_failed callback"
+      on_failed: "{{ playbook_dir }}/on_failed.sh"

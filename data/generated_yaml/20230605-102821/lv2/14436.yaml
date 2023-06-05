@@ -1,0 +1,27 @@
+
+- name: Upgrade PS3
+  hosts: all
+  vars:
+    memory_size: "{{ default(16, memory_size|int) }}"
+  tasks:
+  - name: Stop PS3 service
+    become: true
+    shell: |
+      ps -ef | grep ps3service | grep -v grep | awk '{print $2}' | xargs -r kill -9
+    ignore_errors: yes
+  - name: Add memory fix for PS3
+    become: true
+    command: update-ps3 -MemorySize {{ memory_size }}
+    register: mem_fix_output
+  - name: Verify memory fix output
+    debug:
+      msg: "{{ mem_fix_output.stdout }}"
+  - name: Start PS3 service
+    become: true
+    shell: start-service ps3service
+  - name: Verify PS3 service is running
+    wait_for:
+      host: localhost
+      port: 4301
+      state: started
+    ignore_errors: yes

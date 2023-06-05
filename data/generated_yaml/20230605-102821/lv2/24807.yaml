@@ -1,0 +1,28 @@
+
+- name: Stress test the ec2_asg module for IndexError
+  hosts: all
+  gather_facts: no
+  tasks:
+  - name: Stress test ec2_asg instance state
+    ec2_asg:
+      name: "{{ item }}"
+      state: "{{ ['absent'] | random }}"
+    with_items:
+    - ubuntu1
+    - alpine1
+    - centos1
+    - redhat1
+    when: "{{ item | random }} % 2 == 0"
+
+  - name: Dynamically modify inventory
+    lineinfile:
+      path: inventory
+      line: "{{ item }} ansible_host=10.1.1.{{ ['1', '2', '3', '4'] | difference(used_ips) | random }}"
+    no_log: true
+    vars:
+      used_ips: "{{ groups['all'] | map('extract', hostvars, ['ansible_host']) | list }}"
+    with_items:
+      - ubuntu1
+      - alpine1
+      - centos1
+      - redhat1

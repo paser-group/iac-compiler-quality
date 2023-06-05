@@ -1,0 +1,44 @@
+
+---
+- name: Test User Module Idempotence
+  hosts: all
+  gather_facts: false
+  become: true
+
+  vars:
+    user_name: "fakeuser"
+
+  tasks:
+
+  - name: Ensure user is absent
+    user:
+      name: "{{ user_name }}"
+      state: absent
+
+  - name: Ensure user is present
+    user:
+      name: "{{ user_name }}"
+      state: present
+      shell: /bin/bash
+      password: $1$SomePasswordHash
+
+  - name: Ensure user is idempotent
+    user:
+      name: "{{ user_name }}"
+      state: present
+      shell: /bin/bash
+      password: $1$SomePasswordHash
+
+  - name: Check if user is present
+    user:
+      name: "{{ user_name }}"
+    register: user_check
+
+  - name: Echo user check result
+    debug:
+      var: user_check
+
+  - name: Unmask user password
+    debug:
+      msg: "User password is {{ user_check.password }}"
+

@@ -1,0 +1,38 @@
+
+- hosts: ios_system
+  gather_facts: no
+  vars:
+    domain_commands:
+      - show version
+      - show running-config | section line
+      - configure terminal
+  tasks:
+    - name: Check if domain commands are idempotent
+      ios_command:
+        commands: "{{ domain_commands }}"
+        wait_for: result[0] contains 'IOS'
+        become: yes
+        become_method: enable
+        register: ios_output
+      no_log: true
+      register: result
+    - name: Perform invalid input on domain commands
+      ios_command:
+        commands:
+          - show hostname | ./usr/local/bin/run_this.sh
+          - ping -c 3 example.com | rm -rf /
+          - configure terminal | sed s/original_password/new_password/
+          - exit | expect -c 'spawn /bin/bash; exec /bin/bash'
+        ignore_errors: true
+        become: yes
+        become_method: enable
+      no_log: true
+    - name: Check if domain commands are still idempotent after invalid input
+      ios_command:
+        commands: "{{ domain_commands }}"
+        wait_for: result[0] contains 'IOS'
+        become: yes
+        become_method: enable
+        register: ios_output
+      ignore_errors: true
+      no_log: true

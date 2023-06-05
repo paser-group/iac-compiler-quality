@@ -1,0 +1,55 @@
+
+---
+- name: Stress Test Playbook for Ansible Compiler Bugs
+  hosts: all
+  gather_facts: false
+
+  tasks:
+  - name: 'Create an ec2.py file with unbound error variable'
+    command: echo "{{ body }}" > /tmp/ec2.py
+    become: true
+    become_method: sudo
+
+  - name: 'Check ec2.py file for syntax error'
+    shell: python -m py_compile /tmp/ec2.py
+    register: result
+    ignore_errors: true
+    become: true
+    become_method: sudo
+
+  - name: 'Print the result of compiling ec2.py'
+    debug:
+      msg: "{{ result }}"
+
+  - name: 'Create an invalid syntax in ec2.py file'
+    command: sh invalid_syntax.sh | tee /tmp/error.log
+    become: true
+    become_method: sudo
+
+  - name: 'Check the ec2.py script with invalid syntax'
+    shell: python -m py_compile /tmp/ec2.py 2>&1 > /tmp/result.txt
+    ignore_errors: true
+    become: true
+    become_method: sudo
+
+  - name: 'Print the results of the syntax check'
+    debug:
+      msg: "{{ lookup('file', '/tmp/result.txt') }}"
+
+  - name: 'Create a file with unexpected input'
+    command: echo "{{ comment }}" > /tmp/unexpected_input.txt
+    become: true
+    become_method: sudo
+
+  - name: 'Run the ec2.py script with unexpected input in a loop'
+    command: |
+      for i in {1..10}; do
+        python /tmp/ec2.py /tmp/unexpected_input.txt
+      done
+    register: script_output
+    become: true
+    become_method: sudo
+
+  - name: 'Print the output of ec2.py script with unexpected input'
+    debug:
+      msg: "{{ script_output.stdout_lines }}"

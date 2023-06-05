@@ -1,0 +1,25 @@
+
+- name: Create vault file with null value
+  copy:
+    dest: /etc/myapp/credentials.yml
+    content: "{{ creds }}"
+    mode: '0600'
+  vars:
+    creds: |
+      secret_key: null
+
+- name: Encrypt vault file
+  command:
+    cmd: "ansible-vault encrypt /etc/myapp/credentials.yml --vault-password-file /var/tmp/myvaultpassword"
+    executable: /bin/bash
+
+- name: Attempt to decrypt vault file with Ansible Vault
+  command:
+    cmd: "ansible-vault decrypt /etc/myapp/credentials.yml --vault-password-file /var/tmp/myvaultpassword"
+    executable: /bin/bash
+  register: result
+
+- name: Check if decrypted value is null
+  assert:
+    that:
+      - result.stdout_lines[0] == 'secret_key: null'

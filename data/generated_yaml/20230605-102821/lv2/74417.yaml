@@ -1,0 +1,52 @@
+
+- name: Reboot Ubuntu with high verbosity for connection debug
+  hosts: ubuntu1
+  gather_facts: no
+
+  tasks:
+    - name: Display server uptime
+      command: uptime
+      changed_when: false
+
+    - name: Reboot the server and force close all open connections
+      reboot:
+        reboot_timeout: 1200
+        post_reboot_delay: 300
+        test_command: 'uptime'
+        confirm_command: 'echo server is confirmed online'
+      become: yes
+      become_method: sudo
+      become_user: root
+      vars:
+        ansible_ssh_timeout: 1200
+      register: reboot_result
+
+    - name: Verify server is up after reboot
+      wait_for_connection:
+        connect_timeout: 5
+      when: reboot_result.changed
+      vars:
+        ansible_ssh_timeout: 1200
+
+    - name: Display server uptime after reboot
+      command: uptime
+      changed_when: false
+
+    - name: Confirm successful reboot
+      debug:
+        msg: "Server has been successfully rebooted."
+      when: reboot_result.changed
+      
+    - name: Verify SSH connection status
+      wait_for:
+        host: "{{ inventory_hostname }}"
+        port: 22
+        delay: 1
+        timeout: 360
+      retries: 3
+      when: reboot_result.changed
+      
+    - name: Print output of debug message
+      debug:
+        var: reboot_result.stdout_lines
+      when: reboot_result.changed

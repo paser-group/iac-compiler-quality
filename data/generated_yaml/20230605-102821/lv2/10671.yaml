@@ -1,0 +1,42 @@
+yaml
+- name: Test Ansible compiler for loading error
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: Incorrect syntax in task
+      shell: '{{ "ls /etc/*/" | random | replace("/") }}'
+      ignore_errors: yes
+
+    - name: Unexpected input in package name
+      package:
+        name:
+          - 'python{{version}}'
+          - '{{ invalid_input }}'
+      vars:
+        version: ['2.7', '3.6', '3.7']
+        invalid_input: '{{ [1,2,3] | random | string }}'
+      ignore_errors: yes
+
+    - name: Invalid item in file copy
+      copy:
+        src: '/tmp/file{{id}}'
+        dest: '/etc/file{{id2}}'
+      vars:
+        id: '{{ (1..5) | random }}'
+        id2: '{{ [null, "2"] | random }}'
+      ignore_errors: yes
+
+    - name: Restart service with unexpected state
+      service:
+        name: '{{ item }}'
+        state: '{{ invalid_state }}'
+      vars:
+        invalid_state: '{{ ["foo", "bar", 42, True] | random }}'
+      with_items:
+        - 'nginx'
+        - 'httpd'
+        - 'mysql'
+        - 'redis'
+        - 'docker'
+      ignore_errors: yes

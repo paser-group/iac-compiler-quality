@@ -1,0 +1,26 @@
+
+---
+- name: List errored nodes without internal_ip
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Get list of nodes
+      os_server_facts:
+        auth:
+          auth_url: "{{ auth_url }}"
+          project_name: "{{ project_name }}"
+          username: "{{ username }}"
+          password: "{{ password }}"
+        all_projects: "{{ all_projects }}"
+        filter:
+          status: ERROR
+      register: servers
+
+    - name: Filter nodes without internal_ip
+      set_fact:
+        errored_servers: "{{ errored_servers|default([]) + [item] }}"
+      loop: "{{ servers.openstack_servers }}"
+      when: "'internal_ip' not in item.networks"
+  
+    - name: Print errored nodes without internal_ip
+      debug: var=errored_servers

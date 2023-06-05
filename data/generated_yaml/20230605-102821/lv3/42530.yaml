@@ -1,0 +1,41 @@
+
+- name: Test hostname module in LXD container
+  hosts: ubuntu1
+  gather_facts: no
+  tasks:
+    - name: Create LXD container
+      become: true
+      lxd_container:
+        state: started
+        name: test-container
+        image: ubuntu
+        profiles:
+          - default
+        wait_for_ipv4_addresses: true
+        config:
+          raw.lxc: |
+            lxc.idmap = u 0 100000 1000
+            lxc.idmap = g 0 100000 1000
+          user.network_mode: link-local
+          user.user-data: |
+            #!/bin/bash
+            echo "127.0.0.1 test-hostname" >> /etc/hosts
+      register: lxd
+      changed_when: false
+
+    - name: Update hostname inside container
+      become: true
+      lxd_container_exec:
+        name: test-container
+        command: /bin/hostnamectl set-hostname test-hostname
+      register: hostname_output
+
+    - debug:
+        var: hostname_output
+
+    - name: Stop LXD container
+      become: true
+      lxd_container:
+        state: stopped
+        name: test-container
+      when: lxd.changed == true

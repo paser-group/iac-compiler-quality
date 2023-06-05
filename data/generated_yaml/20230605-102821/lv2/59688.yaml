@@ -1,0 +1,49 @@
+
+- name: Stress test make module with variables
+  hosts: all
+  gather_facts: false
+  become: true
+
+  vars:
+    bad_params: "'-f', '-h', '-v', '-x', '--debug'"
+    bad_file_path: "/tmp/nonexistent_file"
+    bad_target: "make_does_not_have_this_target"
+
+  tasks:
+    - name: Use invalid params with make
+      shell: "make {{ item }} -C /tmp/"
+      with_items:
+        - "{{ bad_params }}"
+        - "{{ bad_params | quote }}"
+        - "{{ bad_params }} 2>&1 | tee /tmp/make-output.txt {{ bad_params | quote }}"
+        - "''; {{ bad_params | quote }}"
+        - "{{ bad_params }} & echo 'command injected'"
+        - "{{ bad_params }}$(whoami)"
+        - ">< {{ bad_params | quote }}"
+        - "{{ bad_params }}; hostname"
+        - "{{ bad_params }} && whoami || whoami"
+        - "{{ bad_params }} || whoami && id"
+        - "{{ bad_params }} | base64"
+        - "'|{{ bad_params }}'"
+    
+    - name: Attempt to use invalid makefile path
+      shell: "make -f {{ bad_file_path }} -C /tmp/"
+    
+    - name: Attempt to use invalid target
+      shell: "make {{ bad_target }} -C /tmp/"
+    
+    - name: Check for injected command within makefile
+      shell: "make $(cat /tmp/injected-command.txt) -C /tmp/"
+    
+    - name: Check for printed environment variable values within makefile
+      shell: "make -s -C /tmp/ printenv | base64 -w 0 > /tmp/environment.txt"
+    
+    - name: Show invalid variable content when using make
+      shell: "make {{ item }} -C /tmp/"
+      with_items:
+        - "/etc/passwd"
+        - "/proc/version"
+        - "/tmp/output.txt"
+        - "/var/log/*"
+
+  

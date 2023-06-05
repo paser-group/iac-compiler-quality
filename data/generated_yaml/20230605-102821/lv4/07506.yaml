@@ -1,0 +1,45 @@
+
+---
+- name: Auto-scaling Playbook
+  hosts: all
+  vars:
+    - scw_token: "{{lookup('env', 'SCW_TOKEN')}}"
+    - scw_organization: "{{lookup('env', 'SCW_ORGANIZATION')}}"
+    - scw_region: "par1"
+    - scw_size: "ARM64-2GB"
+    - scw_tag: "autoscaling"
+    - min_nodes: "{{min_nodes}}"
+    - max_nodes: "{{max_nodes}}"
+    - threshold: "{{threshold}}"
+    - poll_interval: "{{poll_interval}}"
+  tasks:
+    - name: Check node count
+      command: kubectl get nodes -l "{{scw_tag}}" --no-headers | wc -l
+      register: current_node_count
+      changed_when: false
+      become: true
+
+    - name: Scale up
+      command: >
+        scaleway --organization "{{scw_organization}}" compute server create \
+        --name "autoscaling-{{scw_tag}}-{{ansible_date_time.date}}-{{ansible_date_time.hour}}-{{ansible_date_time.minute}}" \
+        --commercial-type "{{scw_size}}" \
+        --tags "{{scw_tag}}" \
+        --bootscript "ubuntu_bionic" \
+        --env "INSTALL_IMG={{ansible_distribution}}-{{ansible_distribution_version}}-{{scw_tag}}" \
+        --command-line "apt-get update && apt-get install docker-compose -y" \
+        --ip-addresses "10.1.1.{{current_node_count.stdout|int + 1}}" \
+        --image "ubuntu-bionic" \
+        --volume "id=autoscaling_data_{{scw_tag}},name=autoscaling_{{scw_tag}},bootscript_id=ubuntu_bionic,size=10GB" \
+        --wait-for-server \
+        --token "{{scw_token}}"
+      tags:
+        - scaleup
+      when: current_node_count.stdout|int < max_nodes
+
+    - name: Scale down
+      command: scaleway compute server delete --project-id="{{scw_organization}}" --tags "{{scw_tag}}" --state running --number "{{current_node_count.stdout|int - threshold}}" --async --no-interactive --quiet --wait --token "{{scw_token}}"
+      tags:
+        - scaledown
+      when: current_node_count.stdout|int > min_nodes and current_node_count.stdout|int - threshold > 0
+      become: true

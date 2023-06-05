@@ -1,0 +1,47 @@
+yaml
+---
+- name: Test Ansible Compiler for java_cert Bug
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Install OpenJDK 8
+      apt:
+        name: openjdk-8-jdk
+        state: present
+
+    - name: Copy Java Certificate to localhost
+      copy:
+        src: certs/java.crt
+        dest: /tmp/java.crt
+        mode: 400
+
+    - name: Install Java Certificate to System
+      command: /usr/bin/keytool -importcert -keystore /usr/lib/jvm/java-8-openjdk-amd64/jre/lib/security/cacerts -storepass changeit -noprompt -alias java_cert -file /tmp/java.crt
+      become: yes
+      become_method: su
+      become_user: root
+
+    - name: Add User with Invalid Email
+      user:
+        name: invalid-user
+        password: "{{ 'invalid@domain.com' }}"
+        uid: 2000
+        comment: "Invalid Email"
+
+    - name: Add User with Invalid Characters in Name
+      user:
+        name: "inv@lid-usr"
+        password: "{{ 'pasRD#1' }}"
+        uid: 2001
+        comment: "User with Special Characters"
+
+    - name: Add User with Invalid Password Length
+      user:
+        name: invalid-password
+        password: "short"
+        uid: 2002
+        comment: "User with short password"
+
+    - name: Check System for java_cert
+      command: /usr/bin/keytool -list -keystore /usr/lib/jvm/java-8-openjdk-amd64/jre/lib/security/cacerts -storepass changeit | grep -i java_cert
+ 

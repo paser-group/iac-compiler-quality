@@ -1,0 +1,53 @@
+
+- name: Test ios_vlans
+  hosts: all
+  gather_facts: no
+  vars:
+    vlans_output: |
+      {{
+        [
+          { 'vlan': '10', 'name': 'VLAN10', 'status': 'active', 'ports': '1' },
+          { 'vlan': '20', 'name': 'VLAN20', 'status': 'active', 'ports': '2' },
+          { 'vlan': '30', 'name': 'VLAN30', 'status': 'suspended', 'ports': '3' },
+          { 'vlan': '40', 'name': 'VLAN40', 'status': 'active', 'ports': '4' },
+          { 'vlan': '50', 'name': 'VLAN50', 'status': 'active', 'ports': '5' },
+          { 'vlan': '60', 'name': 'VLAN60', 'status': 'active', 'ports': '6' },
+          { 'vlan': '70', 'name': 'VLAN70', 'status': 'active', 'ports': '7' },
+          { 'vlan': '80', 'name': 'VLAN80', 'status': 'active', 'ports': '8' },
+          { 'vlan': '90', 'name': 'VLAN90', 'status': 'active', 'ports': '9' },
+          { 'vlan': '100', 'name': 'VLAN100', 'status': 'active', 'ports': '10' }
+        ]
+      | to_json | b64encode }}
+  tasks:
+    - name: Show vlan
+      ios_command:
+        commands:
+          - show vlan
+        provider:
+          host: "{{ inventory_hostname }}"
+          username: "{{ ansible_user }}"
+          password: "{{ lookup('file', '/path/to/password/file') }}"
+          authorize: yes
+          auth_pass: "{{ lookup('file', '/path/to/enable_password/file') }}"
+      register: vlan_show
+
+    - name: Parse vlan output
+      set_fact:
+        vlans: |
+          {{
+            vlan_show.stdout[0]['result'][0]['output']
+            | regex_findall('^(\\d+) +([^ ]+) +(active|suspended) +(Fa|Gi)\\d+(\\.\\d+)?')
+            | map('regex_replace', '(^\\d+) +([^ ]+)', '{ "vlan": "\\1", "name": "\\2" }')
+            | map('regex_replace', '(active|suspended)', '"status": "\\1"')
+            | map('regex_replace', '(Fa|Gi)(\\d+)(\\.\\d+)?', '"ports": "\\1\\2"')
+            | join(',')
+            | join('},{')
+            | prepend('[')
+            | append(']')
+            | to_json | b64encode
+          }}
+
+    - name: Compare vlans output
+      fail:
+        msg: "Unexpected output, expected {{ vlans_output }}, got {{ vlans }}"
+      when: vlans != vlans_output

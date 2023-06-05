@@ -1,0 +1,27 @@
+yaml
+- hosts: all
+  gather_facts: no
+  tasks:
+    - name: create temporary directory for galaxy command execution
+      tempfile:
+        state: directory
+        suffix: galaxydir
+      register: tmpdir
+      
+    - name: execute ansible-galaxy list command
+      shell: ansible-galaxy list
+      args:
+        chdir: "{{ tmpdir.path }}"
+        # Removing 'roles_path' will simulate missing search directories
+        environment:
+          ANSIBLE_CONFIG: /dev/null
+          PATH: "{{ ansible_env.PATH }}"
+          ANSIBLE_ROLES_PATH: 
+          
+      register: galaxy_list_result
+      ignore_errors: yes
+      
+    - name: check if ansible-galaxy list command failed due to missing search directories
+      debug:
+        msg: "ansible-galaxy list command errored out indicating a bug in the Ansible compiler. Please check the search directories."
+      when: galaxy_list_result.rc != 0

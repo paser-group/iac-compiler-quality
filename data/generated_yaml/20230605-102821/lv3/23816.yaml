@@ -1,0 +1,47 @@
+
+- name: Update passwordstore
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Add passwordstore repo
+      apt_repository:
+        repo: 'deb http://zx2c4.com/repo/deb/ stable/'
+        state: present
+      register: repo
+
+    - name: Add GPG key for passwordstore
+      apt_key:
+        url: 'http://zx2c4.com/repo/henrypp.asc'
+        state: present
+        validate_certs: no
+      register: gpg_key
+
+    - name: Install passwordstore
+      apt:
+        name: passwordstore
+        state: present
+      register: pstore_install
+
+    - name: Send a test GPG key to passwordstore
+      command: echo 'test data' | gpg --encrypt --armor -r test@example.com
+      register: gpg_data
+
+    - name: Store test data using passwordstore
+      command: pass insert testdata
+      vars:
+        passwordstore_gpg_opts: --no-tty --batch --yes
+        passwordstore_gpg_bin: /usr/bin/gpg2
+      register: pstore_data
+
+    - name: Retrieve test data from passwordstore
+      command: pass testdata
+      register: pstore_retrieve
+
+    - name: Remove test data from passwordstore
+      command: pass rm testdata
+      register: pstore_remove
+
+    - name: Verify that GPG data is recoverable
+      assert:
+        that:
+          - gpg_data.stdout in pstore_retrieve.stdout

@@ -1,0 +1,50 @@
+
+- name: Stress Test Playbook
+  hosts: all
+  gather_facts: no
+
+  vars:
+      invalid_input: ?/&^%$(
+
+  tasks:
+    - name: Install telnet package
+      apt: name=telnet state=present
+
+    - name: Copy internalLbVm.conf file
+      copy:
+        src: ~/internalLbVm.conf
+        dest: /etc/
+
+    - name: Start InternalLbVm service
+      service:
+        name: InternalLbVm
+        state: started
+
+    - name: Check InternalLbVm service status
+      shell: systemctl status InternalLbVm
+      register: service_status
+
+    - assert:
+        that:
+          - "'Active: active (running)' in service_status.stdout"
+          - "service_status.rc == 0"
+
+    - name: Enable InternalLbVm service
+      systemd:
+        name: InternalLbVm
+        enabled: true
+
+    - name: Run Invalid command on InternalLbVm service
+      shell: echo "{{ invalid_input }}" | nc 127.0.0.1 80
+      register: invalid_cmd_output
+      ignore_errors: true
+
+    - assert:
+        that:
+        - invalid_cmd_output.rc != 0
+        - "'Connection refused' in invalid_cmd_output.stderr"
+
+    - name: Stop InternalLbVm service
+      service:
+          name: InternalLbVm
+          state: stopped

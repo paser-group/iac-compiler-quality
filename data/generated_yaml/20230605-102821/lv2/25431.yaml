@@ -1,0 +1,75 @@
+
+- name: Test copy module behavior
+  hosts: all
+  gather_facts: no
+  vars:
+    invalid_dest: "{{ '/'.join(['//', hostvars[item]['ansible_default_ipv4']['address'], 'invalid_dest']) }}"
+    malformed_src: "{{ '' if hostvars[item]['ansible_distribution'] == 'Alpine' else '/' }}"
+    stdout_max_bytes: "{{ 2 ** 31 }}"
+    binary_file: "/dev/urandom"
+    null_dest: "/dev/null"
+    sensitive_file: "/tmp/.password_file"
+    passwords_file: "/tmp/.passwords_file"
+  tasks:
+    - name: Copy file with changed_when using 'path' parameter
+      copy:
+        src: "{{ binary_file }}"
+        dest: "/tmp/binary_file"
+      changed_when: "'path' in ansible_copy"
+    - name: Copy file with changed_when using 'dest' parameter
+      copy:
+        src: "{{ binary_file }}"
+        dest: "/tmp/binary_file_{{ inventory_hostname }}"
+      changed_when: "'dest' in ansible_copy"
+    - name: Copy file without changed_when to test default behavior
+      copy:
+        src: "{{ binary_file }}"
+        dest: "/tmp/binary_file_default"
+    - name: Try to copy a file to an invalid destination
+      copy:
+        src: "{{ binary_file }}"
+        dest: "{{ invalid_dest }}"
+    - name: Try to copy a malformed source file
+      copy:
+        src: "{{ malformed_src }}"
+        dest: "/tmp/malformed_source_file"
+    - name: Copy a file and disable output
+      copy:
+        src: "{{ binary_file }}"
+        dest: "{{ null_dest }}"
+      register: silent_copy
+    - name: Copy a sensitive file with password
+      copy:
+        src: "{{ sensitive_file }}"
+        dest: "/tmp/.sensitive_file"
+        decrypt: yes
+        owner: root
+        group: root
+        mode: "400"
+      vars:
+        password: "{{ lookup('file', passwords_file) }}"
+        ansible_password: "{{ hostvars[item]['ansible_password'] }}"
+      when: password in [ansible_password, None]
+    - name: Copy a sensitive file with wrong password
+      copy:
+        src: "{{ sensitive_file }}"
+        dest: "/tmp/.sensitive_file"
+        decrypt: yes
+        owner: root
+        group: root
+        mode: "400"
+      vars:
+        password: "{{ lookup('file', passwords_file) }}"
+        ansible_password: "{{ hostvars[item]['ansible_password'] + 'x' }}"
+      ignore_errors: yes
+      when: password not in [ansible_password, None]
+    - name: Copy huge file to test stdout limitation
+      copy:
+        src: "{{ binary_file }}"
+        dest: "/tmp/huge_file"
+      register: huge_copy
+    - name: Check stdout from copy operation of huge file
+      debug:
+        var: huge_copy.stdout
+      register: huge_copy_stdout
+      failed_when: huge_copy.changed and huge_copy_stdout.stdout|length > stdout_max_bytes

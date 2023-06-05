@@ -1,0 +1,43 @@
+
+- name: Backport Pull Request 77371 to stable-2.12
+  hosts: ubuntu1, alpine1, centos1, redhat1
+  become: yes
+  gather_facts: no
+  strategy: debug
+
+  tasks:
+  - name: Ensure interpreter discovery works
+    shell: >
+           if [[ $OSTYPE =~ 'darwin' ]]; then
+                echo 'macOS';
+           elif [[ $OSTYPE =~ 'linux-gnu' ]]; then
+                echo 'Linux';
+           elif [[ $OSTYPE =~ 'busybox' ]]; then
+                echo 'BusyBox';
+           else
+                echo 'Unknown OS';
+           fi
+    register: interpreter_discovery
+    failed_when: false
+
+  - name: Print interpreter discovered
+    debug:
+      var: interpreter_discovery.stdout_lines
+
+  - name: Test irregular syntax
+    command: "this is an invalid command ##7"
+    register: cmd_result
+    changed_when: false
+    failed_when: false
+
+  - name: Validate command output
+    assert:
+      that: "'No such file or directory' in cmd_result.stderr"
+      fail_msg: "Command 'this is an invalid command ##7' did not fail as expected"
+
+  - name: Test unexpected input
+    debug:
+      msg: |
+        {{ foo.bar }}
+        {{ bar.baz }}
+    failed_when: false

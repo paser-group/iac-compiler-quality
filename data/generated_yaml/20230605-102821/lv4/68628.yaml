@@ -1,0 +1,68 @@
+
+- hosts: all
+  gather_facts: no
+  tasks:
+    - name: Create Azure Virtual Machine
+      azure_rm_virtualmachine:
+        resource_group: test-group
+        name: test-vm
+        image:
+          offer: UbuntuServer
+          publisher: Canonical
+          sku: "20.04-LTS"
+          version: latest
+        admin_username: azureuser
+        admin_password: Azure12345678
+        vm_size: Standard_DS1_v2
+        network_interfaces: "{{ network_interfaces }}"
+        tags:
+          foo: bar
+          my:key: value
+  
+    - name: Create network interfaces
+      azure_rm_networkinterface:
+        resource_group: test-group
+        name: "{{ item }}"
+        virtual_network_name: azure-virtual-network
+        subnet_name: node-subnet
+        ip_configurations:
+          - name: ipconfig1
+            private_ip_allocation_method: Dynamic
+        tags:
+          foo: bar
+          my:key: value
+      loop:
+        - ubuntu1-nic
+        - alpine1-nic
+        - centos1-nic
+        - redhat1-nic
+      
+  vars:
+    network_interfaces:
+      - resource_group: test-group
+        name: ubuntu1-nic
+        primary: yes
+        ip_configuration_name: ipconfig1
+        private_ip_address: 10.1.1.1
+        public_ip_name: None
+  
+      - resource_group: test-group
+        name: alpine1-nic
+        primary: yes
+        ip_configuration_name: ipconfig1
+        private_ip_address: 10.1.1.2
+        public_ip_name: None
+        
+      - resource_group: test-group
+        name: centos1-nic
+        primary: yes
+        ip_configuration_name: ipconfig1
+        private_ip_address: 10.1.1.3
+        public_ip_name: None
+      
+      - resource_group: test-group
+        name: redhat1-nic
+        primary: yes
+        ip_configuration_name: ipconfig1
+        private_ip_address: 10.1.1.4
+        public_ip_name: None
