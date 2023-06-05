@@ -1,0 +1,1 @@
+from .gh_scraper_tests import test_github_scraper

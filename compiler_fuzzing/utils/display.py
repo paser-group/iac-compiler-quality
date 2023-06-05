@@ -5,6 +5,9 @@ this file contains functions for printing things in a certain format
 from colorama import Fore, Style
 import os
 
+# local imports
+from . import strings
+
 def title(title_str: str, fill_char: str='='):
 	"""
 	prints the given title centered in the terminal and surrounded by fill_char 
@@ -73,3 +76,67 @@ def red(msg: str, end='\n'):
     prints a string in red text
     """
     print(Fore.RED + msg + Style.RESET_ALL)
+
+
+######################################################################################
+### this section contains repetitive code for printing strings with headers on them ###
+######################################################################################
+
+def with_header(msg: str, header, color='green', end='\n'):
+    """
+    prints a message in the format '[<header>] <msg>' where the color <header> can be changed by the <color> argument
+
+    Input:
+        msg: str - the message to be displayed
+        header: str - the header message. usually a single word
+        color: str - the desired color for the header
+    """
+    colorizer = {
+        'green': strings.green,
+        'red': strings.red,
+        'yellow': strings.yellow,
+        'blue': strings.blue,
+        'cyan': strings.cyan,
+        'magenta': strings.magenta,
+    }
+
+    if color not in colorizer:
+        raise ValueError(f'The color \'{color}\' is not supported')
+
+    print('[' + colorizer[color](header) + '] ' + msg, end=end)
+
+def warning(msg: str, end='\n'):
+    with_header(msg, 'WARNING', color='yellow', end=end)
+
+def error(msg: str, end='\n'):
+    with_header(msg, 'ERROR', color='red', end=end)
+
+def ok(msg: str, end='\n'):
+    with_header(msg, 'OK', color='green', end=end)
+    
+def note(msg: str, end='\n'):
+    with_header(msg, 'NOTE', color='magenta', end=end)
+
+def in_progress(msg: str, end='\n'):
+    with_header(msg, 'IN PROGRESS', color='blue', end=end)
+
+def testing(msg: str, end='\n'):
+    with_header(msg, 'TESTING', color='blue', end=end)
+
+def done(msg: str=None, end='\n'):
+    if msg is None:
+        with_header('', 'DONE', color='green', end=end)
+    else:
+        with_header(msg, 'DONE', color='green', end=end)
+
+def test_passed(end='\n'):
+    with_header('', 'PASS', color='green', end=end)
+
+def fail(msg: str, end='\n'):
+    with_header(msg, 'FAIL', color='red', end=end)
+
+def review(msg: str, end='\n'):
+    with_header(msg, 'FOR REVIEW', color='yellow', end=end)
+
+def exception(msg: str, end='\n'):
+    with_header(msg, 'EXCEPTION CONTENT', color='red', end=end)

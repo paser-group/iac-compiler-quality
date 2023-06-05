@@ -123,6 +123,16 @@ def parse():
         type=str,
         default="syntax",
     )
+
+    # subparser for unit testing
+    parser_gen = subparser.add_parser('unit_test')
+    parser_gen.add_argument(
+        '-c',
+        '--config',
+        help='config path',
+        type=str,
+        default="{{PROJECT_ROOT}}/confs/config.yaml",
+    )
     
     argcomplete.autocomplete(parser)
     args = parser.parse_args()
