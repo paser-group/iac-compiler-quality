@@ -30,3 +30,4 @@ def load(path_str: str):
     cfg = yaml.safe_load(cfg)
 
     return cfg
+
