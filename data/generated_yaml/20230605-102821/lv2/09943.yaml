@@ -1,0 +1,40 @@
+
+---
+- name: stress test for Ansible compiler
+  hosts: all
+  gather_facts: no
+
+  tasks:
+
+  - name: copy files with failed_when and ignore_errors
+    copy:
+      src: /tmp/file
+      dest: /tmp/dest
+    failed_when: "'failed' in output"
+    ignore_errors: yes
+    check_mode: yes
+
+  - name: execute a command using failed_when and ignore_errors
+    command: "/tmp/script.sh"
+    register: output
+    failed_when: output.rc != 0
+    ignore_errors: yes
+    check_mode: yes
+
+  - name: stop and start services with irregular syntax
+    service:
+      name: "{{ item }}{{- }}"
+      state: stopped started
+    with_items:
+      - apache
+      - "{{'nginx'}}"
+    no_log: true
+
+  - name: use unexpected inputs to modify files
+    replace:
+      path: /etc/hosts
+      regexp: '(\d+.\d+.\d+.\d+)\s+{{ inventory_hostname }}\s+{{ ansible_hostname }}'
+      replace: '{{ item }} {{ ansible_hostname }} {{ inventory_hostname }}'
+    with_items:
+      - "10.1.1.9"
+      - "{{ lookup('password', '/tmp/password') }}"

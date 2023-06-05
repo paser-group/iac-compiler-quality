@@ -1,0 +1,28 @@
+
+- name: Test playbook for with_fileglob
+  hosts: ubuntu1
+  gather_facts: False
+
+  tasks:
+  - name: Find all YAML files in the playbook directory
+    find:
+      paths: "playbook/*"
+      file_type: "file"
+      patterns: "*.yaml"
+    register: yaml_files
+
+  - name: Copy YAML files to all nodes
+    copy:
+      src: "{{ yaml_files.files | random | basename }}"
+      dest: "/tmp/{{ inventory_hostname }}.yaml"
+
+  - name: Execute the playbook using with_fileglob
+    include_tasks: "{{ item }} "
+    with_fileglob:
+      - "/tmp/*.yaml"
+    ignore_errors: True
+
+  - name: Copy results to the Ansible control node
+    synchronize:
+      src: "/tmp/results/"
+      dest: "results/"

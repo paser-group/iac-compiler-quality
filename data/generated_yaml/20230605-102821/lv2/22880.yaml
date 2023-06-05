@@ -1,0 +1,32 @@
+
+- name: Stress test Ansible junos_config module for update overwrite issue
+  hosts: all
+  gather_facts: no
+  become: yes
+  vars:
+    junos_configs:
+      - "set interfaces ge-0/0/1 unit 0 family inet address 10.0.1.1/24"
+      - "set interfaces ge-0/0/0 unit 0 family inet address 10.0.0.1/24"
+  tasks:
+    - name: Configure Juniper devices with Ansible junos_config module
+      junos_config:
+        lines: "{{ junos_configs }}"
+        format: set
+
+    - name: Update Juniper configuration with overwrite using Ansible junos_config module
+      junos_config:
+        lines:
+          - "set interfaces ge-0/0/1 unit 0 family inet address 10.0.1.2/24"
+          - "set interfaces ge-0/0/0 unit 0 family inet address 10.0.0.2/24"
+        format: set
+      overwrite: yes
+
+    - name: Verify Juniper configuration state with Ansible junos_command module
+      junos_command:
+        commands:
+          - "show interfaces terse"
+      register: junos_output
+
+    - name: Print Juniper configuration output to debug potential bugs
+      debug:
+        var: junos_output

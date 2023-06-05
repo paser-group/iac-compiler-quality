@@ -1,0 +1,21 @@
+
+- name: Test WinRM Kerberos Error
+  hosts: all
+  vars:
+    invalid_username: "+&`'\\?<>"
+    invalid_password: "+&`'\\?<>"
+    invalid_domain: "+&`'\\?<>"
+  tasks:
+    - name: WinRM Kerberos Connection
+      win_shell: "Get-ChildItem C:\\"
+      register: winrm_output
+      become: yes
+      become_user: "{{ invalid_username }}"
+      become_password: "{{ invalid_password }}"
+      connection: winrm
+      winrm_transport: kerberos
+      kerberos_delegate: yes
+      kerberos_hostname_override: "{{ invalid_domain }}"
+    - name: Print WinRM Kerberos Output
+      debug:
+        var: winrm_output.stdout_lines

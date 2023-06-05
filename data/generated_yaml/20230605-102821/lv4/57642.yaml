@@ -1,0 +1,37 @@
+
+- hosts: localhost
+  gather_facts: no
+  
+  vars:
+    vcenter_hostname: "vcenter.example.com"
+    vcenter_username: "myuser@vsphere.local"
+    vcenter_password: "{{ lookup('file', '/path/to/vcenter_password_file') }}"
+    
+  tasks:
+    - name: Validate vSphere credentials
+      vmware_vcenter_info:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+      register: vcenter_info
+  
+    - name: Gather VMs from vCenter
+      vmware_vm_inventory:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: no
+        strict_ssl_checking: no
+      register: vcenter_vms
+
+    - name: Validate VMs
+      debug:
+        var: vcenter_vms.virtual_machines
+
+    - name: List orphaned VMs
+      set_fact:
+        orphan_vm_list: "{{ query('json_query', 'virtual_machines[?summary.config.uuid==`null`].name', {'vcenter_vms': vcenter_vms}) }}"
+      
+    - name: Debug orphaned VM list
+      debug:
+        var: orphan_vm_list

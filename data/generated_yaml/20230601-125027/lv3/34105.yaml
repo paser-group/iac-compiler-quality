@@ -1,0 +1,60 @@
+
+- name: Create a virtual machine and configure a Distributed Virtual Switch
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    vcenter_hostname: "vcenter.example.com"
+    vcenter_username: "user"
+    vcenter_password: "pass"
+    vm_name: "test_vm"
+    network_name: "test_network"
+    dvs_name: "test_dvs"
+    esxi_hostname: "esxi.example.com"
+    esxi_username: "root"
+    esxi_password: "pass"
+    datastore_name: "datastore1"
+    disk_size: 10
+
+  tasks:
+    - name: Create DVS
+      vmware_dvs:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: no
+        dvs_name: "{{ dvs_name }}"
+      register: dvs_result
+    
+    - name: Create Virtual Machine connected to DVS
+      vmware_guest:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: no
+        name: "{{ vm_name }}"
+        state: poweredon
+        hardware:
+          memory_mb: 1024
+          num_cpus: 1
+        disk:
+          scsi: paravirtual
+          size_gb: "{{ disk_size }}"
+          datastore: "{{ datastore_name }}"
+        networks:
+        - name: "{{ network_name }}"
+          dvs: "{{ dvs_result.uuid }}"
+          type: vmxnet3
+          ip: 10.1.1.10
+        - name: "{{ network_name }}"
+          dvs: "{{ dvs_result.uuid }}"
+          type: vmxnet3
+          ip: 10.1.1.20
+        folder: /vm
+        wait_for_ip_address: yes
+        esxi_hostname: "{{ esxi_hostname }}"
+        esxi_username: "{{ esxi_username }}"
+        esxi_password: "{{ esxi_password }}"
+
+      register: vm_result
+      ignore_errors: True

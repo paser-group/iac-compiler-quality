@@ -1,0 +1,27 @@
+
+- name: Test Ansible Compiler for Environment Variable Evaluation Error
+  hosts: all
+  vars:
+    body_var: "{{ lookup('env','SECRET') }}"
+    invalid_value: \"'\"`rm -rf / ; echo \"'\"`\"
+  tasks:
+  - name: Test Environment Variable Syntax Evaluation
+    command: >
+      echo "{{ body_var }}"
+    register: env_var_output
+    ignore_errors: true
+  - name: Verify Proper Error Handling
+    assert:
+      that:
+      - env_var_output is failed
+      - 'template error while templating string: unexpected symbol encountered' in env_var_output.stderr
+  - name: Test Invalid Value Syntax
+    shell: "{{ invalid_value }}"
+    register: invalid_value_output
+    ignore_errors: true
+  - name: Verify Proper Error Handling of Invalid Value Syntax
+    assert:
+      that:
+      - invalid_value_output is failed
+      - "rm: cannot remove" in invalid_value_output.stderr
+      - ".: command not found" in invalid_value_output.stderr

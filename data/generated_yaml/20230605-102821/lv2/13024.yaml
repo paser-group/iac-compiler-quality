@@ -1,0 +1,58 @@
+
+- name: Testing Ansible Compiler for Certificate Errors
+  hosts: all
+  become: yes
+  gather_facts: no
+  vars:
+    proxy: "http://{{proxy_user}}:{{proxy_password}}@{{proxy_address}}:{{proxy_port}}"
+    cert_file: "/etc/ssl/test_cert.pem"
+    invalid_cert_file: "/etc/ssl/invalid_cert.pem"
+
+  tasks:
+    - name: Testing Certificate Error with Proxy on Ubuntu Node
+      apt:
+        update_cache: yes
+        proxy: "{{proxy}}"
+      register: ubuntu_result
+
+    - name: Printing Result of Certificate Error with Proxy on Ubuntu Node
+      debug:
+        var: ubuntu_result
+
+    - name: Testing Certificate Error with Invalid Certificate on Alpine Node
+      copy:
+        src: "{{cert_file}}"
+        dest: "/etc/ssl/cert.pem"
+        mode: "0644"
+      register: alpine_result
+      delegate_to: alpine1
+
+    - name: Printing Result of Certificate Error with Invalid Certificate on Alpine Node
+      debug:
+        var: alpine_result
+
+    - name: Testing Certificate Error with Proxy on CentOS Node
+      command:
+        cmd: "ping www.google.com"
+        __ansible_shell_executable: "{{invalid_cert_file}}"
+        __ansible_allow_world_readable_tmpfiles: yes
+      register: centos_result
+      delegate_to: centos1
+
+    - name: Printing Result of Certificate Error with Proxy on CentOS Node
+      debug:
+        var: centos_result
+
+    - name: Testing Certificate Error with Proxy and Invalid Certificate on RedHat Node
+      ping:
+        data: "Testing Certificate Error with Proxy and Invalid Certificate on RedHat Node"
+      environment:
+        http_proxy: "{{proxy}}"
+        https_proxy: "{{proxy}}"
+        SSL_CERT_FILE: "{{invalid_cert_file}}"
+      register: redhat_result
+      delegate_to: redhat1
+
+    - name: Printing Result of Certificate Error with Proxy and Invalid Certificate on RedHat Node
+      debug:
+        var: redhat_result

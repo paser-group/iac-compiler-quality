@@ -1,0 +1,31 @@
+
+- name: Unicode parsing issue with junos_config
+  hosts: all
+  become: yes
+  tasks:
+    - name: Create a temporary file with non-ascii characters
+      tempfile:
+        state: file
+        suffix: .txt
+        delete_on_completion: yes
+      register: tmpfile
+
+    - name: Write non-ascii characters to the temporary file
+      copy:
+        dest: "{{ tmpfile.path }}"
+        content: "《朝霞美雪》"
+
+    - name: Include the temporary file contents in juniper config file
+      junos_config:
+        lines:
+          - "{{ lookup('file', tmpfile.path) }}"
+      register: junos_out
+
+    - name: Debug output from junos_config
+      debug:
+        var: junos_out
+
+    - name: Ensure junos_config output has non-ascii characters
+      assert:
+        that:
+          - "u'\\uff1a\\u671d\\u971c\\u7f8a\\u96ea' in junos_out.stdout_lines[0]"

@@ -1,0 +1,49 @@
+
+- name: ansible stress test
+  hosts: all
+  gather_facts: no
+  tasks:
+  - name: check if custom module folders resolve in local library folder
+    command: ls /usr/local/lib/python3.6/site-packages/ansible/modules/
+    become: yes
+    register: result
+
+  - debug:
+      var: result.stdout_lines
+
+  - name: create symlink to custom module folders
+    file:
+      src: /usr/local/lib/python3.6/site-packages/ansible/modules
+      dest: /tmp/custom_modules
+      state: link
+    become: yes
+
+  - name: copy ansible.cfg file to nodes
+    copy:
+      src: /etc/ansible/ansible.cfg
+      dest: /tmp/ansible.cfg
+    delegate_to: "{{ item }}"
+    with_items:
+      - ubuntu1
+      - alpine1
+      - centos1
+      - redhat1
+
+  - name: remove ansible.cfg file from nodes
+    file:
+      path: /tmp/ansible.cfg
+      state: absent
+    delegate_to: "{{ item }}"
+    with_items:
+      - ubuntu1
+      - alpine1
+      - centos1
+      - redhat1
+
+  - name: check if custom module folders resolve after removing ansible.cfg file
+    command: ls /usr/local/lib/python3.6/site-packages/ansible/modules/
+    become: yes
+    register: result2
+
+  - debug:
+      var: result2.stdout_lines

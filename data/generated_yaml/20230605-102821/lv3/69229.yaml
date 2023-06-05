@@ -1,0 +1,22 @@
+
+- name: Set postgresql default tablespace
+  hosts: all
+  become: true
+  vars:
+    default_tablespace: "my_tablespace"
+  tasks:
+    - name: Set default tablespace
+      postgresql_set:
+        db: my_database
+        default_tablespace: "{{ default_tablespace }}"
+      register: result
+    - name: Get database info
+      postgresql_db_info:
+        db: my_database
+      register: db_info
+      when: result.changed
+    - name: Write output to file
+      copy:
+        content: "{{ db_info.stdout_lines }}"
+        dest: "/tmp/db_info.txt"
+        when: result.changed

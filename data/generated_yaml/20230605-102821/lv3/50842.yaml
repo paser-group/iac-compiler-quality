@@ -1,0 +1,24 @@
+
+- name: Testing meta clear_host_errors issue
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: Create a temporary file with invalid syntax
+      copy:
+        content: this is invalid ansible syntax
+        dest: /tmp/syntax_error.yml
+
+    - name: Attempt to execute the invalid syntax file
+      include_tasks:
+        file: /tmp/syntax_error.yml
+      ignore_errors: true
+      register: syntax_error_result
+
+    - name: Check if syntax error occurred
+      meta: clear_host_errors
+      when: syntax_error_result | failed
+
+  rescue:
+    - name: Ensure error is cleared with meta clear_host_errors module
+      meta: clear_host_errors

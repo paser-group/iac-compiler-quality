@@ -1,0 +1,64 @@
+
+- name: Ansible Compiler Stress Test Playbook
+  hosts: ubuntu1, alpine1, centos1, redhat1
+  gather_facts: false
+  become: true
+
+  tasks:
+    - name: Test Case 1
+      debug:
+        msg: "{{ groups['Group with spaces in name'] }}"
+
+    - name: Test Case 2
+      debug: 
+        var: my_variable
+
+    - name: Test Case 3
+      shell: |
+        echo "{{ groups['Group without spaces in name'] }}" | awk '{$1=$1;print}'
+
+    - name: Test Case 4
+      shell: cat "{{ lookup('file', 'file-with-spaces') }}"
+      register: output
+
+    - name: Test Case 5
+      pause:
+        seconds: 5
+
+    - name: Test Case 6
+      block:
+        - name: Run Command 1
+          shell: |
+            echo '{{ inventory_hostname }}' | awk '{$1=$1;print}'
+          ignore_errors: true
+        - name: Run Command 2
+          command: cat /dev/random > /dev/null
+          ignore_errors: true
+      rescue:
+        - name: Handle Error
+          debug:
+            msg: "Error occurred in Test Case 6"
+
+    - name: Test Case 7
+      command: echo "ansible-playbook playbook.yml -i inventory --private-key /var/tmp/key_I.pem --become-password-file /path/to/password_file"
+
+    - name: Test Case 8
+      debug:
+        msg: "{{ groups[['Group with multiple','spaces in name']] }}"
+
+    - name: Test Case 9
+      set_fact:
+        group_name: "{{ groups.keys() | list | random }}"
+      debug:
+        var: "{{ groups[group_name] }}"
+
+    - name: Test Case 10
+      shell: |
+        echo '{{ body }}' > /dev/null
+      ignore_errors: true
+  
+  handlers:
+    - name: restart service
+      service:
+        name: sample-service
+        state: restarted

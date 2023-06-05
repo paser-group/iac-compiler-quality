@@ -1,0 +1,28 @@
+
+- name: Fix SSH Fail in Template Module with Default tmp Path
+  hosts: all
+  tasks:
+    - name: Set Secure tmp Directory Path
+      set_fact:
+        ansible_local:
+          tmpdir_path: "/dev/shm"
+
+    - name: Configure SSH client
+      template:
+        src: ssh_config.j2
+        dest: "/etc/ssh/ssh_config"
+        mode: '0644'
+        backup: yes
+      register: config_result
+
+    - name: Add SSH Key to SSH Agent
+      shell: eval "$(ssh-agent -s)" && ssh-add /path/to/ssh.key
+      when: config_result.changed
+
+    - name: Test SSH Connection
+      ping:
+      register: ping_result
+
+    - name: Debug SSH Connection
+      debug:
+        msg: "{{ ping_result.msg }}"

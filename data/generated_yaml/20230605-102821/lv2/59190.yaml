@@ -1,0 +1,69 @@
+
+- name: Stress test playbook for vmware_guest mem_reservation issue
+  hosts: all
+  gather_facts: false
+
+  tasks:
+  
+  - name: Launch VMs with various mem_reservation values
+    vmware_guest:
+      hostname: "{{ inventory_hostname }}"
+      username: "{{ my_username }}"
+      password: "{{ my_password }}"
+      datacenter: "{{ datacenter_name }}"
+      folder: "{{ folder_name }}"
+      name: "{{ item.name }}"
+      hardware:
+        memory_mb: "{{ item.mem_reservation }}"
+        num_cpu: "{{ item.cpu_count }}"
+        scsi: "{{ item.scsi }}"
+      networks:
+        - network_label: "{{ item.network }}"
+          ip: "{{ item.ip }}"
+          netmask: "{{ item.netmask }}"
+      cdrom:
+        type: "{{ item.cd_type }}"
+        iso_path: "{{ item.iso_path }}"
+      state: "{{ item.state }}"
+    with_items:
+      - name: ubuntu-vm-{{ ansible_date_time.epoch }}
+        mem_reservation: 0
+        cpu_count: 2
+        scsi: paravirtual
+        network: node-net
+        ip: 10.1.1.10
+        netmask: 255.255.255.0
+        cd_type: none
+        iso_path: ""
+        state: poweredon
+      - name: alpine-vm-{{ ansible_date_time.epoch }}
+        mem_reservation: -1
+        cpu_count: 1
+        scsi: lsilogic
+        network: node-net
+        ip: 10.1.1.20
+        netmask: 255.255.255.0
+        cd_type: client
+        iso_path: "/mnt/cdrom/alpine.iso"
+        state: present
+      - name: centos-vm-{{ ansible_date_time.epoch }}
+        mem_reservation: 9999999999999999999999
+        cpu_count: 4
+        scsi: pvscsi
+        network: node-net
+        ip: 10.1.1.30
+        netmask: 255.255.255.0
+        cd_type: config
+        iso_path: "/mnt/cdrom/centos-config.iso"
+        state: poweredoff
+      - name: redhat-vm-{{ ansible_date_time.epoch }}
+        mem_reservation: "0invalid"
+        cpu_count: 3
+        scsi: buslogic
+        network: node-net
+        ip: 10.1.1.40
+        netmask: 255.255.255.0
+        cd_type: data
+        iso_path: "/mnt/cdrom/redhat-data.iso"
+        state: absent
+

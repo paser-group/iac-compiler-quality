@@ -1,0 +1,43 @@
+yaml
+- name: Test Unarchive Module with Custom Permissions
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Create temporary directory
+      tempfile:
+        state: directory
+      register: tmp_dir
+
+    - name: Touch file in directory
+      file:
+        path: "{{ tmp_dir.path }}/testfile"
+        state: touch
+
+    - name: Archive directory with custom permissions
+      shell: "tar -zcf {{ tmp_dir.path }}/testarchive.tar.gz {{ tmp_dir.path }} --mode 'g-rwx' --owner 'root' --group 'root'"
+      args:
+        executable: /bin/bash
+      register: archive
+
+    - name: Extract archive with same permissions
+      unarchive:
+        src: "{{ tmp_dir.path }}/testarchive.tar.gz"
+        dest: "{{ tmp_dir.path }}/testextract"
+        extra_opts: "--same-permissions"
+        remote_src: True
+      register: unarchive
+
+    - name: Verify archive permissions
+      stat:
+        path: "{{ tmp_dir.path }}/testextract"
+      register: stats
+
+    - name: Assert archive ownership and permissions
+      assert:
+        that:
+          - stats.stat.mode == 16877
+          - stats.stat.uid == 0
+          - stats.stat.gid == 0
+        fail_msg: "Incorrect ownership or permissions detected after extraction."
+        success_msg: "Archive extracted successfully with same permissions."

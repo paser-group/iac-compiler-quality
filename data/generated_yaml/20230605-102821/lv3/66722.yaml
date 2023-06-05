@@ -1,0 +1,35 @@
+
+---
+- name: Test Issue
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: execute async task with multiple references to async_status
+      async_status:
+        jid: myjob
+        data:
+          variable1: "{{ inventory_hostname }}"
+          variable2: "{{ ansible_os_family }}"
+      register: async_result
+
+    - name: retrieve async status
+      async_status:
+        jid: "{{ async_result.ansible_job_id }}"
+      register: async_check
+      until: async_check.finished
+      retries: 10
+      delay: 5
+
+    - name: print async status variable multiple times
+      debug:
+        var: "{{ {'var1': async_status, 'var2': async_status} }}"
+
+    - name: fail intentionally
+      fail:
+        msg: "This task fails intentionally"
+      when: async_status.finished
+
+    - name: fail intentionally
+      fail:
+        msg: "This task fails intentionally"
+      when: not async_check.finished

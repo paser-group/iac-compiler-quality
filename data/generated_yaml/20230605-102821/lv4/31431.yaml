@@ -1,0 +1,37 @@
+
+- name: Test vault encryption
+  hosts: all
+  tasks:
+    - name: Create vault file
+      copy:
+        content: |
+          username: alice
+          password: my_super_secret_password
+        dest: /tmp/vault.yml
+      register: vault_file
+
+    - name: Encrypt vault file
+      command: "ansible-vault encrypt /tmp/vault.yml"
+      register: encrypt_command
+
+    - name: Print encrypted contents
+      command: "cat /tmp/vault.yml"
+      register: cat_command
+      no_log: true
+
+    - name: Decrypt vault file
+      command: "ansible-vault decrypt /tmp/vault.yml"
+      register: decrypt_command
+
+    - name: Check decrypted contents
+      command: "cat /tmp/vault.yml"
+      register: cat_command_decrypted
+      no_log: true
+
+    - name: Assert commands have executed successfully
+      assert:
+        that:
+          - vault_file is succeeded
+          - encrypt_command is succeeded
+          - decrypt_command is succeeded
+      ignore_errors: yes

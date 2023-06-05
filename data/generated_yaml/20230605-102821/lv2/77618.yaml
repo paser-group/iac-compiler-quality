@@ -1,0 +1,32 @@
+
+- name: Stress Test for Ansible Compiler
+  hosts: all
+  gather_facts: no
+  tasks:
+  
+  - name: Test Case 1 - Missing f prefix
+    command: "echo 'Missing f prefix'"
+    register: output1
+    failed_when: "output1.stdout != 'Missing f prefix'"
+    
+  - name: Test Case 2 - Incorrect f prefix
+    command: "echo f'Missing f prefix'"
+    register: output2
+    failed_when: "output2.stdout != 'fMissing f prefix'"
+    
+  - name: Test Case 3 - Special characters in f-strings
+    command: "echo f'Title: {{*^10}}'"
+    register: output3
+    failed_when: "output3.stdout != 'Title: ***{{*^10}}***'"
+    
+  - name: Test Case 4 - Multiple expressions in f-strings
+    lineinfile: 
+      dest: /etc/hosts
+      line: "{{ ansible_hostname }} {{ ansible_default_ipv4.address }} {{ f'{ansible_distribution} - {ansible_distribution_version}' }}"
+    notify: restart service
+    
+  handlers:
+    - name: restart service
+      service:
+        name: nginx
+        state: restarted

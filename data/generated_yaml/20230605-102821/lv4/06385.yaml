@@ -1,0 +1,35 @@
+
+- name: Install packages
+  hosts: all
+  become: true
+  gather_facts: no
+
+  vars:
+    pkgs:
+      - tcpdump
+      - nmap
+
+  tasks:
+    - name: Update package list
+      apt:
+        update_cache: yes
+      register: apt_update
+
+    - name: Install packages
+      apt:
+        name: "{{ item }}"
+        state: latest
+        update_cache: yes
+      loop: "{{ pkgs }}"
+      when: apt_update.changed
+      ignore_errors: yes
+
+    - name: Show errors if failed
+      debug:
+        var: ansible_failed_result
+      failed_when: apt_update.changed
+
+    - name: Cleanup
+      apt:
+        autoclean: yes
+        autoremove: yes

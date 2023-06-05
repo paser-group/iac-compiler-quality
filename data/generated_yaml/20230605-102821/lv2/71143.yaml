@@ -1,0 +1,48 @@
+
+- hosts: all
+  gather_facts: false
+
+  tasks:
+  
+  - name: Deploy vmware template
+    vmware_content_deploy_template:
+      object_name: "{{ item.name }}"
+      folder: "{{ item.folder }}"
+      vcenter_hostname: "{{ item.vcenter_hostname }}"
+      datacenter_name: "{{ item.datacenter_name }}"
+      username: "{{ item.username }}"
+      password: "{{ item.password }}"
+      validate_certs: false
+    with_items:
+      - 
+        name: ubuntu12
+        folder: "/invalid/folder/path"
+        vcenter_hostname: "https://vcenter.example.com"
+        datacenter_name: "Datacenter"
+        username: "admin"
+        password: "admin123"
+      - 
+        name: centos6
+        folder: "~!@#$%^&*()_+/{}|:\"<>?[];',./\\"
+        vcenter_hostname: "https://vcenter.example.com"
+        datacenter_name: "<script>alert('XSS Attack!')</script>"
+        username: "admin"
+        password: "admin123"
+      - 
+        name: redhat7
+        folder: "../path/to/../../../file"
+        vcenter_hostname: "https://vcenter.example.com"
+        datacenter_name: "`rm -rf /`"
+        username: "admin"
+        password: "admin123"
+
+    register: deploy_template
+
+  - name: Assert that the deployment failed
+    assert:
+      that:
+        - "'failed to find folder' in deploy_template.msg"
+        - deploy_template.failed == true
+
+  # Add more tasks here that put more stress in the Ansible compiler
+  ...

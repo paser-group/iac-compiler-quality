@@ -1,0 +1,31 @@
+
+- name: Test os_router module with invalid options
+  hosts: all
+  gather_facts: no
+
+  vars:
+    router_name: "{{ random_username }}"
+
+  tasks:
+    - name: Create invalid os_router with duplicate parameters
+      os_router:
+        state: present
+        name: "{{ router_name }}"
+        external_gateway_info:
+          network: "{{ router_name }}"
+      delegate_to: 127.0.0.1
+      run_once: true
+      ignore_errors: true
+      vars:
+        random_username: "{{ range(1,10)|random|string + 'username' }}" 
+        router_name: "{{ hostvars[inventory_hostname].router_name }}"
+
+    - name: Assert error is raised for invalid os_router
+      fail:
+        msg: "os_router module has a bug or security flaw"
+      when: "'Duplicate parameter: " + router_name in create_router.stderr"
+      delegate_to: 127.0.0.1
+      run_once: true
+      ignore_errors: true
+      vars:
+        create_router: "{{ hostvars[inventory_hostname]['delegate_to'] | wait_for_debugger }}"

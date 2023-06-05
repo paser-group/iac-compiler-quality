@@ -1,0 +1,41 @@
+
+---
+- name: Test for error status in command output
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Execute command
+      command: >
+        {% if inventory_hostname == 'alpine1' %}
+        echo 'test' >&2
+        {% elif inventory_hostname == 'centos1' %}
+        echo 'error' >&2
+        {% elif inventory_hostname == 'redhat1' %}
+        echo 'failure'
+        {% else %}
+        echo 'success'
+        {% endif %}
+      register: command_output
+      ignore_errors: yes
+
+    - name: Fail task if error message found
+      fail:
+        msg: "{{ inventory_hostname }} task failed."
+      when: command_output.stderr or ('error' in command_output.stdout and inventory_hostname != 'alpine1')
+
+    - name: Include unreachable
+      add_host:
+        name: "ubuntu2"
+        groups: "unreachable"
+        ansible_host: "10.1.1.5"
+        ansible_user: "ubuntu"
+        ansible_ssh_private_key_file: "/var/tmp/key.pem"
+      delegate_to: localhost
+      run_once: true
+      when: inventory_hostname == 'ubuntu1'
+
+    - name: Ping unreachable node
+      ping:
+      delegate_to: "ubuntu2"
+      ignore_errors: true
+      when: inventory_hostname == 'ubuntu1'

@@ -1,0 +1,58 @@
+
+---
+- name: Docker module stress test
+  hosts: all
+  gather_facts: false
+  tasks:
+  - name: Install Docker
+    become: true
+    apt:
+      name: docker.io
+      update_cache: yes
+  - name: Add user to Docker group
+    become: true
+    user:
+      name: "{{ ansible_user }}"
+      groups: docker
+  - name: Pull an image without authentication
+    become: true
+    docker_image:
+      name: alpine:latest
+  - name: Pull an image with invalid credentials
+    become: true
+    docker_login:
+      username: "invalid_username"
+      password: "invalid_password"
+      registry_url: "https://index.docker.io/v1/"
+  - name: Pull an image with valid credentials
+    become: true
+    docker_login:
+      username: "{{ docker_username }}"
+      password: "{{ docker_password }}"
+      registry_url: "https://index.docker.io/v1/"
+  - name: Push an image with invalid tag name
+    become: true
+    docker_image:
+      name: "{{ ansible_hostname }}"
+      tag: "{{ invalid_tag_name }}"
+      source: build
+      path: "{{ playbook_dir }}"
+      push: yes
+  - name: Push an image with invalid Dockerfile path
+    become: true
+    docker_image:
+      name: "{{ ansible_hostname }}"
+      tag: latest
+      source: build
+      path: "{{ invalid_dockerfile_path }}"
+      push: yes
+  - name: Push an image with unexpected build args
+    become: true
+    docker_image:
+      name: "{{ ansible_hostname }}"
+      tag: latest
+      source: build
+      path: "{{ playbook_dir }}"
+      buildargs:
+        "{{ unexpected_build_arg }}": "{{ unexpected_build_arg_value }}"
+      push: yes

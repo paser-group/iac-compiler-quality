@@ -1,0 +1,57 @@
+
+---
+- name: Stress Test Playbook for Ansible Compiler
+  hosts: all
+  gather_facts: true
+  become: true
+
+  vars:
+    new_password: "{{ ['', 'new_password!@#123'] | random_item }}"
+    verify_pass: "{{ ['verfie_worng_pass', 'new_password!@#123', 'password_new'] | random_item }}"
+    user_account: "{{ ['ansible', 'test_user'] | random_item }}"
+    invalid_shell: /empty/shell
+
+  tasks:
+    # Test 1: Update user's password with invalid input
+    - name: Update Password with Invalid Input
+      user:
+        name: "{{ user_account }}"
+        password: "{{ invalid_password }}"
+        shell: /bin/bash
+      ignore_errors: true
+
+    # Test 2: Check for User existance using Verfiy Method- valid password
+    - name: Check for User Existence with Verfiy Method, valid Password
+      user:
+        name: "{{ user_account }}"
+        password: "{{ new_password }}"
+        shell: /bin/bash
+        verify: "{{ new_password }}"
+        state: present
+
+    # Test 3: Check for User Existance using Verify Method- wrong password
+    - name: Check for User Existence with Verfiy Method, invalid Password
+      user:
+        name: "{{ user_account }}"
+        password: "{{ new_password }}"
+        shell: /bin/bash
+        verify: "{{ verify_pass }}"
+        state: present
+
+    # Test 4: Test for Invalid Shell
+    - name: Test for Invalid Shell
+      user:
+        name: "{{ user_account }}"
+        shell: "{{ invalid_shell }}"
+        state: present
+
+    # Test 5: Change Password for multiple users
+    - name: Change Password for Multiple Users
+      user:
+        name: "{{ item }}"
+        password: "{{ new_password }}"
+        shell: /bin/bash
+      loop:
+        - ansible
+        - root
+        - ubuntu<User_number>  # replace <User_number> with the number of your choice

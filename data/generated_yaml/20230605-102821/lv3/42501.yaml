@@ -1,0 +1,25 @@
+
+- name: check S3 bucket versioning in Minio
+  hosts: all
+  gather_facts: false
+  vars:
+    s3_bucket_name: "my-minio-bucket"
+  tasks:
+    - name: get bucket versioning information
+      s3_bucket:
+        bucket: "{{ s3_bucket_name }}"
+        region: "us-east-1"
+        mode: "get"
+      register: versioning_status
+      ignore_errors: true
+   
+    - name: print error message if versioning is not implemented
+      debug:
+        msg: "s3_bucket versioning for {{ s3_bucket_name }} in Minio is not implemented"
+      when: versioning_status.failed and
+              'GetBucketVersioning' in versioning_status.msg
+
+    - name: handle versioning status if it is implemented
+      debug:
+        msg: "s3_bucket versioning for {{ s3_bucket_name }} in Minio is {{ versioning_status }}"
+      when: not versioning_status.failed

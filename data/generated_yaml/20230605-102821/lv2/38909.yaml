@@ -1,0 +1,56 @@
+
+---
+- name: Test IPv6 port bindings in Docker containers
+  hosts: all
+  gather_facts: false
+
+  tasks:
+  - name: Create IPv6 network
+    docker_network:
+      name: ipv6_net
+      driver: bridge
+      ipv6: true
+      state: present
+    become: true
+    become_user: root
+
+  - name: Launch a container with IPv6 enabled
+    docker_container:
+      name: alpine_ipv6_test
+      image: alpine:latest
+      command: sleep 300
+      detach: true
+      network_mode: ipv6_net
+      ports:
+        - ":::8080"  # bind port 8080 to the container's ipv6 address
+      state: started
+    become: true
+    become_user: root
+
+  - name: Verify that the IPv6 port binding works
+    wait_for:
+      host: "::1"
+      port: 8080
+      protocol: tcp
+      state: started
+    delegate_to: 127.0.0.1
+    become: true
+    become_user: root
+
+  - name: Expose IPv6 address as an environment variable
+    shell: |
+      echo $DOCKER_HOST_IPv6 > /tmp/ipv6_address.txt
+    environment:
+      DOCKER_HOST_IPv6: "{{ ansible_fqdn }}"
+    become: true
+    become_user: root
+
+  - name: Display the IPv6 address inside the container
+    command: docker exec alpine_ipv6_test cat /etc/hosts | grep ipv6 | awk '{ print $1 }' | sed 's/[[:space:]]//g'
+    register: ipv6_address
+    become: true
+    become_user: root
+
+  - name: Compare the exposed IPv6 address with the container's address
+    debug:
+      msg: "Container address: {{ ipv6_address.stdout }}, Exposed address: {{ ansible_fqdn }}"

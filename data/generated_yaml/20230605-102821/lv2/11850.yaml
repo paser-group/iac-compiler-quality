@@ -1,0 +1,37 @@
+
+---
+- name: Shell module stress test
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: Execute command and capture error code
+      shell: |
+        {{ body | truncate(300, True, "...") }}
+      register: command_result
+      ignore_errors: True
+      changed_when: False
+    
+    - name: Display error code in debug output
+      debug:
+        msg: "{{ command_result.rc }}"
+      
+    - name: Execute multiple commands in parallel
+      async: 20
+      poll: 0
+      shell: |
+        sleep 1 && {{ body | truncate(100, True, "...") }} &
+      ignore_errors: True
+      changed_when: False
+      register: async_command
+      
+    - name: Wait for async commands to complete
+      async_status:
+        jid: "{{ item.ansible_job_id }}"
+      register: async_status_result
+      loop: "{{ async_command.results }}"
+
+    - name: Fail task if any async command failed
+      fail:
+        msg: "At least one async command failed."
+      when: "async_status_result.results | selectattr('finished', 'equalto', True) | selectattr('failed', 'equalto', True) | list | count > 0"

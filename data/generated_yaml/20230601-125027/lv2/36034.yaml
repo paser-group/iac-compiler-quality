@@ -1,0 +1,34 @@
+
+- name: Test Ansible compiler by missing inventory file
+  hosts: all
+  gather_facts: no
+  
+  tasks:
+    
+    - name: Create a temporary directory
+      tempfile:
+        state: directory
+      register: tmpdir
+      
+    - name: Rename inventory file to trigger an error
+      command: mv /etc/ansible/hosts /etc/ansible/hosts_backup
+      args:
+        warn: no
+      
+    - name: Execute Ansible playbook with missing inventory file
+      shell: |
+        ansible-playbook -i inventory playbook.yml --private-key /var/tmp/key_I.pem --become-password-file <path_to_password_file>
+      args:
+        executable: /bin/bash
+        warn: no
+      ignore_errors: yes
+      
+    - name: Restore the inventory file
+      command: mv /etc/ansible/hosts_backup /etc/ansible/hosts
+      args:
+        warn: no
+      
+    - name: Delete temporary directory
+      file:
+        state: absent
+        path: "{{ tmpdir.path }}"

@@ -1,0 +1,44 @@
+
+---
+- hosts: localhost
+  gather_facts: false
+  vars:
+    namespace: test
+    deployment: app1
+    image: nginx
+  tasks:
+  - name: include Kubernetes module
+    include_role:
+      name: kubernetes
+    vars:
+      kubeconfig: $HOME/.kube/config
+      api_version: v1
+      kind: Deployment
+      name: "{{deployment}}"
+      namespace: "{{namespace}}"
+      image: "{{image}}"
+      replicas: 1
+      update_strategy:
+        type: RollingUpdate
+        rolling_update:
+          max_surge: 25%
+          max_unavailable: 10%
+  - name: deliberately return a 422 response
+    shell: kubectl delete deployment {{deployment}} -n {{namespace}}; kubectl delete namespace {{namespace}} 2>&1 || true
+    ignore_errors: true
+  - name: rerun Kubernetes module to test idempotency
+    include_role:
+      name: kubernetes
+    vars:
+      kubeconfig: $HOME/.kube/config
+      api_version: v1
+      kind: Deployment
+      name: "{{deployment}}"
+      namespace: "{{namespace}}"
+      image: "{{image}}"
+      replicas: 1
+      update_strategy:
+        type: RollingUpdate
+        rolling_update:
+          max_surge: 25%
+          max_unavailable: 10%

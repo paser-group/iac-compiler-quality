@@ -1,0 +1,57 @@
+
+---
+- name: Test ansible vmware_guest without MAC address
+  hosts: localhost
+  gather_facts: no
+  vars:
+    vmware_guest_name: vm-test-01
+    vmware_guest_template: vmware_test_template
+    vmware_guest_folder: /ansible_test
+  tasks:
+  - name: create vmware guest without mac address
+    vmware_guest:
+      hostname: "{{ vcenter_hostname }}"
+      username: "{{ vcenter_username }}"
+      password: "{{ vcenter_password }}"
+      validate_certs: False
+      datacenter: "{{ datacenter_name }}"
+      folder: "{{ vmware_guest_folder }}"
+      name: "{{ vmware_guest_name }}"
+      template: "{{ vmware_guest_template }}"
+      disk:
+        - size_gb: 20
+          type: ide
+          datastore: datastore1
+      networks:
+        - name: network-1
+          state: absent
+      customization:
+        hostname: "{{ vmware_guest_name }}"
+        dns_servers: []
+        dns_suffixes: []
+        domain: ""
+        timezone: Europe/London
+        password: "{{ vmware_guest_password }}"
+        username: "{{ vmware_guest_username }}"
+        type: linux
+        wait_for_customization: True
+        hardware:
+           memory_mb: 512
+           num_cpus: 1
+           scsi: paravirtual
+           device_change:
+           - device:
+              key: 4000
+              managed_object_type: VirtualE1000
+              unit_number: 7
+            operation: add
+      delegate_to: 127.0.0.1
+      register: vmware_vm_creation_result
+      ignore_errors: True
+      vars:
+        esxi_hostname: "{{ vcenter_hostname }}"
+        esxi_username: "{{ vcenter_username }}"
+        esxi_password: "{{ vcenter_password }}"
+  - fail:
+      msg: "Gather Facts Failed without MAC address"
+    when: "'vmware_guest_nic_facts' not in vmware_vm_creation_result.failed_task_result"

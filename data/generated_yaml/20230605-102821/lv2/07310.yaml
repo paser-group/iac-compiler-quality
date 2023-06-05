@@ -1,0 +1,37 @@
+
+---
+- name: "Test Ansible Compiler for respecting Default Configuration"
+  hosts: all
+  remote_user: root
+
+  vars:
+     httpd_running_user: "apache"
+
+  tasks:
+    - name: "Ensure Apache is Installed and Enabled"
+      yum:
+        name: "httpd"
+        state: present
+      notify: start httpd
+
+    - name: "Ensure Apache Configuration is Set"
+      copy:
+        src: "{{ item }}"
+        dest: "/etc/httpd/conf.d/"
+      with_items:
+        - "security.conf"
+        - "performance.conf"
+      notify: restart httpd
+
+  handlers:
+    - name: "start httpd"
+      service:
+        name: "httpd"
+        state: started
+        reloaded: true
+
+    - name: "restart httpd"
+      service:
+        name: "httpd"
+        state: restarted
+      listen: restart httpd

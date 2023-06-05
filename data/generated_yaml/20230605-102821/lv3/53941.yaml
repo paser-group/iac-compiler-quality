@@ -1,0 +1,32 @@
+
+- name: Deploy a Docker Swarm Service
+  hosts: ubuntu1
+  gather_facts: false
+  vars:
+    service_name: "web"
+    image_name: "my-private-registry-image:latest" 
+    registry_url: "my.registry.com"
+    registry_username: "my_username"
+    registry_password: "my_password"
+  tasks:
+    - name: Login to Registry
+      docker_login:
+        registry_url: "{{ registry_url }}"
+        username: "{{ registry_username }}"
+        password: "{{ registry_password }}"
+        timeout: "300"
+        
+    - name: Pull Docker Image
+      docker_image:
+        name: "{{ image_name }}"
+        source: pull
+        timeout: "300"
+        
+    - name: Deploy Swarm Service
+      docker_swarm_service:
+        service_name: "{{ service_name }}"
+        state: present
+        image: "{{ image_name }}"
+        registry: "{{ registry_url }}"
+        username: "{{ registry_username }}"
+        password: "{{ registry_password }}"

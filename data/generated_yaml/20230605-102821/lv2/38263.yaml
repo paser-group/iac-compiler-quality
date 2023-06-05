@@ -1,0 +1,84 @@
+
+- name: Ansible Compiler Stress Test
+  hosts: all
+  gather_facts: no
+  
+  tasks:
+  - name: Check if SSH is available on the nodes
+    wait_for:
+      port: 22
+      timeout: 5
+
+  - name: Ensure python is installed on the nodes
+    raw: test -e /usr/bin/python || (apt -y update && apt install -y python-minimal)
+
+  - name: Install the necessary dependencies
+    apt: 
+      name: 
+        - gcc
+        - make
+        - vim
+      state: present
+
+  - name: Install the pyvmomi library
+    pip:
+      name: pyvmomi
+      state: present
+
+  - name: Take a snapshot of the VMs
+    vmware_guest_snapshot:
+      hostname: "{{ ansible_host }}"
+      username: "{{ ansible_user }}"
+      password: "{{ ansible_password }}"
+      validate_certs: False
+      folder: "/"
+      name: "{{ inventory_hostname }} snapshot"
+      state: present
+    delegate_to: localhost
+
+  - name: Remove the snapshot of the VMs
+    vmware_guest_snapshot:
+      hostname: "{{ ansible_host }}"
+      username: "{{ ansible_user }}"
+      password: "{{ ansible_password }}"
+      validate_certs: False
+      folder: "/"
+      name: "{{ inventory_hostname }} snapshot"
+      state: absent
+    delegate_to: localhost
+
+  - name: Verify VMWare Guest
+    vmware_guest:
+        hostname: "{{ ansible_host }}"
+        username: "{{ ansible_user }}"
+        password: "{{ ansible_password }}"
+        validate_certs: false
+        name: "{{ inventory_hostname }}"
+        datacenter_name: "{{ ansible_hostname }}"
+        folder: "/"
+        network_label: node-net
+        template: ubuntu
+        disk:
+        - size_gb: 8
+          type: thin
+          datastore: datastore1
+        hardware:
+          num_cpus: 1
+          memory_mb: 2048
+        cdrom:
+          type: iso
+          iso_path: /opt/vmware/iso/ubuntu-16.04.7-server-amd64.iso
+        state: poweredon
+    delegate_to: localhost
+
+  - name: Delete the VMs
+    vmware_guest:
+      hostname: "{{ ansible_host }}"
+      username: "{{ ansible_user }}"
+      password: "{{ ansible_password }}"
+      validate_certs: false
+      name: "{{ inventory_hostname }}"
+      datacenter_name: "{{ ansible_hostname }}"
+      folder: "/"
+      state: absent
+    delegate_to: localhost

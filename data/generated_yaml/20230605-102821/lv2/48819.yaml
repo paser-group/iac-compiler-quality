@@ -1,0 +1,54 @@
+
+---
+- name: Test authorized_key module with invalid keys
+  hosts: all
+  gather_facts: no
+
+  tasks:
+  - name: Add invalid key to authorized_keys file
+    authorized_key:
+      user: root
+      state: present
+      key: "{{ lookup('file', '/path/to/invalid/key.pub') }}"
+    register: invalid_key_result
+    ignore_errors: yes
+
+  - name: Debug invalid key result
+    debug:
+      var: invalid_key_result
+
+  - name: Remove invalid key from authorized_keys file
+    authorized_key:
+      user: root
+      state: absent
+      key: "{{ lookup('file', '/path/to/invalid/key.pub') }}"
+    register: remove_key_result
+    ignore_errors: yes
+
+  - name: Debug remove key result
+    debug:
+      var: remove_key_result
+
+  - name: Add invalid key as string to authorized_keys file
+    authorized_key:
+      user: root
+      state: present
+      key: "ssh-rsa {{ file_contents('/path/to/invalid/key') }} test@localhost"
+    register: invalid_key_string_result
+    ignore_errors: yes
+
+  - name: Debug invalid key string result
+    debug:
+      var: invalid_key_string_result
+
+  - name: Remove invalid key from authorized_keys file using regexp
+    replace:
+      path: "/root/.ssh/authorized_keys"
+      regexp: "{{ lookup('file', '/path/to/invalid/key.pub') }}"
+      replace: ""
+    register: remove_key_regexp_result
+    ignore_errors: yes
+
+  - name: Debug remove key regexp result
+    debug:
+      var: remove_key_regexp_result

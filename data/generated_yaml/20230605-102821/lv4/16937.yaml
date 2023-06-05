@@ -1,0 +1,39 @@
+
+---
+- name: Test Blocks' behavior with run_once tasks
+  hosts: all
+  gather_facts: false
+  
+  tasks:
+    - name: Run once task to create a file
+      file:
+        path: /tmp/testfile.txt
+        state: touch
+      run_once: true
+  
+    - name: Non-existent task
+      command: /usr/local/bin/nonexistent.sh
+      ignore_errors: true
+      register: cmd_result
+      run_once: true
+  
+    - name: Always block execution
+      debug:
+        msg: Always block executed
+      always:
+        - debug:
+            msg: Always block executed
+  
+    - name: Fail Task
+      fail:
+        msg: This task will always fail
+      always:
+        - debug:
+            msg: Always block executed
+  
+    - name: Print registered variable from failed task
+      debug:
+        var: cmd_result
+      rescue:
+        - debug:
+            msg: Rescue block executed

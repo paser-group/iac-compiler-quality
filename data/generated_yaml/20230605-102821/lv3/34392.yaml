@@ -1,0 +1,29 @@
+
+- name: Create Windows Firewall Rule
+  hosts: windows
+  gather_facts: false
+  become: true
+  vars:
+    rule_name: "Test Firewall Rule"
+    rule_port: "3389"
+    rule_protocol: "tcp"
+  tasks:
+    - name: Include current firewall rules
+      win_command: netsh advfirewall firewall show rule name=all
+      register: rule_state
+      changed_when: false
+    - name: Allow TCP traffic to port 3389
+      win_firewall_rule:
+        state: enabled
+        name: "{{ rule_name }}"
+        direction: in
+        protocol: "{{ rule_protocol }}"
+        localport: "{{ rule_port }}"
+    - name: Ensure no firewall rules were removed
+      win_command: netsh advfirewall firewall show rule name=all
+      register: new_rule_state
+      changed_when: false
+    - debug:
+        msg: "{{ new_rule_state.stdout_lines|join('\n') }}"
+      when:
+        - new_rule_state.stdout_lines != rule_state.stdout_lines

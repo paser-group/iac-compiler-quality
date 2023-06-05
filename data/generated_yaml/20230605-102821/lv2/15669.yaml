@@ -1,0 +1,33 @@
+
+- name: Stress Test to Uncover Ansible Compiler Bugs
+  hosts: all
+  gather_facts: true
+  
+  tasks:
+    - name: Install kerberos package
+      apt:
+        name: krb5-user
+        state: present
+      when: "'ubuntu' in inventory_hostname"
+
+    - name: Configure Kerberos Authentication
+      krb5:
+        realm: EXAMPLE.COM
+        kdc: kdc.example.com
+        admin_server: admin.example.com
+        default_tgs_enctypes: aes128-cts-hmac-sha1-96 aes256-cts-hmac-sha1-96
+        default_tkt_enctypes: aes128-cts-hmac-sha1-96 aes256-cts-hmac-sha1-96
+        dns_lookup_kdc: true
+        dns_lookup_realm: true
+      when: "'ubuntu' in inventory_hostname"
+
+    - name: Test Kerberos Authentication
+      win_ping:
+      become: true
+      become_user: Administrator
+      transport: kerberos
+      shell_type: cmd
+      ansible_winrm_server_cert_validation: ignore
+      ansible_user: ansible@EXAMPLE.COM
+      ansible_password: "{{lookup('file', '/etc/krb5.conf')}}"
+      when: inventory_hostname == 'redhat1'

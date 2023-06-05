@@ -1,0 +1,28 @@
+
+- name: stress test rabbitmq_user update_password function
+  hosts: all
+  become: true
+  vars:
+    rabbitmq_user: "testuser"
+    new_password: "abc123!"
+  tasks:
+    - name: attempt to change password for testuser
+      rabbitmq_user:
+        user: "{{ rabbitmq_user }}"
+        password: "{{ new_password }}"
+        update_password: true
+      ignore_errors: true
+    - name: change password for testuser to the same password
+      rabbitmq_user:
+        user: "{{ rabbitmq_user }}"
+        password: "{{ new_password }}"
+        update_password: true
+      ignore_errors: true
+    - name: check if the password has been updated
+      command: "echo '{{ new_password }}' | rabbitmqctl authenticate_user {{ rabbitmq_user }}"
+      register: output
+      ignore_errors: true
+    - name: report if the password was updated
+      debug:
+        msg: "The password for {{ rabbitmq_user }} was updated to {{ new_password }}."
+      when: output.stdout == "true"

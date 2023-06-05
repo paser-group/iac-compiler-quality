@@ -1,0 +1,25 @@
+
+---
+- name: Performance Stress Test
+  hosts: all
+  gather_facts: no
+
+  tasks:
+  - name: Generate random payload
+    shell: head -c 100000000 /dev/urandom > /tmp/payload.txt
+    register: payload
+
+  - name: Copy payload to nodes
+    copy:
+      src: /tmp/payload.txt
+      dest: /tmp/payload.txt
+
+  - name: Execute expensive command on nodes
+    shell: cat /tmp/payload.txt | strings > /dev/null
+    async: 1000
+    poll: 10
+
+  - name: Delete payload
+    file:
+      path: /tmp/payload.txt
+      state: absent

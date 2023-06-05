@@ -1,0 +1,52 @@
+
+- name: Stress Test Playbook
+  hosts: all
+  become: yes
+  gather_facts: no
+
+  tasks:
+
+  - name: Check if win_service is running
+    win_service:
+      name: Some_Service
+      state: started
+    register: svc_out
+
+  - name: Stop the improperly formatted service
+    win_service:
+      name: "Improp€r#y_F¤rm@tt€d_§erv1ce_Nam€"
+      state: stopped
+
+  - name: Attempt to start the service with invalid parameters
+    win_service:
+      name: Some_Service
+      state: not_a_valid_state
+    register: invalid_param_out
+
+  - name: Attempt to start a service with an empty name
+    win_service:
+      name: ""
+      state: started
+    register: empty_name_out
+
+  - name: Attempt to start the service with an excessively long name
+    win_service:
+      name: "{{ 'A'*100000 }}"
+      state: started
+    register: long_name_out
+
+  - name: Attempt to start unauthorized service
+    win_service:
+      name: Some_Unauthorized_Service
+      state: started
+    become_user: some_other_user
+
+  - name: Stop the service without proper authentication
+    win_service:
+      name: Some_Service
+      state: stopped
+    become_user: some_other_user
+
+  - name: Reboot the machine without warning
+    win_reboot:
+      force_reboot: yes

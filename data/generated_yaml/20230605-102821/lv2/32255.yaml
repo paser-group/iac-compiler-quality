@@ -1,0 +1,19 @@
+yaml
+- name: Stress test max_fail_percentage argument
+  hosts: all
+  gather_facts: no
+  vars:
+    exit_codes:
+      - 0
+      - 1
+      - 2
+  tasks:
+    - name: Execute command with exit code
+      shell: "echo 'Command with exit code {{ item }}'; exit {{ item }};"
+      with_items: "{{ exit_codes }}"
+      register: result
+    - name: Fail the playbook if more than 20% of the commands failed
+      fail:
+        msg: "At least 20% of the commands have failed"
+      when: result.failed | length > (exit_codes | length) * 0.2
+  max_fail_percentage: 20

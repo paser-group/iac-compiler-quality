@@ -1,0 +1,71 @@
+
+- name: Dynamic Inventory Stress Test
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+    - name: Check dynamic inventory
+      debug:
+        msg: "{{ item }}"
+      with_inventory_hostnames:
+        - ubuntu1
+        - alpine1
+        - centos1
+        - redhat1
+
+    - name: Add dynamically-hosted nodes
+      add_host:
+        name: "newnode{{ item }}"
+        ansible_host: "10.1.2.{{ item + 10 }}"
+      with_sequence: start=1 end=10
+
+    - name: Check added nodes
+      debug:
+        msg: "{{ item }}"
+      with_inventory_hostnames:
+        - newnode1
+        - newnode2
+        - newnode3
+        - newnode4
+
+    - name: Access nodes outside subnet
+      delegate_to: "{{ item }}"
+      ping:
+      with_inventory_hostnames:
+        - ubuntu1
+        - alpine1
+        - centos1
+        - redhat1
+        - newnode1
+        - newnode2
+        - newnode3
+        - newnode4
+        - 192.168.1.1
+
+    - name: Access denied host
+      delegate_to: "{{ item }}"
+      ping:
+      with_inventory_hostnames:
+        - ubuntu1
+        - alpine1
+        - centos1
+        - redhat1
+        - newnode1
+        - newnode2
+        - newnode3
+        - newnode4
+        - 10.1.1.254
+
+    - name: Access host outside inventory
+      delegate_to: "{{ item }}"
+      ping:
+      with_inventory_hostnames:
+        - ubuntu1
+        - alpine1
+        - centos1
+        - redhat1
+        - newnode1
+        - newnode2
+        - newnode3
+        - newnode4
+        - external-host.example.com

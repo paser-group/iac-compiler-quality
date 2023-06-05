@@ -1,0 +1,21 @@
+
+- name: SCP stress test playbook
+  hosts: all
+  gather_facts: no
+  become: yes
+
+  tasks:
+    - name: Create temp file
+      tempfile:
+        state: file
+        suffix: '.txt'
+      register: temp_file
+    - name: Run SCP command with malformed files
+      shell: 'scp "{{ temp_file.path }}" root@10.1.1.1:/tmp/{{ item }}'
+      loop:
+        - '...//file'
+        - '/tmp/../file'
+        - '/dev/null;sleep 9999 | tar cfh /tmp/fake.tar -'
+      register: output
+    - debug:
+        var: output.stderr_lines

@@ -1,0 +1,45 @@
+
+- name: Install Ansible on Ubuntu, Alpine, CentOS and Redhat
+  hosts: all
+  gather_facts: no
+  become: yes
+
+  tasks:
+  - name: Install Ansible
+    block:
+    - name: Install dependencies
+      apt:
+        update_cache: yes
+        name: python3-pip
+      when: ansible_distribution == 'Ubuntu'
+      register: apt_output
+
+    - name: Install Ansible
+      pip:
+        name: ansible
+        executable: pip3
+      when: ansible_distribution == 'Ubuntu' or ansible_distribution == 'Alpine'
+      register: pip_output
+
+    - name: Install EPEL repository
+      yum:
+        name: epel-release
+        state: present
+      when: ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
+      register: epel_output
+
+    - name: Install Ansible
+      yum:
+        name: ansible
+        state: present
+      when: ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
+      register: yum_output
+
+    - name: Verify installation
+      shell: ansible --version
+      register: output
+
+    always:
+    - name: Log output
+      debug:
+        var: output.stdout_lines

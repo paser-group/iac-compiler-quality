@@ -1,0 +1,67 @@
+
+- name: Stress test playbook
+  hosts: all
+  remote_user: administrator
+  become: true
+  
+  tasks:
+    - name: Execute ping command
+      command: ping -c 5 google.com
+      
+    - name: Update apt cache
+      become: yes
+      apt:
+        update_cache: yes
+        
+    - name: Install dependencies
+      package:
+        name: ['{{ item }}', 'libcurl4-openssl-dev']
+        state: present
+      loop:
+        - python-dev
+        - libffi-dev
+        - libssl-dev
+        
+    - name: Copy SSH keys
+      copy:
+        src: "/home/username/.ssh/id_rsa"
+        dest: "/root/.ssh/id_rsa"
+        mode: 0600
+        
+    - name: Disable root login
+      lineinfile:
+        dest: /etc/ssh/sshd_config
+        regexp: '#PermitRootLogin yes'
+        line: PermitRootLogin no
+        state: present
+        backup: yes
+        
+    - name: Create new user
+      user:
+        name: testuser
+        shell: /bin/bash
+        group: sudo
+      
+    - name: Disable SELinux
+      command: setenforce 0
+      
+    - name: Install package from PPA repository
+      apt_repository:
+        repo: ppa:certbot/certbot
+        
+    - name: Enable SSL on Apache
+      apache2_module:
+        name: ssl
+        state: present
+      
+    - name: Set up firewall
+      ufw:
+        rule: allow
+        port: 80/tcp
+      
+    - name: Modify crontab
+      cron:
+        name: Snapshot
+        minute: "{{ range(0, 60, 5) | random }}"
+        job: "/bin/echo 'Creating snapshot!'"
+        state: present

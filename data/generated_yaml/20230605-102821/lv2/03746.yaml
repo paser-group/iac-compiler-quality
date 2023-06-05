@@ -1,0 +1,56 @@
+
+- name: Test ec2 module
+  hosts: all
+  become: true
+  gather_facts: false
+
+  vars:
+    aws_region: "{{ var_region | default('us-east-1') }}"
+    instance_type: "{{ var_instance_type | default('t2.micro') }}"
+    image_id: "{{ var_image_id | default('ami-0c94855ba95c71c99') }}"
+    key_name: "{{ var_key_name | default('mykey') }}"
+
+  tasks:
+    - name: Launch new EC2 instance
+      ec2:
+        instance_type: "{{ instance_type }}"
+        image_id: "{{ image_id }}"
+        key_name: "{{ key_name }}"
+        region: "{{ aws_region }}"
+        wait: yes
+        # utilizing ``exact_count=1`` to force an idempotency failure
+        exact_count: 1
+      register: ec2_launch_result
+
+    - name: Check if instance is running
+      wait_for:
+        host: "{{ ec2_launch_result.instances[0].public_ip }}"
+        port: 22
+        delay: 5
+        timeout: 120
+        state: started
+
+    - name: Terminate new EC2 instance
+      ec2:
+        instance_ids: "{{ ec2_launch_result.instance_ids }}"
+        region: "{{ aws_region }}"
+        terminate_instances: true
+        # utilizing ``force_terminate=True`` (which is not a valid parameter) to test fail_msg
+        force_terminate: true
+      register: ec2_terminate_result
+
+    - name: Check if instance is terminated
+      wait_for:
+        timeout: 60
+        sleep: 5
+        host: "{{ ec2_launch_result.instances[0].public_ip }}"
+        port: 22
+        state: stopped
+
+    - name: Verify ec2 module
+      assert:
+        that:
+          - "'changed=True' in ec2_launch_result.stdout"
+          - "'failed' in ec2_terminate_result.msg"
+        fail_msg: "EC2 module failed to return 'changed=True' when there was no change in the instance launch"
+      register: result

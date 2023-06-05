@@ -1,0 +1,32 @@
+yaml
+---
+- name: Verify correct error is displayed when destination path does not exist
+  hosts: localhost
+  become: true
+  vars:
+    s3_bucket_name: "my-bucket"
+    s3_object_name: "non-existing-file"
+    s3_dest_path: "/non-existent-dir"
+  tasks:
+    - name: Download non-existing S3 object to non-existent directory
+      amazon.aws.aws_s3:
+        bucket: "{{ s3_bucket_name }}"
+        object: "{{ s3_object_name }}"
+        dest: "{{ s3_dest_path }}"
+        mode: get
+      register: s3_download_result
+      ignore_errors: yes
+
+    - name: Fail if the file is not found in the S3 bucket
+      fail:
+        msg: "File {{s3_object_name}} was not found in S3 bucket {{s3_bucket_name}}"
+      when: s3_download_result.rc == 2 and "'404'" in s3_download_result.msg
+
+    - name: Fail if the destination folder does not exist
+      fail:
+        msg: "The destination folder {{s3_dest_path}} does not exist"
+      when: s3_download_result.rc == 2 and re.search("No such file or directory.*{{s3_dest_path}}", s3_download_result.msg)
+
+    - name: Debug the s3 download result
+      debug:
+        var: s3_download_result

@@ -1,0 +1,35 @@
+yaml
+- hosts: all
+  gather_facts: false
+  tasks:
+    - name: Send HTTP requests with 304 status
+      uri:
+        url: "http://{{ inventory_hostname }}"
+        method: "GET"
+        status_code: "304"
+        headers:
+          If-None-Match: "{{ lookup('env', 'ETAG') }}"
+      register: response
+    
+    - name: Debug response status
+      debug:
+        var: response.status
+        
+    - name: Send HTTP requests with invalid status code
+      uri:
+        url: "http://{{ inventory_hostname }}"
+        method: "GET"
+        status_code: "xyz"
+      register: invalid_status
+    
+    - name: Debug invalid status code response
+      debug:
+        var: invalid_status.status
+        
+    - name: Send HTTP requests with invalid URL
+      uri:
+        url: "http://{{ inventory_hostname }}/{{ lookup('password', '/path/to/file')}}"
+
+    - name: Send HTTP requests with special characters in URL
+      uri:
+        url: "http://{{ inventory_hostname }}/special/#!characters/'?param={{ lookup('password', '/path/to/file')}}"

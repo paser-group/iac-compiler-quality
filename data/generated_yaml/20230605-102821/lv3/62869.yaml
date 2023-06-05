@@ -1,0 +1,28 @@
+
+- name: Install default collection
+  hosts: all
+  gather_facts: false
+  become: true
+
+  tasks:
+  - name: Copy collections directory to remote hosts
+    copy:
+      src: /path/to/collections
+      dest: /etc/ansible/collections/
+    register: copy_collections
+
+  - name: Install default collection
+    ansible.builtin.command: ansible-galaxy collection install my_namespace.my_collection
+    ignore_errors: true
+    register: install_collection
+
+  - name: Check install path
+    ansible.builtin.command: |-
+      find / -name my_namespace.my_collection \
+      | grep /etc/ansible/collections \
+      | grep -v '/..*/'
+    register: check_install_path
+
+  - name: Print install path
+    debug:
+      msg: "{{ check_install_path.stdout }}"

@@ -1,0 +1,39 @@
+
+- name: AWS S3 Stress Test
+  hosts: all
+  gather_facts: false
+
+  tasks:
+  - name: Create AWS profile with invalid creds
+    shell: aws configure set aws_secret_access_key invalid --profile test-profile
+
+  - name: Test AWS S3 access with invalid profile
+    amazon.aws.aws_s3:
+      profile: test-profile
+      bucket: test-bucket
+      object: test-object
+    ignore_errors: yes
+
+  - name: Create AWS profile with valid creds
+    shell: aws configure set aws_access_key_id valid_key --profile test-profile
+    become: yes
+    become_user: root
+
+  - name: Test AWS S3 access with valid profile
+    amazon.aws.aws_s3:
+      profile: test-profile
+      bucket: test-bucket
+      object: test-object
+    ignore_errors: yes
+
+  - name: Create AWS profile with invalid region
+    shell: aws configure set region invalid_region --profile test-profile
+    environment:
+      AWS_CONFIG_FILE: /dev/null
+
+  - name: Test AWS S3 access with invalid region
+    amazon.aws.aws_s3:
+      profile: test-profile
+      bucket: test-bucket
+      object: test-object
+    ignore_errors: yes

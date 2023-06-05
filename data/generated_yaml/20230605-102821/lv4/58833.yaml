@@ -1,0 +1,50 @@
+yaml
+---
+- name: Test Ansible Playbook for s3_lifecycle deleting the prefix
+  hosts: all
+  vars:
+    lifecycle:
+      status: enabled
+      id: r1
+  tasks:
+    - name: Create S3 bucket and upload file
+      s3_bucket:
+        name: my-test-bucket
+        state: present
+      register: s3_bucket_create_result
+
+    - name: Configure S3 Lifecycle Rule
+      s3_bucket_lifecycle:
+        bucket: my-test-bucket
+        rules:
+          - id: "{{ lifecycle.id }}"
+            prefix: prefixdata
+            expiration:
+              date: "2022-12-31T00:00:00Z"
+            status: "{{ lifecycle.status }}"
+      register: s3_lifecycle_result
+
+    - name: Debugging information about S3 Lifecycle Rule
+      debug:
+        var: s3_lifecycle_result
+
+    - name: Add a file using s3 module to bucket
+      s3:
+        bucket: my-test-bucket
+        src: "{{ playbook_dir }}/my-test-file"
+        key: prefixdata/testobj1
+        mode: put
+        permission: public-read-write
+      register: s3_file_upload_result
+
+    - name: Remove the prefix in the bucket
+      s3:
+        bucket: my-test-bucket
+        object: prefixdata/
+        mode: delete
+      when: s3_lifecycle_result.s3_lifecycle_rules[0].status == "enabled" and s3_lifecycle_result.s3_lifecycle_rules[0].id == lifecycle.id
+      
+    - name: Debugging information about S3 prefix removal
+      debug:
+        var: s3_file_upload_result
+      when: s3_lifecycle_result.s3_lifecycle_rules[0].status == "enabled" and s3_lifecycle_result.s3_lifecycle_rules[0].id == lifecycle.id

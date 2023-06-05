@@ -1,0 +1,51 @@
+
+- name: Stress test playbook
+  hosts: all
+  tasks:
+    - name: Print debug message
+      debug:
+        msg: "This is a debug message."
+
+    - name: Run command with dynamic inventory
+      command: "{{item}} ping"
+      register: output
+      with_items: "{{ groups['all'] }}"
+      ignore_errors: yes
+
+    - name: Check for errors in output
+      command: "echo {{output.stdout}} | grep 'ERROR'"
+      register: output_check
+      ignore_errors: yes
+      failed_when: false
+
+    - name: Install tree package
+      apt:
+        name: tree
+        state: present
+
+    - name: Copy files to nodes
+      copy:
+        src: "{{ item }}"
+        dest: "/tmp/"
+      with_fileglob:
+        - "/path/to/files/file1"
+        - "/path/to/files/file2"
+
+    - name: Install nginx on nodes
+      apt:
+        name: nginx
+        state: present
+
+    - name: Start nginx service
+      service:
+        name: nginx
+        state: started
+
+    - name: Check if nginx is running
+      shell: "ps aux | grep nginx | grep -v grep | wc -l"
+      register: nginx_count
+
+    - name: Notify if nginx not running
+      debug:
+        msg: "nginx not running on {{ inventory_hostname }}"
+      when: nginx_count.stdout_lines[0] == "0"

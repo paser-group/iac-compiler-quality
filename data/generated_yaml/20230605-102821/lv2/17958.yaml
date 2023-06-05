@@ -1,0 +1,21 @@
+yaml
+- name: Test Ansible compiler for Fatal Error Handling Issue
+  hosts: all
+  become: true
+
+  tasks:
+  - name: Execute a command that generates fatal errors
+    shell: "echo 'This is a fatal error' 1>&2"
+    ignore_errors: true
+
+  # intentionally use command rather than shell
+  - name: Execute a command with wrong syntax to stdout
+    command: "ech This message should go to standard output"
+    register: command_output
+    ignore_errors: true
+
+  - name: Check the output for fatal errors
+    fail:
+      msg: "{{ item }}"
+    with_items: "{{ command_output.stderr_lines | list }}"
+    when: "'syntax error' in item"

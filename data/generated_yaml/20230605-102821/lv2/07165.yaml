@@ -1,0 +1,17 @@
+
+- name: Test sudo prompt on CentOS
+  hosts: centos1
+  become: true
+  vars:
+    ansible_become_pass: "{{ ansible_user_password }}"
+  tasks:
+    - name: Verify if password is asked for sudo command with no password provided
+      expect:
+        command: "sudo ls"
+        responses:
+          '(?i)password': "password"
+      register: sudo_output
+    - name: Fail if password prompt not found
+      fail:
+        msg: "Password prompt not found"
+      when: sudo_output.stdout.find('password') == -1

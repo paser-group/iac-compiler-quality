@@ -1,0 +1,20 @@
+
+---
+- name: Configure interface on a network device
+  hosts: network_device
+  gather_facts: no
+  tasks:
+    - name: Configure conflicting interface
+      nxos_config:
+        lines: interface Ethernet1/1
+               ip address 192.168.1.1/24
+      register: previous_configuration
+    
+    - name: Ensure intended configuration is applied
+      nxos_config:
+        lines: interface Ethernet1/1
+               description "Ansible Automation"
+               ip address 192.168.1.2/24
+        parents: interface Ethernet1/1
+        diff_match: all
+      when: previous_configuration.changed == True

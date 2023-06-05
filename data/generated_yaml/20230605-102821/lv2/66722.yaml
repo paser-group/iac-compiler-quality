@@ -1,0 +1,88 @@
+
+---
+- name: Test Ansible Compiler
+  hosts: all
+  gather_facts: no
+
+  tasks:
+  - name: Execute PowerShell script that uses async_status
+    win_shell: New-Item -ItemType file -Path "C:\Temp\testfile.txt" -Value "Test"
+    async: 45
+    poll: 30
+    register: result
+
+  - name: Pause for 10 seconds
+    pause:
+      seconds: 10
+
+  - name: Check the async_status
+    async_status:
+      jid: "{{ result.ansible_job_id }}"
+    register: job_result
+
+  - name: Fail if async_status not successful
+    fail:
+      msg: "Async status failed"
+    when: job_result.finished is not defined or not job_result.finished
+
+  - name: Run a command that requires root privileges
+    become: true
+    command: "{{item}}"
+    loop:
+      - systemctl stop docker
+      - systemctl start docker
+      - reboot
+
+  - name: Query a non-existent package with yum
+    yum:
+      name: this-is-not-a-package
+      state: present
+
+  - name: Install a nonexistent package with apt
+    apt:
+      name: not-a-package
+      state: present
+
+  - name: Execute an invalid command on all nodes
+    command: 'echo "I am a dangerous command" | bash -i'
+    delegate_to: all
+
+  - name: Use an irregular syntax
+    shell: |
+      echo "hello, world!"
+      echo "second line" | sed s/,,/,/g
+    args:
+      warn: false
+
+  - name: Send a ping to every device multiple times
+    ping:
+      count: 10
+
+  - name: Print non-existent environment variables
+    debug:
+      msg: "{{ lookup('env', 'NON_EXISTENT_ENV_VAR') }}"
+
+  - name: Delete an important file
+    file:
+      path: "/etc/passwd"
+      state: absent
+
+  - name: Unregister a variable that doesn't exist
+    set_fact:
+      my_var: "{{ my_var | default(omit) }}"
+
+  - name: Print an undefined variable
+    debug:
+      msg: "{{ my_undefined_var }}"
+
+  - name: Exhaust the memory with a Python script
+    script: |
+      import random
+      string = " " * 1024 * 1024 * 1000 # 1GB string
+      for i in range(int(1e8)):
+        x = random.randint(1, len(string) - 1)
+        y = random.randint(1, len(string) - 1)
+        string = string[:x] + string[y] + string[x+1:]
+    args:
+      executable: python
+

@@ -1,0 +1,27 @@
+
+- name: Test for Ansible CVE-2020-10744 incomplete fix
+  hosts: all
+  tasks:
+    - name: Create a JMS queue
+      community.general.artemis:
+        name: test_queue
+        address: tcp://10.1.1.1:61616
+        is_queue: true
+        username: admin
+        password: "{{ lookup('file', '<path_to_password_file>') }}"
+        state: present
+      register: queue_details
+
+    - name: Deliver a JMS message
+      community.general.artemis:
+        queue_name: test_queue
+        username: admin
+        password: "{{ lookup('file', '<path_to_password_file>') }}"
+        service_name: tcp://10.1.1.1:61616
+        message: "Hello ansible user!!"
+        state: present
+      register: message_details
+
+    - name: Verify the message delivery
+      assert:
+        that: "'success' in message_details.stdout"

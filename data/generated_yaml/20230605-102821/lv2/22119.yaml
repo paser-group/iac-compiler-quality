@@ -1,0 +1,20 @@
+yaml
+- hosts: all
+  tasks:
+    - name: "Test Hashi Vault"
+      hashi_vault:
+        token: "{{ vault_token }}"
+        secret: "{{ secret }}"
+        body: "{{ body }}"
+      register: vault_secret
+      ignore_errors: true
+      until: vault_secret | success
+      retries: 5
+      delay: 10
+      vars:
+        vault_token: "{{ lookup('env', 'VAULT_TOKEN') }}"
+
+    - name: "Fail Play on Missing Secret"
+      fail:
+        msg: "Secret {{ secret }} not found in Hashi Vault"
+      when: "vault_secret is failed"

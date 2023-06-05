@@ -1,0 +1,46 @@
+
+- hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create VPC
+      ec2_vpc:
+        state: present
+        cidr_block: 10.0.0.0/16
+        resource_tags:
+          Name: my-vpc
+      register: vpc
+
+    - name: Create subnet 1
+      ec2_vpc_subnet:
+        state: present
+        cidr: 10.0.1.0/24
+        vpc_id: "{{ vpc.vpc.id }}"
+        resource_tags:
+          Name: my-subnet-1
+
+    - name: Wait for subnet creation before proceeding
+      wait_for:
+        host: "{{ ec2_metadata.private_ipv4 }}"
+        port: 443
+        state: started
+        delay: 10
+        timeout: 60
+      when: "'subnet_1' in ec2_vpc_subnet.changed"
+
+    - name: Create subnet 2
+      ec2_vpc_subnet:
+        state: present
+        cidr: 10.0.2.0/24
+        vpc_id: "{{ vpc.vpc.id }}"
+        resource_tags:
+          Name: my-subnet-2
+
+    - name: Wait for subnet creation before proceeding
+      wait_for:
+        host: "{{ ec2_metadata.private_ipv4 }}"
+        port: 443
+        state: started
+        delay: 10
+        timeout: 60
+      when: "'subnet_2' in ec2_vpc_subnet.changed"

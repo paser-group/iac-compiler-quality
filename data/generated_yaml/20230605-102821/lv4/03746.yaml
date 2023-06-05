@@ -1,0 +1,39 @@
+yaml
+- hosts: localhost
+  connection: local
+  gather_facts: no
+
+  tasks:
+  - name: create ec2 instance
+    ec2:
+      instance_type: t2.micro
+      image: ami-0c94855ba95c71c99
+      region: us-west-1
+      count: 1
+      key_name: mykey
+      group: webserver
+      instance_tags:
+        Name: test-instance
+        Project: test-project
+    register: ec2_instance
+
+  - name: check for change
+    shell: echo "{{ ec2_instance.changed }}"
+    register: check
+
+  - name: report change value
+    debug:
+      var: check.stdout
+
+  - name: cleanup - terminate instance
+    ec2:
+      instance_ids: "{{ ec2_instance.instance_ids }}"
+      state: absent
+
+  - name: check for change after cleanup
+    shell: echo "{{ ec2_instance.changed }}"
+    register: check_after_cleanup
+
+  - name: report cleanup change
+    debug:
+      var: check_after_cleanup.stdout

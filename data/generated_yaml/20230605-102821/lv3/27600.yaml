@@ -1,0 +1,26 @@
+
+- name: Remove the vrf interface
+  hosts: nxos-switch
+  
+  gather_facts: no
+  vars:
+    vrf_interface_name: test_interface
+
+  tasks:
+    - name: Configure vrf interface to remove
+      nxos_vrf_interface:
+        vrf: vrf_test
+        interface: "{{ vrf_interface_name }}"
+        ipv4:
+            absent: True
+      register: interface_removal
+ 
+    - name: Validate interface removal
+      shell: show running-config interface "{{ vrf_interface_name }}"
+      register: int_show
+      ignore_errors: True
+      
+    - name: Fail the module if the interface is still present
+      fail:
+        msg: "Interface {{ vrf_interface_name }} removal failed"
+      when: int_show is not failed

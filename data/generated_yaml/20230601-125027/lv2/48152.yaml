@@ -1,0 +1,18 @@
+
+- name: Stress test for No space left on device error
+  hosts: ubuntu1, alpine1
+  gather_facts: no
+  vars:
+    file_size: 500M
+
+  tasks:
+  - name: Create large file
+    command: dd if=/dev/zero of=/tmp/largefile bs=1M count=500
+    register: dd_output
+    ignore_errors: yes
+
+  - name: Check output for failure
+    fail:
+      msg: "No space left on device"
+    when: 'dd_output.rc != 0 and ("No space left on device" in dd_output.stdout or "No space left on device" in dd_output.stderr)'
+

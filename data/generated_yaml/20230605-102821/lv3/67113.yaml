@@ -1,0 +1,18 @@
+
+- hosts: all
+  gather_facts: true
+  tasks:
+    - name: Verify packages consistency
+      shell: |
+        result=""
+        for i in `seq 1 4`; do
+          output=`ssh -i /var/tmp/key_I.pem root@10.1.1.$i "dpkg -s PACKAGE | grep Version"`
+          if [[ -z "$result" ]]; then
+            result=$output
+          elif [[ "$result" != "$output" ]]; then
+            echo "Package inconsistency found in node $i"
+            exit 1
+          fi
+        done
+      with_items:
+        - PACKAGE

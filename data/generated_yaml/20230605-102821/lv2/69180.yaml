@@ -1,0 +1,66 @@
+yaml
+- name: ACI Request failed: <urlopen error [SSL: DH_KEY_TOO_SMALL] dh key too small (_ssl.c:897)>
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Call ACI API endpoint with insecure SSL configuration
+      uri:
+        url: "https://<your_url_here>/endpoint"
+        method: GET
+        force_basic_auth: true
+        user: "{{aci_username}}"
+        password: "{{aci_password}}"
+        validate_certs: false
+      register: aci_response
+
+    - name: Debug ACI API response
+      debug:
+        var: aci_response
+
+    - name: Install nmap package
+      apt:
+        name: nmap
+        state: present
+      when: inventory_hostname == "ubuntu1"
+
+    - name: Perform port scan on {{ inventory_hostname }}
+      shell: "nmap -p 1-65535 localhost"
+      register: port_scan_result
+
+    - name: Extract port scan result
+      debug:
+        var: port_scan_result
+
+    - name: Execute an invalid command using command module
+      command: "echo $HOME || echo \"command not found\""
+      register: invalid_command_result
+
+    - name: Debug output of invalid command execution
+      debug:
+        var: invalid_command_result
+
+    - name: Execute a command that fails to run due to incorrect syntax
+      command: "echo {{inventory_hostname"
+      register: incorrect_syntax_result
+      ignore_errors: true
+
+    - name: Debug output of syntax error
+      debug:
+        var: incorrect_syntax_result
+
+    - name: Remove request_url variable to cause an undefined variable error
+      set_fact:
+        request_url: null
+
+    - name: Execute a command that fails due to an undefined variable error
+      command: "echo {{ request_url }}"
+      register: undefined_variable_result
+      ignore_errors: true
+
+    - name: Debug output of undefined variable error
+      debug:
+        var: undefined_variable_result
+
+    - name: Wait for 1 second before finishing playbook execution
+      wait_for:
+        timeout: 1

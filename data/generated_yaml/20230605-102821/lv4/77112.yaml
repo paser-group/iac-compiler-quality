@@ -1,0 +1,31 @@
+
+---
+- name: Check KubeVirt module import support code 
+  hosts: all
+  become: true
+  tasks:
+    - name: Check if module_utils is loaded
+      shell: cat /dev/null
+      register: output
+      environment:
+        ANSIBLE_LOAD_CALLBACK_PLUGINS: "{{ lookup('env', 'ANSIBLE_LOAD_CALLBACK_PLUGINS' ) }}"
+        ANSIBLE_LIBRARY: "{{ lookup('env', 'ANSIBLE_LIBRARY' ) }}"
+        ANSIBLE_COLLECTIONS_PATHS: "{{ lookup('env', 'ANSIBLE_COLLECTIONS_PATHS' ) }}"
+        ANSIBLE_MODULE_UTILS: "{{ lookup('env', 'ANSIBLE_MODULE_UTILS' ) }}"
+      no_log: "{{output.stdout != ''}}"
+      
+    - name: Debug info about directories
+      debug:
+        var: lookup('env', item)
+      loop:
+       - ANSIBLE_LIBRARY
+       - ANSIBLE_MODULE_UTILS
+       - ANSIBLE_CALLBACK_PLUGINS
+       - ANSIBLE_FILTER_PLUGINS
+       - ANSIBLE_ACTION_PLUGINS
+       - ANSIBLE_CACHE_PLUGIN_PATH
+       
+    - name: Show the error message
+      debug:
+        var: output
+      when: output.stdout != ''

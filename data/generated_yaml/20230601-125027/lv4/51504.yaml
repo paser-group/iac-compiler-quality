@@ -1,0 +1,19 @@
+
+- name: Get the number of CPUs
+  shell: "cat /proc/cpuinfo | grep -c processor"
+  register: cpu_count
+
+- name: Get the number of vCPUs in container
+  shell: "{{ item }}/bin/sh -c 'cat /sys/fs/cgroup/cpu,cpuacct/cpu.cfs_quota_us'"
+  with_items: 
+    - ubuntu1
+    - alpine1
+    - centos1
+    - redhat1
+  register: vcpu_count
+  
+- name: Compare CPU count with vCPU count
+  debug:
+    msg: "WARNING: CPU count ({{ cpu_count.stdout }}) does not match vCPU count ({{ item.stdout }}) on {{ item.item }}"
+  loop: "{{ vcpu_count.results }}"
+  when: cpu_count.stdout != item.stdout

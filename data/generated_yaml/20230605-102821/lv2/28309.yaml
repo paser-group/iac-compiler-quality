@@ -1,0 +1,19 @@
+
+- name: Detect Incorrect Context on Arista Modular Switches (7500)
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Run show commands to check for incorrect context
+      arista.eos.eos_command:
+        command: "{{ item }}"
+      with_items:
+        - show run
+        - show vlan
+      delegate_to: "{{ hostvars[groups['arista'][0]]['inventory_hostname'] }}"
+      register: show_outputs
+
+    - name: Check for Incorrect Context
+      debug: 
+        msg: "Incorrect context detected on {{ inventory_hostname }}"
+      when: "'unknown command' in item.stdout"
+      with_items: "{{ show_outputs.results }}"

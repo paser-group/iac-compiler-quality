@@ -1,0 +1,57 @@
+
+---
+- name: Test lineinfile module concurrency issues
+  hosts: [ubuntu1, alpine1, centos1, redhat1]
+  become: yes
+  gather_facts: no
+
+  vars:
+    file_path: "/tmp/test_file.txt"
+    lineinfile_task: "ansible-playbook -i inventory playbook.yml --private-key /var/tmp/key_I.pem --become-password-file <path_to_password_file>"
+
+  tasks:
+    - name: Create test file
+      file:
+        path: "{{ file_path }}"
+        state: touch
+
+    - name: Task to write to file
+      lineinfile:
+        path: "{{ file_path }}"
+        line: "{{ inventory_hostname }} task 1"
+      delegate_to: "{{ item }}"
+      run_once: true
+      with_items: "{{ groups['all'] }}"
+
+    - name: Task to write to file
+      lineinfile:
+        path: "{{ file_path }}"
+        line: "{{ inventory_hostname }} task 2"
+      delegate_to: "{{ item }}"
+      run_once: true
+      with_items: "{{ groups['all'] }}"
+
+    - name: Task to write to file
+      lineinfile:
+        path: "{{ file_path }}"
+        line: "{{ inventory_hostname }} task 3"
+      delegate_to: "{{ item }}"
+      run_once: true
+      with_items: "{{ groups['all'] }}"
+
+    - name: Task to write to file
+      lineinfile:
+        path: "{{ file_path }}"
+        line: "{{ inventory_hostname }} task 4"
+      delegate_to: "{{ item }}"
+      run_once: true
+      with_items: "{{ groups['all'] }}"
+
+    - name: Check results
+      shell: "grep -c '{{ inventory_hostname }}' {{ file_path }}"
+      delegate_to: "{{ groups['all'][0] }}"
+      register: results
+
+    - name: Debug results
+      debug:
+        var: results.stdout_lines

@@ -1,0 +1,23 @@
+
+- name: Verify GCP Authentication
+  hosts: localhost
+  gather_facts: no
+  
+  vars:
+    auth_file: /path/to/auth_file.json
+  
+  tasks:
+    - name: Attempt to authenticate with incorrect GCP auth file
+      gcp_auth:
+        service_account_file: /path/to/incorrect/auth_file.json
+      register: auth_result
+      ignore_errors: true
+
+    - name: Run GCP action
+      gcp_iam:
+        state: present
+        name: testuser@example.com
+        email: testuser@example.com
+        project: my-gcp-project
+        auth_kind: "{{ auth_result.failed | ternary('machineaccount', 'serviceaccount') }}"
+        service_account_file: "{{ auth_result.failed | ternary(auth_file, '/dev/null') }}"

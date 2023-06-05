@@ -1,0 +1,22 @@
+
+- name: Configure port channel and feature on network devices
+  hosts: all
+  gather_facts: no
+  connection: network_cli  # use network_cli for network devices
+  tasks:
+    - name: Ensure feature is enabled
+      nxos_feature:
+        feature: <feature_name>
+        enabled: yes
+      register: feature_result
+
+    - name: Configure port channel
+      nxos_portchannel:
+        name: <port_channel_name>
+        mode: active
+        members:
+          - "{{ hostvars[item]['intf_name'] }}"
+          - "{{ hostvars[item]['intf_name2'] }}"
+        state: present
+      when: feature_result.changed | default(false)
+      with_items: "{{ groups['all'] }}"

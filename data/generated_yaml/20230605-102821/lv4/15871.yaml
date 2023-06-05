@@ -1,0 +1,30 @@
+
+---
+- name: Find Nodes Without Internal IPs
+  hosts: all
+  gather_facts: false
+
+  tasks:
+  - name: Gather Openstack Details
+    os_server_facts:
+      cache: yes
+      server:
+        state: ERROR
+      auth:
+        auth_url: "{{ auth_url }}"
+        username: "{{ user }}"
+        password: "{{ password }}"
+        project_name: "{{ project }}"
+        project_domain_id: "{{ domain_id }}"
+        region_name: "{{ region }}"
+        interface: internal
+      validate_certs: False
+    register: servers_info
+
+  - name: Filter Nodes without Internal IP
+    set_fact:
+      errored_servers: "{{ servers_info.servers|selectattr('interface_ip', 'equalto', None)|list }}"
+
+  - name: Print List of Nodes without Internal IP
+    debug:
+      var: errored_servers

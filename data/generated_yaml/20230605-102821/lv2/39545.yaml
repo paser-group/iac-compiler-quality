@@ -1,0 +1,44 @@
+
+- name: Find and display errors in EC2 instances' templating
+  hosts: all
+  gather_facts: false
+  
+  vars:
+    test_body: "{{ body }}"
+    test_input: "{{ unexpected_input }}"
+
+  tasks:
+  - name: Create temporary directory with irregular syntax
+    file:
+      path: "/tmp/!@#$%^&*()"
+      state: directory
+
+  - name: Generate templating error
+    copy:
+      content: "{{ test_body }}"
+      dest: "/tmp/file.txt"
+    register: result
+    ignore_errors: true
+
+  - name: Display error message when templating fails
+    fail:
+      msg: "Templating failed with error: {{ result.msg }}"
+    when: result.failed
+
+  - name: Create unexpected input file
+    copy:
+      content: "{{ test_input }}"
+      dest: "/tmp/unexpected_file.txt"
+
+  - name: Install invalid package
+    package:
+      name: invalid_package_name
+      state: present
+  
+  - name: Execute irregular shell command with backticks and quotes
+    shell: "`echo 'quote\"backtick`\${variable}'`"
+    register: output
+
+  - name: Display output of irregular shell command
+    debug:
+      var: output.stdout

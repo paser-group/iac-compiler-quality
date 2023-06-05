@@ -1,0 +1,31 @@
+
+- name: Test Docker container error handling 
+  hosts: ubuntu1
+  tasks:  
+  - name: Pull a non-existent Docker image
+    docker_image:
+      name: "nonexistent-image"
+    ignore_errors: yes
+    register: image_output
+  
+  - name: Fail task if docker_container fails
+    fail:
+      msg: "Docker container failed: {{ item.container }}"
+    when: item.container is defined and item.container_failed | default(false)
+    loop: "{{ image_output.changed | default(False) | ternary([{ container: 'test-container'}], []) }}"
+    loop_control:
+      extended: yes
+      label: "{{ item.container }}"
+  
+  - name: Create Docker container
+    docker_container:
+      name: "test-container"
+      image: "ubuntu:16.04"
+      command: "/bin/false"
+    register: container_output
+  
+  - name: Debug Docker tasks
+    debug:
+      msg: "{{ item }}"
+    loop: "{{ container_output.task_result }}"
+

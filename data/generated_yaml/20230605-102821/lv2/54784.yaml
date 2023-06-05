@@ -1,0 +1,38 @@
+
+- name: Stress testing Ansible compiler
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Install telnet on hosts and reboot
+      when: inventory_hostname == 'ubuntu1' or inventory_hostname == 'alpine1'
+      become: true
+      apt:
+        name: telnet
+        state: present
+      register: telnet_install
+
+    - name: Reboot the hosts
+      when: telnet_install.changed and telnet_install.rc == 0
+      become: true
+      reboot:
+        post_reboot_delay_seconds: 45
+      register: reboot_status
+
+    - name: Ensure that the hosts can be accessed post-reboot
+      assert:
+        that:
+          - inventory_hostname in hostvars
+          - hostvars[inventory_hostname].ansible_ssh_host is defined
+          - hostvars[inventory_hostname].ansible_ssh_user is defined
+          - hostvars[inventory_hostname].ansible_ssh_pass is defined
+      when: reboot_status.changed and reboot_status.rebooted
+
+    - name: Test telnet connectivity to hosts
+      command: telnet {{ inventory_hostname }} 23
+      become: true
+      register: telnet_output
+      ignore_errors: yes
+
+    - name: Print telnet output
+      debug:
+        var: telnet_output

@@ -1,0 +1,76 @@
+yaml
+- name: Ensure EC2 ELB is properly configured and idempotent
+  hosts: ubuntu1
+  gather_facts: false
+  vars:
+    elb_name: "my-elb"
+    instance_ids:
+      - "i-0123456789abcdef0"
+      - "i-0987654321fedcba0"
+  tasks:
+    - name: Create an EC2 ELB
+      ec2_elb_lb:
+        name: "{{ elb_name }}"
+        region: eu-west-1
+        listeners:
+          - protocol: HTTP
+            load_balancer_port: 80
+            instance_protocol: HTTP
+            instance_port: 80
+        security_group_ids:
+          - sg-0123456789abcdef0
+        subnets:
+          - subnet-0123456789abcdef0
+        wait_timeout: 300
+      register: elb_result
+
+    - name: Re-run EC2 ELB creation play to test idempotence
+      ec2_elb_lb:
+        name: "{{ elb_name }}"
+        region: eu-west-1
+        listeners:
+          - protocol: HTTP
+            load_balancer_port: 80
+            instance_protocol: HTTP
+            instance_port: 80
+        security_group_ids:
+          - sg-0123456789abcdef0
+        subnets:
+          - subnet-0123456789abcdef0
+        wait_timeout: 300
+      register: elb_result_2
+      failed_when: not elb_result_2.changed
+
+    - name: Check if EC2 ELB exists
+      ec2_elb_lb:
+        name: "{{ elb_name }}"
+        region: eu-west-1
+        state: present
+      register: elb_exists
+
+    - name: Add unexpected input to EC2 ELB creation
+      ec2_elb_lb:
+        name: "{{ elb_name }}"
+        region: eu-west-1
+        state: present
+        listeners:
+          - protocol: HTTP
+            load_balancer_port: 80
+            instance_protocol: HTTP
+            instance_port: 80
+            invalid_input: "unexpected"
+        security_group_ids:
+          - sg-0123456789abcdef0
+        subnets:
+          - subnet-0123456789abcdef0
+        wait_timeout: 300
+      register: elb_result_3
+
+    - name: Remove instances from EC2 ELB using incorrect variables
+      ec2_elb_lb:
+        name: "{{ elb_name }}"
+        region: eu-west-1
+        state: absent
+        instances: "{{ instance_ids_invalid }}"
+      register: elb_result_4
+      ignore_errors: True

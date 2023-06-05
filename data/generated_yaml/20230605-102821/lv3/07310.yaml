@@ -1,0 +1,20 @@
+
+- name: Override default configuration of kernel module
+  hosts: all
+  become: true
+  tasks:
+    - name: Load module
+      modprobe:
+        name: ip_tables
+        state: present
+      vars:
+        default_config_file: /etc/sysconfig/ip_tables
+
+    - name: Copy overriden configuration
+      copy:
+        src: files/ip_tables.conf
+        dest: /etc/sysconfig/ip_tables
+      when: "'ip_tables' in ansible_kernel"
+
+    - name: Restart module
+      command: /sbin/modprobe -r ip_tables && /sbin/modprobe ip_tables

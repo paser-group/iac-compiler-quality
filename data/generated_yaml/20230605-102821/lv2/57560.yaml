@@ -1,0 +1,38 @@
+
+---
+
+- name: Service Unreachable Error Stress Test
+  hosts: all
+  gather_facts: false
+  become: true
+  vars:
+    command: "{{ ['/bin/false', '/usr/bin/false', '/usr/sbin/service'] | random }}"
+    service: "{{ ['httpd', 'nginx', 'mysql', 'postgresql', 'redis', 'memcached'] | random }}"
+    interval: "{{ range(10, 30, 5) | random }}"
+
+  tasks:
+    - name: Stop Random Service
+      shell: "{{ command }} {{ service }} stop"
+      async: 10
+      poll: "{{ interval }}"
+
+    - name: Restart Random Service
+      shell: "{{ command }} {{ service }} restart"
+      async: 5
+      poll: "{{ interval }}"
+
+    - name: Enable Random Service
+      shell: "{{ command }} {{ service }} enable"
+      async: 20
+      poll: "{{ interval }}"
+
+    - name: Disable Random Service
+      shell: "{{ command }} {{ service }} disable"
+      async: 15
+      poll: "{{ interval }}"
+
+    - name: Verify Random Service Status
+      shell: "{{ command }} {{ service }} status"
+      async: 10
+      poll: "{{ interval }}"
+

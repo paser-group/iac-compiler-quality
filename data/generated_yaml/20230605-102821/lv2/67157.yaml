@@ -1,0 +1,51 @@
+
+---
+- name: Execute stress test scenarios
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Copy file with invalid parameter
+      copy:
+        src: "{{ item }}"
+        dest: "/tmp/{{ item }}"
+        mode: "0644"
+        string_conversion_action: "error"
+      with_items:
+        - "test1.txt"
+        - "test2.txt{{"
+        - "test{{3}}.txt"
+      register: copy_result
+      changed_when: false
+      ignore_errors: true
+
+    - name: Print copy result
+      debug:
+        var: copy_result
+        
+    - name: Template with invalid parameter
+      template:
+        src: "test.j2"
+        dest: "/tmp/test.conf"
+        mode: "0644"
+        string_conversion_action: "error"
+      register: template_result
+      changed_when: false
+      ignore_errors: true
+
+    - name: Print template result
+      debug:
+        var: template_result
+
+    - name: Command with invalid parameter
+      command: "echo {{ item }}"
+      with_items:
+        - "$PATH"
+        - "{{ item }}"
+        - "{{ 1/0 }}"
+      register: command_result
+      changed_when: false
+      ignore_errors: true
+
+    - name: Print command result
+      debug:
+        var: command_result

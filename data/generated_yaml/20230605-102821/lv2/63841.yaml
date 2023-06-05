@@ -1,0 +1,29 @@
+
+- name: Copy files using robocopy and report copy errors
+  hosts: all
+  gather_facts: false
+
+  vars:
+    src: "/var/tmp/src"   # replace with your source folder
+    dst: "/var/tmp/dst"   # replace with your destination folder
+
+  tasks:
+  - name: Copying files using robocopy
+    win_robocopy:
+      src: "{{ src }}"
+      dst: "{{ dst }}"
+      options: "{{ item.options }}"
+    with_items:
+        - { options: "/SEC /LOG+:log.txt /R:3 /W:5 /NP /NFL /NDL /NJH /NJS" }
+        - { options: "/MIR /LOG+:log.txt /W:10 /FFT /NP /NFL /NDL /NJH /NJS" }
+
+  - name: Check if copy had any failures
+    shell: "if grep -q ERROR log.txt; then exit 1; else exit 0; fi"
+    changed_when: false
+    ignore_errors: true
+    register: result
+
+  - name: Report any copy errors
+    fail:
+      msg: "{{ inventory_hostname }} - Copy failed"
+    when: result.rc != 0

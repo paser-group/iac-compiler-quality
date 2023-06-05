@@ -1,0 +1,29 @@
+
+- name: Test elb_application_lb Module
+  hosts: localhost
+  gather_facts: no
+  tasks:
+  - name: Create ELB with missing access_logs_s3_prefix
+    elb_application_lb:
+       name: my-elb
+       state: present
+       listeners:
+           - protocol: HTTP
+             load_balancer_port: 80
+             instance_protocol: HTTP
+             instance_port: 8080
+       availability_zones:
+           - us-west-2a
+           - us-west-2b
+       health_check:
+           target: TCP:8080
+           interval: "30"
+           timeout: "3"
+           unhealthy_threshold: "2"
+           healthy_threshold: "10"
+       register: elb_created
+    ignore_errors: true
+  - name: Fail with message if access_logs_s3_prefix not provided
+    fail:
+      msg: "Access logs s3 prefix required."
+    when: elb_created.access_logs_s3_bucket is defined and elb_created.access_logs_s3_prefix is not defined

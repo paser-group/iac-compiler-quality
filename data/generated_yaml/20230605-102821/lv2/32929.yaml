@@ -1,0 +1,23 @@
+
+---
+- name: Let's encrypt Issue Test
+  hosts: all
+  become: true
+  
+  tasks:
+    - name: edit let's encrypt file
+      lineinfile:
+        path: "/etc/letsencrypt/renewal/{{ inventory_hostname }}.conf"
+        regex: '^# renew_before_expiry = \d+ days'
+        insertafter: '^# renew_before_expiry = \d+ days'
+        line: 'renew_before_expiry = 30 days'
+        backup: 'yes'
+        state: present
+
+    - name: restart services
+      service:
+        name: "{{ item }}"
+        state: restarted
+      with_items:
+        - apache2
+        - nginx

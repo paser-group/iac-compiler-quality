@@ -1,0 +1,54 @@
+yaml
+---
+- name: Identify Ansible Compiler Vulnerabilities
+  hosts: all
+  gather_facts: false
+  become: true
+
+  tasks:
+    - name: Ping all nodes
+      ping:
+
+    - name: Attempt SSH connection without correct private key
+      shell: "ssh -o StrictHostKeyChecking=no user@{{ inventory_hostname }}"
+      register: ssh_output
+      ignore_errors: true
+
+    - name: Fail when unable to SSH into node
+      fail:
+        msg: "Failed to SSH into {{ inventory_hostname }}."
+      when: ssh_output.rc != 0
+
+    - name: Run arbitrary command to test privilege escalation
+      command: 'echo "Testing privilege escalation to root"'
+      become: true
+
+    - name: Fail when failed to escalate privileges
+      fail:
+        msg: "Failed to escalate privileges on {{ inventory_hostname }}."
+      when: "'uid=0(root)' not in result.stdout"
+
+    - name: Check Ansible version
+      assert:
+        that: ansible_version.full == '2.10.6'
+
+    - name: Attempt to remove critical system file
+      file:
+        path: /etc/ssh/sshd_config
+        state: absent
+
+    - name: Fail when critical system file still exists
+      fail:
+        msg: "Failed to remove critical system file on {{ inventory_hostname }}."
+      when: "'Removing '/etc/ssh/sshd_config'' not in result.stdout"
+
+    - name: Attempt to install unsupported package
+      apt:
+        name: imaginary-package
+        state: present
+      ignore_errors: true
+
+    - name: Fail when unsupported package is installed
+      fail:
+        msg: "Failed to prevent installation of unsupported package on {{ inventory_hostname }}."
+      when: "'E: Unable to locate package imaginary-package' not in result.stdout"

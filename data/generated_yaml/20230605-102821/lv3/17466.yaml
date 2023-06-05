@@ -1,0 +1,26 @@
+yaml
+- hosts: all
+  tasks:
+    - name: Create a directory
+      file:
+        path: "/tmp/example_directory"
+        state: directory
+
+    - name: Go to the directory
+      shell: "cd /tmp/example_directory"
+
+    - name: Start async task
+      async: 10
+      poll: 0
+      vars:
+        ansible_python_interpreter: /usr/bin/python3
+      command: touch /tmp/example_directory/example_file
+
+    - name: Make sure touch succeeds
+      async_status:
+        jid: "{{ item.ansible_job_id }}"
+      register: async_output
+      until: async_output.finished
+      retries: 30
+      delay: 10
+      with_items: "{{ ansible_play_batch }}"

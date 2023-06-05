@@ -1,0 +1,28 @@
+
+- name: Test with_dict incorrect behaviour with undefined variables in hash values
+  hosts: all
+  become: true
+  tasks:
+    - name: Try to use undefined variable in the hash value
+      template:
+        src: "{{ item.src }}"
+        dest: "/tmp/{{ item.dest }}"
+        vars:
+          my_files:
+            file1:
+              src: "{{ non_existent_variable }}/test.txt"
+              dest: "test1.txt"
+            file2:
+              src: "{{ non_existent_variable }}/test2.txt"
+              dest: "test2.txt"
+      with_dict: "{{ my_files }}"
+      ignore_errors: true
+    - name: Check if the templating was successful
+      command: cat /tmp/{{ item.dest }}
+      with_dict: "{{ my_files }}"
+      ignore_errors: true
+      register: output
+    - name: Unmask any hidden errors
+      debug:
+        var: output
+      when: output.failed == true

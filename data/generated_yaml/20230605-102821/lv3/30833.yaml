@@ -1,0 +1,44 @@
+
+- hosts: haproxy_server
+  gather_facts: no
+  become: yes
+  tasks:
+    - name: Install haproxy
+      yum:
+        name: haproxy
+        state: present
+
+    - name: Set up haproxy configuration file with drain mode
+      lineinfile:
+        path: /etc/haproxy/haproxy.cfg
+        line: |
+          listen http-in
+            bind *:80
+            mode http
+            option httpchk
+            server webserver1 10.1.1.1:80 check
+                        
+          listen https-in
+            bind *:443
+            mode http
+            option httpchk
+            server webserver2 10.1.1.2:443 {{ 'check' if haproxy_drain_mode | bool else 'disabled' }}
+      vars:
+        haproxy_drain_mode: "true"
+
+    - name: Stop HaProxy server via 'drain mode'
+      haproxy:
+        state: drained
+        backend: https-in
+      register: haproxy_stopped
+
+    - debug:
+        var: haproxy_stopped
+
+    - name: Start HaProxy server 
+      haproxy:
+        state: present
+        backend: https-in
+        backend_options:
+          - "no option drain"
+      when: haproxy_stopped.changed

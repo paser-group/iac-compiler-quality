@@ -1,0 +1,43 @@
+
+---
+- name: Test vmware inventory script for cache age checking
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Generate unexpected inputs for cache age checking
+      debug:
+        msg: "{{ '0-' ~ '*' ~ range(5) | list | join('') }}" # This generates a cache_age with a value of 0-***** to trigger an incorrect cache age check.
+
+    - name: Test irregular syntax for cache age checking
+      shell: |
+        set -e
+        cache_age=3600
+        if [ "$cache_age" == "0-"{{ '*' * 6 }}" ]
+        then
+            exit 1
+        fi # This tests the Ansible compiler's ability to handle irregular syntax while checking the cache age.
+
+    - name: Test unique scenario for cache age checking
+      command: |
+        if [ "{{ my_var }}" == "invalid_input" ]
+        then
+            cache_age=0
+        elif [ "{{ my_var }}" == "valid_input" ]
+        then
+            cache_age=7200
+        else
+            cache_age=3600
+        fi # This tests the Ansible compiler's ability to handle unexpected variable inputs in the vmware inventory script.
+
+    - name: Test vmware inventory script with incorrect cache age checking
+      vmware_vm_inventory:
+        hostname: "{{ inventory_hostname }}"
+        username: "admin"
+        password: "password"
+        validate_certs: false
+        cache_age: "{{ 3600 }}"
+      register: result
+
+    - name: Debug results
+      debug:
+        var: result # This prints out the results of the vmware inventory script with incorrect cache age checking.

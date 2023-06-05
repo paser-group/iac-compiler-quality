@@ -1,0 +1,75 @@
+
+---
+- name: Azure container registry idempotence bug test
+  hosts: all
+  gather_facts: no
+
+  vars:
+    repository_name: "testrepo_{{ ansible_date_time.epoch }}"
+
+  tasks:
+    - name: Create Azure container registry
+      azure_rm_containerregistry:
+        login_server_name: "testrepo.azurecr.io"
+        resource_group: "test-resource-group"
+        location: "eastus"
+        sku: "Basic"
+        admin_enabled: true
+        tags:
+          test: "{{ lookup('env', 'TEST_TAG') }}"
+      register: registry_created
+
+    - name: Assert container registry created
+      assert:
+        that:
+          - registry_created is success
+          - registry_created.changed
+        success_msg: "Azure container registry {{ repository_name }} created successfully"
+        fail_msg: "Failed to create Azure container registry {{ repository_name }}"
+
+    - name: Create docker image
+      shell: |
+        echo "FROM alpine:3.14.2" > Dockerfile
+        echo "COPY ./ /" >> Dockerfile
+        docker build -t testimage .
+      args:
+        chdir: "{{ playbook_dir }}/files"
+
+    - name: Load docker image into registry
+      shell: "docker tag testimage {{ registry_created.login_server }}/testrepo_{{ ansible_date_time.epoch }} && docker push {{ registry_created.login_server }}/testrepo_{{ ansible_date_time.epoch }}"
+      environment:
+        DOCKER_CLI_EXPERIMENTAL: enabled
+      args:
+        executable: /bin/bash
+
+    - name: Load docker image into registry again with same tag
+      shell: "docker tag testimage {{ registry_created.login_server }}/testrepo_{{ ansible_date_time.epoch }} && docker push {{ registry_created.login_server }}/testrepo_{{ ansible_date_time.epoch }}"
+      environment:
+        DOCKER_CLI_EXPERIMENTAL: enabled
+      args:
+        executable: /bin/bash
+
+    - name: Assert container image pushed
+      assert:
+        that:
+          - '"testrepo_{{ ansible_date_time.epoch }}: latest" in (item.stdout_lines | map("trim") | list)'
+          - item.rc == 0
+        with_items:
+          - "{{ groups['all'] | map('extract', hostvars, ['ansible_default_ipv4', 'address']) | list }}"
+        success_msg: "Docker image pushed to container registry successfully"
+        fail_msg: "Failed to push Docker image to container registry"
+
+    - name: Remove container registry
+      azure_rm_containerregistry:
+        login_server_name: "testrepo.azurecr.io"
+        resource_group: "test-resource-group"
+        state: absent
+      register: registry_removed
+
+    - name: Assert container registry removed
+      assert:
+        that:
+          - registry_removed.changed
+          - registry_removed is success
+        success_msg: "Azure container registry removed successfully"
+        fail_msg: "Failed to remove Azure container registry"

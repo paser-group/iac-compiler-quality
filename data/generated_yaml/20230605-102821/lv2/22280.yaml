@@ -1,0 +1,21 @@
+
+- hosts: all
+  gather_facts: no
+  tasks:
+    - name: Populate invalid dictionary
+      set_fact:
+        invalid_dict: '{{ item }}'  # {{body}}
+      with_items:
+        - "{key: value"  # Wrong syntax: missing closing brace for dictionary
+        - "{key: 'value', "  # Wrong syntax: missing closing brace for dictionary
+        - "{key:"  # Wrong syntax: missing value for dictionary key
+        - "{key"  # Wrong syntax: missing both closing brace and value for dictionary key
+        - ": value}"  # Wrong syntax: missing key for dictionary value
+        - "} value}"  # Wrong syntax: missing key for dictionary value
+        - "key: value"  # Invalid input: using colon outside of a dictionary
+        - "'key': 'value'"  # Valid dictionary
+    - name: Iterate over invalid dict keys
+      debug:
+        msg: "Key: {{ item.key }}, Value: {{ item.value }}"
+      loop: "{{ invalid_dict | dict2items }}"  # Convert dict to list for iteration
+      ignore_errors: yes  # Continue with playbook execution even if a key is missing

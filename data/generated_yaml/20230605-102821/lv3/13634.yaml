@@ -1,0 +1,32 @@
+
+- name: Reproduce group_by creates incorrect groups issue
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: Set variables for inventory
+      set_fact:
+        common_var: "common_value"
+        ubuntu_var: "ubuntu_value"
+        alpine_var: "alpine_value"
+        centos_var: "centos_value"
+        redhat_var: "redhat_value"
+
+    - name: Create inventory
+      add_host:
+        name: "{{ item.name }}"
+        ansible_host: "{{ item.ip }}"
+        ansible_user: "{{ item.user }}"
+        ansible_become_user: root
+        ansible_ssh_private_key_file: /var/tmp/key_I.pem
+        common_var: "{{ common_var }}"
+        "{{ item.distro }}_var": "{{ item.distro_var }}"
+      with_items:
+        - { name: "ubuntu1", ip: "10.1.1.1", distro: "ubuntu", user: "ubuntu", distro_var: "{{ ubuntu_var }}" }
+        - { name: "alpine1", ip: "10.1.1.2", distro: "alpine", user: "alpine", distro_var: "{{ alpine_var }}" }
+        - { name: "centos1", ip: "10.1.1.3", distro: "centos", user: "centos", distro_var: "{{ centos_var }}" }
+        - { name: "redhat1", ip: "10.1.1.4", distro: "redhat", user: "redhat", distro_var: "{{ redhat_var }}" }
+
+    - name: Verify groups created by group_by
+      debug:
+        var: groups

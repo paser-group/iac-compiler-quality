@@ -1,0 +1,55 @@
+
+- name: Stress Test Ansible Compiler
+  hosts: all
+  gather_facts: no
+
+  vars:
+    vni_list:
+      - 10
+      - 20
+      - 30
+    vxlan_vtep_id:
+      - "vlan100"
+      - "vlan200"
+      - "vlan300"
+    loop_counter: "{{ range(1,5)|list }}"
+
+  tasks:
+    - name: Install nxos_vxlan package
+      yum:
+        name: nxos_vxlan
+        state: present
+      ignore_errors: yes
+      
+    - name: Reboot server
+      reboot:
+        pre_reboot_delay: 3600
+        post_reboot_delay: 30
+        reboot_timeout: 180
+
+    - name: Assert nxos_vxlan_vtep_vni errors out when trying to test remove idempotence
+      nxos_vxlan_vtep_vni:
+        vni: "{{ item }}"
+        vxlan_vtep_id: "{{ vxlan_vtep_id[item % 3] }}"
+        idempotent: yes
+      loop: "{{ vni_list }}"
+      when: loop_counter == 1
+      ignore_errors: yes
+
+    - name: Assert nxos_vxlan_vtep_vni is idempotent
+      nxos_vxlan_vtep_vni:
+        vni: "{{ item }}"
+        vxlan_vtep_id: "{{ vxlan_vtep_id[item % 3] }}"
+        idempotent: no
+      loop: "{{ vni_list }}"
+      when: loop_counter <= 3
+
+    - name: Assert nxos_vxlan_vtep_vni errors out when trying to test remove idempotence
+      nxos_vxlan_vtep_vni:
+        vni: "{{ item }}"
+        vxlan_vtep_id: "{{ vxlan_vtep_id[item % 3] }}"
+        state: absent
+        idempotent: yes
+      loop: "{{ vni_list }}"
+      when: loop_counter == 4
+      ignore_errors: yes

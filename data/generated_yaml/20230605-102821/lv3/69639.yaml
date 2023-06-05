@@ -1,0 +1,26 @@
+
+- name: Install helm chart
+  hosts: localhost
+  become: true
+  
+  vars:
+    kubeconfig_path: /path/to/kubeconfig
+    chart_name: mychart
+    namespace: default
+  
+  tasks:
+    - name: Get Kubernetes API server IP
+      uri:
+        url: https://{{ ansible_env.KUBERNETES_SERVICE_HOST }}:{{ ansible_env.KUBERNETES_SERVICE_PORT }}/version
+        method: GET
+        validate_certs: False
+      register: kubernetes_check
+    
+    - name: Install Helm chart
+      helm:
+        kubeconfig: "{{ kubeconfig_path }}"
+        chart_src: "{{ chart_name }}"
+        release_name: "{{ chart_name }}"
+        namespace: "{{ namespace }}"
+      when: kubernetes_check.status == 200
+      ignore_errors: true

@@ -1,0 +1,22 @@
+yaml
+- name: Install VMware Tools
+  hosts: all
+  tasks:
+    - name: Run async installation of VMware Tools
+      async: 240
+      poll: 0
+      ignore_errors: yes
+      shell: "sudo ./vmware-install.pl --default"
+      register: async_result
+
+    - name: Wait for async installation to complete
+      async_status:
+        jid: "{{ async_result.ansible_job_id }}"
+      register: job_result
+      until: job_result.finished
+      retries: 30
+      delay: 10
+
+    - name: Debug async job result
+      debug:
+        var: job_result

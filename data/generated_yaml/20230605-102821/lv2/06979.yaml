@@ -1,0 +1,53 @@
+
+- name: Test Playbook for Precedence Issue in Ansible
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: Define variables in groups_vars/all
+      set_fact:
+        my_var: "{{ groups.all[0] }}"
+
+    - name: Define a list of variables in an array
+      set_fact:
+        my_array: ["{{ my_var }}", "{{ ansible_distribution }}"]
+
+    - name: Print array items with variable precedence
+      debug:
+        var: my_array[0]
+
+    - name: Print array items with ansible_distribution variable
+      debug:
+        var: my_array[1]
+
+    - name: Print group_vars variable
+      debug:
+        var: my_var + '_var'
+
+    - name: Set variables with different syntax
+      set_fact:
+        "{{ item }}" : "{{ vars['item'] }}"
+      with_items:
+        - "{{ my_var }}_var"
+        - "{{ ansible_distribution }}_distro"
+
+    - name: Print variables with different syntax
+      debug:
+        msg: "The {{ item }} is {{ vars[item] }}"
+      with_items:
+        - "{{ my_var }}_var"
+        - "{{ ansible_distribution }}_distro"
+
+    - name: Set fact with duplicate group_vars and host_vars variables
+      set_fact:
+        "{{ item }}" : "{{ lookup('env', 'HOSTNAME') }}"
+      with_items:
+        - "{{ my_var }}_var"
+        - "{{ inventory_hostname }}_var"
+
+    - name: Print duplicate variables
+      debug:
+        msg: "The {{ item }} is {{ vars[item] }}"
+      with_items:
+        - "{{ my_var }}_var"
+        - "{{ inventory_hostname }}_var"

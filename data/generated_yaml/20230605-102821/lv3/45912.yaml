@@ -1,0 +1,31 @@
+yaml
+- name: Intermittent WinRM connection issues
+  hosts: all
+  become: true
+  gather_facts: true
+
+  tasks:
+  - name: Configure the firewall to block incoming WinRM connections
+    iptables:
+      chain: INPUT
+      protocol: tcp
+      destination_port: 5986
+      jump: DROP
+      state: present
+    register: result
+
+  - name: Verify the connection is blocked
+    win_ping:
+
+  - name: Wait for a few seconds before unblocking the connection
+    pause:
+      seconds: "{{ 5 | random }}"
+      
+  - name: Remove the block rule from the firewall
+    iptables:
+      chain: INPUT
+      protocol: tcp
+      destination_port: 5986
+      jump: ACCEPT
+      state: present
+    when: result is changed

@@ -1,0 +1,24 @@
+
+- name: Synchronizing Files with Rsync via Devel Module
+  hosts: all
+  vars:
+    rsync_path: /usr/bin/rsync
+  tasks:
+    - name: Synchronize files using Devel module
+      devel.synchronize:
+        src: "/home/user/source/"
+        dest: "/home/user/destination/"
+        rsync_path: "{{ rsync_path }}"
+      register: sync_result
+
+    - assert:
+        that:
+          - sync_result.rc == 0
+        fail_msg: "Rsync returned a non-zero exit code: {{ sync_result.rc }}"
+      when: sync_result is defined
+
+    - assert:
+        that:
+          - "'failed' not in sync_result.msg"
+        fail_msg: "Synchronization failed with the following message: {{ sync_result.msg }}"
+      when: sync_result is defined

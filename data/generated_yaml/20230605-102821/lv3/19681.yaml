@@ -1,0 +1,46 @@
+
+- name: Test Hostname Module with Docker Containers
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Install Docker
+      become: true
+      block:
+        - name: Install dependencies
+          apt:
+            name:
+              - apt-transport-https
+              - ca-certificates
+              - curl 
+              - gnupg-agent
+              - software-properties-common
+        - name: Add Docker's GPG key
+          apt_key:
+            url: https://download.docker.com/linux/ubuntu/gpg
+        - name: Add Docker repository
+          apt_repository:
+            repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu bionic stable
+            state: present
+        - name: Install Docker CE
+          apt:
+            name: docker-ce
+            state: present
+    - name: Create Docker Container for Ubuntu
+      community.general.docker_container:
+        name: ansible_test_ubuntu
+        image: ubuntu
+        cap_add:
+          - ALL
+        security_opt:
+          - apparmor:unconfined
+        detach: true
+        ports:
+          - "5555:5555"
+          - "8080:8080"
+    - name: Check Hostname on Ubuntu Container
+      command: hostname
+      register: result
+      delegate_to: docker://ansible_test_ubuntu
+    - name: Print Hostname
+      debug:
+        var: result.stdout

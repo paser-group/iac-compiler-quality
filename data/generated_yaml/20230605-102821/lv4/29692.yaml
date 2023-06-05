@@ -1,0 +1,38 @@
+
+---
+- name: Provision EC2 instances
+  hosts: localhost
+  gather_facts: no
+  vars:
+    region: us-west-2
+  vars_prompt:
+    - name: "aws_access_key"
+      prompt: "Enter your AWS Access Key ID"
+      private: no
+    - name: "aws_secret_key"
+      prompt: "Enter your AWS Secret Access Key"
+      private: yes
+  tasks:
+  - name: Create an instance without an image id
+    ec2:
+      aws_access_key: "{{ aws_access_key }}"
+      aws_secret_key: "{{ aws_secret_key }}"
+      region: "{{ region }}"
+      instance_type: t2.micro
+      key_name: "{{ key_name }}"
+      group: "{{ sg_name }}"
+      instance_tags: '{"Name":"ansible-test-instance-1"}'
+      wait: no
+    ignore_errors: yes
+    register: ec2_inst
+  - name: List instances to check if instance is really created
+    ec2_instance_info:
+      aws_access_key: "{{ aws_access_key }}"
+      aws_secret_key: "{{ aws_secret_key }}"
+      region: "{{ region }}"
+      filters:
+        instance-state-name: running
+    register: ec2_info
+  - name: Debug output of created EC2 instances
+    debug:
+      var: ec2_info.instances

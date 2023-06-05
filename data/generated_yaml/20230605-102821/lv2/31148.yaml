@@ -1,0 +1,33 @@
+
+- name: Redis cache test
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Install Redis package
+      apt:
+        name: redis
+        update_cache: yes
+
+    - name: Start Redis service
+      service:
+        name: redis
+        state: started
+
+    - name: Set Redis key
+      redis:
+        key: "test_key"
+        value: "{{ 'x' * 10000000 }}"
+        state: present
+
+    - name: Flush Redis cache
+      shell: "redis-cli flushall"
+
+    - name: Get Redis key
+      redis:
+        key: "test_key"
+        register: redis_result
+
+    - name: Check Redis key value
+      debug:
+        var: redis_result.stdout

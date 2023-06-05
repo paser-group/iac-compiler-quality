@@ -1,0 +1,16 @@
+
+- name: Test SSH performance
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Read the contents of a large file
+      command: cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 2048 | head -n 100000 > /tmp/large_file
+      become: true
+
+    - name: Iterate over the contents of the file on each node
+      lineinfile:
+        line: "{{ item }}"
+        path: "/tmp/output.txt"
+      with_lines: cat /tmp/large_file
+      transport: ssh
+      become: true

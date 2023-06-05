@@ -1,0 +1,34 @@
+
+- name: Create desktop shortcut
+  hosts: windows_hosts
+  gather_facts: false
+  vars:
+      shortcut_path: "C:\Program Files\MyApp\MyApp.lnk"
+      app_path: "C:\Program Files\MyApp\MyApp.exe"
+  tasks:
+    - name: Create shortcut
+      win_shell: |
+        $WshShell = New-Object -comObject WScript.Shell
+        $Shortcut = $WshShell.CreateShortcut('{{ shortcut_path }}')
+        $Shortcut.TargetPath = '{{ app_path }}'
+        $Shortcut.Description = 'MyApp'
+        $Shortcut.Save()
+      register: create_new_shortcut
+    
+    - name: Ensure shortcut is present
+      win_shell: |
+        $WshShell = New-Object -comObject WScript.Shell
+        $Shortcut = $WshShell.CreateShortcut('{{ shortcut_path }}')
+        if($Shortcut.TargetPath -ne '{{ app_path }}' -Or $Shortcut.Description -ne 'MyApp') {
+          Write-Error 'The shortcut is incorrect'
+          exit 1
+        }
+      when: create_new_shortcut.changed
+      
+    - name: Ensure shortcut is absent
+      win_file:
+        path: '{{ shortcut_path }}'
+        state: absent
+      delegate_to: localhost
+      run_once: true
+      when: create_new_shortcut.changed

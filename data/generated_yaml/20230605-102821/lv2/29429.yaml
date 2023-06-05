@@ -1,0 +1,49 @@
+
+- name: Test lvol indempotency with floating point argument
+  hosts: all
+  gather_facts: no
+  
+  tasks:
+    - name: Create lvol with floats as argument
+      lvol:
+        vg: /dev/vdb
+        lv: test-lv
+        size: "3.5g"
+      register: result
+      ignore_errors: yes
+
+    - name: Change lv size with floats as argument
+      lvol:
+        vg: /dev/vdb
+        lv: test-lv
+        size: "2.5g"
+      register: result1
+      ignore_errors: yes
+      
+    - name: Verify lvol creation with floats as argument
+      shell: |
+        sudo lvdisplay /dev/vdb/test-lv | grep "LV Size" | awk '{print $3}'
+      register: result_lvol_size
+      failed_when: result_lvol_size.stdout is not defined or result_lvol_size.stdout != "3.50"
+      ignore_errors: yes
+
+    - name: Verify lvol modification with floats as argument
+      shell: |
+        sudo lvdisplay /dev/vdb/test-lv | grep "LV Size" | awk '{print $3}'
+      register: result_lvol_size1
+      failed_when: result_lvol_size1.stdout is not defined or result_lvol_size1.stdout != "2.50"
+      ignore_errors: yes
+      
+    - name: Remove lvol after modification
+      lvol:
+        vg: /dev/vdb
+        lv: test-lv
+        state: absent
+      ignore_errors: yes
+      
+    - name: Verify removal of lvol
+      shell: |
+        sudo lvdisplay /dev/vdb/test-lv
+      register: result_lvol_absent
+      failed_when: result_lvol_absent.rc == 0
+      ignore_errors: yes

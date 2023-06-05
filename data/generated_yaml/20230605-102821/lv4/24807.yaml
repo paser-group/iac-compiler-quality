@@ -1,0 +1,28 @@
+
+---
+- name: Test ec2_asg module
+  hosts: localhost
+  gather_facts: no
+  
+  vars:
+    region: us-west-2
+  
+  tasks:
+    - name: Set ASG dynamic inventory
+      add_host:
+        name: "{{ item.instance_id }}"
+        ansible_host: "{{ item.public_ip_address }}"
+        ansible_user: ec2-user
+        group: ec2_asg
+      with_items: "{{ query('aws_ec2', region=region, filters=[{'Name': 'tag:aws:autoscaling:groupName', 'Values': ['my-autoscaling-group']}]) }}"
+ 
+    - name: Test ec2_asg module
+      hosts: ec2_asg
+      become: yes
+      become_method: sudo
+      gather_facts: no
+      tasks:
+        - debug:
+            var: inventory_hostname
+        - name: Get facts
+          setup:

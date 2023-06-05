@@ -1,0 +1,44 @@
+
+- name: Test WinRM Certification Error with delegate_to
+  gather_facts: false
+  hosts: all
+  vars:
+    winrm_cert: "{{ lookup('env', 'WINRM_CERT') }}"
+    winrm_cert_pwd: "{{ lookup('env', 'WINRM_CERT_PASSWORD') }}"
+  tasks:
+    - name: Install Ubuntu package dependencies
+      become: true
+      apt:
+        name: "{{ item }}"
+        state: present
+      with_items:
+        - python
+        - python-pip
+        - gcc
+        - openssl
+        - libssl-dev
+    - name: Install Pywinrm
+      become: true
+      pip:
+        name: pywinrm
+    - name: Update Ansible configuration with WinRM settings
+      become: true
+      lineinfile:
+        path: /etc/ansible/ansible.cfg
+        line: "{{ item }}"
+      with_items:
+        - 'transport = winrm'
+        - 'ansible_connection = winrm'
+        - 'ansible_winrm_server_cert_validation = ignore'
+        - 'ansible_winrm_cert_pem = "{{ winrm_cert }}"'
+        - 'ansible_winrm_cert_key_pem = "{{ winrm_cert }}"'
+        - 'ansible_winrm_cert_key_password = "{{ winrm_cert_pwd }}"'
+    - name: Test WinRM delegate_to syntax
+      become: true
+      win_ping:
+        delegate_to: "{{ item }}"
+      with_items:
+        - "{{ groups['ubuntu1'] }}"
+        - "{{ groups['alpine1'] }}"
+        - "{{ groups['centos1'] }}"
+        - "{{ groups['redhat1'] }}"

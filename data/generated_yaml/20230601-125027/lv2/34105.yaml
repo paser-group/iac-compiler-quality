@@ -1,0 +1,38 @@
+
+- hosts: all
+  gather_facts: no
+  vars:
+    vmware_datastore: datastore1
+    vmware_guests:
+      - name: test-vm1
+        guestid: ubuntu64Guest
+        state: present
+      - name: test-vm2
+        guestid: ubuntu64Guest
+        state: present
+  tasks:
+    - name: Ensure VM is created with idempotency
+      vmware_guest:
+        hostname: "{{ ansible_host }}"
+        username: "{{ ansible_user }}"
+        password: "{{ ansible_password }}"
+        name: "{{ item.name }}"
+        guest_id: "{{ item.guestid }}"
+        state: "{{ item.state }}"
+        hardware:
+          memory_mb: 1024
+          num_cpus: 2
+        disk:
+          size_gb: 40
+          type: thin
+          datastore: "{{ vmware_datastore }}"
+        wait_for_ip_address: yes
+      with_items: "{{ vmware_guests }}"
+      register: vmware_guest_result
+
+    - name: Assert idempotency state
+      assert:
+        that:
+          - item is changed <= False
+        success_msg: "VM creation is idempotent"
+      with_items: "{{ vmware_guest_result.results }}"

@@ -1,0 +1,26 @@
+
+- name: Perform stress test on clear_host_errors method
+  hosts: all
+  vars:
+    error_msgs:
+      - "Failed to connect to host."
+      - "Permission denied (publickey)."
+      - "Cannot allocate memory."
+      - "Connection timed out."
+  tasks:
+    - name: Set error state for all hosts
+      shell: "echo {{ item }} > /dev/stderr"
+      with_items: "{{ error_msgs }}"
+      register: result
+      failed_when: true
+    - name: Check host error state
+      assert:
+        that: "'Failed to connect' in hostvars[item].ansible_failed_result['msg']"
+        with_items: "{{ groups.all }}"
+        ignore_errors: true
+    - name: Clear host error state
+      assert:
+        that: "'Failed to connect' not in hostvars[item].ansible_failed_result['msg']"
+        with_items: "{{ groups.all }}"
+        ignore_errors: true
+      when: "'Failed to connect' in hostvars[item].ansible_failed_result['msg']"

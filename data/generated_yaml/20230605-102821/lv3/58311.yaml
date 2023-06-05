@@ -1,0 +1,36 @@
+
+- name: Test Snow modules authentication issues with SSO/ADFS
+  hosts: all
+  gather_facts: no
+  vars:
+    snow_user: "{{ ansible_user }}"
+    snow_password: "{{ ansible_password }}"
+    snow_instance: "{{ ansible_hostname }}"
+  tasks:
+    - name: Install required libraries
+      package:
+        name: python3-pip
+        state: present
+        become: true
+
+    - name: Install snow-api python module
+      pip:
+        name: pysnow
+        state: present
+        become: true
+
+    - name: Test Snow API connection
+      snow_record:
+        username: "{{ snow_user }}"
+        password: "{{ snow_password }}"
+        instance: "{{ snow_instance }}"
+        table: incident
+        state: present
+        data:
+          description: "Test Incident created"
+          short_description: "Test"
+      register: result
+
+    - name: Debug Snow API result
+      debug:
+        var: result

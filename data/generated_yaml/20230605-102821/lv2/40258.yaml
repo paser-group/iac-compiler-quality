@@ -1,0 +1,34 @@
+
+---
+- name: Test docker_container published_ports
+  hosts: all
+  gather_facts: false
+  become: true
+
+  tasks:
+    - name: Set up docker daemon.json
+      copy:
+        content: |
+          {
+              "default-address-pools": [
+                  {"base":"172.20.0.0/16","size":24}
+              ]
+          }
+        dest: /etc/docker/daemon.json
+        mode: 0644
+      notify: restart docker
+
+    - name: Create and start a container with published ports
+      docker_container:
+        name: test_container
+        image: alpine:3.12
+        state: started
+        published_ports:
+          - "{{ hostvars['ubuntu1']['ansible_default_ipv4']['address'] }}:22:22"
+          - "{{ hostvars['alpine1']['ansible_default_ipv4']['address'] }}:80:80"
+          - "{{ hostvars['centos1']['ansible_default_ipv4']['address'] }}:8080:8000"
+        log_driver: syslog
+        log_options:
+          syslog-address: "{{ hostvars['ubuntu1']['ansible_default_ipv4']['address'] }}:514"
+          syslog-format: rfc3164
+          tag: "test_container"

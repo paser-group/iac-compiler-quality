@@ -1,0 +1,31 @@
+
+- name: Softlink issue playbook
+  hosts: all
+  become: yes
+  tasks:
+    - name: Create a soft link
+      file:
+        src: "{{ ansible_env.HOME }}/vault_password"
+        dest: /etc/ansible/hosts
+        state: link
+      vars:
+        complex_path: "../" * 10 + "{{ ansible_env.HOME }}/vault_password"
+      register: link_output
+
+    - name: Try to access Ansible Vault
+      shell: "ansible-vault view /etc/ansible/hosts"
+      args:
+        chdir: "{{ ansible_env.HOME }}"
+      register: vault_view_output
+      when: link_output.changed
+
+    - name: Check Ansible Vault Output
+      debug:
+        msg: "{{ vault_view_output.stdout_lines }}"
+      when: vault_view_output.rc == 0
+
+    - name: Remove the soft link
+      file:
+        path: /etc/ansible/hosts
+        state: absent
+      when: link_output.changed

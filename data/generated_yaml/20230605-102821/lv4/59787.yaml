@@ -1,0 +1,27 @@
+yaml
+- name: Update IAM Password Policy
+  hosts: all
+  become: true
+
+  vars:
+    aws_default_password_policy:
+      - require_lowercase_characters: true
+      - require_uppercase_characters: true
+
+    group_password_policy:
+      - minimum_password_length: 12
+      - password_reuse_prevention: 20
+
+    iam_password_policy:
+      - default_password_policy: "{{ aws_default_password_policy }}"
+        password_policy[group]: "{{ group_password_policy }}"
+
+  tasks:
+    - name: Set IAM Password Policy
+      iam_password_policy:
+        state: update
+        policy_name: "{{ item.policy_name }}"
+        default_policy: "{{ item.default_password_policy }}"
+        group_policy: "{{ item.password_policy[group] }}"
+      with_items:
+        - "{{ iam_password_policy }}"

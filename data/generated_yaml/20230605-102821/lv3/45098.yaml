@@ -1,0 +1,31 @@
+
+- hosts: localhost
+  gather_facts: no
+
+  vars:
+    binary_data: !binary |
+      AAABAAEAEBAQAAEABAAoAQAAFgAAACgAAAAQAAAAIAAAAAEABAAAAAAAgAAAAAAAAAAAAAAAEAAAAAAA
+
+  tasks:
+    - name: Try to read inventory file containing binary data
+      ansible.builtin.command: 'ansible-inventory --inventory-file=inventory.yaml --list'
+
+      environment:
+        ANSIBLE_STDOUT_CALLBACK: json
+
+      register: output
+
+      ignore_errors: yes
+
+    - name: Display the command output
+      debug:
+        msg: "{{ output.stdout }}"
+
+    - name: Display any errors encountered
+      debug:
+        msg: "{{ output.stderr }}"
+
+    - name: Check for a JSON decoding error in the output
+      fail:
+        msg: "JSON decoding error encountered while trying to read inventory file with binary data!"
+      when: "'ERROR!'" in output.stdout

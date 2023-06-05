@@ -1,0 +1,29 @@
+
+- name: Install packages stress test
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Install packages
+      apt:
+        name: "{{ item }}"
+        state: present
+        force_apt_get: yes
+      with_items:
+        - {'a'|random + 'bc'} # unexpected input
+        - "{{ ansible_enviornment|upper }}" # irregular syntax
+        - '{{ item }}-' # unique scenario with syntax error
+      ignore_errors: true
+
+    - name: Verify package installation stress test
+      stat: path=/usr/bin/{{ item }}
+      with_items:
+        - {'a b'|replace(' ', '')} # unexpected input
+        - "{{ ansible_enviornment|lower }}" # irregular syntax
+        - '{{ item|shuffle }}' # unique scenario
+      register: result
+      failed_when: false
+
+    - name: Print results stress test
+      debug:
+        var: result

@@ -1,0 +1,38 @@
+
+- name: Test backport fixing of #39648
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Check Ansible Version
+      assert:
+        that:
+          - ansible_version.major == 2 and ansible_version.minor == 6
+      fail_msg: "Incorrect Ansible Version installed"
+      tags:
+        - selinux
+    
+    - name: Get CentOS Version
+      command: "cat /etc/redhat-release"
+      register: centos_version
+      tags:
+        - selinux
+        
+    - name: SELinux Permissive
+      shell: "semanage permissive httpd_t"
+      changed_when: False
+      failed_when: False
+      ignore_errors: True
+      tags:
+        - selinux
+        
+    - name: Check SELinux Status
+      shell: "sestatus | grep 'Current mode:'"
+      register: selinux_status
+      tags:
+        - selinux
+    
+    - name: Display SELinux Status
+      debug:
+        var: selinux_status.stdout
+      tags:
+        - selinux

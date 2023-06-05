@@ -1,0 +1,26 @@
+yaml
+- name: Simulate missing attribute error in Connection.py
+  hosts: all
+  gather_facts: no
+  tasks:
+  - name: create temporary directory
+    tempfile:
+      state: directory
+    register: temp_dir
+
+  - name: set SSH ControlMaster
+    ansible_connection: ssh
+    ansible_ssh_common_args: '-o ControlMaster=auto -o ControlPersist=60s'
+    register: set_ssh_cm
+
+  - name: connect to remote host
+    shell: "echo hello"
+    register: connect_remote
+    delegate_to: localhost
+
+  - name: connect again to remote host with persistent socket
+    shell: "echo hello"
+    register: connect_persistent_remote
+    delegate_to: localhost
+    environment:
+      SSH_AUTH_SOCK: "{{ set_ssh_cm.socket }}"

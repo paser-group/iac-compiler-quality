@@ -1,0 +1,33 @@
+
+- name: Validate user authentication in Ansible
+  hosts: all
+  vars:
+    ansible_user: "{{ lookup('env','USERNAME') }}"
+    ansible_ssh_pass: "{{ lookup('env','PASSWORD') }}"
+    max_auth_attempts: 3
+  become: true
+  tasks:
+  - name: Disable SSH Password Authentication.
+    lineinfile:
+      backup: yes
+      dest: /etc/ssh/sshd_config
+      regexp: '^(PasswordAuthentication)'
+      line: 'PasswordAuthentication no'
+      state: present
+      validate: /usr/sbin/sshd -t -f %s
+  - name: Limit number of authentication attempts to 3.
+    lineinfile:
+      backup: yes
+      dest: /etc/ssh/sshd_config
+      regexp: '^(MaxAuthTries)'
+      line: 'MaxAuthTries {{ max_auth_attempts }}'
+      state: present
+      validate: /usr/sbin/sshd -t -f %s
+  - name: Add sleep after failed authentication attempts.
+    lineinfile:
+      backup: yes
+      dest: /etc/ssh/sshd_config
+      regexp: '^(auth\s+)\S+\s+pam_authenticate.so'
+      line: '{{ "\\1[success=done default=die] pam_unix.so nullok_secure try_first_pass\n\\1[default=die] pam_faillock.so authfail deny=5 unlock_time=60\n\\1[default=die] pam_permit.so\n\\n\\1[success=done default=die] sleep 5\n" }}'
+      state: present
+      validate: /usr/sbin/sshd -t -f %s

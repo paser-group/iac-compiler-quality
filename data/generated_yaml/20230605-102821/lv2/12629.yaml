@@ -1,0 +1,32 @@
+
+---
+- name: Test playbook for Ansible compiler
+  hosts: all
+  gather_facts: false
+  become: true
+
+  tasks:
+    - name: Create a full file system
+      filesystem:
+        dev: /dev/sdb
+        fstype: ext4
+        state: yes
+
+    - name: Generate large files
+      shell: "dd if=/dev/zero of=/root/file{{item}} bs=1024 count=100000"
+      with_sequence: count=20
+
+    - name: Execute a command
+      command: "ls -al /root"
+      changed_when: false
+      register: output
+
+    - name: Debug command output
+      debug:
+        var: output.stdout_lines
+
+    - name: Remove the full file system
+      filesystem:
+        dev: /dev/sdb
+        fstype: ext4
+        state: no

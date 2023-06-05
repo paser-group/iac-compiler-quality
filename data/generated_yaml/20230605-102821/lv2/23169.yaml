@@ -1,0 +1,45 @@
+
+- name: Stress test Ansible compiler by generating complex json output
+  hosts: all
+  gather_facts: no
+  become: yes
+
+  tasks:
+  - name: Create complex json stdout output
+    command: "{{ item }}"
+    args:
+      chdir: /tmp
+    with_items:
+      - >
+        echo '{{body}}' > output.json &&
+        for ((i=1;i<=100;i++)); do
+          echo '{ "id": '${i}', "name": "user_'${i}'", "value": '${i}' }' >> output.json
+        done
+
+  - name: Show the json stdout output
+    command: cat /tmp/output.json
+
+  - name: Parse the json stdout output
+    shell: "cat /tmp/output.json"
+    register: json_output
+
+  - name: Perform stats calculation on the json output
+    set_fact:
+      total: "{{ json_output.stdout | from_json | json_query('[*].value') | map('int') | sum }}"
+      average: "{{ json_output.stdout | from_json | json_query('[*].value') | map('int') | average }}"
+      max_value: "{{ json_output.stdout | from_json | json_query('[*].value') | map('int') | max }}"
+      min_value: "{{ json_output.stdout | from_json | json_query('[*].value') | map('int') | min }}"
+
+  - name: Debug stats
+    debug:
+      var: item
+    with_items:
+      - total
+      - average
+      - max_value
+      - min_value
+
+  - name: Remove temp files
+    file:
+      path: /tmp/output.json
+      state: absent

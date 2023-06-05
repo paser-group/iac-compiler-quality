@@ -1,0 +1,23 @@
+
+- name: Simulate ec2_win_password unicode issue
+  hosts: windows
+  gather_facts: false
+  vars:
+    private_key_data: "{{ lookup('file', 'id_rsa') }}"
+
+  tasks:
+    - name: Install cryptography library
+      raw: "pip3 install cryptography"
+
+    - name: Register private key as Bytes object
+      set_fact:
+        priv_key: "{{ private_key_data | b64decode }}"
+
+    - name: Convert private key to string with encode
+      set_fact:
+        priv_key_str: "{{ priv_key | string | replace('\n', '') | encode('utf-8') }}"
+
+    - name: Use ec2_win_password module
+      ec2_win_password:
+        instance_id: i-01234567
+        private_key: "{{ priv_key_str }}"

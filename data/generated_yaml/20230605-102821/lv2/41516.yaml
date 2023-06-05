@@ -1,0 +1,25 @@
+
+---
+- name: Misleading Max Retries Exceeded error message when dest path doesn't exist
+  hosts: all
+  become: true
+  gather_facts: false
+
+  tasks:
+    - name: Upload to S3 bucket
+      aws_s3:
+        bucket: mybucket
+        object: "{{ item }}"
+        src: /tmp/localfile
+        dest: "{{ item }}/non_existing_directory/newfile"
+        mode: put
+      with_items:
+        - /existing_directory
+        - /non_existing_directory
+      ignore_errors: true
+
+    - name: Verify Max Retries Exceeded error message is thrown
+      assert:
+        that: "'Max Retries Exceeded' in item.msg"
+        fail_msg: "Max Retries Exceeded error message not thrown when dest path doesn't exist"
+      loop: "{{ ansible_play_batch }}"

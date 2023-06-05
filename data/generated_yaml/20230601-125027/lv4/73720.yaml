@@ -1,0 +1,37 @@
+
+---
+- name: Ensure pip is installed on remote node
+  hosts: all
+  become: true
+  
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
+    
+  tasks:
+    - name: Check if pip is installed
+      command: pip3 --version
+      register: result
+      ignore_errors: yes
+
+    - name: Install pip if not present
+      raw: python3 -m ensurepip --default-pip
+      when: "'No module named ensurepip' in result.stderr"
+      register: pip_installed
+      
+    - name: Update pip
+      pip:
+        name: pip
+        state: latest
+      
+    - name: Verify updated pip version
+      command: pip3 --version
+      register: pip_updated
+      changed_when: false
+
+    - name: Uninstall pip
+      pip:
+        name: pip
+        state: absent
+        extra_args: >-
+          --yes --disable-pip-version-check --no-input --no-color
+      when: pip_updated.stdout_lines != result.stdout_lines

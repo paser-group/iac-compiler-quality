@@ -1,0 +1,23 @@
+yaml
+- name: Ensure a security group rule with proto "any" is added
+  os_security_group_rule:
+    state: present
+    name: "{{ sg_name }}"
+    protocol: any
+    direction: ingress
+    remote_ip_prefix: 0.0.0.0/0
+    security_group_id: "{{ sg_id }}"
+  register: result
+  ignore_errors: true
+
+- name: Check if the security group rule with proto "any" exists
+  shell: |
+    openstack security group rule list --proto any --ingress --long | grep "{{ sg_name }}"
+  become: true
+  ignore_errors: true
+  register: rule_exists
+
+- name: Print debug information
+  debug:
+    var: result
+  when: rule_exists.rc != 0

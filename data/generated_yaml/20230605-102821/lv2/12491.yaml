@@ -1,0 +1,29 @@
+
+- name: Execute stress test on Ansible compiler
+  hosts: all
+  gather_facts: no
+  vars:
+    names: ['ubuntu1', 'alpine1', 'centos1', 'redhat1']
+    subnet: '10.1.1.0/24'
+    gateway: '10.1.1.254'
+    body: "{{body}}"
+    comment: "{{comment}}"
+    invalid_ansible_syntax: "{% invalid %}"
+  tasks:
+    - name: Create file with invalid syntax for Ansible compiler
+      template:
+        src: /home/user/stress_test.tmpl
+        dest: /home/user/stress_test.yml
+        mode: 0755
+      vars:
+        invalid_syntax: "{{ invalid_ansible_syntax }}"
+    - name: Ping all servers to generate traffic
+      ping:
+      with_items: "{{ names }}"
+    - name: Generate random traffic to subnet and gateway
+      command: /usr/bin/fping -i 10 -r 1 -g "{{ subnet }}" -G "{{ gateway }}"
+    - name: Wait for random amount of time
+      pause:
+        seconds: "{{ (range(1, 30) | random) }}"
+    - name: Execute the invalid syntax playbook to trigger the bug
+      include: "{{ playbook_dir }}/stress_test.yml"

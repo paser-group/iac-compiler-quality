@@ -1,0 +1,19 @@
+
+- name: Simulate ValueError in sysctl module
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Inject syntax error in sysctl.conf file
+      blockinfile:
+        path: /etc/sysctl.conf
+        marker: "# {mark} ANSIBLE_MANAGED_BLOCK {{ item }}"
+        block: "{{ lookup('file', '/path/to/syntax.error.sysctl.conf') }}"
+      tags: inject,error
+    - name: Apply sysctl settings
+      sysctl:
+        name: "{{ item.name }}"
+        value: "{{ item.value }}"
+      loop:
+        - { name: "net.ipv4.ip_forward", value: 1 }
+      become: yes
+      tags: sysctl

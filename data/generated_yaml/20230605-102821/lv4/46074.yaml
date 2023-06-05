@@ -1,0 +1,38 @@
+yaml
+- name: Update GCP compute instance network configs and verify
+  hosts: all
+  vars:
+    instance_name: my-instance
+    network_name: my-network
+    subnet_name: my-subnetwork
+    zone: us-central1-a
+  tasks:
+    - name: Update instance network configs
+      gcp_compute_instance:
+        name: "{{ instance_name }}"
+        zone: "{{ zone }}"
+        network_interface:
+          network: "projects/my-project/global/networks/{{ network_name }}"
+          subnetwork: "projects/my-project/regions/us-central1/subnetworks/{{ subnet_name }}"
+        auth_kind: serviceaccount
+        service_account_file: "/path/to/service_account_file.json"
+
+    - name: Verify the instance network configs
+      hosts: all
+      gather_facts: no
+      tasks:
+        - name: Check instance network configs
+          uri:
+            url: https://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip
+            method: GET
+            headers:
+              Metadata-Flavor: Google
+            return_content: yes
+          register: response
+          changed_when: false
+
+        - name: Validate network configurations
+          assert:
+            that:
+              - "'access-configs' in response.json"
+              - "response.json['access-configs'][0]['external-ip'] is defined"

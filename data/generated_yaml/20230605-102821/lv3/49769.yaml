@@ -1,0 +1,40 @@
+
+- name: Test ACI aci_bd_subnet error
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Create BD on ACI fabric
+      aci_bd:
+        host: "{{ inventory_hostname }}"
+        username: admin
+        password: "{{ lookup('file', '/path/to/password/file') }}"
+        tenant: prod
+        bd: test_bd
+        state: present
+        configure_mode: merge
+        aci_bum_interval: 300
+        aci_subnet:
+          - ip: 10.1.1.0/24
+            aggregation: true
+      register: botd_res
+
+    - name: Query ACI BD subnet
+      aci_bd_subnet:
+        host: "{{ inventory_hostname }}"
+        username: admin
+        password: "{{ lookup('file', '/path/to/password/file') }}"
+        tenant: prod
+        bd: test_bd
+        output_level: detailed
+        state: query
+      register: botd_subnet
+
+    - name: Debug result
+      debug:
+        var: botd_subnet
+
+    - name: Verify failed query result
+      assert:
+        that:
+          - "'msg' in botd_subnet and botd_subnet['msg'] == 'error in executing query'"
+        fail_msg: "Invalid ACI BD subnet query result"

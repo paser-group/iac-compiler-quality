@@ -1,0 +1,30 @@
+
+- name: Launch EC2 Instance
+  hosts: localhost
+  gather_facts: no
+  tasks:
+  - name: Launch EC2 instance
+    ec2:
+      region: "{{ region }}"
+      key_name: "{{ keyname }}"
+      instance_type: "{{ instancetype }}"
+      image: "{{ ami }}"
+      wait: true
+      count: 1
+      vpc_subnet_id: "{{subnet_id}}"
+      assign_public_ip: yes
+    register: ec2
+
+  - name: Register targets with the ALB
+    elb_target_group:
+      name: "my-target-group"
+      targets:
+        - id: "{{ ec2.instance_id }}"
+
+  - name: Verify target registration
+    wait_for:
+      host: "{{ elb_dns_name }}"
+      port: 80
+      state: started
+      delay: 10
+      timeout: 300

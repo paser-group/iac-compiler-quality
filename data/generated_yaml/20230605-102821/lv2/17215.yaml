@@ -1,0 +1,20 @@
+
+- hosts: all
+  gather_facts: yes
+  tasks:
+  - name: Check temp_path
+    assert:
+      that:
+        - temp_path is defined
+      fail_msg: "'temp_path' is not defined"
+  - name: Check disk space usage
+    shell: |
+      df -h / | tail -1 | awk '{print $5}' | tr -d '%'
+    register: disk_usage
+  - name: Print disk usage
+    debug:
+      var: disk_usage.stdout
+  - name: Create a large file to fill the disk
+    command: dd if=/dev/zero of=/tmp/largefile bs=1M count={{ 1024*100 }}
+  - name: Remove the large file
+    command: rm -f /tmp/largefile

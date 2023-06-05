@@ -1,0 +1,41 @@
+yaml
+---
+- name: Start LXC container using Ansible
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Install LXC dependencies
+      apt:
+        name:
+          - lxc
+          - python3-lxc
+        state: present
+
+    - name: Start LXC container
+      lxc_container:
+        name: my_container
+        state: started
+        template: ubuntu
+        template_options:
+          release: bionic
+        config:
+          security.privileged: "true"
+          raw.lxc: |
+            lxc.idmap = u 0 100000 1000
+            lxc.idmap = g 0 100000 1000
+            lxc.network.type = veth
+            lxc.network.link = node-net
+            lxc.network.flags = up
+            lxc.network.hwaddr = 00:16:3e:xx:xx:xx
+            lxc.rootfs.path = dir:/var/lib/lxc/my_container/rootfs
+            lxc.mount.auto = proc:rw sys:rw
+          authorized_keys:
+            type: disk
+            source: /root/.ssh/authorized_keys
+            readonly: true
+      register: lxc_result
+
+    - name: Display LXC container status
+      debug:
+        var: lxc_result.stdout_lines

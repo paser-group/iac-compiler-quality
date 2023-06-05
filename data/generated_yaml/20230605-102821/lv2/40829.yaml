@@ -1,0 +1,26 @@
+
+---
+- name: Test ios_facts module
+  hosts: ios_hosts
+  gather_facts: no
+
+  vars:
+    interfaces: [tunnel, ether]
+
+  tasks:
+  - name: Get ios_facts for all hosts
+    ios_facts:
+      gather_subset: interfaces
+
+  - name: Display the gathered facts
+    debug:
+      var: ansible_facts.ios_facts
+
+  - name: Verify MAC addresses
+    assert:
+      that:
+        - "'mac_address' not in hostvars[item]['ansible_facts']"
+        - "'ip_address' in hostvars[item]['ansible_facts']"
+      fail_msg: "{{item}} has MAC address in ios_facts"
+      success_msg: "{{item}} does not have MAC address in ios_facts"
+    when: inventory_hostname in groups['ios_hosts']

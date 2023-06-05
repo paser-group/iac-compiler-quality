@@ -1,0 +1,72 @@
+
+---
+
+- name: Stress test for cloudwatchlogs_log_group
+  hosts: all
+  tasks:
+
+  - name: Create a log group with retention in days
+    cloudwatchlogs_log_group:
+      name: stress-test-log-group
+      retentionInDays: "{{ item }}"
+      state: present
+    with_items:
+      - 1
+      - 30
+      - 60
+      - 90
+      - 180
+      - 365
+      - 730
+      - 1460
+
+  - name: Remove the log group
+    cloudwatchlogs_log_group:
+      name: stress-test-log-group
+      state: absent
+
+  - name: Create a log group with invalid retention in days
+    cloudwatchlogs_log_group:
+      name: stress-test-log-group
+      retentionInDays: "{{ item }}"
+      state: present
+    with_items:
+      - "a"
+      - []
+      - {}
+      - null
+      - true
+      - false
+      - 1000000000000
+
+  - name: Remove the log group
+    cloudwatchlogs_log_group:
+      name: stress-test-log-group
+      state: absent
+
+  - name: Create a log group with unexpected input
+    cloudwatchlogs_log_group:
+      name: "{{ item }}"
+      retentionInDays: 30
+      state: present
+    with_items:
+      - "{{ 'a' * 255 }}"
+      - "{{ 'a' * 256 }}"
+      - "{{ 'a' }}{{ 'b' }}{{ 'c' }}"
+      - "{{ [1, 2, 3] }}"
+      - "{{ {'a': 1, 'b': 2, 'c': 3} }}"
+      - $'{{print("hello")}}'
+
+  - name: Remove the log group
+    cloudwatchlogs_log_group:
+      name: "{{ item }}"
+      state: absent
+    with_items:
+      - "{{ 'a' * 255 }}"
+      - "{{ 'a' * 256 }}"
+      - "{{ 'a' }}{{ 'b' }}{{ 'c' }}"
+      - "{{ [1, 2, 3] }}"
+      - "{{ {'a': 1, 'b': 2, 'c': 3} }}"
+      - $'{{print("hello")}}'
+
+...

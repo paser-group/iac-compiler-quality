@@ -1,0 +1,46 @@
+
+- name: Test Cyrillic symbols in filenames in archive
+  hosts: ubuntu1
+  become: yes
+  gather_facts: no
+
+  tasks:
+  - name: Create file with Cyrillic symbols
+    copy:
+      content: "Привет"
+      dest: "/tmp/файл.txt"
+    delegate_to: localhost
+
+  - name: Create an archive with file name that has Cyrillic symbols
+    archive:
+      path: "/tmp/файл.txt"
+      dest: "/tmp/archive.tar.gz"
+      format: gztar
+      force_archive: true
+    delegate_to: localhost
+
+  - name: Extract archive and check file name
+    unarchive:
+      src: "/tmp/archive.tar.gz"
+      dest: "/tmp/"
+      remote_src: yes
+    register: archive_output
+    delegate_to: localhost
+
+  - name: Print the unarchive output
+    debug:
+      var: archive_output
+
+  - name: Remove archive and file with Cyrillic symbols
+    file:
+      state: absent
+      path: "/tmp/archive.tar.gz"
+    become: yes
+    delegate_to: localhost
+
+  - name: Remove file with Cyrillic symbols
+    file:
+      state: absent
+      path: "/tmp/файл.txt"
+    become: yes
+    delegate_to: localhost

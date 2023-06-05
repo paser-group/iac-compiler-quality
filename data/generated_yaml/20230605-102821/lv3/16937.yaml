@@ -1,0 +1,24 @@
+
+---
+
+- name: Test Run Once Task Failure
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Run once task with fail_cond
+      command: /bin/false
+      run_once: yes
+      register: commandResult
+
+    # Define an always block that will run regardless of the status of the previous tasks
+    - name: Ensure always block executes always
+      debug:
+        msg: "Always Block is Executing"
+      always:
+        - name: Check if the run_once task has failed
+          fail:
+            msg: "Run Once task Failed"
+          when: commandResult.rc != 0
+          ignore_errors: true
+      run_once: yes
+

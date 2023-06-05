@@ -1,0 +1,51 @@
+yaml
+- name: Create EC2 Metric Alarm
+  hosts: ec2_instances
+  gather_facts: false
+  become: true
+
+  vars:
+    period_in_seconds: 60
+    evaluation_period_in_seconds: 300
+
+  tasks:
+    - name: Create cloudwatch metric
+      cloudwatch_metric:
+        metric_name: "{{ metric_name }}"
+        namespace: "{{ namespace }}"
+        statistic: "{{ statistic }}"
+        dimensions: "{{ dimensions }}"
+        period: "{{ period_in_seconds }}"
+      register: metric_result
+
+    - name: Create cloudwatch alarm
+      cloudwatch_alarm:
+        name: "{{ alarm_name }}"
+        metric_name: "{{ metric_name }}"
+        namespace: "{{ namespace }}"
+        statistic: "{{ statistic }}"
+        dimensions: "{{ dimensions }}"
+        period: "{{ period_in_seconds }}"
+        evaluation_periods: "{{ evaluation_period_in_seconds // period_in_seconds }}"
+        threshold: "{{ threshold }}"
+        comparison: "{{ comparison }}"
+        state: "{{ state }}"
+        actions_enabled: "{{ actions_enabled }}"
+        alarm_description: "{{ alarm_description }}"
+        treat_missing_data: "{{ treat_missing_data }}"
+      register: alarm_result
+
+    - name: Verify alarm
+      assert:
+        that: alarm_result.alarm.state_value == 'OK'
+        msg: "EC2 metric alarm has gone into alarm state!"
+
+      failed_when: false
+
+  handlers:
+    - name: Delete the EC2 CloudWatch Alarm
+      cloudwatch_alarm:
+        state: absent
+        name: "{{ alarm_name }}"
+        region: "{{ region }}"
+      when: alarm_result.alarm.state_value == 'OK'

@@ -1,0 +1,32 @@
+
+- name: Stress test Ansible compiler
+  hosts: all
+  gather_facts: no
+  tasks:
+  - name: Install buildah and its dependencies
+    command: "apt-get install -y buildah &> /dev/null"
+    become: yes
+    become_user: root
+  - name: Create a container using buildah
+    command: "buildah from alpine |>> /var/log/buildah.log"
+    args:
+      chdir: "/tmp/"
+  - name: Copy data to the container
+    copy:
+      src: "{{ lookup('env', 'HOME') }}/file.txt"
+      dest: "/tmp/file.txt"
+  - name: Set permissions on the copied file
+    file:
+      path: "/tmp/file.txt"
+      mode: "2000"
+  - name: Commit the changes to the container
+    command: "buildah commit --format docker --rm container1 |>> /var/log/buildah.log"
+    args:
+      chdir: "/tmp/"
+  - name: Push the container image to Docker Hub
+    command: "buildah push -f docker -t myrepo/image {{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}/myrepo/image:latest |>> /var/log/buildah.log"
+    args:
+      chdir: "/tmp/"
+    environment:
+      DOCKER_USER: "{{ lookup('env', 'DOCKER_USER') }}"
+      DOCKER_PASSWORD: "{{ lookup('file', '/run/secrets/docker_password') }}"

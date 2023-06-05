@@ -1,0 +1,77 @@
+
+---
+- hosts: all
+  gather_facts: true
+
+  tasks:
+  - name: Run once task
+    shell: echo "I am a run_once task"
+    run_once: true
+
+  - name: Error task
+    shell: /usr/bin/false
+    register: error
+
+  - name: Run another task
+    shell: echo "I am another task"
+    rescue:
+      - name: Rescue task
+        shell: echo "I am a rescue task"
+      - name: Another rescue task
+        shell: echo "I am another rescue task"
+    always:
+      - name: Always task
+        shell: echo "I am an always task"
+      - name: Another always task
+        shell: echo "I am another always task"
+    when: error.failed
+
+  - name: Remove existing files
+    file:
+      path: "{{ item }}"
+      state: absent
+    loop:
+      - "/root/file1"
+      - "/root/file2"
+      - "/root/file3"
+      - "/root/file4"
+
+  - name: Create new files
+    file:
+      path: "/root/{{ item }}"
+      state: touch
+    loop:
+      - "{{ ansible_hostname }}-file1"
+      - "{{ ansible_hostname }}-file2"
+      - "{{ ansible_hostname }}-file3"
+      - "{{ ansible_hostname }}-file4"
+      - "{{ ansible_hostname }}-file5"
+
+  - name: Create a network interface
+    network_interface:
+      name: eth1
+      state: up
+      address: "10.1.1.{{ inventory_hostname | regex_replace('^.*([0-9]+)$', '\\1') }}"
+      netmask: 255.255.255.0
+      gateway: "10.1.1.254"
+
+  - name: Restart network service
+    service:
+      name: network
+      state: restarted
+    become: true
+    become_user: root
+
+  - name: Install a package from a third-party repository
+    yum:
+      name: third-party-package
+      state: present
+      vars:
+        repo_url: "http://third-party-repo.com"
+        repo_key_url: "{{ repo_url }}/RPM-GPG-KEY-ThirdPartyRepo"
+      repo_rpm:
+        name: "{{ repo_url }}/third-party-repo.rpm"
+
+  - name: Display success message
+    debug:
+      msg: "The playbook execution completed successfully."

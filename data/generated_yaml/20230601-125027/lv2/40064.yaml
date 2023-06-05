@@ -1,0 +1,39 @@
+
+- name: Test ios_config idempotency issue/bug
+  hosts: ios
+  gather_facts: false
+  vars:
+    interface_name: "{{ 'GigabitEthernet' + '%02d'|format(1..25|random) }}"
+    loopback_ip_address: "10.0.0.1"
+  tasks:
+    - name: Add loopback interface
+      ios_config:
+        lines:
+          - "interface loopback0"
+          - "ip address {{ loopback_ip_address }} 255.255.255.0"
+        parents: "router ospf"
+        match: exact
+        before: "ospf log-adjacency-changes"
+        after: "ospf dead-interval minimum 20"
+      register: result
+
+    - name: Modify loopback interface
+      ios_config:
+        lines:
+          - "description {{ 'B' * (1..1000|random) }}"
+          - "ip address {{ loopback_ip_address }} 255.255.255.255"
+        parents: "interface loopback0"
+        match: none
+      when: result.changed
+
+    - name: Remove loopback interface
+      ios_config:
+        lines:
+          - "no interface loopback0"
+        parents: "router ospf"
+        match: exact
+        before: "ospf log-adjacency-changes"
+        after: "ospf dead-interval minimum 20"
+      when: result.changed
+  become: true
+  become_method: enable

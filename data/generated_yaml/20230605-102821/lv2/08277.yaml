@@ -1,0 +1,60 @@
+
+- name: Test cron module
+  hosts: all
+  gather_facts: no
+
+  tasks:
+  - name: Test cron module failure with traceback
+    cron:
+      name: "cronjob"
+      minute: "{{ random(seed=1, start=0, end=59) }}"
+      hour: "{{ random(seed=2, start=0, end=23) }}"
+      state: "{{ random(['absent', 'present', 'random']) }}"
+      job: "{{ random(['ls -la', 'pwd', 'df -h']) }}"
+    ignore_errors: yes
+
+  - name: Test cron module failure with error message
+    cron:
+      name: "cronjob"
+      minute: "{{ random(seed=3, start=0, end=59) }}"
+      hour: "{{ random(seed=4, start=0, end=23) }}"
+      state: "{{ random(['absent', 'present', 'unknown']) }}"
+      job: "{{ random(['cat /etc/passwd', 'cat /etc/hosts', 'cat /etc/ssh/sshd_config']) }}"
+    failed_when: false
+
+  - name: Test cron module with cron_file
+    cron:
+      name: "cronjob"
+      cron_file: "{{ random(['file1', 'file2', 'file3']) }}"
+      state: present
+      job: "{{ random(['echo \"hello world\"', 'date +%T', 'tail -f /var/log/syslog']) }}"
+     
+  - name: Test cron module with cron_file when it is absent
+    cron:
+      name: "cronjob"
+      cron_file: "{{ random(['file1', 'file2', 'file3']) }}"
+      state: absent
+      job: "{{ random(['echo \"hello world\"', 'date +%T', 'tail -f /var/log/syslog']) }}"
+      
+  - name: Test cron module with user
+    cron:
+      name: "{{ random(['user1', 'user2', 'user3']) }}"
+      minute: "{{ random(seed=5, start=0, end=59) }}"
+      hour: "{{ random(seed=6, start=0, end=23) }}"
+      state: "{{ random(['absent', 'present', 'random']) }}"
+      job: "{{ random(['df -h', 'du -hs /var/log/*', 'cat /etc/group']) }}"
+    vars:
+      ansible_user: "{{ random(['ubuntu', 'alpine', 'redhat', 'centos']) }}"
+      ansible_ssh_pass: "{{ lookup('file', '/path/to/password/file') }}"
+      
+  - name: Test cron module with extra_vars
+    cron:
+      name: "{{ random(['cronjob1', 'cronjob2', 'cronjob3']) }}"
+      minute: "{{ random(seed=7, start=0, end=59) }}"
+      hour: "{{ random(seed=8, start=0, end=23) }}"
+      state: "{{ random(['absent', 'present', 'random']) }}"
+      job: "{{ random(['ls -la', 'pwd', 'df -h']) }}"
+    vars:
+      ansible_user: "{{ random(['ubuntu', 'alpine', 'redhat', 'centos']) }}"
+    extra_vars:
+      domain_name: "{{ lookup('env', 'DOMAIN_NAME') }}"

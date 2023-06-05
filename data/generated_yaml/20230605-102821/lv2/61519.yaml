@@ -1,0 +1,29 @@
+
+- hosts: all
+  become: true
+
+  tasks:
+    - name: Create a file with Cyrillic name
+      shell: touch Название_файла.txt
+
+    - name: Set file permissions
+      file:
+        path: Название_файла.txt
+        mode: 0644
+
+    - name: Copy the file from one node to another
+      copy:
+        src: Название_файла.txt
+        dest: /tmp/Название_файла.txt
+      delegate_to: "{{ item }}"
+      with_items: "{{ groups['all'] }}"
+
+    - name: Verify the copied file
+      stat:
+        path: /tmp/Название_файла.txt
+      register: output
+
+    - name: Print file permissions if the file is present
+      debug:
+        var: output.stat.mode
+      when: output.stat.exists == true

@@ -1,0 +1,60 @@
+
+- name: Test Ansible compiler for pip module and virtualenv_command issues
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: Install package using pip module with virtualenv_command arguments
+      pip:
+        name: mock
+        virtualenv: /opt/venv
+        virtualenv_command: python -m venv
+        executable: /usr/local/bin/python3
+      register: result
+
+    - name: Check the install status of the package
+      debug:
+        var: result
+
+    - name: Install package using pip module with virtualenv_command arguments and --quiet flag
+      pip:
+        name: mock
+        virtualenv: /opt/venv
+        virtualenv_command: python -m venv
+        executable: /usr/local/bin/python3
+        quiet: yes
+      register: result_quiet
+
+    - name: Check the install status of the package with --quiet flag
+      debug:
+        var: result_quiet
+
+    - name: Install package using pip module with invalid virtualenv_command
+      pip:
+        name: mock
+        virtualenv: /opt/venv
+        virtualenv_command: test
+        executable: /usr/local/bin/python3
+      register: result_err
+
+    - name: Handle error for invalid virtualenv_command
+      debug:
+        var: result_err
+      failed_when: result_err is failed
+      
+    - name: Test pip module with piped command output
+      command: echo "PATH=/path1:/path2:$PATH" | ansible-playbook --
+      environment:
+        PATH: "{{ansible_env.PATH}}"
+      register: result_piped
+
+    - name: Pass pip command arguments using vars
+      vars:
+        pip_args: "--trusted-host pypi.org --extra-index-url https://pypi.org/simple"
+      pip:
+        name: python
+        state: present
+        executable: /usr/local/bin/pip3
+        virtualenv: /opt/venv
+        extra_args: "{{pip_args}}"
+      become: yes

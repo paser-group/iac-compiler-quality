@@ -1,0 +1,29 @@
+
+- name: Test nxos_igmp_interface module
+  hosts: all
+  gather_facts: no
+
+  vars:
+    interface_name: "eth1"
+    access_group: "igmp_acl"
+  
+  tasks:
+    - name: Test cli connection
+      nxos_igmp_interface:
+        interface: "{{ interface_name }}"
+        access_group: "{{ access_group }}"
+        version: "2"
+
+    - name: Verify igmp interface configuration
+      nxos_command:
+        commands: "show run igmp interface {{ interface_name }}"
+      register: igmp_intf_output
+
+    - name: Check cli connection output
+      assert:
+        that:
+          - interface_name in igmp_intf_output.stdout
+          - access_group in igmp_intf_output.stdout
+          - "version 2" in igmp_intf_output.stdout
+        success_msg: "nxos_igmp_interface module test passed successfully."
+        fail_msg: "nxos_igmp_interface module test failed."

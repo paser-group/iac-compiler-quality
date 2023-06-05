@@ -1,0 +1,23 @@
+
+- name: Test ec2_lc
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Check for default VPCs
+      ec2_vpc_net_facts:
+        region: "{{ lookup('env', 'EC2_REGION') }}"
+      register: vpc_info
+    - name: Create EC2 instance with launch configuration
+      ec2_lc:
+        region: "{{ lookup('env', 'EC2_REGION') }}"
+        name: my-instance
+        state: present
+        launch_configuration_name: my-lc
+        image_id: ami-0c55b159cbfafe1f0
+        instance_type: t2.micro
+        vpc_id: "{{ vpc_info.vpcs[0].id | default(omit) }}"
+      when: vpc_info.vpcs | length > 0
+    - name: Fail when no default VPC found
+      debug:
+        msg: "No default VPC found in the region"
+      when: vpc_info.vpcs | length == 0

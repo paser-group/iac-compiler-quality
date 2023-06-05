@@ -1,0 +1,32 @@
+
+- name: Add instance to autoscaling group
+  esg_asg:
+    name: my_autoscaling_group
+    min_size: 1
+    max_size: 3
+    desired_capacity: 2
+    region: us-west-1
+    launch_template:
+      id: lt-03a585965b9d2b3f2
+      version: {{ item.version }}
+    lifecycle_hooks:
+      post_auto_scaling_group_create:
+        - heartbeat_timeout: 900
+          lifecycle_transition: autoscaling:EC2_INSTANCE_LAUNCHING
+          notification_target_arn: arn:aws:sns:us-west-1:123456789012:MyTopic
+          heartbeat_period: 60
+          default_result: ABANDON
+      heartbeat_timeout: 900
+  with_items:
+    - { version: 1 }
+    - { version: 2 }
+  async: 50
+  poll: 5
+  register: asg_result
+
+- name: Wait for instance to be added
+  async_status:
+    jid: "{{ asg_result.ansible_job_id }}"
+  register: async_result
+  until: async_result.finished
+  retries: 60

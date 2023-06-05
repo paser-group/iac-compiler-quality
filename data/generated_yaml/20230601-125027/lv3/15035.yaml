@@ -1,0 +1,25 @@
+
+- name: ansible-playbook doesn't report error if the inventory file doesn't exist
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+  - name: Test connectivity to the inventory
+    ping:
+
+  - name: Update inventory file path
+    lineinfile:
+      path: /etc/ansible/hosts
+      line: 'ansible_connection=local ansible_python_interpreter="{{ansible_playbook_python}}"'
+      create: yes
+    delegate_to: localhost
+
+  - name: Run the playbook with an invalid inventory path
+    command: ansible-playbook --inventory-file=/path/to/invalid/inventory playbook.yml
+    register: playbook_output
+    ignore_errors: true
+
+  - name: Check Ansible error
+    fail:
+      msg: 'Ansible error occurred'
+    when: "'failed to parse inventory with YAML' not in playbook_output.stderr"

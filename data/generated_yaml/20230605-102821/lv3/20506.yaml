@@ -1,0 +1,33 @@
+
+- name: create firewall rule
+  hosts: localhost
+  vars:
+    my_project: my_project 
+    my_network: my_network
+    my_subnet: my_subnet
+  tasks:
+  - name: create firewall rule
+    gcp_compute_firewall:
+      name: default-allow-internal
+      direction: ingress
+      network: projects/{{ my_project }}/global/networks/{{ my_network }}
+      description: allow internal traffic
+      allow:
+      - protocol: tcp
+        ports:
+        - 80
+        - 443
+        - 22
+  - name: add the rule to all instances
+    gcp_compute_instance:
+      name: all-instances
+      zone: us-central1-a
+      project: "{{my_project}}"
+      network_interface:
+        network: projects/{{ my_project }}/global/networks/{{ my_network }}
+        network_ip: "{{item}}"
+      tags:
+          items:
+          - default-allow-internal
+    with_items:
+        - "{{query('gcp_compute', 'instance-groups/list-instances', {'instance_group': 'all-instances', 'zone': 'us-central1-a', 'project': '{{my_project}}'})['instances'] | map(attribute='network_interfaces')|flatten|map(attribute='network_ip')|flatten|list}}"

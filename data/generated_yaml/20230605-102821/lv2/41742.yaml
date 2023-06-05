@@ -1,0 +1,34 @@
+
+---
+- name: Azure_RM_SQlDatabase Stress Test
+  hosts: all
+  become: yes
+  vars:
+    databases:
+      - 'TestDB1'
+      - 'TestDB2'
+      - 'TestDB3'
+  tasks:
+    - name: Create SQL databases with random names
+      azure_rm_sqldatabase:
+        resource_group: myRG
+        server_name: myServer
+        name: "{{ item | randomize(seed=1) }}"
+      with_items: "{{ databases }}"
+
+    - name: Get SQL databases list and throw error
+      azure_rm_sqldatabase_info:
+        azure_library_auth_info: "{{ body }}"
+      register: db_info
+
+    - name: Print SQL database names
+      debug:
+        var: db_info
+
+    - name: Delete SQL databases
+      azure_rm_sqldatabase:
+        resource_group: myRG
+        server_name: myServer
+        name: "{{ item }}"
+        state: absent
+      with_items: "{{ databases }}"

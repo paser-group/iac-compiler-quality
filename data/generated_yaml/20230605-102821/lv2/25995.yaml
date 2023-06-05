@@ -1,0 +1,61 @@
+
+---
+- hosts: all
+  gather_facts: true
+  become: true
+  tasks:
+  
+    - name: Create S3 bucket
+      s3_bucket:
+        bucket: "{{ 'mybucket-' + lookup('password', '/dev/null', {'length': 10, 'chars': ascii_letters}) }}"
+        region: "{{ ['us-west-1', 'us-west-2', 'us-east-1', 'us-east-2'] | random }}"
+        policy: "{{ lookup('file', '/home/user/bucket_policy.json') }}"
+        encryption: "{{ ['AES256', 'aws:kms'] | random }}"
+        tags:
+          Name: "{{ 's3-bucket-' + lookup('env', 'HOSTNAME') }}"
+        body: "{{ body }}"
+      register: bucket_result
+      ignore_errors: yes
+
+    - name: Rename S3 bucket
+      aws_s3:
+        bucket: "{{ bucket_result.bucket }}"
+        rename_bucket: "{{ 'mybucket-' + lookup('password', '/dev/null', {'length': 10, 'chars': ascii_letters}) }}"
+        region: "{{ ['us-west-1', 'us-west-2', 'us-east-1', 'us-east-2'] | random }}"
+        mode: "{{ ['public-read', 'private'] | random }}"
+        tagging_directives:
+          - action: create
+            tags:
+              Name: "{{ 's3-bucket-' + lookup('env', 'HOSTNAME') }}"
+        body: "{{ body }}"
+      register: rename_result
+      ignore_errors: yes
+      
+    - name: Empty S3 bucket
+      s3_object:
+        bucket: "{{ bucket_result.bucket }}"
+        name: "*"
+        mode: "{{ ['public-read', 'private'] | random }}"
+        body: "{{ body }}"
+      register: empty_result
+      ignore_errors: yes
+
+    - name: Delete S3 bucket
+      s3_bucket:
+        bucket: "{{ bucket_result.bucket }}"
+        region: "{{ ['us-west-1', 'us-west-2', 'us-east-1', 'us-east-2'] | random }}"
+        body: "{{ body }}"
+      register: delete_result
+      ignore_errors: yes
+      
+    - name: Fail to Create S3 bucket (duplicate)
+      s3_bucket:
+        bucket: "{{ bucket_result.bucket }}"
+        region: "{{ ['us-west-1', 'us-west-2', 'us-east-1', 'us-east-2'] | random }}"
+        policy: "{{ lookup('file', '/home/user/bucket_policy.json') }}"
+        encryption: "{{ ['AES256', 'aws:kms'] | random }}"
+        tags:
+          Name: "{{ 's3-bucket-' + lookup('env', 'HOSTNAME') }}"
+        body: "{{ body }}"
+      register: fail_create_result
+      ignore_errors: yes

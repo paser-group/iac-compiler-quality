@@ -1,0 +1,23 @@
+
+---
+- name: Test Ansible URI module with invalid API token authentication
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Invalid API token authentication test
+      uri:
+        url: https://example.com/api/data
+        method: GET
+        return_content: yes
+        validate_certs: no
+        headers:
+          Authorization: "Bearer {{ api_token }}"
+        status_code: [200, 401]
+      register: response
+      ignore_errors: yes
+
+    - name: Fail when unauthorized access is successful
+      fail:
+        msg: "API token authentication issue with URI module"
+      when: "'OK' in item.content and item.status == 200"
+      with_items: "{{ response.results }}"

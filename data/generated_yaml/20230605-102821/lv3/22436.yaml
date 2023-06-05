@@ -1,0 +1,24 @@
+
+- name: Emulate Ansible crash due to 'surrogate_then_replace' error handler
+  hosts: all
+  tasks:
+    - name: Create file with iso8859-15 encoding
+      shell: echo -e "\xc4rztin" > /tmp/iso_file.txt
+      register: iso_file_created
+    
+    - name: Copy file with diff option and unknown error handler
+      copy:
+        src: /tmp/iso_file.txt
+        dest: /tmp/iso_file_copy.txt
+        check_mode: no
+        diff: yes
+        remote_src: yes
+        content: "{{ lookup('file', '/tmp/iso_file.txt') }}"
+        force: yes
+        backup: yes
+        blocksize: 4096
+        mode: "a+r"
+        owner: root
+        group: root
+        validate: "/usr/bin/echo 'validation passed'"
+        errors: "surrogate_then_replace"

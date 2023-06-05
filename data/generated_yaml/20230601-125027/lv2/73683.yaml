@@ -1,0 +1,43 @@
+
+- hosts: all
+  remote_user: ansible
+  gather_facts: no
+  vars:
+    folder_path: "/home/user/{{ hostname }}"
+    invalid_path: "/home/user/{{ hostname }}/_hidden_folder"
+    attack_pattern: "&pwd -V"
+    forbidden_path: "/dev/null/folder"
+  tasks:
+  - name: Create folder in valid path
+    file:
+      path: "{{ folder_path }}"
+      state: directory
+  - name: Attempt to create folder in invalid path
+    file:
+      path: "{{ invalid_path }}"
+      state: directory
+  - name: Attempt to create folder in forbidden path
+    file:
+      path: "{{ forbidden_path }}"
+      state: directory
+  - name: Execute invalid command with shell module
+    shell: "{{ attack_pattern }}"
+    register: command_result
+    ignore_errors: yes
+  - name: Debug output of the result
+    debug:
+      var: command_result
+  - name: Adding multiple users with the same name
+    user:
+      name: ansible
+      shell: /bin/bash
+      groups: wheel
+      append: yes
+      generate_ssh_key: yes
+      ssh_key_bits: 1024
+  - name: Upgrade all packages to latest version
+    apt:
+      name: "*"
+      update_cache: yes
+      state: latest
+

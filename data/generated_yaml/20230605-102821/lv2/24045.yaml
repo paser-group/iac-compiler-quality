@@ -1,0 +1,40 @@
+
+- name: Compute zone list permissions issue
+  hosts: all
+  gather_facts: false
+
+  tasks:
+  - name: Check if compute zone list permission exists
+    command: /bin/ls -al /etc/permissions.d/compute_zone_list_permission
+    register: permission_exists
+
+  - name: Create new permission file
+    command: /bin/touch /etc/permissions.d/compute_zone_list_permission
+    when: permission_exists.rc != 0
+
+  - name: Set permission
+    command: /bin/chmod 644 /etc/permissions.d/compute_zone_list_permission
+    when: permission_exists.rc != 0
+
+  - name: Restart service
+    command: /sbin/service compute_zone_list restart
+    when: permission_exists.rc != 0
+
+  - name: Enable permissions
+    command: /sbin/setenforce 0
+    become: true
+    when: permission_exists.rc != 0
+
+  - name: Disable permissions
+    command: /sbin/setenforce 1
+    become: true
+    when: permission_exists.rc != 0
+
+  - name: Check file exists
+    stat:
+      path: /etc/permissions.d/compute_zone_list_permission
+    register: file_status
+
+  - name: Remove file
+    command: /bin/rm /etc/permissions.d/compute_zone_list_permission
+    when: file_status.stat.exists == True

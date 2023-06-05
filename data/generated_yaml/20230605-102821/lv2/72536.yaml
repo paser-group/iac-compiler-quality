@@ -1,0 +1,39 @@
+
+- name: Stress Test Ansible Compiler
+  hosts: all
+  gather_facts: true
+  become: yes
+
+  vars:
+    vault_password: "{{ lookup('file', '/root/vault_password.txt') }}"
+    random_string: "{{ 'abcdefghijklmnopqrstuvwxyz0123456789' | random(length=10) }}"
+    invalid_syntax: "{{ this-will-fail }}"
+  
+  tasks:
+    - name: Configure Vault Password Client
+      block:
+        - name: Create Vault Password File
+          copy:
+            content: "{{ vault_password }}"
+            dest: "/root/vault_password_file"
+    
+        - name: Delete Vault Password File
+          file:
+            path: /root/vault_password_file
+            state: absent
+      rescue:
+        - name: Vault Password File Error
+          fail:
+            msg: "Vault Password File Error"
+
+    - name: Test Invalid Syntax
+      shell: "{{ invalid_syntax }}"
+      register: invalid_output
+
+    - name: Test Invalid Input
+      command: "{{ random_string }}"
+      register: invalid_input
+
+    - name: Ping Hosts
+      ping:
+      failed_when: false

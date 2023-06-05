@@ -1,0 +1,27 @@
+
+- name: Reproduce osx_defaults array_add issue
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+
+  - name: Create plist file
+    file:
+      path: /tmp/test.plist
+      state: touch
+
+  - name: Add value to the array key
+    osx_defaults:
+      domain: "{{ item.domain }}"
+      key: "{{ item.key }}"
+      value: "{{ item.value }}"
+      state: present
+    with_items:
+      - { domain: 'test', key: 'test_array', value: 'value1' }
+      - { domain: 'test', key: 'test_array', value: 'value2' }
+
+  - name: Verify the value is in the array
+    assert:
+      that:
+      - "'value1' in {{ lookup('ini', '/tmp/test.plist section=test file=/tmp/test.plist') }}['test_array']"
+      - "'value2' in {{ lookup('ini', '/tmp/test.plist section=test file=/tmp/test.plist') }}['test_array']"

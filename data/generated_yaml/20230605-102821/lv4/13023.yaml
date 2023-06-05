@@ -1,0 +1,32 @@
+
+- name: Performance Test
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Touch file
+      file:
+        path: /tmp/testing.touch
+        state: touch
+      run_once: True
+    - name: Copy files
+      copy:
+        src: /dev/zero
+        dest: /tmp/{{ inventory_hostname }}-{{ item }}
+      with_items: "{{ range(200) | list }}"
+      when: inventory_hostname in groups['ubuntu']
+      delegate_to: ubuntu1
+    - name: Check files
+      stat:
+        path: /tmp/{{ inventory_hostname }}-{{ item }}
+      with_items: "{{ range(200) | list }}"
+      when: inventory_hostname in groups['ubuntu']
+      delegate_to: ubuntu1
+      register: stat_result
+      ignore_errors: true
+    - name: Cleanup files
+      file:
+        path: /tmp/{{ inventory_hostname }}-{{ item }}
+        state: absent
+      with_items: "{{ range(200) | list }}"
+      when: inventory_hostname in groups['ubuntu']
+      delegate_to: ubuntu1

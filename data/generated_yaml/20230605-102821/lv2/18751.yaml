@@ -1,0 +1,37 @@
+
+---
+- name: Stress testing Ansible compiler
+  hosts: ubuntu1, alpine1, centos1, redhat1
+  become: yes
+  gather_facts: true
+
+  tasks:
+    - name: Copy fact_cache to incorrect path
+      copy:
+        src: /var/tmp/fact_cache
+        dest: /etc/ansible/facts_cache/{{ ansible_os_family }}_temp
+      ignore_errors: yes
+
+    - name: Set fact_caching to incorrect value
+      set_fact:
+        ansible_fact_caching: RedisCache
+      ignore_errors: yes
+
+    - name: Error-prone task with incorrect fact caching
+      command: echo "{{ item }}"
+      loop:
+        - "Incorrect fact caching {{ ansible_fact_caching }} leads to a weird error"
+        - "This error is due to the incorrect fact_cache path /etc/ansible/facts_cache/{{ ansible_os_family }}_temp"
+      ignore_errors: yes
+
+    - name: Remove fact_cache from incorrect path
+      file:
+        path: /etc/ansible/facts_cache/{{ ansible_os_family }}_temp
+        state: absent
+      ignore_errors: yes
+ 
+  post_tasks:
+    - name: Clean up fact_cache directories
+      file:
+        path: /etc/ansible/facts_cache/{{ ansible_os_family }}_temp
+        state: absent

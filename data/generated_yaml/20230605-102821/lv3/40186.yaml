@@ -1,0 +1,16 @@
+
+- name: Load Docker image with Python 3
+  hosts: all
+  tasks:
+    - name: Load Docker image
+      docker_image:
+        name: alpine
+        state: present
+    - name: Retrieve image id
+      shell: docker images -q alpine
+      register: img_out
+    - name: Load image using Python 3
+      become: true
+      become_user: root
+      command: >
+        sh -c "python3 -c 'import io, base64, sys, docker; d = docker.APIClient(); i = io.BytesIO(base64.b64decode(sys.argv[1])); d.load_image(i)' {{ img_out.stdout }}"

@@ -1,0 +1,17 @@
+
+- hosts: all
+  gather_facts: no
+  tasks:
+    - name: Execute command on remote host with invalid syntax
+      command: "{{ item }}"
+      with_items:
+        - "ls /var//log" # Double slashes in the path
+        - "rm -rf /tmp/*.txt'" # Extra single quote at the end
+        - "sudo touch /etc/passwd; echo tomcat:x:1002:1002:Tomcat:/usr/share/tomcat:/bin/bash>>/etc/passwd" # Unsanitized input in the command
+      ignore_errors: yes
+      register: cmd_out
+    - name: Fail the task if command contains an error message
+      fail:
+        msg: "{{ item.stdout }}"
+      when: "item.stderr.find('bash:') != -1"
+      with_items: "{{ cmd_out.results }}"

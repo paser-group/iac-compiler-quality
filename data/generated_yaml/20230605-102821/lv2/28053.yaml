@@ -1,0 +1,34 @@
+
+- name: Stress test for Ansible compiler
+  hosts: all
+  tasks:
+
+  - name: Install required packages
+    apt:
+      name: ['lxc', 'lxc-templates']
+      state: present
+    become: true
+
+  - name: Verify if the cgroup namespace is mounted
+    command: grep -q cgroup /proc/self/mounts
+    changed_when: false
+    failed_when: false
+    register: cgroup_verif
+
+  - name: Mount cgroup namespace if not already done
+    mount:
+      name: cgroup
+      src: none
+      path: /sys/fs/cgroup
+      fstype: cgroup
+      opts: "noauto, x-systemd.requires=/sys/fs/cgroup/systemd"
+    when: cgroup_verif.rc != 0
+    become: true
+
+  - name: Create and start LXC container with default configuration
+    command: lxc-create -n container1 -t debian -- -r stretch
+    become: true
+
+  - name: Start the LXC container
+    command: lxc-start -n container1
+    become: true

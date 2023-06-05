@@ -1,0 +1,19 @@
+
+- name: Check for duplicate entries of default Vault-ids
+  hosts: all
+  become: true
+  tasks:
+    - name: List all files under the default Vault-ids path
+      shell: ls /etc/ansible/vault-password/ids
+      register: file_list
+  
+    - name: Check for duplicate entries
+      command: cat /etc/ansible/vault-password/ids/{{item}} | awk '{print $1}' | sort | uniq -d
+      with_items: "{{ file_list.stdout_lines }}"
+      when: item is defined
+      ignore_errors: true
+      register: duplicate_entries
+  
+    - name: Print duplicate entries
+      debug:
+        var: duplicate_entries.stdout_lines

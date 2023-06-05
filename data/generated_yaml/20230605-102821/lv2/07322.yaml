@@ -1,0 +1,54 @@
+
+- name: apt_repository module error and proxy usage stress test
+  hosts: all
+  become: true
+
+  vars:
+    http_proxy: "http://10.1.1.100:8080"
+    https_proxy: "http://10.1.1.100:8080"
+    no_proxy: "localhost,127.0.0.1,{{ansible_host}},10.1.1.0/24"
+
+  tasks:
+    - name: Add the repository's apt key
+      apt_key:
+        id: "A1C052F8"
+        url: "http://repository.example.com/debian/repo.key"
+      register: result
+      ignore_errors: true
+
+    - name: Add apt repository with invalid proxy settings
+      apt_repository:
+        repo: "deb http://repository.example.com/ubuntu/ bionic main universe",
+        state: present,
+        proxy: "http://invalid.proxy.com:8080"
+      register: result
+      ignore_errors: true
+
+    - name: Install packages from repository with valid proxy settings
+      apt:
+        name: ["package1", "package2"],
+        state: present,
+        proxy: "{{http_proxy}}"
+      register: result
+      ignore_errors: true
+
+    - name: Update apt cache with invalid cache path
+      apt:
+        update_cache: true,
+        cache_valid_time: 3600,
+        cache_valid: no,
+        cache_dir: ""
+      register: result
+      ignore_errors: true
+
+    - name: Remove apt repositories without proper authentication
+      apt_repository:
+        repo: "deb http://repository.example.com/private/ bionic main"
+      register: result
+      ignore_errors: true
+
+    - name: Test connectivity with wrong network interface
+      shell: ping -c 1 8.8.8.8
+      when: ansible_default_ipv4.interface != "eth0"
+      register: result
+      ignore_errors: true

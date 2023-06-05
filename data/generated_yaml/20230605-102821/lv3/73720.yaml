@@ -1,0 +1,32 @@
+
+- name: Test Pip Installation
+  hosts: all
+  become: yes
+  tasks:
+  - name: Install Pip
+    command: sudo apt-get install python-pip -y
+    register: pip_install
+    
+  - debug:
+      var: pip_install.stdout_lines
+    
+  - name: Append Pip to PATH
+    lineinfile:
+      dest: /etc/environment
+      state: present
+      regexp: 'PATH=(.*)'
+      line: 'PATH={{ ansible_env.PATH }}:/usr/local/bin'
+      validate: 'source /etc/environment && env'
+      
+  - name: Install Flask
+    pip:
+      name: Flask
+      executable: pip
+      state: latest
+      
+  - name: Verify Flask Installation
+    command: flask --version
+    register: flask_version
+    
+  - debug:
+        var: flask_version.stdout_lines

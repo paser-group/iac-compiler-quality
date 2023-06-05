@@ -1,0 +1,25 @@
+
+- name: Test Ansible Escalation Permissions
+  hosts: all
+  gather_facts: no
+  become: yes
+  vars:
+    file_path: "/opt/testfile"
+    file_perms: "0644"
+    
+  tasks:
+    - name: Create Test File
+      file:
+        path: "{{ file_path }}"
+        state: touch
+    - name: Set Incorrect File Permissions
+      shell: "chmod +a {{ file_perms }} {{ file_path }}"
+      ignore_errors: yes
+    - name: Ensure File Permissions Are Correct
+      stat:
+        path: "{{ file_path }}"
+      register: file_stat
+    - name: Fail If Incorrect Permissions Are Set
+      fail:
+        msg: "Incorrect file permissions for {{ file_path }}: {{ file_stat.mode }}"
+      when: file_stat.mode != "100644"

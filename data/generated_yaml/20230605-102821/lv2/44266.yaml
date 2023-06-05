@@ -1,0 +1,31 @@
+
+- name: User module shell test
+  hosts: all
+  gather_facts: no
+  tasks:
+  
+    - name: Add new user with irregular shell
+      user:
+        name: testuser
+        shell: /bin/nonexistent-shell
+        state: present
+
+    - name: Change the default shell for all users on Debian
+      replace:
+        path: /etc/default/useradd
+        regexp: '^SHELL=/bin/sh$'
+        replace: 'SHELL=/bin/bash'
+        backup: yes
+      when: ansible_distribution in ['Debian', 'Ubuntu']
+
+    - name: Delete the test user on all nodes
+      user:
+        name: testuser
+        state: absent
+
+    - name: Add new user with a specific shell and home directory
+      user:
+        name: testuser2
+        shell: /bin/bash
+        create_home: yes
+        home: /home/testuser2

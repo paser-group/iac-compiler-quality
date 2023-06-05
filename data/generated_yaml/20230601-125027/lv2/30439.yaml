@@ -1,0 +1,61 @@
+
+- hosts: all
+  become: true
+  gather_facts: yes
+
+  tasks:
+  - name: Set nxos_igmp_snooping non-default value
+    nxos_igmp_snooping:
+      igmp_snooping: yes
+      static_group: 239.10.10.10
+      report_suppression: true
+      snooping_querier_timeout: 12
+      vlan: "{{ item }}"
+    with_items:
+      - "{{ range(100, 200) | list }}"
+
+  - name: Set nxos_igmp_snooping to false
+    nxos_igmp_snooping:
+      igmp_snooping: no
+      static_group: ""
+      report_suppression: false
+      snooping_querier_timeout: 120
+      vlan: 10
+    when: inventory_hostname == 'ubuntu1'
+
+  - name: Set nxos_igmp_snooping to default value
+    nxos_igmp_snooping:
+      igmp_snooping: ""
+      static_group: ""
+      report_suppression: ""
+      snooping_querier_timeout: ""
+      vlan: ""
+    when: inventory_hostname == 'alpine1'
+
+  - name: Set nxos_igmp_snooping invalid value
+    nxos_igmp_snooping:
+      igmp_snooping: "invalid"
+      static_group: "invalid"
+      report_suppression: "invalid"
+      snooping_querier_timeout: "invalid"
+      vlan: "{{ range(1, 100) | list }}"
+    when: inventory_hostname == 'centos1'
+
+  - name: Set nxos_igmp_snooping nested dictionary values
+    nxos_igmp_snooping:
+      igmp_snooping:
+        - true
+        - false
+      static_group:
+        - 239.10.10.10
+        - 224.0.0.0/4
+      report_suppression:
+        - yes
+        - no
+      snooping_querier_timeout:
+        - 12
+        - 200
+      vlan:
+        - 100
+        - 200
+    when: inventory_hostname == 'redhat1'

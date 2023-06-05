@@ -1,0 +1,33 @@
+
+- name: Create GCP image from currently used disk
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    gce_project_id: <project_id>
+    gce_service_account_email: <service_account_email>
+    gce_cred_kind: serviceaccount
+    gce_cred_file: <path_to_service_account_key_file>
+    gce_disk_name: <disk_name>
+    gce_image_name: <image_name>
+
+  tasks:
+    - name: Snapshot the disk
+      gcp_compute_snapshot:
+        name: "{{ gce_disk_name }}-snapshot"
+        project: "{{ gce_project_id }}"
+        auth_kind: "{{ gce_cred_kind }}"
+        service_account_file: "{{ gce_cred_file }}"
+        disk: "{{ gce_disk_name }}"
+        wait: yes
+        timeout: 200
+
+    - name: Create GCP image
+      gcp_compute_image:
+        name: "{{ gce_image_name }}"
+        project: "{{ gce_project_id }}"
+        auth_kind: "{{ gce_cred_kind }}"
+        service_account_file: "{{ gce_cred_file }}"
+        source_disk: "{{ gce_disk_name }}"
+        wait: yes
+        timeout: 200

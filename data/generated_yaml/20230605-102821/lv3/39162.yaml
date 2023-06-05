@@ -1,0 +1,24 @@
+
+- name: Demonstrate Vault Encryption Error
+  hosts: ubuntu1
+  vars_prompt:
+    - name: secret
+      prompt: "Enter a Secret to Encrypt"
+      private: yes
+  tasks:
+    - name: Encrypt Secret with Ansible Vault
+      ansible.builtin.encrypt:
+        vault_password_file: /path/to/vault_password_file
+        plaintext: "{{ secret }}"
+      register: secret_encryption_result
+
+    - name: Store Encrypted Secret in hosts file
+      lineinfile:
+        path: /etc/hosts
+        line: "secret={{ secret_encryption_result['ciphertext'] }}"
+        regexp: '^secret=.*'
+        state: present
+
+    - name: Access Encrypted Secret using hostvars[]
+      debug:
+        var: hostvars['ubuntu1']['secret']

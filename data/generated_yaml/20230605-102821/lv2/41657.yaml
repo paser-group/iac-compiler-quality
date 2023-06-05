@@ -1,0 +1,73 @@
+
+---
+- name: ios_l2_interface bug detection playbook
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: set fact for interfaces and vlans
+      set_fact:
+        vlans:
+          - vlan10
+          - vlan20
+          - vlan30
+        interfaces:
+          - GigabitEthernet0/0/1
+          - GigabitEthernet0/0/2
+          - GigabitEthernet0/0/3
+
+    - name: configure vlans and interfaces
+      ios_l2_interface:
+        name: "{{ item.0 }} {{ item.1 }}"
+        state: "{{ item.2 }}"
+        provider:
+          host: "{{ inventory_hostname }}"
+          username: "{{ lookup('env', 'ANSIBLE_USERNAME') }}"
+          password: "{{ lookup('file', ansible_password_file) }}"
+      loop:
+        - ['{{ vlans[0] }}', '{{ interfaces[0] }}', 'present']
+        - ['{{ vlans[1] }}', '{{ interfaces[1] }}', 'present']
+        - ['{{ vlans[2] }}', '{{ interfaces[2] }}', 'present']
+        - ['{{ vlans[0] }}', '{{ interfaces[1] }}', 'absent']
+        - ['{{ vlans[1] }}', '{{ interfaces[2] }}', 'absent']
+        - ['{{ vlans[2] }}', '{{ interfaces[0] }}', 'absent']
+
+    - name: configure interface description and mode
+      ios_l2_interface:
+        name: "{{ item }}"
+        description: "{{ lookup('password', '/dev/null chars=ascii_letters') | random(seed=inventory_hostname + item) }}"
+        mode: "{{ ['access', 'trunk'] | random(seed=inventory_hostname + item) }}"
+        provider:
+          host: "{{ inventory_hostname }}"
+          username: "{{ lookup('env', 'ANSIBLE_USERNAME') }}"
+          password: "{{ lookup('file', ansible_password_file) }}"
+      loop: "{{ interfaces }}"
+
+    - name: check interface mode and description
+      ios_l2_interface_facts:
+        provider:
+          host: "{{ inventory_hostname }}"
+          username: "{{ lookup('env', 'ANSIBLE_USERNAME') }}"
+          password: "{{ lookup('file', ansible_password_file) }}"
+      register: interface_facts
+
+    - name: show interface description and mode
+      debug:
+        msg: "Description: {{ item.value.description }}, Mode:{{ item.value.mode }}"
+      loop: "{{ interface_facts.interfaces_dict | dict2items }}"
+
+    - name: clear vlans and interfaces
+      ios_l2_interface:
+        name: "{{ item }}"
+        state: absent
+        provider:
+          host: "{{ inventory_hostname }}"
+          username: "{{ lookup('env', 'ANSIBLE_USERNAME') }}"
+          password: "{{ lookup('file', ansible_password_file) }}"
+      loop: "{{ interfaces + vlans }}"
+
+  vars:
+    ansible_password_file: "/path/to/password_file.txt"
+
+  collections:
+    - cisco.ios
+

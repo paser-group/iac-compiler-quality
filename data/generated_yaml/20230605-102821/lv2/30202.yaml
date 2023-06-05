@@ -1,0 +1,23 @@
+
+- name: Test playbook for EC2 group and default groups
+  hosts: all
+  remote_user: root
+
+  tasks:
+  - name: Add a node to the default group
+    add_host:
+      name: "{{ groups['all'] | random }}"
+      groups: default_group1
+
+  - name: Add the same node to EC2 group
+    add_host:
+      name: "{{ hostvars[item]['ansible_default_ipv4']['address'] }}"
+      groups: ec2_group
+    with_items: "{{ groups['default_group1'] }}"
+
+  - name: Add the same node to another default group
+    shell: echo "{{ hostvars[item]['ansible_default_ipv4']['address'] }}" >> /etc/hosts && echo "{{ item }}" >> /etc/ansible/hosts
+    with_items: "{{ groups['default_group1'] }}"
+    become: true
+    become_user: root
+    ignore_errors: yes

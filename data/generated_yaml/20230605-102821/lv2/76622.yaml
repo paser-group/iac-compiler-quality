@@ -1,0 +1,24 @@
+
+- name: OpenStack Inventory Test
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Generate a long inventory file
+      shell: "head -c 20 /dev/urandom > /tmp/openstack_inventory.py"
+      delegate_to: "ubuntu1"
+      become: true
+
+    - name: Test typo in inventory
+      command: "python /tmp/openstack_inventory.py"
+      delegate_to: "alpine1"
+      ignore_errors: true
+
+    - name: Test invalid key
+      command: "ansible -i /tmp/openstack_inventory.py -m ping all -e 'ansible_python_interpreter=/usr/bin/python3'"
+      delegate_to: "centos1"
+      ignore_errors: true
+
+    - name: Test unsupported OS
+      command: "ansible-inventory -i /tmp/openstack_inventory.py --list --yaml"
+      delegate_to: "redhat1"
+      ignore_errors: true

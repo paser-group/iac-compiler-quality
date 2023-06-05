@@ -1,0 +1,27 @@
+
+---
+- name: Check for UFW changed
+  hosts: all
+  gather_facts: no
+  become: yes
+
+  tasks:
+    - name: Ensure UFW is installed
+      apt:
+        name: ufw
+        state: present
+
+    - name: Enable firewall
+      ufw:
+        policy: deny
+        state: enabled
+      register: ufw_output
+
+    - name: Check for UFW changes
+      shell: ufw show added | grep -v '^#.*'
+      changed_when: ufw_output.changed
+      register: ufw_changes
+
+    - name: Print UFW changes
+      debug:
+        var: ufw_changes.stdout_lines

@@ -1,0 +1,26 @@
+
+- name: Assigning Interfaces to VLAN
+  hosts: all
+  become: true
+  tasks:
+    - name: Get VLAN Information
+      command: vlan
+      register: vlaninfo
+
+    - name: Check VLAN Count
+      command: "{{ 'assert' if vlaninfo.stdout_lines|length <= 6 else 'fail' }} msg='Too many interfaces assigned to VLAN'"
+
+    - name: Assign Interfaces to VLAN
+      command: "{{ 'interface {} vlan {}'.format(item['interface'], vlaninfo.stdout_lines|random ) }}"
+      loop: "{{ range(28)|list }}"  # Assign a maximum of 28 interfaces
+      when: vlaninfo.stdout_lines is defined
+
+    - name: Verify VLAN Assignment
+      command: show interfaces
+      register: interfacestatus
+
+    - name: Check VLAN Assignment
+      command: "{{ 'assert' if item in interfacestatus.stdout else 'fail' }}"
+      with_items:
+         - "VLAN assignment successful"
+         - "VLAN assignment unsuccessful"

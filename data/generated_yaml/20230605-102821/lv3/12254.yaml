@@ -1,0 +1,28 @@
+
+- name: Async status until with_items issue
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Simulate long-running tasks
+      command: /bin/sleep {{ item }}
+      with_items:
+        - 10
+        - 20
+        - 30
+      async: 300
+      poll: 0
+      register: async_result
+
+    - name: Check async status
+      async_status:
+        jid: "{{ item.ansible_job_id }}"
+      register: job_result
+      until: job_result.finished
+      retries: 120
+      delay: 5
+      with_items:
+        - "{{ async_result.results }}"
+
+    - name: Print job result
+      debug:
+        var: job_result

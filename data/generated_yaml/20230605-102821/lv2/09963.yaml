@@ -1,0 +1,34 @@
+
+---
+- name: Test Ansible-vault
+  hosts: all
+  gather_facts: no
+  
+  tasks:
+    - name: Test odd-length string error
+      set_fact:
+        password: "{{ 'test_password'[:-1] }}"
+        
+    - name: Attempt to encrypt a file using odd-length string password
+      command: ansible-vault encrypt testfile --vault-password-file password.txt --encrypt-vault-id=tags
+      
+  vars:
+    vault_pass: "{{ lookup('file', 'password.txt') }}"
+    ansible_vault_password: "{{ vault_pass }}"
+    
+  environment:
+    ANSIBLE_VAULT_PASSWORD: "{{ vault_pass }}"
+        
+  ignore_errors: yes
+  register: result
+
+- name: Check for odd-length string error
+  debug:
+    msg: "{{ result.stderr }}"
+  when: "'odd-length string' in result.stderr"
+
+- name: Clean up files
+  file:
+    path: testfile
+    state: absent
+  ignore_errors: yes

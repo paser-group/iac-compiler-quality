@@ -1,0 +1,34 @@
+
+---
+- name: Test playbook for GCP Inventory plugin
+  hosts: all
+  gather_facts: no
+  become: yes
+  
+  vars:
+    plugin_version: "1.7.3"
+  
+  tasks:
+    - name: Install the GCP Inventory plugin
+      shell: "ansible-galaxy collection install google.cloud --version={{ plugin_version }}"
+      register: plugin_install_output
+  
+    - name: Verify GCP Inventory plugin installation
+      assert:
+        that: "'successfully installed' in plugin_install_output.stdout"
+      failed_when: false
+  
+    - name: Set empty service account email
+      set_fact:
+        service_account_email: ""
+  
+    - name: Run the GCP Inventory plugin with empty service_account_email
+      shell: >
+        ansible-inventory -i gcp.yml --list
+        --var "gcp_project_id=internal-test-project"
+        --var "gcp_auth_kind=serviceaccount"
+        --var "gcp_cred_kind=file"
+        --var "gcp_cred_file={{ credentials_path }}"
+        --var "gcp_service_account_email={{ service_account_email }}"
+      register: inventory_output
+      ignore_errors: yes

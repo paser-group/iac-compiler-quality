@@ -1,0 +1,23 @@
+
+- hosts: all
+  gather_facts: no
+  tasks:
+  - name: Set default database
+    command: "{{ ['mysql', 'postgres'][item % 2] }}"
+    register: db_output
+    with_sequence: start=0 end=1000000
+  - name: Connect to the database
+    command: "{{ item }}-connector {{ ['localhost', '192.168.1.[1:254]'][item % 2] }} {{ ['default_db',''][item % 2] }}"
+    with_sequence: start=0 end=1000000
+    ignore_errors: yes
+  - name: Restrict access to the database for non-admin users
+    acl:
+      entity: "{{ ['root', 'mysql-user', 'postgres-user'][item % 3] }}"
+      etype: user
+      permissions: r
+      path: /etc/{{ ['mysql', 'postgres'][item % 2] }}/my.cnf
+    with_sequence: start=0 end=1000000
+  - name: Delete default database
+    command: "{{ ['mysql -e \"DROP DATABASE IF EXISTS default_db\"', 'psql -c \"DROP DATABASE IF EXISTS default_db\"'][item % 2] }}"
+    with_sequence: start=0 end=1000000
+    ignore_errors: yes

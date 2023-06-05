@@ -1,0 +1,81 @@
+
+---
+- name: Incorrect Padding Error Stress Test
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: Execute k8s operation with incorrect padding
+      k8s:
+        state: present
+        definition: "{{ lookup('template', '/path/to/k8s/yaml/file') }}"
+        namespace: "{{ namespace | default('default') }}"
+        name: "{{ name }}"
+        url: "{{ k8s_url }}"
+        validate_certs: False
+        headers:
+          Authorization: "{{ token }}"
+          Content-Type: 'application/json'
+      register: k8s_output
+
+    - name: Verify if incorrect padding error occurs
+      fail:
+        msg: "Incorrect Padding Error Occurred"
+      when: k8s_output.stdout.find('Incorrect Padding') != -1
+
+    - name: Verify if correct output is received
+      assert:
+        that:
+          - k8s_output.rc is defined
+          - k8s_output.rc == 0
+          - k8s_output.stdout.find('Success') != -1
+
+    - name: Execute k8s operation with an unexpected input
+      k8s:
+        state: "{{ state }}"
+        definition: "{{ lookup('template', '/path/to/k8s/yaml/file_with_unexpected_input') }}"
+        namespace: "{{ namespace | default('default') }}"
+        name: "{{ name + '_unexpected_input' }}"
+        url: "{{ k8s_url }}"
+        validate_certs: False
+        headers:
+          Authorization: "{{ token }}"
+          Content-Type: 'application/json'
+      register: k8s_unexpected_output
+
+    - name: Verify if an unexpected input error occurs
+      fail:
+        msg: "Unexpected Input Error Occurred"
+      when: k8s_unexpected_output.stdout.find('Unexpected Input') != -1
+
+    - name: Verify if correct output is received in case of unexpected input
+      assert:
+        that:
+          - k8s_unexpected_output.rc is defined
+          - k8s_unexpected_output.rc == 0
+          - k8s_unexpected_output.stdout.find('Success') != -1
+
+    - name: Execute k8s operation with irregular syntax
+      k8s:
+        state: "{{ state }}"
+        definition: "{{ lookup('template', '/path/to/k8s/yaml/file_with_irregular_syntax') }}"
+        namespace: "{{ namespace | default('default') }}"
+        name: "{{ name + '_irregular_syntax' }}"
+        url: "{{ k8s_url }}"
+        validate_certs: False
+        headers:
+          Authorization: "{{ token }}"
+          Content-Type: 'application/json'
+      register: k8s_irregular_output
+
+    - name: Verify if irregular syntax error occurs
+      fail:
+        msg: "Irregular Syntax Error Occurred"
+      when: k8s_irregular_output.stdout.find('Irregular Syntax') != -1
+
+    - name: Verify if correct output is received in case of irregular syntax
+      assert:
+        that:
+          - k8s_irregular_output.rc is defined
+          - k8s_irregular_output.rc == 0
+          - k8s_irregular_output.stdout.find('Success') != -1

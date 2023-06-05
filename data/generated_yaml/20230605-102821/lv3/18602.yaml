@@ -1,0 +1,24 @@
+
+- name: Test rescue and always tasks not executing
+  hosts: all
+  any_errors_fatal: true
+  tasks:
+    - name: Run a command which fails
+      shell: /path/to/failing/command
+      register: command_result
+      ignore_errors: true
+    
+    - name: Rescue task
+      debug:
+        msg: "Rescue task executed"
+      rescue:
+        - name: Rollback the changes
+          shell: /path/to/rollback/command
+          when: command_result|failed
+      
+    - name: Always task
+      debug:
+        msg: "Always task executed"
+      always:
+        - name: Clean up after
+          shell: /path/to/cleanup/command

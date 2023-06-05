@@ -1,0 +1,31 @@
+
+---
+- hosts: all
+  become: true
+  
+  tasks:
+    - name: Create custom roles directory
+      file:
+        path: "/tmp/custom_roles"
+        state: directory
+  
+    - name: Create custom role outside of default roles location
+      command: "mkdir /tmp/custom_roles/test_role"
+  
+    - name: Create a task outside of default role folder
+      ansible.builtin.copy:
+        content: |
+          ---
+          - name: Say Hello
+            hosts: all
+            tasks:
+              - ansible.builtin.debug:
+                  msg: "Hello, world!"
+        dest: "/tmp/custom_roles/test_role/test_task.yaml"
+  
+    - name: Run a task outside of default role directory
+      ansible.builtin.include_role:
+        name: /tmp/custom_roles/test_role
+        tasks_from: test_task.yaml
+      vars:
+        ansible_skip_tags: "{{ 'skip-tag' }}"

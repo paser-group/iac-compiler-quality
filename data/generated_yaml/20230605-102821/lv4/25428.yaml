@@ -1,0 +1,42 @@
+
+- name: Test S3 Bucket Access for IAM user or role
+  hosts: all
+  vars:
+    s3_bucket_name: "my_test_bucket"
+    iam_principle_arn: "arn:aws:iam::123456789012:user/Alice"
+  tasks:
+    - name: Include AWS Variables
+      include_vars:
+        file: "aws_vars.yml"
+
+    - name: Test IAM User or Role S3 Bucket Access
+      s3_bucket_info:
+        aws_access_key: "{{ aws_access_key }}"
+        aws_secret_key: "{{ aws_secret_key }}"
+        bucket: "{{ s3_bucket_name }}"
+        object: "/testobj.txt"
+        mode: list
+      register: s3_bucket_test
+
+    - name: Print S3 Bucket Access test results
+      debug:
+        var: s3_bucket_test
+
+    - name: Copy a file from the S3 Bucket
+      s3:
+        mode: get
+        bucket: "{{ s3_bucket_name }}"
+        object: "/testobj.txt"
+        dest: "/tmp/test_file.txt"
+        aws_access_key: "{{ aws_access_key }}"
+        aws_secret_key: "{{ aws_secret_key }}"
+      delegate_to: localhost
+
+    - name: Verify Copied file exists
+      stat:
+        path: "/tmp/test_file.txt"
+      register: test_file_exists
+
+    - name: Print file existence test results
+      debug:
+        var: test_file_exists

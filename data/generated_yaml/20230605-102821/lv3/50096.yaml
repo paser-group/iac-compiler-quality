@@ -1,0 +1,27 @@
+
+- name: MySQL db check
+  hosts: all
+  become: true
+  become_method: sudo
+  vars:
+    mysql_root_username: root
+    mysql_root_password: password
+    mysql_cert_location: "/etc/mysql/ca_cert.pem"
+    database_name: mydatabase
+  tasks:
+    - name: Install MySQL client
+      apt:
+        name: mysql-client
+      when: ansible_os_family == 'Debian'
+    - name: Get SSL CA certificate
+      get_url:
+        url: "https://example.com/ca_cert.pem"
+        dest: "{{ mysql_cert_location }}"
+        mode: '0600'
+    - name: Ensure database exists
+      mysql_db:
+        name: "{{ database_name }}"
+        login_user: "{{ mysql_root_username }}"
+        login_password: "{{ mysql_root_password }}"
+        state: present
+        ssl_ca: "{{ mysql_cert_location }}"

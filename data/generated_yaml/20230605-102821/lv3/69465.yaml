@@ -1,0 +1,31 @@
+
+- name: Test jsonfile cache plugin prefix option
+  hosts: all
+  gather_facts: no
+
+  vars:
+    ansible_cache_plugin: jsonfile
+    ansible_cache_plugin_prefix: "/tmp/ansible-cache/{{ inventory_hostname }}"
+
+  tasks:
+    - name: Create a test file
+      file:
+        path: "/tmp/test_file"
+        state: touch
+
+    - name: Use cache plugin to retrieve test file
+      command: cat /tmp/test_file
+      register: file_contents
+      cache:
+        key: "test_file_contents"
+        duration: 3600
+
+    - name: Debug file contents
+      debug:
+        var: file_contents.stdout_lines
+
+    - name: Remove test file
+      file:
+        path: "/tmp/test_file"
+        state: absent
+

@@ -1,0 +1,15 @@
+
+- name: Test Kubernetes module for 422 responses
+  hosts: localhost
+  gather_facts: no
+  tasks:
+    - name: Create Kubernetes Deployment with invalid YAML
+      k8s:
+        state: present
+        src: "{{ lookup('file', 'deployment_invalid.yaml') }}"
+      register: result
+      ignore_errors: true
+    - name: Fail the play if a 422 response is returned
+      fail:
+        msg: "Received a 422 status error: {{ result }}"
+      when: "'status' in result and result['status'] == 422"

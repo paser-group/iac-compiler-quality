@@ -1,0 +1,17 @@
+
+- name: Run Yum List Command
+  hosts: all
+  tasks:
+    - name: Run yum list command
+      shell: "yum list 2>&1 | tee -a /tmp/yum_list.log"
+      register: list_output
+
+    - name: Check for errors in output
+      shell: 'grep "Error:" /tmp/yum_list.log'
+      register: error_output
+      ignore_errors: true
+
+    - name: Fail if any errors are found
+      fail:
+        msg: "Errors found in yum list command: {{ error_output.stdout }}"
+      when: error_output.stdout_lines | length > 0

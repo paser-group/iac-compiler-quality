@@ -1,0 +1,31 @@
+
+- name: Configure Route53
+  hosts: localhost
+  gather_facts: false
+  vars:
+    hosted_zone_id: "YOUR_HOSTED_ZONE_ID"
+    records:
+      - name: "subdomain.example.com"
+        type: "A"
+        ttl: 3600
+        values:
+          - "10.1.1.1"
+          - "10.1.1.2"
+          - "10.1.1.3"
+          - "10.1.1.4"
+  tasks:
+    - name: Test route53 connection
+      route53:
+        command: get_zones
+      register: result
+    - debug:
+        var: result
+    - name: Create DNS record
+      route53:
+        command: create
+        zone: "{{ hosted_zone_id }}"
+        record: "{{ item }}"
+        ttl: "{{ item.ttl }}"
+        type: "{{ item.type }}"
+        value: "{{ item.values }}"
+      with_items: "{{ records }}"

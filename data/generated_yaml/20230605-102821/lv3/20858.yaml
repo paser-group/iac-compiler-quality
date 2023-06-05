@@ -1,0 +1,31 @@
+
+- name: Test sudo become timeout
+  hosts: localhost
+  gather_facts: false
+  become: true
+  vars:
+    timeout_val: 5
+
+  tasks:
+  - name: Force hostname to invalid DNS name
+    lineinfile:
+      path: /etc/hosts
+      regexp: '^127.0.0.1'
+      line: '127.0.0.1 invalid-dns-name'
+
+  - name: Check sudo access
+    command: id
+    become_method: sudo
+    register: id_output
+    ignore_errors: true
+    args:
+      executable: /bin/bash
+      stdin: 'echo {{ ansible_become_pass }} | sudo -S id'
+      warn: false
+    async: 1
+    poll: "{{ timeout_val }}"
+    become: true
+
+  - name: Display output
+    debug:
+      var: id_output

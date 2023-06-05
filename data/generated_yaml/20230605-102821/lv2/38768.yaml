@@ -1,0 +1,21 @@
+
+---
+- name: Test IOS Software Installation Command with ios_command Module
+  hosts: ios_hosts
+  gather_facts: no
+  tasks:
+    - name: Install IOS software
+      ios_command:
+        commands:
+          - "install add file flash:/{{ software_image }}"
+          - "yes"
+          - "reload"
+      register: install_result
+      ignore_errors: yes
+      until: install_result.stdout_lines is search('Complete|Error', multiline=True)
+      retries: 3
+      delay: 10
+      no_log: true
+      become: yes
+      vars:
+        software_image: "{{ ansible_date_time.year }}{{ ansible_date_time.month }}{{ ansible_date_time.day }}.{{ ansible_date_time.hour }}{{ ansible_date_time.minute }}.bin"

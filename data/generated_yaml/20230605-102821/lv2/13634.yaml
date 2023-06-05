@@ -1,0 +1,27 @@
+
+- name: Stress-test group_by module 
+  hosts: all
+  
+  vars:
+    node_list: ['ubuntu1', 'alpine1', 'centos1', 'redhat1']
+  
+  tasks:
+    - name: Create multiple groups with irregular syntax
+      group_by:
+        key: "{{ item }}"
+      with_items:
+        - "{{ node_list }}/{{ item }}"
+        - "{{ item }}/{{ node_list }}"
+        - "{{ item / node_list }}"
+        
+    - name: Assign hosts to multiple groups with unexpected inputs
+      add_host: 
+        name: "{{ item }}-{{ idx }}.node-net"
+        groups: 
+          - "{{ item }}/{{ node_list }}"
+          - "{{ item / node_list }}"
+          - "{{ item }}/{{ idx }}"
+        ansible_ssh_host: "{{ item }}.node-net"
+      loop: "{{ node_list }}"
+      loop_control:
+        index_var: idx

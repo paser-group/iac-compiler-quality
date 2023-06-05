@@ -1,0 +1,35 @@
+
+- name: Segfault in shell module gives negative exit code
+  hosts: all
+  become: true
+
+  tasks:
+  - name: Test negative exit code
+    shell: |
+      for ((i=0; i<=1000000; i++)); do
+        echo "Number: $i"
+        sleep 0.5
+      done
+    ignore_errors: true
+
+  - name: Test segfault
+    shell: "{{ body }} | tr -dc '[:print:]\n' | grep -o 'Ansible' || true"
+    register: segfault_output
+    ignore_errors: true
+
+  - name: Check for segfault message
+    debug:
+      msg: "{{ segfault_output.stderr }}"
+    when: segfault_output.stderr is defined
+
+  - name: Test invalid syntax
+    shell: "ansible-playbook --syntax-check {{ body }}"
+    ignore_errors: true
+
+  - name: Check for invalid syntax message
+    debug:
+      msg: "{{ ansible_play_batch.stderr }}"
+    when: ansible_play_batch.stderr is defined
+
+  - name: Cleanup
+    shell: "rm -rf /tmp/*"

@@ -1,0 +1,31 @@
+
+- name: Test playbook for Cobbler module cobbler_system validate_certs error
+  hosts: all
+  gather_facts: no
+  become: yes
+  
+  tasks:
+    - name: Create a new Cobbler system with invalid value for validate_certs parameter
+      cobbler_system:
+        name: "{{ inventory_hostname }}"
+        profile: "{{ ansible_distribution }}-{{ ansible_distribution_release }}-{{ ansible_architecture }}"
+        ip_address: "{{ ansible_host }}"
+        netmask: 255.255.255.0
+        gateway: 10.1.1.254
+        name_servers: 1.1.1.1
+        validate_certs: "off"
+      register: cobbler_sys
+
+    - name: Assert Cobbler system was not created 
+      fail:
+        msg: "Cobbler system creation failed with error {{ cobbler_sys }}"
+      when: cobbler_sys.failed
+
+    - name: Wait for 10 seconds
+      pause:
+        seconds: 10
+
+    - name: Remove Cobbler system
+      cobbler_system:
+        name: "{{ inventory_hostname }}"
+        state: absent

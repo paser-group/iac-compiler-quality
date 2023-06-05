@@ -1,0 +1,19 @@
+
+- name: Load Missing Module
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Install Missing Package
+      become: yes
+      package:
+        name: "{{ missing_module }}"
+        state: present
+      ignore_errors: yes
+    - name: Confirm Module Installation
+      command: ansible-doc -t module {{ missing_module }}
+      failed_when: false
+      register: module_info
+    - name: Show Module Path
+      debug:
+        msg: "{{ module_info.stdout_lines | select('match', '^\\s+path:') | list }}"
+      when: module_info.stdout_lines | length > 0

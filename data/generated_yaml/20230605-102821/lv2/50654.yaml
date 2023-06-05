@@ -1,0 +1,57 @@
+
+- name: Docker Swarm Service Validation
+  hosts: all
+  gather_facts: false
+  tasks:
+  - name: Run docker service on all nodes
+    docker_service:
+      service_name: "{{ item }}common_prefix_service"    ## service name has common prefix, but in a different position
+      state: started
+      image: ubuntu
+      published_ports: "80:80"
+      networks:
+        - name: swarm_network
+      swarm:
+        service_mode: replicated
+        replicas: "{{ item }}"
+    loop: "{{ range(1, 3) | list }}"
+    register: result
+
+  - name: Get service info across all nodes
+    shell: "docker service ps common_prefix_service{{ item }} --format '{{ item }},{{ .CurrentState }}\n'"     ##extra quotes added
+    loop: "{{ range(1, 3) | list }}"
+    register: ps_results
+
+  - name: Debug task
+    debug:
+      var: ps_results
+
+  - name: Stop the services
+    docker_service:
+      service_name: "{{ item }}common_prefix_service"   ##service name with a prefix added
+      state: stopped
+    loop: "{{ range(1, 3) | list }}"
+
+  - name: Remove the service
+    docker_service:
+      service_name: "{{ item }}common_prefix_service"   ##service name with a prefix added
+      state: absent
+    loop: "{{ range(1, 3) | list }}"
+
+  pre_tasks:
+  - name: Update Linux Packages
+    become: true
+    apt:
+      upgrade: dist
+      update_cache: yes
+
+  - name: Create Swarm Network
+    docker_network:
+      name: swarm_network
+      state: present
+      driver: overlay
+
+  - name: Verify connected nodes
+    assert:
+      that:
+        - groups['all'] | length == 4   

@@ -1,0 +1,28 @@
+
+---
+- name: Test wait_for with IPv6 disabled
+  hosts: all
+  gather_facts: False
+
+  tasks:
+    - name: Check if IPv6 is disabled
+      block:
+        - name: Ping using IPv6
+          ping:
+            proto: ipv6
+          ignore_errors: True
+        - name: Set fact if no error
+          set_fact:
+            ipv6_disabled: "no"
+      rescue:
+        - name: Set fact if error
+          set_fact:
+            ipv6_disabled: "yes"
+
+    - name: Wait for www.example.com to respond
+      wait_for:
+        host: www.example.com
+        port: 80
+        timeout: 5
+        msg: "www.example.com did not respond within the specified time."
+      when: ipv6_disabled == "no"

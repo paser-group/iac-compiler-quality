@@ -1,0 +1,25 @@
+
+- name: Import MySQL database from SQL file
+  hosts: mysql_server
+  become: true
+
+  vars:
+    mysql_db_name: my_db
+    mysql_db_user: my_user
+    mysql_db_password: my_pwd
+
+  tasks:
+  - name: Install MySQL client
+    apt:
+      name: mysql-client
+      state: present
+
+  - name: Import MySQL database from SQL file
+    shell: "mysql -u {{ mysql_db_user }} -p{{ mysql_db_password }} {{ mysql_db_name }} < /path/to/sql/file.sql"
+    register: result
+    ignore_errors: true
+
+  - name: Check the output for error 1050
+    debug:
+      msg: "{{ result.stderr }}"
+    when: "'Error 1050' in result.stderr"

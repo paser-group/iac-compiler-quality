@@ -1,0 +1,38 @@
+
+- name: Perform AWS KMS encryption stress test
+  hosts: all
+  become: true
+  tasks:
+    - name: Set AWS credentials
+      set_fact:
+        aws_access_key: "INVALID_ACCESS_KEY"
+        aws_secret_key: "INVALID_SECRET_KEY"
+        aws_region: "us-east-1"
+    
+    - name: Create S3 bucket
+      s3_bucket:
+        state: present
+        name: "{{ 'my-s3-bucket-' + lookup('pipe', 'date +%s%N') }}"
+        region: "{{ aws_region }}"
+      register: s3_result
+
+    - name: Create KMS key
+      shell: "{{ 'aws kms create-key --region ' + aws_region + ' --description Invalid-Key-' + lookup('pipe', 'date +%s%N') }}"
+
+    - name: Enable default S3 KMS encryption
+      s3_bucket:
+        bucket: "{{ s3_result.name }}"
+        region: "{{ aws_region }}"
+        kms_master_key_id: "INVALID_DEFAULT_KEY"
+      register: s3_encryption_result
+
+    - name: Verify KMS encryption
+      fail:
+        msg: "AWS KMS encryption unsuccessful"
+      when: s3_encryption_result.kms_master_key_id != "DEFAULT_KEY_ARN"
+
+    - name: Delete S3 bucket
+      s3_bucket:
+        state: absent
+        name: "{{ s3_result.name }}"
+        region: "{{ aws_region }}"

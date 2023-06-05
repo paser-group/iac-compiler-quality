@@ -1,0 +1,29 @@
+
+---
+- name: Test playbook for uncovering Ansible compiler bugs
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Locally execute a command before executing plays
+      local_action: command "echo 'Executing a local action'"
+    
+    - name: Dynamically add a host to the inventory
+      add_host:
+        hostname: "{{ inventory_hostname }}"
+        groups: "dynamic_hosts"
+
+    - name: Run command on all hosts
+      command: "echo 'Hello, World!'"
+      delegate_to: "{{ item }}"
+      with_items: "{{ groups['all'] }}"
+
+    - name: Run command on dynamically added host
+      command: "echo 'Hello, Dynamic Host!'"
+      delegate_to: "{{ groups['dynamic_hosts'][0] }}"
+      when: "'dynamic_hosts' in group_names"
+
+    - name: Dynamically remove the added host from the inventory
+      remove_host:
+        hostname: "{{ groups['dynamic_hosts'][0] }}"
+        groups: "dynamic_hosts"
+      when: "'dynamic_hosts' in group_names"

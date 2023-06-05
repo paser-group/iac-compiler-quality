@@ -1,0 +1,49 @@
+
+- name: User Home Directory Ownership Stress Test
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Create User with Invalid Username
+      user:
+        name: "!@#*"
+        home: "/home/!@#*/"
+        password: "{{ lookup('password', '/dev/null chars=ascii_letters,digits,length=8') }}"
+        state: present
+      register: invalid_user
+
+    - name: Set Ownership of User Home Directory to Root
+      file:
+        path: "{{ invalid_user.home }}"
+        owner: root
+        state: directory
+
+    - name: Create User with Non-Standard Useradd Arguments
+      user:
+        name: "ansible-user"
+        home: "/home/ansible-user"
+        password: "{{ lookup('password', '/dev/null chars=ascii_letters,digits,length=8') }}"
+        state: present
+        shell: "/bin/bash"
+        comment: "Ansible user account"
+        createhome: no
+      register: nonstandard_user
+
+    - name: Set Ownership of User Home Directory to User
+      file:
+        path: "{{ nonstandard_user.home }}"
+        owner: "ansible-user"
+        state: directory
+
+    - name: Create User with Invalid Home Directory Path
+      user:
+        name: "ansible-user2"
+        home: "/home/ansible-user2/!@#*"
+        password: "{{ lookup('password', '/dev/null chars=ascii_letters,digits,length=8') }}"
+        state: present
+      register: invalid_home_user
+
+    - name: Set Ownership of User Home Directory to Centos with Invalid State
+      file:
+        path: "/home/ansible-user2"
+        owner: "centos"
+        state: invalid

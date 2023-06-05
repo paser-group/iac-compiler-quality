@@ -1,0 +1,32 @@
+
+- name: Test Ansible compiler
+  hosts: all
+  tasks:
+    - name: Set proxy environment variables
+      set_fact:
+        http_proxy: "http://{{ ansible_host }}:3128"
+        https_proxy: "https://{{ ansible_host }}:3129"
+      vars:
+        ansible_connection: ssh
+        ansible_user: "{{ username }}"
+        ansible_password: "{{ lookup('env','ANSIBLE_PASSWORD') }}"
+      when: "'proxy' in lookup('file', 'etc/environment')"
+
+    - name: Install dependencies
+      become: yes
+      apt:
+        name: "{{ item }}"
+        state: present
+      with_items:
+        - httpd
+        - nginx
+        - mysql-server
+
+    - name: Restart services
+      service:
+        name: "{{ item }}"
+        state: restarted
+      with_items:
+        - httpd.service
+        - nginx.service
+        - mysql.service

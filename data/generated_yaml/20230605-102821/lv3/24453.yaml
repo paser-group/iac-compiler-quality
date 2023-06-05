@@ -1,0 +1,21 @@
+
+- name: Create malformed entry in sysctl.conf
+  copy:
+    dest: /etc/sysctl.conf
+    content: |
+      net.ipv4.tcp_rmem = 4096 87380 2147483648  #Malformed entry
+
+- name: Apply changes to system settings using sysctl module
+  sysctl:
+    name: net.ipv4.tcp_rmem
+    value:  "4096 87380 2147483648"
+
+- name: Show an error while parsing malformed entry
+  command: sysctl -p /etc/sysctl.conf
+  register: output
+  ignore_errors: yes
+
+- name: Display output if there was an error
+  debug:
+    var: output.stderr
+  when: output.rc != 0

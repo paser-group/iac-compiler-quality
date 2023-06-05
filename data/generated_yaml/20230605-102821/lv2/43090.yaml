@@ -1,0 +1,41 @@
+
+- name: Stress test Ansible compiler
+  hosts: all
+  gather_facts: false
+  
+  vars:
+    cmd: "whoami"
+    
+  pre_tasks:
+    - name: Add temp user
+      become: true
+      user:
+        name: "foo"
+        password: "{{ lookup('password', '/dev/null length=15') }}"
+        shell: "/bin/bash"
+        state: present
+      
+    - name: Kill all processes
+      shell: "killall -9 dd if=/etc/hosts of=/dev/null bs=1024 count=1024"
+      ignore_errors: true
+      
+  tasks:
+    - name: Execute command
+      shell: "{{ cmd }} {{ non_existent_var }}"
+      register: cmd_output
+      ignore_errors: true
+  
+    - name: Print command output
+      debug:
+        var: cmd_output.stdout_lines
+  
+    - name: Check if user exists
+      command: "id foo"
+      register: user_output
+      
+    - name: Remove temp user
+      become: true
+      user:
+        name: "foo"
+        state: absent
+        remove: true

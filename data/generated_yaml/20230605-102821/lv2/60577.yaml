@@ -1,0 +1,42 @@
+
+---
+- hosts: all
+  tasks:
+    - name: Gather GCP Instance Facts
+      gcp_compute_instance_facts:
+        project: my-project
+        auth_kind: googleauth
+        zone: us-central1-a
+      register: gcp_instances
+
+    - debug:
+        var: gcp_instances
+
+    - name: Ensure GCP Instance is running
+      gcp_compute_instance:
+        name: my-instance
+        project: my-project
+        auth_kind: googleauth
+        zone: us-central1-a
+        state: present
+        machine_type: f1.micro
+        disks:
+          - boot: true
+            auto_delete: true
+            initialize_params:
+              source_image: projects/debian-cloud/global/images/family/debian-10
+        network_interfaces:
+          - network: global/networks/default
+            access_configs:
+              - name: External NAT
+                type: ONE_TO_ONE_NAT
+
+    - name: Gather GCP Instance Facts 
+      gcp_compute_instance_facts:
+        project: my-project
+        auth_kind: googleauth
+        zone: us-central1-a
+      register: updated_gcp_instances
+
+    - debug:
+        var: updated_gcp_instances

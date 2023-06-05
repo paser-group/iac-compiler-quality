@@ -1,0 +1,99 @@
+
+---
+- name: Stress test playbook for gcp-auth
+  hosts: all
+  become: true
+  gather_facts: false
+
+  vars:
+    project_id: "my-project-1234"
+    service_account_key_file: "/path/to/key.json"
+
+  tasks:
+    - name: Ensure google-auth python library is installed
+      pip:
+        name: google-auth
+        state: present
+      register: pip_module_check
+
+    - name: Run gcp-* task with incorrect keyfile
+      gcp_compute_instance:
+        name: "{{ inventory_hostname }}"
+        project: "{{ project_id }}"
+        auth_kind: "serviceaccount"
+        service_account_file: "{{ service_account_key_file }}_invalid"
+        zone: "us-central1-a"
+        machine_type: "n1-standard-1"
+        disk_size: 10
+        image_project: "ubuntu-os-cloud"
+        image_family: "ubuntu-1604-lts"
+        tags:
+          - http-server
+      ignore_errors: true
+
+    - name: Remove google-auth package and re-install with another version
+      apt:
+        name: google-auth
+        state: absent
+      register: apt_module_output
+      ignore_errors: true
+    - apt:
+        name: google-auth==1.0.0
+        state: present
+      register: apt_module_output
+      until: apt_module_output is succeeded
+
+    - name: Run gcp-* task with custom URL for metadata server
+      gcp_compute_instance:
+        name: "{{ inventory_hostname }}"
+        project: "{{ project_id }}"
+        auth_kind: "serviceaccount"
+        service_account_file: "{{ service_account_key_file }}"
+        zone: "us-central1-a"
+        machine_type: "n1-standard-1"
+        disk_size: 10
+        image_project: "ubuntu-os-cloud"
+        image_family: "ubuntu-1604-lts"
+        tags:
+          - http-server
+        scopes:
+          - "https://www.googleapis.com/auth/gce"
+        metadata_host: "http://metadata.fake.com"
+      ignore_errors: true
+      register: task_output
+
+    - name: Check for gcp-auth error message in task output
+      assert:
+        that:
+          - "'gcp_auth' in task_output.stderr"
+          - "'AuthMetadataPluginCallback' in task_output.stderr"
+      ignore_errors: true
+
+    - name: Run gcp-* task with incorrect network subnet
+      gcp_compute_instance:
+        name: "{{ inventory_hostname }}"
+        project: "{{ project_id }}"
+        auth_kind: "serviceaccount"
+        service_account_file: "{{ service_account_key_file }}"
+        zone: "us-central1-a"
+        machine_type: "n1-standard-1"
+        disk_size: 10
+        image_project: "ubuntu-os-cloud"
+        image_family: "ubuntu-1604-lts"
+        tags:
+          - http-server
+        network: "node-net"
+        subnetwork: "10.1.2.0/24"
+      ignore_errors: true
+
+    - name: Terminate gcp_compute_instance
+      gcp_compute_instance:
+        name: "{{ inventory_hostname }}"
+        project: "{{ project_id }}"
+        auth_kind: "serviceaccount"
+        service_account_file: "{{ service_account_key_file }}"
+        state: "absent"
+        zone: "us-central1-a"
+      ignore_errors: true
+
+...

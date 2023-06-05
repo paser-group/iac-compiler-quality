@@ -1,0 +1,20 @@
+
+---
+- name: IIS SSL update stress test
+  hosts: windows
+  gather_facts: no
+
+  tasks:
+    - name: Update default SSL binding
+      win_iis_webbinding:
+        name: "{{'Default Web Site'}}"
+        protocol: https
+        binding_info: "*:443:"
+        certificate_thumbprint: "{{lookup('file', 'thumbprint.txt')}}"
+      register: binding_result
+
+    - name: Fail if binding response code is not 200
+      fail:
+        msg: |
+          Expected 200 response code but got {{binding_result.rc}}
+        when: binding_result.rc != 200

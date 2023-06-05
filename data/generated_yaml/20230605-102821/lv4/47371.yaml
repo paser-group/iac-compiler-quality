@@ -1,0 +1,57 @@
+
+- name: Reboot SBC System and Set Timezone to UTC
+  hosts: all
+  become: yes
+  gather_facts: yes
+
+  tasks:
+    - name: Get current time and timezone
+      command: date +%s
+      register: current_time_raw
+
+    # Store current timezone value in variable for later use
+    - name: Get current timezone
+      command: timedatectl | awk '/Time zone/ {print $3}'
+      register: current_timezone
+
+    # Reboot the system
+    - name: Reboot SBC System
+      reboot:
+
+    # Wait for the system to come back up after the reboot
+    - name: Wait for system to become responsive
+      wait_for_connection:
+
+    # Ensure timezone is set to UTC
+    - name: Set timezone to UTC
+      timezone:
+        name: etc/UTC
+
+    # Get the time after reboot and compare to the original time
+    - name: Get current time and timezone after reboot
+      command: date +%s
+      register: rebooted_time_raw
+
+    # Store the rebooted timezone value in variable for later use
+    - name: Get current timezone after reboot
+      command: timedatectl | awk '/Time zone/ {print $3}'
+      register: rebooted_timezone
+
+    # Check if the time has changed after the reboot
+    - set_fact:
+        time_has_changed: "{{ not current_time_raw.stdout == rebooted_time_raw.stdout }}"
+
+    # Check if timezone has been set back to original value
+    - set_fact:
+        tz_has_changed: "{{ not current_timezone.stdout == rebooted_timezone.stdout }}"
+
+    # Notify if bugs exist or not
+    - name: Check for time zone bug
+      fail:
+        msg: SBC reboot time incorrectly parsed when TZ is set - bug exists
+      when: tz_has_changed
+  
+    - name: Check for time update bug
+      fail:
+        msg: SBC reboot time incorrectly parsed when TZ is set - bug exists
+      when: not time_has_changed

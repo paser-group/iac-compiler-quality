@@ -1,0 +1,27 @@
+
+- name: Test ssh and paramiko error handling
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: Attempt ssh connection with invalid key
+      ansible_ssh_private_key_file: /path/to/invalid_key
+      ansible_ssh_common_args: "-o StrictHostKeyChecking=yes"
+      ignore_errors: true
+
+    - name: Check for ssh connection errors
+      fail:
+        msg: "Failed to connect to host {{inventory_hostname}} over ssh"
+      when: "'Failed to connect' in ansible_ssh_result.stderr"
+
+    - name: Attempt paramiko connection with invalid credentials
+      paramiko_auth:
+        hostname: "{{inventory_hostname}}"
+        username: invalid_user
+        password: invalid_password"
+      ignore_errors: true
+
+    - name: Check for paramiko connection errors
+      fail:
+        msg: "Failed to connect to host {{inventory_hostname}} over paramiko"
+      when: "'Failed to connect' in ansible_failed_result.stderr"

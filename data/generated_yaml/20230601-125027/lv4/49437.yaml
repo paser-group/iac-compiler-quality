@@ -1,0 +1,28 @@
+
+- name: Ensure tower_credential is idempotent
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Create towerserver credential
+      tower_credential:
+        name: towerserver
+        description: "Ansible credential for connecting to Tower server API"
+        organization: Default
+        credential_type: "Machine"
+        inputs:
+          username: "{{ lookup('env', 'TOWER_USER') }}"
+          password: "{{ lookup('env', 'TOWER_PASS') }}"
+      register: credential_config
+
+    - name: Ensure there's only one tower_credential
+      tower_credential:
+        state: present
+        name: towerserver
+        description: "Ansible credential for connecting to Tower server API"
+        organization: Default
+        credential_type: "Machine"
+        inputs:
+          username: "{{ lookup('env', 'TOWER_USER') }}"
+          password: "{{ lookup('env', 'TOWER_PASS') }}"
+        unique: true
+      when: credential_config.changed | bool

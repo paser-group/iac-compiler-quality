@@ -1,0 +1,18 @@
+yaml
+- name: Check service manager in use
+  hosts: all
+  become: true
+
+  tasks:
+  - name: Display current service manager in use
+    shell: systemctl show-environment | grep -E '^MANAGERPIDMAIN=|^MANAGERPIDUNIT='
+    register: manager_output
+
+  - name: Display registered service managers
+    shell: systemctl --no-pager list-unit-files --type=service | grep 'enabled'
+    register: unit_output
+
+  - name: Check if desired service manager is enabled
+    fail:
+      msg: "{{ ansible_service_mgr }} in use. Please switch to systemd"
+    when: "'systemd' not in unit_output.stdout"

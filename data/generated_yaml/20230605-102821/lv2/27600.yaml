@@ -1,0 +1,41 @@
+
+- name: Test nxos_vrf_interface idempotency
+  hosts: all
+  gather_facts: yes
+  tasks:
+    - name: Create test VRF
+      nxos_vrf:
+        vrf: test_vrf
+    - name: Add interface to test VRF
+      nxos_vrf_interface:
+        vrf: test_vrf
+        interface: Ethernet1/1
+        state: present
+     
+    - name: Remove test VRF
+      nxos_vrf:
+        vrf: test_vrf
+        state: absent
+      register: vrf_removed
+
+    - name: Remove interface from test VRF
+      nxos_vrf_interface:
+        vrf: test_vrf
+        interface: Ethernet1/1
+        state: absent
+      ignore_errors: yes
+
+    - name: Check idempotency
+      nxos_vrf_interface:
+        vrf: test_vrf
+        interface: Ethernet1/1
+        state: absent
+      register: result
+      until: result is succeeded
+      retries: 5
+
+    - name: Fail if not idempotent
+      fail:
+        msg: "nxos_vrf_interface was not idempotent while removing, please check the logs"
+      when: result is failed
+  

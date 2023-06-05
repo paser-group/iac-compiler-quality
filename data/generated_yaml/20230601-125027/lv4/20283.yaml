@@ -1,0 +1,28 @@
+
+---
+- hosts: windows
+  become: yes
+  vars:
+    reg_key: HKLM:\SOFTWARE\ExampleKey
+  tasks:
+  - name: Create registry key
+    win_regedit:
+      key: "{{reg_key}}"
+      action: create
+    register: reg_create
+  - name: Check registry key exists
+    win_regedit:
+      key: "{{reg_key}}"
+      action: query
+    register: reg_query
+  - name: Delete registry key
+    win_regedit:
+      key: "{{reg_key}}"
+      action: delete
+    when: reg_create.changed
+  - name: Final check to ensure registry key is deleted
+    win_regedit:
+      key: "{{reg_key}}"
+      action: query
+    when: reg_create.changed
+    changed_when: false

@@ -1,0 +1,31 @@
+yaml
+---
+- name: Test Ansible Copy/Template Checksum Error
+  hosts: all
+  gather_facts: false
+  become: true
+  tasks:
+    - name: Create temporary file
+      tempfile:
+        state: file
+        suffix: '.txt'
+      register: tmpfile
+    - name: Add content to temporary file
+      lineinfile:
+        path: "{{ tmpfile.path }}"
+        line: "{{ lookup('password', '/dev/null length=21 chars=ascii_letters,digits') }}"
+    - name: Copy temporary file
+      copy:
+        src: "{{ tmpfile.path }}"
+        dest: "/tmp/copy_test.txt"
+    - name: Template temporary file
+      template:
+        src: "{{ tmpfile.path }}"
+        dest: "/tmp/template_test.txt"
+    - name: Ensure files have the same contents
+      shell: "md5sum /tmp/copy_test.txt /tmp/template_test.txt"
+      register: checksum_output
+    - name: Let the user know if there's a checksum error
+      fail:
+        msg: "Expected checksum {{ checksum_output.stdout.split()[0] }} but got {{ checksum_output.stdout.split()[2] }}"
+      when: checksum_output.stdout.find(" differ") != -1

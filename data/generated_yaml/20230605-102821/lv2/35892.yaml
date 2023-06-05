@@ -1,0 +1,40 @@
+
+---
+- name: Test HTTPSHandler implementation for unexpected exception
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: Install required packages
+      package:
+        name: "{{ item }}"
+      with_items:
+        - python3-httplib2
+        - python3-urllib3
+    
+    - name: Copy the HTTPSHandler implementation module
+      copy:
+        dest: /usr/local/lib/python3.8/dist-packages/my-https-handler/https_handler.py
+        content: |
+          import http.client
+          import urllib3.connectionpool
+
+          class HTTPSHandler(http.client.HTTPSConnection):
+              def __init__(self, *args, **kwargs):
+                  super().__init__(*args, **kwargs)
+                  self.pool_manager = urllib3.PoolManager()
+
+              def connect(self):
+                  self.sock = self.pool_manager.connection_from_host(self.host, self.port)
+
+          def aiosession():
+              session = urllib3.PoolManager(cert_reqs='CERT_NONE')
+              session.connection_cls = HTTPSHandler
+              return session
+
+    - name: Execute HTTPSHandler
+      shell: python3 -c "from my-https-handler.https_handler import aiosession; aiosession().request('GET', 'https://{{ inventory_hostname }}')"
+
+    - name: Confirm successful execution
+      debug:
+        msg: "Playbook executed successfully"

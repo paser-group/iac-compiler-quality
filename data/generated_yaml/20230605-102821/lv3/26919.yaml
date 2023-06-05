@@ -1,0 +1,41 @@
+
+- name: Provision MySQL database
+  hosts: all
+  become: true
+
+  vars:
+    mysql_config_file: /etc/mysql/my.cnf
+    mysql_db_name: mydb
+    mysql_db_user: myuser
+    mysql_db_password: "{{ lookup('password', '/path/to/mysql_password_file') }}"
+    mysql_db_charset: UTF-8
+
+  tasks:
+    - name: Install MySQL
+      apt:
+        name: mysql-server
+        state: present
+  
+    - name: Configure MySQL
+      lineinfile:
+        path: "{{ mysql_config_file }}"
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+      loop:
+        - { regexp: '^#?character-set-server\s*=?\s*$', line: 'character-set-server = {{ mysql_db_charset }}' }
+        - { regexp: '^#?default-character-set\s*=?\s*$', line: 'default-character-set = {{ mysql_db_charset }}' }
+
+    - name: Create database
+      mysql_db:
+        name: "{{ mysql_db_name }}"
+        state: present
+
+    - name: Create and grant privileges to user
+      mysql_user:
+        name: "{{ mysql_db_user }}"
+        password: "{{ mysql_db_password }}"
+        priv: "{{ mysql_db_name }}.*:ALL"
+        state: present
+        host: "{{ item }}"
+      loop: "{{ groups['all'] }}"
+

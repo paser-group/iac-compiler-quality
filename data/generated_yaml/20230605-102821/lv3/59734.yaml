@@ -1,0 +1,29 @@
+
+- name: simulate ansible-galaxy login error
+  hosts: all
+  gather_facts: no
+  vars:
+    cert_path: "<path_to_cert>"
+    key_path: "<path_to_key>"
+  tasks:
+    - name: create temp directory
+      file:
+        path: "/tmp/ansible-galaxy"
+        state: directory
+
+    - name: add certificate and key
+      copy:
+        src: "{{ item }}"
+        dest: "/tmp/ansible-galaxy/"
+      with_items:
+        - "{{ cert_path }}"
+        - "{{ key_path }}"
+
+    - name: execute ansible-galaxy command with invalid certificate
+      command: ansible-galaxy login -c CERT --cert /tmp/ansible-galaxy/invalid_cert.pem --key /tmp/ansible-galaxy/invalid_key.pem
+      register: result
+      ignore_errors: yes
+   
+    - name: display ansible-galaxy command output
+      debug:
+        var: result

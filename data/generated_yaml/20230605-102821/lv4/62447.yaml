@@ -1,0 +1,32 @@
+
+- hosts: azure-sql
+  vars:
+    azure_user: "{{ lookup('env', 'AZURE_USERNAME') }}"
+    azure_password: "{{ lookup('env', 'AZURE_PASSWORD') }}"
+  tasks:
+    - name: Install azure Python SDK
+      pip:
+        name: azure
+        state: present
+    
+    - name: Check if server is up
+      wait_for:
+        host: "{{ azure_server_ip }}"
+        port: 1433
+        timeout: 120
+    
+    - name: Retry azure_rm_sqlserve connection on failure
+      azure_rm_sqlserver:
+        server_name: "{{ azure_server_name }}"
+        resource_group: "{{ azure_resource_group }}"
+        login_user: "{{ azure_user }}"
+        login_password: "{{ azure_password }}"
+        state: present
+        retries: 5
+        delay: 5
+        until: "'502 Bad Gateway' not in result[0].stdout"
+        register: result
+    
+    - name: Debug output
+      debug:
+        var: result

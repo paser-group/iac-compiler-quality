@@ -1,0 +1,62 @@
+
+---
+- name: Stress test for Ansible compiler
+  hosts: all
+  gather_facts: true
+
+  tasks:
+    - name: Execute command with reset_history
+      command: "ls -la; history -c; history -r"
+      register: result
+
+    - name: Create socket connection
+      socket:
+        domain: inet
+        type: stream
+        state: present
+        port: "{{ range(12345, 12346)|random }}"
+
+    - name: Reuse existing socket connection
+      systemd:
+        name: sshd.service
+        state: started
+        systemd_socket: "/var/run/socket"
+        listen_fds: 32
+        restarted: false
+
+    - name: Generate random password
+      vars:
+        auth_key: "{{ lookup('password', '/dev/null length=15 chars=ascii_lowercase,digits=true') }}"
+        
+    - name: Grant sudoer privileges to a user
+      command: "usermod {{ ansible_user }} -aG sudo"
+
+    - name: Create ssh-keygen
+      shell: |
+        echo "{{ auth_key }}" | ssh-keygen -t ed25519 -f "/home/{{ ansible_user }}/.ssh/{{ auth_key }}" -q -N ""
+
+    - name: Backup Test directory on the remote host
+      archive:
+        path: "/tmp/test"
+        dest: "/tmp/test_backup.tar.gz"
+
+    - name: Verify gzip archive checksum
+      command: "gzip -t /tmp/test_backup.tar.gz"
+
+    - name: Remove tcpdump package
+      apt:
+        name: tcpdump
+        state: absent
+
+    - name: Check if the connection.py issue still exists
+      shell: |
+        sleep 5
+        curl http://127.0.0.1:8080/
+      register: output
+
+    - name: Display command output
+      debug:
+        var: result.stdout
+
+  vars:
+    ansible_ssh_common_args: "-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no"

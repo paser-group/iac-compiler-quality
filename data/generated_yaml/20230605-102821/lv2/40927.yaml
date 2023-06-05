@@ -1,0 +1,54 @@
+
+- name: Stress Test Ansible Compiler
+  hosts: all
+  gather_facts: no
+  vars:
+    - input: "{{ '\n'.join(range(10**5)) }}"
+
+  tasks:
+    - name: with_items loop with invalid input
+      debug:
+        msg: "{{ item|from_yaml }}"
+      with_items:
+        - "{{ input }}"
+        - "{{ input|b64encode }}"
+        - "{{ input|regex_replace('0', '(?<=\\d)') }}"
+    - name: generate random empty file on all nodes
+      file:
+        path: "/tmp/{{ item|random_string(length=5, chars='abcdefghijklmnopqrstuvwxyz0123456789') }}"
+        state: touch
+      with_items:
+        - "{{ groups['all'] }}"
+    - name: install non-existent packages
+      apt:
+        name: "{{ item|random_string(length=10, chars='abcdefghijklmnopqrstuvwxyz') }}"
+        state: absent
+      delegate_to: "{{ groups['ubuntu'][0] }}"
+      with_items:
+        - "{{ range(10) }}"
+    - name: create invalid symlink
+      file:
+        src: "{{ item }}"
+        dest: "/tmp/{{ item|random_string(length=5, chars='abcdefghijklmnopqrstuvwxyz0123456789') }}"
+        state: link
+      with_items:
+        - "/etc/passwd"
+        - "/etc/shadow"
+        - "/etc/hosts"
+    - name: execute invalid command
+      command: "{{ item|regex_replace('echo', 'echoo') }}"
+      delegate_to: "{{ groups['all']|random }}"
+      register: result
+      ignore_errors: yes
+      with_items:
+        - "hello world"
+        - "python -c 'exit(1)'"
+        - "true"
+    - name: use nonexistent filter plugin
+      debug:
+        msg: "{{ 'hello world'|nonexistent_filter }}"
+      delegate_to: "{{ groups['all']|random }}"
+    - name: fail the playbook with an invalid loop
+      debug:
+        msg: "{{ item }}"
+      with_items: "{{ groups }}"

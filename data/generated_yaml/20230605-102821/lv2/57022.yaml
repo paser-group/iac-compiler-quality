@@ -1,0 +1,77 @@
+
+- name: Check ansible_connection bug
+  hosts: all
+  gather_facts: no
+  vars:
+    invalid_var: "{{ '{{' }}item{{ '}}' }}"
+    ansible_user: root
+    ansible_password: "{{ lookup('file', '/etc/ansible/.vault_pass') }}"
+  tasks:
+  - name: ping all hosts with custom connection
+    shell: >
+      ping -c 1 {{ hostvars[item]['inventory_hostname'] }}
+    with_items:
+    - "{{ groups['all'] }}"
+    loop_control:
+      label: "{{ inventory_hostname }}"
+    vars:
+      ansible_connection: local
+  - name: ping all hosts with invalid var
+    shell: >
+      ping -c 1 {{ hostvars[item]['inventory_hostname'] }}
+    with_items:
+    - "{{ groups['all'] }}"
+    loop_control:
+      label: "{{ inventory_hostname }}"
+    vars:
+      ansible_connection: "{{ invalid_var|default('ssh', true) }}"
+  - name: ping all hosts with invalid ansible_connection
+    shell: >
+      ping -c 1 {{ hostvars[item]['inventory_hostname'] }}
+    with_items:
+    - "{{ groups['all'] }}"
+    loop_control:
+      label: "{{ inventory_hostname }}"
+    vars:
+      ansible_connection: invalid_connection
+  - name: ping all hosts with define var
+    shell: >
+      ping -c 1 {{ hostvars[item]['inventory_hostname'] }}
+    with_items:
+    - "{{ groups['all'] }}"
+    loop_control:
+      label: "{{ inventory_hostname }}"
+    vars:
+      ansible_connection: "{{ lookup('env', 'ANSIBLE_CONNECTION') }}"
+  - name: test ansible_user and ansible_password
+    shell: >
+      whoami
+    changed_when: false
+    with_items:
+    - "{{ groups['all'] }}"
+    loop_control:
+      label: "{{ inventory_hostname }}"
+    vars:
+      ansible_connection: ssh
+  - name: test ansible_user and ansible_password with invalid pass
+    shell: >
+      whoami
+    changed_when: false
+    with_items:
+    - "{{ groups['all'] }}"
+    loop_control:
+      label: "{{ inventory_hostname }}"
+    vars:
+      ansible_connection: ssh
+      ansible_password: "{{ invalid_pass }}"
+  - name: test ansible_user and ansible_password with default pass file
+    shell: >
+      whoami
+    changed_when: false
+    with_items:
+    - "{{ groups['all'] }}"
+    loop_control:
+      label: "{{ inventory_hostname }}"
+    vars:
+      ansible_connection: ssh
+      ansible_password: "{{ ansible_password }}"

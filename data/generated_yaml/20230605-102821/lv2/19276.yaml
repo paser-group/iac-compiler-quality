@@ -1,0 +1,36 @@
+
+- name: Stress test on Ansible compiler
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Empty inventory
+      command: /usr/bin/python /etc/ansible/ec2.py --list --refresh-cache --profile default
+      register: empty_inventory
+
+    - name: Display output
+      debug:
+        var: empty_inventory.stdout_lines
+
+    - name: Install stress tool
+      apt:
+        name: stress
+        state: present
+
+    - name: Stress test
+      shell: stress --cpu 1 --timeout 10s
+
+    - name: Ping all hosts
+      ping:
+
+    - name: Add node to inventory
+      add_host:
+        name: windows1
+        ansible_user: Administrator
+        groups: windows
+
+    - name: Attempt to install python3 on windows node
+      win_shell: choco install python3 --confirm --no-progress
+      delegate_to: windows1
+
+    - name: Invalid syntax
+      command: /usr/bin/python /etc/ansible/ec2.py --list --host not_defined

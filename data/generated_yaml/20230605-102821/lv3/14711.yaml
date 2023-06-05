@@ -1,0 +1,23 @@
+
+---
+- name: "Fetch ElastiCache instances"
+  hosts: localhost
+  gather_facts: false
+  
+  tasks:
+    - name: "Add ElastiCache to the dynamic inventory"
+      add_host:
+        name: "{{ item.cache_cluster_id }}"
+        groups: ec
+        ec2_tag_Name: "{{ item.cache_cluster_id }}"
+        ec2_private_ip_address: "{{ item.cache_nodes[0].endpoint.address }}"
+        ansible_host: "{{ item.cache_nodes[0].endpoint.address }}"
+      with_items: "{{ ec2_remote_cache_cluster_facts }}"
+      
+- name: "Test connectivity to ElastiCache instances"
+  hosts: ec
+  gather_facts: false
+  
+  tasks:
+    - name: "Ping the ElastiCache instances"
+      ping:

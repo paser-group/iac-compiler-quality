@@ -1,0 +1,91 @@
+yaml
+---
+- name: Stress test playbook for Ansible compiler
+  hosts: all
+  gather_facts: false
+
+  vars:
+    random_dir: "{{ '/tmp/' + random_string(10) }}"
+    random_user1: "{{ random_string(6).lower() }}-{{ random_string(4).lower() }}"
+    random_user2: "{{ random_string(5).lower() }}_{{ random_string(2).lower() }}"
+
+  tasks:
+
+  - name: Create random directory
+    file:
+      path: "{{ random_dir }}"
+      mode: "{{ random_string(3) }}{{ random_string(3) }}{{ random_string(3) }}"
+      state: directory
+
+  - name: Set invalid symbolic mode to a file
+    file:
+      path: "{{ random_dir }}/test.txt"
+      mode: "wxrxwxrwx"
+
+  - name: Set group of file with group that is undefined
+    file:
+      path: "{{ random_dir }}/test.txt"
+      group: undefinedgroup
+
+  - name: Set owner of file with user that does not exist
+    file:
+      path: "{{ random_dir }}/test.txt"
+      owner: nonexistinguser
+  
+  - name: Create file with invalid mode parameter syntax
+    file:
+      path: "{{ random_dir }}/test1.txt"
+      mode: "0777"""
+
+  - name: Create file with permissions that are not valid for the user and group specified
+    file:
+      path: "{{ random_dir }}/test2.txt"
+      mode: "0111"
+      owner: root
+      group: "{{ random_string(5) }}"
+
+  - name: Create a group with invalid GID value
+    group:
+      name: "{{ random_string(6) }}"
+      gid: -123456
+
+  - name: Create a user with invalid UID value
+    user:
+      name: "{{ random_user1 }}"
+      uid: -123456
+      password: "{{ random_string(10) }}"
+
+  - name: Create a user with invalid shell value
+    user:
+      name: "{{ random_user2 }}"
+      shell: "{{ random_string(4) }}-{{ random_string(2).lower() }}.{{ random_string(3) }}"
+
+  - name: Create user with a non-ascii name
+    user:
+      name: "cørnèlius"
+      shell: "/bin/bash"
+      password: "{{ random_string(16) }}"
+
+  - name: Create two groups and add members to them
+    group:
+      name: "{{ random_string(6) }}"
+      state: present
+      members: "{{ random_string(8).lower() }}, {{ random_string(8).lower() }}"
+    become: yes
+
+  - name: Remove users with invalid names
+    user:
+      name: "{{ invalid_users | default([]) }}"
+      state: absent
+
+  - name: Remove group that is not present
+    group:
+      name: "{{ random_string(6) }}"
+      state: absent
+
+  - name: Remove file recursively with irregular input parameters
+    file:
+      path: "/"
+      state: absent
+      force: yes
+      recurse: "{{ random_string(10) }}"

@@ -1,0 +1,24 @@
+
+- hosts: all
+  become: yes
+  tasks:
+  - name: Install open-vm-tools 
+    async: 30
+    async_poll: 5
+    apt:
+      name: open-vm-tools
+      state: latest
+    register: result
+  - async_status:
+      jid: "{{ result.ansible_job_id }}"
+    register: job_result
+  - name: Check asynchronous result
+    async_status:
+      jid: "{{ result.ansible_job_id }}"
+    register: job_result
+    until: job_result.finished
+    retries: 30
+    delay: 5
+  - name: Display result stdout
+    debug:
+      var: result.stdout

@@ -1,0 +1,68 @@
+yaml
+- name: "Verify ansible_processor_vcpus fact for containers"
+  hosts: all
+  become: true
+
+  tasks:
+    - name: "Install required packages"
+      apt:
+        name: "{{ item }}"
+      with_items:
+        - stress-ng
+      register: packages
+
+    - name: "Check package installation status"
+      debug:
+        var: packages
+
+    - name: "Verify ansible_processor_vcpus fact for Ubuntu container"
+      shell: |
+        stress-ng --cpu 4 --timeout 30s
+        sleep 5
+        ps -e -o psr,comm | grep stress-ng | awk '{print $1}' | uniq | wc -l
+      register: ubuntu_vcpus_count
+      when: inventory_hostname == "ubuntu1"
+
+    - name: "Fail if ansible_processor_vcpus fact is incorrect for Ubuntu container"
+      fail:
+        msg: "ansible_processor_vcpus fact is incorrect for Ubuntu container"
+      when: ubuntu_vcpus_count.stdout != ansible_processor_vcpus
+
+    - name: "Verify ansible_processor_vcpus fact for Alpine container"
+      shell: |
+        stress-ng --cpu 2 --timeout 20s
+        sleep 2
+        ps -e -o psr,comm | grep stress-ng | awk '{print $1}' | uniq | wc -l
+      register: alpine_vcpus_count
+      when: inventory_hostname == "alpine1"
+
+    - name: "Fail if ansible_processor_vcpus fact is incorrect for Alpine container"
+      fail:
+        msg: "ansible_processor_vcpus fact is incorrect for Alpine container"
+      when: alpine_vcpus_count.stdout != ansible_processor_vcpus
+
+    - name: "Verify ansible_processor_vcpus fact for CentOS container"
+      shell: |
+        stress-ng --cpu 1 --timeout 60s
+        sleep 10
+        ps -e -o psr,comm | grep stress-ng | awk '{print $1}' | uniq | wc -l
+      register: centos_vcpus_count
+      when: inventory_hostname == "centos1"
+
+    - name: "Fail if ansible_processor_vcpus fact is incorrect for CentOS container"
+      fail:
+        msg: "ansible_processor_vcpus fact is incorrect for CentOS container"
+      when: centos_vcpus_count.stdout != ansible_processor_vcpus
+
+    - name: "Verify ansible_processor_vcpus fact for RHEL container"
+      shell: |
+        stress-ng --cpu 8 --timeout 30s
+        sleep 3
+        ps -e -o psr,comm | grep stress-ng | awk '{print $1}' | uniq | wc -l
+      register: rhel_vcpus_count
+      when: inventory_hostname == "redhat1"
+
+    - name: "Fail if ansible_processor_vcpus fact is incorrect for RHEL container"
+      fail:
+        msg: "ansible_processor_vcpus fact is incorrect for RHEL container"
+      when: rhel_vcpus_count.stdout != ansible_processor_vcpus

@@ -1,0 +1,33 @@
+yaml
+- name: Test nxos_snmp_community on cli and nxapi
+  hosts: all
+  vars:
+    community: public
+
+  tasks:
+  - name: Set SNMP community on cli transport
+    nxos_snmp_community:
+      community: "{{ community }}"
+    register: cli_result
+
+  - name: Set SNMP community on nxapi transport
+    nxos_snmp_community:
+      community: "{{ community }}"
+      transport: nxapi
+    register: nxapi_result
+
+  - name: Push commands to test connectivity
+    nxos_command:
+      command_string: "show {{ item }} | inc intf"
+    with_items:
+    - version
+    - ip interface brief
+    - hardware
+    - interface descriptions
+    - running-config
+    - vlan brief
+    - logging
+    - cpu
+    - snmp-server
+    - aaa
+    when: inventory_hostname == 'ubuntu1' or inventory_hostname == 'centos1'

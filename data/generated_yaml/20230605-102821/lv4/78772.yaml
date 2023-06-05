@@ -1,0 +1,20 @@
+yaml
+- name: Testing Bad File Descriptor Bug
+  hosts: all
+  tasks:
+    - name: Create a temporary file
+      tempfile:
+        state: file
+        suffix: '.tmp'
+      register: tempfile_output
+    - name: Open file
+      shell: 'echo "Test message" >> {{ tempfile_output.path }}'
+      register: write_output
+    - name: Close file
+      shell: 'exec {{ write_output.fd }}>&-'
+    - name: Read from file
+      shell: 'cat {{ tempfile_output.path }}'
+      register: read_output
+    - name: Debug Value
+      debug:
+        var: read_output.stdout_lines[0]

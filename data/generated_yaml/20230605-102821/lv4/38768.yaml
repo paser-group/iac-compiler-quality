@@ -1,0 +1,33 @@
+
+- name: Install IOS software on network devices
+  hosts: network_devices
+  gather_facts: no
+  
+  vars:
+    software_version: "iosv-l2-adventerprisek9-m.03.2017.bin"
+  
+  tasks:
+  - name: Check current IOS version
+    ios_command:
+      commands:
+        - "show version | include IOS Software"
+        - "show boot | include BOOT path-list"
+    register: current_ios_version
+  
+  - name: Copy IOS software to network devices
+    ios_command:
+      commands:
+        - "copy tftp://10.1.1.5/{{ software_version }} flash:{{ software_version }}"
+    check_mode: no
+  
+  - name: Verify IOS installation
+    ios_command:
+      commands:
+        - "show archive log config all | include Archive file"
+    register: new_ios_version
+  - name: Rollback IOS if installation fails
+    ios_command:
+      commands:
+        - "archive download-sw /overwrite /reload tftp://10.1.1.5/{{ software_version }}"
+    when: new_ios_version.stdout_lines == current_ios_version.stdout_lines
+    check_mode: no

@@ -1,0 +1,37 @@
+yaml
+- name: Deploy Azure Resources with error handling
+  hosts: localhost
+  gather_facts: no
+  tasks:
+    - name: Include Azure login credentials
+      include_vars:
+        file: azure_login.yaml # assuming this file includes credentials for the Azure account
+  
+    - name: Create Azure Resource Group
+      azure_rm_resourcegroup:
+        resource_group: "{{ resource_group_name }}"
+        location: "{{ location }}"
+        state: present
+      register: rg_created
+
+    - name: Deploy Azure Resources
+      block:
+        - name: Deploy Azure Resources Automation
+          azure_rm_deployment:
+            resource_group_name: "{{ resource_group_name }}"
+            deployment_mode: "{{ deployment_mode }}"
+            template_uri: "{{ template_uri }}"
+            parameters:
+              prefixName: "{{ prefix_name }}"
+            state: present
+          register: deploy_status
+        
+        - name: Fail If Azure Deployment Fails
+          fail:
+            msg: "Azure Deployment failed with {{ deploy_status | to_nice_json }}"
+          when: deploy_status.failed
+        
+      rescue:
+        - name: Handle 503 HTTP Errors During Deployment
+          fail:
+            msg: "Azure Deployment failed with HTTP 503 error."

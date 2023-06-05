@@ -1,0 +1,64 @@
+
+---
+- name: Undercloud Deployment Test
+  hosts: all
+  become: true
+
+  tasks:
+  - name: Set timezone to UTC
+    shell: timedatectl set-timezone UTC
+    register: output
+
+  - name: Tag nodes with their OS name
+    debug:
+      msg: "{{ inventory_hostname }} has the {{ ansible_distribution }} distribution"
+
+  - name: Install Python 3 if not available
+    raw: test -e /usr/bin/python || (apt -y update && apt -y install python3-minimal)
+    changed_when: false
+    register: output_raw
+
+  - name: Set hostname to undercloud
+    hostname:
+      name: undercloud
+
+  - name: Create user 'stack' with 'sudo' privileges
+    user:
+      name: stack
+      comment: "Stack user"
+      groups: sudo
+      shell: /bin/bash
+      password: "{{ 'secret' | password_hash('sha256') }}"
+
+  - name: Generate high CPU load on node
+    shell: "dd if=/dev/zero of=/dev/null &"
+    async: 10
+    poll: 0
+
+  - name: Install missing package
+    apt:
+      name: "{{[]|push('package-name')}}"
+      state: present
+
+  - name: Restart node service
+    service:
+      name: "node-service"
+      state: restarted
+
+  - name: Insert incorrect syntax in YAML file
+    blockinfile:
+      path: /etc/motd
+      block: |-
+        This is the MOTD file.
+        ⍟⌘❥ Do not modify.
+
+  - name: Create large file with random data
+    blockinfile:
+      path: /tmp/largefile.txt
+      block: "{{ lookup('pipe', 'tr -dc a-zA-Z0-9 </dev/urandom | head -c 1000000') }}"
+      blocksize: 4096
+      backup: false
+
+  - name: Print debug message with invalid variable
+    debug:
+      msg: "{{ non_existent_var }}" 

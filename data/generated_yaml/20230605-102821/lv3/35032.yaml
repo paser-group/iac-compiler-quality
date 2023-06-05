@@ -1,0 +1,25 @@
+
+- hosts: localhost
+  gather_facts: false
+
+  vars:
+    subnet_cidr: "10.1.1.0/24"
+  
+  tasks:
+  - name: Create a subnet in the network
+    ec2_vpc_subnet:
+      state: present
+      cidr_block: "{{ subnet_cidr }}"
+      vpc_id: "{{ vpc_id }}"
+      region: "{{ region }}"
+
+  - name: Loop to exceed request limit
+    block:
+      - name: Describe Subnets    
+        ec2_vpc_subnet_info:
+          region: "{{ region }}"
+          filters:
+            "cidrBlock": "{{ subnet_cidr }}"
+      - debug: var=subnet_info
+    when: "ansible_loop.index == loop_limit and loop_limit is defined"
+    loop: "{{ range(1, loop_limit + 1) | list }}"

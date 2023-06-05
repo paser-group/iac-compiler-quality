@@ -1,0 +1,76 @@
+
+- name: Testing tower_credentials idempotency issue
+  hosts: all
+  gather_facts: false
+
+  tasks:
+  - name: Create tower credential with an empty name field
+    tower_credential:
+      name: ""
+      description: "Test name is empty"
+      credential_type: "vault"
+      host: "https://localhost:19000"
+      token: "my_token"
+
+  - name: Create tower credential with an unsupported credential_type
+    tower_credential:
+      name: "Test Credential"
+      description: "Credential type is not supported"
+      credential_type: "my_credential"
+      host: "https://localhost:19000"
+      token: "my_token"
+
+  - name: Create tower credential with invalid host URL
+    tower_credential:
+      name: "Test Credential"
+      description: "Host URL is invalid"
+      credential_type: "vault"
+      host: "https:/localhost:19000"
+      token: "my_token"
+
+  - name: Create tower credential with an invalid token
+    tower_credential:
+      name: "Test Credential"
+      description: "Token is invalid"
+      credential_type: "vault"
+      host: "https://localhost:19000"
+      token: "invalid_token"
+
+  - name: Create tower credential with an empty token
+    tower_credential:
+      name: "Test Credential"
+      description: "Token is empty"
+      credential_type: "vault"
+      host: "https://localhost:19000"
+      token: ""
+
+  - name: Create tower credential with a duplicate name
+    tower_credential:
+      name: "Test Credential"
+      description: "Name already exists"
+      credential_type: "vault"
+      host: "https://localhost:19000"
+      token: "my_token"
+
+  - name: Create tower credential and update it with an empty name field
+    tower_credential:
+      name: "Test Credential"
+      description: "Test update name is empty"
+      credential_type: "vault"
+      host: "https://localhost:19000"
+      token: "my_token"
+    register: credential
+
+  - name: Update the credential with an empty name field
+    tower_credential:
+      id: "{{ credential.id }}"
+      name: ""
+      description: "Test update name is empty"
+      credential_type: "vault"
+      host: "https://localhost:19000"
+      token: "my_token"
+
+  - name: Delete the credential
+    tower_credential:
+      id: "{{ credential.id }}"
+      state: absent

@@ -1,0 +1,26 @@
+yaml
+- name: Test Redis fact caching on RHEL6
+  hosts: all
+  become: true
+  gather_facts: false
+
+  tasks:
+  
+  - name: Install Redis Python library
+    yum:
+      name: python-redis
+      state: present
+
+  - name: Set Redis as the fact caching backend
+    set_fact:
+      ansible_fact_caching: yes
+      ansible_fact_caching_connection: "redis://{{inventory_hostname}}:6379/{{ansible_distribution_major_version}}"
+      ansible_fact_caching_prefix: "ansible_fact_caching_{{inventory_hostname}}"
+      ansible_fact_caching_expiration: 300
+
+  - name: Cache a test fact
+    set_fact: 
+      redis_test_fact: "test"
+    failed_when: True
+
+  - debug: var=redis_test_fact

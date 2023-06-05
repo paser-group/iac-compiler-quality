@@ -1,0 +1,31 @@
+
+- hosts: all
+  gather_facts: false
+  vars:
+    ios_device_list:
+    - "{{ ansible_host }}"
+    ios_config:
+      lines:
+        - interface loopback0
+        - ip address 2.2.2.2 255.255.255.255
+        - exit
+      parents:
+        - interface GigabitEthernet1
+    ios_timeout: 10
+    ios_command_timeout: 30
+    ios_delay_factor: 2
+  tasks:
+    - name: Configure Loopback and Parent Interface
+      ios_config:
+        provider: "{{ item.provider }}"
+        lines: "{{ item.lines }}"
+        parents: "{{ item.parents }}"
+        timeout: "{{ item.timeout }}"
+        command_timeout: "{{ item.command_timeout }}"
+        delay_factor: "{{ item.delay_factor }}"
+      with_items:
+        - { provider: "{{ hostvars[inventory_hostname].ios_connection }}", lines: "{{ ios_config.lines }}", parents: "{{ ios_config.parents }}", timeout: "{{ ios_timeout }}", command_timeout: "{{ ios_command_timeout }}", delay_factor: "{{ ios_delay_factor }}" }
+      register: ios_config_result
+    - name: Print Output
+      debug:
+        var: ios_config_result

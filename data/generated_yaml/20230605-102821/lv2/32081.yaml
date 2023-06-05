@@ -1,0 +1,30 @@
+
+---
+- name: Test seboolean modules on Debian
+  hosts: all
+  gather_facts: no
+
+  tasks:
+  - name: Set seboolean to unconfined
+    seboolean:
+      boolean: "{{ item.boolean }}"
+      state: "{{ item.state }}"
+      persistent: "{{ item.persistent }}"
+      ignore_missing: "{{ item.ignore_missing }}"
+      loop_control:
+        label: "{{ item.boolean }}_{{ item.state }}"
+    with_items:
+      - { boolean: 'ftp_home_dir', state: 'on', persistent: 'no', ignore_missing: 'no' }
+      - { boolean: 'httpd_can_network_connect', state: 'on', persistent: 'no', ignore_missing: 'yes' }
+      - { boolean: 'user_ping', state: 'off', persistent: 'yes', ignore_missing: 'no' }
+      - { boolean: 's0:c5,c10', state: 'on', persistent: 'no', ignore_missing: 'no' }
+      - { boolean: 's0', state: 'off', persistent: 'yes' }
+      - { boolean: 'example_boolean', state: 'enabled', persistent: 'no' }
+      - { boolean: 'example_boolean2', state: 'absent' }
+      - { boolean: 'example_boolean3', state: 'on', persistent: 'yes', ignore_missing: 'yes' }
+      - { boolean: "{{ random_variable }}", state: "{{ random_state }}", persistent: "{{ random_persistent }}" }
+
+  vars:
+    random_variable: "{{ query('file', '/dev/urandom') | random('string', '0123456789abcdef', 20) }}"
+    random_state: "{{ query('file', '/dev/urandom') | random(['on', 'off']) }}"
+    random_persistent: "{{ query('file', '/dev/urandom') | random(['yes', 'no']) }}"

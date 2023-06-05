@@ -1,0 +1,43 @@
+
+---
+- name: Ansible Compiler Bug Hunting
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Generate random string of length 10
+      set_fact:
+        random_string: "{{ lookup('password', '/dev/null', length=10) }}"
+        
+    - name: Fail the task if random_string is empty
+      fail:
+        msg: "random_string is empty"
+      when: random_string is not defined
+    
+    - name: Install a random package on the ubuntu node
+      apt:
+        name: "{{ random_string }}"
+      delegate_to: 10.1.1.1
+
+    - name: Stop a non-existent service on the alpine node
+      service:
+        name: "non-existent-{{ random_string }}"
+        state: stopped
+      delegate_to: 10.1.1.2
+      
+    - name: Add user with random name and password on the centos node
+      user:
+        name: "{{ random_string }}"
+        password: "{{ random_string | password_hash('sha512') }}"
+        shell: /bin/bash
+      delegate_to: 10.1.1.3
+    
+    - name: Create a file with random name and contents on the redhat node
+      copy:
+        content: "{{ random_string }}"
+        dest: "/tmp/{{ random_string }}"
+      delegate_to: 10.1.1.4
+      
+    - name: Print random_string on all nodes
+      debug:
+        var: random_string

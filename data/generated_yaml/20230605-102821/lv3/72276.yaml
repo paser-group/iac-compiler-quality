@@ -1,0 +1,26 @@
+
+- name: Test AnsibleVaultFormatError
+  hosts: all
+  connection: local
+  
+  tasks:
+  - name: Create Encrypted File
+    copy:
+      content: "This is some sensitive data."
+      dest: /tmp/secret.txt
+    become: true
+
+  - name: Encrypt File using Ansible Vault
+    command: ansible-vault encrypt /tmp/secret.txt
+    register: result
+    become: true
+
+  - name: Attempt to Decrypt File with Wrong Password
+    command: ansible-vault view /tmp/secret.txt --vault-password-file=/tmp/wrong-password.txt
+    ignore_errors: yes
+    become: true
+    register: file_decryption
+
+  - name: Print Error Message
+    debug:
+      var: file_decryption.stderr_lines

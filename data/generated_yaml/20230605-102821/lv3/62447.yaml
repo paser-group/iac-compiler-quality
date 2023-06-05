@@ -1,0 +1,28 @@
+
+- name: Create SQL database
+  hosts: localhost
+  tasks:
+  - name: Add firewall rule for SQL Server
+    azure_rm_firewallrule:
+      resource_group: myResourceGroup
+      server_name: mySQLServer
+      name: AllowAllWindowsAzureIps
+      start_ip_address: 0.0.0.0
+      end_ip_address: 0.0.0.0
+    register: firewall_rule
+
+  - name: Create SQL database
+    azure_rm_sqldatabase:
+      resource_group: myResourceGroup
+      server_name: mySQLServer
+      name: myDatabase
+      collation: SQL_Latin1_General_CP1_CI_AS
+      maximum_size_bytes: 1073741824
+      tags:
+          cost_center: "a1"
+          department: "finance"
+    when: firewall_rule.changed
+    register: sql_db
+
+  - name: Test SQL connectivity
+    command: /usr/bin/sqlcmd -S {{ sql_db.fqdn }} -U myUser -P myPassword -Q "SELECT @@VERSION"

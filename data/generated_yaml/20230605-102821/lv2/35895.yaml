@@ -1,0 +1,17 @@
+
+- name: Generate random password
+  shell: "openssl rand -base64 12"
+  register: rand_pass
+
+- name: Stress test Ansible by repeatedly executing ping module
+  shell: "ansible all -i inventory -m ping -e '{{ rand_pass.stdout }}' -u root --private-key /var/tmp/key_I.pem --become-method=sudo"
+  loop: "{{ range(10) | list }}"
+
+- name: Check system logs for errors
+  shell: "dmesg | grep segfault || true"
+  register: dmesg_output
+  changed_when: false
+
+- name: Display any segfaults found
+  debug: 
+    var: dmesg_output

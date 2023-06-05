@@ -1,0 +1,22 @@
+
+- name: Test idempotency issue on IOSXR L3
+  hosts: iosxr_l3
+  gather_facts: no
+
+  tasks:
+    - name: Configure loopback interface on IOSXR L3
+      iosxr_config:
+        lines:
+          - "interface Loopback {{ 1 + 1 }}{{- }}{{ 1 | random }}"
+          - "description {{ random_string(50, charset='abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789') }}"
+        after:
+          - "commit"
+
+    - name: Delete loopback interface on IOSXR L3
+      iosxr_command:
+        commands:
+          - "no interface Loopback {{ 1 + 1 }}{{- }}{{ 1 | random }}"
+        prompt: "[confirm]"
+        answer: "y{{ random_string(20, charset='abcdefghijklmnopqrstuvwxyz') }}"
+        after:
+          - "commit"

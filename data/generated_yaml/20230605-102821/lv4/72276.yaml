@@ -1,0 +1,25 @@
+
+- name: Test AnsibleVaultFormatError Handling
+  hosts: all
+  vars:
+    password: !vault | 
+              $ANSIBLE_VAULT;1.1;AES256
+              64316631313632323861626664656139633138396133663237646533663765383634636531616430
+    another_password: !vault |
+              $ANSIBLE_VAULT;1.1;AES256
+              39323265383861623039343833616231623030316532386234386434336333663633386633616531
+  tasks:
+    - name: Ensure the first vault key works
+      debug:
+        msg: "Password is {{password}}"
+      vars:
+        ansible_vault_password_file: /path/to/first_key
+      ignore_errors: yes
+
+    - name: Ensure the second vault key fails with expected error
+      debug:
+        msg: "Password is {{another_password}}"
+      vars:
+        ansible_vault_password_file: /path/to/second_key
+      register: vault_error
+      failed_when: "'AnsibleVaultFormatError' not in (vault_error | to_nice_json)"

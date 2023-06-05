@@ -1,0 +1,54 @@
+
+---
+- name: Reboot VMware guest
+  hosts: localhost
+  gather_facts: no
+  vars:
+    vm_device_id: "vm-12345"
+    vm_name: "ubuntu-vm"
+    vmware_host: "vcenter1.domain.com"
+    vmware_user: "administrator@vsphere.local"
+    vmware_password: "{{ lookup('file', '/path/to/vcenter-password.txt') }}"
+    vmware_datacenter: "Datacenter1"
+    vmware_cluster: "Cluster1"
+    vmware_datastore: "Datastore1"
+
+  tasks:
+  - name: gather vm status
+    vmware_guest_info:
+      hostname: "{{ vmware_host }}"
+      username: "{{ vmware_user }}"
+      password: "{{ vmware_password }}"
+      validate_certs: False
+      datacenter_name: "{{ vmware_datacenter }}"
+      name: "{{ vm_name }}"
+      folder: "/{{ vmware_datacenter }}/vm/{{ vmware_cluster }}"
+      vm_properties:
+        - name
+        - power_state
+        - guest_id
+      delegate_to: localhost
+    register: vm_guest_info
+
+  - name: echo vm status
+    debug:
+      msg: "{{ vm_guest_info | to_nice_json }}"
+
+  - name: reboot vm
+    vmware_guest:
+      hostname: "{{ vmware_host }}"
+      username: "{{ vmware_user }}"
+      password: "{{ vmware_password }}"
+      validate_certs: False
+      datacenter: "{{ vmware_datacenter }}"
+      cluster: "{{ vmware_cluster }}"
+      name: "{{ vm_name }}"
+      state: restarted
+      wait_for_custom_ip: true
+      timeout: 300
+      delegate_to: localhost
+    register: vm_result
+
+  - name: echo vm reboot result
+    debug:
+      msg: "{{ vm_result }}"

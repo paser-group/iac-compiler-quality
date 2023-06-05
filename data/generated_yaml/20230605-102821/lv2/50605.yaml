@@ -1,0 +1,45 @@
+
+---
+- name: Provision VM in NSX-T
+  hosts: ubuntu1
+  tasks:
+    - name: Set folder permissions on NSX-T
+      block:
+        - name: Create folder
+          file:
+            path: /tmp/vmware_guest
+            state: directory
+            mode: '0777'
+        - name: Set permissions on folder
+          file:
+            path: /tmp/vmware_guest
+            mode: '0700'
+      rescue:
+        - name: Remove folder on error
+          file:
+            path: /tmp/vmware_guest
+            state: absent
+
+    - name: Create vmware_guest on NSX-T
+      vmware_guest:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ vmware_username }}"
+        password: "{{ vmware_password }}"
+        datacenter: "{{ datacenter }}"
+        folder: "/tmp/vmware_guest"
+        name: "{{ inventory_hostname }}"
+        guest_id: "{{ guest_id }}"
+        hardware:
+          memory_mb: "{{ memory_mb }}"
+          num_cpus: "{{ num_cpus }}"
+          disk:
+            - size_gb: "{{ disk_size_gb }}"
+              type: "{{ disk_type }}"
+        networks:
+          - name: "{{ network_name }}"
+            ip: "{{ ansible_host }}"
+      register: result
+
+    - name: Debug vmware_guest creation
+      debug:
+        msg: "{{ result }}"

@@ -1,0 +1,23 @@
+
+- name: Check for MOTD parse error
+  hosts: all
+  tasks:
+    - name: Dropbear MOTD parse check
+      shell: echo "{{body}}" > /etc/motd; /usr/sbin/dropbear -R
+      register: dropbear_output
+      changed_when: false
+
+    - name: Assert no parse errors
+      assert:
+        that: "not ('parse error' in dropbear_output.stderr)"
+        success_msg: "No parse errors found"
+        fail_msg: "Parse error detected!"
+        tags: parse_check
+
+    - name: Create empty MOTD file
+      file:
+        path: /etc/motd
+        state: touch
+        mode: '0644'
+        changed_when: false
+      tags: [empty_motd]

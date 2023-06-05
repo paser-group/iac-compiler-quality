@@ -1,0 +1,45 @@
+
+- name: Remove idempotence test of nxos_vxlan_vtep_vni module
+  hosts: all
+  gather_facts: False
+  tasks:
+    - name: Configure VTEP and VNI mapping
+      nxos_vxlan_vtep_vni:
+        vrf: VRF1
+        vni: 10000
+        src_vtep: "{{ inventory_hostname }}"
+        dst_vtep: "{{ item }}"
+        state: present
+      with_items:
+        - "{{ groups['all'] | difference([inventory_hostname]) }}"
+      register: configure_vtep_vni_output
+
+    - name: Check idempotence of nxos_vxlan_vtep_vni module by removing the configuration
+      nxos_vxlan_vtep_vni:
+        vrf: VRF1
+        vni: 10000
+        src_vtep: "{{ inventory_hostname }}"
+        dst_vtep: "{{ item }}"
+        state: absent
+      with_items:
+        - "{{ groups['all'] | difference([inventory_hostname]) }}"
+      register: check_idempotence_output
+
+    - name: Echo output of remove idempotence test
+      debug:
+        var: configure_vtep_vni_output.results
+        var: check_idempotence_output.results
+
+- name: Remove VTEP and VNI mapping
+  hosts: all
+  gather_facts: False
+  tasks:
+    - name: Remove VTEP and VNI mapping configuration
+      nxos_vxlan_vtep_vni:
+        vrf: VRF1
+        vni: 10000
+        src_vtep: "{{ inventory_hostname }}"
+        dst_vtep: "{{ item }}"
+        state: absent
+      with_items:
+        - "{{ groups['all'] | difference([inventory_hostname]) }}"

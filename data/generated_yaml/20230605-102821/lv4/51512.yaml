@@ -1,0 +1,17 @@
+yaml
+- hosts: windows
+  gather_facts: no
+  
+  tasks:
+    - name: Create PSCredential object with plain text password
+      set_fact:
+        pscredential: "{{ 'username':'admin_user', 'password':'admin_password' }}"
+        
+    - name: Convert plain text to secure string PS credential
+      win_shell: "$securestring = ConvertTo-SecureString {{ pscredential.password }} -AsPlainText -Force; New-Object Management.Automation.PSCredential ('{{ pscredential.username }}', $securestring)"
+      register: secure_credential
+      
+    - name: Show secure string cred
+      debug:
+        var: secure_credential
+      failed_when: "'SecurePassword' not in secure_credential.stdout"

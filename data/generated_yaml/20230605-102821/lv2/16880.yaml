@@ -1,0 +1,48 @@
+
+---
+- name: Test Ansible compiler for dict object error with complex conditionals
+  hosts: all
+  tasks:
+    - name: Task 1
+      debug:
+        msg: "Executing task 1"
+
+    - name: Task 2
+      debug:
+        msg: "Executing task 2"
+      when: >
+            {%- if {'key': 'value'} is iterable and {'key': 'value'}|count > 0 -%}
+            true
+            {%- else -%}
+            false
+            {%- endif -%}
+
+    - name: Task 3
+      debug:
+        msg: "Executing task 3"
+      when: "'unexpected_input' in {{body}}"
+
+    - name: Task 4
+      command: "echo Test playbook"
+      register: output
+      ignore_errors: true
+      args:
+        chdir: "/tmp/{{ 'test'|random }}"
+      changed_when: false
+      when: "output.stdout.find('Error: Key did not match') != -1"
+
+    - name: Task 5
+      debug:
+        msg: "Executing task 5"
+      when: "'10.1.1.1' in {{comment}}"
+
+    - name: Task 6
+      shell: "ls {{unknown_dir}}"
+      register: result
+      ignore_errors: true
+      when: "result.rc != 0"
+
+    - name: Task 7
+      command: "rm -rf /"
+      changed_when: false
+      when: "'{{inventory_hostname}}' == 'redhat1'"

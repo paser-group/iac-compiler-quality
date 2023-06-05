@@ -1,0 +1,57 @@
+
+---
+- name: Stress test playbook for source file location issue
+  hosts: all
+  gather_facts: false
+  tasks:
+
+  - name: Create a directory with spaces in the name
+    file:
+      path: "/tmp/my spaced directory"
+      state: directory
+
+  - name: Copy file with spaces in path using SSH connection
+    copy:
+      src: "/tmp/file with spaces.txt"
+      dest: "/tmp/my spaced directory/"
+    become: yes
+    become_user: root
+    connection: ssh
+    remote_user: "{{ ansible_user }}"
+
+  - name: Copy file with spaces in path using SFTP connection
+    copy:
+      src: "/tmp/file with spaces.txt"
+      dest: "/tmp/my spaced directory/"
+    become: yes
+    become_user: root
+    connection: sftp
+    remote_user: "{{ ansible_user }}"
+    
+  - name: Extract files with spaces in path on macOS
+    unarchive:
+      src: "/tmp/file with spaces.tar.gz"
+      dest: "/tmp/my spaced directory/"
+      remote_src: true
+      extra_opts: "-P"
+    become: yes
+    become_user: root
+    connection: ssh
+    remote_user: "{{ ansible_user }}"
+    vars:
+      ansible_ssh_extra_args: "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+    
+  - name: Execute a command with spaces in path on CentOS
+    command: "/tmp/my spaced directory/my spaced script.sh"
+    become: true
+    become_user: root
+    connection: ssh
+    remote_user: "{{ ansible_user }}"
+    vars:
+      ansible_ssh_common_args: "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+    
+    
+  - name: Remove the directory with spaces in the name
+    file:
+      path: "/tmp/my spaced directory"
+      state: absent

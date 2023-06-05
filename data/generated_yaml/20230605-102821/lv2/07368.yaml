@@ -1,0 +1,31 @@
+
+- name: Testing ec2_vpc module
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Create VPC with instance ID
+      ec2_vpc_net:
+        state: present
+        cidr_block: "{{ hostvars[groups['all'][0]]['ansible_default_ipv4']['network'] }}"
+        vpc_id: "i-99999999"
+        region: "us-east-1"
+        subnet_id: "subnet-123456"
+        tags:
+          Name: "test-VPC"
+      register: vpc_creation
+      
+    - name: Create route table
+      ec2_vpc_route_table:
+        vpc_id: "{{ vpc_creation.vpc_id }}"
+        tags:
+          Name: "test-route-table"
+      register: route_table_creation
+      
+    - name: Add route to VPC route table
+      ec2_vpc_route:
+        route_table_id: "{{ route_table_creation.route_table.id }}"
+        dest_cidr_block: "0.0.0.0/0"
+        instance_id: "{{ vpc_creation.instance_id }}"
+        region: "us-east-1"
+        state: present
+      register: add_route_result

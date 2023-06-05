@@ -1,0 +1,19 @@
+
+---
+- hosts: windows
+  gather_facts: no
+  tasks:
+  - name: Execute long-running command via WinRM
+    win_command: "ping -t 127.0.0.1"
+    register: cmd_output
+    async: 600
+    poll: 0
+    args:
+      ansible_winrm_operation_timeout_sec: 600
+  - name: Get command output
+    async_status:
+      jid: "{{ cmd_output.ansible_job_id }}"
+    register: job_result
+    until: job_result.finished
+    retries: "{{ ansible_winrm_max_retries }}"
+    delay: "{{ ansible_winrm_retry_delay }}"

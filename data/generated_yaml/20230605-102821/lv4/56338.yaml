@@ -1,0 +1,28 @@
+
+- name: Install Docker SDK
+  hosts: all
+  become: true
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
+
+  tasks:
+    - name: Ensure Docker SDK is installed
+      pip:
+        name: docker
+        state: latest
+
+    - name: Create a Docker Container
+      docker_container:
+        name: web-server
+        image: nginx
+        state: started
+        restart: yes
+
+    - name: Verify the Docker Container is running
+      shell: docker ps | grep web-server | awk '{print $1}'
+      register: docker_container_status
+      failed_when: docker_container_status.stdout_lines | length == 0
+
+    - name: Debug Docker Container Status
+      debug:
+        var: docker_container_status.stdout_lines

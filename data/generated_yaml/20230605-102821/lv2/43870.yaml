@@ -1,0 +1,25 @@
+
+---
+- name: Test Ansible DNF Module for RPM Scriptlet Errors Warning
+  hosts: all
+  become: true
+  tasks:
+    - name: Install a package with post-install scriptlet error
+      dnf:
+        name: httpd
+        state: present
+        installonlypkgs: "{{ random.choice([False, True]) }}"
+        installroot: /tmp
+        install_weak_deps: "{{ random.choice([False, True]) }}"
+        security: "{{ random.choice([False, True]) }}"
+        exclude: httpd*
+        disable_exclude: "{{ random.choice([False, True]) }}"
+        disablerepo: "{{ random.choice(['repo1', 'repo2', '', '*', '@circleci']) }}"
+        skip_broken: "{{ random.choice([False, True]) }}"
+      register: dnf_output
+      ignore_errors: true
+
+    - name: Fail the playbook if post-install scriptlet error warning not present
+      fail:
+        msg: "'RPM scriptlet errors' warning not present"
+      when: "'RPM scriptlet errors' not in dnf_output.stderr"

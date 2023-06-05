@@ -1,0 +1,24 @@
+
+- name: junos module run - stress test playbook
+  hosts: all
+  gather_facts: no
+  tasks:
+  - name: Check if authentication is successful
+    junos_command:
+      commands: "show system uptime"
+      user: "{{ ansible_user }}"
+      passwd: "{{ ansible_ssh_pass }}"
+      provider:
+        host: "{{ inventory_hostname }}"
+        ssh_keyfile: "{{ ansible_ssh_private_key_file }}"
+        timeout: 5
+        transport: "{{ inventory_hostname == 'ubuntu1' | ternary('telnet', 'ssh') }}"
+    register: auth
+
+  - name: Stress test for wrong connection type - unset the transport key
+    junos_command:
+      commands: "show system uptime"
+      provider:
+        host: "{{ inventory_hostname }}"
+    register: test_unset_transport
+    when: "{{ inventory_hostname == 'ubuntu1' }}"

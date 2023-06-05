@@ -1,0 +1,28 @@
+
+---
+- name: Test selective callback failure on looped items
+  hosts: all
+  gather_facts: false
+
+  vars:
+    items: ['ubuntu1', 'alpine1', 'centos1', 'redhat1']
+
+  tasks:
+    - name: Check for failed items during loop
+      assert:
+        that: item in items
+        fail_msg: "Loop item {{ item }} failed assertion"
+        success_msg: "Loop item {{ item }} passed assertion"
+      with_items: "{{ items }}"
+      register: loop_results
+
+    - name: Perform selective callback
+      debug:
+        msg: "Running selective callback for {{ item }}"
+      failed_when: "loop_results.results[{{ item }}].failed and ('FAILED' not in loop_results.results[{{ item }}].msg)"
+      with_sequence: start=0 end="{{ (loop_results.results | length) - 1 }}"
+
+  tags:
+    - selective_callback
+    - looped_items
+    - ansible_compiler

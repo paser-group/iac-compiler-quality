@@ -1,0 +1,24 @@
+
+- hosts: all
+  gather_facts: false
+  tasks:
+    - name: Test with_fileglob resolving relative paths
+      file:
+        path: /tmp/ansible-test/
+        state: directory
+      register: dir_create_status
+
+    - name: Copy test files to directory
+      copy:
+        src: "{{ item }}"
+        dest: /tmp/ansible-test/
+      with_items:
+        - "{{ playbook_dir }}/test-file.txt"
+        - "{{ playbook_dir }}/subdirectory/test-file.txt"
+
+    - name: Test with_fileglob resolving files in directory
+      fail:
+        msg: "Fail condition triggered. Please ensure that with_fileglob resolves all files in directory."
+      when: item.stat.isdir is defined
+      with_fileglob:
+        - "/tmp/ansible-test/*"

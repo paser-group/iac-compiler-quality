@@ -1,0 +1,31 @@
+
+---
+- name: Debug EC2 Transit Gateway issues with specific regions
+  hosts: localhost
+  gather_facts: no
+  become: yes
+  vars:
+    aws_region: "us-west-2"
+    aws_access_key_id: "{{ lookup('env', 'AWS_ACCESS_KEY_ID') }}"
+    aws_secret_access_key: "{{ lookup('env', 'AWS_SECRET_ACCESS_KEY') }}"
+    subnet_a: "subnet-0123456789"
+    subnet_b: "subnet-abcdef0123"
+  tasks:
+    - name: Ping subnet A
+      ec2_vpc_ping:
+        region: "{{ aws_region }}"
+        aws_access_key: "{{ aws_access_key_id }}"
+        aws_secret_key: "{{ aws_secret_access_key }}"
+        subnet_id: "{{ subnet_a }}"
+      register: ping_a_output
+    - name: Ping subnet B
+      ec2_vpc_ping:
+        region: "{{ aws_region }}"
+        aws_access_key: "{{ aws_access_key_id }}"
+        aws_secret_key: "{{ aws_secret_access_key }}"
+        subnet_id: "{{ subnet_b }}"
+      register: ping_b_output
+    - name: Print ping results
+      debug:
+        var: item
+      loop: [ "{{ ping_a_output.stdout }}", "{{ ping_b_output.stdout }}" ]

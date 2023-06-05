@@ -1,0 +1,34 @@
+
+- hosts: all
+  tasks:
+  - name: Install image-related dependencies
+    apt:
+      name:
+        - python-dev
+        - libjpeg-dev
+        - libfreetype6-dev
+        - zlib1g-dev
+      state: present
+
+  - name: Install Pillow library
+    pip:
+      name: Pillow
+      state: present
+
+  - name: Download image
+    get_url:
+      url: "https://example.com/image.jpg"
+      dest: "/tmp/image.jpg"
+
+  - name: Normalize image
+    command: "python -c \"from PIL import Image; Image.open('/tmp/image.jpg').convert('RGB').save('/tmp/normalized.jpg')\""
+
+  - name: Assert image normalization
+    command: "file /tmp/normalized.jpg"
+    register: normalized_file_output
+
+  - name: Check normalized image
+    assert:
+      that:
+        - "'JPEG image data' in normalized_file_output.stdout"
+        - "stat('/tmp/normalized.jpg').size > 0"

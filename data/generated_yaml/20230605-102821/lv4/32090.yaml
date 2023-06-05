@@ -1,0 +1,42 @@
+
+---
+- name: Install Ansible via source
+  hosts: localhost
+  become: true
+
+  vars:
+      ansible_src_dir: "/opt/ansible-src"
+      ansible_git_url: "https://github.com/ansible/ansible.git"
+      ansible_version: "2.10.8"
+
+  tasks:
+    - name: Clone the Ansible git repository
+      git:
+        repo: "{{ ansible_git_url }}"
+        dest: "{{ ansible_src_dir }}"
+        version: "{{ ansible_version }}"
+      register: git_result
+
+    - name: Install dependencies for building Ansible from source
+      package:
+        name: "{{ item }}"
+        state: present
+      with_items:
+        - python3-dev
+        - libffi-dev
+        - libssl-dev
+      when: ansible_os_family == "Debian"
+
+    - name: Build Ansible from source
+      command: python3 setup.py install
+      args:
+        chdir: "{{ ansible_src_dir }}"
+      when: git_result.changed
+
+    - name: Check Ansible version
+      command: ansible --version
+      changed_when: false
+      register: output
+
+    - debug:
+        var: output.stdout_lines

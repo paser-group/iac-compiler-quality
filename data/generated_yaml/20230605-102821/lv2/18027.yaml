@@ -1,0 +1,50 @@
+yaml
+- name: Error handling in loops - Stress Testing Playbook
+  hosts: all
+  vars:
+    not_iterable_variable: "not iterable"
+    iterable_variable: ["1", "2", "three", "4"]
+    array1: [1, 2, 3]
+    array2: [4, 5, 6]
+    array3: [7, 8, 9]
+    array4: [10, 11]
+  tasks:
+    - name: Looping with an invalid range - uncovered bug expected
+      debug:
+        msg: "{{ range(1..5) }}"
+
+    - name: Trying to iterate over non-iterable variables
+      set_fact:
+        variable: "{{ item }}"
+      with_items: "{{ not_iterable_variable }}"
+      ignore_errors: yes
+
+    - name: Accessing an undefined variable during loop - irregular syntax
+      debug:
+        msg: "{{ variable }}"
+
+    - name: Looping over missing tasks - unexpected input
+      include_tasks: missing_task.yml
+      loop: "{{ range(3) }}"
+      ignore_errors: yes
+
+    - name: Catching exceptions during loop execution - error handling edge case
+      block:
+        - set_fact:
+            variable: "{{ item }}"
+          with_items: "{{ iterable_variable }}"
+          ignore_errors: yes
+        - name: Check for exception within loop
+          fail:
+            msg: "Error while iterating over {{ iterable_variable }}"
+          when: variable is failed
+
+    - name: Looping over multiple arrays of unequal length - stress test
+      debug:
+        msg: "{{ item }}"
+      with_together:
+        - "{{ array1 }}"
+        - "{{ array2 }}"
+        - "{{ array3 }}"
+        - "{{ array4 }}"
+      max_loops: 2

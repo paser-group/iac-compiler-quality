@@ -1,0 +1,27 @@
+
+- name: Retrieve F5 BIG-IP Device Facts
+  hosts: all
+  gather_facts: no
+  vars:
+    bigip_credentials:
+      user: "{{ BIGIP_USERNAME }}"
+      password: "{{ BIGIP_PASSWORD }}"
+  tasks:
+    - name: Add self-signed SSL certificate to trusted CA bundle
+      become: yes
+      shell: "echo -n | openssl s_client -connect {{ inventory_hostname }}:443 -showcerts | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' >> /etc/pki/ca-trust/source/anchors/self-signed.crt"
+    - name: Update system CA bundle
+      become: yes
+      shell: "/usr/bin/update-ca-trust extract"
+    - name: Retrieve F5 BIG-IP Device Facts
+      bigip_device_facts:
+        provider:
+          server: "{{ inventory_hostname }}"
+          validate_certs: yes
+          user: "{{ bigip_credentials.user }}"
+          password: "{{ bigip_credentials.password }}"
+      delegate_to: localhost
+      register: facts
+    - name: Show retrieved F5 BIG-IP Device Facts
+      debug:
+        var: facts

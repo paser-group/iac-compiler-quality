@@ -1,0 +1,86 @@
+
+---
+- name: Test attaching a volume from a snapshot
+  hosts: all
+  gather_facts: no
+
+  vars:
+    region: us-west-2
+    instance_id: i-0123456789abcdef
+
+  tasks:
+  - name: Attach volume from snapshot with invalid volume ID
+    ec2_vol:
+      instance: "{{ instance_id }}"
+      snapshot: snap-0123456789abcdef
+      volume_size: 8
+      region: "{{ region }}"
+      device_name: /dev/xvdg
+      state: attached
+      volume_type: gp2
+      volume_id: invalid_volume_id
+    register: invalid_volume_result
+    ignore_errors: true
+
+  - name: Attach volume from snapshot with invalid instance ID
+    ec2_vol:
+      instance: invalid_instance_id
+      snapshot: snap-0123456789abcdef
+      volume_size: 8
+      region: "{{ region }}"
+      device_name: /dev/xvdg
+      state: attached
+      volume_type: gp2
+      volume_id: vol-0123456789abcdef
+    register: invalid_instance_result
+    ignore_errors: true
+
+  - name: Attach volume from snapshot with invalid snapshot ID
+    ec2_vol:
+      instance: "{{ instance_id }}"
+      snapshot: invalid_snapshot_id
+      volume_size: 8
+      region: "{{ region }}"
+      device_name: /dev/xvdg
+      state: attached
+      volume_type: gp2
+      volume_id: vol-0123456789abcdef
+    register: invalid_snapshot_result
+    ignore_errors: true
+
+  - name: Detach volume from instance
+    ec2_vol:
+      instance: "{{ instance_id }}"
+      volume_id: vol-0123456789abcdef
+      state: detached
+      region: "{{ region }}"
+    register: detach_result
+    ignore_errors: true
+
+  - name: Delete volume that was detached from the instance
+    ec2_vol:
+      volume_id: vol-0123456789abcdef
+      state: absent
+      region: "{{ region }}"
+    register: delete_result
+    ignore_errors: true
+
+  - name: Fail to delete volume that is still attached to the instance
+    ec2_vol:
+      instance: "{{ instance_id }}"
+      volume_id: vol-0123456789abcdef
+      state: absent
+      region: "{{ region }}"
+    register: fail_to_delete_result
+    failed_when: detach_result.status == 'attached'
+
+  - name: Display volume attachment results
+    debug:
+      var: item
+    with_items:
+      - invalid_volume_result
+      - invalid_instance_result
+      - invalid_snapshot_result
+      - detach_result
+      - delete_result
+      - fail_to_delete_result

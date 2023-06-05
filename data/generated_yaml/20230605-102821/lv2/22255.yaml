@@ -1,0 +1,38 @@
+
+---
+- name: Uncover bugs in lineinfile module
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: Insert random text to a file with syntax errors
+      lineinfile:
+        path: "{{item}}"
+        line: "{{'This sentence has {{ syntax errors and '}}"
+      with_items:
+        - /tmp/test1.txt
+        - /tmp/test2.txt
+        - /tmp/test3.txt
+      ignore_errors: yes
+
+    - name: Insert duplicate lines to file
+      lineinfile:
+        path: /tmp/test_duplicate.txt
+        line: "This line is a duplicate one"
+        create: yes
+        insertafter: EOF
+      loop: "{{range(1000)|list}}"
+
+    - name: Insert text to file with wrong format mode
+      lineinfile:
+        path: /etc/hosts
+        line: "{{ansible_hostname}} {{ansible_host}}.{{ item % 50 }} {{item}}"
+        regexp: '^{{ansible_hostname}} '
+        mode: "{{item}}"
+      loop: "{{range(100)|list}}"
+
+    - name: Insert text to file using non-ASCII characters
+      lineinfile:
+        path: /tmp/test_unicode.txt
+        line: "{{ u'你好, 世界' }}"
+      ignore_errors: yes

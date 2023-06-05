@@ -1,0 +1,28 @@
+
+- name: Test virt_net module idempotency
+  hosts: all
+  gather_facts: no
+  become: yes
+
+  tasks:
+  - name: Create virtual network
+    virt_net:
+      name: mynetwork
+      interface: eth0
+      state: present
+      forward_dev: eth0
+      dhcp_enabled: true
+      forward_mode: nat
+    register: result1
+
+  - name: Modify virtual network with invalid input
+    virt_net:
+      name: mynetwork
+      state: present
+      dhcp_enabled: '{{ 1/0 }}'
+    failed_when: "result1 is changed"
+
+  - name: Remove virtual network
+    virt_net:
+      name: mynetwork
+      state: absent

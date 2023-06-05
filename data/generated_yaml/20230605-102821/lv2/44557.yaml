@@ -1,0 +1,23 @@
+
+- name: Test s3_lifecycle module
+  hosts: all
+  gather_facts: no
+  tasks:
+  - name: Create S3 bucket
+    s3_bucket:
+      name: "{{ random('alpha_numeric', length=8) }}"
+      state: present
+  - name: Add lifecycle policy with empty prefix
+    s3_lifecycle:
+      bucket: "{{ hostvars[item]['s3_bucket'] }}"
+      policy:
+        Rules:
+        - NoncurrentVersionExpiration:
+            NoncurrentDays: 30
+          Status: Enabled
+          Filter:
+            Prefix: ""
+      access_key: "{{aws_access_key}}"
+      secret_key: "{{aws_secret_access_key}}"
+      region: "{{aws_region}}"
+    loop: "{{ groups['all'] }}"

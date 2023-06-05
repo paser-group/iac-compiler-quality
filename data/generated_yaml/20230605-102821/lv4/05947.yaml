@@ -1,0 +1,28 @@
+yaml
+- name: Check for link state on file src
+  hosts: all
+  gather_facts: false
+  vars:
+    filename: '/tmp/test.txt'
+    src_file: '/tmp/test_link.txt'
+    dest_file: '/tmp/test_dest.txt'
+  tasks:
+  - name: Create file with state=link
+    file:
+      src: "{{ src_file }}"
+      dest: "{{ filename }}"
+      state: link
+      force: true
+  - name: Attempt to create file with state=file without state=link
+    file:
+      src: "{{ src_file }}"
+      dest: "{{ dest_file }}"
+      state: file
+      force: true
+    register: result
+    ignore_errors: true
+  - name: Fail if state=link is not specified 
+    fail:
+      msg: "src option used without state=link"
+    when: >
+      "'src' in result.msg and 'state=link' not in result.msg"

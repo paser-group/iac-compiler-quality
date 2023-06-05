@@ -1,0 +1,41 @@
+
+- name: Testing authorized_keys file
+  hosts: all
+  gather_facts: false
+
+  tasks:
+  
+  - name: Add an invalid key to authorized_keys
+    authorized_key: user=root key='SSH invalid key' state=present
+    ignore_errors: true
+    
+  - name: Add an authorized_key with incorrect file permissions
+    authorized_key:
+      user: root
+      key: "{{ lookup('file','/path/to/id_rsa.pub') }}"
+      path: "/root/.ssh/authorized_keys"
+      mode: 0666
+    ignore_errors: true
+
+  - name: Add an authorized_key with an invalid file path
+    authorized_key:
+      user: root
+      key: "{{ lookup('file','/path/to/id_rsa.pub') }}"
+      path: "/root/.ssh/unknown_authorised_keys"
+    ignore_errors: true
+
+  - name: Add an authorized_key with a duplicate key value
+    authorized_key: user=root key="{{ lookup('file', '/root/.ssh/id_rsa.pub') }}" state=present
+    ignore_errors: true
+
+  - name: Add an authorized_key with an invalid username
+    authorized_key: user=invalid key='{{ lookup('file', '/root/.ssh/id_rsa.pub') }}' state=present
+    ignore_errors: true
+
+  - name: Remove authorized_key with an invalid username
+    authorized_key: user=invalid key='{{ lookup('file', '/root/.ssh/id_rsa.pub') }}' state=absent
+    ignore_errors: true
+
+  - name: Remove authorized_key with invalid key value
+    authorized_key: user=root key='invalid_key' state=absent
+    ignore_errors: true

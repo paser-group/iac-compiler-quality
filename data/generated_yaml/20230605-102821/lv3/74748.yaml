@@ -1,0 +1,36 @@
+
+- name: Test SSH issue
+  hosts: all
+  become: yes
+  gather_facts: no
+
+  tasks:
+  - name: Configure sshd
+    become: yes
+    lineinfile:
+      path: /etc/ssh/sshd_config
+      regexp: "{{ item.regexp }}"
+      line: "{{ item.line }}"
+      state: present
+      backup: yes
+    with_items:
+      - { regexp: "^AuthorizedKeysCommand.*", line: 'AuthorizedKeysCommand /usr/bin/echo "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDhJMIUlfKMAaI2XMeqEk6QfrE7KECyCER56+WLGRuIIKHfK6/D5VxqDIEs1bVHwDwCkqPeWJH48Xkw2+D5eXdvOdLcklNRZ+8TY0Ema0ylrfyw+ZRlo5S25vGvE7sGH193h8i9khrmOcPNcMYeIyJ5hNWlDIQRVyKKAAaQ8NUFDyVvNclwhZ3MhZho4vlqrlhxwcydSFe3tKjyGQJ/LAeRuSQP0qGhL2iFnqOsbqpnY4jM3C2/NnvSuw12Kzz+bGjzYlUmNYRw2eKi+VdMRmptyvPrAzPqQSwsqvt3m3ZdzAGcVQeINIAlP0nw/5QGuJsh/fp9OkOxqOvzFv ansible-user\n"' }
+
+  - name: Copy privileged script
+    become: yes
+    copy:
+      src: /path/to/script.sh
+      dest: /usr/local/bin/script
+      mode: '0700'
+
+  - name: Run privileged script
+    become: yes
+    shell: /usr/local/bin/script
+    register: out
+
+  - name: Copy public key
+    become: yes
+    authorized_key:
+      user: ansible-user
+      state: present
+      key: "{{ out.stdout }}"

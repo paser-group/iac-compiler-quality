@@ -1,0 +1,34 @@
+
+- hosts: all
+  gather_facts: False
+  become: true
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
+    redis_password: 'myredispassword'
+  tasks:
+    - name: Install Redis server
+      yum:
+        name: redis
+        state: present
+
+    - name: Configure Redis password
+      lineinfile:
+        path: /etc/redis.conf
+        regexp: '^# requirepass'
+        line: 'requirepass {{ redis_password }}'
+
+    - name: Restart Redis service
+      service:
+        name: redis
+        state: restarted
+
+    - name: Retrieve Redis fact cache size
+      redis_facts:
+        password: '{{ redis_password }}'
+        filter: ansible
+        key: ansible_facts
+      register: redis_cache
+
+    - name: Debug Redis fact cache size
+      debug:
+        var: redis_cache.redis_facts.ansible_facts|length

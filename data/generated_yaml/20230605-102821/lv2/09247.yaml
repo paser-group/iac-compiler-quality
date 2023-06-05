@@ -1,0 +1,30 @@
+yaml
+---
+- hosts: all
+  gather_facts: no
+  become: yes
+  tasks:
+    - name: Generate a warning even when system_warnings is disabled
+      ignore_errors: true
+      shell: >
+        python -c "import atfork"
+      register: atfork_import
+
+    - name: Disable system warning messages
+      sysctl:
+        name: kernel.printk
+        value: "0 4 1 7"
+        state: present
+
+    - name: Generate a warning when copying a sensitive file
+      become: false
+      copy:
+        src: /etc/shadow
+        dest: /tmp/
+      ignore_errors: true
+
+    - name: Display warning message when system warning is disabled
+      meta: flush_handlers
+      when: atfork_import.rc == 0
+      debug:
+        msg: "Warning: system_warnings is currently disabled, however 'import atfork' still generates a warning message."

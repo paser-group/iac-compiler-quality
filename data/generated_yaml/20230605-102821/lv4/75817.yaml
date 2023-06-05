@@ -1,0 +1,22 @@
+
+- name: Test syntax check with faulty Ansible code
+  hosts: all
+  tasks:
+    - name: Create a file with incorrect syntax
+      copy:
+        content: "{ { mustache }}"
+        dest: "/tmp/test.yml"
+      register: copy_output
+      ignore_errors: True
+    - name: Check syntax using the faulty file
+      command: ansible-playbook --syntax-check /tmp/test.yml
+      register: syntax_output
+      ignore_errors: True
+    - name: Echo the syntax errors
+      debug:
+        var: syntax_output.stderr_lines
+      when: syntax_output|failed
+    - name: Unmask the exceptions
+      debug:
+        var: syntax_output.exception
+      when: syntax_output|failed

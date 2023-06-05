@@ -1,0 +1,37 @@
+
+---
+- name: Performance Issues with Over 9000 Groups
+  hosts: all
+  tasks:
+    - name: Create dynamic inventory file
+      copy:
+        content: |
+          [ubuntu]
+          ubuntu1
+          
+          [alpine]
+          alpine1
+          
+          [centos]
+          centos1
+          
+          [redhat]
+          redhat1
+      
+        dest: "/tmp/inventory"
+    
+    - name: Create multiple groups
+      file:
+        path: "/tmp/{{ item }}.group"
+        state: touch
+      loop: "{{ range(1, 9010) | list }}"
+      
+    - name: Add hosts to groups
+      lineinfile:
+        path: "/tmp/{{ item % 4 + 1 }}.group"
+        line: "ubuntu1"
+      loop: "{{ range(1, 9010) | list }}"
+            
+    - name: Include the dynamic inventory file
+      include_vars:
+        file: "/tmp/inventory"

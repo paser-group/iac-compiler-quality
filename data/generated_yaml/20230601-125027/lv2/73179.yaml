@@ -1,0 +1,39 @@
+
+- name: Disk full host test playbook
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Force a disk to be full
+      shell: "dd if=/dev/zero of=/var/log/disk_full_test bs=10M count=1000"
+      delegate_to: "{{ item }}"
+      with_items: "{{ groups['all'] }}"
+      ignore_errors: true
+
+    - name: Stop firewall service
+      service:
+        name: "{{ item }}"
+        state: stopped
+      with_items:
+        - ufw
+        - firewalld
+      when: "'ubuntu' == inventory_hostname or 'centos' == inventory_hostname"
+
+    - name: Check connection to all hosts
+      ping:
+
+    - name: Clean up after testing
+      shell: "rm -f /var/log/disk_full_test"
+      delegate_to: "{{ item }}"
+      with_items: "{{ groups['all'] }}"
+      ignore_errors: true
+
+  post_tasks:
+    - name: Start firewall service
+      service:
+        name: "{{ item }}"
+        state: started
+      with_items:
+        - ufw
+        - firewalld
+      when: "'ubuntu' == inventory_hostname or 'centos' == inventory_hostname"

@@ -1,0 +1,27 @@
+
+- hosts: all
+  gather_facts: false
+  vars:
+    ssh_user: "{{ lookup('env', 'USER') }}"
+    ssh_key: ~/.ssh/id_rsa
+  tasks:
+  - name: Ensure SSH key exists
+    stat:
+      path: '{{ ssh_key }}'
+    register: stat_res
+  - name: Create SSH key
+    command: ssh-keygen -f '{{ ssh_key }}' -t rsa -N '' -C '{{ ssh_user }}@localhost'
+    when: stat_res.stat.exists == False
+  - name: Set permissions on SSH key
+    file:
+      path: '{{ ssh_key }}'
+      owner: '{{ ssh_user }}'
+      group: '{{ ssh_user }}'
+      mode: '0600'
+  - name: Test SSH connectivity
+    ping:
+    become: true
+    become_user: root
+    vars:
+      ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
+      ansible_ssh_extra_args: '-i {{ ssh_key }}'

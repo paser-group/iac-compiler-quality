@@ -1,0 +1,36 @@
+
+- name: Update firewall rules for Google Compute Engine network
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+    - name: Get network details
+      uri:
+        url: "https://www.googleapis.com/compute/v1/projects/my_project/global/networks/my_network"
+        method: GET
+        headers:
+          Authorization: "Bearer my_token"
+          Content-Type: "application/json"
+      return_content: yes
+      register: network_resp
+
+    - name: Update firewall rules
+      uri:
+        url: "https://www.googleapis.com/compute/v1/projects/my_project/global/firewalls"
+        method: POST
+        headers:
+          Authorization: "Bearer my_token"
+          Content-Type: "application/json"
+        body:
+          name: "allow-ssh"
+          allowed: [{
+            IPProtocol: "tcp",
+            ports: ["22"]
+          }]
+          sourceRanges: ["0.0.0.0/0"]
+          network: "{{ network_resp.json['selfLink'] }}"
+          targetTags: ["ssh-allowed"]
+      register: firewall_resp
+
+    - debug:
+        var: firewall_resp

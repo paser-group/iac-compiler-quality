@@ -1,0 +1,38 @@
+
+- name: Test Docker Swarm Service
+  hosts: all
+  become: true
+  gather_facts: no
+  vars:
+    service_name: my_service_{{ '{{' }} item }}{{ '}}' }}
+    image_name: "{{ '{{' }} item.image_name{{ '}}' }}"
+    replicas: "{{ '{{' }} item.replicas{{ '}}' }}"
+    state: "{{ '{{' }} item.state{{ '}}' }}"
+    node_name: ubuntu1
+  tasks:
+    - name: Launch Docker Swarm Service "{{ service_name }}"
+      docker_swarm_service:
+        name: "{{ service_name }}"
+        state: "{{ state }}"
+        networks:
+          - name: my_network
+        image: "{{ image_name }}"
+        replicas: "{{ replicas }}"
+        constraints:
+          - "{{ '{{' }} item.constraints{{ '}}' }}"
+        placement:
+          tasks:
+            - "{{ '{{' }} item.tasks{{ '}}' }}"
+          max_replicas_per_node: "{{ '{{' }} item.max_replicas_per_node{{ '}}' }}"
+      with_items:
+        - { image_name: "nginx:latest", replicas: 1, state: present, constraints: ["@bad_input", ""] }
+        - { image_name: "httpd:latest", replicas: "@bad_input", state: present, constraints: ["node.id != 1", "node.labels.color == bad_input"] }
+        - { image_name: "rabbitmq:3-management", replicas: 1, state: "{{ 'bad state value' }}", constraints: ["node.hostname == {{ item }}"] }
+        - { image_name: "", replicas: 1, state: present, tasks: ["- bad_task1", "bad_task2"], max_replicas_per_node: "{{ '{{' }} bad_max_replicas{{ '}}' }}" }
+
+    - name: Verify Service "{{ service_name }}" Status
+      docker_service_info:
+        name: "{{ service_name }}"
+      register: service_info
+    - debug:
+        var: service_info

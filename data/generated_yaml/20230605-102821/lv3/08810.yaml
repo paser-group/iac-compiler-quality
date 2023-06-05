@@ -1,0 +1,27 @@
+
+- name: Set default module arguments
+  hosts: all
+  tasks:
+    - name: Replace default argument of echo module
+      replace:
+        path: /usr/lib/python3/dist-packages/ansible/modules/commands/echo.py
+        regexp: "'msg': \['Hello from the echo module'\]"
+        replace: "'msg': ['Hello World from the echo module']"
+      become: true
+      become_user: root
+      register: result
+
+    - name: Display output of echo command
+      command: echo "Hello from the echo module"
+      register: echo_output
+
+    - name: Display output of overridden echo command
+      command: echo "Hello World from the echo module"
+      register: overridden_echo_output
+
+    - name: Compare the command outputs
+      assert:
+        that:
+          - overridden_echo_output.stdout == "Hello World from the echo module"
+          - echo_output.stdout != "Hello World from the echo module"
+      when: result.changed

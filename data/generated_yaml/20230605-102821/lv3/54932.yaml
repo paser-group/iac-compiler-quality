@@ -1,0 +1,30 @@
+
+---
+- name: Provision Redis Cache
+  hosts: all
+  gather_facts: false
+
+  tasks:
+  - name: Block provisioning operations
+    block:
+      - name: Create resource group
+        azure_rm_resourcegroup:
+          name: "{{ resource_group }}"
+          location: "{{ location }}"
+          state: present
+        register: rg_result
+      - name: Create Redis Cache
+        azure_rm_rediscache:
+          resource_group: "{{ resource_group }}"
+          name: "{{ redis_cache_name }}"
+          location: "{{ location }}"
+          sku:
+            name: Basic
+            family: C
+            capacity: 0
+          state: present
+        when: rg_result.changed == true
+    rescue:
+      - name: Handle errors
+        debug:
+          msg: "An error occurred in the provisioning process."

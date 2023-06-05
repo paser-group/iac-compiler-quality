@@ -1,0 +1,55 @@
+
+---
+- name: Inventory report error with Template module
+  hosts: all
+  gather_facts: no
+
+  vars:
+    body: "{{ body }}" # Content of the issue's body
+    comment: "{{ comment }}" # Supplementary comments
+
+  tasks:
+  - name: Generate inventory files with random content
+    copy:
+      dest: /var/tmp/{{ item }}/inventory.txt
+      content: "{{ range(100) | random | string * 10 }}"
+      mode: '0644'
+    with_items:
+      - ubuntu1
+      - alpine1
+      - centos1
+      - redhat1
+
+  - name: Create a directory on each host
+    file:
+      path: /usr/local/{{ item }}
+      state: directory
+    with_items:
+      - ubuntu1
+      - alpine1
+      - centos1
+      - redhat1
+
+  - name: Create a file on each host with the issue's body content
+    file:
+      path: "/usr/local/{{ item }}/report.txt"
+      owner: "{{ item }}"
+      group: "{{ item }}"
+      mode: '0644'
+      content: "{{ body }}"
+    with_items:
+      - ubuntu1
+      - alpine1
+      - centos1
+      - redhat1
+
+  - name: Generate inventory report using the Template module
+    template:
+      src: templates/inventory.j2
+      dest: /etc/{{ item }}/inventory_report.txt
+      mode: '0644'
+    with_items:
+      - ubuntu1
+      - alpine1
+      - centos1
+      - redhat1

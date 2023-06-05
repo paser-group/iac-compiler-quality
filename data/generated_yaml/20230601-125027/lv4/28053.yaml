@@ -1,0 +1,34 @@
+yaml
+- hosts: all
+  become: yes
+  gather_facts: no
+  vars:
+    container_name: "{{ hostvars[inventory_hostname]['container_name'] }}"
+  tasks:
+    - name: Start an LXC container
+      community.general.lxc_container:
+        name: "{{ container_name }}"
+        state: started
+        template: "{{ hostvars[inventory_hostname]['template'] }}"
+        profiles: ["default"]
+        debian__extra_binds:
+          - "/sys/fs/bpf:/sys/fs/bpf:rw"
+        config:
+          raw.lxc: |
+            lxc.apparmor.profile = unconfined
+        devices:
+          ens3:
+            nictype: macvlan
+            parent: "{{ hostvars[inventory_hostname]['interface'] }}"
+        wait_for_network: yes
+      register: prefix
+
+    - name: Execute sample test command in the container
+      command: echo "Test successful"
+      container: "{{ prefix.container_id }}"
+
+    - name: Stop the LXC container
+      community.general.lxc_container:
+        name: "{{ container_name }}"
+        state: stopped
+      when: prefix.changed

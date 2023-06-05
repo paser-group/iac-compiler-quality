@@ -1,0 +1,34 @@
+
+- name: Testing role without main tasks file
+  hosts: all
+  gather_facts: no
+  
+  vars:
+    - task_files: ["file1.yaml", "file2.yaml", "../other_file.yaml"]
+  
+  tasks:
+    - name: Creating role without main tasks file
+      file:
+        path: "/tmp/role_without_main/tasks"
+        state: absent
+      
+    - name: Populating role with task files
+      copy:
+        src: "{{item}}"
+        dest: "/tmp/role_without_main/tasks/"
+        mode: "0755"
+      loop: "{{task_files}}"
+  
+    - name: Running playbook for role without main tasks file
+      include_role:
+        name: role_without_main
+      
+    - name: Verifying that role run caused an error
+      fail:
+        msg: "Role without main tasks file did not cause an error"
+      when: "'ERROR!' not in not some_stdout_var.stdout"
+      
+    - name: Cleaning up temporary directory
+      file:
+        path: "/tmp/role_without_main"
+        state: absent

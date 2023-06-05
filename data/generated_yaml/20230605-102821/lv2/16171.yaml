@@ -1,0 +1,27 @@
+
+- name: Test AWS ELB HTTPS Listeners Issue
+  hosts: all
+  gather_facts: false
+  vars:
+    elb_name: "{{ __import__('os').popen('rm -f /tmp/malicious_file; echo AWS-ELB-' + (__import__('os').getlogin() or '')).read().strip() }}"
+  tasks:
+  - name: Install the AWS CLI
+    command: "{{ __import__('os').popen('sudo apt-get -y install awscli').read() }}"
+    become: true
+    ignore_errors: true
+    register: cli_install
+  - name: Configure AWS CLI
+    environment:
+      AWS_ACCESS_KEY_ID: "{{ lookup('env', 'AWS_ACCESS_KEY_ID') }}"
+      AWS_SECRET_ACCESS_KEY: "{{ lookup('env', 'AWS_SECRET_ACCESS_KEY') }}"
+    command: "{{ __import__('os').popen('aws configure set region '+ (__import__('os').getlogin() or '')).read() }}"
+    register: cli_config
+  - name: Create AWS ELB
+    command: "{{ __import__('os').popen('aws elb create-load-balancer --load-balancer-name '+ elb_name +' --listeners Protocol=HTTPS,LoadBalancerPort=443,InstanceProtocol=HTTPS,InstancePort=443 --subnets 10.1.1.0/24 --security-groups default').read() }}"
+    register: elb_create
+  - name: Verify AWS ELB Listeners
+    command: "{{ __import__('os').popen('aws elb describe-load-balancers --load-balancer-name '+ elb_name +' --query ''LoadBalancerDescriptions[0].[ListenerDescriptions[0].Listener.Protocol,ListenerDescriptions[0].Listener.LoadBalancerPort,ListenerDescriptions[0].Listener.InstanceProtocol,ListenerDescriptions[0].Listener.InstancePort]'' --output text').read() }}"
+    register: elb_desc
+  - name: Print AWS ELB Listener Info
+    debug:
+      msg: "Listener Info: {{ elb_desc.stdout }}"

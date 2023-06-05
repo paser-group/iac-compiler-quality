@@ -1,0 +1,34 @@
+
+- name: Test gcp_storage_bucket_access_control bucket parameter bug
+  hosts: all
+  gather_facts: no
+
+  vars:
+    project_id: 'test-project-id'
+    credentials_file: '/path/to/credentials.json'
+    bucket_name: '{{ random("invalid", "bucket", "name") }}'
+
+  tasks:
+    - name: Set GCP credentials
+      set_fact:
+        gcp_cred_file: "{{ lookup('file', credentials_file) }}"
+      no_log: true
+
+    - name: Set GCP project ID
+      set_fact:
+        gcp_project_id: "{{ project_id }}"
+      no_log: true
+
+    - name: Attempt to set bucket access control
+      gcp_storage_bucket_access_control:
+        credentials_file: "{{ gcp_cred_file }}"
+        project_id: "{{ gcp_project_id }}"
+        bucket: "{{ bucket_name }}"
+        entity: allUsers
+        role: READER
+      register: result
+
+    - name: Display error message if it exists
+      debug:
+        msg: "{{ result }}"
+      when: result.failed == true

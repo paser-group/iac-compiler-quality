@@ -1,0 +1,40 @@
+
+- name: Test Ansible JSON File Cache Plugin Prefix Option
+  hosts: all
+  gather_facts: false
+
+  vars:
+    cache_dir: "/opt/cache_dir"
+    cache_plugin_type: "jsonfile"
+    cache_plugin_prefix: "apple*5"
+
+  tasks:
+    - name: Configure the cache plugin
+      ansible.builtin.file:
+        state: directory
+        path: "{{ cache_dir }}"
+      register: cache_dir_created
+
+    - name: Test Cache Plugin Prefix Option
+      ansible.builtin.rsync:
+        src: /var/log
+        dest: "{{ cache_dir }}"
+        archive: true
+      cache:
+        path: "{{ cache_dir }}"
+        type: "{{ cache_plugin_type }}"
+        prefix: "{{ cache_plugin_prefix }}"
+      args:
+        - "--exclude=*.gz"
+        - "--delay-updates"
+      register: rsync_output
+
+    - name: Display rsync output
+      debug:
+        var: rsync_output
+
+  post_tasks:
+    - name: Clean up test environment
+      ansible.builtin.file:
+        state: absent
+        path: "{{ cache_dir }}"

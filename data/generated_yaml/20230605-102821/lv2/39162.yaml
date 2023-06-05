@@ -1,0 +1,37 @@
+
+- name: Stress test Ansible compiler using unexpected inputs
+  hosts: all
+  vars:
+    secret_key: "{{ lookup('env', 'SECRET_KEY') }}"
+  tasks:
+    - name: Copy vault secret to nodes
+      copy:
+        content: "my_secret_key"
+        dest: "/var/encrypted_file"
+      delegate_to: "{{ hostvars['ubuntu1']['ansible_default_ipv4']['address'] }}"
+
+    - name: Create a new vault-encrypted file
+      command: echo "my_not_encrypted_password" > /var/vault_pass
+      register: vault_result
+      failed_when: "'input is not vault encrypted data' in vault_result.stderr"
+      delegate_to: "{{ hostvars['alpine1']['ansible_default_ipv4']['address'] }}"
+
+    - name: Attempt to read the vault-encrypted file
+      block:
+        - name: Verify that the file is vault-encrypted
+          stat:
+            path: /var/vault_pass
+            get_md5: yes
+          register: encrypted_file_info
+          delegate_to: "{{ hostvars['centos1']['ansible_default_ipv4']['address'] }}"
+
+        - name: Use vault key to read encrypted file
+          command: cat /var/vault_pass
+          vars:
+            ansible_vault_password_file: "{{ secret_key }}"
+          with_items: "{{ encrypted_file_info }}"
+          loop_control:
+            label: "{{ item.stat.path }}"
+            index_var: my_index
+      ignore_errors: yes
+      delegate_to: "{{ hostvars['redhat1']['ansible_default_ipv4']['address'] }}"

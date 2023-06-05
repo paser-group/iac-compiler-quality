@@ -1,0 +1,42 @@
+
+- name: Stress Test Ansible Compiler
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: Introduce syntax error
+      expect:
+        command: /usr/bin/python -c "print(''hello, world!')"
+        timeout: 10
+        responses:
+          ">>": "SyntaxError: invalid syntax"
+
+    - name: Invalid Variable Expansion
+      debug:
+        var: "{{ @!!!&$^invalidvar**"
+
+    - name: Introduce Circular Reference
+      include_vars: "{{ var_name }}"
+      vars:
+        var_name: "{{ var_name | default('cir_ref', true) }}"
+
+    - name: Introduce Argument Overflow
+      file:
+        path: /tmp/testfile.txt
+        state: touch
+        owner: root
+        group: root
+        mode: '0644'
+        backup: yes
+        xattr: yes
+        setype: s0
+        seuser: system_u
+        serole: object_r
+        selevel: s0
+
+    - name: Create Multiple Invalid Users
+      user:
+        name: "{{ item }}"
+        state: present
+        groups: invalid_group
+      loop: "{{ ['user_invalid_1', 'user_invalid_2', 'user_invalid_3'] }}"

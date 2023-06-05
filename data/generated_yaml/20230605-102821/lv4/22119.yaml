@@ -1,0 +1,35 @@
+
+- name: Test Hashivault error handling
+  hosts: localhost
+  tasks:
+    - name: Set up the Vault CLI
+      pip:
+        name: hvac
+        state: latest
+      register: hvac_install
+      
+    - name: Ensure the Vault server is running
+      wait_for:
+        host: "{{vault_host}}"
+        port: "{{vault_port}}"
+        state: started
+      
+    - name: Mock a non-existent secret
+      shell: echo '{"data": {"password": "foo"}}'
+      register: bad_secret
+
+    - name: Retrieve a non-existent secret from Vault
+      vars:
+        secret: "{{bad_secret.stdout | from_json}}"
+      hashivault:
+        endpoint: "{{vault_endpoint}}"
+        token: "{{vault_token}}"
+        secret: "{{secret}}"
+      ignore_errors: yes
+      register: hvac_result
+
+    - name: Verify that we received the correct error message
+      assert:
+        that:
+          - "'error' in hvac_result.stderr"
+          - "'status code 404' in hvac_result.stderr"

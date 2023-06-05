@@ -1,0 +1,24 @@
+- name: Pacman module crashes with get_bin_path error
+  hosts: all
+  become: true
+  gather_facts: false
+  tasks:
+    - name: Ensure pacman and python are installed
+      package:
+        name: ['pacman', 'python']
+        state: present
+
+    - name: Update pacman database
+      pacman:
+        update_cache: yes
+
+    - name: Get pacman package list
+      shell: pacman -Slq
+      register: pacman_packages
+
+    - name: Ensure package is installed 
+      pacman:
+        name: "{{ item }}"
+        state: present
+      loop: "{{ pacman_packages.stdout_lines }}"
+      when: "ansible_pkg_mgr == '/usr/bin/pacman' and '/usr/local/sbin' not in ansible_env.PATH"

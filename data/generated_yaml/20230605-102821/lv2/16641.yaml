@@ -1,0 +1,39 @@
+
+---
+- hosts: all
+  become: yes
+  vars:
+    database_servers:
+      - redhat1
+    web_servers:
+      - alpine1
+      - centos1
+      - ubuntu1
+
+  tasks:
+
+  - name: Creating the web-servers group
+    group:
+      name: web-servers
+    when: inventory_hostname == 'ubuntu1'
+
+  - name: Creating the database-servers group
+    group:
+      name: database-servers
+    when: inventory_hostname == 'redhat1'
+
+  - name: Adding web servers to web-servers group
+    group:
+      name: web-servers
+      hosts: "{{ web_servers }}"
+
+  - name: Adding redhat1 to database-servers group
+    group:
+      name: database-servers
+      hosts: "{{ database_servers }}"
+
+  - name: Copying webapp configuration file to web and database servers using the incorrect group var
+    template:
+      src: /srv/data/webapp.conf.j2
+      dest: /etc/app_config.conf
+      group: database-servers

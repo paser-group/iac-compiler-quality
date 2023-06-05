@@ -1,0 +1,45 @@
+
+- name: Test Ansible Compiler for Temporary File Syntax Errors
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Create temporary directory
+      tempfile:
+        state: directory
+        suffix: "_test"
+      register: tempdir
+
+    - name: Copy Ansible module file with syntax error
+      copy:
+        dest: "{{tempdir.path}}/AnsiballZ_setup.py"
+        content: |
+          {% raw -%}
+          from __future__ import absolute_import, division, print_function
+          __metaclass__ = type
+          from ansible.module_utils.basic import AnsibleModule
+          
+          def main():
+            module_args = dict(
+                foo=dict(type='str')
+            )
+            module = AnsibleModule(
+                argument_spec=module_args,
+                supports_check_mode=True
+            )
+          
+            results = {"msg": "Hello world!"}
+            results[" changed "] = True
+          
+            module.exit_json(**results)
+
+      register: ansiballz_file
+
+    - name: Execute non-existent Ansible module
+      command: ansible localhost -m non_existent_module
+      ignore_errors: yes
+      register: non_existent_module_result
+
+    - name: Debug Temporary File Syntax Error
+      debug:
+        var: ansiballz_file
+        verbosity: 2

@@ -1,0 +1,22 @@
+
+- hosts: all
+  tasks:
+  - name: Increase the number of open files for ansible-galaxy
+    become: true
+    sysctl:
+      name: fs.file-max
+      value: 100000
+
+  - name: Install the package with 100 versions
+    ansible-galaxy:
+      name: my_package
+      state: present
+      version: "{{ item }}"
+      become: true
+    loop: "{{ range(1, 101)|list }}"
+
+  - name: Restore the original number of open files for ansible-galaxy
+    become: true
+    sysctl:
+      name: fs.file-max
+      value: "{{ ansible_local.sysctl.fs_file_max.value }}"

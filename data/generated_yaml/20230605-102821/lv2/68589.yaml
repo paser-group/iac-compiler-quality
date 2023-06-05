@@ -1,0 +1,28 @@
+
+- name: Test 'setup' module with custom facts on Windows targets
+  hosts: windows
+  gather_facts: no
+  tasks:
+    - name: Load custom facts
+      win_shell: |
+        $data = '[{"name":"custom_fact","value":"{{ random_string(50) }}"}]'
+        $path = Join-Path -Path $env:ProgramData -ChildPath 'Ansible\facts.d'
+        if (-not (Test-Path -Path $path)) {
+            New-Item -ItemType Directory -Path $path
+        }
+        $data | Set-Content (Join-Path -Path $path -ChildPath 'custom.json') -Encoding Ascii
+      no_log: true
+      run_once: true
+
+    - name: Test setup module with custom facts
+      setup:
+        fact_path: "{{ ansible_env.ProgramData }}\\Ansible\\facts.d"
+        gather_subset: all
+      become: yes
+      become_method: runas
+      become_flags: '-l Administrator'
+      register: setup_output
+
+    - name: Debug setup module output
+      debug:
+        var: setup_output

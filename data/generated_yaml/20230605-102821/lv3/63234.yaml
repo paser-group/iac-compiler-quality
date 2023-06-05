@@ -1,0 +1,32 @@
+
+- name: Test GCP storage bucket access control module
+  hosts: ubuntu1
+  gather_facts: false
+  tasks:
+    - name: Set GCP credentials environment variable
+      set_fact:
+        GOOGLE_APPLICATION_CREDENTIALS: "/path/to/service_account.json"
+      delegate_to: localhost
+    - name: Ensure firewall rule for GCP storage is enabled
+      gcp_compute_firewall:
+        name: "allow-health-checks"
+        network: "node-net"
+        allowed:
+          - ip_protocol: tcp
+            ports: ["80", "8080", "8443", "2376"]
+        source_ranges:
+          - "0.0.0.0/0"
+        state: present
+      register: firewall_details
+    - name: Create a GCP storage bucket
+      gcp_storage_bucket:
+        name: "{{ random_name }}"
+        project: "{{ project_name }}"
+        location: "{{ gcp_region }}"
+      register: bucket_details
+    - name: Set GCP storage bucket access control
+      gcp_storage_bucket_access_control:
+        bucket: "{{ bucket_details.name }}"
+        entity: "allUsers"
+        role: "READER"
+      register: access_control_details

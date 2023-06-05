@@ -1,0 +1,24 @@
+
+- name: Test any_errors_fatal with block/rescue
+  hosts: all
+  gather_facts: false
+
+  vars:
+    error_message: "something_failed"
+
+  tasks:
+    - name: Run task that always fails
+      command: /bin/false
+      register: result
+      ignore_errors: true
+
+    - name: Fail the playbook if an error has occurred
+      assert:
+        that: "'{{result.stderr}}' == error_message"
+      any_errors_fatal: true
+
+  handlers:
+    - name: Restart service after successful execution
+      service:
+        name: httpd
+        state: restarted

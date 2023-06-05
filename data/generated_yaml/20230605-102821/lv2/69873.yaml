@@ -1,0 +1,51 @@
+
+- name: EC2 Transit Gateway Stress Test
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: Create a transit gateway attachment
+      ec2_transit_gateway_attachment:
+        region: "{{ item }}"
+        transit_gateway_id: "tgw-123456789"
+        vpc_id: "vpc-123456789"
+        subnet_ids:
+          - "subnet-123456789"
+        tags:
+          Name: "Test attachment"
+      loop:
+        - "us-east-1"
+        - "us-west-2"
+        - "ap-southeast-1"
+        - "eu-central-1"
+        - "sa-east-1"
+        - "af-south-1"
+      ignore_errors: yes
+
+    - name: Delete a transit gateway attachment
+      ec2_transit_gateway_attachment:
+        region: "{{ item }}"
+        transit_gateway_id: "tgw-123456789"
+        attachment_id: "tgw-attach-123456789"
+      loop:
+        - "ap-northeast-1"
+        - "ca-central-1"
+        - "eu-west-3"
+        - "me-south-1"
+      ignore_unreachable: yes
+
+    - name: Accept a transit gateway multicast domain association
+      ec2_transit_gateway_multicast_domain_association:
+        region: "{{ item }}"
+        transit_gateway_id: "tgw-123456789"
+        subnet_ids:
+          - "subnet-123456789"
+        multicast_domain_id: "tgw-mcast-domain-123456789"
+        allow_transit_gateway_cidr_blocks:
+          - "{{ ['10.1.1.0/24', 'invalid_cidr'] | random }}"
+        tags:
+          Name: "Test multicast domain association"
+      loop:
+        - "us-west-1"
+        - "us-east-2"
+      ignore_errors: yes

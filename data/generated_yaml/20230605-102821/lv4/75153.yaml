@@ -1,0 +1,26 @@
+yaml
+- name: Test for CVE-2020-10729 in Ansible 2.8 branch
+  hosts: all
+  become: yes
+  tasks:
+    - name: Clone Ansible 2.8 repository
+      git:
+        repo: https://github.com/ansible/ansible
+        dest: /tmp/ansible-2.8
+        version: 2.8
+      register: ansible_repo
+
+    - name: Check whether the vulnerability patch is present
+      shell: git -c 'advice.detachedHead=false' --no-pager log --oneline -G'^ssh.*_command$' | grep -c 'CVE-2020-10729'
+      register: cve_2020_10729_found
+      ignore_errors: true
+
+    - name: Output results
+      debug:
+        msg: 'Vulnerability patch not found!'
+      when: cve_2020_10729_found.stderr != '' or cve_2020_10729_found.stdout_lines[0] == "0"
+
+    - name: Fail task if vulnerability patch not found
+      fail:
+        msg: 'Vulnerability still present in Ansible 2.8 repository.'
+      when: cve_2020_10729_found.stdout_lines[0] == "0"

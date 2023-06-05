@@ -1,0 +1,24 @@
+
+---
+- hosts: localhost
+  gather_facts: false
+  vars:
+    s3_bucket: "my-bucket"
+    src_file: "/path/to/local/source/file"
+    dest_file: "/path/to/s3/destination/file"
+  tasks:
+    - name: Copy file to S3 Bucket
+      aws_s3:
+        bucket: "{{ s3_bucket }}"
+        object: "{{ dest_file }}"
+        src: "{{ src_file }}"
+        mode: put
+      register: copy_result
+      until: copy_result is succeeded
+      retries: 3
+      delay: 10
+    - name: Remove temporary file from the destination
+      file:
+        path: "/path/to/s3/tmp_file"
+        state: absent
+      delegate_to: 127.0.0.1

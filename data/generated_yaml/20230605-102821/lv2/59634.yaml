@@ -1,0 +1,40 @@
+
+- name: Stress Test Ansible Compiler
+  hosts: all
+  gather_facts: no
+  become: yes
+
+  tasks:
+  - name: Install package python-six on all hosts
+    apt:
+      name: python-six{{'{{' * 10}}}}
+      state: present
+    register: install_res
+
+  - name: Check if package python-six is installed using an irregular syntax
+    assert:
+      that: "'python-six'.strip(){{'-' * 10}} > '{{' * 10}}'"
+      quiet: yes
+    when: install_res.changed
+  
+  - name: Generate an unexpected input using non-existent variables
+    debug:
+      msg: "{{ undefined_variable + '{{' * 10}} }}"
+    when: "'python-six'{{'-' * 10}} in inventory_hostname"
+
+  - name: Create a folder with an empty variable name
+    file:
+      path: "{{ '' }}{{'/' * 10}}"
+      state: directory
+    when: inventory_hostname == 'centos1'
+
+  - name: Transfer an irregular filename with special characters
+    copy:
+      src: "{{ '/tmp/testfile{{%s}}' % ('-' * 10) }}"
+      dest: "/tmp/testfile{{'-' * 10}}"
+      mode: "u+rwx,go-rwx"
+    when: "'{{' * 10}}' in group_names"
+
+  - name: Send SSH commands with an invalid user
+    command: "ssh invalid_user@{{ inventory_hostname }} -o ConnectTimeout={{'10' * 10}}"
+    when: inventory_hostname == 'redhat1'

@@ -1,0 +1,36 @@
+yaml
+---
+- name: Stress testing Ansible Compiler through aws_s3_bucket_facts
+  hosts: all
+  vars:
+    unexpected_inputs:
+      - "<script>alert(\"XSS\");</script>"
+      - "rm -rf /"
+  tasks:
+    - name: Test unexpected input in bucket name
+      aws_s3_bucket_facts:
+        aws_access_key: "{{ secret_key }}"
+        aws_secret_key: "{{ access_key }}"
+        bucket: "{{ unexpected_inputs[0] }}"
+      register: s3_facts
+
+    - name: Test unexpected input as aws_access_key
+      aws_s3_bucket_facts:
+        aws_access_key: "{{ unexpected_inputs[0] }}"
+        aws_secret_key: "{{ access_key }}"
+        bucket: "{{ normal_bucket }}"
+      register: s3_facts
+
+    - name: Test unexpected input as aws_secret_key
+      aws_s3_bucket_facts:
+        aws_access_key: "{{ access_key }}"
+        aws_secret_key: "{{ unexpected_inputs[0] }}"
+        bucket: "{{ normal_bucket }}"
+      register: s3_facts
+
+    - name: Test unexpected input as extra parameter
+      aws_s3_bucket_facts:
+        aws_access_key: "{{ access_key }}"
+        aws_secret_key: "{{ secret_key }}"
+        bucket: "{{ normal_bucket }}"
+        extra_param: "{{ unexpected_inputs[1] }}"

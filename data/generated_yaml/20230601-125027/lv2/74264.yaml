@@ -1,0 +1,38 @@
+
+- name: Test ansible-vault create command
+  hosts: all
+  gather_facts: no
+
+  vars:
+    secret: "{{ lookup('password', 'secrets/vault_secret.txt', file=True) }}"
+
+  tasks:
+    - name: Test scenario 1 - create a vault file with no name
+      command: ansible-vault create
+      args:
+        stdin: "{{ secret }}"
+        executable: /bin/bash
+
+    - name: Test scenario 2 - create a vault file with invalid characters in the file name
+      command: ansible-vault create "*?myfile"
+      args:
+        stdin: "{{ secret }}"
+        executable: /bin/bash
+
+    - name: Test scenario 3 - create a vault file with invalid encoding in the file name
+      command: ansible-vault create "$(printf '\g')myfile"
+      args:
+        stdin: "{{ secret }}"
+        executable: /bin/bash
+
+    - name: Test scenario 4 - create a vault file with unexpected arguments
+      command: ansible-vault create myfile --no-such-option
+      args:
+        stdin: "{{ secret }}"
+        executable: /bin/bash
+
+    - name: Test scenario 5 - create a vault file with unexpected input
+      command: ansible-vault create myfile
+      args:
+        stdin: "{{ lookup('pipe', 'echo \"UnexpectedInput\"') }}"
+        executable: /bin/bash

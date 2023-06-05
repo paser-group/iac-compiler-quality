@@ -1,0 +1,25 @@
+
+- name: Create OpenShift RoleBindings
+  hosts: localhost
+  gather_facts: false
+  vars:
+    - api_server: "https://{{ openshift_master_url }}"
+    - oc_cmd: "oc"
+    - oc_login_user: "{{ openshift_user }}"
+    - oc_login_password: "{{ openshift_password }}"
+    - project_name: "{{ openshift_project }}"
+    - role_name: "test-role"
+    - user_name: "test-user"
+  tasks:
+    - name: Login to OpenShift
+      shell: "{{ oc_cmd }} login -u {{ oc_login_user }} -p {{ oc_login_password }} -s {{ api_server }}"
+      changed_when: false
+    
+    - name: Create RoleBindings
+      shell: "{{ oc_cmd }} create rolebinding {{ role_name }} --user={{ user_name }} --namespace={{ project_name }}"
+      register: rolebinding_output
+      ignore_errors: true
+  
+    - name: Debug Rolebinding response
+      debug:
+        msg: "{{ rolebinding_output.stderr_lines }}"

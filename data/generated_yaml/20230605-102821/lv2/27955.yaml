@@ -1,0 +1,109 @@
+
+---
+- name: Test playbook for acl module
+  hosts: all
+  gather_facts: no
+
+  tasks:
+  - name: Remove default ACL entries
+    acl:
+      path: /tmp/testfile
+      state: absent
+      entity: "{{ item }}"
+      default: yes
+      type: default
+      permissions: rwx
+      follow: no
+      ignore:
+        - "{{ inventory_hostname }}"
+    with_items:
+      - user1
+      - user2
+      - group1
+      - group2
+      
+  - name: Create test file
+    file:
+      path: /tmp/testfile
+      state: touch
+
+  - name: Test acl module - add entries for same user and group
+    acl:
+      path: /tmp/testfile
+      entity: user1
+      state: present
+      permissions: rwx
+      default: yes
+    acl:
+      path: /tmp/testfile
+      entity: user1
+      state: present
+      permissions: rx
+      default: yes
+    acl:
+      path: /tmp/testfile
+      entity: group1
+      state: present
+      permissions: rwx
+      default: yes
+    acl:
+      path: /tmp/testfile
+      entity: group1
+      state: present
+      permissions: r-x
+      default: yes
+
+  - name: Test acl module - add entries without entity
+    acl:
+      path: /tmp/testfile
+      permissions: r-x
+
+  - name: Test acl module - add entry with invalid user and group
+    acl:
+      path: /tmp/testfile
+      entity: invalid_user
+      state: present
+      permissions: rwx
+      default: yes
+    acl:
+      path: /tmp/testfile
+      entity: invalid_group
+      state: present
+      permissions: rwx
+      default: yes
+
+  - name: Test acl module - add entry with invalid state and default
+    acl:
+      path: /tmp/testfile
+      entity: user1
+      state: invalid_state
+      permissions: rwx
+      default: invalid_default
+
+  - name: Test acl module - remove non-existing entry
+    acl:
+      path: /tmp/testfile
+      entity: "{{ inventory_hostname }}"
+      state: absent
+      default: yes
+      permissions: rwx
+
+  - name: Test acl module - add entry with invalid permission
+    acl:
+      path: /tmp/testfile
+      entity: user1
+      permissions: invalid_permission
+
+  - name: Test acl module - add entry with invalid ignore value
+    acl:
+      path: /tmp/testfile
+      entity: user1
+      state: present
+      permissions: rwx
+      default: yes
+      ignore: invalid_ignore
+      
+  - name: Remove the test file
+    file:
+      path: /tmp/testfile
+      state: absent

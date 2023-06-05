@@ -1,0 +1,28 @@
+
+---
+- name: Stress testing Ansible compiler with irregular syntax and unexpected inputs
+  hosts: all
+  gather_facts: no
+
+  vars:
+    body: "{{ body }}"
+  
+  tasks:
+  - name: Introduce irregular syntax
+    shell: |
+      echo "{{ 'My Name Is Xyxyxyxyxyxyxyxyyzyzzyzyzyzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzyzyzyzyzyzyxyzyxyxyxyxyxyxyxy' }}"
+      {% for i in range(10) %}
+      echo "{{ 'My Unexpected Input-1 is {{{{ ' + body + ' }}}} }}}"
+      {% endfor %}
+      {% for i in range(20) %}
+      echo "{{ 'My Unexpected Input-2 is {{ ' + body + ' if true else false }}' }}"
+      {% endfor %}
+      {% for i in range(5) %}
+      echo "{{ 'My Unexpected Input-3 is {{ [ ' + body + ' ] * 10 | join(" ") }}' }}"
+      {% endfor %}
+    register: output
+
+  - name: Check for Python error on Jinja2
+    fail:
+      msg: "Unexpected Python error on Jinja2!"
+    when: output.rc != 0

@@ -1,0 +1,27 @@
+
+- hosts: all
+  gather_facts: no
+
+  tasks:
+    # This task aims to test the error handling of the ansible-inventory command with unsupported option '--toml'
+    - name: Test invalid option with ansible-inventory
+      shell: ansible-inventory --list --toml
+      register: shell_output
+      ignore_errors: true
+
+    # This task aims to test the ansible inventories of unsupported types (yml, xml)
+    - name: Test unsupported inventory types
+      shell: ansible-inventory --list -i unsupported.yml
+      register: shell_output
+      ignore_errors: true
+
+    # This task aims to test unexpected input with the ansible-inventory command, which could potentially expose a bug
+    - name: Test unexpected input with ansible-inventory
+      shell: ansible-inventory --list {{ '"{}"'.format(ansible_managed) }}
+      register: shell_output
+      ignore_errors: true
+
+    # This task aims to intentionally break the Ansible syntax by using an invalid 'when' condition, which could potentially expose a syntax error
+    - name: Test invalid syntax with Ansible
+      command: echo "Hello World!"
+      when: [1, 2, 3]    # invalid when condition

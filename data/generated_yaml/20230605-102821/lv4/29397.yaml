@@ -1,0 +1,37 @@
+yaml
+- hosts: localhost
+  gather_facts: no
+  vars:
+    aws_access_key: "YOUR_AWS_ACCESS_KEY"
+    aws_secret_key: "YOUR_AWS_SECRET_KEY"
+    region: "us-west-2"
+  tasks:
+    - name: Create S3 bucket
+      s3_bucket:
+        name: mybucket
+        aws_access_key: "{{ aws_access_key }}"
+        aws_secret_key: "{{ aws_secret_key }}"
+        region: "{{ region }}"
+        mode: create
+      register: bucket
+      ignore_errors: yes
+
+    - name: Get S3 bucket versioning status
+      s3_bucket_versioning_info:
+        aws_access_key: "{{ aws_access_key }}"
+        aws_secret_key: "{{ aws_secret_key }}"
+        name: "{{ bucket.bucket.name }}"
+      register: versioning_status
+
+    - name: Print S3 bucket status
+      debug:
+        msg: "S3 bucket versioning status: {{ versioning_status.versioning.status }}"
+
+    - name: Delete S3 bucket
+      s3_bucket:
+        name: "{{ bucket.bucket.name }}"
+        aws_access_key: "{{ aws_access_key }}"
+        aws_secret_key: "{{ aws_secret_key }}"
+        region: "{{ region }}"
+        mode: delete
+      when: versioning_status.versioning.status == 'Enabled'

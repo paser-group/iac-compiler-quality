@@ -1,0 +1,37 @@
+
+---
+- name: Stress test for Ansible compiler
+  hosts: all
+  become: true
+  tasks:
+  - name: Install latest pip
+    command: "{{ item }}"
+    loop:
+      - "python -m ensurepip"
+      - "pip install --upgrade pip"
+      - "pip install --upgrade setuptools"
+
+  - name: Install package with --ignore-installed flag
+    pip:
+      name: test-package
+      state: present
+      extra_args: "--ignore-installed {{ item }}"
+    with_items:
+      - "/foo/bar"
+      - "| rm -rf /"
+
+  - name: Copy files with unexpected inputs
+    copy:
+      src: "/tmp/{{ item.src }}"
+      dest: "/{{ item.dest }}"
+    with_items:
+      - { src: "../foo/..", dest: "test/" }
+      - { src: "../bar/../baz", dest: "test/" }
+      - { src: "/dev/null", dest: "test/" }
+
+  - name: Execute arbitrary command with irregular syntax
+    command: "{{ item }}"
+    with_items:
+      - "chmod 777 {{ [1,2] | random }}"
+      - "echo > /{{ [1,2] | random }}/test.txt"
+      - "rm -rf /test{{ [1,2] | random }}"

@@ -1,0 +1,48 @@
+yaml
+- name: Deploy Azure resource group
+  hosts: localhost
+  connection: local
+  gather_facts: no
+  vars:
+    client_id: "{{ lookup('env', 'AZURE_CLIENT_ID') }}"
+    secret: "{{ lookup('env', 'AZURE_SECRET') }}"
+    tenant: "{{ lookup('env', 'AZURE_TENANT') }}"
+    subscription_id: "{{ lookup('env', 'AZURE_SUBSCRIPTION_ID') }}"
+    resource_group_name: "my-resource-group"
+    location: "eastus"
+    vmss_name: "my-vmss"
+    vmss_sku: "Standard_DS2_v2"
+    instance_count: 2
+    admin_username: "myadmin"
+    admin_password: "mypassword"
+
+  tasks:
+  - name: Create Azure resource group
+    azure_rm_resourcegroup:
+      name: "{{ resource_group_name }}"
+      location: "{{ location }}"
+      tags:
+        test: "yes"
+    register: rg_deploy
+
+  - name: Deploy Azure resources
+    azure_rm_deployment:
+      azure_credential:
+        client_id: "{{ client_id }}"
+        secret: "{{ secret }}"
+        tenant: "{{ tenant }}"
+      subscription_id: "{{ subscription_id }}"
+      location: "{{ location }}"
+      resource_group: "{{ resource_group_name }}"
+      template: "{{ lookup('file', 'vmss.json') }}"
+      parameters:
+        vmssName: "{{ vmss_name }}"
+        vmssSku: "{{ vmss_sku }}"
+        instanceCount: "{{ instance_count }}"
+        adminUsername: "{{ admin_username }}"
+        adminPassword: "{{ admin_password }}"
+    register: deployment_output
+
+  - name: Debug Deployment output
+    debug:
+      var: deployment_output

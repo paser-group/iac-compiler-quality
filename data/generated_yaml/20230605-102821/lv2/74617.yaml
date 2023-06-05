@@ -1,0 +1,37 @@
+
+- name: Stress test for sudo command
+  hosts: all
+  gather_facts: false
+
+  tasks:
+
+  - name: Execute command with sudo
+    command: "{{ item }}"
+    with_items:
+      - "sudo su - u oracle"
+      - "sudo -s"
+      - "sudo -i"
+      - "sudo --user=oracle"
+      - "sudo bash -c \"echo $PATH\""
+      - "sudo bash -c 'echo $HOME'"
+      - "sudo bash -c 'echo $TERM'"
+      - "sudo bash -c 'echo \"$USER : $HOME : $TERM\"'"
+      - "sudo ls -la /"
+      - "sudo ps -ef"
+
+  - name: Remove -u from sudo command
+    lineinfile:
+      path: /etc/sudoers
+      state: present
+      regexp: '^%admin[[:space:]]+ALL.*ALL$'
+      line: '%admin ALL=(ALL) NOPASSWD:/usr/bin/su - oracle'
+      backup: yes
+    become: true
+    become_method: sudo
+
+  - name: Remove oracle user
+    user:
+      name: oracle
+      state: absent
+    become: true
+    become_method: sudo

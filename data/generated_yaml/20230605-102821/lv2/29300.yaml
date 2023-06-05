@@ -1,0 +1,43 @@
+
+- name: Create duplicate VPC Route Table name
+  hosts: all
+  gather_facts: false
+  become: true
+  tasks:
+    - ec2_vpc_route_table:
+        vpc_id: vpc-123456
+        region: us-east-1
+        name: VPC-ROUTE-TABLE
+        state: present
+      register: result
+      ignore_errors: yes
+
+    - ec2_vpc_route_table:
+        vpc_id: vpc-123456
+        region: us-east-1
+        name: "{{ result.route_table_name }}"
+        state: absent
+      when: result is defined
+
+    - ec2_vpc_route_table:
+        vpc_id: vpc-123456
+        region: us-east-1
+        name: VPC-ROUTE-TABLE2
+        state: present
+        tags:
+          Name: VPC-ROUTE-TABLE2
+      register: result2
+    
+    - ec2_vpc_route_table:
+        vpc_subnet_id: subnet-123456
+        vpc_route_table_id: "{{ result2.route_table.id }}"
+        region: us-east-1
+        state: present
+      ignore_errors: yes
+    
+    - ec2_vpc_route_table:
+        vpc_subnet_id: subnet-123456
+        vpc_route_table_id: "{{ result2.route_table.id }}"
+        region: us-east-1
+        state: absent
+      ignore_errors: yes

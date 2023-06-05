@@ -1,0 +1,25 @@
+
+---
+- name: Test decoding of binary YAML data in inventory files
+  hosts: all
+  gather_facts: no
+  vars:
+    binary_data: !!binary |
+      VGhpcyBpcyBhIGJhc2U2NCBzdHJpbmc=
+    inventory_file_path: /etc/ansible/hosts
+  tasks:
+  - name: Add binary YAML data to the inventory file
+    copy:
+      content: "{{ binary_data }}"
+      dest: "{{ inventory_file_path }}"
+  - name: Execute ansible-inventory
+    command: ansible-inventory -i {{ inventory_file_path }} --list --yaml
+    register: result
+  - name: Verify execution output
+    assert:
+      that:
+        - result.rc == 0
+        - "'ERROR! "{{ binary_data }}" is not a valid host pattern.' not in result.stderr"
+        - "'ERROR! Inventory data is not a dictionary' not in result.stderr"
+    fail_msg: "Unexpected error occurred while running ansible-inventory"
+    success_msg: "ansible-inventory ran successfully"

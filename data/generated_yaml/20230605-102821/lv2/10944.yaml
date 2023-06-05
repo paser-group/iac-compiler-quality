@@ -1,0 +1,42 @@
+
+---
+- name: Demonstrate 'vars_prompt' invalid value bug
+  hosts: all
+  gather_facts: false
+
+  vars_prompt:
+    - name: "invalid_var"
+      prompt: "Enter an invalid variable (e.g., !@#$%^&*)"
+      private: no
+      default: "!@#$%^&*"
+
+  tasks:
+    - name: "Print the invalid variable"
+      debug:
+        var: invalid_var
+
+    - name: "Demonstrate the bug by using 'vars_prompt' with an invalid value"
+      command: echo "{{ invalid_var }}" > /tmp/invalid_var.txt
+
+    - name: "Print the contents of the invalid variable file"
+      command: cat /tmp/invalid_var.txt
+      register: invalid_var_content
+
+    - name: "Print the result of the command execution"
+      debug:
+        var: invalid_var_content.stdout
+
+    - name: "Delete the invalid variable file"
+      file:
+        path: /tmp/invalid_var.txt
+        state: absent
+
+    - name: "Demonstrate the bug by using '!vault' with an invalid value"
+      command: echo "some_secret_value" > /tmp/invalid_vault.txt
+      vars:
+        ansible_vault_password: "{{ invalid_var }}"
+
+    - name: "Delete the invalid vault file"
+      file:
+        path: /tmp/invalid_vault.txt
+        state: absent

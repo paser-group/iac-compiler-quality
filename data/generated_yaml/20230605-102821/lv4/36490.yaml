@@ -1,0 +1,21 @@
+
+- name: Test the iptables module's handling of tcp_flags parameter
+  hosts: all
+  gather_facts: no
+  tasks:
+  - name: Add a rule with space-separated list in tcp_flags parameter
+    iptables:
+      chain: INPUT
+      protocol: tcp
+      tcp_flags: SYN ACK
+      jump: ACCEPT
+    become: true
+    become_method: sudo
+    become_user: root
+  - name: Check if packets with the specified flags are allowed
+    command: "nmap -sS -p 22 {{ inventory_hostname }}"
+    changed_when: false
+    register: result
+  - name: Print the result
+    debug:
+      var: result.stdout_lines

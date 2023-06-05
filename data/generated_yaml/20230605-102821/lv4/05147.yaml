@@ -1,0 +1,32 @@
+
+- name: Test SSHD debug mode
+  hosts: all
+  vars:
+    sshd_config_file: "/etc/ssh/sshd_config"
+  tasks:
+    - name: Set sshd to debug mode
+      lineinfile:
+        path: "{{ sshd_config_file }}"
+        line: "LogLevel DEBUG3"
+        state: present
+      register: sshd_debug_mode
+    - name: Start sshd
+      service:
+        name: sshd
+        state: started
+      when: sshd_debug_mode.changed
+    - name: Test sshd syntax
+      shell: "/usr/sbin/sshd -T"
+      register: sshd_test_syntax
+    - name: Revert sshd.cfg changes
+      lineinfile:
+        path: "{{ sshd_config_file }}"
+        regexp: "^LogLevel DEBUG3"
+        line: "#LogLevel INFO"
+        state: present
+      when: sshd_debug_mode.changed
+    - name: Stop sshd
+      service:
+        name: sshd
+        state: stopped
+      when: sshd_debug_mode.changed

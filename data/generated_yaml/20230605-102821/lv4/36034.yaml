@@ -1,0 +1,21 @@
+yaml
+- hosts: all
+  gather_facts: false
+
+  pre_tasks:
+    - assert:
+        that: inventory_hostname is defined
+    - assert:
+        that: inventory_hostname in groups
+
+  tasks:
+    - name: Check if inventory file exists
+      stat:
+        path: "{{ inventory_file }}"
+      register: inventory_file_status
+
+    - debug:
+        var: inventory_file_status
+        
+    - name: Execute tasks
+      include_tasks: "{{ inventory_file_status.stat.exists | ternary(inventory_file, 'inventory_file_missing.yml') }}"

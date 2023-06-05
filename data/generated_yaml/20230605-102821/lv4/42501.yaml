@@ -1,0 +1,48 @@
+
+- name: Retrieve S3 bucket versioning configuration
+  hosts: all
+  gather_facts: no
+  
+  vars:
+    minio_endpoint: "{{ hostvars['minio1']['ansible_host'] }}"
+    minio_port: "{{ hostvars['minio1']['minio_port'] }}"
+    minio_bucket_name: "test-bucket"
+    minio_access_key: "{{ vault_minio_access_key }}"
+    minio_secret_key: "{{ lookup('file', '/path/to/minio_secret_key.txt') }}"
+  
+  tasks:
+    - name: Set AWS environment variables for Minio compatibility
+      set_fact:
+        AWS_ACCESS_KEY_ID: "{{ minio_access_key }}"
+        AWS_SECRET_ACCESS_KEY: "{{ minio_secret_key }}"
+        AWS_SESSION_TOKEN: ""
+        AWS_REGION: us-west-2
+      when: inventory_hostname == 'ubuntu1'
+      
+    - name: Install and configure s3cmd on Ubuntu
+      apt:
+        name: s3cmd
+        state: latest
+      when: inventory_hostname == 'ubuntu1'
+  
+    - name: Install and configure mc on Alpine
+      apk:
+        name: mc
+        state: latest
+      when: inventory_hostname == 'alpine1'
+  
+    - name: Install and configure awscli on CentOS and RedHat
+      yum:
+        name: awscli
+        state: latest
+      when: inventory_hostname in ['centos1', 'redhat1']
+  
+    - name: Retrieve S3 bucket versioning configuration
+      shell: |
+        aws s3api get-bucket-versioning --bucket {{ minio_bucket_name }} --endpoint-url http://{{ minio_endpoint }}:{{ minio_port }}
+      register: s3_bucket_versioning_output
+      ignore_errors: yes
+  
+    - name: Echo the versioning configuration
+      debug:
+        var: s3_bucket_versioning_output.stdout

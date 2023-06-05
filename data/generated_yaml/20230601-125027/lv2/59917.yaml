@@ -1,0 +1,55 @@
+
+- name: Ensure VMware Portgroup Idempotency
+  hosts: all
+  gather_facts: no
+  tasks:
+  - name: Create VMware Portgroup
+    vmware_guest_network:
+      hostname: "{{ inventory_hostname }}"
+      username: "root"
+      password: "{{ vault_vmware_password }}"
+      datacenter_name: "DC1"
+      validate_certs: no
+      name: "VLAN10"
+      vlan_id: 10
+      switch_name: "{{ 'vSwitch0' }}"
+      state: present
+  - name: Verify VMware Portgroup
+    vmware_guest_network:
+      hostname: "{{ inventory_hostname }}"
+      username: "root"
+      password: "{{ vault_vmware_password }}"
+      datacenter_name: "DC1"
+      validate_certs: no
+      name: "VLAN10"
+      vlan_id: 10
+      switch_name: "{{ 'vSwitch0' }}"
+      state: present
+    register: portgroup_info
+  - name: Remove VMware Portgroup
+    vmware_guest_network:
+      hostname: "{{ inventory_hostname }}"
+      username: "root"
+      password: "{{ vault_vmware_password }}"
+      datacenter_name: "DC1"
+      validate_certs: no
+      name: "VLAN10"
+      switch_name: "{{ 'vSwitch0' }}"
+      state: absent
+  - name: Verify Portgroup has been removed
+    vmware_guest_network:
+      hostname: "{{ inventory_hostname }}"
+      username: "root"
+      password: "{{ vault_vmware_password }}"
+      datacenter_name: "DC1"
+      validate_certs: no
+      name: "VLAN10"
+      state: absent
+    register: portgroup_removal_info
+  - name: Print Portgroup Removal Output
+    debug:
+      msg: "VMware Portgroup Removal Output - {{ portgroup_removal_info }}"
+  - assert:
+      that:
+      - portgroup_info is success
+      - portgroup_removal_info is success

@@ -1,0 +1,42 @@
+
+---
+- name: Stress test mysql_db defaults overriding config_file
+  hosts: all
+  vars:
+    mysql_db:
+      - name: myapp_db
+        state: started
+        config_file: /etc/mysql/my.cnf
+        defaults_file: /etc/mysql/mysql_defaults.conf  # Override config_file
+      - name: mydata_db
+        state: started
+    mysql_port: "{{ 3306 }}{{ some_variable }}"  # Invalid syntax to test compiler
+
+  tasks:
+  - name: Install MySQL server
+    package:
+      name: mysql-server
+      state: present
+  - name: Configure MySQL
+    template:
+      src: "{{ item.src }}"
+      dest: "{{ item.dest }}"
+      owner: "{{ item.owner }}"  # Invalid variable to test compiler
+      mode: "{{ item.mode }}"
+    loop:
+      - { src: 'mysql.cnf.j2', dest: '/etc/mysql/my.cnf', owner: 'mysql', mode: '0600' }  # Missing variable to test compiler
+      - { src: 'mysql_defaults.cnf.j2', dest: '/etc/mysql/mysql_defaults.conf', mode: '0644' }
+  - name: Start MySQL service
+    service:
+      name: mysql
+      state: started
+  - name: Create MySQL databases
+    mysql_db:
+      name: "{{ item.name }}"
+      state: "{{ item.state }}"
+      config_file: "{{ item.config_file }}"
+      defaults_file: "{{ some_undefined_var }}"  # Undefined variable to test compiler
+    loop: "{{ mysql_db }}"
+  - name: Check MySQL databases
+    command: "mysql -u root -p{{ some_password }} -e 'USE {{ item.name }}; SELECT 1' >/dev/null"
+    loop: "{{ mysql_db }}"

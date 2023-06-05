@@ -1,0 +1,46 @@
+
+---
+- name: Create a Distributed Virtual Switch
+  hosts: localhost
+  connection: local
+  gather_facts: no
+
+  vars:
+    # Define the prefix for the DVS name
+    dvs_name_prefix: "my-dvs-"
+
+  tasks:
+    - name: Create a new Distributed Virtual Switch
+      vmware_dvs:
+        hostname: vcenter
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        datacenter_name: "{{ datacenter_name }}"
+        
+        # Generate a random DVS name with the defined prefix
+        dvs_name: "{{ dvs_name_prefix }}{{ (1..10000)|random }}"
+
+        # Specify the uplink ports for the new switch
+        uplinks:
+          - uplink1
+          - uplink2
+
+      # Register the output to check for changes
+      register: dvs_out
+
+    # Check if the DVS was created or already exists
+    - name: Ensure DVS is created
+      vmware_dvs:
+        hostname: vcenter
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        datacenter_name: "{{ datacenter_name }}"
+        dvs_name: "{{ dvs_out.dvs_name }}"
+        
+        # Specify the uplink ports for the new switch
+        uplinks:
+          - uplink1
+          - uplink2
+
+      # Check if the DVS already existed or was newly created
+      when: dvs_out.changed

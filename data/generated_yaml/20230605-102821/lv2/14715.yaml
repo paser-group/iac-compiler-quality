@@ -1,0 +1,56 @@
+
+- hosts: all
+  gather_facts: no
+  tasks:
+  - name: Install curl package
+    apt:
+      name: curl
+      state: present
+  - name: Send a GET request with Ansible URI module
+    uri:
+      url: "http://{{ item }}:{{ port }}"
+      method: GET
+      return_content: no
+      status_code: 200
+      validate_certs: no
+    loop:
+      - "{{ hostvars['ubuntu1']['ansible_default_ipv4']['address'] }}"
+      - "{{ hostvars['alpine1']['ansible_default_ipv4']['address'] }}"
+      - "{{ hostvars['centos1']['ansible_default_ipv4']['address'] }}"
+      - "{{ hostvars['redhat1']['ansible_default_ipv4']['address'] }}"
+    vars:
+      port: "{{ 10000 | random }}"
+  - name: Send a POST request with Ansible URI module
+    uri:
+      url: "http://{{ item }}:{{ port }}"
+      method: POST
+      body: "{{ body | b64decode }}"
+      return_content: no
+      status_code: 201
+      validate_certs: no
+    loop:
+      - "{{ hostvars['ubuntu1']['ansible_default_ipv4']['address'] }}"
+      - "{{ hostvars['alpine1']['ansible_default_ipv4']['address'] }}"
+      - "{{ hostvars['centos1']['ansible_default_ipv4']['address'] }}"
+      - "{{ hostvars['redhat1']['ansible_default_ipv4']['address'] }}"
+    vars:
+      port: "{{ 10000 | random }}"
+  - name: Check if '{{ item }}' service is running
+    service:
+      name: "{{ item }}"
+      state: started
+      enabled: yes
+    loop:
+      - mongodb
+      - docker
+      - nginx
+      - apache
+  - name: Stop '{{ item }}' service
+    service:
+      name: "{{ item }}"
+      state: stopped
+    loop:
+      - mysql
+      - rabbitmq
+      - elasticsearch
+      - redis

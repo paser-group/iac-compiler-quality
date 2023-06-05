@@ -1,0 +1,30 @@
+
+- name: Test Ansible Compiler with DigitalOcean droplets
+  hosts: all
+  gather_facts: no
+
+  tasks:
+  
+    - name: Set ansible_virtualization_role to guest
+      set_fact:
+        ansible_virtualization_role: "guest"
+
+    - name: Install fping on Debian based distros
+      apt:
+        name: fping
+        state: present
+      when: ansible_distribution in ['Debian', 'Ubuntu']
+      
+    - name: Install fping on Red Hat based distros
+      yum:
+        name: fping
+        state: present
+      when: ansible_distribution in ['RedHat', 'CentOS', 'Fedora']
+    
+    - name: Ping hosts in inventory file
+      shell: fping -qr1 -g {{ansible_default_ipv4.network}}.0/24
+      register: result
+      
+    - name: Display results
+      debug:
+        var: result.stdout_lines

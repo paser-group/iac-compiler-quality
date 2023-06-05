@@ -1,0 +1,55 @@
+
+- hosts: localhost
+  gather_facts: no
+  vars:
+    client_id: "<client_id>"
+    secret: "<secret>"
+    tenant: "<tenant>"
+    subscription_id: "<subscription_id>"
+    resource_group: "test_rg"
+  tasks:
+    - name: Include Azure Credentials
+      azure_rm_credential:
+        client_id: "{{ client_id }}"
+        secret: "{{ secret }}"
+        tenant: "{{ tenant }}"
+        subscription_id: "{{ subscription_id }}"
+      no_log: true
+
+    - name: Create Azure Virtual Machine
+      azure_rm_virtualmachine:
+        resource_group: "{{ resource_group }}"
+        name: "test-vm"
+        location: "eastus2"
+        vm_size: Standard_D1_v2
+        admin_username: "adminuser"
+        admin_password: "Password1234!"
+        image:
+          offer: "Canonical"
+          publisher: "Canonical"
+          sku: "18.04-LTS"
+          version: "latest"
+        network_interfaces:
+          - name: nic1
+            properties:
+              primary: true
+              ip_configurations:
+                - name: TestConfiguration
+                  properties:
+                    subnet:
+                      id: "{{ azure_subnet.id }}"
+        os_disk:
+          name: "test-osdisk"
+          caching: "ReadWrite"
+          create_option: "fromImage"
+          managed_disk_type: "Premium_LRS"
+        state: present
+      no_log: true
+      
+    - name: Serialize Azure Virtual Machine
+      set_fact:
+        json_data: "{{ azure_virtual_machine | to_json }}"
+
+    - name: Deserialize Azure Virtual Machine
+      set_fact:
+        deserialized_data: "{{ json_data | from_json }}"

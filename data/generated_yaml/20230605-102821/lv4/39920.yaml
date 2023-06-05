@@ -1,0 +1,30 @@
+
+- name: Test junos config module
+  hosts: junos-hosts
+  
+  tasks:
+  - junos_config:
+      lines:
+        - "set system syslog user * any emergency"
+    register: result
+    ignore_errors: true
+    
+  - name: Display debug message
+    debug:
+      var: result
+      verbosity: 2
+      
+  - name: Display error message
+    debug:
+      var: result.msg
+      verbosity: 3
+      
+  - name: Extract Error Details from Debug Message
+    set_fact:
+      error_details: "{{ result.messages|last }}"
+    when: result is failed
+      
+  - name: Reveal Unmasked Error Details
+    debug:
+      var: error_details|to_nice_json
+    when: result is failed

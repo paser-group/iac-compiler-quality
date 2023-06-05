@@ -1,0 +1,22 @@
+
+- name: Run cloudwatch event rule
+  hosts: all
+  become: yes
+  vars:
+    body_param: "{{ body }}"
+  tasks:
+  - name: Create CloudWatch event rule
+    cloudwatchevent_rule:
+      name: "My event rule"
+      state: present
+      schedule_expression: "cron(0/5 * * * ? *)"
+      targets:
+        - id: "My target"
+          arn: "arn:aws:ecs:us-east-1:{{ account_number }}:cluster/my-cluster/service/my-service"
+    register: cloudwatch_event_rule_result
+  
+  - name: Debug cloudwatch event rule output
+    debug:
+      var: cloudwatch_event_rule_result
+      verbosity: 1
+    when: "'failed' in cloudwatch_event_rule_result.msg"

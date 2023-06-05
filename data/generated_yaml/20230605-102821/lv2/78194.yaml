@@ -1,0 +1,49 @@
+
+- name: Stress Test Ansible Compiler for ansible_parent_role_paths
+  hosts: all
+  gather_facts: no
+  become: yes
+  become_method: sudo
+
+  tasks:
+  - name: Modify ansible_parent_role_paths
+    copy:
+      dest: /etc/ansible/
+      content: |
+        [defaults]
+        hostfile = /etc/ansible/hosts
+        roles_path = /usr/share/ansible/roles:/usr/share/ansible/roles:/invalid/path1
+
+  - name: Expect failure due to incorrectly added path
+    command: ansible-playbook test.yml
+    args:
+      chdir: /ansibleproject/project/
+    ignore_errors: yes
+
+  - name: Remove invalid path from ansible_parent_role_paths
+    replace:
+      dest: /etc/ansible/ansible.cfg
+      regexp: /invalid/path1
+      replace: ''
+      
+  - name: Add invalid plugin type
+    file:
+      path: /etc/ansible/plugins/action/invalid.py
+      mode: '0755'
+      state: touch
+      
+  - name: Expect failure due to incorrect plugin type
+    command: ansible-playbook test.yml
+    args:
+      chdir: /ansibleproject/project/
+    ignore_errors: yes
+
+  - name: Remove invalid plugin
+    file:
+      path: /etc/ansible/plugins/action/invalid.py
+      state: absent
+
+  - name: Expect success with corrected ansible_parent_role_paths
+    command: ansible-playbook test.yml
+    args:
+      chdir: /ansibleproject/project/

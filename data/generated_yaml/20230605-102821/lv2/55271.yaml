@@ -1,0 +1,25 @@
+
+- name: Web Application - Playbook Error Test
+  hosts: all
+  tasks:
+    - name: Install required packages
+      apt:
+        name: ['curl', 'apache2']
+        state: present
+
+    - name: Ensure web server is started and runs on boot
+      service:
+        name: apache2
+        state: started
+        enabled: true
+
+    - name: Verify web server response
+      uri:
+        url: "http://{{ inventory_hostname }}"
+        method: GET
+        register: response
+
+    - name: Fail task if web server response is not 200
+      fail:
+        msg: "Web server response error: {{ response.status }} {{ response.reason }}"
+      when: response.status != 200

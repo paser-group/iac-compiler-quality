@@ -1,0 +1,34 @@
+
+- name: certificate error reproduction playbook
+  hosts: ubuntu1
+  become: true
+  gather_facts: false
+  vars:
+    username: "admin"
+    password: "{{ lookup('file', '/path/to/password/file') }}"
+    remote_host: "redhat1" 
+    remote_file_path: "/tmp/example_file"
+    certificate_path: "/etc/certs/example.crt"
+  
+  tasks:
+    - name: Copy Cert File
+      copy:
+        src: "{{ certificate_path }}"
+        dest: "{{ remote_file_path }}"
+        mode: '0644'
+
+    - name: Check Certificate file in Remote Machine
+      stat:
+        path: "{{ remote_file_path }}"
+      register: stat_cert_file
+
+    - name: Copy file using delegate_to
+      copy:
+        src: "{{ remote_file_path }}"
+        dest: "{{ remote_file_path }}"
+        remote_src: yes
+      delegate_to: "{{ remote_host }}"
+      become_method: sudo
+      become_user: root
+      become: true
+      when: stat_cert_file.stat.exists

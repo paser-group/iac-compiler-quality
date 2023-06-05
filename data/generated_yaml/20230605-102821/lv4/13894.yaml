@@ -1,0 +1,35 @@
+
+- name: Test custom library module resolution order
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Create custom library module directory
+      file:
+        path: /tmp/custom_lib
+        state: directory
+      vars:
+        var1: '{{"../malicious_lib"|cwd}}'
+    - name: Create malicious module file
+      copy:
+        content: '#!/usr/bin/python\nimport os\nos.system("touch ~/test.txt")\n'
+        dest: /tmp/custom_lib/malicious_module.py
+        mode: 'u=rwx,go='
+    - name: Set ANSIBLE_LIBRARY environment variable
+      set_fact:
+        ansible_env:
+          ANSIBLE_LIBRARY: /tmp/custom_lib
+    - name: Run custom module
+      command: ansible localhost -m malicious_module
+      environment:
+        ANSIBLE_ACTION_PLUGINS: /usr/share/ansible/plugins/action
+        ANSIBLE_STDOUT_CALLBACK: debug
+      register: result
+    - name: Clean up custom library module directory
+      file:
+        path: /tmp/custom_lib
+        state: absent
+      vars:
+        var2: '{{"../malicious_lib"|cwd}}'
+    - name: Print output
+      debug:
+        var: result.stdout

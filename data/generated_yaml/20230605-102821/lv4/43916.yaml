@@ -1,0 +1,26 @@
+
+- name: Configure F5 BigIP
+  hosts: bigip_servers
+  gather_facts: false
+  tasks:
+    - name: Add pool member
+      bigip_pool_member:
+        hostname: "{{ inventory_hostname }}"
+        user: "{{ lookup('env','BIGIP_USER') }}"
+        password: "{{ lookup('file','/var/tmp/BIGIP_PASSWORD') }}"
+        state: present
+        name: "{{ item.name }}"
+        partition: "Common"
+        pool: "web_pool"
+        port: "{{ item.port }}"
+        provider:
+          server: "{{ hostvars[item.host].ansible_host }}"
+          server_port: "{{ item.hostvars[item.host].ansible_port }}"
+          username: "{{ lookup('env','BIGIP_USERNAME') }}"
+          password: "{{ lookup('file','/var/tmp/BIGIP_PASSWORD') }}"
+      with_items:
+        - { name: "ubuntu1", port: 8080, host: "ubuntu1" }
+        - { name: "alpine1", port: 8080, host: "alpine1" }
+        - { name: "centos1", port: 8080, host: "centos1" }
+        - { name: "redhat1", port: 8080, host: "redhat1" }
+

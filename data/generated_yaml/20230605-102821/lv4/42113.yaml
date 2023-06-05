@@ -1,0 +1,34 @@
+
+- hosts: all
+  become: yes
+  gather_facts: no
+
+  vars:
+    my_var: "default_value"
+
+  tasks:
+    - name: Add template block to config file
+      blockinfile:
+        block: |
+          # {{ ansible_managed }}
+
+          my_var = {{ my_var }}
+        dest: /etc/my_config_file.conf
+        create: true
+
+    - name: Override default value for variable
+      blockinfile:
+        block: |
+          # {{ ansible_managed }}
+
+          my_var = {{ my_var | default("new_value") }}
+        dest: /etc/my_config_file.conf
+
+    - name: Retrieve variable value from config file
+      command: "grep ^my_var /etc/my_config_file.conf"
+      register: my_var_output
+
+    - name: Display variable value
+      debug:
+        var: my_var_output.stdout
+

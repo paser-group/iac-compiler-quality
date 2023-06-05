@@ -1,0 +1,29 @@
+
+- name: Stress test for docker_container
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Pull invalid image
+      become: yes
+      docker_image:
+        name: "invalid"
+        source: "pull"
+        force: yes
+
+    - name: Run a container from invalid image
+      become: yes
+      docker_container:
+        name: "{{ inventory_hostname }}_unreachable"
+        image: "invalid"
+        state: present
+        pull: always
+        restart_policy: always
+        network_mode: host
+      register: result
+      failed_when: "result.rc != 111 and 'Error response from daemon: Get https://registry-1.docker.io/v2/: net/http: request canceled (Client.Timeout exceeded while awaiting headers)' not in result.stderr"
+
+    - name: Stop and remove the container
+      become: yes
+      docker_container:
+        name: "{{ inventory_hostname }}_unreachable"
+        state: absent

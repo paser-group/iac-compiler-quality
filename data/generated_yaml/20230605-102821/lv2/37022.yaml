@@ -1,0 +1,58 @@
+
+- name: Configure FEX on Nexus 5K
+  hosts: ubuntu1
+  gather_facts: no
+
+  tasks:
+  - name: Enable FEX configuration mode
+    nxos_config:
+      lines: feature fex
+      provider:
+        host: "{{ hostvars['ubuntu1']['ansible_host'] | default(inventory_hostname) }}"
+        username: admin
+        password: "{{ lookup('file', 'secrets/pass.txt') }}"
+        transport: nxapi
+
+    ignore_errors: yes
+    register: fex_config_output
+
+  - name: Configure FEX ID on Nexus 5K
+    nxos_config:
+      lines: fex id {{ ['101', '102', '103'] | random }}
+      provider:
+        host: "{{ hostvars['ubuntu1']['ansible_host'] | default(inventory_hostname) }}"
+        username: admin
+        password: "{{ lookup('file', 'secrets/pass.txt') }}"
+        transport: nxapi
+
+    when: fex_config_output.changed
+
+  - name: Add interfaces to FEX on Nexus 5K
+    nxos_config:
+      lines: interface Ethernet{{ item }}/1\n  switchport access vlan {{ ['101', '102', '103'] | random }}
+      provider:
+        host: "{{ hostvars['ubuntu1']['ansible_host'] | default(inventory_hostname) }}"
+        username: admin
+        password: "{{ lookup('file', 'secrets/pass.txt') }}"
+        transport: nxapi
+      
+    with_sequence: start=1 end=48
+
+  - name: Configure FEX on Ubuntu
+    shell: echo "interface {{ hostvars['ubuntu1']['ansible_eth1']['ipv4']['address'] | regex_replace('/.*$/', '') }}\n  description ubuntu\n" >> /etc/network/interfaces
+
+  - name: Configure FEX on Alpine
+    when: inventory_hostname in ['alpine1']
+    shell: echo "interface {{ hostvars['alpine1']['ansible_eth1']['ipv4']['address'] | regex_replace('/.*$/', '') }}\n  description alpine\n" >> /etc/network/interfaces
+
+  - name: Configure FEX on CentOS
+    when: inventory_hostname in ['centos1']
+    shell: echo "MODULES=most\n\nifaces=(enp0s3)\n\nfor iface in ifaces\n  do \n    nmcli con add con-name ${iface:3} ifname ${iface} type ethernet ip4 {{ hostvars['centos1']['ansible_eth1']['ipv4']['address'] }}/24 gw 10.1.1.254\n  done" >> /etc/sysconfig/network-scripts/ifcfg-enp0s3
+
+  - name: Configure FEX on Red Hat
+    when: inventory_hostname in ['redhat1']
+    lineinfile:
+      path: /etc/sysconfig/network-scripts/ifcfg-em1
+      line: "BOOTPROTO=static\nIPADDR={{ hostvars['redhat1']['ansible_eth1']['ipv4']['address'] }}/24\nNETMASK=255.255.255.0\nGATEWAY=10.1.1.254\nONBOOT=yes"
+
+

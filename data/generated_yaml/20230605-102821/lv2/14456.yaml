@@ -1,0 +1,34 @@
+
+- name: Trigger race condition with fact cache and smart fact gathering
+  hosts: all
+  gather_facts: true
+
+  tasks:
+  - name: Set fact cache variables
+    set_fact:
+      fact_path: "/tmp/ansible_fact_cache"
+      fact_caching_timeout: 300
+      cache_plugin: jsonfile
+
+  - name: Collect and cache facts
+    setup:
+      fact_path: "{{ fact_path }}"
+      fact_caching: yes
+      fact_caching_timeout: "{{ fact_caching_timeout }}"
+      fact_caching_plugin: "{{ cache_plugin }}"
+      
+  - name: Access cached facts and perform operation
+    command: bash -c "echo 'The system is up and running!' > /tmp/test_file.txt"
+    when: inventory_hostname == 'ubuntu1'
+    
+  - debug:
+      var: nonexistent_var
+    when: inventory_hostname == 'alpine1'
+    
+  - name: Test Ansible compiler
+    shell: echo "Hello World!" > /tmp/ansible_test.txt
+    when: inventory_hostname == 'centos1'
+    
+  - debug:
+      var: "{{ hostvars.redhat1.ansible_default_ipv4.address }}"
+    when: inventory_hostname == 'redhat1' 

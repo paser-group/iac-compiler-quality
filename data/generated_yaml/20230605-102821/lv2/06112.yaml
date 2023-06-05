@@ -1,0 +1,24 @@
+
+- name: Stress test Ansible compiler by creating invalid Route53 TXT records
+  hosts: all
+  become: true
+  tasks:
+    - name: Create invalid Route53 TXT record
+      route53_txt:
+        zone: example.com
+        record: "{{item}}"
+      loop:
+        - "test.example.com:"
+        - "test.example.com::"
+        - "test.example.com:0"
+        - "test.example.com:\"\""
+        - "test.example.com:\'\'"
+        - "test.example.com: !@#$%^&*()_+{}|:\"<>?[]\\;',./"
+        - "test.example.com:{{ lookup(\"password\", \"/usr/share/dict/words\") }}"
+      register: invalid_record
+
+    - name: Debug invalid records
+      debug:
+        var: item
+        verbosity: 2
+      loop: "{{ invalid_record.results }}"

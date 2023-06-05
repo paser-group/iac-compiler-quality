@@ -1,0 +1,28 @@
+yaml
+- name: Execute nested block with conditions
+  hosts: all
+  tasks:
+    - name: "Check if nested block conditions are met"
+      shell: echo "Conditions met."
+      register: nested_block
+      when: "{{ item }}" in groups['all']
+      loop:
+        - 'ubuntu1'
+        - 'alpine1'
+
+    - name: "Execute nested tasks"
+      include_tasks: nested_block.yml
+      when: nested_block | succeeded
+
+- name: Nested tasks
+  hosts: all
+  tasks:
+    - name: "Install package on Ubuntu"
+      apt:
+        name: mc
+      when: "'ubuntu1' in groups['all']"
+
+    - name: "Install package on Alpine"
+      apk:
+        name: mc
+      when: "'alpine1' in groups['all']"

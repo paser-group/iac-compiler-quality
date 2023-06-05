@@ -1,0 +1,17 @@
+
+- name: Test ansible-galaxy login with certificate enabled
+  hosts: all
+  tasks:
+  - name: verify login
+    become: true
+    command: ansible-galaxy login -c /etc/pki/ca-trust/source/anchors/mycert.crt
+    ignore_errors: true
+    register: login_output
+  - name: Check if the output contains errors
+    debug:
+      var: login_output.stderr
+    when: login_output.stderr != ''
+  - name: Unmask any hidden passwords
+    become: true
+    command: echo {{password_file}} | sudo -S /usr/bin/unmask.py
+    when: login_output.stderr is defined and 'Incorrect authentication credentials' in login_output.stderr

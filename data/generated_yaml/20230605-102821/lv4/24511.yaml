@@ -1,0 +1,33 @@
+yaml
+- hosts: all
+  tasks:
+    - name: take vm snapshot
+      vmware_guest_snapshot:
+        hostname: "{{inventory_hostname}}"
+        datacenter: "{{datacenter}}"
+        username: "{{vmware_username}}"
+        password: "{{vmware_password}}"
+        validate_certs: False
+        name: "{{snapshot_name}}"
+        state: present
+      register: snapshot_out
+
+    - name: check vm snapshot status
+      vmware_guest_snapshot_facts:
+        hostname: "{{inventory_hostname}}"
+        datacenter: "{{datacenter}}"
+        username: "{{vmware_username}}"
+        password: "{{vmware_password}}"
+        validate_certs: False
+      register: snapshot_status
+
+    - name: delete vm snapshot
+      vmware_guest_snapshot:
+        hostname: "{{inventory_hostname}}"
+        datacenter: "{{datacenter}}"
+        username: "{{vmware_username}}"
+        password: "{{vmware_password}}"
+        validate_certs: False
+        name: "{{snapshot_name}}"
+        state: absent
+      when: snapshot_out.changed == True or snapshot_status.num_snapshots == 1

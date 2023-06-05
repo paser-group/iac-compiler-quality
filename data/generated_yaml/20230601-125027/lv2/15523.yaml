@@ -1,0 +1,39 @@
+
+- name: Test any_errors_fatal
+  hosts: all
+  gather_facts: no
+  any_errors_fatal: true
+  tasks:
+    - name: Ping all hosts
+      ping:
+      ignore_errors: yes
+      when: ansible_connection == 'ssh'
+
+    - name: Check network connectivity
+      shell: ping -c2 -W 1 10.1.1.254
+      ignore_errors: true
+
+    - name: Check file existence
+      stat:
+        path: /tmp/{{ item }}
+      with_items:
+        - file1
+        - file2
+        - file3
+      ignore_errors: true
+
+    - name: Create a symlink
+      file:
+        src: non_existent_file
+        dest: /tmp/symlink
+        state: link
+
+    - name: Install a package
+      apt:
+        name: nonexistent_package
+        state: present
+
+    - name: Execute a shell command
+      shell: /bin/false
+      register: result
+      failed_when: result.rc == 5

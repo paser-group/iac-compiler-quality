@@ -1,0 +1,41 @@
+
+- name: Test Azure_rm_containerregistry idempotence bug
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+  - name: Check if docker is installed
+    raw: which dockerd
+    register: docker_installed_output
+    changed_when: false
+
+  - name: Install Docker
+    yum:
+      name: docker-ce
+      state: present
+      update_cache: true
+    when: docker_installed_output.rc != 0
+
+  - name: Pull an image from Azure Container Registry
+    azure_rm_containerregistry:
+      resource_group: rg_name
+      registry_url: my_registry.azurecr.io
+      username: username
+      password: password
+      image: my_image:tag
+      pull: yes
+
+  - name: Confirm idempotency
+    azure_rm_containerregistry:
+      resource_group: rg_name
+      registry_url: my_registry.azurecr.io
+      username: username
+      password: password
+      image: my_image:tag
+      pull: no
+    register: output
+
+  - name: Fail if not idempotent
+    fail:
+      msg: "azure_rm_containerregistry module not idempotent"
+    when: "'Image was already present' not in output.stderr"

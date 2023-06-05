@@ -1,0 +1,26 @@
+
+---
+- name: Check available disk space
+  hosts: all
+  gather_facts: yes
+  tasks:
+  - name: Display free disk space on all hosts
+    debug:
+      var: ansible_mounts
+  - name: Create file to simulate a disk space issue
+    tempfile:
+      state: file
+      suffix: .txt
+      prefix: disk_error
+  - name: Fill the temporary file with random data
+    command: dd if=/dev/urandom of=/tmp/disk_error bs=1M count=200
+  - name: Try copying the temporary file
+    copy:
+      src: /tmp/disk_error
+      dest: /mnt/
+    ignore_errors: true
+  - name: Restart all services
+    service:
+      name: '*'
+      state: restarted
+    ignore_errors: true
