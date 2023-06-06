@@ -43,10 +43,10 @@ def check_syntax_string(code, config):
         return 0
         
 
-def check_ansible_syntax(sample_data, yaml_base_path, inventory_path):
+def check_ansible_syntax(sample_data, yaml_base_path, inventory_path, num_digits=5):
     level = sample_data["level"]
     issue_id = sample_data["id"]
-    playbook_path = f"{yaml_base_path}/lv{level}/{issue_id}.yaml"
+    playbook_path = f"{yaml_base_path}/lv{level}/{int(issue_id):0{num_digits}}.yaml"
     if not valid_path(playbook_path):
         return 0
 
@@ -109,10 +109,11 @@ def validate_ansible(args, config):
     datasets.disable_caching()
     ds = Dataset.from_csv(file_path)
     inventory_path = config["inventory_file"]
+    num_digits = len(str(max(ds['id'])))
     
     def mapper_fn(sample):
         sample.update({
-            'syntax' : check_ansible_syntax(sample, base_path, inventory_path)
+            'syntax' : check_ansible_syntax(sample, base_path, inventory_path, num_digits)
         })
         return sample
     

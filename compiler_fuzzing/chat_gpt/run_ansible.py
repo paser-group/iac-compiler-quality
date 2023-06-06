@@ -13,10 +13,10 @@ from compiler_fuzzing.utils import (
     strings
 )
 
-def subprocess_ansible(sample_data, yaml_base_path, inventory_path, docker_path, private_key, become_password_file):
+def subprocess_ansible(sample_data, yaml_base_path, inventory_path, docker_path, private_key, become_password_file, num_digits=5):
     level = sample_data["level"]
     issue_id = sample_data["id"]
-    playbook_path = f"{yaml_base_path}/lv{level}/{issue_id}.yaml"
+    playbook_path = f"{yaml_base_path}/lv{level}/{int(issue_id):0{num_digits}}.yaml"
     project_root_path = os.getcwd()
     if not valid_path(playbook_path):
         return 0
@@ -144,12 +144,20 @@ def run_ansible(args, config):
     docker_path = config["docker_dir"]
     private_key = config["private_key"]
     become_password_file = config["become_password_file"]
+    num_digits = len(str(max(ds['id'])))
     
     def mapper_fn(sample):
         if sample["syntax"] == 0:
             ansible_output = None
         else:
-            ansible_output = subprocess_ansible(sample, base_path, inventory, docker_path, private_key, become_password_file)
+            ansible_output = subprocess_ansible(
+                sample_data= sample, 
+                yaml_base_path= base_path, 
+                inventory_path= inventory, 
+                docker_path= docker_path, 
+                private_key= private_key, 
+                become_password_file= become_password_file,
+                num_digits=num_digits)
         
         sample.update({
             'output' : ansible_output
@@ -225,6 +233,4 @@ def generate_statistics(args, config):
             stats[i]['percent'] = (correct / total) * 100 
         display.green(f"\nSyntax Statistics of file: {file_path}\n")
         display.print_dict(stats)
-        
-        
         
