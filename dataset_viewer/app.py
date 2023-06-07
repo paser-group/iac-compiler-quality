@@ -6,6 +6,7 @@ import jinja2
 import os
 from collections import OrderedDict
 from bs4 import BeautifulSoup
+from compiler_fuzzing import cfg_reader
 
 app = Flask(__name__)
 app.secret_key = 'fuzzing' 
@@ -14,9 +15,10 @@ app.secret_key = 'fuzzing'
 # dataset = Dataset.from_csv('../data/generated_yaml/20230513-233833/manifest_ds.csv')
 
 # df = pd.read_csv('../data/generated_yaml/20230513-233833/manifest_ds.csv')
+timestamp = '20230605-102821'
 
-input_file = '../data/generated_yaml/20230513-233833/manifest_ds.csv'
-output_file = 'annotations/20230513-233833.csv'
+input_file = f'../data/generated_yaml/{timestamp}/manifest_ds.csv'
+output_file = f'annotations/{timestamp}.csv'
 
 # Check if the output file exists
 if not os.path.exists(output_file):
@@ -35,12 +37,12 @@ if not os.path.exists(output_file):
     df.to_csv(output_file, index=False)
 else:
     print("Output file already exists.")
-# Create a list of all unique IDs
+# Create a list of all unique ids
 df = Dataset.from_csv(output_file)
 # breakpoint()
-ids = list(OrderedDict.fromkeys(df['ID']))
+ids = list(OrderedDict.fromkeys(df['id']))
 
-# Initialize an index to keep track of the current ID
+# Initialize an index to keep track of the current id
 current_id_index = 0
 
 def clean_html_tags(html_text):
@@ -59,10 +61,12 @@ def format_output(output):
 @app.route('/', methods=['GET', 'POST'])
 def home():
     global current_id_index
-    # Fetch all rows with the current ID
+    # Fetch all rows with the current id
     
     # breakpoint()
     df = Dataset.from_csv(output_file)
+    cfg = cfg_reader.primary.load("../confs/config.yaml")
+    level_list =  [int(x) for x in cfg['levels'].split(",")]
     
     if request.method == 'POST':
         # Get filter parameters from form
@@ -95,7 +99,7 @@ def home():
     # Get filter parameters
     # syntax = session.get('syntax', request.form.getlist('syntax'))
     # level = session.get('level', request.form.getlist('level'))
-    rows = df.filter(lambda example: example['ID'] ==ids[current_id_index])
+    rows = df.filter(lambda example: example['id'] ==ids[current_id_index])
     # breakpoint()
     # Filter data
     if syntax:
@@ -113,7 +117,7 @@ def home():
             if isinstance(value, str) and key in ['sys_role', 'prompt', 'response']:
                 row[key] = value.replace('\n', '<br>').replace('\\n', '<br>')
     # breakpoint()
-    return render_template('index.html', rows=rows, syntax=syntax, level=level)
+    return render_template('index.html', rows=rows, syntax=syntax, level=level, level_list=level_list)
 
 @app.route('/save', methods=['POST'])
 def save_annotations():
@@ -125,7 +129,7 @@ def save_annotations():
     with open('annotations/log.txt', 'a') as f:
         for annotation in annotations:
             f.write(str(annotation) + '\n')
-    # Increment the index to get the next ID
+    # Increment the index to get the next id
     def update_func(sample):
         for annotation in annotations:
             relevance = int(annotation['relevance'])
@@ -133,7 +137,7 @@ def save_annotations():
             sample_id = int(annotation['id'])
             level = int(annotation['level'])
             comment = annotation['comment']
-            if sample['ID'] == sample_id and sample['level'] == level:
+            if sample['id'] == sample_id and sample['level'] == level:
                 
                 sample.update({
                     'relevance' : relevance,
@@ -143,16 +147,16 @@ def save_annotations():
         return sample
     df = Dataset.from_csv(output_file)
     output_ds = df.map(update_func)
-    # row = df[(df['ID'] == int(annotation['id'])) & (df['level'] == int(annotation['level']))]
+    # row = df[(df['id'] == int(annotation['id'])) & (df['level'] == int(annotation['level']))]
     output_ds.to_csv(output_file)
     
     # df = output_ds
     
     
     # current_id_index += 1
-    # # Fetch the rows for the next ID and return them
-    # next_rows = df.filter(lambda example: example['ID'] == ids[current_id_index])
-    # df[df['ID'] == ids[current_id_index]].to_dict(orient='records')
+    # # Fetch the rows for the next id and return them
+    # next_rows = df.filter(lambda example: example['id'] == ids[current_id_index])
+    # df[df['id'] == ids[current_id_index]].to_dict(orient='records')
     # breakpoint()
     return "Success"
 
@@ -208,10 +212,11 @@ def paginate_dataset(dataset, page_number, limit):
 def view():
     page = request.args.get('page', 1, type=int)
     
-
+    cfg = cfg_reader.primary.load("../confs/config.yaml")
+    level_list =  [int(x) for x in cfg['levels'].split(",")]
     filtered_dataset, syntax, relevance, level, generate_bug = load_and_filter_dataset(request)
 
-    
+    length = len(filtered_dataset)
     # Apply pagination
     page_items, end = paginate_dataset(filtered_dataset, page, 10)
     # start = (page - 1) * 10
@@ -228,7 +233,9 @@ def view():
         syntax = syntax, 
         relevance = relevance, 
         level = level, 
-        generate_bug = generate_bug
+        generate_bug = generate_bug,
+        length = length,
+        level_list = level_list
         )
 
 

@@ -77,7 +77,7 @@ def test_github_scraper(cfg):
             if print_review_data:
                 display.review('--- contents from output of collect_commits() ---')
                 pprint(data)
-
+            breakpoint()
             display.test_passed()
         else:
             display.fail(test_case)
