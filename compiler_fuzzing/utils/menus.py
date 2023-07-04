@@ -52,21 +52,23 @@ def file_explorer(prompt, start_path=None):
             cwd = target
             directory = ['../'] + sorted(os.listdir(cwd))
 
-
-def yes_no(message: str, default_no: bool=True) -> bool:
+def binary_prompt(message: str, default: bool=True) -> bool:
     """
     used to prompt the user for any yes or no options
 
     Input
         message[str]: the message to be displayed before prompting
-        default_no[bool]: sets the default action. if default_no then prompt returns true unles 'n' or  'no' is specified
+        default_no[bool]: sets the default action. if default_no then prompt returns true unless 'n' or  'no' is specified
 
     Return
         bool: yes or no converted to true or false
     """
 
     choice = input(f'{message} (y/n): ').lower()
-    if default_no:
-        return not choice in ['n', 'no']
+
+    if choice in ['y', 'yes']:
+        return True
+    elif choice in ['n', 'no']:
+        return False
     else:
-        return choice in ['y', 'yes']
+        return default

@@ -35,7 +35,7 @@ def get_full_path(path_str, check_exist=False) -> str:
     path = os.path.abspath(path_str)
 
     # check if path exists. raise error otherwise
-    if check_exist : validate.path_exists(path)
+    if check_exist: validate.path_exists(path)
 
     return path
 
@@ -200,3 +200,15 @@ def write_file(path_str: str, content: str):
     validate.path_exists(dirname(path_str))
     with open(path_str, 'w') as f:
         f.write(content)
+
+def path_exists(path_str: str) -> bool:
+    """
+    checks if a given path string exists
+
+    :param path_str: input path
+    :type path_str: str
+
+    :return: True if path exists else false
+    :rtype: bool
+    """
+    return os.path.exists(path_str)

@@ -2,7 +2,11 @@ from compiler_fuzzing import (
     arguments,
     utils,
     cfg_reader,
-    unit_testing
+    unit_testing,
+)
+
+from compiler_fuzzing.ansible_tools import (
+    build_module_list,
 )
 
 from compiler_fuzzing.chat_gpt import (
@@ -24,12 +28,16 @@ def main():
         validate_ansible(args, cfg)
         
     elif args.procedure == 'run':
-        # run validator
+        # execute playbooks
         run_ansible(args, cfg)    
 
     elif args.procedure == 'stat':
         # run the generator
         generate_statistics(args, cfg)
+
+    elif args.procedure == 'gen_module_list':
+        # generate module list
+        build_module_list(args, cfg)
 
     elif args.procedure == 'unit_test':
         # run through unit tests
