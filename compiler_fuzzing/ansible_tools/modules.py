@@ -163,6 +163,14 @@ def generate_manifest_ds(args, cfg, ds, level_list=['base']):
 
 def build_module_list(args, cfg):
 
+    """
+    executes and collects data on the outputs of 'ansible-doc -l'. 
+    
+    Input
+        args[argparse.Namespace]: the command line arguments
+        cfg[Dict]: the config values
+    """
+
     ########### unpack values from cfg ########### 
 
     target_collections = cfg['module_collections']
@@ -172,7 +180,10 @@ def build_module_list(args, cfg):
 
     # check if file exists
     if files.path_exists(save_dir):
-        choice = menus.binary_prompt(f'save location ({save_dir}) already exists. overwrite?', default=False)
+        choice = menus.binary_prompt(
+            f'save location ({save_dir}) already exists. overwrite?',
+            default=False
+        )
         if choice == False:
             display.done('Exiting without creating new dataset ...')
             sys.exit()
@@ -190,7 +201,11 @@ def build_module_list(args, cfg):
 
     # start building dataset by first building list of dictionaries with desired attributes
     ds = []
-    for module in tqdm(modules, total=len(modules), desc='aggregating module information'):
+    for module in tqdm(
+        modules,
+        total=len(modules),
+        desc='aggregating module information'
+    ):
         
         # split line into basics
         module = module.split()
@@ -201,11 +216,11 @@ def build_module_list(args, cfg):
         desc_full = subprocess.check_output(['ansible-doc', mod_name]).decode()
         module_args, arg_types = get_module_args(desc_full)
         
-        module_args = module_args.split('\n')
-        arg_types = arg_types.split('\n')
+        module_arg_list = module_args.split('\n')
+        arg_types_list = arg_types.split('\n')
         arg_str = ""
-        for i in range(len(module_args)):
-            arg_str += f"{module_args[i]} ({arg_types[i]}), "
+        for i in range(len(module_arg_list)):
+            arg_str += f"{module_arg_list[i]} ({arg_types_list[i]}), "
 
 
         ds.append({
