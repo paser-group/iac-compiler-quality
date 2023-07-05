@@ -145,12 +145,28 @@ def parse():
         type=str,
         default="{{PROJECT_ROOT}}/confs/config.yaml",
     )
+    # subparser for generating module list
+    parser_gen = subparser.add_parser('gen_module_ansible')
+    parser_gen.add_argument(
+        '-c',
+        '--config',
+        help='config path',
+        type=str,
+        default="{{PROJECT_ROOT}}/confs/config.yaml",
+    )
 
     parser_gen.add_argument(
         '--debug',
         help='used for testing the create_ansible function',
         action='store_true',
         default=False,
+    )
+    
+    parser_gen.add_argument(
+        '--limit',
+        help='used to limit the amount of samples generated',
+        type=int,
+        default=-1,
     )
     
     ######################### end arg definitions ######################### 

@@ -7,6 +7,7 @@ from compiler_fuzzing import (
 
 from compiler_fuzzing.ansible_tools import (
     build_module_list,
+    generate_ansible_for_modules
 )
 
 from compiler_fuzzing.chat_gpt import (
@@ -38,6 +39,11 @@ def main():
     elif args.procedure == 'gen_module_list':
         # generate module list
         build_module_list(args, cfg)
+        
+        
+    elif args.procedure == 'gen_module_ansible':
+        # generate module list
+        generate_ansible_for_modules(args, cfg)
 
     elif args.procedure == 'unit_test':
         # run through unit tests

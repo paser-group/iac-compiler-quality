@@ -1,1 +1,1 @@
-from .modules import build_module_list
+from .modules import build_module_list, generate_ansible_for_modules

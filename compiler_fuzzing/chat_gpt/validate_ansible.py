@@ -13,6 +13,7 @@ from compiler_fuzzing.utils import (
 
 def check_syntax_string(code, config):
     root_path = config["root_path"]
+    files.create_path(f"{root_path}/files/temp/")
     temp_yaml_path = f"{root_path}/files/temp/tmp.yaml"
     files.write_file(temp_yaml_path, code)
     inventory_path = config["inventory_file"]

@@ -32,6 +32,14 @@ def replace_slot(text: str, entries: str) -> str:
 def remove_tilde(text: str) -> str:
     return text.split('```')[1] 
 
+def extract_yamls(text: str) -> List:
+    yaml_blocks = []
+    pattern = re.compile(r'```(.*?)```', re.DOTALL)
+    matches = pattern.findall(text)
+    for match in matches:
+        yaml_blocks.append(match.strip())
+    return yaml_blocks
+
 def white_space_trail(msg: str) -> List[str]:
     """
     split but keep trailing whitespace at the end of each word
