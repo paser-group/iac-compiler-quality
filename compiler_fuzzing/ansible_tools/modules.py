@@ -34,8 +34,8 @@ def generate_playbooks(output_ds, config, base_output_path, level_list=['base'])
     # write files to output directory
     for i, sample in enumerate(tqdm(output_ds, desc='generating playbooks', total=len(output_ds))):
         if sample['code'] != '':
-            # breakpoint()
-            codes = sample['code']
+            breakpoint()
+            codes = sample['code'].split(";;;;")
             for j, code in enumerate(codes):
                 
                 module_path = f'{output_lv_path}/{sample["name"]}'
@@ -45,7 +45,7 @@ def generate_playbooks(output_ds, config, base_output_path, level_list=['base'])
 
 def generate_ansible_for_modules(args, config):
     
-    # args.limit = 1
+    # args.limit = 3
     # level_list = [int(x) for x in config["module_prompt_levels"].split(",")]
     # args.limit = args.limit * len(level_list)
     ds = Dataset.from_csv(config['module_data_dir'])
@@ -140,6 +140,7 @@ def generate_manifest_ds(args, cfg, ds, level_list=['base']):
     # extract code from the responses and add to a new column
     def mapper_fn(sample):
         # extract code from response
+        # breakpoint()
         codes = strings.extract_yamls(sample['response']) \
                 if '```' in sample['response'] \
                 else ''
@@ -151,12 +152,13 @@ def generate_manifest_ds(args, cfg, ds, level_list=['base']):
                 if re.match(r'^yaml', code) is not None:
                     code = code[4:].strip()
                     lst.append(code)
-            codes = lst
+            codes = ';;;;'.join(lst)
                 
         sample.update({
             'code' : codes,
         })
         return sample
+    breakpoint()
     output_ds = output_ds.map(mapper_fn)
     
     return output_ds

@@ -1,0 +1,72 @@
+- name: Heuristic Test Scenario for ansible.builtin.apt module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Install package with invalid state - should trigger a compiler bug
+      apt:
+        name: my-package
+        state: invalid
+
+    - name: Install package with unsupported parameter - should trigger a compiler bug
+      apt:
+        name: my-package
+        state: present
+        invalid_param: true
+
+    - name: Remove package with null state - should trigger a compiler bug
+      apt:
+        name: my-package
+        state: null
+
+    - name: Install package with invalid cache update retry values - should trigger a compiler bug
+      apt:
+        name: my-package
+        state: present
+        update_cache: yes
+        update_cache_retries: -1
+        update_cache_retry_max_delay: 600
+
+    - name: Perform multiple apt tasks in a single playbook - should expose any potential bug in multi-task handling
+      apt:
+        name: "{{ item.name }}"
+        state: "{{ item.state }}"
+      loop:
+        - { name: package1, state: present }
+        - { name: package2, state: absent }
+
+    - name: Configure cached update - should expose any issue with cache validation
+      apt:
+        name: my-package
+        state: present
+        update_cache: yes
+        cache_valid_time: "{{ item }}"
+      loop:
+        - 7200
+        - 14400
+        - 28800
+
+    - name: Install package with ignore errors option - should expose any bug related to error handling
+      apt:
+        name: my-package
+        state: present
+        ignore_errors: yes
+
+    - name: Check package installation status - should expose any issue with certificate validation
+      apt:
+        name: my-package
+        state: present
+        validate_certs: yes
+
+    - name: Install package with force cache update - should expose any issue with cache handling
+      apt:
+        name: my-package
+        state: latest
+        update_cache: yes
+        cache_valid_time: -1
+
+    - name: Install package without purging removed files - should expose any issue with package removal
+      apt:
+        name: my-package
+        state: purged
+        purge: no
