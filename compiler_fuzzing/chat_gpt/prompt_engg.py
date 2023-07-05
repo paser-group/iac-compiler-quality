@@ -39,7 +39,8 @@ class PromptEngg:
             self.prompt_config['prompt']['current'], 
             {
                 "module" : ds['name'],
-                "attributes": ds['arg_str']
+                "attributes": ds['arg_str'],
+                "desc_short": ds['desc_short']
             }
         )
         
