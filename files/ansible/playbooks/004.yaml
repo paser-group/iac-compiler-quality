@@ -1,0 +1,41 @@
+---
+- name: Test add_host module with unexpected data types
+  hosts: ubuntu1
+  gather_facts: false
+  tasks:
+    - name: Test with mixed case group name
+      add_host:
+        name: ansible-test-host
+        groups:
+          - MixedCaseGroup
+      register: mixed_case_result
+    - name: Test with byte string as host name
+      add_host:
+        name: !!binary "YXNkYXNkYXNk"
+        groups:
+          - some_group
+      register: byte_string_result
+
+    - name: Test with different string encoding
+      add_host:
+        name: "ansible-test-host"
+        groups:
+          - encoded_group
+      vars:
+        encoded_group: "{{ 'group_name' | b64encode }}"
+      register: encoding_result
+
+    - name: Test with null value in groups
+      add_host:
+        name: "ansible-test-host"
+        groups: !!null
+      register: null_result
+
+    - name: Display results
+      debug:
+        var: item
+      loop:
+        - mixed_case_result
+        - byte_string_result
+        - encoding_result
+        - null_result
