@@ -1,0 +1,67 @@
+---
+- name: Debugger & Heuristic Test Playbook
+  hosts: localhost
+  gather_facts: false
+  become: false
+
+  vars:
+    mixed_case_value: aAbBcC
+    byte_string_value: !!python/bytes "QW5zaWJsZSBCeXRlcyBhcyBiYXNlNjQgYnVmZmVy"
+    mixed_value: "{{ mixed_case_value }}{{ byte_string_value }}"
+    random_mac_address: "{{ '%02x:%02x:%02x:%02x:%02x:%02x' | format(ansible_random.randint(0, 255), ansible_random.randint(0, 255), ansible_random.randint(0, 255), ansible_random.randint(0, 255), ansible_random.randint(0, 255), ansible_random.randint(0, 255)) }}"
+    random_port: "{{ 10000 | random }}"
+    encoded_string: !unsafe "\u03A3 xyz \u03A9"
+    limit_value: "{{ 100 / 2 }}"
+    null_value: !null
+    random_ip_address: "192.168.{{ ansible_random.randint(1, 9) }}.{{ ansible_random.randint(1, 9) }}"
+
+  tasks:
+    - name: Test Scenario 1 - Mixed case sensitivity
+      community.network.avi_webhook:
+        name: "{{ mixed_case_value }}"
+        url: "https://example.com/webhook"
+
+    - name: Test Scenario 2 - Byte string values
+      community.network.avi_webhook:
+        name: "{{ byte_string_value }}"
+        url: "https://example.com/webhook"
+
+    - name: Test Scenario 3 - Configuration values with bytes and strings
+      community.network.avi_webhook:
+        name: "{{ mixed_value }}"
+        url: "https://example.com/webhook"
+
+    - name: Test Scenario 4 - Random MAC addresses
+      community.network.avi_webhook:
+        name: "{{ random_mac_address }}"
+        url: "https://example.com/webhook"
+
+    - name: Test Scenario 5 - Random port numbers
+      community.network.avi_webhook:
+        name: "webhook"
+        url: "https://example.com/webhook"
+        port: "{{ random_port }}"
+
+    - name: Test Scenario 6 - Strings with varied encodings
+      community.network.avi_webhook:
+        name: "{{ encoded_string }}"
+        url: "https://example.com/webhook"
+
+    - name: Test Scenario 7 - Division-based operations for limit values
+      community.network.avi_webhook:
+        name: "webhook"
+        url: "https://example.com/webhook"
+        limit: "{{ limit_value }}"
+
+    - name: Test Scenario 8 - !null as configuration values
+      community.network.avi_webhook:
+        name: "webhook"
+        url: "https://example.com/webhook"
+        port: "{{ null_value }}"
+        limit: "{{ null_value }}"
+
+    - name: Test Scenario 9 - Random IP addresses
+      community.network.avi_webhook:
+        name: "webhook"
+        url: "https://example.com/webhook"
+        ip_address: "{{ random_ip_address }}"

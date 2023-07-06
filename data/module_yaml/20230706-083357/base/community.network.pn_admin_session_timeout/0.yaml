@@ -1,0 +1,71 @@
+- name: Heuristic-based test playbook for community.network.pn_admin_session_timeout module
+  hosts: localhost
+  gather_facts: false
+  vars:
+    pn_cliswitch: "CliSwitch"
+    pn_timeout: "5m"
+  
+  tasks:
+    - name: Set pn_admin_session_timeout with mixed case sensitivity
+      community.network.pn_admin_session_timeout:
+        pn_cliswitch: "{{ item|lower }}"
+        pn_timeout: "{{ pn_timeout }}"
+      loop:
+        - "{{ pn_cliswitch|lower }}"
+        - "{{ pn_cliswitch|upper }}"
+
+    - name: Set pn_admin_session_timeout with byte string values
+      community.network.pn_admin_session_timeout:
+        pn_cliswitch: "{{ item }}"
+        pn_timeout: "{{ pn_timeout }}"
+      loop:
+        - "!binary '5m'"
+        - "!binary '10m'"
+        - "!binary '15m'"
+
+    - name: Set pn_admin_session_timeout with mixed data types
+      community.network.pn_admin_session_timeout:
+        pn_cliswitch: "{{ item }}"
+        pn_timeout: "{{ pn_timeout }}"
+      loop:
+        - "{{ random_string() }}"
+        - "{{ random_mac_address() }}"
+
+    - name: Set pn_admin_session_timeout with random MAC addresses
+      community.network.pn_admin_session_timeout:
+        pn_cliswitch: "{{ pn_cliswitch }}"
+        pn_timeout: "{{ pn_timeout }}"
+        state: present
+        pn_mac: "{{ random_mac_address() }}"
+
+    - name: Set pn_admin_session_timeout with random port numbers
+      community.network.pn_admin_session_timeout:
+        pn_cliswitch: "{{ pn_cliswitch }}"
+        pn_timeout: "{{ pn_timeout }}"
+        state: present
+        pn_port: "{{ random_port() }}"
+
+    - name: Set pn_admin_session_timeout with varied string encodings
+      community.network.pn_admin_session_timeout:
+        pn_cliswitch: "{{ pn_cliswitch }}"
+        pn_timeout: "{{ pn_timeout }}"
+        pn_timeout_encoding: "{{ item }}"
+      loop:
+        - "utf-8"
+        - "ascii"
+        - "latin-1"
+
+  vars:
+
+    def random_string():
+      return "{{ lookup('password', '/dev/null', length=12) }}"
+
+    def random_mac_address():
+      return "{{ mac_address_prefix }}:{{ random.randint(0, 255) }}:{{ random.randint(0, 255) }}:{{ random.randint(0, 255) }}"
+
+    def random_port():
+      return "{{ random.randint(1024, 65535) }}"
+
+  vars_prompt:
+    - name: mac_address_prefix
+      prompt: "Enter MAC address prefix (XX:XX:XX)"

@@ -1,0 +1,59 @@
+- name: Test community.network.ce_multicast_global module for bugs
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Configure community.network.ce_multicast_global
+      community.network.ce_multicast_global:
+        aftype: ipv4
+        state: present
+        vrf: default
+      register: result
+
+    - name: Print result
+      debug:
+        var: result
+
+    # Test mixed case sensitivity for string configuration values
+    - name: Test mixed case sensitivity
+      community.network.ce_multicast_global:
+        aftype: IPV4
+        state: present
+        vrf: default
+      when: result.failed
+      register: result_mixed_case
+
+    - name: Print result_mixed_case
+      debug:
+        var: result_mixed_case
+
+    # Test byte string values in place of regular strings
+    - name: Test byte string values
+      community.network.ce_multicast_global:
+        aftype: ipv4
+        state: present
+        vrf: "{{ 'default' | to_bytes }}"
+      when: result_mixed_case.failed
+      register: result_byte_string
+
+    - name: Print result_byte_string
+      debug:
+        var: result_byte_string
+
+    # Test different data types for configuration values
+    - name: Test different data types
+      community.network.ce_multicast_global:
+        aftype: ipv4
+        state: present
+        vrf: "{{ 123 }}"
+      when: result_byte_string.failed
+      register: result_different_data_types
+
+    - name: Print result_different_data_types
+      debug:
+        var: result_different_data_types
+
+    # Add additional test scenarios here
+
+    - name: Final result
+      debug:
+        var: result_different_data_types

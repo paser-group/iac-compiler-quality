@@ -1,0 +1,69 @@
+- name: Heuristic-based test playbook for community.network.pn_dhcp_filter module
+  hosts: localhost
+  become: true
+  gather_facts: false
+
+  vars:
+    pn_cliswitch: "10.1.1.1"
+    pn_name: "dhcp-filter"
+    pn_trusted_ports:
+      - "eth1"
+      - "eth2"
+    state: "present"
+
+  tasks:
+    - name: Install required package
+      package:
+        name: python3-pip
+        state: present
+
+    - name: Install community.network.pn_dhcp_filter module
+      pip:
+        name: community.network
+
+    - name: Ensure DHCP filter configuration is present
+      community.network.pn_dhcp_filter:
+        pn_cliswitch: "{{ pn_cliswitch }}"
+        pn_name: "{{ pn_name }}"
+        pn_trusted_ports: "{{ pn_trusted_ports }}"
+        state: "{{ state }}"
+
+    - name: Generate random MAC address
+      shell: "python3 -c 'import random; import string; print(':'.join([''.join(random.choice(string.hexdigits).lower() for _ in range(2)) for _ in range(6)]))'"
+      register: random_mac
+
+    - name: Generate random port number
+      shell: "python3 -c 'import random; print(random.randint(1, 65535))'"
+      register: random_port
+
+    - name: Create configuration value with different encodings
+      set_fact:
+        encoded_string: "{{ 'test-string'.encode('utf-8') }}"
+
+    - name: Assign a limit-related value with division
+      set_fact:
+        limit: "{{ 12 / 3 }}"
+
+    - name: Use !null as configuration value
+      set_fact:
+        null_value: !null
+
+    - name: Generate random IP address
+      shell: "python3 -c 'import random; import socket; print(socket.inet_ntoa(struct.pack('!I', random.randint(1, 0xffffffff))))'"
+      register: random_ip
+
+    - name: Ensure DHCP filter configuration is absent
+      community.network.pn_dhcp_filter:
+        pn_cliswitch: "{{ pn_cliswitch }}"
+        pn_name: "{{ pn_name }}"
+        state: absent
+
+    - name: Uninstall community.network.pn_dhcp_filter module
+      pip:
+        name: community.network
+        state: absent
+
+    - name: Uninstall unnecessary packages
+      package:
+        name: python3-pip
+        state: absent

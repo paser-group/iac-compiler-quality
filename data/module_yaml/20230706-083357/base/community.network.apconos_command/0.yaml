@@ -1,0 +1,76 @@
+---
+- name: Heuristic-driven test playbook for community.network.apconos_command module
+  hosts: localhost
+  gather_facts: false
+  vars:
+    commands:
+      - show interfaces
+      - show version
+    interval: 10
+    match: "SUCCESS"
+    retries: 3
+    wait_for:
+      - host=node2
+        port=22
+        search_regex=OpenSSH
+      - host=node3
+        port=80
+        body_regex=Welcome to Node 3
+  tasks:
+    - name: Execute commands with community.network.apconos_command module
+      community.network.apconos_command:
+        commands: "{{ commands }}"
+        interval: "{{ interval }}"
+        match: "{{ match }}"
+        retries: "{{ retries }}"
+        wait_for: "{{ wait_for }}"
+      register: result
+
+    - name: Debug result
+      debug:
+        var: result
+
+    - name: Test mixed case sensitivity
+      community.network.apconos_command:
+        commands: "{{ commands }}"
+        interval: "{{ Interval | default(10) }}"
+        match: "{{ Match | default('SUCCESS') }}"
+        retries: "{{ Retries | default(3) }}"
+        wait_for: "{{ wait_for }}"
+      register: mixed_case_result
+
+    - name: Debug mixed case sensitivity result
+      debug:
+        var: mixed_case_result
+
+    - name: Test byte string values
+      community.network.apconos_command:
+        commands: !binary |
+          U2hvdwppbntBbmQgdGhpcyBpcyBhIHN0cmluZ30K
+      interval: 10
+      match: "SUCCESS"
+      retries: 3
+      wait_for: "{{ wait_for }}"
+      register: byte_string_result
+
+    - name: Debug byte string values result
+      debug:
+        var: byte_string_result
+
+    - name: Test mixed byte and string values
+      community.network.apconos_command:
+        commands:
+          - !binary |
+            U2hvdwppbntBbmQgdGhpcyBpcyBhIHN0cmluZ30K
+          - show version
+      interval: 10
+      match: "SUCCESS"
+      retries: 3
+      wait_for: "{{ wait_for }}"
+      register: mixed_byte_string_result
+
+    - name: Debug mixed byte and string values result
+      debug:
+        var: mixed_byte_string_result
+
+    # Add more heuristic-driven test scenarios as needed

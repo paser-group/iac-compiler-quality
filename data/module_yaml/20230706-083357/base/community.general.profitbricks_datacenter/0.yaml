@@ -1,0 +1,49 @@
+- name: Bug Exposing Playbook
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    module_name: "community.general.profitbricks_datacenter"
+    description: "My test datacenter!"
+    location: "us/las"
+    name: "Test Datacenter"
+    state: "present"
+    subscription_password: "mypassword"
+    subscription_user: "myusername"
+    wait: true
+    wait_timeout: 300
+
+  tasks:
+    - name: Test mixed case sensitivity bug
+      {{ module_name }}:
+        description: "My TEST datacenter"
+        location: "{{ location | upper }}"
+        name: "{{ name | lower }}"
+        state: "{{ state | capitalize }}"
+        subscription_password: "{{ subscription_password | upper }}"
+        subscription_user: "{{ subscription_user | lower }}"
+        wait: "{{ wait | bool }}"
+        wait_timeout: "{{ wait_timeout | string | length }}"
+
+    - name: Test byte string values
+      {{ module_name }}:
+        description: !binary |
+          VGhpcyBpcyBhIGJ5dGUgc3RyaW5nCg==
+        location: "{{ location }}"
+        name: "{{ name }}"
+        state: "{{ state }}"
+        subscription_password: "{{ subscription_password }}"
+        subscription_user: "{{ subscription_user }}"
+        wait: "{{ wait }}"
+        wait_timeout: "{{ wait_timeout }}"
+
+    - name: Test configuration values with bytes and strings
+      {{ module_name }}:
+        description: "My datacenter"
+        location: "{{ location }}"
+        name: "{{ name }}"
+        state: "{{ state }}"
+        subscription_password: "{{ subscription_password | encode }}"
+        subscription_user: "{{ subscription_user }}"
+        wait: "{{ wait }}"
+        wait_timeout: "{{ wait_timeout }}"

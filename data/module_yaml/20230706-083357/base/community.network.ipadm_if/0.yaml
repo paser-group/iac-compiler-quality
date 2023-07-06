@@ -1,0 +1,118 @@
+---
+- name: Ansible Compiler Debugger & Heuristic Test Playbook
+  hosts: localhost
+  gather_facts: False
+
+  vars:
+    # Heuristic: Identify potential bugs in the Ansible compiler that might be triggered by mixed case sensitivity for string configuration values.
+    mixed_case_value: "MixedCaSe"
+
+    # Heuristic: Introduce byte string values in place of regular strings.
+    byte_string: !binary "Zm9v"
+
+    # Heuristic: Create configuration values that incorporate both bytes and strings.
+    mixed_encoding: ["Foo", !binary "QmFy"]
+
+    # Heuristic: Generate random MAC addresses for network modules.
+    random_mac: "{{ '%02x:%02x:%02x:%02x:%02x:%02x' | format(255|random, 255|random, 255|random, 255|random, 255|random, 255|random) }}"
+
+    # Heuristic: Produce random port numbers to test port settings.
+    random_port: "{{ 1024 + 4096 * random | int }}"
+
+    # Heuristic: Generate strings with varied encodings.
+    utf8_string: "{{ 'foo' | string | to_json }}"
+    utf16_string: "{{ 'foo' | string | to_json | b64encode }}"
+    utf32_string: "{{ 'foo' | string | to_json | b64encode | b64decode | string }}"
+
+    # Heuristic: Implement division-based operations when assigning limit-related values.
+    total_nodes: 10
+    max_capacity: "{{ 100 // total_nodes }}"
+
+    # Heuristic: Use !null as configuration values in manifests.
+    null_value: !null
+
+    # Heuristic: Formulate random IP addresses for recently introduced networking modules.
+    random_ip: "{{ ansible_date_time.year }}.{{ ansible_date_time.month | zfill(2) }}.{{ ansible_date_time.day | zfill(2) }}"
+
+  tasks:
+    - name: Test scenario 1 - Mixed case sensitivity for string configuration values
+      community.network.ipadm_if:
+        name: "{{ mixed_case_value }}"
+        state: present
+      register: result_1
+      ignore_errors: True
+
+    - name: Test scenario 2 - Byte string values instead of regular strings
+      community.network.ipadm_if:
+        name: "{{ byte_string }}"
+        state: present
+      register: result_2
+      ignore_errors: True
+
+    - name: Test scenario 3 - Configuration values with both bytes and strings
+      community.network.ipadm_if:
+        name: "{{ mixed_encoding }}"
+        state: present
+      register: result_3
+      ignore_errors: True
+
+    - name: Test scenario 4 - Random MAC addresses for network modules
+      community.network.ipadm_if:
+        name: "{{ random_mac }}"
+        state: present
+      register: result_4
+      ignore_errors: True
+
+    - name: Test scenario 5 - Random port numbers for port settings
+      community.network.ipadm_if:
+        name: "eth0"
+        state: present
+        port: "{{ random_port }}"
+      register: result_5
+      ignore_errors: True
+
+    - name: Test scenario 6 - Strings with varied encodings
+      community.network.ipadm_if:
+        name: "{{ item }}"
+        state: present
+      register: result_6
+      ignore_errors: True
+      loop:
+        - "{{ utf8_string }}"
+        - "{{ utf16_string }}"
+        - "{{ utf32_string }}"
+
+    - name: Test scenario 7 - Division-based operations for limit-related values
+      community.network.ipadm_if:
+        name: "eth0"
+        state: present
+        limit: "{{ max_capacity }}"
+      register: result_7
+      ignore_errors: True
+
+    - name: Test scenario 8 - Using !null as configuration values
+      community.network.ipadm_if:
+        name: "eth0"
+        state: "{{ null_value }}"
+      register: result_8
+      ignore_errors: True
+
+    - name: Test scenario 9 - Random IP addresses for recently introduced networking modules
+      community.network.ipadm_if:
+        name: "{{ random_ip }}"
+        state: present
+      register: result_9
+      ignore_errors: True
+
+    - name: Print test results
+      debug:
+        msg: |
+          Test scenario 1 result: {{ result_1 }}
+          Test scenario 2 result: {{ result_2 }}
+          Test scenario 3 result: {{ result_3 }}
+          Test scenario 4 result: {{ result_4 }}
+          Test scenario 5 result: {{ result_5 }}
+          Test scenario 6 result: {{ result_6 }}
+          Test scenario 7 result: {{ result_7 }}
+          Test scenario 8 result: {{ result_8 }}
+          Test scenario 9 result: {{ result_9 }}

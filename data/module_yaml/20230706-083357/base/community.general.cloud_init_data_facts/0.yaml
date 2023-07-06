@@ -1,0 +1,22 @@
+---
+- name: Heuristic-based test playbook for community.general.cloud_init_data_facts module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Set up random configuration values
+      set_fact:
+        mixed_case_value: "{{ ['VaLuE1', 'VALUE2', 'vAluE3'] | random }}"
+        byte_string_value: "{{ 'abcd' | to_nice_yaml }}"
+        mixed_type_value: "{{ ['str', 123, 4.5] | random }}"
+        random_mac: "{{ '%02x' | format(255 * random()) }}:{{ '%02x' | format(255 * random()) }}:{{ '%02x' | format(255 * random()) }}:{{ '%02x' | format(255 * random()) }}:{{ '%02x' | format(255 * random()) }}:{{ '%02x' | format(255 * random()) }}"
+        random_port: "{{ 1024 + (65534 * random()) | int }}"
+        random_ip: "{{ '10.1.' ~ (1 + random() * 254) | int ~ '.' ~ (1 + random() * 254) | int }}"
+
+    - name: Retrieve cloud-init data facts
+      community.general.cloud_init_data_facts:
+        filter: "{{ mixed_case_value }}"
+      register: cloud_init_data
+
+    - debug:
+        var: cloud_init_data

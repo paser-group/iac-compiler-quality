@@ -1,0 +1,95 @@
+---
+- name: Ansible Compiler Debugger & Heuristic Test Playbook
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    gslb_name: "Test GSLB"
+    gslb_tenant: "admin"
+    gslb_username: "admin"
+    gslb_password: "password"
+    gslb_controller: "https://avi-controller.example.com"
+    gslb_site1_name: "Site1"
+    gslb_site1_ip: "10.1.1.1"
+    gslb_site2_name: "Site2"
+    gslb_site2_ip: "10.1.1.2"
+    gslb_site3_name: "Site3"
+    gslb_site3_ip: "10.1.1.3"
+    gslb_dns_domain: "example.com"
+    gslb_dns_nameservers:
+      - 8.8.8.8
+      - 8.8.4.4
+
+  tasks:
+    - name: Configure GSLB
+      community.network.avi_gslb:
+        controller: "{{ gslb_controller }}"
+        username: "{{ gslb_username }}"
+        password: "{{ gslb_password }}"
+        tenant: "{{ gslb_tenant }}"
+        name: "{{ gslb_name }}"
+        sites:
+          - name: "{{ gslb_site1_name }}"
+            ip_addresses:
+              - "{{ gslb_site1_ip }}"
+          - name: "{{ gslb_site2_name }}"
+            ip_addresses:
+              - "{{ gslb_site2_ip }}"
+          - name: "{{ gslb_site3_name }}"
+            ip_addresses:
+              - "{{ gslb_site3_ip }}"
+        dns_configs:
+          - fqdn: "{{ gslb_dns_domain }}"
+            preferred_dns: "{{ gslb_dns_nameservers }}"
+            gslb_service_subdomain: "subdomain"
+        state: present
+
+        # Heuristic-based test scenarios
+        avi_disable_session_cache_as_fact: false
+        is_federated: true
+        leader_cluster_uuid: "12345678-1234-1234-1234-1234567890ab"
+        maintenance_mode: true
+        send_interval: 10
+        send_interval_prior_to_maintenance_mode: 5
+        third_party_sites:
+          - site_name: "ThirdPartySite1"
+            site_uuid: "12345678-1234-1234-1234-1234567890ab"
+            controller_ip: "10.1.1.4"
+            enabled: true
+        api_version: "17.2.1"
+        api_context:
+          scheme: "http"
+          port: 80
+        description: "Test GSLB Description"
+        tenant_uuid: "12345678-1234-1234-1234-1234567890ab"
+
+        # Additional tests for potential bugs
+        avi_credentials:
+          username: !null
+          password: !null
+        controller: "{{ gslb_controller | upper }}"
+        tenant_ref: !null
+        clear_on_max_retries: false
+        async_interval: 5
+        avi_api_patch_op: replace
+        avi_api_update_method: POST
+        client_ip_addr_group:
+          - name: "ClientIPGroup1"
+            ip_addrs: ["10.1.1.5", "10.1.1.6"]
+            prefix: 24
+        url: "https://avi-server.example.com"
+        state: absent
+        uuid: "12345678-1234-1234-1234-1234567890ab"
+        view_id: "12345678-1234-1234-1234-1234567890ab"
+
+      register: result
+
+    - name: Debug Result
+      debug:
+        var: result
+
+    # Add additional tasks to further validate the behavior of the Ansible module
+    # ...
+
+  # Add additional plays to test other Ansible modules and scenarios
+  # ...

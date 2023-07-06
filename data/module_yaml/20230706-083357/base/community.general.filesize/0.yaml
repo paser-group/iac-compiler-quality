@@ -1,0 +1,81 @@
+---
+- name: Heuristic-based test playbook for community.general.filesize module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create file with specified size
+      community.general.filesize:
+        path: "/tmp/file_with_{{ size | default('1G') }}"
+        size: "{{ size | default('1G') }}"
+        state: touch
+      register: create_result
+
+    - name: Check if file exists
+      assert:
+        that: create_result.changed is equalto true
+
+    - name: Test mixed case sensitivity
+      community.general.filesize:
+        path: "{{ mixed_case | default('file.txt') }}"
+        size: 1M
+      when: mixed_case is defined
+
+    - name: Test byte string values
+      community.general.filesize:
+        path: "{{ path | default(b'file.txt') }}"
+        size: 1M
+      when: path is defined
+
+    - name: Test mixed byte and string values
+      community.general.filesize:
+        path: "{{ mixed_byte_string_path | default(b'file.txt') }}"
+        size: "{{ mixed_byte_string_size | default('1M') }}"
+      when:
+        - mixed_byte_string_path is defined
+        - mixed_byte_string_size is defined
+
+    - name: Test random MAC address
+      community.general.filesize:
+        path: "/tmp/file_with_{{ mac_address }}"
+        size: 1M
+      when: random_mac is defined
+      vars:
+        mac_address: "{{ '%02x:%02x:%02x:%02x:%02x:%02x' | format((random() * 256)|int, (random() * 256)|int, (random() * 256)|int, (random() * 256)|int, (random() * 256)|int, (random() * 256)|int) }}"
+
+    - name: Test random port number
+      community.general.filesize:
+        path: "/tmp/file_with_port_{{ port }}"
+        size: 1M
+      when: random_port is defined
+      vars:
+        port: "{{ 1025 + (random() * 49151)|int }}"
+
+    - name: Test varied string encodings
+      community.general.filesize:
+        path: "{{ encoded_path }}"
+        size: 1M
+      when: encoded_path is defined
+      vars:
+        encoded_path: "{{ path | default('file.txt') | b64encode }}"
+
+    - name: Test division-based operations for limits
+      community.general.filesize:
+        path: "/tmp/file_with_{{ size | default('1G') }}"
+        size: "{{ size | default('1G') }}"
+        limit: "{{ size | default('1G') | int / 2 }}"
+      when: division_based_operation is defined
+
+    - name: Test null configuration value
+      community.general.filesize:
+        path: "/tmp/file_with_null"
+        size: 1M
+      when: null_configuration is defined
+
+    - name: Test random IP address
+      community.general.filesize:
+        path: "/tmp/file_with_{{ ip_address }}"
+        size: 1M
+      when: random_ip is defined
+      vars:
+        ip_address: "{{ '.'.join([str(random() * 256 | int) for _ in range(4)]) }}"

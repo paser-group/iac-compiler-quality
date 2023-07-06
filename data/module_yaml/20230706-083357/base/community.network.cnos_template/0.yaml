@@ -1,0 +1,124 @@
+---
+- name: Heuristic-based test scenarios for community.network.cnos_template module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Test mixed case sensitivity for string configuration values
+      community.network.cnos_template:
+        commandfile: commandfile.txt
+        deviceType: switch
+        enablePassword: password
+        host: "{{ inventory_hostname }}"
+        outputfile: outputfile.txt
+        password: Password
+        username: Username
+      register: result_mixed_case
+
+    - name: Test byte string values instead of regular strings
+      community.network.cnos_template:
+        commandfile: commandfile.txt
+        deviceType: switch
+        enablePassword: password
+        host: "{{ inventory_hostname }}"
+        outputfile: outputfile.txt
+        password: "{{ '!b' + 'yte_string' | b64encode }}"
+        username: "{{ '!b' + 'yte_string' | b64encode }}"
+      register: result_byte_string
+
+    - name: Test configuration values with both bytes and strings
+      community.network.cnos_template:
+        commandfile: commandfile.txt
+        deviceType: switch
+        enablePassword: password
+        host: "{{ inventory_hostname }}"
+        outputfile: outputfile.txt
+        password: "Password"
+        username: "{{ '!b' + 'yte_string' | b64encode }}"
+      register: result_bytes_and_strings
+
+    - name: Test random MAC addresses for network modules
+      community.network.cnos_template:
+        commandfile: commandfile.txt
+        deviceType: switch
+        enablePassword: password
+        host: "{{ inventory_hostname }}"
+        outputfile: outputfile.txt
+        password: password
+        username: username
+        mac: "{{ lookup('community.general.mac', format='cisco') }}"
+      register: result_random_mac
+
+    - name: Test random port numbers for port settings
+      community.network.cnos_template:
+        commandfile: commandfile.txt
+        deviceType: switch
+        enablePassword: password
+        host: "{{ inventory_hostname }}"
+        outputfile: outputfile.txt
+        password: password
+        username: username
+        port: "{{ 1024 | random }}"
+      register: result_random_port
+
+    - name: Test strings with varied encodings
+      community.network.cnos_template:
+        commandfile: commandfile.txt
+        deviceType: switch
+        enablePassword: password
+        host: "{{ inventory_hostname }}"
+        outputfile: outputfile.txt
+        password: password
+        username: username
+        encoding: "{{ ['UTF-8', 'UTF-16', 'ISO-8859-1'] | random }}"
+      register: result_varied_encodings
+
+    - name: Test division-based operations for limit-related values
+      community.network.cnos_template:
+        commandfile: commandfile.txt
+        deviceType: switch
+        enablePassword: password
+        host: "{{ inventory_hostname }}"
+        outputfile: outputfile.txt
+        password: password
+        username: username
+        limit: "{{ 100 / 3 | round(0) }}"
+      register: result_division_based
+
+    - name: Test !null as configuration values
+      community.network.cnos_template:
+        commandfile: commandfile.txt
+        deviceType: switch
+        enablePassword: password
+        host: "{{ inventory_hostname }}"
+        outputfile: outputfile.txt
+        password: password
+        username: username
+        limit: !null
+      register: result_null_config
+
+    - name: Test random IP addresses for networking modules
+      community.network.cnos_template:
+        commandfile: commandfile.txt
+        deviceType: switch
+        enablePassword: password
+        host: "{{ inventory_hostname }}"
+        outputfile: outputfile.txt
+        password: password
+        username: username
+        ip: "{{ lookup('community.general.random_ipv4', subnet='10.0.0.0/8') }}"
+      register: result_random_ip
+
+    - name: Display results
+      debug:
+        var: item
+      loop:
+        - result_mixed_case
+        - result_byte_string
+        - result_bytes_and_strings
+        - result_random_mac
+        - result_random_port
+        - result_varied_encodings
+        - result_division_based
+        - result_null_config
+        - result_random_ip

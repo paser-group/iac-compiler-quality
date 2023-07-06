@@ -1,0 +1,73 @@
+---
+- name: Heuristic-based test playbook for community.general.snap_alias module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Include the snap_alias module
+      ansible.builtin.import_role:
+        name: community.general.snap_alias
+
+    - name: Test Scenario 1 - Mixed case sensitivity
+      community.general.snap_alias:
+        name: MyAlias
+        alias:
+          - Alias1
+          - Alias2
+        state: present
+
+    - name: Test Scenario 2 - Byte string values
+      community.general.snap_alias:
+        name: "{{ 'MyAlias' | to_bytes(encoding='utf-8') }}"
+        alias:
+          - "{{ 'Alias1' | to_bytes(encoding='utf-8') }}"
+          - "{{ 'Alias2' | to_bytes(encoding='utf-8') }}"
+
+    - name: Test Scenario 3 - Bytes and strings in configuration values
+      community.general.snap_alias:
+        name: MyAlias
+        alias:
+          - "{{ 'Alias1' | to_bytes(encoding='utf-8') }}"
+          - Alias2
+
+    - name: Test Scenario 4 - Random MAC addresses
+      community.general.snap_alias:
+        name: MyAlias
+        alias:
+          - Alias1
+          - Alias2
+        state: present
+        mac_address: "{{ '%02x:%02x:%02x:%02x:%02x:%02x' | format(ansible_random.randint(0, 255), ansible_random.randint(0, 255), ansible_random.randint(0, 255), ansible_random.randint(0, 255), ansible_random.randint(0, 255), ansible_random.randint(0, 255)) }}"
+
+    - name: Test Scenario 5 - Random port numbers
+      community.general.snap_alias:
+        name: MyAlias
+        alias:
+          - Alias1
+          - Alias2
+        state: present
+        port: "{{ 10000 | random(start=20000) }}"
+
+    - name: Test Scenario 6 - Varied encoding strings
+      community.general.snap_alias:
+        name: "{{ 'MyAlias' | to_bytes(encoding='utf-8') }}"
+        alias:
+          - "{{ 'Alias1' | to_bytes(encoding='utf-8') }}"
+          - "{{ 'MyAlias' | to_bytes(encoding='utf-8') }}"
+
+    - name: Test Scenario 7 - Division-based operations for limit
+      community.general.snap_alias:
+        name: MyAlias
+        alias:
+          - Alias1
+          - Alias2
+        state: present
+        limit: "{{ ansible_memtotal_mb // 2 }}M"
+
+    - name: Test Scenario 8 - !null as configuration values
+      community.general.snap_alias:
+        name: MyAlias
+        alias: null
+        state: present
+
+    # Add more test scenarios as needed

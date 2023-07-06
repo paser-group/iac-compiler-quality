@@ -1,0 +1,97 @@
+- name: Heuristic-based test scenarios for community.general.utm_network_interface_address module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Test scenario with mixed case sensitivity for string configuration values
+      community.general.utm_network_interface_address:
+        address: "{{ address | upper }}"
+        state: "{{ state }}"
+      register: result1
+      when: address != ""
+
+    - name: Test scenario with byte string configuration values
+      community.general.utm_network_interface_address:
+        address: !binary |-
+          Hellow World
+        state: "{{ state }}"
+      register: result2
+      when: address != ""
+
+    - name: Test scenario with byte and regular strings in configuration values
+      community.general.utm_network_interface_address:
+        address: !binary |-
+          48656c6c6f7720576f726c64
+        state: "{{ state }}"
+      register: result3
+      when: address != ""
+
+    - name: Test scenario with random MAC addresses
+      community.general.utm_network_interface_address:
+        address: "00:11:22:33:44:55"
+        state: "{{ state }}"
+      register: result4
+      when: address != ""
+
+    - name: Test scenario with random port numbers
+      community.general.utm_network_interface_address:
+        address: "{{ address }}"
+        utm_port: "{{ item }}"
+        state: "{{ state }}"
+      register: result5
+      loop: "{{ range(1, 11) | list }}"
+      when: address != ""
+
+    - name: Test scenario with strings with different encodings
+      community.general.utm_network_interface_address:
+        address: "HELLO"
+        state: "{{ state }}"
+      register: result6
+      when: address != ""
+
+    - name: Test scenario with division-based operations for limit-related values
+      community.general.utm_network_interface_address:
+        address: "{{ address }}"
+        utm_port: "{{ 100 / 2 }}"
+        state: "{{ state }}"
+      register: result7
+      when: address != ""
+
+    - name: Test scenario with !null as configuration values
+      community.general.utm_network_interface_address:
+        address: !null
+        state: "{{ state }}"
+      register: result8
+
+    - name: Test scenario with random IP addresses
+      community.general.utm_network_interface_address:
+        address: "{{ item }}"
+        state: "{{ state }}"
+      register: result9
+      loop:
+        - "10.0.0.1"
+        - "192.168.0.1"
+        - "172.16.0.1"
+        - "169.254.0.1"
+      when: address != ""
+
+  tasks:
+    - name: Display results
+      debug:
+        var: item
+      loop:
+        - result1
+        - result2
+        - result3
+        - result4
+        - result5
+        - result6
+        - result7
+        - result8
+        - result9
+
+    - name: Cleanup (delete network interface)
+      community.general.utm_network_interface_address:
+        address: "{{ address }}"
+        state: "absent"
+      when: address != ""

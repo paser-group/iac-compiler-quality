@@ -1,0 +1,30 @@
+---
+- name: Heuristic Test Playbook for community.general.clc_firewall_policy
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create Firewall Policy
+      community.general.clc_firewall_policy:
+        destination: "{{ ['192.168.1.1', '192.168.2.0/24'] | random }}"
+        destination_account_alias: "{{ ['test_destination_account'] | random }}"
+        enabled: "{{ ['true', 'false'] | random }}"
+        firewall_policy_id: "{{ ['test_firewall_policy_id'] | random }}"
+        location: "{{ ['test_location'] | random }}"
+        ports: "{{ [80, 443] | random }}"
+        source: "{{ ['10.0.0.0/16', '10.1.0.0/24'] | random }}"
+        source_account_alias: "{{ ['test_source_account'] | random }}"
+        state: "{{ ['present', 'absent'] | random }}"
+        wait: "{{ ['yes', 'no'] | random }}"
+      register: firewall_policy
+
+    - name: Debug Output
+      debug:
+        var: firewall_policy
+
+    - name: Delete Firewall Policy
+      when: firewall_policy is defined and firewall_policy.changed and firewall_policy.state == "absent"
+      community.general.clc_firewall_policy:
+        firewall_policy_id: "{{ firewall_policy.firewall_policy_id }}"
+        state: absent
+      ignore_errors: true

@@ -1,0 +1,73 @@
+- name: Heuristic-based test playbook for community.general.online_user_info module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    api_timeout: 10
+    api_token: "EXAMPLE_TOKEN"
+    api_url: "https://api.example.com"
+    validate_certs: true
+
+  tasks:
+    - name: Gather online user information
+      community.general.online_user_info:
+        api_timeout: "{{ api_timeout }}"
+        api_token: "{{ api_token }}"
+        api_url: "{{ api_url }}"
+        validate_certs: "{{ validate_certs }}"
+      register: user_info_result
+
+    - name: Debug online user information
+      debug:
+        var: user_info_result
+
+    - name: Heuristic test - Mixed case sensitivity
+      debug:
+        msg: "Testing heuristic scenario - Mixed case sensitivity"
+      when: "'{{ api_timeout | upper }}' == '{{ api_timeout }}'"
+
+    - name: Heuristic test - Byte string values
+      debug:
+        msg: "Testing heuristic scenario - Byte string values"
+      when: "api_token | type_debug == 'bytes'"
+
+    - name: Heuristic test - Bytes and strings combination
+      debug:
+        msg: "Testing heuristic scenario - Bytes and strings combination"
+      when: "api_url | type_debug == 'bytes' or api_url | type_debug == 'str'"
+
+    - name: Heuristic test - Random MAC addresses
+      vars:
+        mac_address: "52:54:00:{{ '%02x' | format(play_hosts.index(inventory_hostname) + 1) }}:01:00"
+      debug:
+        msg: "Testing heuristic scenario - Random MAC addresses"
+      when: inventory_hostname in groups['nodes']
+
+    - name: Heuristic test - Random port numbers
+      vars:
+        port_number: "{{ (play_hosts.index(inventory_hostname) + 1) * 1000 }}"
+      debug:
+        msg: "Testing heuristic scenario - Random port numbers"
+      when: inventory_hostname in groups['nodes']
+
+    - name: Heuristic test - Varied encoded strings
+      debug:
+        msg: "Testing heuristic scenario - Varied encoded strings"
+      when: "'{{ api_timeout | b64encode }}' == '{{ api_timeout | b64encode }}'"
+
+    - name: Heuristic test - Division-based operations for limit-related values
+      debug:
+        msg: "Testing heuristic scenario - Division-based operations for limit-related values"
+      when: "api_timeout / api_timeout == 1"
+
+    - name: Heuristic test - !null configuration values
+      debug:
+        msg: "Testing heuristic scenario - !null configuration values"
+      when: "api_url is not defined"
+
+    - name: Heuristic test - Random IP addresses
+      vars:
+        ip_address: "10.{{index_item(play_hosts, play_hosts.index(inventory_hostname))}}.1.1"
+      debug:
+        msg: "Testing heuristic scenario - Random IP addresses"
+      when: inventory_hostname in groups['nodes']

@@ -1,0 +1,104 @@
+---
+- name: Ansible Compiler Debugger & Heuristic Test Playbook
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    acl_description: "Test ACL"
+    acl_name: "Test_ACL"
+    acl_num: 10
+    acl_step: 10
+    dest_ip: "192.0.2.1"
+    dest_mask: "255.255.255.0"
+    dest_pool_name: "dest_pool"
+    dest_port_begin: 80
+    dest_port_end: 443
+    dest_port_op: "eq"
+    dest_port_pool_name: "dest_port_pool"
+    dscp: 10
+    established: true
+    frag_type: "first-fragment"
+    icmp_code: 1
+    icmp_name: "echo-reply"
+    icmp_type: 0
+    igmp_type: 1
+    log_flag: true
+    precedence: 1
+    protocol: "tcp"
+    rule_action: "permit"
+    rule_description: "Test rule"
+    rule_id: 10
+    rule_name: "Test_Rule"
+    source_ip: "192.0.2.2"
+    src_mask: "255.255.255.0"
+    src_pool_name: "src_pool"
+    src_port_begin: 1024
+    src_port_end: 65535
+    src_port_op: "gt"
+    src_port_pool_name: "src_port_pool"
+    state: "present"
+    syn_flag: "not-set"
+    tcp_flag_mask: "syn fin"
+    time_range: "test_time_range"
+    tos: 1
+    ttl_expired: true
+    vrf_name: "vrf1"
+
+  tasks:
+    - name: Test Heuristic - Mixed Case Sensitivity
+      community.network.ce_acl_advance:
+        acl_name: "{{ acl_NAME }}"
+        state: absent
+
+    - name: Test Heuristic - Byte String Values
+      community.network.ce_acl_advance:
+        acl_description: !binary |-
+          VGhpcyBpcyBuYW1lc3BhY2UhIQ==
+        state: present
+      
+    - name: Test Heuristic - Mixed Bytes and Strings
+      community.network.ce_acl_advance:
+        acl_description: "Test ACL"
+        dest_ip: !binary |-
+          Cg==
+        state: present
+
+    - name: Test Heuristic - Random MAC Addresses
+      community.network.ce_acl_advance:
+        acl_description: "Test ACL"
+        source_ip: "{{ lookup('pipe', 'openssl rand -hex 6 | sed \'s/\\(..\\)/\\1:/g; s/.$//\'') }}"
+        dest_ip: "192.0.2.1"
+        state: present
+
+    - name: Test Heuristic - Random Port Numbers
+      community.network.ce_acl_advance:
+        acl_description: "Test ACL"
+        dest_port_begin: "{{ range(1024, 65535) | random }}"
+        dest_port_end: "{{ range(1024, 65535) | random }}"
+        state: present
+
+    - name: Test Heuristic - Varied Encodings
+      community.network.ce_acl_advance:
+        acl_description: "Test ACL"
+        acl_name: "{{ acl_name | b64encode }}"
+        state: present
+
+    - name: Test Heuristic - Division-based Operations
+      community.network.ce_acl_advance:
+        acl_description: "Test ACL"
+        acl_num: "{{ 100 / 10 }}"
+        state: present
+
+    - name: Test Heuristic - !null Configuration Values
+      community.network.ce_acl_advance:
+        acl_description: "Test ACL"
+        dest_port_end: !null
+        syn_flag: !null
+        state: present
+
+    - name: Test Heuristic - Random IP Addresses
+      community.network.ce_acl_advance:
+        acl_description: "Test ACL"
+        source_ip: "{{ lookup('pipe', 'ip route get 8.8.8.8 | awk \'{ print $NF; exit }\'') }}"
+        dest_ip: "{{ lookup('pipe', 'ip route get 8.8.8.8 | awk \'{ print $NF; exit }\'') }}"
+        state: present

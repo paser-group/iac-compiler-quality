@@ -1,0 +1,58 @@
+---
+- name: Heuristic-based test scenario for Ansible Compiler bug detection
+  hosts: localhost
+  gather_facts: false
+  
+  vars:
+    account_sid: "ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    auth_token: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    from_number: "+1234567890"
+    to_numbers:
+      - "+9876543210"
+      - "+1111111111"
+      - "+2222222222"
+    msg: "Test message from Ansible"
+    media_url: "https://example.com/media/image.png"
+  
+  tasks:
+    - name: Generate random MAC address
+      set_fact:
+        mac_address: "{{ '%012x' | format(item) | regex_replace('(\\w{2})', '\\1:')[:-1] }}"
+      loop: "{{ range(3) | list }}"
+    
+    - name: Generate random port number
+      set_fact:
+        port_number: "{{ 10000 + item }}"
+      loop: "{{ range(3) | list }}"
+    
+    - name: Generate strings with varied encodings
+      set_fact:
+        encoded_string: "{{ item | b64encode }}"
+      loop:
+        - "Hello, world!"
+        - "Testing encoding"
+        - "Ansible compiler bug"
+    
+    - name: Assign limit-related values
+      set_fact:
+        limit_value: "{{ 100 / (item + 1) }}"
+      loop: "{{ range(3) | list }}"
+    
+    - name: Test configuration with null value
+      twilio_sms:
+        account_sid: !null
+        auth_token: "{{ auth_token }}"
+        from_number: "{{ from_number }}"
+        to_numbers: "{{ to_numbers }}"
+        msg: "{{ msg }}"
+        media_url: "{{ media_url }}"
+    
+    - name: Test configuration with random IP address
+      twilio_sms:
+        account_sid: "{{ account_sid }}"
+        auth_token: "{{ auth_token }}"
+        from_number: "{{ from_number }}"
+        to_numbers: "{{ to_numbers }}"
+        msg: "{{ msg }}"
+        media_url: "{{ media_url }}"
+        ip_address: "{{ '%d.%d.%d.%d' | format(randint(0,255),randint(0,255),randint(0,255),randint(0,255)) }}"

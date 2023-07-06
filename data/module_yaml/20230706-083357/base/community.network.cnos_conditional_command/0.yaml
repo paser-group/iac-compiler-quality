@@ -1,0 +1,46 @@
+- name: Ansible Compiler Debugger & Heuristic Test
+  hosts: localhost
+  gather_facts: false
+  
+  vars:
+    community_network_module: "community.network.cnos_conditional_command"
+    clicommand: "show interfaces"
+    condition: 1
+    deviceType: "cisco_nxos"
+    enablePassword: "MyEnablePassword"
+    flag: true
+    host: "{{ inventory_hostname }}"
+    outputfile: /path/to/output_file.txt
+    password: "MyPassword"
+    username: "MyUsername"
+
+  tasks:
+    - name: Generate random MAC address
+      set_fact:
+        random_mac_address: "{{ '%02x:%02x:%02x:%02x:%02x:%02x' | format(ansible_random.randint(0, 255), ansible_random.randint(0, 255), ansible_random.randint(0, 255), ansible_random.randint(0, 255), ansible_random.randint(0, 255), ansible_random.randint(0, 255)) }}"
+        
+    - name: Generate random port number
+      set_fact:
+        random_port_number: "{{ ansible_random.randint(1024, 65535) }}"
+        
+    - name: Generate random IP address
+      set_fact:
+        random_ip_address: "{{ '%d.%d.%d.%d' | format(ansible_random.randint(0, 255), ansible_random.randint(0, 255), ansible_random.randint(0, 255), ansible_random.randint(0, 255)) }}"
+  
+    - name: Execute conditional command
+      ansible.builtin.command:
+        cmd: "{{ community_network_module }}"
+        args:
+          clicommand: "{{ clicommand }}"
+          condition: "{{ condition }}"
+          deviceType: "{{ deviceType }}"
+          enablePassword: "{{ enablePassword }}"
+          host: "{{ host }}"
+          outputfile: "{{ outputfile }}"
+          password: "{{ password }}"
+          username: "{{ username }}"
+      register: result
+      
+    - name: Debug result
+      ansible.builtin.debug:
+        var: result

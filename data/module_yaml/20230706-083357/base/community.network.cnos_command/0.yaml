@@ -1,0 +1,41 @@
+---
+- name: Heuristic-based test scenarios for community.network.cnos_command module
+  hosts: localhost
+  gather_facts: no
+  
+  vars:
+    commands:
+      - show version
+      - show interfaces
+
+    interval: 5
+    match: "Release\s*(\d+\.\d+)\."
+    retries: 3
+    wait_for: yes
+
+  tasks:
+    - name: Run arbitrary commands on network devices
+      community.network.cnos_command:
+        provider:
+          host: "{{ inventory_hostname }}"
+          username: admin
+          password: password123
+        commands: "{{ commands }}"
+        interval: "{{ interval }}"
+        match: "{{ match }}"
+        retries: "{{ retries }}"
+        wait_for: "{{ wait_for }}"
+      register: result
+
+    - name: Display command output
+      debug:
+        var: result
+        
+    - name: Verify mixed case sensitivity in configuration values
+      assert:
+        that:
+          - "'Gi0/1' in result.stdout"
+          - "'Fas0/2' in result.stdout"
+          - "'Giga0/3' in result.stdout"
+        fail_msg: "Mixed case sensitivity bug detected in configuration values"
+        success_msg: "Mixed case sensitivity bug not detected in configuration values"

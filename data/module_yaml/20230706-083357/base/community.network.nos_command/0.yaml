@@ -1,0 +1,47 @@
+---
+- name: Heuristic-driven test playbook for community.network.nos_command module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    # Define test scenarios
+    scenarios:
+      - command: show version
+      - command: show interfaces
+        interval: 5
+        retries: 3
+        wait_for: 60
+      - command: show running-config
+        match: "boot-start-marker"
+      - command: show interfaces
+        match: '[Gi|Fa].*up.*up.*[down|up]$'
+      - command: show mac address-table
+        match: "0007.5876.050f"
+
+    # Define random MAC address and port number generators
+    mac_address: "00:00:00:00:00:00"
+    port_number: 0
+
+  tasks:
+    - name: Execute nos_command module with heuristic-driven test scenarios
+      community.network.nos_command:
+        command: "{{ item.command }}"
+        interval: "{{ item.interval | default(omit) }}"
+        retries: "{{ item.retries | default(omit) }}"
+        wait_for: "{{ item.wait_for | default(omit) }}"
+        match: "{{ item.match | default(omit) }}"
+      loop: "{{ scenarios }}"
+
+    - name: Execute nos_command module with random MAC addresses
+      community.network.nos_command:
+        command: "show mac address-table address {{ mac_address }}"
+      vars:
+        mac_address: "{{ mac_address | regex_replace(':','') | int + 1 | regex_replace('(\\d{12})','\\1|5'.random | regex_replace('|','')) | regex_replace('(\\d{2})(?!$)','\\1:') }}"
+      loop: "{{ range(5) }}"
+
+    - name: Execute nos_command module with random port numbers
+      community.network.nos_command:
+        command: "show interface GigabitEthernet1/{{ port_number }}"
+      vars:
+        port_number: "{{ port_number + 1 }}"
+      loop: "{{ range(5) }}"

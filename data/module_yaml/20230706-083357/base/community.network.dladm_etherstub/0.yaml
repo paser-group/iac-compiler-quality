@@ -1,0 +1,59 @@
+- name: Heuristic Test Playbook for community.network.dladm_etherstub
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Test Case 1 - Mixed Case Sensitivity
+      community.network.dladm_etherstub:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - EtherStub
+        - eThErStUb
+
+    - name: Test Case 2 - Byte String Values
+      community.network.dladm_etherstub:
+        name: "{{ lookup('pipe', 'echo -n -e \\\x45\\\x74\\\x68\\\x65\\\x72\\\x53\\\x74\\\x75\\\x62') }}"
+        state: present
+
+    - name: Test Case 3 - Byte and String Combination
+      community.network.dladm_etherstub:
+        name: "{{ lookup('pipe', 'echo -n -e \\\x48\\\x65\\\x74\\\\x65\\\x72\\\x53\\\x74\\\x75\\\x62') }}"
+        state: present
+
+    - name: Test Case 4 - Random MAC Addresses
+      community.network.dladm_etherstub:
+        name: "{{ lookup('pipe', 'macchanger -r eth0 | grep -oE \"([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}\"') }}"
+        state: present
+
+    - name: Test Case 5 - Random Port Numbers
+      community.network.dladm_etherstub:
+        name: "EtherStub"
+        state: present
+        port: "{{ lookup('pipe', 'shuf -i 1-65535 -n 1') }}"
+
+    - name: Test Case 6 - Strings with Varied Encodings
+      community.network.dladm_etherstub:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - "{{ lookup('pipe', 'echo -n -e \\\x45\\\x74\\\x68\\\x65\\\x72\\\x53\\\x74\\\x75\\\x62') }}"
+        - "{{ lookup('pipe', 'echo -n -e \\\xfe\\\xd6\\\xb5\\\x7d') }}"
+
+    - name: Test Case 7 - Division-based Limit Values
+      community.network.dladm_etherstub:
+        name: "EtherStub"
+        state: present
+        limit: "{{ 10 // 2 }}"
+
+    - name: Test Case 8 - Null Configuration Values
+      community.network.dladm_etherstub:
+        name: "EtherStub"
+        state: present
+        temporary: null
+
+    - name: Test Case 9 - Random IP Addresses
+      community.network.dladm_etherstub:
+        name: "{{ 'EtherStub-' + lookup('pipe', 'shuf -i 1-255 -n 1') }}"
+        state: present
+        temporary: "{{ lookup('pipe', 'shuf -i 0-255 -n 4 | xargs printf \"%d.\"')[:-1] }}"

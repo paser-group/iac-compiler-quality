@@ -1,0 +1,80 @@
+---
+- name: Test Playbook for community.general.solaris_zone module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    attach_options: "{{ ['attach', 'detach'] | random }}"
+    config: "/etc/zone/config"
+    create_options: ""
+    install_options: ""
+    name: "Test Zone"
+    path: "/zone/path"
+    root_password: "{{ random_password }}"
+    sparse: "{{ [True, False] | random }}"
+    state: "{{ ['running', 'stopped'] | random }}"
+    timeout: "{{ random_timeout }}"
+
+  tasks:
+    - name: Print test scenario details
+      debug:
+        msg: >
+          Test Scenario:
+          Attach Options: {{ attach_options }}
+          Config: {{ config }}
+          Create Options: {{ create_options }}
+          Install Options: {{ install_options }}
+          Name: {{ name }}
+          Path: {{ path }}
+          Root Password: {{ root_password }}
+          Sparse: {{ sparse }}
+          State: {{ state }}
+          Timeout: {{ timeout }}
+
+    - name: Test community.general.solaris_zone module
+      community.general.solaris_zone:
+        attach_options: "{{ attach_options }}"
+        config: "{{ config }}"
+        create_options: "{{ create_options }}"
+        install_options: "{{ install_options }}"
+        name: "{{ name }}"
+        path: "{{ path }}"
+        root_password: "{{ root_password }}"
+        sparse: "{{ sparse }}"
+        state: "{{ state }}"
+        timeout: "{{ timeout }}"
+      register: result
+
+    - name: Display module result
+      debug:
+        var: result
+
+
+# Helper function to generate random password
+- name: Generate random password
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Generate password
+      set_fact:
+        random_password: "{{ lookup('password', '/dev/null chars=ascii_letters,digits,length=20') }}"
+      register: result
+
+    - name: Display password
+      debug:
+        var: random_password
+
+
+# Helper function to generate random timeout value
+- name: Generate random timeout
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Generate timeout
+      set_fact:
+        random_timeout: "{{ 5 + (random | int) }}"
+      register: result
+
+    - name: Display timeout
+      debug:
+        var: random_timeout

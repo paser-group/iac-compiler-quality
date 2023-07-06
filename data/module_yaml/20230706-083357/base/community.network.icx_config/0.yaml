@@ -1,0 +1,32 @@
+- name: Ansible Compiler Debugger & Heuristic Test Playbook
+  hosts: localhost
+  gather_facts: false
+  vars:
+    test_scenario1:
+      config_options:
+        option1: "value1"
+        option2: !binary |-
+          VGhpcyBpcyBhIGJ5dGUgcm9vbQ==
+        option3: "{{ random_mac }}"
+      expected_result: "Success"
+
+  tasks:
+    - name: Generate Random MAC Address
+      ansible.builtin.set_fact:
+        random_mac: "{{ lookup('mac', 'random') }}"
+
+    - name: Execute icx_config Module
+      community.network.icx_config:
+        lines: "{{ test_scenario1.config_options }}"
+      register: result
+      ignore_errors: true
+
+    - name: Assert Result
+      fail:
+        msg: "Test Scenario Failed"
+      when: result.failed and test_scenario1.expected_result == "Success"
+
+    - name: Debug Result
+      debug:
+        var: result
+      when: not result.failed

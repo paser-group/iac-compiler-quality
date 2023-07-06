@@ -1,0 +1,59 @@
+---
+- name: Heuristic-based Playbook for community.network.avi_vrfcontext
+  hosts: localhost
+  gather_facts: false
+  vars:
+    vrf_context_name: "TestVRF"     # Change this name according to your requirements
+    controller: "https://avi-controller.example.com"   # Change the controller URL
+    username: "admin"      # Change the username
+    password: "password"   # Change the password
+    tenant: "admin"        # Change the tenant
+
+  tasks:
+    - name: Include Ansible Avi role profile_tasks
+      include_role:
+        name: ansible-role-avi
+
+    - name: Create VRF Context with mixed case sensitivity
+      community.network.avi_vrfcontext:
+        controller: "{{ controller }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        tenant: "{{ tenant }}"
+        name: "{{ vrf_context_name }}"
+        description: "MixedCaseSensitive"
+      register: mixed_case_sensitive_result
+
+    - name: Create VRF Context with bytes instead of strings
+      community.network.avi_vrfcontext:
+        controller: "{{ controller }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        tenant: "{{ tenant }}"
+        name: "{{ vrf_context_name }}"
+        description: b"This is a bytes String"
+      register: byte_string_result
+
+    - name: Create VRF Context with mixed byte and string values
+      community.network.avi_vrfcontext:
+        controller: "{{ controller }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        tenant: "{{ tenant }}"
+        name: "{{ vrf_context_name }}"
+        description: "{{ 'Mixed' | b64encode }}".encode('ascii')   # Incompatible byte and string values
+      register: mixed_byte_string_result
+
+    # Add more test scenarios based on the heuristic guidelines
+
+    - name: Debug Result - Mixed Case Sensitive
+      debug:
+        var: mixed_case_sensitive_result
+
+    - name: Debug Result - Byte String Values
+      debug:
+        var: byte_string_result
+
+    - name: Debug Result - Mixed Byte and String Values
+      debug:
+        var: mixed_byte_string_result

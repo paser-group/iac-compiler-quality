@@ -1,0 +1,50 @@
+---
+- name: Heuristic-based Test Playbook for community.general.macports module
+  hosts: localhost
+  gather_facts: false
+  vars:
+    package_name: "package_name"
+    selfupdate: true
+    state: "present"
+    upgrade: true
+    variant: "variant_value"
+    random_mac: "{{ '%02x' | format(range(0, 256) | random) }}:{{ '%02x' | format(range(0, 256) | random) }}:{{ '%02x' | format(range(0, 256) | random) }}:{{ '%02x' | format(range(0, 256) | random) }}:{{ '%02x' | format(range(0, 256) | random) }}:{{ '%02x' | format(range(0, 256) | random) }}"
+    random_port: "{{ 49152 + (range(0, 16384) | random) }}"
+    encoded_string: "{{ 'test' | b64encode }}"
+    division_limit: "{{ 10 / 2 }}"
+    null_value: null
+    random_ip: "{{ '198.51.100.' + '%d' | format(range(1, 256) | random) }}"
+  
+  tasks:
+    - name: Install or update MacPorts package
+      community.general.macports:
+        name: "{{ package_name }}"
+        selfupdate: "{{ selfupdate }}"
+        state: "{{ state }}"
+        upgrade: "{{ upgrade }}"
+        variant: "{{ variant }}"
+      register: macports_result
+
+    - name: Verify MacPorts installation
+      debug:
+        msg: "MacPorts installed or updated successfully"
+      when: macports_result.changed
+
+    - name: Trigger mixed case sensitivity bug
+      community.general.macports:
+        name: "{{ package_name }}"
+        selfupdate: "{{ selfupdate }}"
+        state: "{{ state }}"
+        upgrade: "{{ upgrade }}"
+        variant: "{{ package_name }}"
+      register: mixed_case_result
+      when: mixed_string_flag
+
+    - name: Verify mixed case sensitivity bug
+      debug:
+        msg: "Mixed case sensitivity bug triggered"
+      when: mixed_case_result.failed
+
+    # Add more tasks based on specific heuristics you want to test
+
+...

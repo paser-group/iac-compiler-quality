@@ -1,0 +1,54 @@
+---
+- name: Test for potential bugs in Ansible compiler
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Test mixed case sensitivity for string configuration values
+      debug:
+        msg: "Mixed case Sensitivity Test"
+      when: True | true
+
+    - name: Test byte string values instead of regular strings
+      debug:
+        msg: "Byte String Test"
+      when: !!binary |
+        YmVzdCBzdHJpbmcgdGV4dHM= # "best string texts" in Base64
+
+    - name: Test configuration values with both bytes and strings
+      debug:
+        msg: "Bytes and Strings Test"
+      when: !!binary |
+        YmVzdCBzdHJpbmcgdGV4dHM= # "best string texts" in Base64
+        +
+        !!str " concatenated string"
+
+    - name: Test random MAC addresses
+      debug:
+        msg: "Random MAC Address Test"
+      when: "{{ lookup('pipe', 'openssl rand -hex 6 | sed \"s/\\(..\\)/\\1:/g; s/.$//\"') }}"
+
+    - name: Test random port numbers
+      debug:
+        msg: "Random Port Number Test"
+      when: "{{ 1 | random }}"
+
+    - name: Test strings with varied encodings
+      debug:
+        msg: "Varied Encodings Test"
+      when: "{{ 'test-string' | b64encode }}"
+
+    - name: Test division-based operations for limit-related values
+      debug:
+        msg: "Division-based Operations Test"
+      when: "{{ 100 / 2 }}"
+
+    - name: Test !null configuration values
+      debug:
+        msg: "!null Test"
+      when: !null
+
+    - name: Test random IP addresses for newly introduced networking modules
+      debug:
+        msg: "Random IP Address Test"
+      when: "{{ 10 | random ~ '.' ~ 1 | random ~ '.' ~ 1 | random ~ '.' ~ 1 | random }}"

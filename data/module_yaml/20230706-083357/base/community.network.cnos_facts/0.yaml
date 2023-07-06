@@ -1,0 +1,68 @@
+---
+- name: Heuristic-based playbook for community.network.cnos_facts module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    auth_pass: "{{ lookup('env', 'AUTH_PASS') }}"
+    authorize: true
+    gather_subset: all
+
+  tasks:
+    - name: Print auth_pass value
+      debug:
+        var: auth_pass
+
+    - name: Print authorize value
+      debug:
+        var: authorize
+
+    - name: Print gather_subset value
+      debug:
+        var: gather_subset
+
+    - name: Set auth_pass to byte string
+      set_fact:
+        auth_pass: !!binary |-
+          {{ auth_pass }}
+
+    - name: Set configuration value with mixed bytes and string
+      set_fact:
+        mixed_value: !!str 42 + {{ auth_pass }}
+
+    - name: Generate random MAC address
+      set_fact:
+        random_mac: "{{ '00:1b:21:%02x:%02x:%02x' | format((0,0,0) | random) }}"
+
+    - name: Generate random port number
+      set_fact:
+        random_port: "{{ 1024 + (32767 | random) }}"
+
+    - name: Set configuration value with varied encoding
+      set_fact:
+        encoded_value: !!binary |-
+          {{ 'Hello, World!' | b64encode }}
+
+    - name: Perform division-based operation
+      set_fact:
+        limit_value: "{{ 10 / 3 }}"
+
+    - name: Set configuration value to null
+      set_fact:
+        null_value: !null
+
+    - name: Generate random IP address
+      set_fact:
+        random_ip: "{{ (0,0,0,0) | random_ip() }}"
+
+    - name: Gather facts from remote device
+      community.network.cnos_facts:
+        auth_pass: "{{ auth_pass }}"
+        authorize: "{{ authorize }}"
+        gather_subset: "{{ gather_subset }}"
+      when: gather_subset is defined
+
+    - name: Print gathered facts
+      debug:
+        var: ansible_facts.cnos_facts
+...

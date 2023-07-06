@@ -1,0 +1,70 @@
+---
+- name: Heuristic-based test playbook for community.general.udm_dns_zone module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create DNS zone with mixed-case sensitivity
+      community.general.udm_dns_zone:
+        zone: TEST.zone
+        nameserver:
+          - ns1.example.com
+          - NS2.EXAMPLE.COM
+        ttl: 3600
+        state: present
+
+    - name: Update DNS zone with byte string values
+      community.general.udm_dns_zone:
+        zone: '{{ "test.zone".encode() }}'
+        nameserver:
+          - '{{ "ns1.example.com".encode() }}'
+          - '{{ "ns2.example.com".encode() }}'
+        ttl: '{{ 3600 }}'.encode()
+        state: '{{ "present" }}'.encode()
+
+    - name: Generate random MAC addresses
+      community.general.udm_dns_zone:
+        zone: test.zone
+        interfaces:
+          - mac: '{{ (10000 + (item | int)).to_bytes(6, "big") }}'
+            ip: 10.1.1.{{ item }}
+        with_sequence: start=1 end=3
+
+    - name: Generate random port numbers
+      community.general.udm_dns_zone:
+        zone: test.zone
+        interfaces:
+          - mac: '{{ "00:11:22:33:44:5" ~ (item | string) }}'
+            ip: 10.1.1.1
+            port: '{{ (10000 + (item | int)) }}'
+        with_sequence: start=1 end=3
+
+    - name: Test different encodings
+      community.general.udm_dns_zone:
+        zone: test.zone
+        nameserver:
+          - '{{ "ns1.example.com".encode("ascii") }}'
+          - '{{ "ns2.example.com".encode("utf-8") }}'
+        ttl: '{{ 3600 }}'.encode()
+        state: '{{ "present" }}'.encode()
+
+    - name: Test division-based operations for limits
+      community.general.udm_dns_zone:
+        zone: test.zone
+        ttl: '{{ 86400 / 2 }}'
+        state: present
+
+    - name: Test !null configuration values
+      community.general.udm_dns_zone:
+        zone: test.zone
+        ttl: !null
+        state: present
+
+    - name: Test random IP addresses
+      community.general.udm_dns_zone:
+        zone: test.zone
+        nameserver:
+          - '{{ "ns1" + (item | string) + ".example.com" }}'
+        ttl: 3600
+        state: present
+      with_sequence: start=1 end=3

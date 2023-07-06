@@ -1,0 +1,29 @@
+- name: Test Playbook for community.general.vertica_info module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    cluster: "VerticaCluster"
+    db: "VerticaDB"
+    login_password: "password123"
+    login_user: "admin"
+    port: "5433"
+
+  tasks:
+    - name: Gather Vertica cluster info
+      community.general.vertica_info:
+        cluster: "{{ cluster | lower }}"
+        db: "{{ db | lower }}"
+        login_password: "{{ login_password | b64encode }}"
+        login_user: "{{ login_user | upper }}"
+        port: "{{ port | int }}"
+        invalid_attribute: "{{ random_string(10, chars='abcdefg') }}"
+      register: info
+
+    - debug:
+        var: info
+
+  handlers:
+    - name: Data Cleanup
+      community.general.vertica_facts_cleanup:
+        cleanup_info: "{{ info }}"

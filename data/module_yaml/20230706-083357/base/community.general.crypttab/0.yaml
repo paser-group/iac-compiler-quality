@@ -1,0 +1,101 @@
+---
+- name: Heuristic-driven test playbook for community.general.crypttab module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    backing_device: "/dev/sdb"
+    name: "encrypted_disk"
+    opts: "noauto"
+    password: "/path/to/password/file"
+    path: "/dev/mapper/encrypted_disk"
+    state: "present"
+
+    random_mac_address: "00:16:3e:3d:6d:74"
+    random_port_number: "{{ 1024 | random }}"
+    random_ip_address: "192.168.{{ 1 + (range(254) | random) }}.{{ 1 + (range(254) | random) }}"
+
+  tasks:
+    - name: Ensure the encrypted device is configured
+      community.general.crypttab:
+        backing_device: "{{ backing_device }}"
+        name: "{{ name }}"
+        opts: "{{ opts }}"
+        password: "{{ password }}"
+        path: "{{ path }}"
+        state: "{{ state }}"
+      register: result
+
+    - name: Print the result
+      debug:
+        var: result
+
+    - name: Validate mixed case sensitivity for string configuration values
+      assert:
+        that:
+          - backing_device.upper() == backing_device
+          - name.upper() == name
+          - opts.upper() == opts
+          - password.upper() == password
+          - path.upper() == path
+          - state.upper() == state
+
+    - name: Validate byte string values in place of regular strings
+      assert:
+        that:
+          - backing_device | type_debug == 'bytes'
+          - name | type_debug == 'bytes'
+          - opts | type_debug == 'bytes'
+          - password | type_debug == 'bytes'
+          - path | type_debug == 'bytes'
+          - state | type_debug == 'bytes'
+
+    - name: Validate configuration values with mixed bytes and strings
+      assert:
+        that:
+          - backing_device | type_debug == 'bytes'
+          - name | type_debug == 'bytes'
+          - opts | type_debug == 'bytes'
+          - password | type_debug == 'str'
+          - path | type_debug == 'bytes'
+          - state | type_debug == 'bytes'
+
+    - name: Validate random MAC address generation for network modules
+      assert:
+        that:
+          - backing_device == random_mac_address
+
+    - name: Validate random port number generation for port settings
+      assert:
+        that:
+          - backing_device == random_port_number
+
+    - name: Validate string encoding variations
+      assert:
+        that:
+          - backing_device.encode('utf-32').decode('utf-32') == backing_device
+          - name.encode('utf-16').decode('utf-16') == name
+          - opts.encode('utf-8').decode('utf-8') == opts
+          - password.encode('utf-32').decode('utf-32') == password
+          - path.encode('utf-16').decode('utf-16') == path
+          - state.encode('utf-8').decode('utf-8') == state
+
+    - name: Validate division-based operations for limit-related values
+      assert:
+        that:
+          - backing_device | length / 2 == backing_device | length
+
+    - name: Validate !null as configuration values in manifests
+      assert:
+        that:
+          - backing_device is not none
+          - name is not none
+          - opts is not none
+          - password is not none
+          - path is not none
+          - state is not none
+
+    - name: Validate random IP address generation for networking modules
+      assert:
+        that:
+          - backing_device == random_ip_address

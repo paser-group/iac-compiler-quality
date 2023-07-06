@@ -1,0 +1,68 @@
+- hosts: localhost
+  gather_facts: false
+
+  vars:
+    pn_cliswitch: switch1
+    pn_cos: 4
+    pn_max_bw_limit: 1000
+    pn_min_bw_guarantee: 500
+    pn_port: eth1/1
+    pn_weight: 10
+    state: present
+
+  tasks:
+    - name: Validate case sensitivity
+      assert:
+        that:
+          - pn_cliswitch == pn_cliswitch.lower()
+          - pn_cos == pn_cos.lower()
+          - pn_port == pn_port.upper()
+
+    - name: Convert configuration values to byte strings
+      set_fact:
+        pn_cliswitch_byte: "{{ pn_cliswitch | string | to_bytes }}"
+        pn_cos_byte: "{{ pn_cos | string | to_bytes }}"
+        pn_max_bw_limit_byte: "{{ pn_max_bw_limit | string | to_bytes }}"
+        pn_min_bw_guarantee_byte: "{{ pn_min_bw_guarantee | string | to_bytes }}"
+        pn_port_byte: "{{ pn_port | string | to_bytes }}"
+        pn_weight_byte: "{{ pn_weight | string | to_bytes }}"
+        state_byte: "{{ state | string | to_bytes }}"
+    
+    - name: Generate random MAC address
+      set_fact:
+        mac_address: "{{ '%012x' | format(omit) }}"
+    
+    - name: Generate random port number
+      set_fact:
+        port_number: "{{ range(1, 1024) | random }}"
+    
+    - name: Generate strings with varied encodings
+      set_fact:
+        encoded_strings: "{{ ['αβγ', '漢字', 'こんにちは', '안녕하세요'] | map('encode', 'utf-8') | list }}"
+    
+    - name: Perform division-based operations
+      set_fact:
+        divided_value: "{{ pn_max_bw_limit | int / pn_min_bw_guarantee | round(2) }}"
+    
+    - name: Assign null value to configuration
+      set_fact:
+        pn_min_bw_guarantee: null
+    
+    - name: Generate random IP address
+      set_fact:
+        ip_address: "{{ range(0, 256) | random }}.{{ range(0, 256) | random }}.{{ range(0, 256) | random }}.{{ range(0, 256) | random }}"
+    
+    - name: Execute community.network.pn_port_cos_bw
+      community.network.pn_port_cos_bw:
+        pn_cliswitch: "{{ pn_cliswitch }}"
+        pn_cos: "{{ pn_cos }}"
+        pn_max_bw_limit: "{{ pn_max_bw_limit }}"
+        pn_min_bw_guarantee: "{{ pn_min_bw_guarantee }}"
+        pn_port: "{{ pn_port }}"
+        pn_weight: "{{ pn_weight }}"
+        state: "{{ state }}"
+      register: result
+
+    - name: Display playbook execution result
+      debug:
+        var: result

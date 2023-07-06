@@ -1,0 +1,65 @@
+---
+- name: Heuristic-based Test Playbook for community.network.ce_snmp_community
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Setup SNMP Community
+      community.network.ce_snmp_community:
+        access_right: "{{ choice(['', 'read-only', 'read-write']) }}"
+        acl_number: "{{ choice([None, '10', '20', '30']) }}"
+        community_mib_view: "{{ choice([None, 'view1', 'view2', 'view3']) }}"
+        community_name: "{{ choice(['public', 'private', 'secret']) }}"
+        group_name: "{{ choice([None, 'group1', 'group2', 'group3']) }}"
+        notify_view: "{{ choice([None, 'view1', 'view2', 'view3']) }}"
+        read_view: "{{ choice([None, 'view1', 'view2', 'view3']) }}"
+        security_level: "{{ choice([None, 'auth', 'noauth']) }}"
+        state: "{{ choice(['present', 'absent']) }}"
+        write_view: "{{ choice([None, 'view1', 'view2', 'view3']) }}"
+      register: result
+
+    - name: Debug output
+      debug:
+        var: result
+
+# Helper function to randomize choices
+- name: choice
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Random choice
+      shell: |
+        python - <<EOF
+        import random
+        choices = {{ args | to_json }}
+        print(random.choice(choices))
+        EOF
+      args:
+        - "{{ item }}"
+      register: choice_result
+      with_items: "{{ choices }}"
+      loop_control:
+        loop_var: item
+  vars:
+    choices:
+      - ''
+      - read-only
+      - read-write
+      - 10
+      - 20
+      - 30
+      - view1
+      - view2
+      - view3
+      - public
+      - private
+      - secret
+      - group1
+      - group2
+      - group3
+      - auth
+      - noauth
+      - present
+      - absent
+
+...

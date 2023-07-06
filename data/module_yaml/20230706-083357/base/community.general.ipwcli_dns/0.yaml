@@ -1,0 +1,95 @@
+---
+- name: Ansible Compiler Debugger & Heuristic Test Playbook
+  hosts: localhost
+
+  vars:
+    address: "10.1.1.1"
+    container: "container1"
+    dnsname: "example.com"
+    flags: "MX"
+    order: 1
+    password: "password123"
+    port: 8080
+    preference: 10
+    priority: 5
+    replacement: "new.example.com"
+    service: "service1"
+    state: present
+    target: "target.example.com"
+    ttl: 3600
+    type: "A"
+    username: "admin"
+    weight: 5
+
+  tasks:
+    - name: Test Case 1 - Mixed case sensitivity
+      community.general.ipwcli_dns:
+        address: "{{ address | lower }}"
+        container: "{{ container | upper }}"
+        dnsname: "{{ dnsname | capitalize }}"
+        flags: "{{ flags | lower }}"
+
+    - name: Test Case 2 - Byte string values
+      community.general.ipwcli_dns:
+        address: "{{ lookup('pipe', 'echo -n ' + address + ' | base64') }}"
+        container: "{{ lookup('pipe', 'echo -n ' + container + ' | base64') }}"
+        dnsname: "{{ lookup('pipe', 'echo -n ' + dnsname + ' | base64') }}"
+        flags: "{{ lookup('pipe', 'echo -n ' + flags + ' | base64') }}"
+
+    - name: Test Case 3 - Byte and string combination
+      community.general.ipwcli_dns:
+        address: "{{ lookup('pipe', 'echo -n ' + address + ' | base64') | from_yaml }}"
+        container: "{{ container }}"
+        dnsname: "{{ lookup('pipe', 'echo -n ' + dnsname + ' | base64') }} | from_yaml }}"
+        flags: "{{ flags }}"
+
+    - name: Test Case 4 - Random MAC addresses
+      community.general.ipwcli_dns:
+        address: "{{ address }}"
+        container: "{{ container }}"
+        dnsname: "{{ dnsname }}"
+        flags: "{{ flags }}"
+        mac_address: "{{ '%02x:%02x:%02x:%02x:%02x:%02x' | format(play_random(seed=1, max_num=255), play_random(seed=2, max_num=255), play_random(seed=3, max_num=255), play_random(seed=4, max_num=255), play_random(seed=5, max_num=255), play_random(seed=6, max_num=255)) }}"
+
+    - name: Test Case 5 - Random port numbers
+      community.general.ipwcli_dns:
+        address: "{{ address }}"
+        container: "{{ container }}"
+        dnsname: "{{ dnsname }}"
+        flags: "{{ flags }}"
+        port: "{{ play_random(seed=7, max_num=65535) + 1 }}"
+
+    - name: Test Case 6 - Strings with varied encodings
+      community.general.ipwcli_dns:
+        address: "{{ address }}"
+        container: "{{ container }}"
+        dnsname: "{{ dnsname }}"
+        flags: "{{ flags }}"
+        encoding: "{{ item }}"
+      loop:
+        - utf-8
+        - utf-16
+        - latin1
+
+    - name: Test Case 7 - Division-based operations
+      community.general.ipwcli_dns:
+        address: "{{ address }}"
+        container: "{{ container }}"
+        dnsname: "{{ dnsname }}"
+        flags: "{{ flags }}"
+        limit: "{{ 100 / play_random(seed=8, max_num=10) }}"
+
+    - name: Test Case 8 - !null as configuration values
+      community.general.ipwcli_dns:
+        address: "{{ address }}"
+        container: "{{ container }}"
+        dnsname: "{{ dnsname }}"
+        flags: "{{ flags }}"
+        limit: !null
+
+    - name: Test Case 9 - Random IP addresses
+      community.general.ipwcli_dns:
+        address: "{{ '%d.%d.%d.%d' | format(play_random(seed=9, max_num=255), play_random(seed=10, max_num=255), play_random(seed=11, max_num=255), play_random(seed=12, max_num=255)) }}"
+        container: "{{ container }}"
+        dnsname: "{{ dnsname }}"
+        flags: "{{ flags }}"

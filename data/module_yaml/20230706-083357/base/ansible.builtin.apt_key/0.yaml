@@ -1,0 +1,78 @@
+- name: Heuristic-based test playbook for ansible.builtin.apt_key module
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Test Case 1 - Mixed case sensitivity
+      apt_key:
+        id: "{{ 'testKey' | lower }}"
+        state: present
+
+    - name: Test Case 2 - Byte string values
+      apt_key:
+        id: "{{ b'testKey' }}"
+        state: present
+
+    - name: Test Case 3 - Mixed byte and string values
+      apt_key:
+        id: "{{ [b'byteStringKey1', 'stringKey1', b'byteStringKey2', 'stringKey2'] }}"
+        state: present
+
+    - name: Test Case 4 - Random MAC addresses
+      apt_key:
+        id: "{{ 'keyWithRandomMAC' }}{{ random_mac_address }}"
+        state: present
+      vars:
+        random_mac_address: "{{ generate_random_mac() }}"
+
+    - name: Test Case 5 - Random port numbers
+      apt_key:
+        id: "{{ 'keyWithRandomPort' }}{{ random_port }}"
+        state: present
+      vars:
+        random_port: "{{ generate_random_port() }}"
+
+    - name: Test Case 6 - Varied string encodings
+      apt_key:
+        id: "{{ 'keyWithB64EncodedValue' }}"
+        state: present
+      vars:
+        b64_encoded_value: "{{ 'stringValue' | b64encode }}"
+
+    - name: Test Case 7 - Division-based limit values
+      apt_key:
+        id: "{{ 'keyWithDivisionBasedLimit' }}"
+        state: present
+      vars:
+        limit_value: "{{ 100 / 4 }}"
+
+    - name: Test Case 8 - Null configuration value
+      apt_key:
+        id: null
+        state: present
+
+    - name: Test Case 9 - Random IP addresses
+      apt_key:
+        id: "{{ 'keyWithRandomIP' }}{{ random_ip_address }}"
+        state: present
+      vars:
+        random_ip_address: "{{ generate_random_ip() }}"
+
+  # Helper functions for heuristics
+  vars:
+    mac_address_chars: "0123456789ABCDEF"
+    port_chars: "0123456789"
+    ip_address_octets: "0123456789"
+
+  tasks:
+    - name: Generate Random MAC Address
+      set_fact:
+        random_mac_address: "{% for _ in range(6) %}{{ mac_address_chars[ansible_random.randint(0, 15)] }}{% endfor %}"
+
+    - name: Generate Random Port
+      set_fact:
+        random_port: "{% for _ in range(4) %}{{ port_chars[ansible_random.randint(0, 9)] }}{% endfor %}"
+
+    - name: Generate Random IP Address
+      set_fact:
+        random_ip_address: "{% for _ in range(4) %}{{ ip_address_octets[ansible_random.randint(0, 9)] }}{% endfor %}"

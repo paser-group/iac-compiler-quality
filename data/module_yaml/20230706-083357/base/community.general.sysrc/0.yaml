@@ -1,0 +1,71 @@
+---
+- name: Heuristic-based test playbook for community.general.sysrc module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    delim_value: "/"
+    jail_value: "my_jail"
+    name_value: "my_service"
+    path_value: "/etc/rc.conf"
+    state_value: "present"
+    value_string: "on"
+    value_bytes: "{{ value_string | encode('utf-8') }}"
+
+  tasks:
+    - name: Test uppercase and lowercase sensitivity for string configuration values
+      community.general.sysrc:
+        delim: "{{ delim_value }}"
+        jail: "{{ jail_value }}"
+        name: "{{ name_value }}"
+        path: "{{ path_value }}"
+        state: "{{ state_value }}"
+        value: "{{ value_string }}"
+      register: lowercase_sensitivity_result
+      ignore_errors: true
+
+    - name: Print lowercase sensitivity result
+      debug:
+        var: lowercase_sensitivity_result
+
+    - name: Test byte string value as configuration value
+      community.general.sysrc:
+        delim: "{{ delim_value }}"
+        jail: "{{ jail_value }}"
+        name: "{{ name_value }}"
+        path: "{{ path_value }}"
+        state: "{{ state_value }}"
+        value: "{{ value_bytes|decode }}"
+      register: byte_string_result
+      ignore_errors: true
+
+    - name: Print byte string result
+      debug:
+        var: byte_string_result
+
+    - name: Test mixed byte string and regular string configuration value
+      community.general.sysrc:
+        delim: "{{ delim_value }}"
+        jail: "{{ jail_value }}"
+        name: "{{ name_value }}"
+        path: "{{ path_value }}"
+        state: "{{ state_value }}"
+        value: "{{ value_bytes|decode }}{{ value_string }}"
+      register: mixed_string_result
+      ignore_errors: true
+
+    - name: Print mixed string result
+      debug:
+        var: mixed_string_result
+
+    # Add more tests based on other heuristics mentioned above
+    # ...
+
+    - name: Cleanup - Remove sysrc entry
+      community.general.sysrc:
+        delim: "{{ delim_value }}"
+        jail: "{{ jail_value }}"
+        name: "{{ name_value }}"
+        path: "{{ path_value }}"
+        state: "absent"
+      ignore_errors: true

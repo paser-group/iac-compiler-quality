@@ -1,0 +1,90 @@
+---
+- name: Ansible Compiler Debugger & Heuristic Test Playbook
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Set test variables
+      vars:
+        headers:
+          Content-Type: "application/json"
+        name: "test_ca"
+        state: "present"
+        utm_host: "utm.example.com"
+        utm_port: 443
+        utm_protocol: "https"
+        utm_token: "secret_token"
+        validate_certs: false
+
+    - name: Test mixed case sensitivity for string configuration values
+      community.general.utm_ca_host_key_cert_info:
+        headers: "{{ headers }}"
+        name: "{{ name | upper }}"
+        state: "{{ state | capitalize }}"
+        utm_host: "{{ utm_host | capitalize }}"
+        utm_port: "{{ utm_port }}"
+        utm_protocol: "{{ utm_protocol | lower }}"
+        utm_token: "{{ utm_token | upper }}"
+        validate_certs: "{{ validate_certs }}"
+      register: result_mixed_case
+      ignore_errors: true
+
+    - name: Test byte string values
+      community.general.utm_ca_host_key_cert_info:
+        headers: "{{ headers }}"
+        name: "{{ name | b64encode }}"
+        state: "{{ state | b64encode }}"
+        utm_host: "{{ utm_host | b64encode }}"
+        utm_port: "{{ utm_port }}"
+        utm_protocol: "{{ utm_protocol | b64encode }}"
+        utm_token: "{{ utm_token | b64encode }}"
+        validate_certs: "{{ validate_certs }}"
+      register: result_byte_string
+      ignore_errors: true
+
+    - name: Test configuration values with both bytes and strings
+      community.general.utm_ca_host_key_cert_info:
+        headers: "{{ headers }}"
+        name: "{{ name }}"
+        state: "{{ state }}"
+        utm_host: "{{ utm_host | b64encode }}"
+        utm_port: "{{ utm_port }}"
+        utm_protocol: "{{ utm_protocol | b64encode }}"
+        utm_token: "{{ utm_token }}"
+        validate_certs: "{{ validate_certs }}"
+      register: result_mixed_values
+      ignore_errors: true
+
+    - name: Test random MAC addresses for network modules
+      community.general.utm_ca_host_key_cert_info:
+        headers: "{{ headers }}"
+        name: "{{ name }}"
+        state: "{{ state }}"
+        utm_host: "{{ utm_host }}"
+        utm_port: "{{ utm_port }}"
+        utm_protocol: "{{ utm_protocol }}"
+        utm_token: "{{ utm_token }}"
+        validate_certs: "{{ validate_certs }}"
+        mac_address: "{{ '%012x' | format(random.randint(0, 0xFFFFFFFFFFFF)) }}"
+      register: result_mac_address
+      ignore_errors: true
+
+    # Add more test scenarios based on the heuristics
+
+    - name: Display playbook results
+      debug:
+        var: result_mixed_case
+
+    - name: Display playbook results
+      debug:
+        var: result_byte_string
+
+    - name: Display playbook results
+      debug:
+        var: result_mixed_values
+
+    - name: Display playbook results
+      debug:
+        var: result_mac_address
+
+    # Add more debug tasks to display other results

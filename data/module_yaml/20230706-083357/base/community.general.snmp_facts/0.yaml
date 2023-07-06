@@ -1,0 +1,45 @@
+- name: Heuristic-based test playbook for community.general.snmp_facts
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    authkey: "{{ ['AuthKey', 'AUTHKEY', 'aUtHkEy'] | random }}"
+    community: "{{ ['public', 'private', 'community'] | random }}"
+    host: "{{ ['192.168.1.1', '10.0.0.2', '172.16.0.3'] | random }}"
+    integrity: "{{ ['MD5', 'SHA', 'SHA-256'] | random }}"
+    level: "{{ ['noAuthNoPriv', 'authNoPriv', 'authPriv'] | random }}"
+    privacy: "{{ ['DES', 'AES', 'AES-192'] | random }}"
+    privkey: "{{ ['PrivKey', 'PRIVKEY', 'pRiVkEy'] | random }}"
+    retries: "{{ [1, 2, 3] | random }}"
+    timeout: "{{ [5, 10, 15] | random }}"
+    username: "{{ ['admin', 'user', 'operator'] | random }}"
+    version: "{{ ['1', '2c', '3'] | random }}"
+
+  tasks:
+    - name: Retrieve SNMP facts
+      community.general.snmp_facts:
+        authkey: "{{ authkey }}"
+        community: "{{ community }}"
+        host: "{{ host }}"
+        integrity: "{{ integrity }}"
+        level: "{{ level }}"
+        privacy: "{{ privacy }}"
+        privkey: "{{ privkey }}"
+        retries: "{{ retries }}"
+        timeout: "{{ timeout }}"
+        username: "{{ username }}"
+        version: "{{ version }}"
+      register: snmp_facts_result
+
+    - name: Display SNMP facts
+      debug:
+        var: snmp_facts_result.snmp_facts
+
+    - name: Fail if SNMP facts retrieval failed
+      fail:
+        msg: "Failed to retrieve SNMP facts"
+      when: snmp_facts_result.snmp_facts is undefined
+
+    - name: Pass if SNMP facts retrieval succeeded
+      debug:
+        msg: "SNMP facts retrieved successfully"

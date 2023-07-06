@@ -1,0 +1,58 @@
+---
+- name: Heuristic-based Test Playbook for ansible.builtin.expect module
+  hosts: localhost
+  gather_facts: false
+  
+  tasks:
+    - name: Test mixed case sensitivity
+      expect:
+        command: "{{ item }}"
+        responses:
+          - "[Yy]es\n"
+        timeout: 5
+      loop:
+        - Yes
+        - no
+        - YES
+
+    - name: Test byte string values
+      expect:
+        command: "{{ item }}"
+        responses:
+          - "r[A-F0-9]{12}\n"
+        timeout: 5
+      loop:
+        - "{{ lookup('pipe', 'echo -n \"' + item + '\" | xxd -p -u') }}"
+      register: byte_string_results
+    
+    - name: Debug byte string values
+      debug:
+        var: byte_string_results
+
+    - name: Test mixed byte and string values
+      expect:
+        command: "{{ item }}"
+        responses:
+          - "r[A-F0-9]{12}\n"
+        timeout: 5
+      loop:
+        - "{{ lookup('pipe', 'echo -n \"' + item + '\" | xxd -p -u') }}"
+        - "string value"
+      register: mixed_values_results
+    
+    - name: Debug mixed byte and string values
+      debug:
+        var: mixed_values_results
+
+    - name: Test random MAC addresses
+      expect:
+        command: "ping -c 1 -I {{ item }} 8.8.8.8"
+        responses:
+          - "1 packets transmitted, 1 received"
+        timeout: 5
+      loop: "{{ query('mac', count=5) }}"
+      register: mac_address_results
+    
+    - name: Debug random MAC addresses
+      debug:
+        var: mac_address_results

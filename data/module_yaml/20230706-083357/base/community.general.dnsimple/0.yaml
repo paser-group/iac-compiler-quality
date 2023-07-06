@@ -1,0 +1,50 @@
+- name: Test playbook for community.general.dnsimple module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    account_api_token: "your_dnsimple_api_token"
+    account_email: "your_email@example.com"
+    domain: "example.com"
+
+  tasks:
+    - name: Create a DNS record
+      community.general.dnsimple:
+        account_api_token: "{{ account_api_token }}"
+        account_email: "{{ account_email }}"
+        domain: "{{ domain }}"
+        record: "www"
+        type: "A"
+        value: "10.1.1.1"
+        priority: 10
+        ttl: 3600
+        state: present
+
+    - name: Get the DNS record ID
+      community.general.dnsimple_info:
+        account_api_token: "{{ account_api_token }}"
+        account_email: "{{ account_email }}"
+        domain: "{{ domain }}"
+        record: "www"
+      register: dns_record_info
+
+    - name: Update the DNS record
+      community.general.dnsimple:
+        account_api_token: "{{ account_api_token }}"
+        account_email: "{{ account_email }}"
+        domain: "{{ domain }}"
+        record: "www"
+        type: "A"
+        value: "10.1.1.2"
+        priority: 20
+        ttl: 1800
+        record_ids: "{{ dns_record_info.records[0].id }}"
+        state: present
+
+    - name: Delete the DNS record
+      community.general.dnsimple:
+        account_api_token: "{{ account_api_token }}"
+        account_email: "{{ account_email }}"
+        domain: "{{ domain }}"
+        record_ids: "{{ dns_record_info.records[0].id }}"
+        state: absent

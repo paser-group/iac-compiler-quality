@@ -1,0 +1,70 @@
+---
+- name: Heuristic Test Scenario for community.general.lldp module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Enable LLDP on network interfaces
+      community.general.lldp:
+        interfaces: "{{ ansible_interfaces }}"
+        enable: true
+
+    - name: Verify LLDP is enabled
+      community.general.lldp:
+        interfaces: "{{ ansible_interfaces }}"
+      register: lldp_status
+
+    - name: Ensure LLDP is enabled on all interfaces
+      fail:
+        msg: "LLDP is not enabled on interface {{ item }}."
+      loop: "{{ ansible_interfaces }}"
+      when: lldp_status.interfaces[item].lldp.enable == false
+
+    - name: Set custom LLDP system name
+      community.general.lldp:
+        system_name: "MyServer"
+  
+    - name: Verify custom LLDP system name is set
+      community.general.lldp:
+        interfaces: "{{ ansible_interfaces }}"
+      register: lldp_info
+
+    - name: Ensure custom LLDP system name is set on all interfaces
+      fail:
+        msg: "Custom system name is not set on interface {{ item }}."
+      loop: "{{ ansible_interfaces }}"
+      when: lldp_info.interfaces[item].lldp.system_name != 'MyServer'
+
+    - name: Set random LLDP Chassis ID
+      community.general.lldp:
+        chassis_id: "00:11:22:33:44:55"
+  
+    - name: Verify random LLDP Chassis ID is set
+      community.general.lldp:
+        interfaces: "{{ ansible_interfaces }}"
+      register: lldp_info
+
+    - name: Ensure random LLDP Chassis ID is set on all interfaces
+      fail:
+        msg: "Random Chassis ID is not set on interface {{ item }}."
+      loop: "{{ ansible_interfaces }}"
+      when: lldp_info.interfaces[item].lldp.chassis_id != '00:11:22:33:44:55'
+
+    - name: Set random LLDP Port ID
+      community.general.lldp:
+        port_id: 1234
+  
+    - name: Verify random LLDP Port ID is set
+      community.general.lldp:
+        interfaces: "{{ ansible_interfaces }}"
+      register: lldp_info
+
+    - name: Ensure random LLDP Port ID is set on all interfaces
+      fail:
+        msg: "Random Port ID is not set on interface {{ item }}."
+      loop: "{{ ansible_interfaces }}"
+      when: lldp_info.interfaces[item].lldp.port_id != '1234'
+
+    - name: Print LLDP information
+      debug:
+        var: lldp_info

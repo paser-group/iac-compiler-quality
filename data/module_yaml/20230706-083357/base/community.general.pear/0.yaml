@@ -1,0 +1,41 @@
+---
+- name: Ansible Compiler Debugger & Heuristic Test Playbook
+  hosts: localhost
+  gather_facts: false
+  vars:
+    pear_executable: "/usr/local/bin/pear"
+    pear_name: "MyPearPackage"
+    pear_prompts:
+      - "Choose installation directory:"
+      - "Confirm installation:"
+    pear_state: "absent"
+    random_macaddress: "{{ '%012x' % (random.randint(0,1<<48-1)) }}"
+  
+  tasks:
+    - name: Test case - Mixed case sensitivity
+      community.general.pear:
+        executable: "{{ pear_executable }}"
+        name: "mypearpackage"
+        prompts:
+          - "choose installation directory:"
+          - "confirm installation:"
+        state: "present"
+
+    - name: Test case - Byte string values
+      community.general.pear:
+        executable: "{{ pear_executable | to_yaml }}"
+        name: "{{ pear_name | to_yaml }}"
+        prompts:
+          - "{{ item | to_yaml }}"
+        state: "{{ pear_state | to_yaml }}"
+      loop: "{{ pear_prompts }}"
+
+    - name: Test case - Mixed data types
+      community.general.pear:
+        executable: "{{ pear_executable }}"
+        name: "{{ pear_name + random_macaddress }}"
+        prompts:
+          - "{{ random_macaddress }}"
+        state: "{{ pear_state }}"
+
+...

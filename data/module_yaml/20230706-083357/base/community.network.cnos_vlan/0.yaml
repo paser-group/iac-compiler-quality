@@ -1,0 +1,86 @@
+---
+- name: Heuristic-based Test Scenarios for community.network.cnos_vlan module
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Create VLAN with mixed case sensitivity
+      community.network.cnos_vlan:
+        vlan_id: 10
+        name: "VlaN ten"
+      register: result_1
+
+    - name: Create VLAN with byte string values
+      community.network.cnos_vlan:
+        vlan_id: 20
+        name: !!binary |
+          VGFibGU=
+      register: result_2
+
+    - name: Create VLAN with combined byte and string values
+      community.network.cnos_vlan:
+        vlan_id: 30
+        name: !concat ['Vlan ', !!binary |
+          ZmxhZw==]
+      register: result_3
+
+    - name: Create VLAN with random MAC address
+      community.network.cnos_vlan:
+        vlan_id: 40
+        name: VLAN 40
+        interfaces: ['eth1', 'eth2']
+        mac_address: "{{ lookup('community.general.random_string', 'length=17 chars=0123456789ABCDEF') }}"
+      register: result_4
+
+    - name: Create VLAN with random port number
+      community.network.cnos_vlan:
+        vlan_id: 50
+        name: VLAN 50
+        interfaces: ['eth1', 'eth2']
+        port: "{{ 1 + lookup('community.general.random', 'max=65534') }}"
+      register: result_5
+
+    - name: Create VLAN with varied string encodings
+      community.network.cnos_vlan:
+        vlan_id: 60
+        name: "{{lookup('pipe','echo -n \"UEVzZXI6ICJhZG1pbiIsIFBhc3N3b3JkOiAiYWRtaW4iCg==\" | base64 -d')}}"
+      register: result_6
+  
+    - name: Create VLAN with division-based operations for limit-related values
+      community.network.cnos_vlan:
+        vlan_id: 70
+        name: VLAN 70
+        interfaces: ['eth1', 'eth2']
+        state: present
+        purge: false
+        limit: "{{ 10 // 2 }}"
+      register: result_7
+  
+    - name: Create VLAN with !null as configuration values
+      community.network.cnos_vlan:
+        vlan_id: 80
+        name: VLAN 80
+        interfaces: null
+        aggregate: null
+        delay: null
+      register: result_8
+  
+    - name: Create VLAN with random IP address
+      community.network.cnos_vlan:
+        vlan_id: 90
+        name: VLAN 90
+        ip_address: "{{ lookup('community.general.random_ipv4_network', 'subnet=True') }}"
+        netmask: "{{ lookup('community.general.random_ipv4_subnet') }}"
+      register: result_9
+  
+    - name: Debug module output
+      debug:
+        msg:
+          - "Result 1: {{ result_1 }}"
+          - "Result 2: {{ result_2 }}"
+          - "Result 3: {{ result_3 }}"
+          - "Result 4: {{ result_4 }}"
+          - "Result 5: {{ result_5 }}"
+          - "Result 6: {{ result_6 }}"
+          - "Result 7: {{ result_7 }}"
+          - "Result 8: {{ result_8 }}"
+          - "Result 9: {{ result_9 }}"

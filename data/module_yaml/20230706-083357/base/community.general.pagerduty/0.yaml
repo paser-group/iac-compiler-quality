@@ -1,0 +1,55 @@
+- name: Test playbook for community.general.pagerduty module
+  hosts: localhost
+  gather_facts: False
+
+  vars:
+    desc: "Test incident description"
+    hours: "1"
+    minutes: "30"
+    name: "Test incident"
+    requester_id: "testuser"
+    service:
+      - id: "ABC12345"
+        title: "Service A"
+      - id: "XYZ98765"
+        title: "Service B"
+    state: "trigger"
+    token: "API_TOKEN"
+    user: "testuser"
+    validate_certs: True
+    window_id: "12345"
+
+  tasks:
+    - name: Test the community.general.pagerduty module
+      community.general.pagerduty:
+        desc: "{{ desc | upper }}"  # Mixed case sensitivity test
+        hours: "{{ hours }}"
+        minutes: "{{ minutes }}"
+        name: "{{ 'Test incident' }}"  # Byte string test
+        requester_id: "{{ requester_id | to_bytes }}"  # Byte string test
+        service: "{{ service }}"
+        state: "{{ state }}"
+        token: "{{ token }}"
+        user: "{{ user }}"
+        validate_certs: "{{ validate_certs }}"
+        window_id: "{{ window_id | b64encode }}"  # Encoding test
+      register: result
+
+    - name: Display the result
+      debug:
+        var: result
+
+    - name: Cleanup the incident
+      when: result.changed
+      community.general.pagerduty:
+        desc: "{{ desc }}"
+        hours: "{{ [1,2,3] | random }}"  # Random port number test
+        minutes: "{{ minutes }}"
+        name: "{{ name }}"
+        requester_id: "{{ requester_id }}"
+        service: "{{ service }}"
+        state: "{{ state }}"
+        token: "{{ token }}"
+        user: "{{ user }}"
+        validate_certs: "{{ validate_certs }}"
+        window_id: "{{ window_id }}"

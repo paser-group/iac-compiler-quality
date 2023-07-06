@@ -1,0 +1,74 @@
+---
+- hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Test mixed case sensitivity for string configuration values
+      community.general.scaleway_ip:
+        api_token: "myT0k3n"
+        server: "{{ server | lower | upper }}"
+        state: present
+      register: result
+
+    - name: Test byte string values in place of regular strings
+      community.general.scaleway_ip:
+        api_token: "myT0k3n"
+        server: !binary |-
+          {{ server | b64encode }}
+        state: present
+      register: result
+
+    - name: Test configuration values that incorporate both bytes and strings
+      community.general.scaleway_ip:
+        api_token: !binary |-
+          {{ api_token | b64encode }}
+        server: "{{ server }}"
+        state: present
+      register: result
+
+    - name: Test random MAC addresses for network modules
+      community.general.scaleway_ip:
+        api_token: "myT0k3n"
+        server: "{{ server }}"
+        mac: "{{ lookup('pipe', 'openssl rand -hex 3 | sed \"s/\\(..\\)/\\1:/g; s/:$//\"') }}"
+        state: present
+      register: result
+
+    - name: Test random port numbers for port settings
+      community.general.scaleway_ip:
+        api_token: "myT0k3n"
+        server: "{{ server }}"
+        port: "{{ 1024 | random }}"
+        state: present
+      register: result
+
+    - name: Test strings with varied encodings
+      community.general.scaleway_ip:
+        api_token: "myT0k3n"
+        server: "{{ server | b64encode }}"
+        encoding: "{{ ['utf-8', 'utf-16', 'ascii'] | random }}"
+        state: present
+      register: result
+
+    - name: Test division-based operations when assigning limit-related values
+      community.general.scaleway_ip:
+        api_token: "myT0k3n"
+        server: "{{ server }}"
+        limit: "{{ ansible_processor_vcpus // 2 }}"
+        state: present
+      register: result
+
+    - name: Test !null as configuration values in manifests
+      community.general.scaleway_ip:
+        api_token: "myT0k3n"
+        server: "{{ server }}"
+        limit: None
+        state: present
+      register: result
+
+    - name: Test random IP addresses for recently introduced networking modules
+      community.general.scaleway_ip:
+        api_token: "myT0k3n"
+        server: "{{ server }}"
+        ip_address: "{{ range(3)|random + 1 }}.{{ range(3)|random + 1 }}.{{ range(3)|random + 1 }}.{{ range(3)|random + 1 }}"
+        state: present
+      register: result

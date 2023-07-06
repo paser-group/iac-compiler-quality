@@ -1,0 +1,64 @@
+- name: Heuristic-based test scenarios for community.general.kernel_blacklist module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    blacklist_file: "/etc/modprobe.d/blacklist.conf"
+    kernel_modules:
+      - name: ipv6
+        state: present
+
+  tasks:
+    - name: Ensure the blacklist file exists
+      file:
+        path: "{{ blacklist_file }}"
+        state: touch
+
+    - name: Add kernel modules to blacklist file
+      lineinfile:
+        path: "{{ blacklist_file }}"
+        line: "blacklist {{ item.name }}"
+      loop: "{{ kernel_modules }}"
+
+    - name: Ensure kernel modules are blacklisted
+      shell:
+        cmd: "grep 'blacklist {{ item.name }}' {{ blacklist_file }}"
+        executable: /bin/bash
+      loop: "{{ kernel_modules }}"
+      register: grep_result
+      changed_when: false
+
+    - name: Print grep results
+      debug:
+        msg: "{{ item.stdout }}"
+      loop: "{{ grep_result.results }}"
+
+    - name: Remove kernel modules from blacklist file
+      lineinfile:
+        path: "{{ blacklist_file }}"
+        line: "#blacklist {{ item.name }}"
+      loop: "{{ kernel_modules }}"
+
+    - name: Ensure kernel modules are not blacklisted
+      shell:
+        cmd: "grep '#blacklist {{ item.name }}' {{ blacklist_file }}"
+        executable: /bin/bash
+      loop: "{{ kernel_modules }}"
+      register: grep_result_rev
+      changed_when: false
+
+    - name: Print reversed grep results
+      debug:
+        msg: "{{ item.stdout }}"
+      loop: "{{ grep_result_rev.results }}"
+
+    - name: Ensure all kernel modules are blacklisted
+      shell:
+        cmd: "grep 'blacklist' {{ blacklist_file }}"
+        executable: /bin/bash
+      register: grep_all
+      changed_when: false
+
+    - name: Print all kernel modules blacklisted
+      debug:
+        msg: "{{ grep_all.stdout }}"

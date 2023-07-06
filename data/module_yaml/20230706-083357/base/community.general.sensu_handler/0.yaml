@@ -1,0 +1,36 @@
+---
+- name: Heuristic Test Playbook for community.general.sensu_handler
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Test creating sensu_handler
+      community.general.sensu_handler:
+        command: "echo hello"
+        filter: "exclude webserver"
+        filters:
+          - "exclude server1"
+          - "exclude server2"
+        handle_flapping: true
+        handle_silenced: false
+        handlers:
+          - restart_sensu
+          - notify_slack
+        mutator: "sensu_mutator"
+        name: "handler1"
+        pipe:
+          command: "grep -v error"
+        severities:
+          - critical
+          - warning
+        socket:
+          host: "localhost"
+          port: 8080
+        state: "present"
+        timeout: 60
+        type: "pipe"
+      register: sensu_handler_result
+
+    - name: Debug sensu_handler_result
+      debug:
+        var: sensu_handler_result

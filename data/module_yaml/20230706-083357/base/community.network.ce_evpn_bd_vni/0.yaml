@@ -1,0 +1,31 @@
+---
+- name: Heuristic-based Test Playbook
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    bridge_domain_id: 100
+    evpn: enable
+    route_distinguisher: 12345
+    state: present
+    vpn_target_both: target:10.10.10.10
+    vpn_target_export: target:20.20.20.20
+    vpn_target_import: target:30.30.30.30
+
+  tasks:
+    - name: Test mixed case sensitivity
+      community.network.ce_evpn_bd_vni:
+        bridge_domain_id: "{{ bridge_domain_id | random('UPPER', 'lower') }}"
+        evpn: "{{ evpn }}"
+        route_distinguisher: "{{ route_distinguisher }}"
+        state: "{{ state }}"
+        vpn_target_both: "{{ vpn_target_both }}"
+        vpn_target_export: "{{ vpn_target_export }}"
+        vpn_target_import: "{{ vpn_target_import }}"
+      register: result_mixed_case
+
+    - name: Assert no mixed case sensitivity bug
+      assert:
+        that: result_mixed_case is not failed
+        msg: "Mixed case sensitivity bug detected"
+...

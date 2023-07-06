@@ -1,0 +1,44 @@
+---
+- name: Heuristic Test Playbook for ansible.builtin.setup module
+  hosts: all
+  gather_facts: no
+
+  vars:
+    fact_path: "/etc/ansible/facts.d"
+    filter: []
+    gather_subset:
+      - network
+      - virtual
+    gather_timeout: 5
+
+  tasks:
+    - name: Display gathered facts
+      ansible.builtin.setup:
+        fact_path: "{{ fact_path }}"
+        filter: "{{ filter }}"
+        gather_subset: "{{ gather_subset }}"
+        gather_timeout: "{{ gather_timeout }}"
+      register: gathered_facts
+
+    - name: Verify mixed case sensitivity for string configuration values
+      assert:
+        that:
+          - "'{{ gathered_facts.ansible_os_family }}' == 'Ubuntu'"
+          - "'{{ gathered_facts.ANSIBLE_SYSTEM_FACTS.ansible_os_family }}' == 'UBUNTU'"
+        fail_msg: "Mixed case sensitivity for string configuration values is not handled correctly"
+
+    - name: Introduce byte string values in place of regular strings
+      assert:
+        that:
+          - "'{{ gathered_facts.hostvars['localhost']['ansible_distribution'] }}' == b'Ubuntu'"
+          - "'{{ gathered_facts.hostvars['localhost']['ansible_virtualization_type'] }}' == b'docker'"
+        fail_msg: "Byte string values are not handled correctly"
+
+    - name: Generate random MAC addresses for network modules
+      set_fact:
+        random_mac_address: "{{ '%02x:%02x:%02x:%02x:%02x:%02x' | format(lookup('pipe', 'od -An -t x1 -N 6 /dev/urandom').split()) }}"
+      register: mac_address_result
+
+    - name: Verify random MAC address
+      debug:
+        var: mac_address_result.random_mac_address

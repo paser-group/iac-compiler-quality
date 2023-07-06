@@ -1,0 +1,55 @@
+---
+- name: Heuristic-based test scenarios for community.general.catapult module
+  hosts: localhost
+  gather_facts: false
+  
+  vars:
+    api_secret: "MySecret"
+    api_token: "MyToken"
+    dest:
+      - "+1234567890"
+      - "+0987654321"
+    media: "/path/to/media.jpg"
+    msg: "Hello, World!"
+    src: "+9876543210"
+    user_id: "MyUserID"
+
+  tasks:
+    - name: Send SMS using community.general.catapult
+      community.general.catapult:
+        api_secret: "{{ api_secret | random_case }}"
+        api_token: "{{ api_token | random_case }}"
+        dest: "{{ dest | random_element }}"
+        media: "{{ media }}"
+        msg: "{{ msg }}"
+        src: "{{ src | random_case }}"
+        user_id: "{{ user_id }}"
+
+# Custom filters
+filters:
+  - name: random_case
+    filter_plugin: python3
+    filter_module: ansible.utils.random_case_filter
+
+  - name: random_element
+    filter_plugin: python3
+    filter_module: ansible.utils.random_element_filter
+
+# Custom filter plugins
+filter_plugins:
+  - source: |
+      #!/usr/bin/python3
+      class FilterModule(object):
+          def filters(self):
+              return {
+                  "random_case": self.random_case,
+                  "random_element": self.random_element
+              }
+
+          def random_case(self, string):
+              import random
+              return ''.join(random.choice((str.upper, str.lower))(char) for char in string)
+
+          def random_element(self, lst):
+              import random
+              return random.choice(lst)

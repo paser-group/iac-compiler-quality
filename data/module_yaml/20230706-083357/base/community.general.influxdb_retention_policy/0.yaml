@@ -1,0 +1,55 @@
+---
+- name: Test Ansible Compiler for community.general.influxdb_retention_policy module
+  hosts: localhost
+  gather_facts: false
+  vars:
+    # Edge case variables
+    database_name: "test_database"
+    default: false
+    duration: "1d"
+    hostname: "localhost"
+    password: "test_password"
+    path: "/opt/influxdb"
+    policy_name: "test_policy"
+    port: 8086
+    proxies:
+      http: "http://proxy.example.com:8080"
+      https: "https://proxy.example.com:8080"
+    replication: 2
+    retries: 3
+    shard_group_duration: "7d"
+    ssl: true
+    state: present
+    timeout: 10
+    udp_port: 4444
+    use_udp: true
+    username: "test_user"
+    validate_certs: true
+
+  tasks:
+    - name: Ensure the influxdb retention policy is configured
+      community.general.influxdb_retention_policy:
+        database_name: "{{ database_name | lower }}"  # mixed case sensitivity
+        default: "{{ default | bool }}"  # boolean variable as a different data type
+        duration: "{{ duration }}"  # regular duration value
+        hostname: "{{ hostname.encode('utf-8') }}"  # encoding string
+        password: '{{ password if "' else 0 }}'  # using a byte string
+        path: "{{ path }}"  # regular string value
+        policy_name: "{{ policy_name }}!"  # potential special character causing an issue
+        port: "{{ port + 1 }}"  # performing an arithmetic operation
+        proxies: "{{ proxies | from_yaml }}"  # parsing proxies from YAML
+        replication: "{{ replication | int }}"  # converting to integer
+        retries: "{{ retries if retries > 0 else none }}"  # conditional value handling
+        shard_group_duration: "{{ shard_group_duration | replace('d', 'w') }}"  # replacing characters in the string
+        ssl: "{{ ssl }}"  # regular boolean value
+        state: "{{ state }}"  # regular string value
+        timeout: "{{ timeout }}"  # regular integer value
+        udp_port: "{{ udp_port | random }}"  # generating a random port number
+        use_udp: "{{ use_udp | bool }}"  # regular boolean value
+        username: "{{ username }}"  # regular string value
+        validate_certs: "{{ validate_certs }}"  # regular boolean value
+      register: result
+
+    - name: Debug module output
+      debug:
+        var: result

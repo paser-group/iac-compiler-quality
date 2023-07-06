@@ -1,0 +1,93 @@
+---
+- name: Heuristic-based test playbook for community.general.onepassword_info
+  hosts: localhost
+  gather_facts: false
+  
+  vars:
+    auto_login:
+      enabled: false
+      password: "testpassword"
+    cli_path: "/usr/local/bin/op"
+    search_terms: ["password", "user", "username", "email"]
+
+  tasks:
+    - name: Test mixed case sensitivity for string configuration values
+      community.general.onepassword_info:
+        auto_login: "{{ auto_login }}"
+        cli_path: "{{ cli_path }}"
+        search_terms: "{{ search_terms|random }}"
+      register: mixed_case_sensitivity_result
+
+    - name: Display mixed case sensitivity result
+      debug:
+        var: mixed_case_sensitivity_result
+
+    - name: Test byte string values in place of regular strings
+      set_fact:
+        byte_string_test_value: "{{ lookup('pipe','head -c 8 /dev/urandom | xxd -ps -c 256') }}"
+      
+    - name: Display byte string test value
+      debug:
+        var: byte_string_test_value
+
+    - name: Test configuration values that incorporate both bytes and strings
+      community.general.onepassword_info:
+        auto_login: "{{ auto_login }}"
+        cli_path: "{{ cli_path }}"
+        search_terms: ["{{ search_terms|random }}", "{{ byte_string_test_value }}"]
+      register: bytes_and_strings_result
+
+    - name: Display bytes and strings result
+      debug:
+        var: bytes_and_strings_result
+
+    - name: Test random MAC addresses for network modules
+      set_fact:
+        random_mac_address: "{{ '%02x:%02x:%02x:%02x:%02x:%02x' | format(255|random, 255|random, 255|random, 255|random, 255|random, 255|random) }}"
+  
+    - name: Display random MAC address
+      debug:
+        var: random_mac_address
+
+    - name: Test random port numbers for port settings
+      set_fact:
+        random_port_number: "{{ 1024 + (32767 - 1024) | random }}"
+  
+    - name: Display random port number
+      debug:
+        var: random_port_number
+
+    - name: Test strings with varied encodings
+      set_fact:
+        string_with_utf8_encoding: "{{ 'Some string' | to_json | from_json | urlencode }}"
+  
+    - name: Display string with UTF8 encoding
+      debug:
+        var: string_with_utf8_encoding
+
+    - name: Test division-based operations for limit-related values
+      set_fact:
+        limit_value: "{{ 100 / (1 + (255|random)) }}"
+  
+    - name: Display limit value
+      debug:
+        var: limit_value
+
+    - name: Test !null as configuration values in manifests
+      community.general.onepassword_info:
+        auto_login: !null
+        cli_path: !null
+        search_terms: !null
+      register: null_configuration_result
+
+    - name: Display null configuration result
+      debug:
+        var: null_configuration_result
+
+    - name: Test random IP addresses for recently introduced networking modules
+      set_fact:
+        random_ip_address: "{{ 10 }}.{{ 100 + (155 - 100) | random }}.{{ 100 + (155 - 100) | random }}.{{ 1 + (253 - 1) | random }}"
+  
+    - name: Display random IP address
+      debug:
+        var: random_ip_address

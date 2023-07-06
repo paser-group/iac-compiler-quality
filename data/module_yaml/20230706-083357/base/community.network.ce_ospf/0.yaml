@@ -1,0 +1,37 @@
+- name: Test playbook for community.network.ce_ospf module
+  hosts: all
+  gather_facts: false
+
+  vars:
+    ospf_config:
+      process_id: 1
+      area: 0.0.0.0
+      auth_mode: plain
+      auth_text_md5: sample_md5_password
+      nexthops:
+        - addr: 192.0.2.2
+          weight: 10
+    check_mode: false
+
+  tasks:
+    - name: Configure OSPF
+      community.network.ce_ospf:
+        addr: "{{ hostvars[inventory_hostname].ansible_host }}"
+        state: present
+        mask: "255.255.255.255"
+        auth_key_id: "1"
+        auth_text_simple: "sample_simple_password"
+        max_load_balance: 10
+        process_id: "{{ ospf_config.process_id }}"
+        area: "{{ ospf_config.area }}"
+        auth_mode: "{{ ospf_config.auth_mode }}"
+        auth_text_md5: "{{ ospf_config.auth_text_md5 }}"
+        nexthop_addr: "{{ item.addr }}"
+        nexthop_weight: "{{ item.weight }}"
+        check_mode: "{{ check_mode }}"
+      loop: "{{ ospf_config.nexthops }}"
+      register: ospf_result
+
+    - name: Display OSPF result
+      debug:
+        var: ospf_result

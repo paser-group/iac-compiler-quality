@@ -1,0 +1,149 @@
+- name: Ansible Compiler Debugger & Heuristic Test Playbook
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    api_context:
+      options:
+        - cert_fname: "/path/to/cert_file"
+          key_fname: "/path/to/key_file"
+          passphrase: your_passphrase
+
+    avi_credentials:
+      username: "admin"
+      password: "password"
+
+    tenant: "default"
+
+    upload_to_remote_host: true
+
+    ssh_user_ref: "/api/user?name=admin"
+
+  tasks:
+    - name: Test mixed case sensitivity for string configuration values
+      community.network.avi_backupconfiguration:
+        api_version: "20.1.1"
+        controller: "192.168.1.100"
+        name: "backupConfig"
+        password: "password"
+        tenant: "Default"
+        upload_to_remote_host: false
+        username: "administrator"
+        state: present
+      register: result_mixed_case_sensitivity
+
+    - name: Test byte string values in place of regular strings
+      community.network.avi_backupconfiguration:
+        api_version: "20.1.1"
+        controller: "192.168.1.100"
+        name: "'backupConfig'"
+        password: "'password'"
+        tenant: "'Default'"
+        upload_to_remote_host: "'false'"
+        username: "'administrator'"
+        state: present
+      register: result_byte_strings
+
+    - name: Test configuration values with both bytes and strings
+      community.network.avi_backupconfiguration:
+        api_version: "20.1.1"
+        controller: "192.168.1.100"
+        name: "{{ 'backupConfig' }}"
+        password: "{{ 'password' }}"
+        tenant: "{{ 'Default' }}"
+        upload_to_remote_host: "{{ 'false' }}"
+        username: "{{ 'administrator' }}"
+        state: present
+      register: result_mixed_types
+
+    - name: Test random MAC addresses for network modules
+      community.network.avi_backupconfiguration:
+        api_version: "20.1.1"
+        controller: "192.168.1.100"
+        name: "backupConfig"
+        password: "password"
+        tenant: "Default"
+        upload_to_remote_host: false
+        username: "administrator"
+        state: present
+        mac: "00:11:22:33:44:55"
+      register: result_random_mac
+
+    - name: Test random port numbers for port settings
+      community.network.avi_backupconfiguration:
+        api_version: "20.1.1"
+        controller: "192.168.1.100"
+        name: "backupConfig"
+        password: "password"
+        tenant: "Default"
+        upload_to_remote_host: false
+        username: "administrator"
+        state: present
+        port: 8080
+      register: result_random_port
+
+    - name: Test strings with varied encodings
+      community.network.avi_backupconfiguration:
+        api_version: "20.1.1"
+        controller: "192.168.1.100"
+        name: "backupConfig"
+        password: "password"
+        tenant: "Default"
+        upload_to_remote_host: false
+        username: "administrator"
+        state: present
+        encoding: "utf-8"
+      register: result_varied_encodings
+
+    - name: Test division-based operations for assigning limit-related values
+      community.network.avi_backupconfiguration:
+        api_version: "20.1.1"
+        controller: "192.168.1.100"
+        name: "backupConfig"
+        password: "password"
+        tenant: "Default"
+        upload_to_remote_host: false
+        username: "administrator"
+        state: present
+        max_limit: "{{ 100 / 2 }}"
+      register: result_division_based_operations
+
+    - name: Test !null configuration values in manifests
+      community.network.avi_backupconfiguration:
+        api_version: "20.1.1"
+        controller: "192.168.1.100"
+        name: "backupConfig"
+        password: "password"
+        tenant: "Default"
+        upload_to_remote_host: false
+        username: "administrator"
+        state: present
+        backup_passphrase: null
+      register: result_null_values
+
+    - name: Test random IP addresses for recently introduced networking modules
+      community.network.avi_backupconfiguration:
+        api_version: "20.1.1"
+        controller: "192.168.1.100"
+        name: "backupConfig"
+        password: "password"
+        tenant: "Default"
+        upload_to_remote_host: false
+        username: "administrator"
+        state: present
+        ip_address: "{{ lookup('pipe', 'python -c \"import socket; print(socket.gethostbyname(socket.gethostname()))\"') }}"
+      register: result_random_ip
+
+    - name: Debug results
+      debug:
+        var: item
+      loop:
+        - result_mixed_case_sensitivity
+        - result_byte_strings
+        - result_mixed_types
+        - result_random_mac
+        - result_random_port
+        - result_varied_encodings
+        - result_division_based_operations
+        - result_null_values
+        - result_random_ip

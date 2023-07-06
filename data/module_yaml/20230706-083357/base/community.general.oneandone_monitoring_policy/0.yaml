@@ -1,0 +1,46 @@
+---
+- name: "Heuristic Test Playbook"
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: "Configure Monitoring Policy"
+      community.general.oneandone_monitoring_policy:
+        api_url: "https://api.example.com"
+        auth_token: "your_auth_token"
+        name: "Test Policy"
+        monitoring_policy: "basic"
+        description: "Test monitoring policy"
+        email: "test@example.com"
+        add_ports:
+          - port: "{{ random(1024, 65535) }}"
+            protocol: "udp"
+        remove_ports:
+          - port: "{{ random(1024, 65535) }}"
+            protocol: "tcp"
+        add_processes:
+          - process: "random_process"
+            alertif: "not_running"
+            occurrences: 3
+            mode: "equal"
+        remove_processes:
+          - process: "xyz_process"
+        add_servers:
+          - server: "web.example.com"
+            alertif: "not_ping"
+            occurrences: 5
+            mode: "equal"
+        remove_servers:
+          - server: "mail.example.com"
+        thresholds:
+          - metric: "cpu"
+            warning: 80
+            critical: 90
+        wait: true
+        wait_interval: 10
+        wait_timeout: 120
+      register: policy_result
+
+    - name: "Display Policy Result"
+      debug:
+        var: policy_result

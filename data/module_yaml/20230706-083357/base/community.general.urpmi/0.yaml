@@ -1,0 +1,69 @@
+---
+- name: Heuristic Test Playbook
+  hosts: localhost
+  gather_facts: false
+  vars:
+    test_packages:
+      - package1
+      - package2
+      - package3
+
+  tasks:
+    # Test scenario: Force the package installation
+    - name: Test force option
+      urpmi:
+        name: "{{ test_packages }}"
+        force: true
+      register: result_force
+      failed_when: result_force.rc != 0
+
+    # Test scenario: Install packages with no recommended packages
+    - name: Test no_recommends option
+      urpmi:
+        name: "{{ test_packages }}"
+        no_recommends: true
+      register: result_no_recommends
+      failed_when: result_no_recommends.rc != 0
+
+    # Test scenario: Specify a custom root directory
+    - name: Test root option
+      urpmi:
+        name: "{{ test_packages }}"
+        root: /path/to/custom/root
+      register: result_root
+      failed_when: result_root.rc != 0
+
+    # Test scenario: Update package cache
+    - name: Test update_cache option
+      urpmi:
+        name: "{{ test_packages }}"
+        update_cache: true
+      register: result_update_cache
+      failed_when: result_update_cache.rc != 0
+
+    # Test scenario: Remove packages
+    - name: Test state absent
+      urpmi:
+        name: "{{ test_packages }}"
+        state: absent
+      register: result_state_absent
+      failed_when: result_state_absent.rc != 0
+
+    # Test scenario: Install packages
+    - name: Test state present
+      urpmi:
+        name: "{{ test_packages }}"
+        state: present
+      register: result_state_present
+      failed_when: result_state_present.rc != 0
+
+  handlers:
+    - name: Print task results
+      debug:
+        msg: |
+          Result: {{ item.result }}
+          Stdout: {{ item.stdout }}
+          Stderr: {{ item.stderr }}
+      loop: "{{ [result_force, result_no_recommends, result_root, result_update_cache, result_state_absent, result_state_present] }}"
+      loop_control:
+        label: "{{ item._task.name }}"

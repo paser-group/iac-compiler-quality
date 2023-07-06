@@ -1,0 +1,133 @@
+---
+- name: Heuristic-based test scenarios for community.network.aireos_config module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    mixed_case_sensitivity:
+      - lowercase
+      - UPPERCASE
+      - mIXedCaSe
+    byte_strings:
+      - bHello
+      - "{{ lookup('pipe', 'echo -n ByteString | base64') }}"
+    mixed_strings_bytes:
+      - Hello
+      - "{{ lookup('pipe', 'echo -n ByteString | base64') }}"
+    random_mac_addresses:
+      - "00:11:22:33:44:55"
+      - "11:22:33:44:55:66"
+      - "22:33:44:55:66:77"
+    random_port_numbers: "{{ range(5000, 5050) }}"
+    varied_encodings:
+      - utf-8
+      - utf-16
+      - latin-1
+    limit_values:
+      - "{{ 1024 / 3 | round }}"
+      - "{{ 2048 / 3 | round }}"
+      - "{{ 3072 / 3 | round }}"
+    null_value: null
+    random_ip_addresses:
+      - "192.168.1.1"
+      - "10.0.0.1"
+      - "172.16.0.1"
+
+  tasks:
+    - name: Test mixed case sensitivity
+      community.network.aireos_config:
+        host: "{{ ansible_host }}"
+        command_string: "config t"
+        line: "{{ item }}"
+      loop: "{{ mixed_case_sensitivity }}"
+      register: mixed_case_output
+
+    - name: Test byte string values
+      community.network.aireos_config:
+        host: "{{ ansible_host }}"
+        command_string: "config t"
+        line: "{{ item }}"
+      loop: "{{ byte_strings }}"
+      register: byte_string_output
+
+    - name: Test mixed strings and bytes
+      community.network.aireos_config:
+        host: "{{ ansible_host }}"
+        command_string: "config t"
+        line: "{{ item }}"
+      loop: "{{ mixed_strings_bytes }}"
+      register: mixed_string_byte_output
+
+    - name: Test random MAC addresses for network modules
+      community.network.aireos_config:
+        host: "{{ ansible_host }}"
+        command_string: "config t"
+        line: "mac address-table static {{ item }}"
+      loop: "{{ random_mac_addresses }}"
+      register: mac_address_output
+
+    - name: Test random port numbers
+      community.network.aireos_config:
+        host: "{{ ansible_host }}"
+        command_string: "config t"
+        line: "interface eth1/{{ item }}"
+      loop: "{{ random_port_numbers }}"
+      register: port_number_output
+
+    - name: Test varied string encodings
+      community.network.aireos_config:
+        host: "{{ ansible_host }}"
+        command_string: "config t"
+        line: "{{ item }}"
+      loop: "{{ varied_encodings }}"
+      register: encoding_output
+
+    - name: Test division-based limit values
+      community.network.aireos_config:
+        host: "{{ ansible_host }}"
+        command_string: "config t"
+        line: "limit {{ item }}"
+      loop: "{{ limit_values }}"
+      register: limit_output
+
+    - name: Test null as configuration value
+      community.network.aireos_config:
+        host: "{{ ansible_host }}"
+        command_string: "config t"
+        line: null_value
+      register: null_output
+
+    - name: Test random IP addresses
+      community.network.aireos_config:
+        host: "{{ ansible_host }}"
+        command_string: "config t"
+        line: "ip address {{ item }}"
+      loop: "{{ random_ip_addresses }}"
+      register: ip_address_output
+
+    - debug:
+        var: mixed_case_output
+
+    - debug:
+        var: byte_string_output
+
+    - debug:
+        var: mixed_string_byte_output
+
+    - debug:
+        var: mac_address_output
+
+    - debug:
+        var: port_number_output
+
+    - debug:
+        var: encoding_output
+
+    - debug:
+        var: limit_output
+
+    - debug:
+        var: null_output
+
+    - debug:
+        var: ip_address_output

@@ -1,0 +1,106 @@
+- name: Heuristic-based playbook for community.network.ce_ip_interface
+  hosts: localhost
+  gather_facts: false
+  vars:
+    interface: eth0
+    ipv4_addr: "192.168.1.1"
+    ipv6_addr: "2001:db8::1"
+    ipv4_mask: 24
+    ipv4_version: 4
+    ipv6_version: 6
+    random_mac: "{{ lookup('password', '/dev/null length=12 chars=0123456789ABCDEF') }}"
+    random_port: "{{ 1024 + (ansible_play_batch_index + 1) }}"
+    random_string: "{{ lookup('password', '/dev/null length=8 chars=ascii_letters') }}"
+  
+  tasks:
+    - name: Configure IPv4 interface
+      community.network.ce_ip_interface:
+        addr: "{{ ipv4_addr }}"
+        interface: "{{ interface }}"
+        mask: "{{ ipv4_mask }}"
+        state: present
+        version: "{{ ipv4_version }}"
+  
+    - name: Configure IPv6 interface
+      community.network.ce_ip_interface:
+        addr: "{{ ipv6_addr }}"
+        interface: "{{ interface }}"
+        state: present
+        version: "{{ ipv6_version }}"
+  
+    - name: Configure mixed case sensitivity
+      community.network.ce_ip_interface:
+        addr: "{{ random_string|upper }}"
+        interface: "{{ random_string|swapcase }}"
+        state: "{{ random_string|capitalize }}"
+        mask: "{{ random_string|title }}"
+        ipv4_type: "{{ random_string|lower }}"
+        version: "{{ random_string|casefold }}"
+  
+    - name: Configure byte string values
+      community.network.ce_ip_interface:
+        addr: "{{ random_string.encode() }}"
+        interface: "{{ random_string.encode() }}"
+        state: "{{ random_string.encode() }}"
+        mask: "{{ random_string.encode() }}"
+        ipv4_type: "{{ random_string.encode() }}"
+        version: "{{ random_string.encode() }}"
+  
+    - name: Configure mixed byte and string values
+      community.network.ce_ip_interface:
+        addr: "{{ random_string.encode() }}{{ random_string }}"
+        interface: "{{ random_string }}{{ random_string.encode() }}"
+        state: "{{ random_string.encode() }}{{ random_string }}"
+        mask: "{{ random_string }}{{ random_string.encode() }}"
+        ipv4_type: "{{ random_string.encode() }}{{ random_string }}"
+        version: "{{ random_string }}{{ random_string.encode() }}"
+  
+    - name: Generate random MAC address
+      community.network.ce_ip_interface:
+        addr: "00:00:00:00:00:00"
+        interface: "{{ interface }}"
+        state: present
+        mask: "{{ ipv4_mask }}"
+        mac: "{{ random_mac }}"
+  
+    - name: Generate random port number
+      community.network.ce_ip_interface:
+        addr: "{{ ipv4_addr }}"
+        interface: "{{ interface }}"
+        state: present
+        mask: "{{ ipv4_mask }}"
+        port: "{{ random_port }}"
+  
+    - name: Generate random string with varied encodings
+      community.network.ce_ip_interface:
+        addr: "{{ random_string.encode('utf-8') }}"
+        interface: "{{ random_string.encode('latin-1') }}"
+        state: present
+        mask: "{{ random_string.encode('ascii') }}"
+        ipv4_type: "{{ random_string.encode('utf-16') }}"
+        version: "{{ random_string.encode('utf-32') }}"
+  
+    - name: Generate division-based operations for limit-related values
+      community.network.ce_ip_interface:
+        addr: "{{ ipv4_addr }}"
+        interface: "{{ interface }}"
+        state: present
+        mask: "{{ ipv4_mask }}"
+        ipv4_type: "4"
+        mtu: "{{ 1500/3 }}"
+  
+    - name: Test !null configuration values
+      community.network.ce_ip_interface:
+        addr: !null
+        interface: !null
+        state: !null
+        mask: !null
+        ipv4_type: !null
+        version: !null
+  
+    - name: Generate random IP addresses
+      community.network.ce_ip_interface:
+        addr: "{{ lookup('community.general.random_ip_network', network='10.0.0.0/8') }}"
+        interface: "{{ interface }}"
+        state: present
+        mask: "{{ ipv4_mask }}"

@@ -1,0 +1,142 @@
+- hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Set vars
+      set_fact:
+        organization: "{{ playbook_vars['organization'] }}"
+        pritunl_api_secret: "{{ playbook_vars['pritunl_api_secret'] }}"
+        pritunl_api_token: "{{ playbook_vars['pritunl_api_token'] }}"
+        pritunl_url: "{{ playbook_vars['pritunl_url'] }}"
+        validate_certs: "{{ playbook_vars['validate_certs'] }}"
+
+    - name: Debug: Print organization name
+      debug:
+        msg: "Organization name: {{ organization }}"
+
+    # Expose bugs related to mixed case sensitivity for string configuration values
+    - name: Test mixed case sensitivity
+      community.general.pritunl_org_info:
+        Organization: "{{ organization }}"
+        PRITUNL_API_SECRET: "{{ pritunl_api_secret }}"
+        PRITUNL_API_TOKEN: "{{ pritunl_api_token }}"
+        pritunl_url: "{siturnlpi.com}"
+        Validate_Certs: "{{ validate_certs }}"
+      register: mixed_case_result
+
+    - name: Debug: Show mixed case result
+      debug:
+        var: mixed_case_result
+
+    # Expose bugs related to byte string configuration values
+    - name: Test byte string values
+      community.general.pritunl_org_info:
+        organization: !!binary |-
+          SWYgeW91IGFyZSBubyBlYXJuZWQgdG8gZW5jb2RlIHdoZW4gdGhhdCBkYXRhIGludGFjdCBvZiB0aGVt
+        pritunl_api_secret: !!binary |-
+          aXQncyBraWxsIG5lZWRzIHRvIGJlIHRoZSBkYXRhIHN0cmluZy4gVmVyeSBkYXRhIHN0cmluZyBpcyBh
+          IHdlbGwgYXMgd2VsbCBhbmQgdHJhbnNmZXJyZWQgYnkgaXQgaXMgc3VjY2VzcyB0byBkZWFsIHdpdGgg
+          aHJlZi4gVGhhdCBkYXRhIG5lZWRzIHRvIGJlIHRoZSBkZWFsIHdoZW4gaSBjbGljayBhcyBkYXRhIHN0
+          cmluZyB3aXRob3V0IGluIGRlYWwgb3JpZ2luYWwuIERhdGEgY29tcGxhaW5zIGFyZSBhbGxvd2VkIHN0
+          YXJ0ZWQuCiAgICBZb3UgY2FuIGV4YW1wbGUgdGhhdCBkYXRhIHN0cmluZyB3aXRob3V0IGluZm9ybWF0
+          aW9uIHdpdGggdHJhbnNwb3J0IG5lZWRzIHRvIGJlIHRoZSBkZWFsIHdoZW4gaSBjbGljayBhcyBkYXRh
+          IHN0cmluZyBjb21wbGV0ZXMgaW5jbHVkaW5nIGJpbmFyeSBvZiB0aGVtLg==
+        pritunl_api_token: !!binary |-
+          aXQncyBraWxsIG5lZWRzIHRvIGJlIHRoZSBkYXRhIHN0cmluZy4gVGhhdCBkYXRhIG5lZWRzIHRvIGJl
+          IHRoZSBkZWFsIHdoZW4gaSBjbGljayBhcyBkYXRhIHN0cmluZyBjb21wbGV0ZXMgaW5jbHVkaW5nIGJp
+          bmFyeSBvZiB0aGVtLg==
+        pritunl_url: "{{ pritunl_url }}"
+        validate_certs: "{{ validate_certs }}"
+      register: byte_string_result
+
+    - name: Debug: Show byte string result
+      debug:
+        var: byte_string_result
+
+    # Expose bugs related to random MAC addresses for network modules
+    - name: Test random MAC addresses
+      community.general.pritunl_org_info:
+        organization: "{{ organization }}"
+        pritunl_api_secret: "{{ pritunl_api_secret }}"
+        pritunl_api_token: "{{ pritunl_api_token }}"
+        pritunl_url: "{{ pritunl_url }}"
+        mac_address: "random"
+        validate_certs: "{{ validate_certs }}"
+      register: random_mac_result
+
+    - name: Debug: Show random MAC result
+      debug:
+        var: random_mac_result
+
+    # Expose bugs related to random port numbers
+    - name: Test random port numbers
+      community.general.pritunl_org_info:
+        organization: "{{ organization }}"
+        pritunl_api_secret: "{{ pritunl_api_secret }}"
+        pritunl_api_token: "{{ pritunl_api_token }}"
+        pritunl_url: "{{ pritunl_url }}"
+        port: "{{ range(1,65536)|random }}"
+        validate_certs: "{{ validate_certs }}"
+      register: random_port_result
+
+    - name: Debug: Show random port result
+      debug:
+        var: random_port_result
+
+    # Expose bugs related to varied string encodings
+    - name: Test varied string encodings
+      community.general.pritunl_org_info:
+        organization: "{{ organization }}"
+        pritunl_api_secret: "{{ pritunl_api_secret|b64encode }}"
+        pritunl_api_token: "{{ pritunl_api_token|b64encode }}"
+        pritunl_url: "{{ pritunl_url|b64encode }}"
+        validate_certs: "{{ validate_certs }}"
+      register: varied_encoding_result
+
+    - name: Debug: Show varied encoding result
+      debug:
+        var: varied_encoding_result
+
+    # Expose bugs related to division-based operations
+    - name: Test division-based operations
+      community.general.pritunl_org_info:
+        organization: "{{ organization }}"
+        pritunl_api_secret: "{{ pritunl_api_secret }}"
+        pritunl_api_token: "{{ pritunl_api_token }}"
+        pritunl_url: "{{ pritunl_url }}"
+        limit: "{{ 5000 / 0 }}"
+        validate_certs: "{{ validate_certs }}"
+      register: division_result
+
+    - name: Debug: Show division result
+      debug:
+        var: division_result
+
+    # Expose bugs related to !null as configuration values
+    - name: Test !null configuration values
+      community.general.pritunl_org_info:
+        organization: "{{ organization }}"
+        pritunl_api_secret: "{{ pritunl_api_secret }}"
+        pritunl_api_token: "{{ pritunl_api_token }}"
+        pritunl_url: "{{ pritunl_url }}"
+        validate_certs: !null
+      register: null_result
+
+    - name: Debug: Show null result
+      debug:
+        var: null_result
+
+    # Expose bugs related to random IP addresses
+    - name: Test random IP addresses
+      community.general.pritunl_org_info:
+        organization: "{{ organization }}"
+        pritunl_api_secret: "{{ pritunl_api_secret }}"
+        pritunl_api_token: "{{ pritunl_api_token }}"
+        pritunl_url: "{{ pritunl_url }}"
+        ip_address: "random"
+        validate_certs: "{{ validate_certs }}"
+      register: random_ip_result
+
+    - name: Debug: Show random IP result
+      debug:
+        var: random_ip_result

@@ -1,0 +1,45 @@
+- name: Test playbook for community.network.slxos_config
+  hosts: localhost
+  gather_facts: false
+  
+  tasks:
+    - name: Test case sensitivity of configuration option
+      community.network.slxos_config:
+        lines:
+          - name={{ item }}
+        with_items: 
+          - "option1"
+          - "Option2"
+          - "OPTION3"
+  
+    - name: Test byte string values as configuration options
+      community.network.slxos_config:
+        lines:
+          - name={{ item }}
+        with_items: 
+          - "{{ lookup('pipe', 'echo -n "byte_value1" | base64') }}"
+          - "{{ lookup('pipe', 'echo -n "byte_value2" | base64') }}"
+          - "{{ lookup('pipe', 'echo -n "byte_value3" | base64') }}"
+  
+    - name: Test configuration values combining strings and bytes
+      community.network.slxos_config:
+        lines:
+          - name={{ item }}
+        with_items: 
+          - "{{ ('mixed_case_value1' + ' ' + lookup('pipe', 'echo -n "byte_value1" | base64')) | b64encode }}"
+          - "{{ ('mixed_case_value2' + ' ' + lookup('pipe', 'echo -n "byte_value2" | base64')) | b64encode }}"
+          - "{{ ('mixed_case_value3' + ' ' + lookup('pipe', 'echo -n "byte_value3" | base64')) | b64encode }}"
+  
+    - name: Test random MAC addresses as configuration options
+      community.network.slxos_config:
+        lines:
+          - name={{ random_mac_address }}
+      vars:
+        random_mac_address: "{{ '%02x' | format('0x' + range(256) | random | string )}}:{{ '%02x' | format('0x' + range(256) | random | string )}}:{{ '%02x' | format('0x' + range(256) | random | string )}}:{{ '%02x' | format('0x' + range(256) | random | string )}}:{{ '%02x' | format('0x' + range(256) | random | string )}}:{{ '%02x' | format('0x' + range(256) | random | string )}}"
+  
+    - name: Test random port numbers as configuration options
+      community.network.slxos_config:
+        lines:
+          - name={{ random_port_number }}
+      vars:
+        random_port_number: "{{ range(1,65535) | random }}"

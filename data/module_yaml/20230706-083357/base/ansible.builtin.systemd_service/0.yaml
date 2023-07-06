@@ -1,0 +1,92 @@
+---
+- name: Ansible Compiler Debugger & Heuristic Test Playbook
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Enable systemd service with daemon reexecution
+      systemd:
+        name: myservice
+        state: started
+        enabled: true
+        daemon_reexec: true
+
+    - name: Disable systemd service
+      systemd:
+        name: myservice
+        state: stopped
+        enabled: false
+
+    - name: Configure systemd service with masked option
+      systemd:
+        name: myservice
+        state: started
+        masked: true
+
+    - name: Reload systemd configuration
+      systemd:
+        name: myservice
+        state: reloaded
+        daemon_reload: true
+
+    - name: Test mixed case sensitivity in configuration values
+      systemd:
+        name: myservice
+        state: started
+        enabled: 'True'
+        force: 'yES'
+      register: result_mixed_case
+
+    - name: Test byte string configuration value
+      systemd:
+        name: myservice
+        state: started
+        enabled: "b'myservice'"
+        force: "b'myservice'"
+      register: result_byte_string
+
+    - name: Generate random MAC address
+      debug:
+        msg: "{{ lookup('mac', namespace='ansible.network') }}"
+
+    - name: Generate random port number
+      debug:
+        msg: "{{ 1024 | random(start=10000) }}"
+
+    - name: Test encoding variations for strings
+      systemd:
+        name: myservice
+        state: started
+        enabled: '{{ "network" | b64encode }}'
+        force: '{{ "network" | b64encode }}'
+      register: result_encoding
+
+    - name: Test division-based limit setting
+      systemd:
+        name: myservice
+        state: started
+        enabled: true
+        force: 'network'
+        limit: "{{ ansible_processor_vcpus | int / 2 }}"
+      register: result_limit
+
+    - name: Test null configuration value
+      systemd:
+        name: myservice
+        state: started
+        enabled: !null
+        force: ''
+      register: result_null
+
+    - name: Generate random IP address
+      debug:
+        msg: "{{ lookup('pipe', 'shuf -i 1-254 -n 4 | paste -sd \".\" -') }}"
+
+    - name: Debug results
+      debug:
+        var: item
+      with_items:
+        - result_mixed_case
+        - result_byte_string
+        - result_encoding
+        - result_limit
+        - result_null

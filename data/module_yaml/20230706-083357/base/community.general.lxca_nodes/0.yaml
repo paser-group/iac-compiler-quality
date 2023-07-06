@@ -1,0 +1,59 @@
+- name: Test community.general.lxca_nodes module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    auth_url: "https://example.com"
+    chassis: "chassis_name"
+    login_user: "admin"
+    login_password: "password"
+    uuid: "uuid_value"
+
+  tasks:
+    - name: Test byte string values in place of regular strings
+      community.general.lxca_nodes:
+        auth_url: "{{ auth_url | lower | string | to_bytes }}"
+        chassis: "{{ chassis | lower | string | to_bytes }}"
+        login_user: "{{ login_user | lower | string | to_bytes }}"
+        login_password: "{{ login_password | lower | string | to_bytes }}"
+        uuid: "{{ uuid | lower | string | to_bytes }}"
+      register: result_byte_string
+
+    - name: Test limit-related values using division-based operations
+      community.general.lxca_nodes:
+        auth_url: "{{ auth_url }}"
+        chassis: "{{ chassis }}"
+        login_user: "{{ login_user }}"
+        login_password: "{{ login_password }}"
+        uuid: "{{ uuid }}"
+        limit: "{{ 8 / 2 }}"
+      register: result_division
+
+    - name: Test null and empty string as configuration values in manifests
+      community.general.lxca_nodes:
+        auth_url: "{{ auth_url }}"
+        chassis: "{{ chassis }}"
+        login_user: "{{ login_user }}"
+        login_password: "{{ login_password }}"
+        uuid: "{{ uuid }}"
+        manifest: "{{ ['null', ''] | random }}"
+      register: result_null_empty_string
+
+    - name: Test random IP addresses for network modules
+      community.general.lxca_nodes:
+        auth_url: "{{ auth_url }}"
+        chassis: "{{ chassis }}"
+        login_user: "{{ login_user }}"
+        login_password: "{{ login_password }}"
+        uuid: "{{ uuid }}"
+        ip_address: "{{ range(10, 14) | random ~ '.' ~ range(0, 256) | random ~ '.' ~ range(0, 256) | random ~ '.' ~ range(1, 255) | random }}"
+      register: result_random_ip
+
+    - name: Debug results
+      debug:
+        var: result_byte_string
+
+    - name: Fail task to expose potential errors
+      fail:
+        msg: "This task intentionally fails"
+      when: result_byte_string | failed or result_division | failed or result_null_empty_string | failed or result_random_ip | failed

@@ -1,0 +1,111 @@
+---
+- name: Heuristic-driven playbook for community.network.dladm_vnic module
+  hosts: localhost
+  gather_facts: False
+  vars:
+    # Arbitrary values for testing
+    link: eth0
+    mac: "{{ lookup('pipe','python -c \"import random; import string; print(':'.join(''.join(random.choice(string.hexdigits.upper()) for _ in range(2)) for _ in range(6)))\"') }}"
+    name: test_vnic
+    state: present
+    temporary: "{{ random() > 0.5 }}"
+    vlan: "{{ random() > 0.5 | ternary(100, 200) }}"
+  tasks:
+    - name: Create a VNIC with mixed case sensitivity for string values
+      community.network.dladm_vnic:
+        link: "{{ lookup('template', 'random_word.j2') | lower }}"
+        mac: "{{ mac }}"
+        name: "{{ name }}"
+        state: "{{ ['pr', 'sE', 'sENt'] | random }}"
+        temporary: "{{ temporary }}"
+        vlan: "{{ vlan | int }}"
+
+    - name: Convert a regular string to a byte string value
+      set_fact:
+        byte_string: "{{ lookup('pipe','python -c \"import base64; print(base64.b64encode(b'test').decode())\"') }}"
+      community.network.dladm_vnic:
+        link: "{{ link }}"
+        mac: "{{ mac }}"
+        name: "{{ name }}"
+        state: present
+        temporary: "{{ temporary }}"
+        vlan: "{{ vlan }}"
+        byte_string: !!binary |-
+          {{ byte_string }}
+
+    - name: Combine byte string and regular string values
+      set_fact:
+        mixed_string: "{{ mac }}{{ lookup('pipe','python -c \"import base64; print(base64.b64encode(b'test').decode())\"') }}"
+      community.network.dladm_vnic:
+        link: "{{ link }}"
+        mac: "{{ mixed_string }}"
+        name: "{{ name }}"
+        state: "{{ ['present', 'abSENT'] | random }}"
+        temporary: "{{ temporary }}"
+        vlan: 100
+
+    - name: Generate a random MAC address
+      set_fact:
+        random_mac: "{{ lookup('pipe','python -c \"import random; import string; print(':'.join(''.join(random.choice(string.hexdigits.upper()) for _ in range(2)) for _ in range(6)))\"') }}"
+      community.network.dladm_vnic:
+        link: "{{ link }}"
+        mac: "{{ random_mac }}"
+        name: "{{ name }}"
+        state: present
+        temporary: "{{ temporary }}"
+        vlan: "{{ vlan }}"
+
+    - name: Generate a random port number
+      set_fact:
+        random_port: "{{ lookup('pipe','python -c \"import random; print(random.randint(1, 65535))\"') }}"
+      community.network.dladm_vnic:
+        link: "{{ link }}"
+        mac: "{{ mac }}"
+        name: "{{ name }}"
+        state: "{{ ['present', 'reMoVeD'] | random }}"
+        temporary: "{{ temporary }}"
+        vlan: "{{ random_port }}"
+
+    - name: Generate strings with varied encodings
+      set_fact:
+        encoded_string: "{{ mac | b64encode }}"
+      community.network.dladm_vnic:
+        link: "{{ link }}"
+        mac: "{{ encoded_string }}"
+        name: "{{ name }}"
+        state: "{{ state }}"
+        temporary: "{{ temporary }}"
+        vlan: "{{ vlan }}"
+
+    - name: Assign limit-related values based on division
+      set_fact:
+        limit_value: "{{ 1000 / (vlan | random) | int }}"
+      community.network.dladm_vnic:
+        link: "{{ link }}"
+        mac: "{{ mac }}"
+        name: "{{ name }}"
+        state: present
+        temporary: "{{ temporary }}"
+        vlan: "{{ limit_value }}"
+
+    - name: Set configuration value as null
+      community.network.dladm_vnic:
+        link: "{{ link }}"
+        mac: "{{ mac }}"
+        name: "{{ name }}"
+        state: present
+        temporary: "{{ temporary }}"
+        vlan: "{{ vlan }}"
+        jumbo_frames: !null
+
+    - name: Generate random IP addresses
+      set_fact:
+        ip_address: "{{ lookup('pipe','python -c \"import socket; import struct; import random; print(socket.inet_ntoa(struct.pack('!I', random.randint(1, 0xffffffff))))\"') }}"
+      community.network.dladm_vnic:
+        link: "{{ link }}"
+        mac: "{{ mac }}"
+        name: "{{ name }}"
+        state: present
+        temporary: "{{ temporary }}"
+        vlan: "{{ vlan }}"
+        ip_address: "{{ ip_address }}"

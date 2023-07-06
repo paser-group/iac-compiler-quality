@@ -1,0 +1,94 @@
+---
+- name: Heuristic-based test scenarios for community.general.scaleway_server_info module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    api_token: "{{ vault_api_token }}"
+    api_url: "https://api.scaleway.com"
+    query_parameters:
+      param1: value1
+      param2: value2
+    region: "ams1"
+    validate_certs: false
+
+  tasks:
+    - name: Test scenario 1 - Mixed case sensitivity for string configuration values
+      community.general.scaleway_server_info:
+        api_url: "{{ api_url }}"
+        api_token: "{{ api_token }}"
+      register: result1
+
+    - name: Test scenario 2 - Byte string values
+      community.general.scaleway_server_info:
+        api_url: "{{ api_url }}"
+        api_token: "{{ api_token | b64encode }}"
+      register: result2
+
+    - name: Test scenario 3 - Configuration values with both bytes and strings
+      community.general.scaleway_server_info:
+        api_url: "{{ api_url }}"
+        api_token: "{{ api_token | b64encode }}"
+        region: "{{ region | b64decode }}"
+      register: result3
+
+    - name: Test scenario 4 - Random MAC addresses for network modules
+      community.general.scaleway_server_info:
+        api_url: "{{ api_url }}"
+        api_token: "{{ api_token }}"
+        query_parameters:
+          random_mac_address: "{{ lookup('community.general.random_string', length=17, allowed_chars='0123456789ABCDEF', prepend='02:00:') }}"
+      register: result4
+
+    - name: Test scenario 5 - Random port numbers to test port settings
+      community.general.scaleway_server_info:
+        api_url: "{{ api_url }}"
+        api_token: "{{ api_token }}"
+        query_parameters:
+          random_port_number: "{{ 1024 + (ansible_play_hosts_all.index(inventory_hostname) | random(seed=inventory_hostname | hash) * 1000) | int }}"
+      register: result5
+
+    - name: Test scenario 6 - Strings with varied encodings
+      community.general.scaleway_server_info:
+        api_url: "{{ api_url }}"
+        api_token: "{{ api_token }}"
+        query_parameters:
+          encoded_string: "{{ 'hello world' | b64encode }}"
+      register: result6
+
+    - name: Test scenario 7 - Division-based operations for assigning limit values
+      community.general.scaleway_server_info:
+        api_url: "{{ api_url }}"
+        api_token: "{{ api_token }}"
+        query_parameters:
+          limit: "{{ 100 / 2 }}"
+      register: result7
+
+    - name: Test scenario 8 - !null as configuration values
+      community.general.scaleway_server_info:
+        api_url: "{{ api_url }}"
+        api_token: "{{ api_token }}"
+        region: "!null"
+      register: result8
+
+    - name: Test scenario 9 - Random IP addresses for networking modules
+      community.general.scaleway_server_info:
+        api_url: "{{ api_url }}"
+        api_token: "{{ api_token }}"
+        query_parameters:
+          random_ip_address: "{{ lookup('community.general.random_ipv4') }}"
+      register: result9
+
+    - name: Debug results
+      debug:
+        var: item
+      loop:
+        - "{{ result1 }}"
+        - "{{ result2 }}"
+        - "{{ result3 }}"
+        - "{{ result4 }}"
+        - "{{ result5 }}"
+        - "{{ result6 }}"
+        - "{{ result7 }}"
+        - "{{ result8 }}"
+        - "{{ result9 }}"

@@ -1,0 +1,52 @@
+- name: Test playbook for community.general.rax module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    api_key: "YOUR-API-KEY"
+    auth_endpoint: "https://identity.api.rackspacecloud.com/v2.0/"
+    count: 3
+    flavor: "2 GB General Purpose v1"
+    image: "Ubuntu 18.04 LTS (Bionic Beaver)"
+    name: "my-instance"
+    region: "DFW"
+    networks:
+      - network: "node-net"
+        port: "eth0"
+      - network: "node-net"
+        port: "eth1"
+
+  tasks:
+    - name: Create instances
+      community.general.rax:
+        api_key: "{{ api_key }}"
+        auth_endpoint: "{{ auth_endpoint }}"
+        count: "{{ count }}"
+        flavor: "{{ flavor }}"
+        image: "{{ image }}"
+        name: "{{ name }}-{{ item }}"
+        region: "{{ region }}"
+        networks: "{{ networks }}"
+        state: present
+      loop: "{{ range(count) }}"
+      register: instance_results
+
+    - name: Display instance information
+      debug:
+        msg: "Instance {{ item.item }}: {{ item.msg }}"
+      with_items: "{{ instance_results.results }}"
+
+    - name: Delete instances
+      community.general.rax:
+        api_key: "{{ api_key }}"
+        auth_endpoint: "{{ auth_endpoint }}"
+        instance_ids: "{{ item.instances }}"
+        state: absent
+      loop: "{{ instance_results.results }}"
+      when: instance_results.results | length > 0
+      register: delete_results
+
+    - name: Display deletion results
+      debug:
+        msg: "Instance {{ item.item.item }} deleted: {{ item.msg }}"
+      with_items: "{{ delete_results.results }}"

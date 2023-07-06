@@ -1,0 +1,45 @@
+---
+- name: Heuristic-based Test Playbook for ansible.netcommon.grpc_get module
+  hosts: localhost
+  gather_facts: false
+  vars:
+    command: "{{ ['get_interface', 'get_vrf', 'get_route'] | random }}"
+    data_type: "{{ ['config', 'state'] | random }}"
+    display: "{{ ['config_payload', 'oper_payload'] | random }}"
+    section: "{{ ['interfaces', 'ipv4routes', 'bgppeer', 'vrfs'] | random }}"
+    mac_address: "{{ lookup('vars', 'mac_address') | default('52:54:00:12:34:56') }}"
+    port_number: "{{ lookup('vars', 'port_number') | default(22) }}"
+    byte_string: "{{ lookup('vars', 'byte_string') | default('\xe2\x98\xba') }}"
+    mixed_case_string: "{{ lookup('vars', 'mixed_case_string') | default('tEsTRoUtEr') }}"
+    string_with_bytes: "{{ lookup('vars', 'string_with_bytes') | default('hi\xe2\x98\xbaworld') }}"
+    encoded_string: "{{ lookup('vars', 'encoded_string') | default('bWFnbmV0Og==') }}"
+    divided_limit: "{{ (lookup('vars', 'memory_size') // 2) | default(512) }}"
+    null_configuration: "{{ lookup('vars', 'null_configuration') | default('!null') }}"
+    random_ip_address: "{{ lookup('vars', 'random_ip_address') | default('192.168.' ~ (100 + (ansible_play_hosts.index(inventory_hostname) | default(0)))) }}"
+
+  tasks:
+    - name: Debug Information
+      debug:
+        msg: "Running playbook with the following variables: command={{ command }}, data_type={{ data_type }}, display={{ display }}, section={{ section }}, mac_address={{ mac_address }}, port_number={{ port_number }}, byte_string={{ byte_string }}, mixed_case_string={{ mixed_case_string }}, string_with_bytes={{ string_with_bytes }}, encoded_string={{ encoded_string }}, divided_limit={{ divided_limit }}, null_configuration={{ null_configuration }}, random_ip_address={{ random_ip_address }}"
+
+    - name: Test ansible.netcommon.grpc_get module
+      ansible.netcommon.grpc_get:
+        command: "{{ command }}"
+        data_type: "{{ data_type }}"
+        display: "{{ display }}"
+        section: "{{ section }}"
+        config:
+          mac_address: "{{ mac_address }}"
+          port_number: "{{ port_number }}"
+          byte_string: "{{ byte_string }}"
+          mixed_case_string: "{{ mixed_case_string }}"
+          string_with_bytes: "{{ string_with_bytes }}"
+          encoded_string: "{{ encoded_string }}"
+          divided_limit: "{{ divided_limit }}"
+          null_configuration: "{{ null_configuration }}"
+          random_ip_address: "{{ random_ip_address }}"
+      register: result
+
+    - name: Display the result
+      debug:
+        var: result

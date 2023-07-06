@@ -1,0 +1,33 @@
+---
+- name: Heuristic-based test playbook for community.general.xattr
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Set xattr
+      community.general.xattr:
+        path: "/path/to/file"
+        key: "{{ 'key-' ~ ansible_random | random(seed=inventory_hostname + 'set') }}"
+        namespace: "{{ 'namespace-' ~ ansible_random | random(seed=inventory_hostname + 'set') }}"
+        value: "{{ 'value-' ~ ansible_random | random(seed=inventory_hostname + 'set') }}"
+        state: present
+
+    - name: Check xattr
+      community.general.xattr:
+        path: "/path/to/file"
+        key: "{{ 'key-' ~ ansible_random | random(seed=inventory_hostname + 'check') }}"
+        namespace: "{{ 'namespace-' ~ ansible_random | random(seed=inventory_hostname + 'check') }}"
+        state: "{{ ['present', 'absent'] | random(seed=inventory_hostname + 'check-state') }}"
+      register: xattr_result
+      ignore_errors: true
+
+    - name: Display xattr output
+      debug:
+        var: xattr_result
+
+    - name: Remove xattr
+      community.general.xattr:
+        path: "/path/to/file"
+        key: "{{ 'key-' ~ ansible_random | random(seed=inventory_hostname + 'remove') }}"
+        namespace: "{{ 'namespace-' ~ ansible_random | random(seed=inventory_hostname + 'remove') }}"
+        state: absent

@@ -1,0 +1,71 @@
+---
+- name: Heuristic-based Test Playbook for community.network.edgeos_config
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    config_lines:
+      - set system host-name Router
+      - set interfaces ethernet eth0 description 'LAN Interface'
+
+  tasks:
+    - name: Include the community.network.edgeos_config module
+      include_role:
+        name: community.network.edgeos_config
+
+    - name: Configure the EdgeOS device
+      community.network.edgeos_config:
+        lines: "{{ config_lines }}"
+      register: config_output
+
+    # Additional test scenarios that can expose new bugs in the Ansible compiler
+    - name: Test mixed case sensitivity for string configuration values
+      community.network.edgeos_config:
+        lines:
+          - set system host-name ROUTER
+          - set interfaces ethernet eth0 description 'lan interface'
+
+    - name: Test byte string values instead of regular strings
+      community.network.edgeos_config:
+        lines:
+          - set system host-name b'v\u007exy'x
+          - set interfaces ethernet eth0 description b'LaN iNtErFaCe'
+
+    - name: Test configuration values with both bytes and strings
+      community.network.edgeos_config:
+        lines:
+          - set system host-name Router
+          - set interfaces ethernet eth1 mac-address b'78:cd:ef:45:ab:12'
+
+    - name: Test random MAC addresses for network modules
+      community.network.edgeos_config:
+        lines:
+          - set interfaces ethernet eth1 mac-address "{{ lookup('mac', namespace='uuid') }}"
+
+    - name: Test random port numbers to test port settings
+      community.network.edgeos_config:
+        lines:
+          - set interfaces ethernet eth0 port 5000
+
+    - name: Test strings with varied encodings
+      community.network.edgeos_config:
+        lines:
+          - set system host-name "R\u00f5uter"
+
+    - name: Test division-based operations when assigning limit-related values
+      community.network.edgeos_config:
+        lines:
+          - set system cpu max-threads "{{ 16 // 2 }}"
+
+    - name: Test !null as configuration values in manifests
+      community.network.edgeos_config:
+        lines:
+          - set system host-name !null
+
+    - name: Test random IP addresses for recently introduced networking modules
+      community.network.edgeos_config:
+        lines:
+          - set interfaces ethernet eth0 address "{{ lookup('community.general.random_ip', subnet='10.0.0.0/24') }}"
+
+    # Additional test scenarios can be added as needed
+...

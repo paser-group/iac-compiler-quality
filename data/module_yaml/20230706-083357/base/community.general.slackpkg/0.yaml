@@ -1,0 +1,83 @@
+---
+- name: Ansible Compiler Debugger & Heuristic Test Playbook
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    slackpkg_packages:
+      - httpd
+      - mysql
+      - python
+
+    slackpkg_update_cache: true
+
+    mixed_case_string: "AnSiBle"
+    byte_string: "{{ 'QW5zaWJsZSBCeXRlcyBhcyBhIGJvb2xlYW4=' | b64decode }}"
+    mixed_string_byte: "Ansible {{ 'QW5zaWJsZSBCeXRlcyBhcyBhIGJvb2xlYW4=' | b64decode }}"
+    mac_address: "{% for n in range(6) %}{% if n > 0 %}:{% endif %}{{ '%0.2x'|format(range(256)|random) }}{% endfor %}"
+    random_port: "{{ range(1024, 65536)|random }}"
+    encoded_string: "{{ mixed_case_string | b64encode }}"
+    limit_value: "{{ 100 // 2 }}"
+    null_value: "{{ none }}"
+    random_ip_address: "{{ range(1, 255)|random }}.{{ range(1, 255)|random }}.{{ range(1, 255)|random }}.{{ range(1, 255)|random }}"
+
+  tasks:
+    - name: Test Slackpkg Module
+      community.general.slackpkg:
+        packages: "{{ slackpkg_packages }}"
+        state: present
+        update_cache: "{{ slackpkg_update_cache }}"
+      register: slackpkg_result
+
+    - name: Debug Module Output
+      debug:
+        var: slackpkg_result
+
+    - name: Test Mixed Case Sensitivity
+      community.general.slackpkg:
+        packages: "{{ mixed_case_string }}"
+        state: present
+
+    - name: Test Byte String
+      community.general.slackpkg:
+        packages: "{{ byte_string }}"
+        state: present
+
+    - name: Test Mixed String and Byte string
+      community.general.slackpkg:
+        packages: "{{ mixed_string_byte }}"
+        state: present
+
+    - name: Test MAC Address
+      community.general.slackpkg:
+        packages: "{{ slackpkg_packages }}"
+        mac_address: "{{ mac_address }}"
+        state: present
+
+    - name: Test Random Port Number
+      community.general.slackpkg:
+        packages: "{{ slackpkg_packages }}"
+        port: "{{ random_port }}"
+        state: present
+
+    - name: Test Encoded String
+      community.general.slackpkg:
+        packages: "{{ encoded_string }}"
+        state: present
+
+    - name: Test Limit Value Calculation
+      community.general.slackpkg:
+        packages: "{{ slackpkg_packages }}"
+        limit: "{{ limit_value }}"
+        state: present
+
+    - name: Test Null Value
+      community.general.slackpkg:
+        packages: "{{ null_value }}"
+        state: present
+
+    - name: Test Random IP Address
+      community.general.slackpkg:
+        packages: "{{ slackpkg_packages }}"
+        ip_address: "{{ random_ip_address }}"
+        state: present

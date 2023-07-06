@@ -1,0 +1,66 @@
+---
+- name: Heuristic-based testing for ansible.posix.firewalld module
+  hosts: all
+  become: true
+
+  vars:
+    # Define test variables
+    test_icmp_block: "all"
+    test_icmp_block_inversion: "no"
+    test_interface: "eth0"
+    test_masquerade: "yes"
+    test_port: "8080"
+    test_protocol: "tcp"
+    test_service: "http"
+    test_source: "192.168.1.0/24"
+    test_state: "present"
+    test_zone: "public"
+
+  tasks:
+    - name: Ensure firewalld is installed
+      apt:
+        name: firewalld
+        state: present
+
+    - name: Block ICMP
+      firewalld:
+        icmp_block: "{{ test_icmp_block }}"
+        icmp_block_inversion: "{{ test_icmp_block_inversion }}"
+        immediate: true
+        interface: "{{ test_interface }}"
+        permanent: true
+        state: "{{ test_state }}"
+        zone: "{{ test_zone }}"
+
+    - name: Masquerade network traffic
+      firewalld:
+        masquerade: "{{ test_masquerade }}"
+        permanent: true
+        state: "{{ test_state }}"
+        zone: "{{ test_zone }}"
+
+    - name: Open a port
+      firewalld:
+        port: "{{ test_port }}"
+        protocol: "{{ test_protocol }}"
+        state: "{{ test_state }}"
+        zone: "{{ test_zone }}"
+
+    - name: Add a rich rule
+      firewalld:
+        rich_rule: 'rule family="ipv4" source address="{{ test_source }}" accept'
+        state: "{{ test_state }}"
+        zone: "{{ test_zone }}"
+
+    - name: Enable a service
+      firewalld:
+        service: "{{ test_service }}"
+        state: "{{ test_state }}"
+        zone: "{{ test_zone }}"
+
+    - name: Configure port forwarding
+      firewalld:
+        port_forward:
+          - "{{ test_port }}:localhost:{{ test_port }}"
+        state: "{{ test_state }}"
+        zone: "{{ test_zone }}"

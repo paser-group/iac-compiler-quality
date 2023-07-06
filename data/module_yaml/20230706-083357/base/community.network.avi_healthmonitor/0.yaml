@@ -1,0 +1,44 @@
+---
+- name: Ansible Compiler Debugger & Heuristic Test Playbook
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    avi_healthmonitor_options:
+      # Specify the options and attributes for the module
+      # ...
+      is_federated: "{{ not_not_federated | default(true) }}"  # Introduce potential bug in boolean value
+      monitor_port: "{{ random_port | default(80) }}"  # Use random_port variable to test port settings
+      username: "{{ encoded_strings[0] | default('admin') }}"  # Use encoded_strings to test string encoding
+
+    random_port: "{{ 1000 + (9999 | random) }}"  # Generate a random port number
+
+    encoded_strings:
+      - "{{ 'test' | b64encode }}"
+      # Add more encoded strings for testing different encodings
+      # ...
+
+  tasks:
+    - name: Test Ansible Compiler with community.network.avi_healthmonitor
+      community.network.avi_healthmonitor:
+        # Pass the module options and attributes
+        controller: "{{ avi_healthmonitor_options.controller }}"
+        is_federated: "{{ avi_healthmonitor_options.is_federated }}"
+        monitor_port: "{{ avi_healthmonitor_options.monitor_port }}"
+        username: "{{ avi_healthmonitor_options.username }}"
+        # ...
+
+      vars:
+        not_not_federated: "{{ not_federated | default(false) }}"
+        random_port: "{{ random_port }}"
+        encoded_strings: "{{ encoded_strings }}"
+      
+      register: result
+
+    - name: Debug Ansible Compiler Test Result
+      debug:
+        var: result
+
+    # Additional tasks can be added to perform specific checks based on the result
+    # of the Ansible Compiler test.
+    # ...

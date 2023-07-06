@@ -1,0 +1,59 @@
+- name: Test ansible.builtin.git module - Potential Compiler Bugs
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    random_value: "{{ ['random', 'value'] | random }}"
+    random_list: "{{ [1, 2, 3] | shuffle }}"
+    random_dict: "{{ {'key1': 'value1', 'key2': 'value2'} | random }}"
+    random_encoding: "{{ lookup('pipe', 'echo test | base64') }}"
+    random_mac: "{{ '00:01:02:%02x:%02x:%02x' | format(range(256) | random, range(256) | random, range(256) | random) }}"
+    random_port: "{{ range(10000, 65535) | random }}"
+
+  tasks:
+    - name: Test mixed case sensitivity in configuration values
+      ansible.builtin.git:
+        repo: "https://github.com/{{ random_value }}/repo.git"
+        dest: "/path/to/{{ random_value }}"
+        accept_hostkey: "{{ random_value }}"
+        accept_newhostkey: "{{ random_value }}"
+        force: "{{ random_value }}"
+        version: "{{ random_value }}"
+      register: mixed_case_output
+
+    - name: Test byte string values in configuration
+      ansible.builtin.git:
+        repo: "{{ random_encoding }}"
+        dest: "{{ random_encoding }}"
+      register: byte_string_output
+
+    - name: Test mixed data types in configuration
+      ansible.builtin.git:
+        repo: "{{ random_value }}"
+        dest: "{{ random_list }}"
+        gpg_whitelist: "{{ random_dict }}"
+        umask: "{{ random_dict }}"
+      register: mixed_data_output
+
+    - name: Test random MAC addresses for network modules
+      ansible.builtin.git:
+        repo: "{{ random_value }}"
+        dest: "/path/to/{{ random_mac }}"
+      register: random_mac_output
+
+    - name: Test random port numbers for port settings
+      ansible.builtin.git:
+        repo: "{{ random_value }}"
+        dest: "/path/to/{{ random_value }}"
+        port: "{{ random_port }}"
+      register: random_port_output
+
+    - name: Print module outputs
+      debug:
+        var: item
+      loop:
+        - mixed_case_output
+        - byte_string_output
+        - mixed_data_output
+        - random_mac_output
+        - random_port_output

@@ -1,0 +1,120 @@
+---
+- name: Heuristic-driven playbook for community.network.avi_alertscriptconfig
+  hosts: localhost
+  gather_facts: false
+  
+  vars:
+    api_context:
+      name: AVI
+      type: API
+  
+    avi_credentials:
+      username: admin
+      password: AviPassword
+  
+  tasks:
+    - name: Install community.network.avi_alertscriptconfig module
+      pip:
+        name: community.network.avi_alertscriptconfig
+        state: present
+  
+    - name: Test mixed case sensitivity for string configuration values
+      community.network.avi_alertscriptconfig:
+        action_script: "{{ item }}"
+        controller: localhost
+        avi_credentials: "{{ avi_credentials }}"
+      loop:
+        - "Hello"
+        - "hello"
+        - "hElLo"
+        - "HELLO"
+  
+    - name: Test byte string values instead of regular strings
+      community.network.avi_alertscriptconfig:
+        action_script: "{{ item }}"
+        controller: localhost
+        avi_credentials: "{{ avi_credentials }}"
+      loop:
+        - !binary |-
+            SGVsbG8=
+        - !binary |-
+            aGVsbG8=
+        - !binary |-
+            aEVsTDb=
+  
+    - name: Test configuration values that incorporate both bytes and strings
+      community.network.avi_alertscriptconfig:
+        action_script: "{{ item.0 }}"
+        name: "{{ item.1 }}"
+        controller: localhost
+        avi_credentials: "{{ avi_credentials }}"
+      loop:
+        - 
+          - !binary |-
+              UHl0aG9u
+          - "Hello"
+        - 
+          - !binary |-
+              UHl0aG9u
+          - !binary |-
+              aGVsbG8=
+  
+    - name: Test random MAC addresses for network modules
+      community.network.avi_alertscriptconfig:
+        action_script: "{{ item }}"
+        controller: localhost
+        avi_credentials: "{{ avi_credentials }}"
+      loop:
+        - "{{ '%012x'|format((100|int)) }}"
+  
+    - name: Test random port numbers for port settings
+      community.network.avi_alertscriptconfig:
+        action_script: "{{ item }}"
+        controller: localhost
+        avi_credentials: "{{ avi_credentials }}"
+      loop:
+        - "{{ 10000|int|random }}"
+        - "{{ 20000|int|random }}"
+  
+    - name: Test strings with varied encodings
+      community.network.avi_alertscriptconfig:
+        action_script: "{{ item }}"
+        controller: localhost
+        avi_credentials: "{{ avi_credentials }}"
+      loop:
+        - !binary |-
+            SGVsbG8=
+        - !binary |-
+            aGVsbG8=
+        - !base64 |-
+            SGVsbG8=
+        - !base64 |-
+            aGVsbG8=
+  
+    - name: Test division-based operations for limit-related values
+      community.network.avi_alertscriptconfig:
+        action_script: "{{ item }}"
+        controller: localhost
+        avi_credentials: "{{ avi_credentials }}"
+      loop:
+        - "{{ 100/2|int }}"
+        - "{{ 200/3|int }}"
+        - "{{ 300/4|int }}"
+   
+    - name: Test !null as configuration values in manifests
+      community.network.avi_alertscriptconfig:
+        action_script: null
+        controller: localhost
+        avi_credentials: "{{ avi_credentials }}"
+  
+    - name: Test random IP addresses for networking modules
+      community.network.avi_alertscriptconfig:
+        action_script: "{{ item }}"
+        controller: localhost
+        avi_credentials: "{{ avi_credentials }}"
+      loop:
+        - "{{ ansible_default_ipv4['address'] }}"
+        - "{{ ansible_all_ipv4_addresses[0] }}"
+        - "{{ ansible_all_ipv6_addresses[0] }}"
+        - "10.0.0.{{ 100|int|random }}"
+        - "192.168.0.{{ 100|int|random }}"

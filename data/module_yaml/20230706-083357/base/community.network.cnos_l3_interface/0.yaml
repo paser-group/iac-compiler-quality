@@ -1,0 +1,45 @@
+- name: Heuristic-based Test Playbook for community.network.cnos_l3_interface
+  hosts: all
+  gather_facts: false
+
+  vars:
+    ipv4_addresses:
+      - "10.0.0.1"
+      - "192.168.1.1"
+      - "172.16.0.1"
+    ipv6_addresses:
+      - "2001:db8::1"
+      - "fd00:dead:beef::1"
+      - "fe80::1"
+    interface_names:
+      - "eth0"
+      - "ens1"
+      - "vlan1"
+    state_values:
+      - "present"
+      - "absent"
+      - "unknown"
+  
+  tasks:
+    - name: Test community.network.cnos_l3_interface module
+      include_role:
+        name: community.network.cnos_l3_interface
+      vars:
+        aggregate: "{{ item.aggregate | default(None) }}"
+        ipv4: "{{ item.ipv4 | default(None) }}"
+        ipv6: "{{ item.ipv6 | default(None) }}"
+        name: "{{ item.name | default(None) }}"
+        state: "{{ item.state | default(None) }}"
+      with_items:
+        - { aggregate: true }
+        - { ipv4: "{{ item }}" }
+        - { ipv6: "{{ item }}" }
+        - { name: "{{ item }}" }
+        - { state: "{{ item }}" }
+      loop_control:
+        extended: yes
+      register: result
+  
+    - name: Report potential bugs
+      debug:
+        var: result

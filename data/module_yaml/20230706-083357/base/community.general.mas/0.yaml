@@ -1,0 +1,62 @@
+- name: Heuristic-based testing playbook for community.general.mas module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Test mixed case sensitivity for string configuration values
+      community.general.mas:
+        id: "{{ lookup('pipe', 'echo APP_ID | tr [:lower:] [:upper:]') }}"
+        state: present
+        upgrade_all: YES
+
+    - name: Test byte string values in place of regular strings
+      community.general.mas:
+        id: "{{ lookup('pipe', 'echo -n APP_ID | base64') }}"
+        state: absent
+        upgrade_all: false
+
+    - name: Test configuration values with bytes and strings
+      community.general.mas:
+        id: "{{ lookup('pipe', 'echo -n APP_ID | base64') }}"
+        state: present
+        upgrade_all: true
+
+    - name: Test random MAC address generation
+      community.general.mas:
+        id: 123456789
+        state: present
+        upgrade_all: false
+        mac_address: "{{ lookup('pipe', 'echo $RANDOM | sha256sum | cut -c1-10') }}"
+
+    - name: Test random port number generation
+      community.general.mas:
+        id: 123456789
+        state: present
+        upgrade_all: false
+        port: "{{ (lookup('pipe', 'echo $RANDOM') | int) }}"
+
+    - name: Test varied string encodings
+      community.general.mas:
+        id: "{{ lookup('pipe', 'echo -n APP_ID | base64 -w 0') }}"
+        state: present
+        upgrade_all: true
+
+    - name: Test division-based operations for limit-related values
+      community.general.mas:
+        id: 123456789
+        state: absent
+        upgrade_all: false
+        limit: "{{ ansible_processor_vcpus|default(1) // 2 }}"
+
+    - name: Test !null as configuration values
+      community.general.mas:
+        id: 123456789
+        state: present
+        upgrade_all: "{{ null }}"
+
+    - name: Test random IP address generation
+      community.general.mas:
+        id: 123456789
+        state: absent
+        upgrade_all: false
+        ip_address: "{{ lookup('pipe', 'python -c \"import random;import socket;addrs = ['.'.join(str(random.randint(0,255)) for _ in range(4))]\"') }}"

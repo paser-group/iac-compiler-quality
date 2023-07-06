@@ -1,0 +1,132 @@
+---
+- name: Heuristic Test Playbook for community.general.ipmi_power
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    key: "AbCD1234"
+    machine:
+      - host: "192.168.1.100"
+        user: "admin"
+        password: "password"
+        port: 623
+      - host: "192.168.1.101"
+        user: "admin"
+        password: "password"
+        port: 623
+    name: "server"
+    password: "password"
+    port: 623
+    state: "power_on"
+    timeout: 10
+    user: "admin"
+
+  tasks:
+    - name: Test scenario - Mixed case sensitivity in string configuration values
+      community.general.ipmi_power:
+        key: "{{ key | lower }}"
+        machine: "{{ machine }}"
+        name: "{{ name | upper }}"
+        password: "{{ password | capitalize }}"
+        port: "{{ port }}"
+        state: "{{ state }}"
+        timeout: "{{ timeout }}"
+        user: "{{ user }}"
+
+    - name: Test scenario - Byte string values in place of regular strings
+      community.general.ipmi_power:
+        key: !binary "YWJDRDEyMzQ="
+        machine: "{{ machine }}"
+        name: !binary "c2VydmVy"
+        password: !binary "cGFzc3dvcmQ="
+        port: "{{ port }}"
+        state: "{{ state }}"
+        timeout: "{{ timeout }}"
+        user: !binary "YWRtaW4="
+
+    - name: Test scenario - Configuration values with both bytes and strings
+      community.general.ipmi_power:
+        key: "{{ key }}"
+        machine: "{{ machine }}"
+        name: !binary "c2VydmVy"
+        password: "{{ password }}"
+        port: "{{ port }}"
+        state: "{{ state }}"
+        timeout: "{{ timeout }}"
+        user: !binary "YWRtaW4="
+
+    - name: Test scenario - Random MAC addresses for network modules
+      set_fact:
+        random_mac_address: "{{ '%012x' | format((['00', '16', '3e'] + (range(1, 6)|random_sample(3)))|join(':'))) }}"
+      community.general.ipmi_power:
+        key: "{{ key }}"
+        machine: "{{ machine }}"
+        name: "{{ name }}"
+        password: "{{ password }}"
+        port: "{{ port }}"
+        mac_address: "{{ random_mac_address }}"
+        state: "{{ state }}"
+        timeout: "{{ timeout }}"
+        user: "{{ user }}"
+
+    - name: Test scenario - Random port numbers for port settings
+      set_fact:
+        random_port_number: "{{ (1024 + (65535-1024)|random) }}"
+      community.general.ipmi_power:
+        key: "{{ key }}"
+        machine: "{{ machine }}"
+        name: "{{ name }}"
+        password: "{{ password }}"
+        port: "{{ random_port_number }}"
+        state: "{{ state }}"
+        timeout: "{{ timeout }}"
+        user: "{{ user }}"
+
+    - name: Test scenario - Strings with varied encodings
+      community.general.ipmi_power:
+        key: "{{ key }}"
+        machine: "{{ machine }}"
+        name: "{{ name }}"
+        password: "{{ password | to_json | b64encode }}"
+        port: "{{ port }}"
+        state: "{{ state }}"
+        timeout: "{{ timeout }}"
+        user: "{{ user | to_json | b64encode }}"
+
+    - name: Test scenario - Division-based operations for limit-related values
+      set_fact:
+        limit_value: "{{ (1000 / loop.index) | round }}"
+      loop: "{{ range(1, 11) | list }}"
+      community.general.ipmi_power:
+        key: "{{ key }}"
+        machine: "{{ machine }}"
+        name: "{{ name }}"
+        password: "{{ password }}"
+        port: "{{ port }}"
+        state: "{{ state }}"
+        timeout: "{{ timeout }}"
+        user: "{{ user }}"
+        limit: "{{ limit_value }}"
+
+    - name: Test scenario - Null configuration values in manifests
+      community.general.ipmi_power:
+        key: "{{ key }}"
+        machine: "{{ machine }}"
+        name: "{{ name }}"
+        password: null
+        port: null
+        state: "{{ state }}"
+        timeout: "{{ timeout }}"
+        user: "{{ user }}"
+
+    - name: Test scenario - Random IP addresses for networking modules
+      community.general.ipmi_power:
+        key: "{{ key }}"
+        machine: "{{ machine }}"
+        name: "{{ name }}"
+        password: "{{ password }}"
+        port: "{{ port }}"
+        state: "{{ state }}"
+        timeout: "{{ timeout }}"
+        user: "{{ user }}"
+        ip_address: "{{ range(1, 254) | random + '.0' }}"

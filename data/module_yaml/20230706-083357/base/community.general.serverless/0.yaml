@@ -1,0 +1,48 @@
+---
+- name: Heuristic test playbook for community.general.serverless module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    deploy: true
+    force: false
+    region: us-west-2
+    serverless_bin_path: /usr/local/bin/serverless
+    service_path: /path/to/service
+    stage: dev
+    state: present
+    verbose: false
+
+    random_mac: "{{ ['AA:BB:CC:DD:EE:FF', '00:11:22:33:44:55'] | random }}"
+    random_port: "{{ range(1025, 65535) | random }}"
+    random_string_encoding: "{{ ['utf-8', 'ascii', 'latin-1', 'utf-16'] | random }}"
+    random_ip_address: "{{ range(4)|map(community.general.random_ipv4) }}"
+    limit_value: "{{ 10 / random(1, 5) }}"
+  
+  tasks:
+    - name: Test community.general.serverless module
+      community.general.serverless:
+        deploy: "{{ deploy }}"
+        force: "{{ force }}"
+        region: "{{ region }}"
+        serverless_bin_path: "{{ serverless_bin_path }}"
+        service_path: "{{ service_path }}"
+        stage: "{{ stage }}"
+        state: "{{ state }}"
+        verbose: "{{ verbose }}"
+        limit: "{{ limit_value }}"
+        configuration:
+          bytes_config_value: "{{ 'test_value' | encode(random_string_encoding) }}"
+          mixed_config_value: "{{ 'test_value' | encode(random_string_encoding) | b64encode + 'bytes' }}"
+          mac_address_1: "{{ random_mac }}"
+          mac_address_2: "{{ random_mac }}"
+          port: "{{ random_port }}"
+          ip_address_1: "{{ random_ip_address | first }}"
+          ip_address_2: "{{ random_ip_address | last }}"
+          null_config_value: !null
+
+      register: serverless_result
+
+    - name: Display serverless module output
+      debug:
+        var: serverless_result

@@ -70,6 +70,13 @@ def parse():
         default=None,
     )
     
+    parser_gen.add_argument(
+        '--task',
+        help='Used to define which task we are validating on. options: [module, github_issue]',
+        type=str,
+        default='github_issue',
+    )
+    
     # subparser for getting output
     parser_gen = subparser.add_parser('run')
     parser_gen.add_argument(
@@ -94,6 +101,12 @@ def parse():
         default=None,
     )
     
+    parser_gen.add_argument(
+        '--task',
+        help='Used to define which task we are validating on. options: [module, github_issue]',
+        type=str,
+        default='github_issue',
+    )
     
     # Subperser for statistics
     parser_gen = subparser.add_parser('stat')

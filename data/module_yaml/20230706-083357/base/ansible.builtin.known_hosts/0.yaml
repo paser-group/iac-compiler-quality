@@ -1,0 +1,50 @@
+---
+- name: Heuristic-driven test playbook for ansible.builtin.known_hosts
+  hosts: localhost
+  gather_facts: false
+  
+  tasks:
+    - name: Add a host to the known_hosts file
+      ansible.builtin.known_hosts:
+        name: myhost.example.com
+        path: /home/user/.ssh/known_hosts
+        key: ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDvKeq6E...
+        state: present
+        hash_host: false
+
+    - name: Remove a host from the known_hosts file
+      ansible.builtin.known_hosts:
+        name: myhost.example.com
+        path: /home/user/.ssh/known_hosts
+        state: absent
+
+    - meta: clear_host_errors
+
+    # Bug: Using byte string for `state` attribute
+    - name: Add a host to the known_hosts file (byte string state)
+      ansible.builtin.known_hosts:
+        name: myhost.example.com
+        path: /home/user/.ssh/known_hosts
+        key: ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDvKeq6E...
+        state: b"present"
+        hash_host: false
+        
+    - name: Remove a host with non-string name
+      ansible.builtin.known_hosts:
+        name: 123.456.789.111   # Bug: Non-string name
+        path: /home/user/.ssh/known_hosts
+        state: absent
+
+    - name: Remove an invalid host with specific key type
+      ansible.builtin.known_hosts:
+        name: invalid-host.example.com
+        path: /home/user/.ssh/known_hosts
+        key: ssh-dsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDvKeq6E...
+        state: absent
+
+    - name: Add a host with invalid path
+      ansible.builtin.known_hosts:
+        name: myhost.example.com
+        path: /invalid/path/known_hosts
+        state: present
+        hash_host: false

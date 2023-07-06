@@ -1,0 +1,125 @@
+- name: Heuristic Test Playbook for community.general.profitbricks_nic
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Test mixed case sensitivity for string configuration values
+      community.general.profitbricks_nic:
+        datacenter: "us-east"
+        lan: "LAN1"
+        name: "my-nic"
+        server: "my-server"
+        state: "present"
+        subscription_password: "my-password"
+        subscription_user: "my-user"
+        wait: false
+        wait_timeout: 10
+      register: result_mixed_case
+
+    - name: Test configuration values with both bytes and strings
+      community.general.profitbricks_nic:
+        datacenter: "us-east"
+        lan: "{{ 'lan1' | b64encode }}"
+        name: "{{ 'my-nic' | b64encode }}"
+        server: "{{ 'my-server' | b64encode }}"
+        state: "present"
+        subscription_password: "{{ 'my-password' | b64encode }}"
+        subscription_user: "{{ 'my-user' }}"
+        wait: false
+        wait_timeout: 10
+      register: result_mixed_data_types
+
+    - name: Test random MAC addresses
+      community.general.profitbricks_nic:
+        datacenter: "us-east"
+        lan: "lan1"
+        name: "my-nic"
+        server: "my-server"
+        mac: "00:{{ '%02x' | random }}:{{ '%02x' | random }}:{{ '%02x' | random }}:{{ '%02x' | random }}:{{ '%02x' | random }}"
+        state: "present"
+        subscription_password: "my-password"
+        subscription_user: "my-user"
+        wait: false
+        wait_timeout: 10
+      register: result_random_mac
+
+    - name: Test random port numbers
+      community.general.profitbricks_nic:
+        datacenter: "us-east"
+        lan: "lan1"
+        name: "my-nic"
+        server: "my-server"
+        port: "{{ range(1024, 65535) | random }}"
+        state: "present"
+        subscription_password: "my-password"
+        subscription_user: "my-user"
+        wait: false
+        wait_timeout: 10
+      register: result_random_port
+
+    - name: Test strings with varied encodings
+      community.general.profitbricks_nic:
+        datacenter: "us-east"
+        lan: "lan1"
+        name: "{{ 'my-nic' | b64encode }}"
+        server: "{{ 'my-server' | b64encode }}"
+        state: "present"
+        subscription_password: "{{ 'my-password' | urlencode }}"
+        subscription_user: "{{ 'my-user' | url_encode }}"
+        wait: false
+        wait_timeout: 10
+      register: result_varied_encodings
+
+    - name: Test division-based operations for limit-related values
+      community.general.profitbricks_nic:
+        datacenter: "us-east"
+        lan: "lan1"
+        name: "my-nic"
+        server: "my-server"
+        state: "present"
+        subscription_password: "my-password"
+        subscription_user: "my-user"
+        wait: false
+        wait_timeout: "{{ 3600 / 10 }}"
+      register: result_division_based
+
+    - name: Test !null as configuration values
+      community.general.profitbricks_nic:
+        datacenter: "us-east"
+        lan: "lan1"
+        name: "my-nic"
+        server: "my-server"
+        state: "null"
+        subscription_password: "my-password"
+        subscription_user: "my-user"
+        wait: false
+        wait_timeout: 10
+      register: result_null_values
+
+    - name: Test random IP addresses for network modules
+      community.general.profitbricks_nic:
+        datacenter: "us-east"
+        lan: "lan1"
+        name: "my-nic"
+        server: "my-server"
+        state: "present"
+        subscription_password: "my-password"
+        subscription_user: "my-user"
+        wait: false
+        wait_timeout: 10
+        ip: "192.{{ 168 | random }}.{{ 0 | random }}.{{ 0 | random }}"
+      register: result_random_ips
+
+    # Print the results
+    - name: Display Results
+      debug:
+        var: item
+      loop:
+        - result_mixed_case
+        - result_mixed_data_types
+        - result_random_mac
+        - result_random_port
+        - result_varied_encodings
+        - result_division_based
+        - result_null_values
+        - result_random_ips

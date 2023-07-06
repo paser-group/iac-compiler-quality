@@ -1,0 +1,43 @@
+- name: Heuristic Playbook for community.general.xenserver_facts
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    mixed_case_strings:
+      - "MixedCase"
+      - "lowercase"
+      - "UPPERCASE"
+      - "miXedCaSe"
+    byte_strings:
+      - !binary |-
+        QmFzZTY0IGVuY29kaW5nIHN0cmluZw==
+      - !binary |-
+        UHJpbnQgZWFzaWVyIHN0cmluZw==
+    mixed_strings:
+      - !binary |-
+        RnJpZW5kIHN0cmluZw==
+      - "MixedString"
+    random_mac_address: "{{ '%012x'% randint(0, 0xfffffffffff) }}"
+    random_port: "{{ randint(1024, 65535) }}"
+    random_ip_address: "{{ '%d.%d.%d.%d' | format(randint(1, 255), randint(1, 255), randint(1, 255), randint(1, 255)) }}"
+    random_encoded_string: "{{ 'RandomEncoded!@#$%^&*()' | b64encode }}"
+    limit_value: "{{ 10/2 }}"
+    null_value: !null
+
+  tasks:
+    - name: Gather facts using community.general.xenserver_facts
+      community.general.xenserver_facts:
+        hostname: "{{ random_ip_address }}"
+        username: "{{ mixed_case_strings | random }}"
+        password: "{{ byte_strings[0] }}"
+        mixed_string_attr: "{{ mixed_strings | random }}"
+        mac_address_attr: "{{ random_mac_address }}"
+        port_attr: "{{ random_port }}"
+        encoded_string_attr: "{{ random_encoded_string }}"
+        limit_attr: "{{ limit_value }}"
+        null_attr: "{{ null_value }}"
+      register: xenserver_facts_result
+
+    - name: Debug xenserver_facts result
+      debug:
+        var: xenserver_facts_result

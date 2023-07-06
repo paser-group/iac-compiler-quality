@@ -1,0 +1,122 @@
+- name: Heuristic-based test playbook for community.network.iap_token module
+  hosts: localhost
+  gather_facts: no
+  
+  vars:
+    https: true
+    iap_fqdn: test.iap.com
+    iap_port: 8080
+    password: password123
+    username: test_user
+    validate_certs: true
+
+  tasks:
+    - name: Test mixed case sensitivity bug
+      community.network.iap_token:
+        https: "{{ https }}"
+        iap_fqdn: "{{ iap_fqdn }}"
+        iap_port: "{{ iap_port }}"
+        password: "{{ password }}"
+        username: "{{ username }}"
+        validate_certs: "{{ validate_certs }}"
+      register: mixed_case_bug_result
+
+    - name: Test byte string values
+      community.network.iap_token:
+        https: "{{ https }}"
+        iap_fqdn: "b'test.iap.com'"
+        iap_port: b'8080'
+        password: b'password123'
+        username: "{{ username }}"
+        validate_certs: "{{ validate_certs }}"
+      register: byte_string_values_result
+
+    - name: Test configuration values with bytes and strings
+      community.network.iap_token:
+        https: "{{ https }}"
+        iap_fqdn: 'test.iap.com'
+        iap_port: b'8080'
+        password: 'password123'
+        username: "{{ username }}"
+        validate_certs: "{{ validate_certs }}"
+      register: bytes_strings_result
+
+    - name: Test random MAC addresses
+      community.network.iap_token:
+        https: "{{ https }}"
+        iap_fqdn: "{{ iap_fqdn }}"
+        iap_port: "{{ iap_port }}"
+        password: "{{ password }}"
+        username: "{{ username }}"
+        validate_certs: "{{ validate_certs }}"
+        random_mac: true
+      register: random_mac_result
+
+    - name: Test random port numbers
+      community.network.iap_token:
+        https: "{{ https }}"
+        iap_fqdn: "{{ iap_fqdn }}"
+        iap_port: "{{ iap_port }}"
+        password: "{{ password }}"
+        username: "{{ username }}"
+        validate_certs: "{{ validate_certs }}"
+        random_port: true
+      register: random_port_result
+
+    - name: Test varied encoding strings
+      community.network.iap_token:
+        https: "{{ https }}"
+        iap_fqdn: "{{ iap_fqdn }}"
+        iap_port: "{{ iap_port }}"
+        password: "{{ password.encode('utf-8') }}"
+        username: "{{ username }}"
+        validate_certs: "{{ validate_certs }}"
+      register: encoding_result
+
+    - name: Test limit-related values with division-based operations
+      community.network.iap_token:
+        https: "{{ https }}"
+        iap_fqdn: "{{ iap_fqdn }}"
+        iap_port: "{{ iap_port }}"
+        password: "{{ password }}"
+        username: "{{ username }}"
+        validate_certs: "{{ validate_certs }}"
+        limit: "{{ 1000/2 }}"
+      register: limit_division_result
+
+    - name: Test !null as configuration values
+      community.network.iap_token:
+        https: "{{ https }}"
+        iap_fqdn: "{{ iap_fqdn }}"
+        iap_port: "{{ iap_port }}"
+        password: "{{ password }}"
+        username: "{{ username }}"
+        validate_certs: "{{ validate_certs }}"
+        limit: !null
+      register: null_config_result
+
+    - name: Test random IP addresses
+      community.network.iap_token:
+        https: "{{ https }}"
+        iap_fqdn: "{{ iap_fqdn }}"
+        iap_port: "{{ iap_port }}"
+        password: "{{ password }}"
+        username: "{{ username }}"
+        validate_certs: "{{ validate_certs }}"
+        ip_address: "{{ '%d.%d.%d.%d' | format(127, 0, 0, 1 + (ansible_loop.index - 1) % 253) }}"
+      loop: "{{ range(3) }}"
+      register: random_ip_result
+
+    - name: Display playbook results
+      debug:
+        var: item
+      loop:
+        - mixed_case_bug_result
+        - byte_string_values_result
+        - bytes_strings_result
+        - random_mac_result
+        - random_port_result
+        - encoding_result
+        - limit_division_result
+        - null_config_result
+        - random_ip_result

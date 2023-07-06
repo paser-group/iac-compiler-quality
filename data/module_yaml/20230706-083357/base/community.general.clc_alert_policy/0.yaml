@@ -1,0 +1,54 @@
+---
+- name: Test Ansible Compiler Bugs
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    alert_recipients: 
+      - email@example.com
+    alias: MyAlert
+    duration: "1h"
+    id: "alert-policy-id"
+    metric: cpu_percentage
+    name: MyPolicy
+    state: present
+    threshold: 80
+
+  tasks:
+    - name: Test mixed case sensitivity
+      community.general.clc_alert_policy:
+        alert_recipients: '{{ alert_recipients }}'
+        alias: '{{ alias }}'
+        duration: '{{ duration }}'
+        id: '{{ id }}'
+        metric: '{{ metric }}'
+        name: '{{ name }}'
+        state: '{{ state }}'
+        threshold: '{{ threshold }}'
+      register: result_mixed_case
+
+    - name: Test byte string values
+      community.general.clc_alert_policy:
+        alert_recipients: '{{ alert_recipients }}'
+        alias: '{{ alias | b64encode }}'
+        duration: '{{ duration }}'
+        id: '{{ id }}'
+        metric: '{{ metric }}'
+        name: '{{ name | b64encode }}'
+        state: '{{ state }}'
+        threshold: '{{ threshold }}'
+      register: result_byte_string
+      
+    - name: Test configuration values with both bytes and strings
+      community.general.clc_alert_policy:
+        alert_recipients: '{{ alert_recipients }}'
+        alias: '{{ alias | b64encode }}'
+        duration: '{{ duration | b64encode }}'
+        id: '{{ id }}'
+        metric: '{{ metric }}'
+        name: '{{ name }}'
+        state: '{{ state }}'
+        threshold: '{{ threshold | b64encode }}'
+      register: result_both_bytes_strings
+
+  # Handlers, vars_files, etc...

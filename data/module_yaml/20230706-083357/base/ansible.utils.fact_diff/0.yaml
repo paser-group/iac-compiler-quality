@@ -1,0 +1,40 @@
+---
+- name: Heuristic Ansible Playbook
+  hosts: localhost
+  gather_facts: False
+
+  tasks:
+    - name: Set variables for test scenarios
+      vars:
+        before_raw: "{{ lookup('file', './before_raw.txt') }}"
+        after_raw: "{{ lookup('file', './after_raw.txt') }}"
+        plugin_dict:
+          key1: value1
+          key2: value2
+        rnd_mac: "{{ '%02x:%02x:%02x:%02x:%02x:%02x' | format(255 | random, 255 | random, 255 | random, 255 | random, 255 | random, 255 | random) }}"
+        rnd_port: "{{ 1024 + random(49151 - 1024) }}"
+        encoded_string: "{{ 'example' | b64encode }}"
+        limit_division: "{{ 100 / 10 }}"
+      vars_prompt:
+        - name: prompt_bytes
+          prompt: "Enter byte string value:"
+          private: no
+      vars_files:
+        - vars.yml
+
+    - name: Store byte string value
+      set_fact:
+        byte_string: "{{ prompt_bytes }}"
+
+    - name: Print test scenario variables
+      debug:
+        var: "{{ item }}"
+      loop:
+        - before_raw
+        - after_raw
+        - plugin_dict
+        - rnd_mac
+        - rnd_port
+        - encoded_string
+        - limit_division
+        - byte_string

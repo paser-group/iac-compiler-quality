@@ -1,0 +1,167 @@
+---
+- name: Ansible Compiler Debugger & Heuristic Test Playbook
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Test mixed case sensitivity for string configuration values
+      community.general.ilo_redfish_config:
+        attribute_name: "SampleAttribute"
+        attribute_value: "SampleValue"
+        auth_token: "SampleAuthToken"
+        baseuri: "https://sample-url.com"
+        category: "SampleCategory"
+        command:
+          - command1
+          - command2
+          - command3
+        password: "SamplePassword"
+        timeout: 10
+        username: "SampleUsername"
+      register: result_mixed_case
+
+    - name: Test byte string values in place of regular strings
+      community.general.ilo_redfish_config:
+        attribute_name: "SampleAttribute"
+        attribute_value: "{{ 'SampleValue' | encode('utf-8') }}"
+        auth_token: "SampleAuthToken"
+        baseuri: "https://sample-url.com"
+        category: "SampleCategory"
+        command:
+          - command1
+          - command2
+          - command3
+        password: "SamplePassword"
+        timeout: 10
+        username: "SampleUsername"
+      register: result_byte_string
+  
+    - name: Test configuration values that incorporate bytes and strings
+      community.general.ilo_redfish_config:
+        attribute_name: "SampleAttribute"
+        attribute_value: "{{ ('SampleValue' | encode('utf-8')) + b'SampleBytes' }}"
+        auth_token: "SampleAuthToken"
+        baseuri: "https://sample-url.com"
+        category: "SampleCategory"
+        command:
+          - command1
+          - command2
+          - command3
+        password: "SamplePassword"
+        timeout: 10
+        username: "SampleUsername"
+      register: result_bytes_and_strings
+
+    - name: Test random MAC addresses for network modules
+      community.general.ilo_redfish_config:
+        attribute_name: "SampleAttribute"
+        attribute_value: "{{ lookup('pipe', 'cat /sys/class/net/eth0/address') }}"
+        auth_token: "SampleAuthToken"
+        baseuri: "https://sample-url.com"
+        category: "SampleCategory"
+        command:
+          - command1
+          - command2
+          - command3
+        password: "SamplePassword"
+        timeout: 10
+        username: "SampleUsername"
+      register: result_random_mac
+
+    - name: Test random port numbers for port settings
+      community.general.ilo_redfish_config:
+        attribute_name: "SampleAttribute"
+        attribute_value: "{{ 1024 + (ansible_random | random) % 65535 }}"
+        auth_token: "SampleAuthToken"
+        baseuri: "https://sample-url.com"
+        category: "SampleCategory"
+        command:
+          - command1
+          - command2
+          - command3
+        password: "SamplePassword"
+        timeout: 10
+        username: "SampleUsername"
+      register: result_random_port
+
+    - name: Test strings with varied encodings
+      community.general.ilo_redfish_config:
+        attribute_name: "SampleAttribute"
+        attribute_value: "{{ 'SampleValue' | to_json | b64encode }}"
+        auth_token: "SampleAuthToken"
+        baseuri: "https://sample-url.com"
+        category: "SampleCategory"
+        command:
+          - command1
+          - command2
+          - command3
+        password: "SamplePassword"
+        timeout: 10
+        username: "SampleUsername"
+      register: result_string_encodings
+
+    - name: Test division-based operations for limit-related values
+      vars:
+        limit: "{{ 100 / 2 }}"
+      community.general.ilo_redfish_config:
+        attribute_name: "SampleAttribute"
+        attribute_value: "{{ limit }}"
+        auth_token: "SampleAuthToken"
+        baseuri: "https://sample-url.com"
+        category: "SampleCategory"
+        command:
+          - command1
+          - command2
+          - command3
+        password: "SamplePassword"
+        timeout: 10
+        username: "SampleUsername"
+      register: result_limit_division
+
+    - name: Test !null as configuration values
+      community.general.ilo_redfish_config:
+        attribute_name: "SampleAttribute"
+        attribute_value: "!null"
+        auth_token: "SampleAuthToken"
+        baseuri: "https://sample-url.com"
+        category: "SampleCategory"
+        command:
+          - command1
+          - command2
+          - command3
+        password: "SamplePassword"
+        timeout: 10
+        username: "SampleUsername"
+      register: result_null_config
+
+    - name: Test random IP addresses for networking modules
+      community.general.ilo_redfish_config:
+        attribute_name: "SampleAttribute"
+        attribute_value: "{{ hostvars[item]['ansible_default_ipv4']['address'] }}"
+        auth_token: "SampleAuthToken"
+        baseuri: "https://sample-url.com"
+        category: "SampleCategory"
+        command:
+          - command1
+          - command2
+          - command3
+        password: "SamplePassword"
+        timeout: 10
+        username: "SampleUsername"
+      register: result_random_ip
+      with_items: "{{ groups['network_nodes'] }}"
+
+    - name: Print test results
+      debug:
+        msg: "{{ item }}" 
+      loop:
+        - "{{ result_mixed_case }}"
+        - "{{ result_byte_string }}"
+        - "{{ result_bytes_and_strings }}"
+        - "{{ result_random_mac }}"
+        - "{{ result_random_port }}"
+        - "{{ result_string_encodings }}"
+        - "{{ result_limit_division }}"
+        - "{{ result_null_config }}"
+        - "{{ result_random_ip }}"	
+...

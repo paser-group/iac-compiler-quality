@@ -1,0 +1,101 @@
+- name: Heuristic-driven test playbook for ansible.netcommon.net_get module
+  hosts: all
+  gather_facts: false
+
+  vars:
+    dest: "/tmp/test_file"
+    protocol: "scp"
+    src: "/tmp/source_file"
+
+  tasks:
+    - name: Create source file
+      file:
+        path: "{{ src }}"
+        state: touch
+
+    - name: Fetch file from network device
+      ansible.netcommon.net_get:
+        dest: "{{ dest }}"
+        protocol: "{{ protocol }}"
+        src: "{{ src }}"
+      register: result
+
+    - name: Display the network device output
+      debug:
+        var: result
+
+    - name: Remove destination file
+      file:
+        path: "{{ dest }}"
+        state: absent
+
+    - name: Remove source file
+      file:
+        path: "{{ src }}"
+        state: absent
+
+  # Heuristic-based test scenarios
+  # Add your test scenarios here to expose potential bugs in the Ansible compiler
+  tasks:
+    - name: Test mixed case sensitivity
+      ansible.netcommon.net_get:
+        dest: "{{ dest }}"
+        protocol: "{{ protocol | upper }}"
+        src: "{{ src | lower }}"
+      register: mixed_case_result
+      ignore_errors: true
+
+    - name: Test byte string values
+      ansible.netcommon.net_get:
+        dest: "{{ dest | to_bytes('utf-8') }}"
+        protocol: "{{ protocol | to_bytes('utf-8') }}"
+        src: "{{ src | to_bytes('utf-8') }}"
+      register: byte_string_result
+      ignore_errors: true
+
+    - name: Test random MAC addresses
+      ansible.netcommon.net_get:
+        dest: "{{ dest }}"
+        protocol: "{{ protocol }}"
+        src: "{{ src }}"
+        mac_address: "{{ '%02x:%02x:%02x:%02x:%02x:%02x' | format(ansible_date_time.year, ansible_date_time.month, ansible_date_time.day, ansible_date_time.hour, ansible_date_time.minute, ansible_date_time.second) }}"
+      register: mac_address_result
+      ignore_errors: true
+
+    - name: Test random port numbers
+      ansible.netcommon.net_get:
+        dest: "{{ dest }}"
+        protocol: "{{ protocol }}"
+        src: "{{ src }}"
+        port: "{{ 1024 | random(range(65535)) }}"
+      register: port_result
+      ignore_errors: true
+
+    - name: Test varied encoding strings
+      ansible.netcommon.net_get:
+        dest: "{{ dest }}"
+        protocol: "{{ protocol }}"
+        src: "{{ src }}"
+        encoding: "{{ ['utf-8', 'ascii', 'ISO-8859-1'] | random }}"
+      register: encoding_result
+      ignore_errors: true
+
+    - name: Display mixed case sensitivity test result
+      debug:
+        var: mixed_case_result
+
+    - name: Display byte string test result
+      debug:
+        var: byte_string_result
+
+    - name: Display random MAC addresses test result
+      debug:
+        var: mac_address_result
+
+    - name: Display random port numbers test result
+      debug:
+        var: port_result
+
+    - name: Display varied encoding strings test result
+      debug:
+        var: encoding_result

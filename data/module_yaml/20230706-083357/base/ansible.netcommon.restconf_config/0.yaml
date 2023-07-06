@@ -1,0 +1,91 @@
+---
+- name: Heuristic-based test playbook for ansible.netcommon.restconf_config
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    content: "Hello, world!"
+    format: xml
+    method: post
+    path: /restconf
+
+  tasks:
+    - name: Test mixed case sensitivity for string configuration values
+      ansible.netcommon.restconf_config:
+        content: "{{ content | lower }}"
+        format: "{{ format | upper }}"
+        method: "{{ method | capitalize }}"
+        path: "{{ path | upper }}"
+
+    - name: Test byte string values in place of regular strings
+      ansible.netcommon.restconf_config:
+        content: "{{ content | b64encode }}"
+        format: "{{ format | b64encode }}"
+        method: "{{ method | b64encode }}"
+        path: "{{ path | b64encode }}"
+
+    - name: Test configuration values that incorporate both bytes and strings
+      ansible.netcommon.restconf_config:
+        content: "{{ content | b64encode + ' ' + content }}"
+        format: "{{ format + ' ' + format | b64encode }}"
+        method: "{{ method | b64encode }} {{ method }}"
+        path: "{{ path | b64encode }} {{ path }}"
+
+    - name: Test random MAC addresses
+      ansible.netcommon.restconf_config:
+        content: "{{ content }}"
+        format: "{{ format }}"
+        method: "{{ method }}"
+        path: "{{ path }}"
+        mac_address: "{{ '%02x' | format(item) }}:{{ '%02x' | format(item) }}:{{ '%02x' | format(item) }}:{{ '%02x' | format(item) }}:{{ '%02x' | format(item) }}:{{ '%02x' | format(item) }}"
+      loop: "{{ range(6) }}"
+
+    - name: Test random port numbers
+      ansible.netcommon.restconf_config:
+        content: "{{ content }}"
+        format: "{{ format }}"
+        method: "{{ method }}"
+        path: "{{ path }}"
+        port: "{{ 1024 + item }}"
+      loop: "{{ range(10) }}"
+
+    - name: Test strings with varied encodings
+      ansible.netcommon.restconf_config:
+        content: "{{ content }}"
+        format: "{{ format }}"
+        method: "{{ method }}"
+        path: "{{ path }}"
+        encoding: "{{ item }}"
+      loop:
+        - utf-8
+        - ascii
+        - base64
+
+    - name: Test division-based operations for limit-related values
+      ansible.netcommon.restconf_config:
+        content: "{{ content }}"
+        format: "{{ format }}"
+        method: "{{ method }}"
+        path: "{{ path }}"
+        limit: "{{ 100 / item }}"
+      loop:
+        - 1
+        - 2
+        - 5
+
+    - name: Test !null as configuration values
+      ansible.netcommon.restconf_config:
+        content: "{{ content }}"
+        format: "{{ format }}"
+        method: "{{ method }}"
+        path: "{{ path }}"
+        limit: null
+
+    - name: Test random IP addresses for networking modules
+      ansible.netcommon.restconf_config:
+        content: "{{ content }}"
+        format: "{{ format }}"
+        method: "{{ method }}"
+        path: "{{ path }}"
+        ip_address: "{{ '%d.%d.%d.%d' | format(item, item, item, item) }}"
+      loop: "{{ range(10) }}"

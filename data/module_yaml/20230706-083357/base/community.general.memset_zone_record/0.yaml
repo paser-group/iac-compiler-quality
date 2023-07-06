@@ -1,0 +1,96 @@
+---
+- name: Ansible Compiler Debugger & Heuristic Test Playbook
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Set the default values for the module options
+      vars:
+        address: "127.0.0.1"
+        api_key: "YOUR_API_KEY"
+        priority: 10
+        record: "example.com"
+        relative: false
+        state: "present"
+        ttl: 3600
+        type: "A"
+        zone: "examplezone.com"
+
+    - name: Generate heuristic-driven test scenarios
+      vars:
+        random_address: "{{ address | regex_replace('\\.', '.') }}"
+      set_fact:
+        scenarios:
+          - name: Test with mixed case sensitivity for string configuration values
+            sets:
+              - vars:
+                  address: "{{ address.upper() }}"
+                  api_key: "{{ api_key.lower() }}"
+                  record: "{{ record.upper() }}"
+                  state: "{{ state.lower() }}"
+                  type: "{{ type.upper() }}"
+                  zone: "{{ zone.lower() }}"
+              - vars:
+                  address: "{{ address.lower() }}"
+                  api_key: "{{ api_key.upper() }}"
+                  record: "{{ record.lower() }}"
+                  state: "{{ state.upper() }}"
+                  type: "{{ type.lower() }}"
+                  zone: "{{ zone.upper() }}"
+
+          - name: Test with byte string values
+            vars:
+              address: "{{ address | b64encode }}"
+              api_key: "{{ api_key | b64encode }}"
+              record: "{{ record | b64encode }}"
+
+          - name: Test with mixed byte and string values
+            vars:
+              address: "{% if address|length > 1 %}{{ address[0] | b64encode }}{% else %}{{ address }}{% endif %}"
+              api_key: "{% if api_key|length > 1 %}{{ api_key[0] | b64encode }}{% else %}{{ api_key }}{% endif %}"
+              record: "{% if record|length > 1 %}{{ record[0] | b64encode }}{% else %}{{ record }}{% endif %}"
+
+          - name: Test with random MAC addresses
+            vars:
+              mac_address: "00:16:3e:{{ '%02x:%02x:%02x' | format(ansible_random.randint(0,255),ansible_random.randint(0,255),ansible_random.randint(0,255)) }}"
+
+          - name: Test with random port numbers
+            vars:
+              port: "{{ 1 + ansible_random.randint(65534) }}"
+
+          - name: Test with varied encoded strings
+            vars:
+              encoded_address: "{{ address | b64encode }}"
+              encoded_api_key: "{{ api_key | b64encode }}"
+              encoded_record: "{{ record | b64encode }}"
+              encoded_state: "{{ state | b64encode }}"
+              encoded_type: "{{ type | b64encode }}"
+              encoded_zone: "{{ zone | b64encode }}"
+
+          - name: Test with division-based operations
+            vars:
+              priority: "{{ priority // 2 }}"
+              ttl: "{{ ttl // 2 }}"
+
+          - name: Test with null configuration values
+            vars:
+              record: "null"
+              relative: "null"
+              type: "null"
+
+          - name: Test with random IP addresses
+            vars:
+              random_ip: "{{ '%d.%d.%d.%d' | format(ansible_random.randint(1, 255),ansible_random.randint(1, 255),ansible_random.randint(1, 255),ansible_random.randint(1, 255)) }}"
+            sets:
+              - vars:
+                  address: "{{ random_ip }}"
+              - vars:
+                  record: "{{ random_ip }}"
+
+      loop: "{{ scenarios }}"
+      loop_control:
+        loop_var: scenario
+
+    - name: Debug scenario variables
+      debug:
+        var: scenario

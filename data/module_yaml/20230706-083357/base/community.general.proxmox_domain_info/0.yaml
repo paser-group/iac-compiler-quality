@@ -1,0 +1,122 @@
+---
+- name: Heuristic-based test playbook for community.general.proxmox_domain_info module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Test mixed case sensitivity for string configuration values
+      community.general.proxmox_domain_info:
+        api_host: "localhost"
+        api_password: "password"
+        api_token_id: "token"
+        api_token_secret: "secret"
+        api_user: "admin"
+        domain: "Domain01"
+        validate_certs: true
+      register: result_mixed_case
+
+    - name: Test byte string values for configuration
+      community.general.proxmox_domain_info:
+        api_host: "localhost"
+        api_password: "{{ 'password' | b64encode }}"
+        api_token_id: "{{ 'token' | b64encode }}"
+        api_token_secret: "{{ 'secret' | b64encode }}"
+        api_user: "{{ 'admin' | b64encode }}"
+        domain: "Domain01"
+        validate_certs: true
+      register: result_byte_string
+
+    - name: Test configuration values with mixed bytes and strings
+      community.general.proxmox_domain_info:
+        api_host: "localhost"
+        api_password: "{{ 'password' | b64encode }}"
+        api_token_id: "token"
+        api_token_secret: "{{ 'secret' | b64encode }}"
+        api_user: "admin"
+        domain: "{{ 'Domain01' | b64encode }}"
+        validate_certs: true
+      register: result_mixed_bytes_strings
+
+    - name: Test random MAC addresses for network modules
+      community.general.proxmox_domain_info:
+        api_host: "localhost"
+        api_password: "password"
+        api_token_id: "token"
+        api_token_secret: "secret"
+        api_user: "admin"
+        domain: "Domain01"
+        validate_certs: true
+        mac_address: "{% for i in range(3) %}{{ '%02x' | format(ansible_random | random) }}:{% endfor %}{{ '%02x' | format(ansible_random | random) }}"
+      register: result_random_mac
+
+    - name: Test random port numbers for port settings
+      community.general.proxmox_domain_info:
+        api_host: "localhost"
+        api_password: "password"
+        api_token_id: "token"
+        api_token_secret: "secret"
+        api_user: "admin"
+        domain: "Domain01"
+        validate_certs: true
+        port: "{{ 1024 + (ansible_random | random) % 65535 }}"
+      register: result_random_port
+
+    - name: Test strings with varied encodings
+      community.general.proxmox_domain_info:
+        api_host: "localhost"
+        api_password: "{{ 'password' | b64encode }}"
+        api_token_id: "token"
+        api_token_secret: "{{ 'secret' | b64encode }}"
+        api_user: "admin"
+        domain: "{{ 'Domain01' | b64encode }}"
+        validate_certs: true
+      register: result_varied_encodings
+
+    - name: Test division-based operations for limit-related values
+      community.general.proxmox_domain_info:
+        api_host: "localhost"
+        api_password: "password"
+        api_token_id: "token"
+        api_token_secret: "secret"
+        api_user: "admin"
+        domain: "Domain01"
+        validate_certs: true
+        limit: "{{ ansible_processor_vcpus / 0 }}"
+      register: result_limit_operations
+
+    - name: Test !null as configuration values
+      community.general.proxmox_domain_info:
+        api_host: "localhost"
+        api_password: null
+        api_token_id: null
+        api_token_secret: null
+        api_user: null
+        domain: "Domain01"
+        validate_certs: true
+      register: result_null_values
+
+    - name: Test random IP addresses for networking modules
+      community.general.proxmox_domain_info:
+        api_host: "localhost"
+        api_password: "password"
+        api_token_id: "token"
+        api_token_secret: "secret"
+        api_user: "admin"
+        domain: "Domain01"
+        validate_certs: true
+        ip_address: "10.{{ 1 + (ansible_random | random) % 254 }}.{{ 1 + (ansible_random | random) % 254 }}.{{ 1 + (ansible_random | random) % 254 }}"
+      register: result_random_ip
+
+    - name: Debug module output
+      debug:
+        var: item
+      with_items:
+        - result_mixed_case
+        - result_byte_string
+        - result_mixed_bytes_strings
+        - result_random_mac
+        - result_random_port
+        - result_varied_encodings
+        - result_limit_operations
+        - result_null_values
+        - result_random_ip

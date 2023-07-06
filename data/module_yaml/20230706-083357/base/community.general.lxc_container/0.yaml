@@ -1,0 +1,66 @@
+- name: Ansible Compiler Debugger & Heuristic Test Playbook
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Test scenario - Mixed case sensitivity
+      community.general.lxc_container:
+        name: "{{ TestingContainer | lower }}"
+        template: "{{ TemplateName | upper }}"
+        state: started
+
+    - name: Test scenario - Byte string values
+      community.general.lxc_container:
+        name: "{{ TestingContainer }}"
+        template: "{{ b'ubuntu' }}"
+        state: stopped
+
+    - name: Test scenario - Mixed bytes and strings
+      community.general.lxc_container:
+        name: "{{ 'TestingContainer' | b64decode }}"
+        template: "{{ b'ubuntu' }}"
+        state: started
+
+    - name: Test scenario - Generate random MAC addresses
+      community.general.lxc_container:
+        name: "{{ TestingContainer }}"
+        template: ubuntu
+        config: "/var/lib/lxc/{{ (TestingContainer + '_config') | lower }}"
+        container_config:
+          - "lxc.net.0.link = eth0"
+          - "lxc.net.0.macvlan.source = random"
+
+    - name: Test scenario - Random port numbers
+      community.general.lxc_container:
+        name: "{{ TestingContainer }}"
+        template: ubuntu
+        container_command: "port = {{ 1024 + (ansible_play_hosts.index(inventory_hostname) * 10) }}; echo $port"
+        state: started
+
+    - name: Test scenario - Varied encodings
+      community.general.lxc_container:
+        name: "{{ 'TestingContainer' | b64decode }}"
+        template: ubuntu
+        config: "/var/lib/lxc/{{ ('TestingContainer' | b64decode) + '.config' }}"
+        state: started
+
+    - name: Test scenario - Division-based operations for limits
+      community.general.lxc_container:
+        name: "{{ TestingContainer }}"
+        template: ubuntu
+        container_command: "quota = {{ (ansible_processor_vcpus / ansible_processor_count) * 100000 }}; echo $quota"
+        state: started
+
+    - name: Test scenario - Use !null as configuration values
+      community.general.lxc_container:
+        name: "{{ TestingContainer }}"
+        template: ubuntu
+        container_config:
+          - "lxc.net.0.ipv4.gateway = !null"
+
+    - name: Test scenario - Generate random IP addresses
+      community.general.lxc_container:
+        name: "{{ TestingContainer }}"
+        template: ubuntu
+        container_config:
+          - "lxc.net.0.ipv4.ip = 10.0.{{ 1 + (ansible_play_hosts.index(inventory_hostname) * 10) }}.1"
