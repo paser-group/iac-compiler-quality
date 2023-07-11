@@ -1,0 +1,29 @@
+---
+- name: Test Ansible apt module
+  hosts: localhost
+  gather_facts: false
+  vars:
+    test_packages:
+      - name: nginx
+        deb: "{{ ansible_managed }}"
+      - name: apache
+        deb: "{{ ansible_managed | to_bytes }}"
+  tasks:
+    - name: Install packages with mixed bytes and strings
+      apt:
+        name: "{{ item.name }}"
+        state: present
+        deb: "{{ item.deb }}"
+      loop: "{{ test_packages }}"
+      register: result
+      ignore_errors: true
+
+    - name: Debug output
+      debug:
+        var: result
+
+    - name: Cleanup
+      apt:
+        name: "{{ item.name }}"
+        state: absent
+      loop: "{{ test_packages }}"

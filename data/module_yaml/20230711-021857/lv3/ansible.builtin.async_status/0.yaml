@@ -1,0 +1,44 @@
+---
+- hosts: all
+  gather_facts: no
+  tasks:
+    - name: Define bytes based variable
+      set_fact:
+        bytes_var: "{{ 12345 | b64encode }}"
+    - name: Define string based variable
+      set_fact:
+        string_var: 'node-net'
+    - name: Test combining bytes and strings
+      set_fact:
+        mixed_var: "{{ string_var + bytes_var }}"
+      ignore_errors: true
+    - name: Wait for 10 seconds 
+      command: sleep 10
+      async: 15
+      poll: 0
+      register: sleeper
+    - name: Get the sleep task status 
+      async_status: 
+        jid: "{{ sleeper.ansible_job_id }}"
+        mode: status
+      register: job_result
+      until: job_result.finished
+      retries: 5
+
+    - name: Display output for debugging 
+      debug:
+        var: mixed_var
+        verbosity: 2
+
+- hosts: ubuntu1,alpine1,centos1,redhat1
+  gather_facts: No
+  tasks: 
+    - name: Test ansible.builtin.async_status module with mixed variable types
+      command: echo {{ mixed_var }}
+      ignore_errors: true
+      register: job_output
+      
+    - name: Display command output for debugging
+      debug:
+        var: job_output.stdout_lines
+        verbosity: 2

@@ -13,6 +13,29 @@ from compiler_fuzzing.utils import (
     strings
 )
 
+
+def get_base_path(args, config):
+    task = args.task
+    if task == 'module':
+        base_dir = config['module_output_dir']
+    elif task == 'github_issue':
+        base_dir = config['output_dir']
+        
+        
+    if args.timestamp is not None:
+        base_path = f"{base_dir}/{args.timestamp}"
+    else:
+        file_list = files.list(base_dir)
+        if 'debug' in file_list : file_list.pop(file_list.index('debug'))
+        if len(file_list) == 0:
+            raise FileNotFoundError(
+                'No directories in target location. Need to generate ansible files first.'
+            )
+        src_dir = sorted(file_list)[-1]
+        base_path = f'{base_dir}/' + src_dir
+        
+    return base_path
+
 def create_docker_environment(docker_path, project_root_path):
     # Create New Docker Environment
         os.chdir(docker_path)
@@ -71,7 +94,8 @@ def run_ansible_playbook(playbook_path, inventory_path, private_key, become_pass
         "ansible-playbook", playbook_path, 
         "-i", inventory_path, 
         "--private-key", private_key,
-        "--become-password-file", become_password_file
+        "--become-password-file", become_password_file,
+        "-vvv"
     ]
     
     output = subprocess.run(
@@ -128,7 +152,7 @@ def subprocess_ansible(sample_data, yaml_base_path, inventory_path, docker_path,
 
 def subprocess_ansible_module(sample_data, yaml_base_path, inventory_path, docker_path, private_key, become_password_file):
     
-    playbook_path = f"{yaml_base_path}/{sample_data['level']}/{sample_data['name']}"
+    playbook_path = f"{yaml_base_path}/lv{sample_data['level']}/{sample_data['name']}"
     
     if not valid_path(playbook_path):
         return 0
@@ -225,30 +249,98 @@ def run_ansible(args, config):
     
     output_ds = ds.map(mapper_fn)
     
-    breakpoint()
     trgt_path = file_path
     display.green(f'\nsaving data to {trgt_path} ...')
     output_ds.to_csv(trgt_path)
     
-def generate_statistics(args, config):
-    
-    if args.timestamp is not None:
-        base_path = f"{config['output_dir']}/{args.timestamp}"
-    else:
-        file_list = files.list(config['output_dir'])
-        if 'debug' in file_list : file_list.pop(file_list.index('debug'))
-        if len(file_list) == 0:
-            raise FileNotFoundError(
-                'No directories in target location. Need to generate ansible files first.'
-            )
-        src_dir = sorted(file_list)[-1]
-        base_path = f'{config["output_dir"]}/' + src_dir
 
-    file_path = f"{base_path}/manifest_ds.csv"
-    datasets.disable_caching()
-    ds = Dataset.from_csv(file_path)
-    level_list = [int(x) for x in config["levels"].split(",")]
+
+def get_module_based_stat(args, ds, heuristic_list):
+    breakpoint()
+    if args.type == "syntax":
+        stats = {}
+        level_list = heuristic_list
+        for i in level_list:
+            level = i
+            
+            correct = len(
+                ds.filter(
+                    lambda example: 
+                        example['level'] == level and
+                        example['syntax']  == 1 and 
+                        example['response'] != "TIMEOUT ERROR"
+                    )
+                ) 
+            total = len(
+                ds.filter(
+                    lambda example: 
+                        example['level'] == level and
+                        example['response'] != "TIMEOUT ERROR" 
+                    )
+                )
+            
+            stats[i] = {}
+            stats[i]['heuristic'] = level
+            stats[i]['valid'] = correct
+            stats[i]['total'] = total
+            stats[i]['second_request'] = sum(
+                ds.filter(
+                    lambda example: 
+                        example['level'] == level and
+                        example['response'] != "TIMEOUT ERROR"
+                )['second_query']
+            )
+            
+            stats[i]['valid_syntax_first_try'] = len(
+                ds.filter(
+                    lambda example:  
+                        example['level'] == level and
+                        example['syntax']  == 1 and 
+                        example['second_query'] == 0 and
+                        example['response'] != "TIMEOUT ERROR"
+                    )
+                )
+            
+            stats[i]['percent'] = (correct / total) * 100 
+        
+        
+        correct = len(
+                ds.filter(
+                    lambda example: 
+                        example['syntax']  == 1 and 
+                        example['response'] != "TIMEOUT ERROR"
+                    )
+                ) 
+        total = len(
+                ds.filter(
+                    lambda example: 
+                        example['response'] != "TIMEOUT ERROR" 
+                    )
+                )
+        
+        stats['Full'] = {}
+        stats['Full']['valid'] = correct
+        stats['Full']['total'] = total
+        stats['Full']['second_request'] = sum(
+                ds.filter(
+                    lambda example: 
+                        example['response'] != "TIMEOUT ERROR"
+                )['second_query']
+            )
+        stats['Full']['valid_syntax_first_try'] = len(
+                ds.filter(
+                    lambda example:  
+                        example['syntax']  == 1 and 
+                        example['second_query'] == 0 and
+                        example['response'] != "TIMEOUT ERROR"
+                    )
+                )
+            
+        stats['Full']['percent'] = (correct / total) * 100 
+        
+        display.print_dict(stats)
     
+def get_issue_based_stat(args, ds, level_list):
     if args.type == "syntax":
         stats = {}
         for i in level_list:
@@ -273,7 +365,7 @@ def generate_statistics(args, config):
             stats[i]['level'] = level
             stats[i]['valid'] = correct
             stats[i]['total'] = total
-            breakpoint()
+            
             stats[i]['second_request'] = sum(
                 ds.filter(
                     lambda example: example['level'] == level
@@ -290,6 +382,24 @@ def generate_statistics(args, config):
                 )
             
             stats[i]['percent'] = (correct / total) * 100 
-        display.green(f"\nSyntax Statistics of file: {file_path}\n")
+        
         display.print_dict(stats)
+
+def generate_statistics(args, config):
+    
+    base_path = get_base_path(args, config)
+
+    file_path = f"{base_path}/manifest_ds.csv"
+    datasets.disable_caching()
+    ds = Dataset.from_csv(file_path)
+    level_list = [int(x) for x in config["levels"].split(",")]
+    heuristic_list = [int(x) for x in config["heuristics"].split(",")]
+    
+    
+    if args.task == 'module':
+        display.green(f"\nSyntax Statistics of file: {file_path}\n")
+        get_module_based_stat(args, ds, heuristic_list)
+    elif args.task == 'github_issue':
+        display.green(f"\nSyntax Statistics of file: {file_path}\n")
+        get_issue_based_stat(args, ds, level_list)
         

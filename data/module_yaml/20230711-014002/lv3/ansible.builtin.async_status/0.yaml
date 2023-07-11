@@ -1,0 +1,53 @@
+- name: Test playbook for ansible.builtin.async_status module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Run async task
+      command: /path/to/async_task.sh
+      async: 300
+      poll: 10
+      register: async_result
+
+    - name: Wait for async task to complete
+      ansible.builtin.async_status:
+        jid: "{{ async_result.ansible_job_id }}"
+        mode: "completed"
+      register: async_status_completed
+
+    - name: Debug async task status (Completed)
+      ansible.builtin.debug:
+        msg: "Async task completed successfully"
+
+    - name: Wait for async task to be notified
+      ansible.builtin.async_status:
+        jid: "{{ async_result.ansible_job_id }}"
+        mode: "notified"
+      register: async_status_notified
+
+    - name: Debug async task status (Notified)
+      ansible.builtin.debug:
+        msg: "Async task notified successfully"
+
+    # Test case 1: Include a value with string and bytes
+    - name: Include value with string and bytes
+      ansible.builtin.async_status:
+        jid: "{{ async_result.ansible_job_id }}"
+        mode: "unexpected_mode"
+        value: "test_string_{{ '\xc3\xa9' | to_json }}"
+      register: async_status_unexpected_mode
+
+    - name: Debug async task status (Unexpected mode)
+      ansible.builtin.debug:
+        msg: "Async task executed with unexpected mode"
+
+    # Test case 2: Include value without specifying mode
+    - name: Include value without specifying mode
+      ansible.builtin.async_status:
+        jid: "{{ async_result.ansible_job_id }}"
+        value: 123
+      register: async_status_no_mode
+
+    - name: Debug async task status (No mode specified)
+      ansible.builtin.debug:
+        msg: "Async task executed without specifying mode"

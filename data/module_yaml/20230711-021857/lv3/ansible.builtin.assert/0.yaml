@@ -1,0 +1,31 @@
+---
+- name: Ansible latent type-related bug discovery playbook
+  hosts: all
+  vars:
+    ubuntu_ip: "10.1.1.1"
+    alpine_ip: "10.1.1.2"
+    centos_ip: "10.1.1.3"
+    redhat_ip: "10.1.1.4"
+    mixed_type_string: "Ansible test: ようこそ"
+    mixed_type_file_content: "{{ lookup('file', '/tmp/fact_file') | default('') }}"
+  tasks:
+    - name: Assert that byte_string values are not empty
+      ansible.builtin.assert:
+        that:
+          - mixed_type_string is defined
+          - mixed_type_string != ''
+          - mixed_type_file_content is defined
+          - mixed_type_file_content != ''
+        success_msg: "Success: Mixed type variable is correct"
+        fail_msg: "Failure: Mixed type variable has a problem"
+
+    - name: Create mixed_type_string fact at each host
+      ansible.builtin.set_fact:
+        host_mixed_fact: "{{ mixed_type_string }}"
+
+    - name: Assert byte_string values per host are same
+      ansible.builtin.assert:
+        that:
+          - host_mixed_fact == mixed_type_string
+        success_msg: "Success: Mixed type fact is correct at each host"
+        fail_msg: "Failure: Mixed type fact is not the same at each host."

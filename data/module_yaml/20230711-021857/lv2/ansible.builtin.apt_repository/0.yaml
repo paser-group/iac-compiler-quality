@@ -1,0 +1,36 @@
+---
+- hosts: all
+  gather_facts: no
+  vars:
+    apt_repository_parameters:
+      - { 'codename': 'focal', 'repo': 'deb http://archive.ubuntu.com/ubuntu focal main', 'state': 'present'}
+      - { 'codename': b'focal', 'repo': b'deb http://archive.ubuntu.com/ubuntu focal main', 'state': 'present'}
+      - { 'install_python_apt': True, 'repo': 'deb http://archive.ubuntu.com/ubuntu focal main', 'state': 'present'}
+      - { 'install_python_apt': b'True', 'repo': b'deb http://archive.ubuntu.com/ubuntu focal main', 'state': 'present'}
+      - { 'update_cache_retry_max_delay': 15, 'repo': 'deb http://archive.ubuntu.com/ubuntu focal main', 'state': 'present'}
+      - { 'update_cache_retry_max_delay': b'15', 'repo': b'deb http://archive.ubuntu.com/ubuntu focal main', 'state': 'present'}
+  tasks:
+    - name: Ensure python3-pip is available
+      apt:
+        name: python3-pip
+        state: present
+    - name: Install Docker python module
+      pip:
+        name: docker
+        state: present
+    - name: Add and remove repository
+      block:
+        - name: Add repository
+          ansible.builtin.apt_repository:
+            filename: apt_test
+            repo: "{{ item.repo }}"
+            state: "{{ item.state }}"
+            codename: "{{ item.codename | default(omit) }}"
+            install_python_apt: "{{ item.install_python_apt | default(omit) }}"
+            update_cache_retry_max_delay: "{{ item.update_cache_retry_max_delay | default(omit) }}"
+          loop: "{{ apt_repository_parameters }}"
+          register: add_repo_output
+        - debug:
+            var: add_repo_output
+          when: add_repo_output is failed
+...

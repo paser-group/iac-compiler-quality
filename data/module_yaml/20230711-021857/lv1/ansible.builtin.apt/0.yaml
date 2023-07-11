@@ -1,0 +1,73 @@
+---
+- name: Install docker on each node
+  hosts: all
+  become: yes
+  tasks:
+  - name: Ensure old versions of Docker are not installed.
+    ansible.builtin.apt:
+      name:
+        - docker
+        - docker-engine
+        - docker.io
+        - containerd
+        - runc
+      state: absent
+
+  - name: Update the apt package index and install packages to allow apt to use a repository over HTTPS.
+    ansible.builtin.apt:
+      update_cache: yes
+      name:
+        - apt-transport-https
+        - ca-certificates
+        - curl
+        - software-properties-common
+
+  - name: Add Docker’s official GPG key
+    ansible.builtin.apt_key:
+      url: "https://download.docker.com/linux/ubuntu/gpg"
+
+  - name: Add Docker Repository
+    ansible.builtin.apt_repository:
+      repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+    register: docker_repo
+
+  - name: Install Docker
+    ansible.builtin.apt:
+      name: docker-ce
+      state: latest
+      update_cache: docker_repo.changed
+
+- name: Deploy Docker nodes with different OS
+  hosts: docker
+  tasks:
+  - name: ubuntu1 node
+    docker_container:
+      name: ubuntu1
+      image: ubuntu:latest
+      networks:
+        - name: node-net
+          ipv4_address: 10.1.1.1
+
+  - name: alpine1 node
+    docker_container:
+      name: alpine1
+      image: alpine:latest
+      networks:
+        - name: node-net
+          ipv4_address: 10.1.1.2
+
+  - name: centos1 node
+    docker_container:
+      name: centos1
+      image: centos:latest
+      networks:
+        - name: node-net
+          ipv4_address: 10.1.1.3
+
+  - name: redhat1 node
+    docker_container:
+      name: redhat1
+      image: redhat:latest
+      networks:
+        - name: node-net
+          ipv4_address: 10.1.1.4

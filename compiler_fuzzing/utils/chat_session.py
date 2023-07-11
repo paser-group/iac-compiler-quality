@@ -98,13 +98,14 @@ class ChatSession:
             
             # update usage statistics
             self.usage = json.loads(str(resp['usage']))
-
+        
+        
         if len(responses) == 1:
             return responses[0]
         else:
             return responses
 
-    def get_history() -> List[Dict[str, str]]:
+    def get_history(self) -> List[Dict[str, str]]:
         """
         returns the message history
 
@@ -112,7 +113,7 @@ class ChatSession:
         """
         return self.messages
 
-    def get_usage() -> Dict[str, int]:
+    def get_usage(self) -> Dict[str, int]:
         """
         returns the usage statistics of the current session
 

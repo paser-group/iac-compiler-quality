@@ -1,0 +1,32 @@
+- name: Add and remove apt repositories
+  hosts: localhost
+  gather_facts: false
+  become: true
+
+  vars:
+    repositories:
+      - repo: "{{ apt_repository }}"
+        state: present
+
+  tasks:
+    - name: Add apt repository
+      apt_repository:
+        repo: "{{ item.repo }}"
+        state: "{{ item.state }}"
+        codename: "{{ item.codename | lower }}"
+        filename: "{{ item.filename }}"
+        install_python_apt: "{{ item.install_python_apt }}"
+        mode: "{{ item.mode }}"
+        update_cache: "{{ item.update_cache }}"
+        update_cache_retries: "{{ item.update_cache_retries }}"
+        update_cache_retry_max_delay: "{{ item.update_cache_retry_max_delay }}"
+        validate_certs: "{{ item.validate_certs }}"
+      loop: "{{ repositories }}"
+
+    - name: Display apt repository information
+      shell: apt-cache policy "{{ apt_repository }}"
+      register: repository_info
+
+    - name: Debug apt repository information
+      debug:
+        var: repository_info.stdout_lines

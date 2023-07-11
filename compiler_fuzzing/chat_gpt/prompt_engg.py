@@ -3,17 +3,21 @@ from compiler_fuzzing.utils.strings import replace_slot
 from compiler_fuzzing.utils.files import load_yaml
 
 class PromptEngg:
-    def __init__(self, config, level, dataset, path_key='taxonomy_filepath', prompt_method='taxonomy'):
+    def __init__(self, config, level, dataset, path_key='taxonomy_filepath', prompt_method='taxonomy', module_file='heu'):
         self.config = config
         self.level = level
 
-        file_path = self.config[path_key]
-        file_name = f"lv{self.level}.yaml"
-        self.prompt_config = load_yaml(f"{file_path}/{file_name}")
-        self.system_msg = self.prompt_config['sys_role']['current']
         if prompt_method == 'taxonomy':
+            file_path = self.config[path_key]
+            file_name = f"lv{self.level}.yaml"
+            self.prompt_config = load_yaml(f"{file_path}/{file_name}")
+            self.system_msg = self.prompt_config['sys_role']['current']
             self.dataset = dataset.map(self.update_columns)
         elif prompt_method == 'module':
+            file_path = self.config[path_key]
+            file_name = f"lv{module_file}.yaml"
+            self.prompt_config = load_yaml(f"{file_path}/{file_name}")
+            self.system_msg = self.prompt_config['sys_role']['current']
             self.dataset = dataset.map(self.update_columns_module)
         
         
@@ -32,7 +36,7 @@ class PromptEngg:
         return ds
     
     def update_columns_module(self, ds):
-        ds["level"] = self.level
+        ds["level"] = f"{self.level}"
         ds["sys_role"] = self.system_msg
         
         ds["prompt"] = replace_slot(
@@ -40,7 +44,8 @@ class PromptEngg:
             {
                 "module" : ds['name'],
                 "attributes": ds['arg_str'],
-                "desc_short": ds['desc_short']
+                "desc_short": ds['desc_short'],
+                "heuristic": self.config["type_heuristics"][f"h{self.level}"]
             }
         )
         

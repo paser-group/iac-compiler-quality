@@ -23,22 +23,31 @@ from compiler_fuzzing.utils import (
     files,
 )
 
-def generate_playbooks(output_ds, config, base_output_path, level_list=['base']):
+def generate_playbooks(output_ds, config, base_output_path, heuristic_list=['base']):
     display.green(f'\ngenerating YAML files to {base_output_path}...')
 
     # get directories for each level
-    output_lv_path = f'{base_output_path}/base'
+    # output_lv_path = f'{base_output_path}/base'
+    output_lv_paths = [
+        f'{base_output_path}/lv{lv}'
+        for lv in heuristic_list
+    ]
     
-    files.create_path(output_lv_path)
+    # files.create_path(output_lv_path)
+    for pth in output_lv_paths : files.create_path(pth)
 
+    # breakpoint()
     # write files to output directory
     for i, sample in enumerate(tqdm(output_ds, desc='generating playbooks', total=len(output_ds))):
         if sample['code'] != '':
-            breakpoint()
             codes = sample['code'].split(";;;;")
             for j, code in enumerate(codes):
                 
-                module_path = f'{output_lv_path}/{sample["name"]}'
+                # module_path = f'{output_lv_path}/{sample["name"]}'
+                module_path = output_lv_paths[
+                    heuristic_list.index(int(sample['level']))
+                    ]+ \
+                    f'/{sample["name"]}'
                 files.create_path(module_path)
                 file_path = f"{module_path}/{j}.yaml"
                 files.write_file(file_path, code)
@@ -50,7 +59,10 @@ def generate_ansible_for_modules(args, config):
     # args.limit = args.limit * len(level_list)
     ds = Dataset.from_csv(config['module_data_dir'])
     
-    output_ds = generate_manifest_ds(args, config, ds)
+    heuristic_list = [int(x) for x in config["heuristics"].split(",")]
+    args.limit = args.limit * len(heuristic_list)
+    
+    output_ds = generate_manifest_ds(args, config, ds, heuristic_list)
 
     # build output path string
     timestamp = strings.now()
@@ -67,7 +79,7 @@ def generate_ansible_for_modules(args, config):
     output_ds.to_csv(trgt_path)
 
     # generate output configs
-    generate_playbooks(output_ds, config, base_output_path)
+    generate_playbooks(output_ds, config, base_output_path, heuristic_list)
 
     # display status messages
     num_blanks = output_ds[:]['code'].count('')
@@ -82,24 +94,37 @@ def generate_ansible_for_modules(args, config):
     ds.cleanup_cache_files()
     if args.debug : breakpoint()
     
-def generate_manifest_ds(args, cfg, ds, level_list=['base']):
+def generate_manifest_ds(args, cfg, ds, heuristic_list=['base']):
 
     key = 'module_taxonomy_filepath'
-    generators = [PromptEngg(cfg, lvl, ds, key, 'module') for lvl in level_list]
+    ds.cleanup_cache_files()
+    generators = [
+        PromptEngg(
+            config=cfg, 
+            level=lvl, 
+            dataset=ds, 
+            path_key=key, 
+            prompt_method='module', 
+            module_file='heu'
+            ) 
+        for lvl in heuristic_list
+        ]
     ds = datasets.interleave_datasets(
         [gen.get_updated_dataset() for gen in generators]
     )
-    
-    response = []
+    # breakpoint()
     second_query = []
+    response = []
+    first_response = []
     
     
     for i, sample in enumerate(tqdm(ds, desc='collecting chatgpt responses', total=len(ds))):
         if i == args.limit : break
 
         session = ChatSession(
-            cfg['openai']['key'],
-            cfg["openai"]["organization"],
+            key = cfg['openai']['key'],
+            org= cfg["openai"]["organization"],
+            model= cfg['model'],
             system_msg=sample['sys_role']
         )
         try:
@@ -108,18 +133,22 @@ def generate_manifest_ds(args, cfg, ds, level_list=['base']):
                 if '```' in reply \
                 else [""]
             
-            flag = False
+            flag = 0
             for code in codes:
+                # breakpoint()
+                if re.match(r'^yaml', code) is not None:
+                    code = code[4:].strip()
                 correct_syntax = check_syntax_string(code, cfg)
                 flag = flag or correct_syntax
             second_call = 0
+            first_reply = reply
             if not correct_syntax:
                 second_call = 1
                 reply = session.get_response(cfg["syntax_nudge"])
-            
                 
             second_query.append(second_call)
             response.append(reply)
+            first_response.append(first_reply)
         except KeyboardInterrupt:
             print('KeyboardInterrupt')
             sys.exit(0)
@@ -128,14 +157,18 @@ def generate_manifest_ds(args, cfg, ds, level_list=['base']):
             display.red(f'timeout error on sample {i}')
             response.append('TIMEOUT ERROR')
             second_query.append(0)
+            first_response.append('TIMEOUT ERROR')
 
     # truncate dataset to accomodate amount of responses generated
     output_ds = ds.select(range(len(response)))
     assert len(response) == len(second_query)
+    assert len(response) == len(first_response)
+    breakpoint()
     
     # append columns to dataset
     output_ds = output_ds.add_column('response', response)
     output_ds = output_ds.add_column('second_query', second_query)
+    output_ds = output_ds.add_column('first_response', first_response)
 
     # extract code from the responses and add to a new column
     def mapper_fn(sample):
@@ -158,7 +191,7 @@ def generate_manifest_ds(args, cfg, ds, level_list=['base']):
             'code' : codes,
         })
         return sample
-    breakpoint()
+    
     output_ds = output_ds.map(mapper_fn)
     
     return output_ds

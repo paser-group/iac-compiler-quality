@@ -1,0 +1,65 @@
+---
+- name: Heuristic Test Playbook for Type-related Bugs
+  hosts: ubuntu1
+  gather_facts: no
+  vars:
+    key_id: '3B4FE6ACC0B21F32'
+    keyserver: 'keyserver.ubuntu.com'
+    test_file: '/test.txt'
+    test_keyring: 'keyring.txt'
+  
+  tasks:
+    - name: Ensure required packages are installed 
+      apt: 
+        name: aptitude
+        state: present
+      become: yes
+
+    - name: Testing APT Key with correct options
+      ansible.builtin.apt_key:
+        data: 'This is a test key (ABCD1234)'
+        id: "{{ key_id }}"
+        keyserver: "{{ keyserver }}"
+        state: "present"
+
+    - name: Testing APT key state with incorrect type
+      ansible.builtin.apt_key:
+        state: 200
+      ignore_errors: yes
+
+    - name: Testing APT key file with incorrect type
+      ansible.builtin.apt_key:
+        file: 12345
+      ignore_errors: yes
+
+    - name: Testing APT key id with incorrect type
+      ansible.builtin.apt_key:
+        id: -123
+      ignore_errors: yes
+
+    - name: Testing APT key keyring with incorrect type
+      ansible.builtin.apt_key:
+        keyring: 100
+      ignore_errors: yes
+
+    - name: Testing APT key keyserver with incorrect type
+      ansible.builtin.apt_key:
+        keyserver: 192.158.1.38
+      ignore_errors: yes
+
+    - name: Create a file with some data
+      ansible.builtin.copy:
+        dest: "{{ test_file }}"
+        content: 'This is a test file with some bytes and strings.'
+        force: yes
+
+    - name: Testing APT key data with byte string
+      ansible.builtin.apt_key:
+        data: "{{ test_file }}"
+      ignore_errors: yes
+
+    - name: Delete the test file after the experiment
+      ansible.builtin.file:
+        path: "{{ test_file }}"
+        state: absent
+...

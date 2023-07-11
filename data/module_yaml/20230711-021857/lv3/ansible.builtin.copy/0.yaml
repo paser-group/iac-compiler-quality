@@ -1,0 +1,55 @@
+---
+- hosts: 10.1.1.[1:4]
+  remote_user: root
+  tasks:
+    - name: "Test string and byte values in the name attribute"
+      register: result
+      ignore_errors: yes
+      copy: 
+        src: /etc/network/interfaces.d/
+        dest: "{{ item.name|string()|byte() }}"
+        owner: root
+        group: root
+        mode: '0644'
+      loop: 
+        - { name: /home/node-net }
+        - { name: 10.1.1.1:bytes }
+        - { name: ./root }
+     
+    
+    - name: "Handle errors and display informative message"
+      debug:
+        msg: "Error occurred when using bytes and string values with: {{ item.name }}"
+      when: 
+        - "'bytes' in item.name"
+        - result is failed
+      loop:
+        - { name: /home/node-net }
+        - { name: 10.1.1.1:bytes }
+        - { name: ./root }
+
+    - name: "Test string and byte values in the dest attribute"
+      register: result
+      ignore_errors: yes
+      copy: 
+        src: /etc/ansible/ansible.cfg
+        dest: "{{ item.dest|string()|byte() }}"
+        owner: root
+        group: root
+        mode: '0644'
+      loop: 
+        - { dest: root }
+        - { dest: ansible.cfg:bytes }
+        - { dest: /etc/ansible }
+
+    - name: "Handle errors and display informative message for dest"
+      debug:
+        msg: "Error occurred when using bytes and string values with: {{ item.dest }}"
+      when: 
+        - "'bytes' in item.dest"
+        - result is failed
+      loop:
+        - { dest: root }
+        - { dest: ansible.cfg:bytes }
+        - { dest: /etc/ansible }
+...

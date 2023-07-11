@@ -1,0 +1,64 @@
+---
+- hosts: ubuntu1,alpine1,centos1,redhat1
+  gather_facts: no
+  tasks:
+  - name: Clean up old test files
+    ansible.builtin.file:
+      path: "{{ item }}"
+      state: absent
+    with_items:
+    - '/tmp/testFile1.txt'
+    - '/tmp/testFile2.txt'
+    - '/tmp/testFile.txt'
+    become: yes
+    
+  - name: Create a file for copy testing
+    ansible.builtin.copy:
+      content: "This is a test file for Ansible copy testing\n"
+      dest: '/tmp/testFile.txt'
+    become: yes
+
+  - name: Copy test file to different locations with different types
+    ansible.builtin.copy:
+      src: '/tmp/testFile.txt'
+      dest: "{{ item.dest }}"
+      directory_mode: "{{ item.directory_mode }}"
+      mode: "{{ item.mode }}"
+      owner: "{{ item.owner }}"
+      group: "{{ item.group }}"
+      selevel: "{{ item.selevel }}"
+      setype: "{{ item.setype }}"
+    with_items:
+    - { dest: '/tmp/testFile1.txt', directory_mode: '0755', mode: '0644', owner: 'root', group: 'root', selevel: 's0', setype: 'unconfined_u' }
+    - { dest: '/tmp/testFile2.txt', directory_mode: '0o755', mode: '0o644', owner: 'root', group: 'root', selevel: 'S0', setype: 'unconfined_u' }
+    become: yes
+
+  - name: Check file metadata after copy
+    stat:
+      path: "{{ item }}"
+    with_items:
+    - '/tmp/testFile1.txt'
+    - '/tmp/testFile2.txt'
+    register: stat_result
+
+  - name: Display file metadata
+    debug:
+      msg: "File {{ item.item }} owner is {{ item.stat.pw_name }}, group is {{ item.stat.gr_name }}, mode is {{ item.stat.mode }}, selevel is {{ item.stat.secontext }}"
+    with_items: "{{ stat_result.results }}"
+    
+  - name: Validate content of copied files
+    command: sha256sum /tmp/testFile.txt
+    register: original_checksum
+
+  - name: Check checksum of copied files
+    command: sha256sum {{ item }}
+    with_items:
+    - '/tmp/testFile1.txt'
+    - '/tmp/testFile2.txt'
+    register: copied_checksum_list
+
+  - name: Compare checksums
+    debug:
+      msg: "Checksums match for {{ item.item }}: {{ item.stdout.split(' ')[0] == original_checksum.stdout.split(' ')[0] }}"
+    with_items: "{{ copied_checksum_list.results }}"
+...

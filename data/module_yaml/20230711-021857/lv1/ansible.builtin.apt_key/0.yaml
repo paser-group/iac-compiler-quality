@@ -1,0 +1,44 @@
+---
+- hosts: ubuntu1
+  vars:
+    test_key_short_id: '7F0CEB10'
+    test_key_url: 'https://www.mongodb.org/static/pgp/server-3.4.asc'
+    test_key_file: '/tmp/test_key.pem'
+    test_key_state1: 'PrEsEnT'
+    test_key_state2: 'AbSeNt'
+
+  tasks:
+    - name: Download test key
+      get_url:
+        url: "{{ test_key_url }}"
+        dest: "{{ test_key_file }}"
+        mode: '0644'
+
+    - name: Try adding key with mixed case state
+      ansible.builtin.apt_key:
+        state: "{{ test_key_state1 }}"
+        id: "{{ test_key_short_id }}"
+        keyring: '/etc/apt/trusted.gpg'
+        url: "{{ test_key_url }}"
+        validate_certs: yes
+      register: result1
+      ignore_errors: true
+
+    - debug:
+        msg: "{{ result1 }}"
+
+    - name: Try removing key with mixed case state
+      ansible.builtin.apt_key:
+        state: "{{ test_key_state2 }}"
+        id: "{{ test_key_short_id }}"
+        keyring: '/etc/apt/trusted.gpg'
+      register: result2
+      ignore_errors: true
+
+    - debug:
+        msg: "{{ result2 }}"
+
+    - name: Cleanup test key file
+      file:
+        path: "{{ test_key_file }}"
+        state: absent

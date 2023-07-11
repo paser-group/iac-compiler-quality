@@ -58,8 +58,8 @@ def check_syntax_file(playbook_path, inventory_path):
         )
 
 def check_ansible_syntax_module(sample_data, yaml_base_path, inventory_path):
-    playbook_path = f"{yaml_base_path}/{sample_data['level']}/{sample_data['name']}"
-    
+    playbook_path = f"{yaml_base_path}/lv{sample_data['level']}/{sample_data['name']}"
+    # breakpoint()
     if not valid_path(playbook_path):
         return 0
     files_and_dirs = os.listdir(playbook_path)
@@ -75,7 +75,7 @@ def check_ansible_syntax_module(sample_data, yaml_base_path, inventory_path):
             check_syntax_file(os.path.join(playbook_path, f), inventory_path)
             flag = 1
         except Exception as e:
-            flag += 0
+            flag = flag or 0
     
     return flag
 

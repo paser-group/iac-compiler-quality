@@ -1,0 +1,26 @@
+---
+- name: Assemble configuration with type-related bug test
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create files to assemble
+      copy:
+        content: "Sample file content 1"
+        dest: /tmp/file1.txt
+
+    - name: Introduce byte string values in place of regular strings
+      set_fact:
+        byte_string_var: '{{ ansible_play_hosts | map("to_bytes") | list }}'
+
+    - name: Assemble configuration files (with type-related bug)
+      ansible.builtin.assemble:
+        src: /tmp/file{{ inventory_hostname | replace("node", "") }}.txt
+        dest: /tmp/assembled_config.cfg
+        delimiter: '{{ byte_string_var }}'
+        validate: '{{ byte_string_var }}'
+      register: assemble_result
+
+    - name: Debug result
+      debug:
+        var: assemble_result

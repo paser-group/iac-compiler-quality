@@ -138,6 +138,13 @@ def parse():
         type=str,
         default="syntax",
     )
+    
+    parser_gen.add_argument(
+        '--task',
+        help='Used to define which task we are validating on. options: [module, github_issue]',
+        type=str,
+        default='github_issue',
+    )
 
     # subparser for unit testing
     parser_gen = subparser.add_parser('unit_test')

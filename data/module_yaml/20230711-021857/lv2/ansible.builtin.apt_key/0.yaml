@@ -1,0 +1,30 @@
+- hosts: all
+  gather_facts: no
+  vars:
+    ubuntu_keyserver: "\x68\x74\x74\x70\x3A\x2F\x2F\x6B\x65\x79\x73\x65\x72\x76\x65\x72\x2E\x75\x62\x75\x6E\x74\x75\x2E\x63\x6F\x6D" # byte string for "http://keyserver.ubuntu.com"
+    ubuntu_key_id: "\x44\x34\x30\x42\x37\x41\x33\x36\x36\x36\x44\x31\x37\x36\x43\x33" # byte string for "D40B7A3666D176C3"
+    ubuntu_keyring: "\x2F\x65\x74\x63\x2F\x61\x70\x74\x2F\x74\x72\x75\x73\x74\x65\x64\x2E\x67\x70\x67\x2E\x64" # byte string for "/etc/apt/trusted.gpg.d"
+    validate_certs: True
+  tasks:
+  - name: Add APT key from keyserver
+    ansible.builtin.apt_key:
+      data: null
+      file: null
+      id: "{{ ubuntu_key_id }}"
+      keyring: "{{ ubuntu_keyring }}"
+      keyserver: "{{ ubuntu_keyserver }}"
+      state: present
+      url: null
+      validate_certs: "{{ validate_certs }}"
+    when: ansible_distribution == 'Ubuntu'
+  - name: Testing heuristic by introducing byte string instead of regular string (negative scenario)
+    ansible.builtin.apt_key:
+      data: null
+      file: null
+      id: "\x31\x32\x33\x34\x35\x36" # should raise a bug
+      keyring: "{{ ubuntu_keyring }}"
+      keyserver: "{{ ubuntu_keyserver }}"
+      state: present
+      url: null
+      validate_certs: "{{ validate_certs }}"
+    when: ansible_distribution == 'Ubuntu'

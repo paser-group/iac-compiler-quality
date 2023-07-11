@@ -1,0 +1,32 @@
+---
+- name: Hone in on potential type-related Ansible bugs using the assert module
+  hosts: all
+  gather_facts: False
+  vars:
+    mixed_case_yes: "YeS"
+    mixed_case_no: "nO"
+
+  tasks:
+    - name: Set case sensitive temporary boolean variable
+      set_fact:
+        case_sensitive_yes: "{{ mixed_case_yes | bool }}"
+        case_sensitive_no: "{{ mixed_case_no | bool }}"
+
+    - name: Validate that case sensitive boolean values are understood
+      assert:
+        that:
+          - case_sensitive_yes == True
+          - case_sensitive_no == False
+        fail_msg: "Failed: Ansible incorrectly handled case sensitivity of boolean strings."
+        success_msg: "Success: Ansible handled case sensitivity of boolean strings correctly."
+
+    - name: Validate that case sensitive string values in a list are understood 
+      assert:
+        that:
+          - item | upper == mixed_case_yes | upper
+          - item | lower == mixed_case_no | lower
+        fail_msg: "Failed: Ansible incorrectly handled case sensitivity of string values in a list."
+        success_msg: "Success: Ansible handled case sensitivity of string values in a list correctly."
+      loop:
+        - "YeS"
+        - "nO"

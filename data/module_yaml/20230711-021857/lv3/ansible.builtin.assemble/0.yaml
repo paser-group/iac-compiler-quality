@@ -1,0 +1,33 @@
+---
+- name: Ansible Type-related Bug Hunting
+  hosts: all
+  vars:
+    test_data:
+      - {type: 'string', content: 'test string content'}
+      - {type: 'bytes',  content: !binary 'dGVzdCBieXRlcyBjb250ZW50'}
+
+  tasks:
+
+    - name: Create files with different data types
+      copy:
+        content: "{{ item.content }}"
+        dest: "/tmp/testfile_{{ item.type }}"
+      loop: "{{ test_data }}"
+
+    - name: Assemble test files
+      assemble:
+        src: "/tmp/testfile_*"
+        dest: "/tmp/assemble.cfg"
+        delimiter: "\n"
+      ignore_errors: yes
+
+    - name: Display result
+      debug:
+        var: result
+      when: result is failed
+
+    - name: Cleanup
+      file:
+        path: "{{ item.dest }}"
+        state: absent
+      loop: "{{ test_data }}"

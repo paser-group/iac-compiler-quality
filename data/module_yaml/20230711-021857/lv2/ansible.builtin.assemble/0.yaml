@@ -1,0 +1,26 @@
+---
+- name: Ansible type-related bugs detection in Docker environment
+  hosts: all
+  gather_facts: False
+  vars:
+     delimiter: !!binary '++'
+     regexp: !!binary ".*\.cfg"
+
+  tasks:
+    - name: Create directory for source files
+      ansible.builtin.file:
+        path: "/tmp/source_files"
+        state: directory
+
+    - name: Create test config files
+      ansible.builtin.copy:
+        dest: "/tmp/source_files/testfile{{ item }}.cfg"
+        content: "This is a test file number {{ item }}"
+      loop: "{{range(4)|list}}"
+
+    - name: Merge all .cfg files in source_files directory into one by ansible.builtin.assemble module
+      ansible.builtin.assemble:
+        src: "/tmp/source_files"
+        dest: "/tmp/merged.cfg"
+        delimiter: "{{ delimiter }}"
+        regexp: "{{ regexp }}"

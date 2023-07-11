@@ -1,0 +1,54 @@
+---
+- hosts: all
+  gather_facts: yes
+  vars:
+    job_id: ""
+
+  tasks:
+    - name: Define Docker Network
+      shell: |
+          docker network create --driver=bridge --subnet=10.1.1.0/24 --gateway=10.1.1.254 node-net
+      register: docker_net
+
+    - name: Launch Nodes
+      shell: |
+        node="{{ item }}"
+        docker run -dit --network=node-net \
+            --ip="${node[1]}" \
+            --name="${node[0]}" \
+            "${node[0]}:latest"
+      loop:
+        - ['ubuntu1', '10.1.1.1']
+        - ['alpine1', '10.1.1.2']
+        - ['centos1', '10.1.1.3']
+        - ['redhat1', '10.1.1.4']
+
+    - name: Testing Asynchronous Functionality
+      shell: sleep 10
+      async: 15 
+      poll: 0 
+      register: my_async
+    
+    - set_fact: 
+        job_id: "{{ my_async.ansible_job_id }}"
+
+    - name: Get Job Status with jid In An Unexpected Case
+      command: ansible.builtin.async_status jid="{{ job_id }}" mode='Status'
+      register: result
+      ignore_errors: true
+
+    - assert:
+        that: 
+            - "result is failed"
+            - "'TypeError' in result.msg"
+
+    - name: Case Testing For 'mode'
+      command: ansible.builtin.async_status jid="{{ job_id }}" mode='STATUS'
+      register: result_mode_unexpected_case 
+      ignore_errors: true 
+      
+    - assert: 
+        that: 
+            - "result_mode_unexpected_case is failed"
+            - "'TypeError' in result_mode_unexpected_case.msg"
+...
