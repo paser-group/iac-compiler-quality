@@ -1,0 +1,34 @@
+---
+- name: Manage User Files
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create user file with regular strings
+      community.general.htpasswd:
+        name: testuser
+        password: password123
+        path: /tmp/users_regular
+
+    - name: Check user file with regular strings
+      shell: cat /tmp/users_regular
+      register: regular_result
+      changed_when: false
+
+    - name: Create user file with byte string values
+      community.general.htpasswd:
+        name: "{{ 'testuser' | to_bytes('utf-8') }}"
+        password: "{{ 'password123' | to_bytes('utf-8') }}"
+        path: /tmp/users_bytes
+
+    - name: Check user file with byte string values
+      shell: cat /tmp/users_bytes
+      register: bytes_result
+      changed_when: false
+
+    - name: Compare results
+      assert:
+        that:
+          - regular_result.stdout == bytes_result.stdout
+        success_msg: "Regular strings and byte strings produce the same result"
+        fail_msg: "Regular strings and byte strings produce different results"

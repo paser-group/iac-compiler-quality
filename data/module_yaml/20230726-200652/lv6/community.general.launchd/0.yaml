@@ -1,0 +1,30 @@
+---
+- name: Testing Ansible Latent Type-Related Bugs
+  hosts: localhost
+  gather_facts: false
+  
+  vars:
+    launchd_jobs:
+      - { name: test-job, state: present, enabled: true, force_stop: false }
+  
+  tasks:
+    - name: Generate strings with varied encodings
+      set_fact:
+        encoded_strings:
+          - "{{ 'test-job' | b64encode }}"
+          - "{{ 'test-job' | urlencode }}"
+          - "{{ 'test-job' | quote }}"
+          - "{{ 'test-job' | center(10) }}"
+  
+    - name: Create launchd job with different encodings
+      community.general.launchd:
+        name: "{{ item }}"
+        state: "{{ launchd_jobs.0.state }}"
+        enabled: "{{ launchd_jobs.0.enabled }}"
+        force_stop: "{{ launchd_jobs.0.force_stop }}"
+      loop: "{{ encoded_strings }}"
+      register: launchd_result
+  
+    - name: Print launchd result
+      debug:
+        var: launchd_result

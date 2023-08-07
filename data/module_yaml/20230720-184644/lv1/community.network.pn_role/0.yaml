@@ -1,0 +1,43 @@
+---
+- name: Test playbook for community.network.pn_role module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create a new role
+      community.network.pn_role:
+        pn_access: read-only
+        pn_cliswitch: "config t"
+        pn_delete_from_users: no
+        pn_name: MyRole
+        pn_running_config: no
+        pn_scope: network-admin
+        pn_shell: yes
+        pn_sudo: no
+        state: present
+      register: output
+
+    - name: Validate the role creation
+      assert:
+        that:
+          - output.changed == true
+          - output is changed
+
+    - name: Create role with mixed case sensitivity
+      community.network.pn_role:
+        pn_access: Read-Only
+        pn_cliswitch: "config t"
+        pn_delete_from_users: yes
+        pn_name: MyRole2
+        pn_running_config: no
+        pn_scope: Network-Admin
+        pn_shell: no
+        pn_sudo: yes
+        state: present
+      register: mixed_case_output
+
+    - name: Validate the mixed case sensitivity bug
+      assert:
+        that:
+          - mixed_case_output.changed == true
+          - mixed_case_output is changed

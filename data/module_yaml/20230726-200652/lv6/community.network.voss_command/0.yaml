@@ -1,0 +1,32 @@
+- name: Execute commands on remote devices
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Execute command with different encodings
+      community.network.voss_command:
+        commands: "{{ item }}"
+      with_items:
+        - "{{ 'echo Test' }}"
+        - "{{ 'echo Test' | b64encode }}"
+        - "{{ 'echo Test' | urlencode }}"
+        - "{{ 'echo Test' | quote }}"
+        - "{{ 'echo Test' | macos_legacy }}"
+        - "{{ 'echo Test' | macos }}"
+        - "{{ 'echo Test' | windows_legacy }}"
+        - "{{ 'echo Test' | windows }}"
+        - "{{ 'echo Test' | linux }}"
+      register: result
+      retries: 3
+      delay: 5
+      until: result is success
+      ignore_errors: true
+
+    - name: Print command output
+      debug:
+        var: result
+
+    - name: Fail the playbook if any command fails
+      fail:
+        msg: "Command failed on {{ inventory_hostname }}: {{ item.cmd }}"
+      when: item.failed == true
+      with_items: "{{ result.results }}"

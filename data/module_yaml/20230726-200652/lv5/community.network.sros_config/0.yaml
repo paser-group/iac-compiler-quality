@@ -1,0 +1,52 @@
+---
+- name: Manage Nokia SR OS configurations
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Configure SR OS device
+      community.network.sros_config:
+        backup: true
+        backup_options:
+          dir_path: /tmp/backup/
+          filename: backup.cfg
+        before: true
+        defaults: true
+        force: true
+        lines: "{{ item }}"
+      with_items: "{{ config_lines }}"
+      register: result
+
+    - name: Show module output
+      debug:
+        var: result
+
+    - name: Test random port settings
+      community.network.sros_config:
+        backup: "{{ item.backup }}"
+        backup_options:
+          dir_path: /tmp/backup/
+          filename: backup.cfg
+        before: "{{ item.before }}"
+        config: "{{ item.config }}"
+        defaults: "{{ item.defaults }}"
+        force: "{{ item.force }}"
+        lines: "{{ item.lines }}"
+      loop:
+        - backup: false
+          before: false
+          config: "random_port_settings"
+          defaults: false
+          force: false
+          lines: "random_port_lines"
+        - backup: true
+          before: true
+          config: "random_port_settings"
+          defaults: true
+          force: true
+          lines: "random_port_lines"
+      register: test_result
+
+    - name: Show test result
+      debug:
+        var: test_result

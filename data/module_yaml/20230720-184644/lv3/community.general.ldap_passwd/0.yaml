@@ -1,0 +1,58 @@
+---
+- name: Test playbook to uncover latent type-related bugs in Ansible module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Install 'ldap3' Python library
+      pip:
+        name: ldap3
+
+    - name: Set up Docker containers
+      docker_container:
+        name: "{{ item.name }}"
+        image: "{{ item.image }}"
+        state: started
+      with_items:
+        - { name: ubuntu1, image: ubuntu }
+        - { name: alpine1, image: alpine }
+        - { name: centos1, image: centos }
+        - { name: redhat1, image: redhat }
+
+    - name: Create 'node-net' network
+      docker_network:
+        name: node-net
+        ipam_config:
+          - subnet: 10.1.1.0/24
+            gateway: 10.1.1.254
+      register: network
+
+    - name: Connect containers to 'node-net' network
+      docker_network:
+        name: node-net
+        containers: "{{ item.name }}"
+        state: connected
+      with_items:
+        - { name: ubuntu1 }
+        - { name: alpine1 }
+        - { name: centos1 }
+        - { name: redhat1 }
+
+    - name: Generate LDAP passwd type-related bugs
+      community.general.ldap_passwd:
+        bind_dn: "cn=admin,dc=test,dc=com"
+        bind_pw: "password"
+        server_uri: "ldap://{{ item }}:389"
+        dn: "cn=user,dc=test,dc=com"
+        passwd: "{{ item == 'alpine1' | ternary(1, 'password') }}"
+        start_tls: "{{ item == 'redhat1' }}"
+        validate_certs: "{{ item == 'centos1' }}"
+        referrals_chasing: "{{ item == 'centos1' | ternary('None', 'False') }}"
+        ca_path: "/path/to/cert.pem"
+        xorder_discovery: "{{ item == 'centos1' }}"
+        sasl_class: "{{ item == 'ubuntu1' | ternary('SASL', 'SIMPLE') }}"
+      with_items:
+        - ubuntu1
+        - alpine1
+        - centos1
+        - redhat1

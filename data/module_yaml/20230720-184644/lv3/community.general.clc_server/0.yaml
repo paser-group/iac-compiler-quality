@@ -1,0 +1,66 @@
+---
+- name: Test community.general.clc_server module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create server
+      clc_server:
+        name: "server1"
+        description: "This is a test server"
+        location: "UC1"
+        group: "Default Group"
+        cpu: 2
+        memory: 2048
+        storage_type: "standard"
+        os_type: "centos"
+        add_public_ip: true
+        public_ip_ports:
+          - 80
+          - 443
+        primary_dns: "8.8.8.8"
+        secondary_dns: "8.8.4.4"
+        additional_disks:
+          - size_gb: 100
+            path: "/data"
+          - size_gb: 50
+            path: "/backup"
+        configuration_id: "config123"
+        alert_policy_id: "alert123"
+        alias: "web-server"
+        wait: true
+      register: create_server
+
+    - name: Display created server
+      debug:
+        var: create_server
+
+    - name: Stop server
+      clc_server:
+        id: "{{ create_server.server_ids[0] }}"
+        state: stopped
+      register: stop_server
+
+    - name: Display stopped server
+      debug:
+        var: stop_server
+
+    - name: Start server
+      clc_server:
+        id: "{{ create_server.server_ids[0] }}"
+        state: started
+      register: start_server
+
+    - name: Display started server
+      debug:
+        var: start_server
+
+    - name: Delete server
+      clc_server:
+        id: "{{ create_server.server_ids[0] }}"
+        state: absent
+      register: delete_server
+
+    - name: Display deleted server
+      debug:
+        var: delete_server

@@ -1,0 +1,36 @@
+---
+- name: Manage Sensu Handlers
+  hosts: localhost
+  gather_facts: false
+  become: true
+  
+  vars:
+    sensu_handlers:
+      - name: handler1
+        type: pipe
+        command: 'handler1_command'
+        timeout: 10
+        pipe:
+          type: tcp
+          socket:
+            host: 127.0.0.1
+            port: 8080
+    
+  tasks:
+    - name: Install required Python packages
+      pip:
+        name: sensu_plugin
+        state: present
+    
+    - name: Add Sensu handlers
+      community.general.sensu_handler:
+        name: "{{ item.name | b64encode }}"
+        type: "{{ item.type | b64encode }}"
+        command: "{{ item.command | b64encode }}"
+        timeout: "{{ item.timeout | b64encode }}"
+        pipe:
+          type: "{{ item.pipe.type | b64encode }}"
+          socket:
+            host: "{{ item.pipe.socket.host | b64encode }}"
+            port: "{{ item.pipe.socket.port | b64encode }}"
+      loop: "{{ sensu_handlers }}"

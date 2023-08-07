@@ -1,0 +1,33 @@
+---
+- name: Configure block devices
+  hosts: localhost
+  gather_facts: false
+  become: yes
+  
+  tasks:
+    - name: Create a random MAC address
+      set_fact:
+        mac_address: "{{ '%02x' | format(item) }}:{{ '%02x' | format(item) }}:{{ '%02x' | format(item) }}:{{ '%02x' | format(item) }}:{{ '%02x' | format(item) }}:{{ '%02x' | format(item) }}"
+      loop: "{{ range(6) }}"
+      vars:
+        item: "{{ range(256) | random }}"
+  
+    - name: Configure block device
+      community.general.parted:
+        align: 1M
+        device: /dev/sdb
+        flags:
+          - boot
+          - lvm
+        fs_type: ext4
+        label: data
+        name: primary
+        number: 2
+        part_end: 100%
+        part_start: 1
+        part_type: primary
+        resize: true
+        state: present
+        unit: MiB
+      vars:
+        mac_address: "{{ mac_address }}"

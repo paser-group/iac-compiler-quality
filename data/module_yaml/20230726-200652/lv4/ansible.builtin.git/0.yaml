@@ -1,0 +1,34 @@
+---
+- name: Deploy software using git module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    repo_url: "https://github.com/example/repo.git"
+    dest_dir: "/opt/software"
+
+  tasks:
+    - name: Clone repository
+      ansible.builtin.git:
+        repo: "{{ repo_url }}"
+        dest: "{{ dest_dir }}"
+        version: master
+        separate_git_dir: "{{ dest_dir }}/.git"
+        accept_hostkey: "yes"  # Potential latent bug: Using a string instead of a boolean
+        accept_newhostkey: "yes"  # Potential latent bug: Using a string instead of a boolean
+        depth: "1"  # Potential latent bug: Using a string instead of an integer
+        force: "true"  # Potential latent bug: Using a string instead of a boolean
+        umask: "0222"  # Potential latent bug: Using an incorrect raw umask value
+      register: git_result
+
+    - name: Check out a specific commit
+      ansible.builtin.git:
+        repo: "{{ dest_dir }}"
+        refspec: "{{ git_result.HEAD.commit }}"
+        separate_git_dir: "{{ dest_dir }}/.git"  # Potential latent bug: Using the wrong attribute name
+        verify_commit: "yes"  # Potential latent bug: Using a string instead of a boolean
+
+    - name: Build software
+      command: make
+      args:
+        chdir: "{{ dest_dir }}"

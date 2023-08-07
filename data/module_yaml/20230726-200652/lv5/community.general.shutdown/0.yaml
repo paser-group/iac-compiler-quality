@@ -1,0 +1,30 @@
+---
+- name: Test playbook for latent type-related bugs
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    msg: "Shutting down node"
+    delay: 5
+    search_paths:
+      - /usr/bin/
+      - /bin/
+
+  tasks:
+    - name: Generate random port numbers
+      debug:
+        msg: "Random port number: {{ (item | random) + 1 }}"
+      with_sequence: count=5
+      register: random_ports
+
+    - name: Shutdown the nodes
+      shutdown:
+        msg: "{{ msg }}"
+        delay: "{{ delay }}"
+        search_paths: "{{ search_paths }}"
+        port: "{{ (random_ports.results[item.0].msg | int) + 123 }}"
+      loop:
+        - [0, "{{ groups['docker_nodes'][0] }}"]
+        - [1, "{{ groups['docker_nodes'][1] }}"]
+        - [2, "{{ groups['docker_nodes'][2] }}"]
+        - [3, "{{ groups['docker_nodes'][3] }}"]

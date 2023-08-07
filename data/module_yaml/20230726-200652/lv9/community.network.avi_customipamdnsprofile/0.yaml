@@ -1,0 +1,44 @@
+---
+- name: Test playbook for community.network.avi_customipamdnsprofile module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    avi_credentials:
+      controller: "https://{{ ansible_default_ipv4.address }}"
+      username: "admin"
+      password: "password"
+      tenant: "admin"
+
+    avi_customipamdnsprofile:
+      name: "Test IPAM DNS Profile"
+      allocate_gateway_ip: true
+      auto_allocate_ip: true
+      dns_service_domain:
+        domain_name: "example.com"
+        ttl: 3600
+      enabled: true
+      floating_ip_dns_provider_ref:
+        url: "/api/metricsprofile/metrics/infrastructure/tenants/admin"
+
+  tasks:
+    - name: Install Avi Networks Python SDK
+      pip:
+        name: avisdk
+        state: present
+
+    - name: Create Custom IPAM DNS Profile
+      community.network.avi_customipamdnsprofile:
+        avi_credentials: "{{ avi_credentials }}"
+        state: present
+        name: "{{ avi_customipamdnsprofile.name }}"
+        allocate_gateway_ip: "{{ avi_customipamdnsprofile.allocate_gateway_ip }}"
+        auto_allocate_ip: "{{ avi_customipamdnsprofile.auto_allocate_ip }}"
+        dns_service_domain: "{{ avi_customipamdnsprofile.dns_service_domain }}"
+        enabled: "{{ avi_customipamdnsprofile.enabled }}"
+        floating_ip_dns_provider_ref: "{{ avi_customipamdnsprofile.floating_ip_dns_provider_ref }}"
+      register: result
+
+    - name: Debug result
+      debug:
+        var: result

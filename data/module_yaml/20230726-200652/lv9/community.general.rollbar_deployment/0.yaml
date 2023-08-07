@@ -1,0 +1,46 @@
+---
+- name: Test for latent type-related bugs in community.general.rollbar_deployment module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Install necessary Python packages
+      become: true
+      apt:
+        name: python3-pip
+        state: present
+
+    - name: Install 'rollbar' Python package
+      pip:
+        name: rollbar
+        state: present
+
+    - name: Set Rollbar notification variables
+      set_fact:
+        rollbar_variables:
+          comment: "Testing Rollbar deployment"
+          environment: "dev"
+          revision: "ABC1234"
+          rollbar_user: "ansible"
+          token: "my_token"
+          url: "https://api.rollbar.com/api/1/deploy/"
+          user: "admin"
+          validate_certs: "true"
+
+    - name: Execute the Rollbar deployment module
+      community.general.rollbar_deployment:
+        comment: "{{ rollbar_variables.comment }}"
+        environment: "{{ rollbar_variables.environment }}"
+        revision: "{{ rollbar_variables.revision }}"
+        rollbar_user: "{{ rollbar_variables.rollbar_user }}"
+        token: "{{ rollbar_variables.token }}"
+        url: "{{ rollbar_variables.url }}"
+        user: "{{ rollbar_variables.user }}"
+        validate_certs: "{{ rollbar_variables.validate_certs }}"
+      register: result
+
+    - debug:
+        var: result
+
+  vars:
+    rollbar_variables: {}

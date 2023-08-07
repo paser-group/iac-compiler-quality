@@ -1,0 +1,54 @@
+---
+- name: Test playbook for Ansible Latent Type-Related Bug
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Configure IPA Host Group
+      community.general.ipa_hostgroup:
+        cn: "test_hostgroup"
+        host: ["ubuntu1", "alpine1", "centos1", "redhat1"]
+        hostgroup: ""
+        ipa_host: 10.1.1.1
+        ipa_port: "443"
+        ipa_prot: "https"
+        ipa_timeout: "10"
+        ipa_user: null
+        ipa_pass: ""
+        state: "present"
+        validate_certs: true
+      register: result
+
+    - name: Debug Result
+      debug:
+        var: result
+
+    - name: Check for type-related bugs
+      assert:
+        that: "'PASS' in result"
+        msg: "Type-related bug encountered"
+        success_msg: "No type-related bug encountered"
+      ignore_errors: true
+
+    - name: Remove IPA Host Group
+      community.general.ipa_hostgroup:
+        cn: "test_hostgroup"
+        state: "absent"
+        ipa_host: 10.1.1.1
+        ipa_port: "443"
+        ipa_prot: "https"
+        ipa_timeout: "10"
+        ipa_user: null
+        ipa_pass: ""
+        validate_certs: true
+
+    - name: Debug Removal Result
+      debug:
+        var: result
+
+    - name: Check for type-related bugs during removal
+      assert:
+        that: "'PASS' in result"
+        msg: "Type-related bug encountered during removal"
+        success_msg: "No type-related bug encountered during removal"
+      ignore_errors: true

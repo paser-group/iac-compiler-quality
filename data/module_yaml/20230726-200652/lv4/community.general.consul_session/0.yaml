@@ -1,0 +1,34 @@
+---
+- name: Test playbook for 'community.general.consul_session'
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Generate random MAC addresses for network modules
+      set_fact:
+        mac_address: "{{ '%02x:%02x:%02x:%02x:%02x:%02x' | format(0x00, 0x16, 0x3e, (random() * 0xff) | int, (random() * 0xff) | int, (random() * 0xff) | int) }}" 
+    
+    - name: Create a consul session
+      community.general.consul_session:
+        host: "{{ host }}"
+        port: "{{ port }}"
+        datacenter: "{{ datacenter }}"
+        token: "{{ token }}"
+        state: present
+        name: "{{ name }}"
+        ttl: "{{ ttl }}"
+        scheme: "{{ scheme }}"
+        validate_certs: "{{ validate_certs }}"
+      loop:
+        - { host: '10.1.1.1', port: 8500, datacenter: 'dc1', token: 'ABC123', name: 'session1', ttl: 30, scheme: 'http', validate_certs: true }
+        - { host: '10.1.1.2', port: 8500, datacenter: 'dc1', token: 'ABC123', name: 'session2', ttl: 60, scheme: 'http', validate_certs: false }
+        - { host: '10.1.1.3', port: 8500, datacenter: 'dc1', token: 'ABC123', name: 'session3', ttl: 90, scheme: 'http', validate_certs: true }
+        - { host: '10.1.1.4', port: 8500, datacenter: 'dc1', token: 'ABC123', name: 'session4', ttl: 120, scheme: 'http', validate_certs: false }
+      loop_control:
+        loop_var: session_params
+
+      register: session_output
+
+    - name: Display session output
+      debug:
+        msg: "{{ session_output }}"

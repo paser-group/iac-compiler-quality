@@ -1,0 +1,28 @@
+---
+- name: Get Jenkins job info
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  tasks:
+    - name: Include random port generator
+      include_vars: random_port.yml
+
+    - name: Set random port
+      set_fact:
+        jenkins_url: "http://{{ ansible_default_ipv4.address }}"
+        jenkins_port: "{{ random_port | random_item }}"
+
+    - name: Get Jenkins job info
+      community.general.jenkins_job_info:
+        url: "{{ jenkins_url }}"
+        port: "{{ jenkins_port }}"
+        user: "{{ jenkins_user }}"
+        password: "{{ jenkins_password }}"
+        token: "{{ jenkins_token }}"
+        validate_certs: "{{ jenkins_validate_certs }}"
+      register: job_info
+
+    - name: Debug Jenkins job info
+      debug:
+        var: job_info

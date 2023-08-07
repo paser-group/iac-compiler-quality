@@ -1,0 +1,37 @@
+---
+- name: Test playbook for community.general.rundeck_acl_policy
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create Rundeck ACL policy
+      community.general.rundeck_acl_policy:
+        url: "http://{{ ansible_host }}:{{ rundeck_port }}"
+        url_username: admin
+        url_password: admin
+        name: "test_policy"
+        project: "test_project"
+        policy: "{{ item }}"
+        state: present
+      with_items:
+        - ansible-playbook:test_policy:
+            api_version: 2
+            policy:
+              context:
+                project: "${resource.project}"
+                application: "${resource.application}"
+              for:
+                resource:
+                  - equals:
+                      name: "job:my_job"
+            force: false
+            force_basic_auth: false
+            use_proxy: false
+            validate_certs: true
+            api_token: "my_api_token"
+            client_cert: "/path/to/client_cert.crt"
+            client_key: "/path/to/client_key.key"
+            use_gssapi: false
+            http_agent: "Ansible-Agent"
+      loop_control:
+        loop_var: item

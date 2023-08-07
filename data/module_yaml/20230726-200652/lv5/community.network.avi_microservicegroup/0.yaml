@@ -1,0 +1,44 @@
+---
+- name: Setup MicroService Group
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    controller: "192.168.1.100"  # Avi Controller IP
+    username: "admin"            # Avi Controller username
+    password: "password"         # Avi Controller password
+    tenant: "admin"              # Avi tenant name
+    tenant_uuid: "admin_uuid"    # Avi tenant UUID
+
+    # List of microservices to include in the group
+    microservices:
+      - name: "microservice1"
+        port: "{{ test_port1 }}"
+      - name: "microservice2"
+        port: "{{ test_port2 }}"
+      - name: "microservice3"
+        port: "{{ test_port3 }}"
+
+  tasks:
+    - name: Set random test port numbers
+      set_fact:
+        test_port1: "{{ 10000 | random }}"
+        test_port2: "{{ 10000 | random }}"
+        test_port3: "{{ 10000 | random }}"
+
+    - name: Create MicroService Group
+      community.network.avi_microservicegroup:
+        controller: "{{ controller }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        tenant: "{{ tenant }}"
+        tenant_uuid: "{{ tenant_uuid }}"
+        name: "MyMicroServiceGroup"
+        description: "This is a test microservice group"
+        service_refs: "{{ microservices }}"
+        state: present
+      register: result
+
+    - name: Debug result
+      debug:
+        var: result

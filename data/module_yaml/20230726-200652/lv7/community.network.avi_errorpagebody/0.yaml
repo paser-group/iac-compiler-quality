@@ -1,0 +1,54 @@
+---
+- name: Test playbook for community.network.avi_errorpagebody module
+  hosts: localhost
+  gather_facts: no
+  vars:
+    avi_credentials:
+      username: "{{ username }}"
+      password: "{{ password }}"
+    api_context:
+      tenant_ref: "{{ tenant }}"
+    avi_disable_session_cache_as_fact: true
+    controller: "{{ controller }}"
+    error_page_body: "{{ error_page_body or '' }}" # Potential latent type-related bug
+
+  tasks:
+    - name: Create ErrorPageBody
+      community.network.avi_errorpagebody:
+        controller: "{{ controller }}"
+        avi_credentials: "{{ avi_credentials }}"
+        api_context: "{{ api_context }}"
+        avi_disable_session_cache_as_fact: "{{ avi_disable_session_cache_as_fact }}"
+        tenant: "{{ tenant }}"
+        password: "{{ password }}"
+        state: present
+        name: "TestErrorPage"
+        error_page_body: "Test Error Page"
+      register: result
+      failed_when: result is failed
+
+    - name: Verify ErrorPageBody
+      community.network.avi_errorpagebody_info:
+        controller: "{{ controller }}"
+        avi_credentials: "{{ avi_credentials }}"
+        tenant: "{{ tenant }}"
+        name: "TestErrorPage"
+      register: result
+      failed_when: result is failed
+
+    - name: Debug ErrorPageBody Info
+      debug:
+        var: result
+
+    - name: Delete ErrorPageBody
+      community.network.avi_errorpagebody:
+        controller: "{{ controller }}"
+        avi_credentials: "{{ avi_credentials }}"
+        api_context: "{{ api_context }}"
+        avi_disable_session_cache_as_fact: "{{ avi_disable_session_cache_as_fact }}"
+        tenant: "{{ tenant }}"
+        password: "{{ password }}"
+        state: absent
+        name: "TestErrorPage"
+      register: result
+      failed_when: result is failed

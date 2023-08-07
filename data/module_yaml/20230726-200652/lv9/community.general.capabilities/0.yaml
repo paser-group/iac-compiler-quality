@@ -1,0 +1,40 @@
+---
+- name: Test playbook to uncover latent type-related bugs
+  hosts: localhost
+  gather_facts: false
+  become: false
+
+  tasks:
+    - name: Create network
+      community.general.capabilities:
+        capability: network
+        state: present
+        path: /tmp/test_network
+
+    - name: Create network interfaces
+      community.general.capabilities:
+        capability: networkinterface
+        state: present
+        path: /tmp/test_network
+        interfaces:
+          - name: eth0
+            address: "{{ item.address }}/24"
+            state: up
+          - name: eth1
+            address: "{{ item.address }}/24"
+            state: up
+      with_items:
+        - { address: "10.1.1.1" }
+        - { address: "10.1.1.2" }
+
+    - name: Verify network configuration
+      community.general.capabilities:
+        capability: networkinterface
+        state: get
+        path: /tmp/test_network
+
+    - name: Delete network
+      community.general.capabilities:
+        capability: network
+        state: absent
+        path: /tmp/test_network

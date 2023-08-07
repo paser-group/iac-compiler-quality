@@ -1,0 +1,63 @@
+---
+- name: Test playbook for community.general.jira module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    issue_summary: "Test Issue"
+    issue_description: "This is a test issue"
+    issue_project: "TEST"
+    issue_issuetype: "Bug"
+    issue_assignee: "admin"
+    jira_user: "admin"
+    jira_password: "password"
+    jira_url: "http://localhost:8080"
+    jira_validate_certs: False
+
+  tasks:
+    - name: Create a Jira issue with minimal attributes
+      community.general.jira:
+        uri: "{{ jira_url }}"
+        username: "{{ jira_user }}"
+        password: "{{ jira_password }}"
+        project: "{{ issue_project }}"
+        issuetype: "{{ issue_issuetype }}"
+        summary: "{{ issue_summary }}"
+        description: "{{ issue_description }}"
+        validate_certs: "{{ jira_validate_certs }}"
+        state: present
+      register: create_issue
+
+    - name: Debug create_issue
+      debug:
+        var: create_issue
+
+    - name: Modify the Jira issue
+      community.general.jira:
+        uri: "{{ jira_url }}"
+        username: "{{ jira_user }}"
+        password: "{{ jira_password }}"
+        issue: "{{ create_issue.issue }}"
+        summary: "{{ issue_summary }}"
+        description: "{{ issue_description }}"
+        validate_certs: "{{ jira_validate_certs }}"
+        state: present
+      register: modify_issue
+
+    - name: Debug modify_issue
+      debug:
+        var: modify_issue
+
+    - name: Delete the Jira issue
+      community.general.jira:
+        uri: "{{ jira_url }}"
+        username: "{{ jira_user }}"
+        password: "{{ jira_password }}"
+        issue: "{{ create_issue.issue }}"
+        validate_certs: "{{ jira_validate_certs }}"
+        state: absent
+      register: delete_issue
+
+    - name: Debug delete_issue
+      debug:
+        var: delete_issue

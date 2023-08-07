@@ -1,0 +1,79 @@
+---
+- name: Test Ansible Sensu Handler Module
+  hosts: all
+  gather_facts: false
+
+  vars:
+    sensu_handler_name: sensu-handler
+    sensu_handler_type: transport
+    sensu_handler_severities: [warning, critical]
+    sensu_handler_command: /usr/bin/handle_sensu_event
+    sensu_handler_state: present
+    sensu_handler_socket_host: 127.0.0.1
+    sensu_handler_socket_port: "{{ sensu_handler_port }}"
+    sensu_handler_pipe_command: /usr/bin/pipe_sensu_event
+    sensu_handler_pipe_state: present
+    sensu_handler_filter: filter_string
+    sensu_handler_filters: [filter1, filter2]
+    sensu_handler_timeout: 60
+    sensu_handler_handle_flapping: True
+    sensu_handler_handle_silenced: False
+    sensu_handler_mutator: mutator_string
+    sensu_handler_handlers: [handler1, handler2]
+
+  tasks:
+    - name: Generate Random Port Number
+      set_fact:
+        sensu_handler_port: "{{ 1024 + (ansible_play_hosts_all.index(inventory_hostname) | random(seed=inventory_hostname) * (65535 - 1024 + 1)) | int }}"
+
+    - name: Install Python pip
+      block:
+        - name: Install pip
+          apt:
+            name: python3-pip
+            state: present
+          become: true
+
+    - name: Install Sensu Handler Dependencies
+      block:
+        - name: Install sensu-handlers-python
+          pip:
+            name: sensu-handlers-python
+            state: present
+            executable: pip3
+
+    - name: Configure Sensu Handler
+      block:
+        - name: Create Sensu Handler Configuration
+          copy:
+            content: |
+              ---
+              name: "{{ sensu_handler_name }}"
+              type: "{{ sensu_handler_type }}"
+              severities: "{{ sensu_handler_severities }}"
+              command: "{{ sensu_handler_command }}"
+              state: "{{ sensu_handler_state }}"
+              socket:
+                host: "{{ sensu_handler_socket_host }}"
+                port: "{{ sensu_handler_socket_port }}"
+              pipe:
+                command: "{{ sensu_handler_pipe_command }}"
+                state: "{{ sensu_handler_pipe_state }}"
+              filter: "{{ sensu_handler_filter }}"
+              filters: "{{ sensu_handler_filters }}"
+              timeout: "{{ sensu_handler_timeout }}"
+              handle_flapping: "{{ sensu_handler_handle_flapping }}"
+              handle_silenced: "{{ sensu_handler_handle_silenced }}"
+              mutator: "{{ sensu_handler_mutator }}"
+              handlers: "{{ sensu_handler_handlers }}"
+            dest: /etc/sensu/sensu_handler.conf
+
+    - name: Print Sensu Handler Configuration
+      block:
+        - name: Display Sensu Handler Configuration
+          command: cat /etc/sensu/sensu_handler.conf
+          register: handler_configuration
+
+        - name: Debug Sensu Handler Configuration
+          debug:
+            var: handler_configuration.stdout_lines

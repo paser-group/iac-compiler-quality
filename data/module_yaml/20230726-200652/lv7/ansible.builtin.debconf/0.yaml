@@ -1,0 +1,35 @@
+---
+- name: Test debconf module with heuristic
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Set debconf question with true/false value
+      ansible.builtin.debconf:
+        name: "{{ item.name }}"
+        question: "{{ item.question }}"
+        unseen: "{{ item.unseen }}"
+        value: "{{ item.value }}"
+        vtype: "{{ item.vtype }}"
+      loop:
+        - { name: "example_question", question: "Do you want to enable feature X?", unseen: true, value: "true", vtype: "boolean" }
+        - { name: "example_question", question: "Do you want to enable feature Y?", unseen: true, value: "false", vtype: "boolean" }
+      register: debconf_output
+
+    - name: Debug debconf output
+      debug:
+        var: debconf_output
+
+    - name: Set debconf question with limit-related values
+      ansible.builtin.debconf:
+        name: "example_question"
+        question: "What is the maximum number of connections?"
+        unseen: true
+        value: "{{ item }}"
+        vtype: "integer"
+      loop: "{{ range(1, 11) | map('string', 'start=1') | map('regex_replace', '^(\\d)$', '0\\1') | list }}"
+      register: debconf_limit_output
+
+    - name: Debug debconf limit output
+      debug:
+        var: debconf_limit_output

@@ -1,0 +1,63 @@
+---
+- name: Test playbook for rax_clb_nodes module
+  hosts: localhost
+  gather_facts: False
+
+  vars:
+    # Define the network setup
+    nodes:
+      - name: ubuntu1
+        ip_address: "10.1.1.1"
+        distribution: "ubuntu"
+      - name: alpine1
+        ip_address: "10.1.1.2"
+        distribution: "alpine"
+      - name: centos1
+        ip_address: "10.1.1.3"
+        distribution: "centos"
+      - name: redhat1
+        ip_address: "10.1.1.4"
+        distribution: "redhat"
+
+  tasks:
+    - name: Generate random MAC address
+      set_fact:
+        mac_address: "{{ '02' + ':' + ':'.join(['{0:02x}'.format((random|int) % 256) for _ in range(5)]) }}"
+
+    - name: Add nodes to RackSpace Cloud Load Balancer
+      community.general.rax_clb_nodes:
+        username: "my_username"
+        api_key: "my_api_key"
+        load_balancer_id: 123
+        state: present
+        nodes:
+          - address: "{{ item.ip_address }}"
+            port: 80
+            condition: ENABLED
+            type: "PRIMARY"
+            weight: 1
+            mac_address: "{{ mac_address }}"
+        validate_certs: false
+      loop: "{{ nodes }}"
+
+    - name: Modify nodes in RackSpace Cloud Load Balancer
+      community.general.rax_clb_nodes:
+        username: "my_username"
+        api_key: "my_api_key"
+        load_balancer_id: 123
+        state: present
+        nodes:
+          - node_id: 456
+            condition: DISABLED
+            weight: 0
+        validate_certs: false
+
+    - name: Remove nodes from RackSpace Cloud Load Balancer
+      community.general.rax_clb_nodes:
+        username: "my_username"
+        api_key: "my_api_key"
+        load_balancer_id: 123
+        state: absent
+        nodes:
+          - node_id: 789
+        validate_certs: false

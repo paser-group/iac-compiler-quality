@@ -1,0 +1,56 @@
+---
+- name: Test playbook for Ansible type-related bugs
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    backup: true
+    cron_file: "/etc/cron.d/ansible_cronvar"
+    insertafter: "@daily"
+    insertbefore: "@hourly"
+    name: "sample_cronvar"
+    state: "present"
+    user: "root"
+    value: "my_value"
+
+  tasks:
+    - name: Install cronvar module
+      pip:
+        name: community.general
+
+    - name: Create cronvar entry
+      community.general.cronvar:
+        backup: "{{ backup }}"
+        cron_file: "{{ cron_file }}"
+        insertafter: "{{ insertafter }}"
+        insertbefore: "{{ insertbefore }}"
+        name: "{{ name }}"
+        state: "{{ state }}"
+        user: "{{ user }}"
+        value: "{{ value }}"
+      register: result
+
+    - name: Debug cronvar result
+      debug:
+        var: result
+
+    - name: Generate random port number
+      shell: "shuf -i 1024-65535 -n 1"
+      register: random_port
+
+    - name: Test port setting
+      community.general.cronvar:
+        backup: "{{ backup }}"
+        cron_file: "{{ cron_file }}"
+        insertafter: "{{ insertafter }}"
+        insertbefore: "{{ insertbefore }}"
+        name: "{{ name }}"
+        state: "{{ state }}"
+        user: "{{ user }}"
+        value: "{{ value }}"
+        port: "{{ random_port.stdout }}"
+      register: port_result
+
+    - name: Debug port result
+      debug:
+        var: port_result

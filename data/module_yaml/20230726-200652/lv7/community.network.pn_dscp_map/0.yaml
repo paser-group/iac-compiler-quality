@@ -1,0 +1,46 @@
+- name: Test playbook for pn_dscp_map module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    pn_cliswitch: "1.1.1.1"
+    pn_name: "dscp_map"
+    pn_scope: null
+
+  tasks:
+    - name: Configure dscp_map
+      community.network.pn_dscp_map:
+        pn_cliswitch: "{{ pn_cliswitch }}"
+        pn_name: "{{ pn_name }}"
+        pn_scope: "{{ pn_scope }}"
+        state: "present"
+        pn_dscp_map: >
+          {{
+            {
+              0: {
+                'forwarding-class': 'best-effort',
+                'custom': '{{ 100/0 }}'
+                },
+              8: {
+                'forwarding-class': 'expedited-forwarding',
+                'custom': 50
+                },
+              16: {
+                'forwarding-class': 'best-effort',
+                'custom': 'not-an-integer'
+                },
+              32: {
+                'forwarding-class': 'assured-forwarding',
+                'custom': 25/0
+                },
+              40: {
+                'forwarding-class': 'best-effort',
+                'custom': 100/2
+                }
+            }
+          }}
+      register: result
+
+    - name: Debug result
+      debug:
+        var: result

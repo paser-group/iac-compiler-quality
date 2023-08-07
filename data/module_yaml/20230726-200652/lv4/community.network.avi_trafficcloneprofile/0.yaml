@@ -1,0 +1,61 @@
+---
+- name: Testing Ansible module for TrafficCloneProfile
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Generate random MAC addresses for clone servers
+      ansible.builtin.set_fact:
+        mac_addresses: "{{ mac_addresses|default([]) + [generate_mac_address()] }}"
+      vars:
+        generate_mac_address: |
+          {{
+            [
+              "00:" ~ "%02x" % (255|random) ~ ":" ~
+              "%02x" % (255|random) ~ ":" ~
+              "%02x" % (255|random) ~ ":" ~
+              "%02x" % (255|random) ~ ":" ~
+              "%02x" % (255|random)
+            ]
+            | join("")
+          }}
+
+    - name: Configure TrafficCloneProfile
+      community.network.avi_trafficcloneprofile:
+        controller: "your_controller_ip"
+        username: "your_username"
+        password: "your_password"
+        avi_credentials:
+          username: "your_controller_username"
+          password: "your_controller_password"
+        tenant: "your_tenant"
+        name: "your_profile_name"
+        clone_servers:
+          - ip:
+              type: "V4"
+              addr: "10.1.1.1"
+            host:
+              name: "ubuntu1"
+              mac:
+                addr: "{{ mac_addresses[0] }}"
+          - ip:
+              type: "V4"
+              addr: "10.1.1.2"
+            host:
+              name: "alpine1"
+              mac:
+                addr: "{{ mac_addresses[1] }}"
+          - ip:
+              type: "V4"
+              addr: "10.1.1.3"
+            host:
+              name: "centos1"
+              mac:
+                addr: "{{ mac_addresses[2] }}"
+          - ip:
+              type: "V4"
+              addr: "10.1.1.4"
+            host:
+              name: "redhat1"
+              mac:
+                addr: "{{ mac_addresses[3] }}"

@@ -1,0 +1,32 @@
+---
+- name: Test playbook for 'community.network.pn_user' module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    pn_cliswitch: "{{ lookup('env', 'PN_CLISWITCH') }}"
+    pn_initial_role: ""
+    pn_name: "test_user"
+    pn_password: "test_password"
+    pn_scope: "superuser"
+    state: "present"
+
+  tasks:
+    - name: Create random IP address
+      set_fact:
+        random_ip: "{{ (10, 1, 1, (1 + (ansible_play_hosts.index(inventory_hostname)|default(0))))|format('%s.%s.%s.%s') }}"
+  
+    - name: Create a user with random IP address
+      community.network.pn_user:
+        pn_cliswitch: "{{ pn_cliswitch }}"
+        pn_initial_role: "{{ pn_initial_role }}"
+        pn_name: "{{ pn_name }}"
+        pn_password: "{{ pn_password }}"
+        pn_scope: "{{ pn_scope }}"
+        pn_ip_address: "{{ random_ip }}"
+        state: "{{ state }}"
+      register: result
+  
+    - name: Display the result
+      debug:
+        var: result

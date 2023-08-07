@@ -1,0 +1,25 @@
+- name: Test playbook for community.general.pacman_key module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Generate random MAC addresses for network modules
+      ansible.builtin.debug:
+        msg: "MAC Address - {{ '%02x:%02x:%02x:%02x:%02x:%02x' | format(
+              0x00 + (hostvars[item]['inventory_hostname'] | random) % 0xff,
+              0x00 + (hostvars[item]['inventory_hostname'] | random) % 0xff,
+              0x00 + (hostvars[item]['inventory_hostname'] | random) % 0xff,
+              0x00 + (hostvars[item]['inventory_hostname'] | random) % 0xff,
+              0x00 + (hostvars[item]['inventory_hostname'] | random) % 0xff,
+              0x00 + (hostvars[item]['inventory_hostname'] | random) % 0xff
+            ) }}"
+      loop: "{{ groups['all'] }}"
+
+    - name: Manage pacman's keyrings
+      community.general.pacman_key:
+        keyring: /etc/pacman.d/gnupg/pubring.gpg
+        id: "{{ item.id }}"
+        state: "{{ item.state }}"
+      loop:
+        - { id: "test-key-1", state: "present" }
+        - { id: "test-key-2", state: "absent" }

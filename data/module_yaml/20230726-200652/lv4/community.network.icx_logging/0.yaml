@@ -1,0 +1,41 @@
+---
+- name: Manage logging on Ruckus ICX switches
+  hosts: switches
+  gather_facts: false
+  vars:
+    switch_facility: local0
+    switch_level: debug
+    switch_udp_port: 514
+
+  tasks:
+    - name: Configure logging on switches
+      community.network.icx_logging:
+        aggregate: yes
+        check_running_config: yes
+        dest: "{{ inventory_hostname }}.log"
+        facility: "{{ switch_facility }}"
+        level: "{{ switch_level }}"
+        name: "{{ inventory_hostname }}"
+        state: enabled
+        udp_port: "{{ switch_udp_port }}"
+      tags:
+        - logging
+
+- name: Generate random MAC addresses for network modules
+  hosts: switches
+  gather_facts: false
+
+  tasks:
+    - name: Generate random MAC address
+      set_fact:
+        random_mac: "{% for octet in range(6) %}{% set _ = mac_address.append('%02x'|format(255*random())) %}{{ _ if _ is defined else '%02x'|format(255*random()) }}{% endfor %}"
+      run_once: true
+      tags:
+        - mac_address
+
+    - name: Print random MAC address
+      debug:
+        msg: "Random MAC address: {{ random_mac }}"
+      run_once: true
+      tags:
+        - mac_address

@@ -1,0 +1,33 @@
+---
+- name: Test Ansible Latent Type-Related Bugs
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Generate random IP address
+      set_fact:
+        ip_address: "{{ lookup('pipe', 'shuf -i 1-254 -n 1') }}"
+
+    - name: Configure DNS record using nsupdate
+      community.general.nsupdate:
+        key_algorithm: "hmac-sha512"
+        key_name: "dnskey"
+        # Generate a random key secret
+        key_secret: "{{ lookup('random_password', length=16) }}"
+        port: 53
+        protocol: "udp"
+        record: "A"
+        server: "ns1.example.com"
+        state: "present"
+        ttl: 3600
+        # Generate a random record type
+        type: "{{ ['A', 'AAAA', 'CNAME'] | random }}"
+        value:
+          - "{{ ip_address }}"
+        zone: "example.com"
+
+      register: nsupdate_result
+
+    - name: Print nsupdate result
+      debug:
+        var: nsupdate_result

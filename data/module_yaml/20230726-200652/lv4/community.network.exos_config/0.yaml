@@ -1,0 +1,54 @@
+---
+- name: Ansible Latent Type-Related Bug Finder
+  hosts: localhost
+  gather_facts: false
+  connection: local
+
+  tasks:
+    - name: Install dependencies
+      block:
+        - name: Install required Python libraries
+          pip:
+            name: exos_sdk
+            state: present
+        - name: Install community.network collection
+          ansible-galaxy:
+            name: community.network
+            state: present
+      become: false
+
+    - name: Configure network devices
+      hosts: network_devices
+      gather_facts: false
+      collections:
+        - community.network
+        
+      tasks:
+        - name: Apply intended configuration
+          community.network.exos_config:
+            after: null
+            backup: true
+            backup_options:
+              dir: backups
+              name_prefix: config_backup
+            before: null
+            defaults: true
+            diff_against: null
+            diff_ignore_lines: null
+            intended_config: null
+            lines: null
+            match: null
+            replace: null
+            running_config: null
+            save_when: null
+            src: null
+          register: exos_output
+
+        - name: Check for errors
+          fail:
+            msg: "Error occurred while configuring network device"
+          when: exos_output is failed
+
+    - name: Debug output
+      debug:
+        var: exos_output

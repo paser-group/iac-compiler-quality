@@ -1,0 +1,30 @@
+---
+- name: Test Ansible Latent Type-Related Bugs
+  hosts: localhost
+  gather_facts: false
+  
+  vars:
+    # Variable to store the generated MAC address
+    mac_address: "{{ random_mac_address }}"
+  
+  tasks:
+    - name: Generate random MAC address
+      set_fact:
+        random_mac_address: "{{ ('%02x'%((random*256)|int)) }}:{{ ('%02x'%((random*256)|int)) }}:{{ ('%02x'%((random*256)|int)) }}:{{ ('%02x'%((random*256)|int)) }}:{{ ('%02x'%((random*256)|int)) }}:{{ ('%02x'%((random*256)|int)) }}"
+  
+    - name: Create solaris zone
+      community.general.solaris_zone:
+        name: test_zone
+        state: running
+        path: /path/to/zone/directory
+        attach_options: '-U'
+        config: '{{ mac_address }}'
+        create_options: 'autosize'
+        install_options: 'source_image:/path/to/solaris/image.iso'
+        root_password: 'secret123'
+        sparse: true
+        timeout: 300
+
+    - name: Debug output
+      debug:
+        var: mac_address

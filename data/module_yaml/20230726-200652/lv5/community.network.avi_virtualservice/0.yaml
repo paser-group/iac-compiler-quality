@@ -1,0 +1,62 @@
+---
+- hosts: localhost
+  gather_facts: false
+
+  vars:
+    # Define the network setup
+    ansible_connection: local
+    ansible_python_interpreter: "/usr/bin/python3"
+    ansible_user: "{{ username }}"
+    ansible_password: "{{ password }}"
+    inventory_file: "inventory.ini"
+    port_range_min: 1024
+    port_range_max: 65535
+
+  tasks:
+    - name: Create inventory file with Docker nodes
+      copy:
+        content: |
+          [nodes]
+          ubuntu1 ansible_host=10.1.1.1
+          alpine1 ansible_host=10.1.1.2
+          centos1 ansible_host=10.1.1.3
+          redhat1 ansible_host=10.1.1.4
+        dest: "{{ inventory_file }}"
+
+    - name: Include the inventory file
+      include_vars:
+        file: "{{ inventory_file }}"
+
+    - name: Setup VirtualService with random port
+      community.network.avi_virtualservice:
+        state: present
+        controller: "{{ controller }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        name: "TestVirtualService"
+        type: HTTP
+        enabled: true
+        vip:
+          ip_address: "{{ groups['nodes'][0] }}"
+          port: "{{ port_range_min }}-{{ port_range_max }}"
+        pool_group_ref: "/api/poolgroup/PoolGroup-1"
+        tenant: "TestTenant"
+      register: vs_result
+
+    - name: Print VirtualService setup result
+      debug:
+        var: vs_result
+
+    - name: Delete the VirtualService
+      community.network.avi_virtualservice:
+        state: absent
+        controller: "{{ controller }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        name: "TestVirtualService"
+        tenant: "TestTenant"
+      register: vs_delete_result
+
+    - name: Print VirtualService delete result
+      debug:
+        var: vs_delete_result

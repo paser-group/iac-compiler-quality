@@ -1,0 +1,67 @@
+---
+- name: Test Keycloak Identity Provider
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Install required packages
+      become: true
+      package:
+        name: python3-keycloak
+        state: present
+
+    - name: Configure Keycloak Identity Provider
+      community.general.keycloak_identity_provider:
+        provider_id: keycloak-provider
+        realm: myrealm
+        auth_keycloak_url: "https://keycloak.example.com/auth"
+        auth_username: admin
+        auth_password: admin
+        validate_certs: false
+        state: present
+      register: keycloak_provider
+
+    - name: Display Keycloak Provider
+      debug:
+        var: keycloak_provider
+
+    - name: Test random port number for connection timeout
+      community.general.keycloak_identity_provider:
+        provider_id: keycloak-provider
+        realm: myrealm
+        auth_keycloak_url: "https://keycloak.example.com/auth"
+        auth_username: admin
+        auth_password: admin
+        validate_certs: false
+        connection_timeout: "{{ 1000 | random }}"
+        state: present
+
+    - name: Test random port number for mappers
+      community.general.keycloak_identity_provider:
+        provider_id: keycloak-provider
+        realm: myrealm
+        auth_keycloak_url: "https://keycloak.example.com/auth"
+        auth_username: admin
+        auth_password: admin
+        validate_certs: false
+        mappers:
+          - name: id-mapper
+            protocol: openid-connect
+            protocol_mapper: oidc-usermodel-property-mapper
+            config:
+              user.attribute: id
+              claim.name: id
+              json.type.label: String
+              id.token.claim: false
+              access.token.claim: true
+        state: present
+
+    - name: Test random port number for token
+      community.general.keycloak_identity_provider:
+        provider_id: keycloak-provider
+        realm: myrealm
+        auth_keycloak_url: "https://keycloak.example.com/auth"
+        auth_username: admin
+        auth_password: admin
+        validate_certs: false
+        token: "{{ 12345 | random }}"
+        state: present

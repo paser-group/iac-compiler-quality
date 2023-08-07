@@ -1,0 +1,46 @@
+- name: Discover latent type-related bugs in community.network.avi_snmptrapprofile module
+  hosts: localhost
+  gather_facts: false
+  vars:
+    api_context: {}
+    api_version: '1.0'
+    avi_api_patch_op: null
+    avi_api_update_method: null
+    avi_credentials: {}
+    avi_disable_session_cache_as_fact: false
+    controller: 'https://{{ inventory_hostname }}'
+    name: null
+    password: 'my_password'
+    state: null
+    tenant: 'Default'
+    tenant_ref: null
+    tenant_uuid: null
+    trap_servers: null
+    url: null
+    username: 'admin'
+    uuid: null
+
+  tasks:
+    - name: Create SNMP Trap Profile with varied encodings
+      community.network.avi_snmptrapprofile:
+        controller: "{{ controller }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        tenant: "{{ tenant }}"
+        name: "{{ item }}"
+        trap_servers:
+          - ip: "10.1.1.1"
+            port: 162
+        state: present
+      loop:
+        - 'regular_string'
+        - '{{ (regular_string | b64encode).decode("utf-8") }}'    # Base64 encoded string
+        - '{{ regular_string | urlencode }}'    # URL encoded string
+        - '{{ (regular_string | upper).lower() }}'    # Lowercase string
+        - '{{ (regular_string | upper).lower() | b64encode }}'    # Combined lowercase and base64 encoded string
+        - '{{ regular_string | regex_replace(regex, replacement) }}'    # Regex replaced string
+      register: result
+
+    - name: Display result
+      debug:
+        var: result

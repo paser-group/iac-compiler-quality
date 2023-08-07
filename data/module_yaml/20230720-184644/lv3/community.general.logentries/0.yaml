@@ -1,0 +1,30 @@
+---
+- name: Ansible Latent Bug Finder Playbook
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Install required pip packages
+      pip:
+        name:
+          - logentries
+          - requests
+
+    - name: Create configuration values that incorporate both bytes and strings
+      set_fact:
+        logtype: "byte_string_test"
+        name: "Test Log"
+        path: "/var/log/test.log"
+        state: "present"
+
+    - name: Logentries - Log type bug test
+      community.general.logentries:
+        logtype: "{{ logtype | to_bytes }}"
+        name: "{{ name }}"
+        path: "{{ path }}"
+        state: "{{ state }}"
+      register: result
+
+    - name: Debug the result
+      debug:
+        var: result

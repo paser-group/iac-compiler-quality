@@ -1,0 +1,39 @@
+- name: Test playbook for community.network.apconos_command
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Set facts for test cases
+      set_fact:
+        test_cases:
+          - command: debug vlan {{ item }}
+            interval: 5
+            match: VLAN
+            retries: 3
+            wait_for:
+              - VLAN 1
+              - VLAN 2
+              - VLAN 3
+          - command: show interface {{ item }}
+            interval: 10
+            match: Interface
+            retries: 2
+            wait_for:
+              - eth0
+              - eth1
+              - eth2
+          - command: display version
+            interval: 30
+            match: Version
+            retries: 1
+            wait_for:
+              - Version
+
+    - name: Run test cases
+      apconos_command:
+        command: "{{ item.command }}"
+        interval: "{{ item.interval }}"
+        match: "{{ item.match }}"
+        retries: "{{ item.retries }}"
+        wait_for: "{{ item.wait_for }}"
+      loop: "{{ test_cases }}"

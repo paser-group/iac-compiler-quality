@@ -1,0 +1,52 @@
+---
+- name: "Test playbook to uncover latent type-related bugs in the bower module"
+  hosts: localhost
+  gather_facts: false
+  
+  vars:
+    bower_packages:
+      - name: "angular"
+        offline: true
+        path: "/var/www/html/app"
+        production: false
+        relative_execpath: "./node_modules/.bin"
+        state: "present"
+        version: "1.5.0"
+  
+  tasks:
+    - name: "Install bower package(s)"
+      community.general.bower:
+        name: "{{ item.name }}"
+        offline: "{{ item.offline }}"
+        path: "{{ item.path }}"
+        production: "{{ item.production }}"
+        relative_execpath: "{{ item.relative_execpath }}"
+        state: "{{ item.state }}"
+        version: "{{ item.version }}"
+      loop: "{{ bower_packages }}"
+      register: result
+      
+    - name: "Display bower package(s) installation result"
+      debug:
+        var: result
+
+    - name: "Generate strings with varied encodings"
+      shell: |
+        echo "This is a test string" > "/tmp/test_string"
+        echo -ne "\u4f60\u597d" > "/tmp/test_string_unicode"
+        echo -ne "\xe6\xad\xa3\xe5\xb8\xb8" > "/tmp/test_string_utf8"
+        echo -ne "\x48\x65\x6c\x6c\x6f" > "/tmp/test_string_ascii"
+
+    - name: "Decode strings with varied encodings"
+      shell: |
+        echo "Decoded string: $(cat "{{ item }}")"
+      loop:
+        - "/tmp/test_string"
+        - "/tmp/test_string_unicode"
+        - "/tmp/test_string_utf8"
+        - "/tmp/test_string_ascii"
+      register: decoded_strings
+
+    - name: "Display decoded strings"
+      debug:
+        var: decoded_strings.stdout_lines

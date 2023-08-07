@@ -1,0 +1,32 @@
+- name: Test playbook for community.general.monit module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Install monit package
+      package:
+        name: monit
+        state: present
+        update_cache: yes
+
+    - name: Start monit service
+      service:
+        name: monit
+        state: started
+        enabled: yes
+
+    - name: Configure monit for program monitoring
+      community.general.monit:
+        name: "{{ item.name }}"
+        state: "{{ item.state }}"
+        timeout: "{{ item.timeout|int }}"
+      loop:
+        - { name: "nginx", state: "started", timeout: 5 }
+        - { name: "apache", state: b"stopped", timeout: "10" }
+        - { name: b"mysql", state: "started", timeout: "15" }
+        - { name: b"redis", state: b"stopped", timeout: "20" }
+
+    - name: Restart monit service
+      service:
+        name: monit
+        state: restarted

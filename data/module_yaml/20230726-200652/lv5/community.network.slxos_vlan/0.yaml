@@ -1,0 +1,30 @@
+---
+- hosts: switches
+  gather_facts: false
+  tasks:
+    - name: Create VLANs on Extreme Networks switches
+      community.network.slxos_vlan:
+        name: "{{ item.name }}"
+        vlan_id: "{{ item.vlan_id }}"
+        state: "{{ item.state }}"
+        purge: "{{ item.purge | default(false) }}"
+        aggregate: "{{ item.aggregate | default(False) }}"
+        delay: "{{ item.delay | default(0) }}"
+        interfaces: "{{ item.interfaces | join(',') }}"
+      loop:
+        - { name: "TestVLAN1", vlan_id: 100, state: "present", purge: true, interfaces: ["ethernet1", "ethernet2"] }
+        - { name: "TestVLAN2", vlan_id: 200, state: "present", interfaces: ["ethernet3", "ethernet4"] }
+        - { name: "TestVLAN3", vlan_id: 300, state: "absent" }
+        - { name: "TestVLAN4", vlan_id: 400, state: "present", purge: false, interfaces: [] }
+        - { name: "TestVLAN5", vlan_id: 500, state: "present", purge: true, aggregate: true }
+        
+    - name: Generate random port numbers for testing
+      set_fact:
+        random_port: "{{ range(10,30) |random }}"
+        
+    - name: Test VLAN port settings with random port numbers
+      community.network.slxos_vlan:
+        name: "RandomVLAN"
+        vlan_id: 600
+        state: "present"
+        interfaces: "{{ random_port }}"

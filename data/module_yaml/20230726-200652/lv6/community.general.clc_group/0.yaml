@@ -1,0 +1,41 @@
+---
+- name: Test playbook for clc_group module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    encoding_test_cases:
+      - name: "Group1"
+        description: "Server Group 1"
+        location: "\u043C\u043E\u0441\u043A\u0432\u0430"
+        parent: "root"
+        state: "present"
+        wait: true
+      - name: "Group2\x99"
+        description: "Server Group 2\x99"
+        location: "New York"
+        parent: "\u05E9\u05DC\u05D5\u05D5\u05EA\x99"
+        state: "absent"
+        wait: false
+
+  tasks:
+    - name: Create server groups
+      community.general.clc_group:
+        name: "{{ item.name }}"
+        description: "{{ item.description }}"
+        location: "{{ item.location }}"
+        parent: "{{ item.parent }}"
+        state: "{{ item.state }}"
+        wait: "{{ item.wait }}"
+      loop: "{{ encoding_test_cases }}"
+      register: result
+
+    - name: Print module output
+      debug:
+        var: result
+
+    - name: Delete server groups
+      community.general.clc_group:
+        name: "{{ item.name }}"
+        state: "absent"
+      loop: "{{ encoding_test_cases }}"

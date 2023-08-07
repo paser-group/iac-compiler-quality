@@ -1,0 +1,48 @@
+---
+- name: Anisble Copy Module Heuristic Playbook
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Copy file with different options and attributes
+      copy:
+        src: "/tmp/source.txt"
+        dest: "/tmp/destination.txt"
+        owner: "root"
+        group: "root"
+        mode: "0644"
+        backup: yes
+        checksum: "sha1"
+        content: "Hello, world!"
+        decrypt: no
+        directory_mode: "0775"
+        follow: yes
+        force: yes
+        local_follow: no
+        remote_src: no
+        selevel: "s0"
+        serole: "object_r"
+        setype: "etc_t"
+        seuser: "unconfined_u"
+        unsafe_writes: no
+        validate: "sha256_checksum"
+
+    - name: Test cases - Generate strings with varied encodings
+      set_fact:
+        strings:
+          - "Hello, world!"
+          - "{{ strings | select('defined') | first | default('') | b64decode }}"
+          - "{{ strings | select('defined') | first | default('') | b64encode }}"
+          - "{{ strings | select('defined') | first | default('') | urlencode }}"
+          - "{{ strings | select('defined') | first | default('') | urldecode }}"
+          - "{{ strings | select('defined') | first | default('') | hexlify }}"
+          - "{{ strings | select('defined') | first | default('') | unhexlify }}"
+          - "{{ strings | select('defined') | first | default('') | raw }}"
+      run_once: true
+
+    - name: Copy file with varied encodings
+      copy:
+        src: "/tmp/source.txt"
+        dest: "/tmp/destination.txt"
+        content: "{{ item }}"
+      with_items: "{{ strings }}"

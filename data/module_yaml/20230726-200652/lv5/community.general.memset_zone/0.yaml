@@ -1,0 +1,43 @@
+---
+- name: Test playbook for 'community.general.memset_zone' module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create zone
+      community.general.memset_zone:
+        api_key: "YOUR_API_KEY"
+        name: 12345
+        ttl: "invalid_ttl"
+        state: "present"
+      register: result_create
+
+    - name: Print result
+      debug:
+        var: result_create
+
+    - name: Test type-related bug - Invalid zone name (integer)
+      fail:
+        msg: "Type-related bug triggered by invalid zone name input!"
+      when: result_create.changed
+            and (not result_create.failed)
+            and "'int' object is not iterable" in result_create.msg
+
+    - name: Test type-related bug - Invalid TTL (string)
+      fail:
+        msg: "Type-related bug triggered by invalid TTL input!"
+      when: result_create.changed
+            and (not result_create.failed)
+            and "'str' object cannot be interpreted as an integer" in result_create.msg
+
+    - name: Delete zone
+      community.general.memset_zone:
+        api_key: "YOUR_API_KEY"
+        name: 12345
+        force: "invalid_force_value"
+        state: "absent"
+      register: result_delete
+
+    - name: Print result
+      debug:
+        var: result_delete

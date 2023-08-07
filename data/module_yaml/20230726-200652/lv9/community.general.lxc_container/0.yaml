@@ -1,0 +1,40 @@
+---
+- name: Generate test cases for lxc_container module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create LXC container
+      community.general.lxc_container:
+        name: test_container
+        state: running
+        template: ubuntu
+        template_options: "--release hirsute"
+        config: /usr/share/lxc/config/ubuntu.common.conf
+        directory: /var/lib/lxc
+        fs_size: "{{ 5 | string }}"
+        fs_type: ext4
+        lxc_path: /var/lib/lxc
+
+    - name: Verify container is running
+      shell: lxc-info -n test_container -s
+      register: container_status
+      failed_when: container_status.stdout_lines[0] != "State:   RUNNING"
+
+    - name: Debug container status
+      debug:
+        var: container_status.stdout_lines
+
+    - name: Stop LXC container
+      community.general.lxc_container:
+        name: test_container
+        state: stopped
+
+    - name: Verify container is stopped
+      shell: lxc-info -n test_container -s
+      register: container_status
+      failed_when: container_status.stdout_lines[0] != "State:   STOPPED"
+
+    - name: Debug container status
+      debug:
+        var: container_status.stdout_lines

@@ -1,0 +1,68 @@
+---
+- name: Latent Type-Related Bug Finder for clc_loadbalancer Module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Generate Random IP Addresses
+      ansible.builtin.set_fact:
+        ip1: "{{ hostvars['localhost'].random_ip1 | default('10.10.10.10') }}"
+        ip2: "{{ hostvars['localhost'].random_ip2 | default('20.20.20.20') }}"
+        ip3: "{{ hostvars['localhost'].random_ip3 | default('30.30.30.30') }}"
+        ip4: "{{ hostvars['localhost'].random_ip4 | default('40.40.40.40') }}"
+
+    - name: Create Load Balancer
+      community.general.clc_loadbalancer:
+        alias: "test-lb"
+        description: "Test Load Balancer"
+        location: "CH1"
+        method: "round-robin"
+        name: "test-lb"
+        nodes:
+          - "{{ hostvars['localhost'].node1_ip }}"
+          - "{{ hostvars['localhost'].node2_ip }}"
+          - "{{ hostvars['localhost'].node3_ip }}"
+        persistence: "standard"
+        port: "80"
+        state: "present"
+        status: "enabled"
+      delegate_to: localhost
+
+    - name: Debug Load Balancer Creation
+      ansible.builtin.debug:
+        msg: "Load Balancer Created!"
+
+    - name: Delete Load Balancer
+      community.general.clc_loadbalancer:
+        alias: "test-lb"
+        description: "Test Load Balancer"
+        location: "CH1"
+        method: "round-robin"
+        name: "test-lb"
+        nodes:
+          - "{{ hostvars['localhost'].node1_ip }}"
+          - "{{ hostvars['localhost'].node2_ip }}"
+          - "{{ hostvars['localhost'].node3_ip }}"
+        persistence: "standard"
+        port: "80"
+        state: "absent"
+        status: "enabled"
+      delegate_to: localhost
+
+    - name: Debug Load Balancer Deletion
+      ansible.builtin.debug:
+        msg: "Load Balancer Deleted!"
+
+  vars:
+    node1_ip: "10.1.1.1"
+    node2_ip: "10.1.1.2"
+    node3_ip: "10.1.1.3"
+
+  tasks:
+    - debug:
+        msg: "Random IP: {{ item }}"
+      loop:
+        - "{{ ip1 }}"
+        - "{{ ip2 }}"
+        - "{{ ip3 }}"
+        - "{{ ip4 }}"

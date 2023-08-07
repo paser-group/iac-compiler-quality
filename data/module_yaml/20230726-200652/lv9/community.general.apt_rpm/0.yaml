@@ -1,0 +1,29 @@
+---
+- name: Test playbook for exposing latent bugs
+  hosts: all
+  gather_facts: false
+  
+  tasks:
+    - name: Configure network
+      raw: |
+        ip address add {%- set ip = '10.1.1.' ~ (range(1, 5)|random|string) -%}{{ ip }}/24 dev eth0
+        ip route add default via 10.1.1.254
+      changed_when: false
+
+    - name: Update cache
+      community.general.apt_rpm:
+        update_cache: "{{ update_cache_var | default(true) }}"
+        state: update_cache
+
+    - name: Install packages
+      community.general.apt_rpm:
+        name: "{{ package_list }}"
+        state: "{{ package_state_var | default('present') }}"
+        update_cache: false
+
+    - name: Upgrade packages
+      community.general.apt_rpm:
+        name: '{{ item }}'
+        state: latest
+        update_cache: false
+      loop: "{{ package_upgrade_list }}"

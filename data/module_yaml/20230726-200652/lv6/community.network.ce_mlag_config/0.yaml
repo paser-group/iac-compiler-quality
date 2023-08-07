@@ -1,0 +1,53 @@
+- hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Install Huawei Ansible Modules
+      pip:
+        name: jinja2-cli
+        state: present
+
+    - name: Generate strings with varied encodings
+      command: echo "{{ item }}" | iconv -f UTF-8 -t {{ item.encoding }}
+      register: encoded_strings
+      loop:
+        - { value: "test", encoding: "UTF-8" }
+        - { value: "test", encoding: "ISO-8859-1" }
+        - { value: "test", encoding: "UTF-16BE" }
+        - { value: "test", encoding: "UTF-16LE" }
+        - { value: "test", encoding: "UTF-32BE" }
+        - { value: "test", encoding: "UTF-32LE" }
+
+    - name: Create inventory file
+      copy:
+        content: |
+          [nodes]
+          ubuntu1 ansible_host=10.1.1.1
+          alpine1 ansible_host=10.1.1.2
+          centos1 ansible_host=10.1.1.3
+          redhat1 ansible_host=10.1.1.4
+
+      delegate_to: localhost
+      run_once: true
+
+    - name: Configure MLAG
+      community.network.ce_mlag_config:
+        provider:
+          host: "{{ host }}"
+          username: "{{ ansible_user }}"
+          password: "{{ ansible_password }}"
+        state: "{{ encoded_string }}"
+        dfs_group_id: null
+        eth_trunk_id: null
+        ip_address: null
+        nickname: null
+        peer_link_id: null
+        priority_id: null
+        pseudo_nickname: null
+        pseudo_priority: null
+        vpn_instance_name: null
+      loop: "{{ encoded_strings.results }}"
+      register: mlag_config
+
+    - name: Debug MLAG Config
+      debug:
+        var: mlag_config

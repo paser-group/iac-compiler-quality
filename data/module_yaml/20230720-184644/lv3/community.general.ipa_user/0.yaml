@@ -1,0 +1,36 @@
+- name: Create IPA user
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create user with bytes and strings
+      community.general.ipa_user:
+        ipa_host: "10.1.1.1"
+        ipa_user: "admin"
+        ipa_pass: "admin"
+        ipa_port: 443
+        ipa_prot: "https"
+        validate_certs: false
+        uid: "user1"
+        givenname: "John"
+        sn: "Doe"
+        displayname: {{ 1000 | to_bytes }}  # Bug: Missing quotes around bytes
+        uidnumber: "{{ 1000 | to_bytes }}"
+        gidnumber: "{{ 1000 | to_bytes }}"
+        mail: ["user1@example.com"]
+        telephonenumber: ["+123456789"]
+        loginshell: "/bin/bash"
+        sshpubkey:
+          - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDXAYcg... user1@example.com
+        title: "Engineer"
+        password: "{{ 'pass123' | to_bytes }}"
+        homedirectory: "/home/user1"
+        state: present
+
+      register: result
+
+    - name: Debug output
+      vars:
+        response: "{{ result }}"
+      debug:
+        var: response

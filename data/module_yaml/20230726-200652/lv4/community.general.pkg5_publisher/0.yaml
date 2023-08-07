@@ -1,0 +1,91 @@
+---
+- name: Install Solaris 11 Image Package
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Include required modules
+      include_tasks: pkg5_publisher_include.yml
+      loop:
+        - name: 'community.general.pkg5_publisher'
+          enabled: true
+          mirror: ['https://example.com/pkg']
+          name: 'pkg://solaris/developer/build/gnu-make'
+          origin: ['https://pkg.oracle.com/solarisstudio/release']
+          state: 'installed'
+          sticky: false
+        - name: 'community.general.pkg5_publisher'
+          enabled: true
+          mirror: ['https://example.com/pkg']
+          name: 'pkg://solaris/developer/build/gnu-make'
+          origin: ['https://pkg.oracle.com/solarisstudio/release']
+          state: 'installed'
+          sticky: true
+        - name: 'community.general.pkg5_publisher'
+          enabled: false
+          mirror: ['https://example.com/pkg']
+          name: 'pkg://solaris/developer/build/gnu-make'
+          origin: ['https://pkg.oracle.com/solarisstudio/release']
+          state: 'installed'
+          sticky: false
+        - name: 'community.general.pkg5_publisher'
+          enabled: false
+          mirror: ['https://example.com/pkg']
+          name: 'pkg://solaris/developer/build/gnu-make'
+          origin: ['https://pkg.oracle.com/solarisstudio/release']
+          state: 'installed'
+          sticky: true
+      loop_control:
+        loop_var: module
+
+    - name: Debug module variables
+      debug:
+        var: module
+
+- name: Clean up
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Cleanup
+      include_tasks: pkg5_publisher_cleanup_include.yml
+
+---
+
+# pkg5_publisher_include.yml
+- name: "Module: {{ item.name }}"
+  community.general.pkg5_publisher:
+    enabled: "{{ item.enabled }}"
+    mirror: "{{ item.mirror }}"
+    name: "{{ item.name }}"
+    origin: "{{ item.origin }}"
+    state: "{{ item.state }}"
+    sticky: "{{ item.sticky }}"
+  register: result
+  ignore_errors: true
+  tags: [package]
+
+- name: Debug package installation
+  debug:
+    var: result
+  tags: [package]
+
+---
+
+# pkg5_publisher_cleanup_include.yml
+- name: "Module: {{ item.name }}"
+  community.general.pkg5_publisher:
+    enabled: "{{ item.enabled }}"
+    mirror: "{{ item.mirror }}"
+    name: "{{ item.name }}"
+    origin: "{{ item.origin }}"
+    state: absent
+    sticky: "{{ item.sticky }}"
+  register: result
+  ignore_errors: true
+  tags: [package]
+
+- name: Debug package cleanup
+  debug:
+    var: result
+  tags: [package]

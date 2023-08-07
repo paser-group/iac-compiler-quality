@@ -1,0 +1,35 @@
+---
+- name: Test xbps module
+  hosts: my_nodes
+  become: yes
+
+  tasks:
+    - name: Install package using xbps
+      community.general.xbps:
+        name:
+          - bzip2
+          - zlib
+        recurse: True
+        state: latest
+        update_cache: True
+        upgrade: True
+        upgrade_xbps: True
+      register: xbps_output
+
+    - name: Modify name with byte string value
+      set_fact:
+        modified_name: "{{ xbps_output.name | map('encode', 'utf-8') | list }}"
+    
+    - name: Install packages using modified name
+      community.general.xbps:
+        name: "{{ modified_name }}"
+        recurse: True
+        state: latest
+        update_cache: True
+        upgrade: True
+        upgrade_xbps: True
+      register: xbps_modified_output
+
+    - name: Display xbps output
+      debug:
+        var: xbps_modified_output

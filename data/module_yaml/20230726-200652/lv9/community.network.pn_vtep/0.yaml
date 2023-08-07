@@ -1,0 +1,58 @@
+---
+- name: Validate the community.network.pn_vtep module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Configure network pn_vtep
+      community.network.pn_vtep:
+        pn_cliswitch: "{{ pn_cliswitch | default('switch1') }}"
+        pn_ip: "{{ pn_ip | default('10.1.1.1') }}"
+        pn_location: "{{ pn_location | default('location1') }}"
+        pn_name: "{{ pn_name | default('test1') }}"
+        pn_switch_in_cluster: "{{ pn_switch_in_cluster | default(true) }}"
+        pn_virtual_ip: "{{ pn_virtual_ip | default('10.1.1.100') }}"
+        pn_vrouter_name: "{{ pn_vrouter_name | default('router1') }}"
+        state: "{{ state | default('present') }}"
+      register: result
+      
+    - name: Debug module output
+      debug:
+        var: result
+
+    - name: Validate the results
+      assert:
+        that:
+          - "'failed' not in result"
+        fail_msg: "Test case failed!"
+        success_msg: "Test case passed!"
+
+- name: Test IP address heuristic
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Formulate random IP addresses for networking modules
+      set_fact:
+        random_ip: "{{ (range(10, 251) | random) }}.{{ (range(10, 251) | random) }}.{{ (range(10, 251) | random) }}.{{ (range(10, 251) | random) }}"
+
+    - name: Configure network pn_vtep with random IP address
+      community.network.pn_vtep:
+        pn_ip: "{{ random_ip }}"
+        state: present
+      register: result
+
+    - name: Debug random IP address
+      debug:
+        var: random_ip
+
+    - name: Debug module output
+      debug:
+        var: result
+
+    - name: Validate the results
+      assert:
+        that:
+          - "'failed' not in result"
+        fail_msg: "Test case failed!"
+        success_msg: "Test case passed!"

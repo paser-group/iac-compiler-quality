@@ -1,0 +1,43 @@
+- name: Create and remove a bigmon chain
+  hosts: localhost
+  gather_facts: False
+
+  vars:
+    access_token: "{{ lookup('env', 'BIGMON_ACCESS_TOKEN') }}"
+    controller: "https://{{ lookup('env', 'BIGMON_CONTROLLER_IP') }}"
+    name: "test_chain"
+    state: "present"
+    validate_certs: False
+
+  tasks:
+    - name: Create a bigmon chain
+      community.network.bigmon_chain:
+        access_token: "{{ access_token }}"
+        controller: "{{ controller }}"
+        name: "{{ name }}"
+        state: "{{ state }}"
+        validate_certs: "{{ validate_certs }}"
+      register: chain_result
+      changed_when: False
+
+    - debug:
+        var: chain_result
+
+    - name: Test port settings with random port numbers
+      set_fact:
+        random_port: "{{ 49152 | random(start=10000) }}"
+      loop: 10
+
+    - name: Remove the bigmon chain
+      community.network.bigmon_chain:
+        access_token: "{{ access_token }}"
+        controller: "{{ controller }}"
+        name: "{{ name }}"
+        state: "absent"
+        port: "{{ random_port }}"
+        validate_certs: "{{ validate_certs }}"
+      register: remove_result
+      changed_when: False
+
+    - debug:
+        var: remove_result

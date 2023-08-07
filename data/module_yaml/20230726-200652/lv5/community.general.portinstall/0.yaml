@@ -1,0 +1,85 @@
+---
+- name: Test playbook for community.general.portinstall module
+  hosts: localhost
+  gather_facts: false
+  become: true
+  
+  tasks:
+    - name: Install packages using portinstall
+      community.general.portinstall:
+        name: "{{ package_name }}"
+        state: "{{ package_state }}"
+        use_packages: "{{ use_packages }}"
+
+  vars:
+    - package_name: Package1
+    - package_state: present
+    - use_packages: true
+
+  tasks:
+    - name: Test case 1 - Install package with valid options
+      community.general.portinstall:
+        name: Package1
+      register: result
+      check_mode: true
+      vars:
+        package_state: present
+        use_packages: true
+    - debug:
+        var: result
+
+    - name: Test case 2 - Install package with invalid package state
+      community.general.portinstall:
+        name: Package2
+      register: result
+      check_mode: true
+      vars:
+        package_state: absent
+        use_packages: true
+    - debug:
+        var: result
+
+    - name: Test case 3 - Install package with invalid use_packages option
+      community.general.portinstall:
+        name: Package3
+      register: result
+      check_mode: true
+      vars:
+        package_state: present
+        use_packages: false
+    - debug:
+        var: result
+
+    - name: Test case 4 - Install package with invalid package name
+      community.general.portinstall:
+        name: ""
+      register: result
+      check_mode: true
+      vars:
+        package_state: present
+        use_packages: true
+    - debug:
+        var: result
+
+    - name: Test case 5 - Install package with random port numbers
+      community.general.portinstall:
+        name: Package5
+      register: result
+      check_mode: true
+      vars:
+        package_state: present
+        use_packages: true
+        port: "{{ random_port() }}"
+    - debug:
+        var: result
+
+  vars:
+    - ports:
+        - 1000
+        - 2000
+        - 3000
+  
+  tasks:
+    - name: Random Port Generator
+      set_fact:
+        random_port: "{{ ports | random }}"

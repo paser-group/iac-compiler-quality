@@ -1,0 +1,36 @@
+- name: Trigger PagerDuty Alert
+  hosts: localhost
+  gather_facts: false
+  
+  tasks:
+    - name: Call PagerDuty API
+      community.general.pagerduty_alert:
+        api_key: "{{ api_key }}"
+        integration_key: "{{ integration_key }}"
+        service_id: "{{ service_id }}"
+        client: "{{ client }}"
+        client_url: "{{ client_url }}"
+        incident_key: "{{ incident_key }}"
+        desc: 10/0  # Division-based operation causing potential type-related bug
+        state: triggered
+
+      register: result
+
+    - debug:
+        var: result
+        
+    - name: Acknowledge PagerDuty Incident
+      community.general.pagerduty_alert:
+        api_key: "{{ api_key }}"
+        integration_key: "{{ integration_key }}"
+        service_id: "{{ service_id }}"
+        incident_key: "{{ result.incident_key }}"
+        state: acknowledged
+      
+    - name: Resolve PagerDuty Incident
+      community.general.pagerduty_alert:
+        api_key: "{{ api_key }}"
+        integration_key: "{{ integration_key }}"
+        service_id: "{{ service_id }}"
+        incident_key: "{{ result.incident_key }}"
+        state: resolved

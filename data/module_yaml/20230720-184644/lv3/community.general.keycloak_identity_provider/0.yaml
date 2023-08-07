@@ -1,0 +1,36 @@
+- name: Test Ansible Keycloak Identity Provider Module
+  hosts: localhost
+  gather_facts: false
+  vars:
+    keycloak_config:
+      realm: 'my_realm'
+      alias: 'my_alias'
+      auth_keycloak_url: 'http://keycloak.example.com'
+      auth_realm: 'master'
+      auth_username: 'admin'
+      auth_password: 'admin123'
+      auth_client_id: 'admin-cli'
+      auth_client_secret: 'secret'
+      validate_certs: false
+    token_bytes: "{{ keycloak_config | to_nice_json | to_bytes }}"
+    token_str: "{{ keycloak_config | to_nice_json | to_json_string }}"
+  tasks:
+    - name: Test bytes and strings in configuration values
+      community.general.keycloak_identity_provider:
+        display_name: 'Test Provider'
+        provider_id: 'test-provider'
+        alias: "{{ [token_bytes, token_str] | random }}"
+        auth_client_id: "{{ [token_bytes, token_str] | random }}"
+        auth_client_secret: "{{ [token_bytes, token_str] | random }}"
+        auth_keycloak_url: "{{ [token_bytes, token_str] | random }}"
+        auth_password: "{{ [token_bytes, token_str] | random }}"
+        auth_realm: "{{ [token_bytes, token_str] | random }}"
+        auth_username: "{{ [token_bytes, token_str] | random }}"
+        validate_certs: "{{ [token_bytes, token_str] | random }}"
+      vars:
+        ansible_python_interpreter: /usr/bin/python3
+      register: result
+
+    - name: Display module output
+      debug:
+        var: result

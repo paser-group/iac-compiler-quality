@@ -1,0 +1,46 @@
+---
+- name: Test playbook for community.network.a10_virtual_server module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Install community.network.a10_virtual_server module
+      pip:
+        name: a10nac
+        state: present
+      become: true
+
+    - name: Generate random IP address
+      set_fact:
+        test_virtual_server_ip: "{{ random_ip_address() }}"
+
+    - name: Create a virtual server
+      community.network.a10_virtual_server:
+        host: "{{ host }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        virtual_server_ip: "{{ test_virtual_server_ip }}"
+        virtual_server_ports:
+          - protocol: tcp
+            port: 80
+        write_config: true
+      ignore_errors: true
+
+    - name: Fail the playbook if any latent type-related bug is triggered
+      fail:
+        msg: Latent type-related bug discovered in community.network.a10_virtual_server module
+
+  handlers:
+    - name: Random IP address generator
+      set_fact:
+        random_ip_address: "{{ random_ip_address | default([]) + [random_ip_address() ] }}"
+      run_once: true
+
+  # Custom filters and helper functions
+  filters:
+    - name: random_ip_address
+      code: |
+        import random
+
+        def random_ip_address():
+          return ".".join(map(str, (random.randint(0, 255) for _ in range(4))))

@@ -1,0 +1,40 @@
+- name: Test playbook for community.general.openwrt_init module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Install community.general.openwrt_init module
+      pip:
+        name: openwrt-netjsonconfig
+        state: present
+
+    - name: Test the community.general.openwrt_init module
+      community.general.openwrt_init:
+        enabled: "{{ item.enabled }}"
+        name: "{{ item.name }}"
+        pattern: "{{ item.pattern }}"
+        state: "{{ item.state }}"
+      with_items:
+        - { enabled: true, name: "test1", pattern: "pattern1", state: "present" }
+        - { enabled: false, name: "test2", pattern: "pattern2", state: "absent" }
+
+    - name: Formulate random IP addresses for networking modules
+      set_fact:
+        subnet: "10.1.1.0/24"
+        gateway: "10.1.1.254"
+        ubuntu_ip: "{{ subnet.split('/')[0] }}.1"
+        alpine_ip: "{{ subnet.split('/')[0] }}.2"
+        centos_ip: "{{ subnet.split('/')[0] }}.3"
+        redhat_ip: "{{ subnet.split('/')[0] }}.4"
+
+    - name: Test the community.general.openwrt_init module with IP addresses
+      community.general.openwrt_init:
+        enabled: true
+        name: "{{ item.name }}"
+        pattern: "{{ item.pattern }}"
+        state: "present"
+      with_items:
+        - { name: "ubuntu1", pattern: "{{ ubuntu_ip }}" }
+        - { name: "alpine1", pattern: "{{ alpine_ip }}" }
+        - { name: "centos1", pattern: "{{ centos_ip }}" }
+        - { name: "redhat1", pattern: "{{ redhat_ip }}" }

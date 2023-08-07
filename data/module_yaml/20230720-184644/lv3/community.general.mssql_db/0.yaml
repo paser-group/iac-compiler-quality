@@ -1,0 +1,44 @@
+---
+- name: Test Ansible Latent Type-Related Bugs
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create MSSQL database with byte and string configuration values
+      community.general.mssql_db:
+        login_host: "10.1.1.1"
+        login_port: "1433"
+        login_user: "sa"
+        login_password: "password123"
+        name: "{{ item.name }}"
+        state: "{{ item.state }}"
+        autocommit: "{{ item.autocommit }}"
+      loop:
+        - { name: b'test_db1', state: "present", autocommit: "yes" }
+        - { name: 'test_db2', state: "absent", autocommit: "no" }
+
+    - name: Display current MSSQL databases
+      community.general.mssql_query:
+        login_host: "10.1.1.1"
+        login_port: "1433"
+        login_user: "sa"
+        login_password: "password123"
+        query: "SELECT name FROM sys.databases"
+      register: result_query
+
+    - name: Debug current MSSQL databases
+      debug:
+        var: result_query
+
+    - name: Remove MSSQL database with byte and string configuration values
+      community.general.mssql_db:
+        login_host: "10.1.1.1"
+        login_port: "1433"
+        login_user: "sa"
+        login_password: "password123"
+        name: "{{ item.name }}"
+        state: "{{ item.state }}"
+        autocommit: "{{ item.autocommit }}"
+      loop:
+        - { name: b'test_db1', state: "absent", autocommit: "yes" }
+        - { name: 'test_db2', state: "absent", autocommit: "no" }

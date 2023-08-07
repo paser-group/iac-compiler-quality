@@ -1,0 +1,41 @@
+- name: Debug latent type-related bugs in Ansible module
+  hosts: localhost
+  gather_facts: false
+  
+  vars:
+    controller: "https://{{ ansible_host }}"
+    username: "admin"
+    password: "admin"
+    tenant: "admin"
+  
+  tasks:
+    - name: Generate strings with varied encodings
+      set_fact:
+        encoded_strings: [
+          "{{ '10.1.1.1' | b64encode }}",
+          "{{ '10.1.1.2' | b64encode }}",
+          "{{ '10.1.1.3' | b64encode }}",
+          "{{ '10.1.1.4' | b64encode }}"
+        ]
+  
+    - name: Configure Avi System Configuration
+      community.network.avi_systemconfiguration:
+        controller: "{{ controller }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        tenant: "{{ tenant }}"
+        api_version: "20.1.1"
+        api_context:
+          api_version: "21.1.3"
+          tenant_uuid: "{{ tenant_uuid }}"
+        avi_credentials:
+          - name: "cred1"
+            username: "admin"
+            password: "admin"
+        dns_configuration:
+          - name: "dns1"
+            type: "Service Discovery"
+            service_configuration_method: "ZK_SETUP"
+        admin_auth_configuration: "{{ item }}"
+        docker_mode: true
+      loop: "{{ encoded_strings }}"

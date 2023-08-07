@@ -1,0 +1,32 @@
+---
+- name: Upload file to Cisco FTD
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Upload file with varied encodings
+      community.network.ftd_file_upload:
+        file_to_upload: "/path/to/file.txt"
+        operation: "upload"
+        register_as: "upload_result"
+        some_option: "{{ item }}"
+      loop:
+        - "UTF-8"  # UTF-8 encoding
+        - "ISO-8859-1"  # Latin-1 encoding
+        - "UTF-16"  # UTF-16 encoding
+        - "US-ASCII"  # ASCII encoding
+        - "UTF-32"  # UTF-32 encoding
+      register: ftd_upload_result
+
+    - name: Debug upload result
+      debug:
+        var: ftd_upload_result
+
+    - name: Verify upload success
+      assert:
+        that:
+          - "'changed' in ftd_upload_result"
+          - "ftd_upload_result.changed"
+          - "'failed' not in ftd_upload_result"
+        success_msg: "File uploaded successfully to Cisco FTD"
+        fail_msg: "Failed to upload file to Cisco FTD"

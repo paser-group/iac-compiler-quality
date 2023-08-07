@@ -1,0 +1,37 @@
+---
+- name: Provision Avi Service Engines
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create Avi Service Engine
+      community.network.avi_serviceengine:
+        controller: "controller.example.com"
+        username: "admin"
+        password: "password"
+        tenant: "Default-Cloud"
+        api_version: "20.1.1"
+        name: "se1"
+        hypervisor: "vmware"
+        flavor: "large"
+        mgmt_vnic: "eth0"
+        data_vnics:
+          - name: "data1"
+            network_ref: "/api/network?name=data1"
+            port_config:
+              - port: "{{ hostvars['ubuntu1']['ansible_default_ipv4']['address'] }}:8080"
+                enable_ssl: true
+              - port: "{{ hostvars['alpine1']['ansible_default_ipv4']['address'] }}:9000"
+                enable_ssl: false
+          - name: "data2"
+            network_ref: "/api/network?name=data2"
+            port_config:
+              - port: "{{ hostvars['centos1']['ansible_default_ipv4']['address'] }}:7070"
+                enable_ssl: true
+              - port: "{{ hostvars['redhat1']['ansible_default_ipv4']['address'] }}:6060"
+                enable_ssl: false
+      register: result
+
+    - name: Debug result of Avi Service Engine creation
+      debug:
+        var: result

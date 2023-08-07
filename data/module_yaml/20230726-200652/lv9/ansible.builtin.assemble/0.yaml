@@ -1,0 +1,30 @@
+- name: Ansible Latent Bug Finder & Heuristic Test Playbook
+  hosts: localhost
+  gather_facts: false
+  
+  tasks:
+    - name: Create temporary file for assembly
+      tempfile:
+        state: file
+        suffix: '.txt'
+      register: temp_file
+
+    - name: Create assembly file
+      ansible.builtin.assemble:
+        src: "{{ item.src }}"
+        dest: "{{ temp_file.path }}"
+      loop:
+        - { src: "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}" }
+        - { src: "{{ hostvars[inventory_hostname]['ansible_default_ipv6']['address'] }}" }
+      register: assemble_result
+      ignore_errors: true
+
+    - name: Debug assembly result
+      debug:
+        var: assemble_result
+
+    # More tasks can be added to validate the output or trigger certain conditions
+
+  vars:
+    ansible_become: true
+    ansible_become_method: sudo

@@ -1,0 +1,43 @@
+- name: Test playbook for oneview_fc_network module
+  hosts: localhost
+  gather_facts: false
+  vars:
+    api_version: 1600
+    config: "/path/to/config_file"
+    data:
+      name: "Test Network"
+      vlanId: 100
+      connectionTemplateUri: "TestConnectionTemplateUri"
+      fabricUri: "TestFabricUri"
+    hostname: "test-host"
+    image_streamer_hostname: "image-streamer-host"
+    password: "test-password"
+    state: "present"
+    username: "test-username"
+    validate_etag: true
+
+  tasks:
+    - name: Introduce byte string values in place of regular strings
+      set_fact:
+        data: "{{ data|combine({item.key: item.value|b64encode}) }}"
+      loop:
+        - { key: "name", value: "Test Network" }
+        - { key: "connectionTemplateUri", value: "TestConnectionTemplateUri" }
+        - { key: "fabricUri", value: "TestFabricUri" }
+
+    - name: Create OneView FC Network
+      community.general.oneview_fc_network:
+        config: "{{ config }}"
+        hostname: "{{ hostname }}"
+        image_streamer_hostname: "{{ image_streamer_hostname }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        api_version: "{{ api_version }}"
+        data: "{{ data }}"
+        validate_etag: "{{ validate_etag }}"
+        state: "{{ state }}"
+      register: result
+
+    - name: Display module output
+      debug:
+        var: result

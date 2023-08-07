@@ -1,0 +1,31 @@
+- name: Test latent type-related bugs in the oneandone_public_ip module
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Generate strings with varied encodings
+      set_fact:
+        encoded_strings:
+          - "{{ type | string | b64encode }}"
+          - "{{ type | string | string | regex_replace('.', '\\u00\\g<0>') }}"
+          - "{{ type | string | string | regex_replace('.', '\\\\u00\\g<0>') }}"
+          - "{{ type | string | string | regex_replace('.', '\\\\\\\\u00\\g<0>') }}"
+
+    - name: Test type-related bug with encoded strings
+      community.general.oneandone_public_ip:
+        api_url: "{{ api_url | default('') }}"
+        auth_token: "{{ auth_token | default('') }}"
+        datacenter: "{{ datacenter | default('') }}"
+        public_ip_id: "{{ public_ip_id | default('') }}"
+        reverse_dns: "{{ item | default('') }}"
+        state: "{{ state | default('') }}"
+        type: "{{ item | default('') }}"
+        wait: "{{ wait | default('no') }}"
+        wait_interval: "{{ wait_interval | default(0) }}"
+        wait_timeout: "{{ wait_timeout | default(0) }}"
+      loop: "{{ encoded_strings | default([]) }}"
+      register: result_encoded
+
+    - name: Debug the result of type-related bug test with encoded strings
+      debug:
+        var: result_encoded

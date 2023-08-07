@@ -1,0 +1,32 @@
+---
+- name: Test playbook for community.network.icx_command module
+  hosts: localhost
+  gather_facts: false
+  
+  tasks:
+    - name: Run icx_command with invalid port
+      community.network.icx_command:
+        commands:
+          - "show version"
+          - "show interfaces brief"
+        interval: 5
+        match: success
+        retries: 3
+        wait_for:
+          - text: "show version"
+            match: "CLI session refused"
+            retries: 1
+            delay: 5
+            until: >
+              command_output is search(".*Invalid.*")
+          - text: "show interfaces brief"
+            match: "CLI session refused"
+            retries: 1
+            delay: 5
+            until: >
+              command_output is search(".*Invalid.*")
+        port: "xyz"
+      register: result
+      
+    - debug:
+        var: result

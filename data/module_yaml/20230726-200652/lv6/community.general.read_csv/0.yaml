@@ -1,0 +1,39 @@
+---
+- name: Test read_csv module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create CSV file with different encodings
+      shell: |
+        echo -n 'header1,header2,header3' > test.csv
+        echo -n $'\n' >> test.csv
+        echo -n 'value1,value2,value3' >> test.csv
+        echo -n $'\n' >> test.csv
+        echo -n 'value4,value5,value6' >> test.csv
+        echo -n $'\n' >> test.csv
+
+      register: file_creation
+
+    - name: Test read_csv with different encodings
+      community.general.read_csv:
+        path: test.csv
+        delimiter: ","
+        dialect: excel
+        key: "{{ item.key }}"
+      loop:
+        - { key: ascii, encoding: 'ascii' }
+        - { key: utf8, encoding: 'utf-8' }
+        - { key: utf16, encoding: 'utf-16' }
+        - { key: utf32, encoding: 'utf-32' }
+
+      register: csv_read_output
+
+    - name: Print read_csv output
+      debug:
+        msg: "{{ csv_read_output }}"
+
+    - name: Remove test.csv file
+      file:
+        path: test.csv
+        state: absent

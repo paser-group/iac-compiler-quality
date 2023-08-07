@@ -1,0 +1,49 @@
+---
+- name: Test Playbook for community.network.avi_networksecuritypolicy module
+  hosts: localhost
+  gather_facts: False
+
+  vars:
+    # Define the network nodes and their IP addresses
+    nodes:
+      - name: ubuntu1
+        ip: 10.1.1.1
+      - name: alpine1
+        ip: 10.1.1.2
+      - name: centos1
+        ip: 10.1.1.3
+      - name: redhat1
+        ip: 10.1.1.4
+    # Define other required variables
+    api_version: "17.2.6"
+    controller: "https://controller.example.com"
+    username: "admin"
+    password: "password"
+    tenant: "Default"
+
+  tasks:
+    - name: Create Network Security Policy
+      community.network.avi_networksecuritypolicy:
+        controller: "{{ controller }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        tenant: "{{ tenant }}"
+        name: "test_policy"
+        api_version: "{{ api_version }}"
+        rules:
+          - name: "TCP Rule"
+            action:
+              - type: "FORWARD"
+            description: "TCP Traffic"
+            enable: True
+            match:
+              - protocol: "TCP"
+                tcp_rules:
+                  - ports: "80"
+                  - ports: "443"
+            tenant_ref: "/api/tenant?name={{ tenant }}"
+      register: result
+
+    - name: Show result
+      debug:
+        var: result

@@ -1,0 +1,46 @@
+---
+- name: Configure network
+  hosts: all
+  gather_facts: false
+  vars:
+    - network_settings:
+        - interface: "{{ ansible_default_ipv4.interface }}"
+          ip_address: "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}"
+          netmask: "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['netmask'] }}"
+          gateway: "10.1.1.254"
+
+  tasks:
+    - name: Configure network settings
+      community.network.nclu:
+        atomic: True
+        commands: |
+          {% for setting in network_settings %}
+          interface {{ setting.interface }}
+            ip address {{ setting.ip_address }}/{{ setting.netmask }}
+            exit
+          {% endfor %}
+          ip route default {{ network_settings[0].gateway }}
+          exit
+        commit: True
+      register: result
+      ignore_errors: true
+
+    - name: Print output
+      debug:
+        var: result
+
+- name: Test Port Settings
+  hosts: all
+  gather_facts: false
+  vars:
+    - port_numbers:
+        - { service: "SSH", port: "{{ 32000 | random }}" }
+        - { service: "HTTP", port: "{{ 32000 | random }}" }
+        - { service: "HTTPS", port: "{{ 32000 | random }}" }
+        - { service: "FTP", port: "{{ 32000 | random }}" }
+
+  tasks:
+    - name: Test port settings
+      debug:
+        msg: "Testing port {{ item.service }} on port number {{ item.port }}"
+      with_items: "{{ port_numbers }}"

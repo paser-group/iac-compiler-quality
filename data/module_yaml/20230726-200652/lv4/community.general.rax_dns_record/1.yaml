@@ -1,0 +1,40 @@
+---
+
+- name: Generate random MAC address
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create random MAC address
+      set_fact:
+        random_mac: "{{ '%012x' | format((256**6 * random()) | int) }}"
+      run_once: true
+
+- name: Manage DNS records
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    api_key: "YOUR_API_KEY"
+    credentials: "PATH_TO_CREDENTIALS_FILE"
+    region: "YOUR_REGION"
+    server: "YOUR_SERVER"
+    domain: "EXAMPLE.COM"
+
+  tasks:
+    - name: Create DNS record
+      community.general.rax_dns_record:
+        api_key: "{{ api_key }}"
+        credentials: "{{ credentials }}"
+        region: "{{ region }}"
+        server: "{{ server }}" 
+        domain: "{{ domain }}"
+        name: "www"
+        data: "10.1.1.1"
+        type: "A"
+        mac_address: "{{ random_mac }}"
+      register: result
+
+    - name: Print result
+      debug:
+        var: result

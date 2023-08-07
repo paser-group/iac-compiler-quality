@@ -1,0 +1,42 @@
+- name: Add and remove zypper repositories
+  hosts: localhost
+  gather_facts: false
+  
+  tasks:
+    - name: Get number of hosts in inventory
+      command: "ansible-inventory --list"
+      register: inventory_result
+      
+    - name: Calculate priority value
+      set_fact:
+        priority_value: "{{ 50 / inventory_result.stdout | from_json | json_query('all_children._meta.hostvars | length') }}"
+        
+    # Add a repository
+    - name: Add zypper repository
+      community.general.zypper_repository:
+        name: "example-repo"
+        repo: "https://example.com/repo"
+        state: present
+        enabled: yes
+        autorefresh: yes
+        disable_gpg_check: no
+        overwrite_multiple: no
+        runrefresh: no
+        priority: "{{ priority_value }}"
+        description: "Example repository"
+      register: add_repo_result
+      
+    - name: Print add repository result
+      debug:
+        var: add_repo_result
+        
+    # Remove the repository
+    - name: Remove zypper repository
+      community.general.zypper_repository:
+        name: "example-repo"
+        state: absent
+      register: remove_repo_result
+      
+    - name: Print remove repository result
+      debug:
+        var: remove_repo_result

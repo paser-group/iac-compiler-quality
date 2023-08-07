@@ -1,0 +1,34 @@
+---
+- name: Configure network interfaces
+  hosts: all
+  become: true
+
+  vars:
+    interface_file: "/etc/network/interfaces"
+
+  tasks:
+    - name: Backup existing interfaces file
+      copy:
+        src: "{{ interface_file }}"
+        dest: "{{ interface_file }}.backup"
+      backup: yes
+
+    - name: Configure network interfaces
+      community.general.interfaces_file:
+        dest: "{{ interface_file }}"
+        interfaces:
+          - name: "{{ iface }}"
+            address_family: "{{ address_family }}"
+            attributes:
+              - "{{ option }} {{ value }}"
+            state: "{{ state }}"
+        backup: "{{ backup | default(omit) }}"
+        group: "{{ group | default(omit) }}"
+        owner: "{{ owner | default(omit) }}"
+        mode: "{{ mode | default(omit) }}"
+        unsafe_writes: "{{ unsafe_writes | default(omit) }}"
+
+    - name: Perform random port testing
+      debug:
+        msg: "Random port testing: {{ item }}"
+      with_sequence: start=10000 end=20000

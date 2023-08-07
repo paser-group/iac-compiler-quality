@@ -1,0 +1,42 @@
+---
+- name: Test playbook for community.network.ipadm_if module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    interface_name: eth0
+    temporary: true
+
+  tasks:
+    - name: Configure IP interface
+      community.network.ipadm_if:
+        name: "{{ interface_name }}"
+        state: absent
+        temporary: "{{ temporary }}"
+
+    - name: Display interface details
+      debug:
+        var: ansible_net_interfaces
+
+    - name: Set random IP address and netmask
+      community.network.ipadm_if:
+        name: "{{ interface_name }}"
+        state: present
+        temporary: "{{ temporary }}"
+        address: "{{ (10.1.1.0|random|int) + loop.index }}"
+        netmask: "255.255.255.0"
+
+    - name: Display updated interface details
+      debug:
+        var: ansible_net_interfaces
+
+    - name: Check if interface exists
+      community.network.ipadm_if:
+        name: "{{ interface_name }}"
+        state: present
+        temporary: "{{ temporary }}"
+      register: interface_check
+
+    - name: Display interface existence result
+      debug:
+        msg: "Interface {{ interface_name }} exists: {{ interface_check.changed }}"

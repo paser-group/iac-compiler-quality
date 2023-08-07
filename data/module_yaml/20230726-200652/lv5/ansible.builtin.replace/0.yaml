@@ -1,0 +1,50 @@
+---
+- name: Replace string in file
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Replace string in file
+      ansible.builtin.replace:
+        path: /path/to/file.txt
+        regexp: '{{ item.regex }}'
+        replace: '{{ item.replace }}'
+      with_items:
+        - { regex: 'old_string', replace: 'new_string' }
+        - { regex: '{{ random_port_regex }}', replace: '{{ random_port }}' }
+
+- name: Test port settings
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    port_range_start: 8000
+    port_range_end: 9000
+
+  tasks:
+    - name: Generate random port number
+      set_fact:
+        random_port: "{{ range_start + (range_end - range_start + 1) | random }}"
+        range_start: "{{ port_range_start }}"
+        range_end: "{{ port_range_end }}"
+
+    - name: Generate random port regex
+      set_fact:
+        random_port_regex: "{{ random_port | regex_escape }}"
+
+    - name: Replace port number in configuration file
+      ansible.builtin.replace:
+        path: /path/to/config.txt
+        regexp: '{{ item.regex }}'
+        replace: '{{ random_port }}'
+      with_items:
+        - { regex: 'port:\s+\d+', replace: 'port: {{ random_port }}' }
+
+    - name: Test configuration file
+      command: cat /path/to/config.txt
+      register: cat_output
+
+    - name: Validate port number in configuration file
+      assert:
+        that: "'port: {{ random_port }}' in cat_output.stdout"
+        fail_msg: "Port number not found in configuration file"

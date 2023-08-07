@@ -1,0 +1,58 @@
+- name: Test playbook for community.general.ldap_search module
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Include vars file for LDAP credentials
+      include_vars:
+        file: ldap_credentials.yml
+        
+    - name: Test with different encodings
+      community.general.ldap_search:
+        attrs:
+          - "cn"
+          - "uid"
+        bind_dn: "{{ ldap_bind_dn }}"
+        bind_pw: "{{ ldap_bind_pw }}"
+        ca_path: "{{ ldap_ca_path }}"
+        dn: "{{ ldap_dn }}"
+        filter: "{{ ldap_filter }}"
+        referrals_chasing: "{{ ldap_referrals_chasing }}"
+        sasl_class: "{{ ldap_sasl_class }}"
+        schema: "{{ ldap_schema }}"
+        scope: "{{ ldap_scope }}"
+        server_uri: "{{ ldap_server_uri }}"
+        start_tls: "{{ ldap_start_tls }}"
+        validate_certs: "{{ ldap_validate_certs }}"
+        xorder_discovery: "{{ ldap_xorder_discovery }}"
+      loop:
+        - bind_dn: "cn=user01,{{ ldap_dn }}"
+          bind_pw: "password"
+          ca_path: "/path/to/cert.pem"
+          dn: "dc=example,dc=com"
+          filter: "(objectClass=person)"
+          referrals_chasing: "always"
+          sasl_class: "EXTERNAL"
+          schema: true
+          scope: "sub"
+          server_uri: "ldaps://ldap.example.com"
+          start_tls: false
+          validate_certs: true
+          xorder_discovery: "subtree"
+        - bind_dn: "cn=user02,{{ ldap_dn }}"
+          bind_pw: "password"
+          ca_path: "/path/to/cert.pem"
+          dn: "dc=example,dc=com"
+          filter: "(objectClass=organization)"
+          referrals_chasing: "never"
+          sasl_class: "PLAIN"
+          schema: false
+          scope: "one"
+          server_uri: "ldap://ldap.example.com"
+          start_tls: true
+          validate_certs: false
+          xorder_discovery: "base"
+          
+      register: result
+      
+    - debug:
+        var: result

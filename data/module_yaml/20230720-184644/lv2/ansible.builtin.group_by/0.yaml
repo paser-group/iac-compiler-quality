@@ -1,0 +1,37 @@
+- name: Group nodes by Linux distribution
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Set up inventory
+      set_fact:
+        inventory:
+          ubuntu1:
+            ip: '10.1.1.1'
+            os: b'ubuntu'
+          alpine1:
+            ip: '10.1.1.2'
+            os: b'alpine'
+          centos1:
+            ip: '10.1.1.3'
+            os: b'centos'
+          redhat1:
+            ip: '10.1.1.4'
+            os: b'redhat'
+
+    - name: Group nodes by Linux distribution
+      ansible.builtin.group_by:
+        key: "{{ item.value.os }}"
+        parents:
+          - linux_distributions
+      loop: "{{ inventory | dict2items }}"
+
+    - name: Show groups
+      debug:
+        var: groups
+
+    - name: Check for any byte string values in groups
+      assert:
+        that:
+          - item | type_debug != 'str'
+        loop: "{{ groups | flatten }}"

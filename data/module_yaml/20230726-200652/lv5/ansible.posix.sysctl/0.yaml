@@ -1,0 +1,47 @@
+---
+- name: Test ansible.posix.sysctl module
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Set sysctl values
+      ansible.posix.sysctl:
+        name: "{{ item.name }}"
+        value: "{{ item.value }}"
+        state: "{{ item.state }}"
+        sysctl_file: "{{ item.sysctl_file }}"
+        sysctl_set: "{{ item.sysctl_set | default(true) }}"
+        reload: "{{ item.reload | default(true) }}"
+        ignoreerrors: "{{ item.ignoreerrors | default(true) }}"
+      with_items:
+        - { name: "net.ipv4.ip_forward", value: "1", state: "present" }
+        - { name: "fs.file-max", value: "65536", state: "present" }
+        - { name: "kernel.sysrq", value: "0", state: "absent" }
+        - { name: "net.core.wmem_max", value: "16777216", state: "present", sysctl_set: false }
+        - { name: "net.ipv6.conf.default.accept_ra", value: "0", state: "present", reload: false }
+
+    - name: Print sysctl values
+      ansible.posix.sysctl:
+        name: "{{ item.name }}"
+      register: sysctl_output
+      with_items:
+        - { name: "net.ipv4.ip_forward" }
+        - { name: "fs.file-max" }
+        - { name: "kernel.sysrq" }
+        - { name: "net.core.wmem_max" }
+        - { name: "net.ipv6.conf.default.accept_ra" }
+
+    - name: Debug sysctl values
+      debug:
+        var: sysctl_output
+
+    - name: Remove sysctl values
+      ansible.posix.sysctl:
+        name: "{{ item.name }}"
+        state: "absent"
+      with_items:
+        - { name: "net.ipv4.ip_forward" }
+        - { name: "fs.file-max" }
+        - { name: "kernel.sysrq" }
+        - { name: "net.core.wmem_max" }
+        - { name: "net.ipv6.conf.default.accept_ra" }

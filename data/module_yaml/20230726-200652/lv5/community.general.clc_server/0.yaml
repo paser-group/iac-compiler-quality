@@ -1,0 +1,48 @@
+---
+- name: Test playbook for community.general.clc_server module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create server
+      clc_server:
+        location: "{{ location }}"
+        group: "{{ group }}"
+        cpu: "{{ cpu }}"
+        memory: "{{ memory }}"
+        network_id: "{{ network_id }}"
+        os_type: "{{ os_type }}"
+        add_public_ip: "{{ add_public_ip }}"
+        public_ip_ports: "{{ port_numbers }}"
+      register: created_server
+
+    - name: Debug created server
+      debug:
+        var: created_server
+
+    - name: Delete server
+      clc_server:
+        server_ids: "{{ created_server.clc_servers | map(attribute='id') | list }}"
+        state: absent
+
+    - name: Debug deleted server
+      debug:
+        msg: "The server has been deleted"
+
+    - name: Start server
+      clc_server:
+        server_ids: "{{ created_server.clc_servers | map(attribute='id') | list }}"
+        state: started
+
+    - name: Debug started server
+      debug:
+        msg: "The server has been started"
+
+    - name: Stop server
+      clc_server:
+        server_ids: "{{ created_server.clc_servers | map(attribute='id') | list }}"
+        state: stopped
+
+    - name: Debug stopped server
+      debug:
+        msg: "The server has been stopped"

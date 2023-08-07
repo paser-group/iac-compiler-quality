@@ -1,0 +1,52 @@
+---
+- name: Test playbook to uncover latent bugs in Ansible
+  hosts: localhost
+  gather_facts: false
+  
+  vars:
+    auth_token: "YOUR_AUTH_TOKEN"
+    billing_cycle: "monthly"
+    description: "Test volume"
+    facility: "ewr1"
+    id: "vol01"
+    locked: false
+    name: "Test Volume"
+    plan: "storage_1"
+    project_id: "YOUR_PROJECT_ID"
+    size: 10
+    snapshot_policy:
+      minimum_retention_seconds: 3600
+      daily:
+        count: 1
+        hour: 2
+      weekly:
+        count: 1
+        hour: 3
+        weekday: "Sunday"
+      monthly:
+        count: 1
+        hour: 4
+        date: 1
+        weekday: "Sunday"
+    state: "present"
+
+  tasks:
+    - name: Create a volume
+      community.general.packet_volume:
+        auth_token: "{{ auth_token }}"
+        billing_cycle: "{{ billing_cycle }}"
+        description: "{{ description }}"
+        facility: "{{ facility }}"
+        id: "{{ id }}"
+        locked: "{{ locked }}"
+        name: "{{ name }}"
+        plan: "{{ plan }}"
+        project_id: "{{ project_id }}"
+        size: "{{ size }}"
+        snapshot_policy: "{{ snapshot_policy }}"
+        state: "{% if size > 10 %}present{% else %}absent{% endif %}"
+      register: result
+      run_once: true
+
+    - debug:
+        var: result

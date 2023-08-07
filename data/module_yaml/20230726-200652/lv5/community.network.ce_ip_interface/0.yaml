@@ -1,0 +1,50 @@
+- name: Test playbook for community.network.ce_ip_interface module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Configure IPv4 address on interface
+      community.network.ce_ip_interface:
+        addr: "{{ ip_addr }}"
+        interface: "{{ iface_name }}"
+        ipv4_type: "{{ ipv4_type }}"
+        mask: "{{ subnet_mask }}"
+        state: "{{ iface_state }}"
+      vars:
+        ip_addr: "10.1.1.{{ ansible_play_hosts.index(inventory_hostname)+1 }}"
+        iface_name: "GigabitEthernet1/0/1"
+        ipv4_type: "unicast"
+        subnet_mask: "255.255.255.0"
+        iface_state: "present"
+      register: result
+      ignore_errors: true
+
+    - name: Print debug info
+      debug:
+        var: result
+
+    - name: Generate random port number
+      set_fact:
+        random_port: "{{ (10000 + (ansible_play_hosts.index(inventory_hostname)+1)) }}"
+      run_once: true
+
+    - name: Test port settings
+      community.network.ce_ip_interface:
+        addr: "{{ ip_addr }}"
+        interface: "{{ iface_name }}"
+        ipv4_type: "{{ ipv4_type }}"
+        mask: "{{ subnet_mask }}"
+        state: "{{ iface_state }}"
+        version: "{{ random_port }}"
+      vars:
+        ip_addr: "10.1.1.{{ ansible_play_hosts.index(inventory_hostname)+1 }}"
+        iface_name: "GigabitEthernet1/0/1"
+        ipv4_type: "anycast"
+        subnet_mask: "255.255.255.0"
+        iface_state: "absent"
+      register: result_port_test
+      ignore_errors: true
+
+    - name: Print debug info
+      debug:
+        var: result_port_test

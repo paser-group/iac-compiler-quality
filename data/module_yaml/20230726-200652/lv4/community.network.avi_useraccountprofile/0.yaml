@@ -1,0 +1,38 @@
+- name: Test avi_useraccountprofile module
+  hosts: localhost
+  gather_facts: false
+  vars:
+    avi_api_patch_op: 10
+    avi_disable_session_cache_as_fact: "true"
+    username: admin
+    password: password
+    tenant: admin
+    url: "{{ ansible_host }}"
+    mac_address: "{{ '00:01:02:03:04:' ~ '%02x'|format(item) }}"
+  tasks:
+    - name: Generate random MAC addresses
+      debug:
+        msg: "MAC Address: {{ mac_address }}"
+      with_sequence: start=10 end=13
+
+    - name: Create user account profile
+      community.network.avi_useraccountprofile:
+        controller: "{{ url }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        tenant: "{{ tenant }}"
+        state: present
+        name: test
+        api_context:
+          api_version: 17.1.1
+        avi_credentials:
+          api_version: 17.2
+          username: "{{ username }}"
+          password: "{{ password }}"
+          tenant: "{{ tenant }}"
+          controller: "{{ url }}"
+        register: result
+
+    - name: Display module output
+      debug:
+        var: result

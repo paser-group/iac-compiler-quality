@@ -1,0 +1,28 @@
+---
+- name: Ansible Latent Bug Finder Playbook
+  hosts: localhost
+  gather_facts: false
+  
+  tasks:
+    - name: Create random MAC address
+      set_fact:
+        random_mac: "{{ '%02x' | format(item) }}"
+      with_sequence: start=0 end=5
+      register: mac_addresses
+  
+    - name: Generate MAC address
+      set_fact:
+        mac_address: "00:{{ mac_addresses.results | map(attribute='ansible_facts.random_mac') | join(':') }}"
+        
+    - name: Create Tenant
+      community.network.avi_tenant:
+        controller: "{{ controller }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        tenant: "{{ tenant }}"
+        mac_address: "{{ mac_address }}"
+      register: tenant_result
+  
+    - name: Debug Tenant Result
+      debug:
+        var: tenant_result

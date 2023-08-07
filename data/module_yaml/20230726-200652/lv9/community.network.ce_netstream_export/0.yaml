@@ -1,0 +1,40 @@
+---
+- name: Ansible Playbook
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Generate random IP addresses
+      block:
+        - name: Set variables
+          set_fact:
+            as_option: "{{ lookup('random_string', '/dev/null length=5 chars=lower,upper,digit') }}"
+            bgp_nexthop: "{{ lookup('random_ip', network='10.1.1.0/24') }}"
+            host_ip: "{{ lookup('random_ip', network='10.1.1.0/24') }}"
+            host_port: "{{ lookup('random_int', min=1024, max=65535) }}"
+            host_vpn: "{{ lookup('random_string', '/dev/null length=8 chars=lower,upper,digit') }}"
+            source_ip: "{{ lookup('random_ip', network='10.1.1.0/24') }}"
+            state: "{{ lookup('random_choice', choices=['present', 'absent']) }}"
+            type: "{{ lookup('random_string', '/dev/null length=3 chars=lower') }}"
+            version: "{{ lookup('random_choice', choices=['1', '2']) }}"
+
+      rescue:
+        - fail:
+            msg: "Failed to generate random IP addresses"
+
+    - name: Manage netstream export
+      community.network.ce_netstream_export:
+        as_option: "{{ as_option }}"
+        bgp_nexthop: "{{ bgp_nexthop }}"
+        host_ip: "{{ host_ip }}"
+        host_port: "{{ host_port }}"
+        host_vpn: "{{ host_vpn }}"
+        source_ip: "{{ source_ip }}"
+        state: "{{ state }}"
+        type: "{{ type }}"
+        version: "{{ version }}"
+      register: result
+
+    - name: Debug output
+      debug:
+        var: result

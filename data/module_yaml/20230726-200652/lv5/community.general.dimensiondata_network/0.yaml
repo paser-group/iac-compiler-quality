@@ -1,0 +1,66 @@
+---
+- name: Test playbook for dimensiondata_network module
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Create a network
+      community.general.dimensiondata_network:
+        name: test-network
+        state: present
+        region: AU
+        description: "Test network"
+        location: Melbourne
+        mcp_user: testuser
+        mcp_password: testpassword
+        service_plan: BASIC
+      register: network
+
+    - name: Check network creation status
+      debug:
+        var: network
+
+    - name: Update the network
+      community.general.dimensiondata_network:
+        id: "{{ network.network.id }}"
+        state: present
+        description: "Updated network"
+        mcp_user: testuser
+        mcp_password: testpassword
+      register: updated_network
+
+    - name: Check network update status
+      debug:
+        var: updated_network
+
+    - name: Delete the network
+      community.general.dimensiondata_network:
+        id: "{{ updated_network.network.id }}"
+        state: absent
+        mcp_user: testuser
+        mcp_password: testpassword
+      register: deleted_network
+
+    - name: Check network deletion status
+      debug:
+        var: deleted_network
+
+    # Test cases for port settings
+    - name: Test random port number
+      community.general.dimensiondata_network:
+        name: test-port
+        state: present
+        region: AU
+        description: "Test port"
+        location: Melbourne
+        mcp_user: testuser
+        mcp_password: testpassword
+        service_plan: BASIC
+        wait: true
+        wait_time: 10
+        wait_poll_interval: 5
+        port: "{{ 1024 + (ansible_play_hosts_all.index(inventory_hostname) | random * 1000) | int }}"
+      register: port_test
+
+    - name: Check port test result
+      debug:
+        var: port_test

@@ -1,0 +1,51 @@
+---
+- name: Test Ansible Latent Type-Related Bug in scaleway_security_group_rule module
+  hosts: localhost
+  gather_facts: false
+  become: false
+  vars:
+    action: deny
+    api_timeout: 10
+    api_token: "your_scaleway_api_token"
+    api_url: "https://api.scaleway.com"
+    direction: ingress
+    ip_range: "0.0.0.0/0"
+    protocol: tcp
+    query_parameters:
+      region: "par1"
+    region: "par1"
+    security_group: "your_security_group_id"
+    state: present
+    validate_certs: true
+
+  tasks:
+    - name: Set random port number (30000-60000)
+      set_fact:
+        random_port: "{{ 30000 + (ansible_random | random * (60000-30000+1)) | int }}"
+        
+    - name: Create security group rule
+      community.general.scaleway_security_group_rule:
+        action: "{{ action }}"
+        api_timeout: "{{ api_timeout }}"
+        api_token: "{{ api_token }}"
+        api_url: "{{ api_url }}"
+        direction: "{{ direction }}"
+        ip_range: "{{ ip_range }}"
+        port: "{{ random_port }}"
+        protocol: "{{ protocol }}"
+        query_parameters: "{{ query_parameters }}"
+        region: "{{ region }}"
+        security_group: "{{ security_group }}"
+        state: "{{ state }}"
+        validate_certs: "{{ validate_certs }}"
+      register: result
+      
+    - name: Debug output
+      debug:
+        var: result
+        
+    - name: Assert bug
+      assert:
+        that: result.changed == true
+        fail_msg: "Bug not triggered!"
+        success_msg: "Bug triggered!"

@@ -1,0 +1,40 @@
+---
+- name: Test playbook to discover type-related bugs in filesystem module
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    dev_path: "/dev/sdb1"
+    mount_point: "/mnt/data"
+    fs_type: "ext4"
+    fs_options: "defaults"
+  
+  tasks:
+    - name: Create a filesystem
+      community.general.filesystem:
+        dev: "{{ dev_path }}"
+        fstype: "{{ fs_type }}"
+        opts: "{{ fs_options }}"
+        state: "present"
+        resizefs: false
+        force: false
+      register: create_fs
+
+    - name: Debug Create FS Output
+      debug:
+        var: create_fs
+
+    - name: Test type-related bug - byte string value
+      community.general.filesystem:
+        dev: b"{{ dev_path }}"
+        fstype: b"{{ fs_type }}"
+        opts: b"{{ fs_options }}"
+        state: b"present"
+        resizefs: byte
+        force: byte
+      register: type_bug
+
+    - name: Debug Type-related Bug Output
+      debug:
+        var: type_bug

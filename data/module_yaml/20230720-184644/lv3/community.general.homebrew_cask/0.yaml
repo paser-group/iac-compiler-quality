@@ -1,0 +1,45 @@
+---
+- name: Test playbook for 'community.general.homebrew_cask' module
+  hosts: localhost
+  gather_facts: false
+  vars:
+    # List of applications to install
+    applications:
+      - name: visual-studio-code
+        accept_external_apps: true
+        greedy: true
+        install_options: ["--ignore-dependencies"]
+        path: /Applications/Visual Studio Code.app
+        state: present
+        sudo_password: "{{ vault_sudo_password }}"
+        update_homebrew: true
+        upgrade_all: true
+      - name: google-chrome
+        accept_external_apps: false
+        greedy: false
+        install_options: []
+        path: /Applications/Google Chrome.app
+        state: present
+        sudo_password: "{{ vault_sudo_password }}"
+        update_homebrew: false
+        upgrade_all: false
+
+  tasks:
+    - name: Install applications
+      community.general.homebrew_cask:
+        name: "{{ item.name }}"
+        accept_external_apps: "{{ item.accept_external_apps }}"
+        greedy: "{{ item.greedy }}"
+        install_options: "{{ item.install_options }}"
+        path: "{{ item.path }}"
+        state: "{{ item.state }}"
+        sudo_password: "{{ item.sudo_password }}"
+        update_homebrew: "{{ item.update_homebrew }}"
+        upgrade_all: "{{ item.upgrade_all }}"
+      loop: "{{ applications }}"
+
+    - name: Uninstall applications
+      community.general.homebrew_cask:
+        name: "{{ item.name }}"
+        state: absent
+      loop: "{{ applications }}"

@@ -1,0 +1,31 @@
+- name: Execute HANA queries
+  hosts: localhost
+  gather_facts: false
+  
+  tasks:
+    - name: Execute queries
+      community.general.hana_query:
+        autocommit: true
+        database: mydb
+        encrypted: false
+        filepath:
+          - "/path/to/file1"
+          - "/path/to/file2"
+        host: hana.example.com
+        instance: "00"
+        password: mysecretpassword
+        query: "{{ item }}"  # Iterate over query list
+        sid: HDB
+        user: hana_user
+        userstore: false
+      with_items:
+        - "SELECT column1 FROM table1"
+        - "SELECT column2 FROM table2"
+        - SELECT "column3" FROM table3  # Syntactical bug - missing quotes around column name
+        - "SELECT * FROM table4 WHERE id = 5; DROP TABLE table4;"  # Potential SQL injection
+
+      register: result
+
+    - name: Debug result
+      debug:
+        var: result

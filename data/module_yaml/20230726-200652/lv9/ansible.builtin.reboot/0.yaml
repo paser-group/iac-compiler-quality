@@ -1,0 +1,35 @@
+---
+- name: Test reboot module for type-related bugs
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Reboot the target nodes
+      ansible.builtin.reboot:
+        connect_timeout: 10
+        reboot_timeout: 300
+        pre_reboot_delay: 10
+        post_reboot_delay: 10
+        reboot_command: /sbin/reboot
+        boot_time_command: /sbin/init --version
+        search_paths:
+          - /sbin/
+          - /usr/sbin/
+          - /usr/local/sbin/
+        msg: "Rebooting the system..."
+      when: inventory_hostname in groups['all']
+
+    - name: Wait for the nodes to come back online
+      wait_for_connection:
+        delay: 10
+        connect_timeout: 5
+      when: inventory_hostname in groups['all']
+
+    - name: Ping the nodes after reboot
+      ping:
+      when: inventory_hostname in groups['all']
+
+    # Add additional tasks or test cases here to uncover latent type-related bugs
+    # based on the provided heuristic of random IP addresses for networking modules
+
+...

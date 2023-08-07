@@ -1,0 +1,50 @@
+---
+- name: Test playbook for Ansible latent type-related bug exploration
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    nodes:
+      - name: ubuntu1
+        ip: 10.1.1.1
+        distribution: ubuntu
+      - name: alpine1
+        ip: 10.1.1.2
+        distribution: alpine
+      - name: centos1
+        ip: 10.1.1.3
+        distribution: centos
+      - name: redhat1
+        ip: 10.1.1.4
+        distribution: redhat
+
+    subnet: 10.1.1.0/24
+    gateway: 10.1.1.254
+
+  tasks:
+    - name: Generate inventory file
+      hosts:
+        localhost
+      gather_facts: false
+      copy:
+        content: |
+          [nodes]
+          {% for node in nodes %}
+          {{ node.name }} ansible_host={{ node.ip }} ansible_distribution={{ node.distribution }}
+          {% endfor %}
+          [node-net]
+          gateway ansible_host={{ gateway }}/24 subnet={{ subnet }}
+        dest: /tmp/inventory
+
+    - name: Print inventory file contents
+      hosts: localhost
+      gather_facts: false
+      blockinfile:
+        path: /tmp/inventory
+        insertafter: EOF
+
+    - name: Debug inventory file and variables
+      hosts: localhost
+      gather_facts: false
+      debug:
+        var: inventory_file

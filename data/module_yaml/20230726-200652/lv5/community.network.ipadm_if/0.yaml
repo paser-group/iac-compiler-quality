@@ -1,0 +1,40 @@
+---
+- name: Configure IP interfaces on Docker nodes
+  hosts: all
+  gather_facts: false
+  become: true
+
+  vars:
+    interface_name: eth0
+    interface_state: up
+    temporary: false
+    addrconf: static
+    load_dependents: true
+    pmtu: 1500
+    mtu: 1500
+
+  tasks:
+    - name: Generate random port numbers
+      set_fact:
+        port: "{{ 4000 | random }}"
+
+    - name: Configure IP interface using random port
+      community.network.ipadm_if:
+        name: "{{ interface_name }}"
+        state: "{{ interface_state }}"
+        temporary: "{{ temporary }}"
+        addrconf: "{{ addrconf }}"
+        load_dependents: "{{ load_dependents }}"
+        pmtu: "{{ pmtu }}"
+        mtu: "{{ mtu }}"
+        port: "{{ port }}"
+      register: ipadm_if_result
+
+    - name: Debug IP interface configuration
+      debug:
+        var: ipadm_if_result
+
+    - name: Validate IP interface configuration
+      fail:
+        msg: "Failed to configure IP interface on {{ inventory_hostname }}"
+      when: ipadm_if_result.changed

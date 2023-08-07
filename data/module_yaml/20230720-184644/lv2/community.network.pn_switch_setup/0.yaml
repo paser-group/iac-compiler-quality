@@ -1,0 +1,55 @@
+---
+- name: Test playbook for community.network.pn_switch_setup module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Install community.network collection
+      command: ansible-galaxy collection install community.network
+
+    - name: Create inventory for switch nodes
+      add_host:
+        name: "{{ item }}"
+        ansible_host: "{{ hostvars[item]['host_ip'] }}"
+        ansible_connection: local
+      loop:
+        - ubuntu1
+        - alpine1
+        - centos1
+        - redhat1
+
+    - name: Configure switch setup
+      pn_switch_setup:
+        pn_switch_name: "switch"
+        pn_motd: '{{ pn_motd | default("Welcome to the switch") | to_bytes }}'
+        pn_banner: '{{ pn_banner | default("*******************") | to_bytes }}'
+        pn_timezone: "UTC"
+        pn_date: "2022-01-01"
+        pn_ntp_server: "ntp.example.com"
+        pn_ntp_secondary_server: "ntp-secondary.example.com"
+        pn_dns_ip: "8.8.8.8"
+        pn_dns_secondary_ip: "8.8.4.4"
+        pn_domain_name: "example.com"
+        pn_enable_host_ports: false
+        pn_eula_accepted: "true"
+        pn_eula_timestamp: "2022-01-01T00:00:00Z"
+        pn_force: true
+        pn_gateway_ip: "10.1.1.254"
+        pn_gateway_ip6: "fe80::1"
+        pn_in_band_ip: "10.1.1.1"
+        pn_in_band_ip6: "fe80::2"
+        pn_in_band_ip6_assign: "Static"
+        pn_in_band_netmask: "255.255.255.0"
+        pn_in_band_netmask_ip6: "64"
+        pn_loopback_ip: "127.0.0.1"
+        pn_loopback_ip6: "::1"
+        pn_mgmt_ip: "192.168.0.1"
+        pn_mgmt_ip6: "fe80::3"
+        pn_mgmt_ip_assignment: "Static"
+        pn_mgmt_netmask: "255.255.255.0"
+        pn_mgmt_netmask_ip6: "64"
+        pn_password: "admin"
+        pn_cliswitch: '{{ pn_cliswitch | to_bytes }}'
+        state: present
+      loop: "{{ groups['all'] }}"
+      when: inventory_hostname in groups['all']

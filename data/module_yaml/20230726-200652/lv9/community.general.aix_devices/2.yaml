@@ -1,0 +1,27 @@
+- name: Test ansible.builtin.aix_devices module
+  hosts: docker_nodes
+  gather_facts: false
+  vars:
+    device_ip: "{{ device_ip | default([]) | random(seed=inventory_hostname) }}"
+  tasks:
+    - name: Generate random IP address
+      ansible.builtin.set_fact:
+        device_ip: "{{ device_ip + ['10.' ~ range(1, 256) | random(seed=inventory_hostname)] }}"
+    
+    - name: Install community.general collection
+      ansible.builtin.shell: ansible-galaxy collection install community.general
+
+    - name: Configure AIX devices
+      community.general.aix_devices:
+        attribute: "{{ attribute }}"
+        device: "{{ device }}"
+        force: "{{ force }}"
+        recursive: "{{ recursive }}"
+        state: "{{ state }}"
+        device_ip: "{{ device_ip }}"
+      vars:
+        attribute: { "key": "value" }
+        device: "example_device"
+        force: true
+        recursive: true
+        state: "present"

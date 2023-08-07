@@ -1,0 +1,42 @@
+---
+- name: Identify latent type-related bugs in Ansible compiler
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create a test VM in RHEV-M
+      community.general.rhevm:
+        server: "my-rhevm-server"
+        user: "admin"
+        password: "my-password"
+        state: "{{ random(['present', 'absent']) }}"
+        name: "TestVM"
+        cluster: "MyCluster"
+        datacenter: "MyDataCenter"
+        vmcpu: "{{ random([2, 4, 8]) }}"
+        vmmem: "{{ random([4096, 8192, 16384]) }}"
+        osver: "fedora28"
+        disks:
+          - image: "my-image-template"
+            iface: "virtio"
+            size: "{{ random([20, 40, 60]) }}"
+        ifaces:
+          - net: "mynetwork"
+            mac: "{{ random_mac_address }}"
+            boot_protocol: "dhcp"
+        cd_drive: "cdrom"
+        boot_order:
+          - "network"
+          - "hd"
+        timeout: 30
+        insecure_api: "{{ random([true, false]) }}"
+        vm_ha: "{{ random([true, false]) }}"
+        del_prot: "{{ random([true, false]) }}"
+        cpu_share: 100
+        mempol: 0
+        port: 443
+      register: rhevm_vm
+
+    - name: Show the result
+      debug:
+        var: rhevm_vm

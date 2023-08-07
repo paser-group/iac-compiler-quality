@@ -1,0 +1,40 @@
+---
+- name: Test VDO module and uncover latent bugs
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Install vdo-utils package
+      package:
+        name: vdo-utils
+        state: present
+
+    - name: Create VDO volume
+      community.general.vdo:
+        name: myvdo
+        state: present
+        device: /dev/sdb
+        logicalsize: 1T
+        writepolicy: writeback
+        compression: lz4
+        deduplication: enabled
+
+    - name: Check if VDO volume is activated
+      command: vdo status --name myvdo
+      changed_when: false
+      register: vdo_status
+      failed_when: false
+
+    - name: Debug VDO status
+      debug:
+        var: vdo_status.stdout
+
+    - name: Increase VDO volume logicalsize
+      community.general.vdo:
+        name: myvdo
+        state: present
+        logicalsize: 2T
+
+    - name: Debug VDO status
+      debug:
+        var: vdo_status.stdout

@@ -1,0 +1,45 @@
+---
+- name: Test Pacemaker Cluster Module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Install pacemaker-cluster package
+      package:
+        name: pacemaker-cluster
+        state: present
+
+    - name: Configure Pacemaker
+      community.general.pacemaker_cluster:
+        force: true
+        node: "{{ inventory_hostname }}"
+        state: started
+        timeout: 30
+
+    - name: Verify Pacemaker status
+      community.general.pacemaker_cluster:
+        state: status
+      register: pacemaker_status
+
+    - name: Print Pacemaker status
+      debug:
+        var: pacemaker_status.stdout
+
+- name: Test Case - Division-based operation for limit-related values
+  hosts: localhost
+  gather_facts: false
+  vars:
+    pacemaker_limit: 10
+
+  tasks:
+    - name: Assign limit-related value with division
+      set_fact:
+        pacemaker_limit: "{{ pacemaker_limit / 2 }}"
+
+    - name: Configure Pacemaker with limit
+      community.general.pacemaker_cluster:
+        force: true
+        node: "{{ inventory_hostname }}"
+        state: started
+        timeout: 30
+        limit: "{{ pacemaker_limit }}"

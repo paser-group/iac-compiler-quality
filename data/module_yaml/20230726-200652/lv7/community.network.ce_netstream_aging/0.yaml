@@ -1,0 +1,32 @@
+- name: Test playbook for exposing latent type-related bugs
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Set timeout mode
+      community.network.ce_netstream_aging:
+        manual_slot: "{{ item.manual_slot | random }}"  # Potential for latent bugs
+        state: "{{ item.state | random }}"  # Potential for latent bugs
+        timeout_interval: "{{ item.timeout_interval | random }}"  # Potential for latent bugs
+        timeout_type: "{{ item.timeout_type | random }}"  # Potential for latent bugs
+        type: "{{ item.type | random }}"  # Potential for latent bugs
+      loop:
+        - { manual_slot: None, state: None, timeout_interval: None, timeout_type: None, type: None }
+        - { manual_slot: 10, state: 'present', timeout_interval: 60, timeout_type: 'idle-timeout', type: 'icmp' }
+        - { manual_slot: 5, state: 'absent', timeout_interval: 120, timeout_type: 'protocol-timeout', type: 'tcp' }
+        - { manual_slot: 2, state: 'present', timeout_interval: 180, timeout_type: 'idle-timeout', type: 'udp' }
+        - { manual_slot: 8, state: 'absent', timeout_interval: 240, timeout_type: 'protocol-timeout', type: 'icmp' }
+
+    - name: Display timeout mode
+      community.network.ce_netstream_aging:
+        manual_slot: "{{ item.manual_slot }}"
+        state: "{{ item.state }}"
+        timeout_interval: "{{ item.timeout_interval }}"
+        timeout_type: "{{ item.timeout_type }}"
+        type: "{{ item.type }}"
+      loop:
+        - { manual_slot: None, state: None, timeout_interval: None, timeout_type: None, type: None }
+
+    - name: Debug results
+      debug:
+        var: item
+      loop: "{{ range(0, result | length) | list }}"

@@ -1,0 +1,49 @@
+---
+- name: Test playbook for community.general.stackdriver module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Set limit-related values
+      set_fact:
+        event: "deploy"
+        event_epoch: "1620123456"
+        instance_id: "i-12345"
+        key: "app_deployment"
+        level: "info"
+        msg: "Deploying application"
+        deployed_by: "John"
+        deployed_to: "production"
+        repository: "my_repo"
+        revision_id: "abc123"
+
+    - name: Trigger the latent type-related bug
+      community.general.stackdriver:
+        project_id: 123456
+        annotations:
+          - deployed_by: "{{ deployed_by }}"
+            deployed_to: "{{ deployed_to }}"
+            event: "{{ event }}"
+            event_epoch: "{{ event_epoch }}"
+            instance_id: "{{ instance_id }}"
+            key: "{{ key }}"
+            level: "{{ level }}"
+            msg: "{{ msg }}"
+            repository: "{{ repository }}"
+            revision_id: "{{ revision_id }}"
+            tags: []
+          - annotated_by: 123456  # This intentionally causes a type-related bug, 'annotated_by' should be a string
+
+      register: result
+
+    - name: Display result
+      debug:
+        var: result
+
+    - name: Perform division-based operation
+      set_fact:
+        division_result: "{{ result.ansible_facts | length / 0 }}"  # This is the division-based operation using limit-related values
+
+    - name: Print division result
+      debug:
+        var: division_result

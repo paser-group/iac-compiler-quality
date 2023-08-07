@@ -1,0 +1,111 @@
+---
+- name: Test Playbook
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Install required packages
+      package:
+        name: python-ipalib
+        state: latest
+      become: true
+
+    - name: Create IPA client
+      community.general.ipa_role:
+        name: "{{ inventory_hostname }}"
+        state: present
+        cn: "{{ inventory_hostname }}"
+        description: "Test client"
+        host: localhost
+        ipa_host: "{{ ipa_host }}"
+        ipa_user: "{{ ipa_user }}"
+        ipa_pass: "{{ ipa_pass }}"
+        ipa_port: "{{ ipa_port }}"
+        ipa_prot: "{{ ipa_prot }}"
+        ipa_timeout: "{{ ipa_timeout }}"
+        validate_certs: "{{ validate_certs }}"
+        privilege: []
+        service: []
+        user: []
+
+    # Test Case 1 - Generate random MAC address for host
+    - name: Generate random MAC address for host
+      vars:
+        mac_address: "00:00:00:00:00:00"
+      set_fact:
+        mac_address: "{{ mac_address[:-2] + ':' + ('%02x' % item) }}"
+      loop: "{{ range(6) }}"
+      when: mac_address == "00:00:00:00:00:00"
+      changed_when: false
+      no_log: true
+      run_once: true
+      ignore_errors: true
+
+    - name: Update host with random MAC address
+      community.general.ipa_role:
+        name: "{{ inventory_hostname }}"
+        state: present
+        host: "{{ mac_address }}"
+        ipa_host: "{{ ipa_host }}"
+        ipa_user: "{{ ipa_user }}"
+        ipa_pass: "{{ ipa_pass }}"
+        ipa_port: "{{ ipa_port }}"
+        ipa_prot: "{{ ipa_prot }}"
+        ipa_timeout: "{{ ipa_timeout }}"
+        validate_certs: "{{ validate_certs }}"
+        privilege: []
+        service: []
+        user: []
+
+    # Test Case 2 - Generate random MAC address for hostgroup
+    - name: Generate random MAC addresses for hostgroup
+      vars:
+        mac_addresses: []
+      set_fact:
+        mac_addresses: "{{ mac_addresses + [mac_address] }}"
+      loop: "{{ range(2) }}"
+      changed_when: false
+      no_log: true
+      run_once: true
+      ignore_errors: true
+
+    - name: Update hostgroup with random MAC addresses
+      community.general.ipa_role:
+        name: "{{ inventory_hostname }}"
+        state: present
+        hostgroup: "{{ mac_addresses }}"
+        ipa_host: "{{ ipa_host }}"
+        ipa_user: "{{ ipa_user }}"
+        ipa_pass: "{{ ipa_pass }}"
+        ipa_port: "{{ ipa_port }}"
+        ipa_prot: "{{ ipa_prot }}"
+        ipa_timeout: "{{ ipa_timeout }}"
+        validate_certs: "{{ validate_certs }}"
+        privilege: []
+        service: []
+        user: []
+
+    # Test Case 3 - Generate random MAC address for group
+    - name: Generate random MAC address for group
+      set_fact:
+        group_mac_address: "{{ mac_address }}"
+      changed_when: false
+      no_log: true
+      run_once: true
+      ignore_errors: true
+
+    - name: Update group with random MAC address
+      community.general.ipa_role:
+        name: "{{ inventory_hostname }}"
+        state: present
+        group: "{{ group_mac_address }}"
+        ipa_host: "{{ ipa_host }}"
+        ipa_user: "{{ ipa_user }}"
+        ipa_pass: "{{ ipa_pass }}"
+        ipa_port: "{{ ipa_port }}"
+        ipa_prot: "{{ ipa_prot }}"
+        ipa_timeout: "{{ ipa_timeout }}"
+        validate_certs: "{{ validate_certs }}"
+        privilege: []
+        service: []
+        user: []

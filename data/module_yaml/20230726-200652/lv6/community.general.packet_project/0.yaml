@@ -1,0 +1,67 @@
+---
+- name: Test for latent type-related bugs in packet_project module
+  hosts: localhost
+  gather_facts: false
+  vars:
+    auth_token: "your_auth_token"
+    org_id: "your_org_id"
+    project_name: "test-project"
+    project_id: ""
+  
+  tasks:
+
+    - name: Create a project
+      community.general.packet_project:
+        auth_token: "{{ auth_token }}"
+        org_id: "{{ org_id }}"
+        name: "{{ project_name }}"
+        state: present
+      register: result
+      tags: create_project
+
+    - name: Output project ID
+      debug:
+        var: result.id
+      when: result.changed
+      tags: create_project
+      
+    - name: Generate strings with varied encodings
+      set_fact:
+        encoded_strings: "{{ ['test_string', 'test_тест', 'test_测试', 'test_टेस्ट'] }}"
+      tags: create_project
+
+    - name: Create a project with encoded strings
+      community.general.packet_project:
+        auth_token: "{{ auth_token }}"
+        org_id: "{{ org_id }}"
+        name: "{{ item }}"
+        state: present
+      loop: "{{ encoded_strings }}"
+      register: encoded_result
+      when: result.changed
+      tags: create_project_encoded
+
+    - name: Output project ID for encoded strings
+      debug:
+        var: item.id
+      loop: "{{ encoded_result.results }}"
+      tags: create_project_encoded
+
+    - name: Delete the project
+      community.general.packet_project:
+        auth_token: "{{ auth_token }}"
+        org_id: "{{ org_id }}"
+        id: "{{ result.id }}"
+        state: absent
+      when: result.changed
+      tags: delete_project
+
+    - name: Delete the project for encoded strings
+      community.general.packet_project:
+        auth_token: "{{ auth_token }}"
+        org_id: "{{ org_id }}"
+        id: "{{ item.id }}"
+        state: absent
+      loop: "{{ encoded_result.results }}"
+      when: result.changed
+      tags: delete_project_encoded

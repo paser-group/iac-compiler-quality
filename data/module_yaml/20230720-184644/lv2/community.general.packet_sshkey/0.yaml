@@ -1,0 +1,39 @@
+---
+- name: Test Ansible Latent Type-Related Bugs
+  hosts: localhost
+  gather_facts: false
+  vars:
+    auth_token: "YOUR_AUTH_TOKEN"
+    sshkey_label: "test_key"
+    sshkey_id: "YOUR_SSHKEY_ID"
+    state: "present"
+
+  tasks:
+    - name: Create SSH key
+      community.general.packet_sshkey:
+        auth_token: "{{ auth_token }}"
+        label: "{{ sshkey_label }}"
+        key_file: "{{ sshkey_label }}.pub"
+        state: "{{ state }}"
+      register: ssh_key_result
+      changed_when: ssh_key_result.created | default(false)
+
+    - name: Retrieve SSH fingerprint
+      set_fact:
+        sshkey_fingerprint: "{{ ssh_key_result.sshkey.fingerprint }}"
+
+    - name: Print SSH fingerprint
+      debug:
+        msg: "SSH key fingerprint: {{ sshkey_fingerprint }}"
+
+    - name: Delete SSH key
+      community.general.packet_sshkey:
+        auth_token: "{{ auth_token }}"
+        id: "{{ sshkey_id }}"
+        state: "absent"
+      register: delete_result
+      changed_when: delete_result.deleted | default(false)
+
+    - name: Print delete result
+      debug:
+        msg: "SSH key deleted: {{ delete_result.deleted }}"

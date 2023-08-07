@@ -1,0 +1,28 @@
+---
+- name: Send Campfire message
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    campfire_room: "{{ random_ip_address() }}"
+    campfire_token: "{{ random_ip_address() }}"
+
+  tasks:
+    - name: Generate random IP address
+      set_fact:
+        random_ip_address: "{{ '%d.%d.%d.%d'|format(random_ip[0], random_ip[1], random_ip[2], random_ip[3]) }}"
+      vars:
+        random_ip: "{{ [hostvars['localhost']['ansible_all_ipv4_addresses'] |
+                       map('split', '.') |
+                       map('int') |
+                       list |
+                       random_sample(4)] }}"
+      run_once: true
+
+    - name: Send message to Campfire
+      community.general.campfire:
+        msg: "Hello from Ansible!"
+        notify: true
+        room: "{{ campfire_room }}"
+        subscription: "All"
+        token: "{{ campfire_token }}"

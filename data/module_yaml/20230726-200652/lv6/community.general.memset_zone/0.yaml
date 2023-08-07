@@ -1,0 +1,33 @@
+---
+- name: Test playbook for exposing latent type-related bugs
+  hosts: localhost
+  gather_facts: False
+
+  vars:
+    api_key: "{{ lookup('pipe', 'echo -n \"my-api-key\" | iconv -f UTF-8 -t UTF-16') }}"
+    name: "{{ lookup('pipe', 'echo -n \"My Zone\" | iconv -f UTF-16 -t UTF-8') }}"
+
+  tasks:
+    - name: Create Memset Zone
+      community.general.memset_zone:
+        api_key: "{{ api_key }}"
+        name: "{{ name }}"
+        ttl: "3600"
+        state: present
+      register: create_memset_zone
+
+    - name: Print Create Memset Zone Result
+      debug:
+        var: create_memset_zone
+
+    - name: Delete Memset Zone
+      community.general.memset_zone:
+        api_key: "{{ api_key }}"
+        name: "{{ name }}"
+        state: absent
+      register: delete_memset_zone
+      when: create_memset_zone is defined and create_memset_zone.changed
+
+    - name: Print Delete Memset Zone Result
+      debug:
+        var: delete_memset_zone

@@ -1,0 +1,41 @@
+- name: Test edgeos_command module
+  hosts: localhost
+  gather_facts: false
+  vars:
+    commands:
+      - show interfaces
+      - show routing table
+    interval: "{{ interval }}"
+    match: "{{ match }}"
+    retries: "{{ retries }}"
+    wait_for: "{{ wait_for }}"
+    ports:
+      - "{{ range(10000, 11000) | random }}"
+  tasks:
+    - name: Run edgeos_command
+      community.network.edgeos_command:
+        username: admin
+        password: password
+        host: "{{ inventory_hostname }}"
+        commands: "{{ commands }}"
+        interval: "{{ interval }}"
+        match: "{{ match }}"
+        retries: "{{ retries }}"
+        wait_for: "{{ wait_for }}"
+      register: result
+      until: result.stdout | search(match)
+      retries: "{{ retries }}"
+      delay: "{{ interval }}"
+      ignore_errors: true
+
+    - name: Display result
+      debug:
+        var: result
+
+    - name: Verify port settings
+      community.general.wait_for:
+        host: "{{ inventory_hostname }}"
+        port: "{{ item }}"
+        delay: 5
+        timeout: 10
+      loop: "{{ ports }}"

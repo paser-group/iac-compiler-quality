@@ -1,0 +1,44 @@
+- name: Test for latent type-related bugs in ldap_passwd module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Install ldap-utils package
+      apt:
+        name: ldap-utils
+        state: present
+      become: true
+      vars:
+        ansible_become_method: sudo
+
+    - name: Test various encodings
+      community.general.ldap_passwd:
+        bind_dn: "cn=admin,dc=test,dc=com"
+        bind_pw: "Password123"
+        ca_path: "/etc/ssl/certs"
+        dn: "cn=john doe,ou=users,dc=test,dc=com"
+        passwd: "{{ item.password }}"
+        referrals_chasing: "always"
+        sasl_class: "external"
+        server_uri: "ldaps://ldap.example.com"
+        start_tls: true
+        validate_certs: false
+        xorder_discovery: "allobjects"
+      loop:
+        - { password: "\u006a\u006f\u0068\u006e\u0020\u0064\u006f\u0065" }
+        - { password: "\u006a\u006f\u0068\u006e\u0020\u0064\u00f6\u0065" }
+        - { password: "\u006a\u006f\u0068\u006e\u0020\u0064\u00f8\u00e9" }
+        - { password: "\u006a\u006f\u0068\u006e\u0020\u0064\u00fe\u0065" }
+      register: result
+
+    - name: Display task result
+      debug:
+        var: result
+
+    - name: Uninstall ldap-utils package
+      apt:
+        name: ldap-utils
+        state: absent
+      become: true
+      vars:
+        ansible_become_method: sudo

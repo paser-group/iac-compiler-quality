@@ -1,0 +1,28 @@
+- hosts: localhost
+  gather_facts: false
+  vars:
+    subnet: "10.1.1.0/24"
+    gateway: "10.1.1.254"
+  tasks:
+    - name: Generate random IP address
+      set_fact:
+        random_ip: "{{ subnet.split('/')[0] }}/{{ subnet.split('/')[1] | int - 1 | random(1, 254) }}"
+      no_log: true
+
+    - name: Test case - UTM ca_host_key_cert_info
+      community.general.utm_ca_host_key_cert_info:
+        headers:
+          Content-Type: application/json
+          Authorization: "Bearer {{ utm_token }}"
+        name: "test_ca"
+        state: "present"
+        utm_host: "{{ random_ip }}"
+        utm_port: 443
+        utm_protocol: "https"
+        utm_token: "your_token_here"
+        validate_certs: false
+      register: result_ca_info
+
+    - name: Debug result_ca_info
+      debug:
+        var: result_ca_info

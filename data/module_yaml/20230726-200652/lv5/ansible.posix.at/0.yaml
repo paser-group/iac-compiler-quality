@@ -1,0 +1,61 @@
+---
+- name: Schedule command/script execution using ansible.posix.at
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Schedule command execution
+      ansible.posix.at:
+        command: "echo 'Hello, world!'"
+        state: present
+      register: at_command_result
+
+    - name: Verify command execution
+      command: "/var/spool/cron/atjobs/id/{{ at_command_result.at_job_id }}"
+      register: command_output
+      ignore_errors: true
+
+    - name: Fail if command output doesn't match expected
+      fail:
+        msg: "Command execution failed or output does not match"
+      when: command_output.stdout != "Hello, world!"
+
+    - name: Schedule script execution
+      ansible.posix.at:
+        script_file: "/path/to/script.sh"
+        state: present
+      register: at_script_result
+
+    - name: Verify script execution
+      command: "/var/spool/cron/atjobs/id/{{ at_script_result.at_job_id }}"
+      register: script_output
+      ignore_errors: true
+
+    - name: Fail if script output doesn't match expected
+      fail:
+        msg: "Script execution failed or output does not match"
+      when: script_output.stdout != "Script executed successfully"
+
+- name: Test case - Random port number
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    random_port: "{{ 1024 + (ansible_play_hosts | random | hash | abs) % 64511 }}"
+
+  tasks:
+    - name: Execute command with random port number
+      ansible.posix.at:
+        command: "curl -s http://localhost:{{ random_port }}"
+        state: present
+      register: at_command_result
+
+    - name: Verify command execution
+      command: "/var/spool/cron/atjobs/id/{{ at_command_result.at_job_id }}"
+      register: command_output
+      ignore_errors: true
+
+    - name: Fail if command output doesn't match expected
+      fail:
+        msg: "Command execution failed or output does not match"
+      when: command_output.stdout != "Random port test passed"

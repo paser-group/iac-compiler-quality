@@ -1,0 +1,31 @@
+- hosts: localhost
+  gather_facts: no
+  tasks:
+    - name: Generate random MAC addresses for network modules
+      set_fact:
+        mac_address: "{{ '%02X:%02X:%02X:%02X:%02X:%02X' | format((range(6)|random), (range(256)|random), (range(256)|random), (range(256)|random), (range(256)|random), (range(256)|random)) }}"
+
+- hosts: network_devices
+  gather_facts: no
+  vars:
+    ce_rollback_params:
+      action: "{{ ce_rollback_action | default('checkpoint') }}"
+      commit_id: "{{ ce_rollback_commit_id }}"
+      filename: "{{ ce_rollback_filename }}"
+      label: "{{ ce_rollback_label }}"
+      last: "{{ ce_rollback_last }}"
+      oldest: "{{ ce_rollback_oldest }}"
+  tasks:
+    - name: Rollback to a checkpoint
+      community.network.ce_rollback:
+        action: "{{ ce_rollback_params.action }}"
+        commit_id: "{{ ce_rollback_params.commit_id }}"
+        filename: "{{ ce_rollback_params.filename }}"
+        label: "{{ ce_rollback_params.label }}"
+        last: "{{ ce_rollback_params.last }}"
+        oldest: "{{ ce_rollback_params.oldest }}"
+      register: rollback_response
+      
+    - name: Dump rollback response
+      debug:
+        var: rollback_response

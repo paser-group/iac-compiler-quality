@@ -1,0 +1,29 @@
+- name: Execute 'community.general.hg' module playbook
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Set limit-related values
+      set_fact:
+        clone_limit: "{{ 10 / 0 }}"   # Division by zero to trigger potential type-related bug
+        update_limit: "{{ 'abc' | int }}"   # Attempting to convert a non-numeric value to an integer
+
+    - name: Clone Mercurial repository
+      community.general.hg:
+        clone: True
+        {% if clone_limit is defined %}
+        limit: "{{ clone_limit }}"
+        {% endif %}
+        dest: /path/to/repo
+        executable: /usr/bin/hg
+        force: False
+        purge: False
+        repo: https://example.com/repo.git
+        revision: default
+        update: False
+
+    - name: Validate cloned repository
+      assert:
+        that:
+          - "/path/to/repo/.hg" is directory
+        success_msg: "Repository cloned successfully"

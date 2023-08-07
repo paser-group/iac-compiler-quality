@@ -1,0 +1,41 @@
+---
+- name: Test playbook for community.network.ce_netstream_global module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Include Ansible Huawei library
+      include_vars:
+        file: huawei.yml
+
+    - name: Create inventory
+      add_host:
+        name: "{{ item.key }}"
+        ansible_connection: docker
+        ansible_become: true
+        ansible_become_method: sudo
+        ansible_host: "{{ item.value }}"
+      with_dict:
+        ubuntu1: 10.1.1.1
+        alpine1: 10.1.1.2
+        centos1: 10.1.1.3
+        redhat1: 10.1.1.4
+
+    - name: Set default values for the module options
+      set_fact:
+        index_switch: !null
+        interface: !null
+        sampler_direction: !null
+        sampler_interval: !null
+        state: !null
+        statistics_direction: !null
+        statistics_record: !null
+        type: !null
+
+    - name: Trigger latent type-related bug
+      community.network.ce_netstream_global:
+        data:
+          cli:
+            - 'interface {{ interface }}'
+            - 'type {{ type }}'
+          state: '{{ state }}'

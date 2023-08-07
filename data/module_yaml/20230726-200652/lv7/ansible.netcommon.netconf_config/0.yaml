@@ -1,0 +1,48 @@
+---
+- hosts: localhost
+  vars:
+    nodes:
+      - name: ubuntu1
+        ip: 10.1.1.1
+        distribution: Ubuntu
+      - name: alpine1
+        ip: 10.1.1.2
+        distribution: Alpine
+      - name: centos1
+        ip: 10.1.1.3
+        distribution: CentOS
+      - name: redhat1
+        ip: 10.1.1.4
+        distribution: Red Hat
+
+  tasks:
+    - name: Generate inventory file
+      template:
+        src: inventory.j2
+        dest: inventory
+
+    - name: Configure network using netconf_config module
+      ansible.netcommon.netconf_config:
+        backup: true
+        backup_options:
+          directory: /tmp/backups
+          prefix: network
+        commit: true
+        confirm: 5
+        confirm_commit: true
+        content: "{{ lookup('template', 'network_config.j2') }}"
+        default_operation: merge
+        delete: true
+        error_option: stop-on-error
+        format: xml
+        get_filter: "{{ lookup('template', 'filter.j2') }}"
+        lock: exclusive
+        save: true
+        source_datastore: running
+        target: running
+        validate: true
+
+      register: result
+
+    - debug:
+        var: result

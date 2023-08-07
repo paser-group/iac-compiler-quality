@@ -1,0 +1,61 @@
+---
+- name: Test playbook for community.network.pn_admin_service module
+  hosts: localhost
+  gather_facts: false
+  vars:
+    pn__if: "{{ ansible_default_ipv4.interface }}"
+    pn_cliswitch: pn_admin
+    pn_icmp: true
+    pn_net_api: true
+    pn_nfs: true
+    pn_snmp: true
+    pn_ssh: true
+    pn_web: true
+    pn_web_log: true
+    pn_web_port: "8080"
+    pn_web_ssl: true
+    pn_web_ssl_port: "8443"
+    state: present
+
+  tasks:
+    - name: Include pn_admin_service module
+      include_vars:
+        file: community.network.pn_admin_service.yml
+
+    - name: Test 1 - Verify division-based operation for 'pn_web_port' variable
+      set_fact:
+        web_port_limit: "{{ pn_web_port|int / 2 }}"
+      vars:
+        pn_web_port: "8080"
+      failed_when: "web_port_limit < 1000 or web_port_limit > 65535"
+      tags: [test1]
+
+    - name: Test 2 - Verify division-based operation for 'pn_web_ssl_port' variable
+      set_fact:
+        web_ssl_port_limit: "{{ pn_web_ssl_port|int / 2 }}"
+      vars:
+        pn_web_ssl_port: "8443"
+      failed_when: "web_ssl_port_limit < 1000 or web_ssl_port_limit > 65535"
+      tags: [test2]
+
+    - name: Test 3 - Execute pn_admin_service module with provided variables
+      community.network.pn_admin_service:
+        pn__if: "{{ pn__if }}"
+        pn_cliswitch: "{{ pn_cliswitch }}"
+        pn_icmp: "{{ pn_icmp }}"
+        pn_net_api: "{{ pn_net_api }}"
+        pn_nfs: "{{ pn_nfs }}"
+        pn_snmp: "{{ pn_snmp }}"
+        pn_ssh: "{{ pn_ssh }}"
+        pn_web: "{{ pn_web }}"
+        pn_web_log: "{{ pn_web_log }}"
+        pn_web_port: "{{ pn_web_port }}"
+        pn_web_ssl: "{{ pn_web_ssl }}"
+        pn_web_ssl_port: "{{ pn_web_ssl_port }}"
+        state: "{{ state }}"
+      register: result
+      tags: [main]
+
+    - debug:
+        var: result
+      tags: [main]

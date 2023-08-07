@@ -1,0 +1,44 @@
+---
+- name: Test Scaleway Function Namespace Module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    scaleway_api_token: "YOUR_API_TOKEN"
+    scaleway_project_id: "YOUR_PROJECT_ID"
+
+  tasks:
+    - name: Create Scaleway Function Namespace
+      community.general.scaleway_function_namespace:
+        api_token: "{{ scaleway_api_token }}"
+        project_id: "{{ scaleway_project_id }}"
+        name: "{{ item }}"
+        description: "Test Namespace"
+        state: present
+      loop:
+        - "namespace1"
+        - "namespace2"
+        - "namespace3"
+        - "namespace4"
+      register: result
+
+    - name: Display Namespace Creation Result
+      debug:
+        var: result
+
+    - name: Wait for Namespace Creation
+      community.general.scaleway_function_namespace:
+        api_token: "{{ scaleway_api_token }}"
+        project_id: "{{ scaleway_project_id }}"
+        name: "{{ item.item }}"
+        state: present
+        wait: true
+        wait_sleep_time: 5
+        wait_timeout: 180
+      loop: "{{ result.results }}"
+      when: item.status == 'changed'
+      register: wait_result
+
+    - name: Display Namespace Wait Result
+      debug:
+        var: wait_result

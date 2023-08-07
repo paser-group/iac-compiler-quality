@@ -1,0 +1,35 @@
+---
+- name: Test community.general.idrac_redfish_command module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    auth_token: "your_auth_token"
+    baseuri: "https://your_idrac_ip"
+    category: "config"
+    resource_id: "BIOS"
+
+  tasks:
+    - name: Generate random MAC address
+      set_fact:
+        mac_address: "{{ '%02x:%02x:%02x:%02x:%02x:%02x' | format(ansible_random.randint(0, 255),
+                                ansible_random.randint(0, 255), ansible_random.randint(0, 255),
+                                ansible_random.randint(0, 255), ansible_random.randint(0, 255),
+                                ansible_random.randint(0, 255)) }}"
+
+    - name: Execute idrac_redfish_command
+      community.general.idrac_redfish_command:
+        baseuri: "{{ baseuri }}"
+        category: "{{ category }}"
+        auth_token: "{{ auth_token }}"
+        username: "{{ ansible_user }}"
+        password: "{{ ansible_password }}"
+        command:
+          - "set"
+          - "/redfish/v1/Systems/System.Embedded.1/EthernetInterfaces/1/MACAddress"
+          - "{{ mac_address }}"
+      register: idrac_result
+
+    - name: Debug idrac_redfish_command output
+      debug:
+        var: idrac_result

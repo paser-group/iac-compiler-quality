@@ -1,0 +1,36 @@
+---
+- name: Test playbook for gitlab_deploy_key module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create GitLab deploy key
+      community.general.gitlab_deploy_key:
+        api_url: "https://gitlab.example.com/api/v4"
+        api_token: "your_api_token"
+        project: "your_project"
+        key: "your_public_key"
+        state: "present"
+        title: "test_key"
+        validate_certs: false
+        can_push: true
+      register: result
+      connection: local
+
+    - name: Print gitlab_deploy_key output
+      debug:
+        var: result
+
+    - name: Test case with different encodings
+      community.general.gitlab_deploy_key:
+        api_url: "https://gitlab.example.com/api/v4"
+        api_token: "{{ test_api_token | b64decode | from_yaml }}"
+        project: "{{ test_project }}"
+        key: "{{ test_public_key | b64decode | from_yaml }}"
+        state: "{{ test_state }}"
+        title: "{{ test_title | b64decode | from_yaml }}"
+        validate_certs: "{{ test_validate_certs | bool }}"
+        can_push: "{{ test_can_push | bool }}"
+      register: bug_result
+      ignore_errors: true
+      connection: local

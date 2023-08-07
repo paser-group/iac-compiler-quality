@@ -1,0 +1,45 @@
+---
+- name: Test ansible latent type-related bug
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    ansible_python_interpreter: "/usr/bin/python3"
+    ansible_become: yes
+
+  tasks:
+    - name: Configure AlertConfig
+      community.network.avi_alertconfig:
+        controller: "localhost"
+        username: "admin"
+        password: "password"
+        tenant: "admin"
+        name: "{{ item.name }}"
+        autoscale_alert: true
+        avi_credentials:
+          - api_version: "{{ item.api_version }}"
+            username: "{{ item.username }}"
+            password: "{{ item.password }}"
+        api_context:
+          - api_version: "{{ item.api_version }}"
+            username: "{{ item.username }}"
+            password: "{{ item.password }}"
+        state: present
+        tenant_uuid: "{{ item.tenant_uuid }}"
+        tenant_ref: "/api/tenant?name={{ item.tenant }}"
+        object_type: "ALERT_CONFIG"
+      loop:
+        - name: Test Case 1
+          api_version: "17.2.11"
+          username: "test1"
+          password: "password1"
+          tenant_uuid: "BSBSAIKEEKLSLJD"
+        - name: Test Case 2
+          api_version: "18.1.3"
+          username: "test2"
+          password: "password2"
+          tenant_uuid: "AKJDF8823HSG"
+
+    - name: Debug Result
+      debug:
+        var: result

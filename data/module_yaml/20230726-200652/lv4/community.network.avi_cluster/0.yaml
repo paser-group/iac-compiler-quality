@@ -1,0 +1,43 @@
+- name: Setup avi_cluster
+  hosts: localhost
+  gather_facts: False
+  tasks:
+    - name: Create random virtual MAC addresses
+      set_fact:
+        virtual_mac: "{{ '00:%02x:%02x:%02x:%02x:%02x' | format((1,256)|random, (1,256)|random, (1,256)|random, (1,256)|random, (1,256)|random) }}"
+        node_macs: "{{ [virtual_mac] + [item] | random }}"
+      with_items:
+        - "{{ groups['dockers'] }}"
+      run_once: true
+
+    - name: Configure avi_cluster
+      community.network.avi_cluster:
+        controller: "{{ controller }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        api_version: "{{ api_version }}"
+        tenant: "{{ tenant }}"
+        state: "{{ state }}"
+        name: "{{ name }}"
+        nodes:
+          - controller: "{{ inventory_hostname }}"
+            ip: "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}"
+            virtual_ip: "{{ virtual_ip }}"
+            mac_address: "{{ node_macs[loop.index - 1] }}"
+        virtual_ip: "{{ virtual_ip }}"
+        api_context:
+          tenant_ref: "{{ tenant_ref }}"
+          tenant_uuid: "{{ tenant_uuid }}"
+          url: "{{ url }}"
+        avi_credentials:
+          username: "{{ username }}"
+          password: "{{ password }}"
+          tenant: "{{ tenant }}"
+        rejoin_nodes_automatically: "{{ rejoin_nodes_automatically }}"
+        avi_api_patch_op: "{{ avi_api_patch_op }}"
+        avi_api_update_method: "{{ avi_api_update_method }}"
+      register: result
+
+    - name: Print result
+      debug:
+        var: result

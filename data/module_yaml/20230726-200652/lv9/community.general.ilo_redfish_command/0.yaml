@@ -1,0 +1,50 @@
+---
+- name: Test playbook for Ansible bugs
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Install required Python dependencies
+      apt:
+        name: 
+          - python3-pip
+        state: present
+
+    - name: Install dependencies using pip
+      pip:
+        name:
+          - python-ilorest-library
+        state: present
+
+    - name: Generate random IP address within subnet
+      command: "shuf -i 2-254 -n 1"
+      register: ip_address
+
+    - name: Set random IP address as host variable
+      set_fact:
+        random_ip: "10.1.1.{{ ip_address.stdout }}"
+
+    - name: Retrieve auth token
+      community.general.ilo_redfish_command:
+        baseuri: "https://{{ hostvars['localhost']['random_ip'] }}"
+        username: "admin"
+        password: "password"
+        category: "auth"
+        command:
+          - "login"
+        timeout: 10
+      register: auth_result
+
+    - name: Perform test operations with auth token
+      community.general.ilo_redfish_command:
+        baseuri: "https://{{ hostvars['localhost']['random_ip'] }}"
+        auth_token: "{{ auth_result['results'][0]['ansible_facts']['ilo_redfish']['auth_token'] }}"
+        category: "system"
+        command:
+          - "get"
+          - "system1"
+      register: system_result
+
+    - name: Debugging output
+      debug:
+        var: system_result

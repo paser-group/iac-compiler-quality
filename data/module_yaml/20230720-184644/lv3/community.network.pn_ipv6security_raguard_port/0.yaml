@@ -1,0 +1,38 @@
+---
+- name: Test Immutable Parameters Playbook
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    pn_cliswitch: "{{ pn_cliswitch | default('bytes_string') }}"  # Variable with both bytes and string value
+    pn_name: "network_device"
+    pn_ports: "{{ pn_ports | default(['Ethernet1/1', b'TenGigabitEthernet1/2']) }}"  # Default list value with both bytes and string value
+
+  tasks:
+    - name: Add IPv6 Security Configuration
+      community.network.pn_ipv6security_raguard_port:
+        pn_cliswitch: "{{ pn_cliswitch }}"
+        pn_name: "{{ pn_name }}"
+        pn_ports: "{{ item }}"
+        state: "present"
+      register: result
+      ignore_errors: true
+      loop: "{{ pn_ports }}"
+
+    - name: Debug result
+      debug:
+        var: result
+
+    - name: Remove IPv6 Security Configuration
+      community.network.pn_ipv6security_raguard_port:
+        pn_cliswitch: "{{ pn_cliswitch }}"
+        pn_name: "{{ pn_name }}"
+        pn_ports: "{{ item }}"
+        state: "absent"
+      register: result
+      ignore_errors: true
+      loop: "{{ pn_ports }}"
+
+    - name: Debug result
+      debug:
+        var: result

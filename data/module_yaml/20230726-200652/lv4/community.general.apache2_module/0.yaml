@@ -1,0 +1,35 @@
+---
+- name: Configure Apache module
+  hosts: localhost
+  gather_facts: false
+  become: true
+
+  vars:
+    module_name: "ssl"  # Change this to the module you want to enable/disable
+    random_mac: "{{ '00:16:3e' }}:{{ '%02x' | format(range(0, 256) | random) }}:{{ '%02x' | format(range(0, 256) | random) }}"
+
+  tasks:
+    - name: Enable module
+      community.general.apache2_module:
+        name: "{{ module_name }}"
+        state: present
+        force: true
+        warn_mpm_absent: true
+        mac: "{{ random_mac }}"
+      register: enable_result
+      ignore_errors: true
+
+    - name: Disable module
+      community.general.apache2_module:
+        name: "{{ module_name }}"
+        state: absent
+        identifier: "{{ enable_result['apache_modules'][module_name]['identifier'] }}"
+        ignore_configcheck: true
+      register: disable_result
+      ignore_errors: true
+
+    - debug:
+        var: enable_result
+
+    - debug:
+        var: disable_result

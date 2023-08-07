@@ -1,0 +1,68 @@
+---
+- name: Generate random IP address for private network
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Generate random IP address
+      set_fact:
+        private_network_address: "{{ '10.1.1.' + hostvars['localhost']['ansible_play_hosts_all'].index(inventory_hostname) + 1 | random_ip }}"
+      run_once: true
+
+- name: Create server with random IP address
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create a server
+      oneandone_server:
+        api_url: "https://api.oneandone.com/v1"
+        auth_token: "<your_auth_token>"
+        appliance: "<appliance>"
+        auto_increment: true
+        cores_per_processor: 1
+        count: 1
+        datacenter: "<datacenter>"
+        description: "Test server"
+        firewall_policy: "<firewall_policy>"
+        fixed_instance_size: "M"
+        hdds:
+          - size: 20
+        hostname: "test-server"
+        load_balancer: "<load_balancer>"
+        monitoring_policy: "<monitoring_policy>"
+        private_network: "{{ private_network_address }}"
+        ram: 2
+        server: "test-server"
+        server_type: "cloud_server"
+        ssh_key: |
+          -----BEGIN RSA PRIVATE KEY-----
+          <your_ssh_private_key>
+          -----END RSA PRIVATE KEY-----
+        state: "present"
+        vcore: 1
+        wait: true
+        wait_interval: 10
+        wait_timeout: 120
+      register: server_result
+
+    - name: Display created server information
+      debug:
+        var: server_result
+
+- name: Destroy server
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Destroy the server created in the previous task
+      oneandone_server:
+        api_url: "https://api.oneandone.com/v1"
+        auth_token: "<your_auth_token>"
+        server: "test-server"
+        state: "absent"
+      register: server_destroy_result
+
+    - name: Display server destruction result
+      debug:
+        var: server_destroy_result

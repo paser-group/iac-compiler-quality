@@ -1,0 +1,48 @@
+---
+- name: Install and configure Kibana plugin
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Install Kibana plugin
+      community.general.kibana_plugin:
+        name: my_plugin
+        state: present
+        url: http://example.com/my_plugin.zip
+        version: 1.0
+        plugin_dir: /usr/share/kibana/plugins
+        allow_root: true
+        force: false
+      register: plugin_install_result
+
+    - name: Debug plugin installation
+      debug:
+        var: plugin_install_result
+
+    - name: Test port settings
+      block:
+        - name: Generate random port numbers
+          set_fact:
+            random_port: "{{ (10000 | random) + 1000 }}"
+          run_once: true
+
+        - name: Test plugin port
+          community.general.kibana_plugin:
+            name: my_plugin
+            state: present
+            url: http://example.com/my_plugin.zip
+            version: 1.0
+            plugin_dir: /usr/share/kibana/plugins
+            allow_root: true
+            force: false
+            port: "{{ random_port }}"
+          register: plugin_port_result
+
+        - name: Debug plugin port result
+          debug:
+            var: plugin_port_result
+
+      rescue:
+        - name: Handle port test failure
+          debug:
+            msg: "Failed to test plugin port"

@@ -1,0 +1,28 @@
+---
+- name: Test Ansible module for latent type-related bugs
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Generate random MAC addresses
+      set_fact:
+        mac_address: "{{ '%012x' | format(ansible_random.randint(0, 281474976710655)) }}"
+
+    - name: Configure switch using conditional templates
+      community.network.cnos_conditional_template:
+        host: "{{ inventory_hostname }}"
+        username: "admin"
+        password: "password"
+        enablePassword: "enable_password"
+        deviceType: "{{ item.deviceType }}"
+        condition: "{{ item.condition }}"
+        commandfile: null
+        outputfile: "/tmp/{{ inventory_hostname }}.cfg"
+      loop:
+        - { deviceType: "dev_type_1", condition: "condition_1" }
+        - { deviceType: "dev_type_2", condition: "condition_2" }
+        - { deviceType: "dev_type_3", condition: "condition_3" }
+
+    - name: Print generated MAC addresses
+      debug:
+        var: mac_address

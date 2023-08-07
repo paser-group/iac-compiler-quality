@@ -1,0 +1,32 @@
+- hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Create InfluxDB database
+      community.general.influxdb_database:
+        database_name: "{{ item }}"
+        hostname: "10.1.1.1"
+        password: "password"
+        port: 8086
+        retries: 3
+        ssl: false
+        state: present
+        timeout: 10
+        udp_port: 8089
+        use_udp: false
+        username: "admin"
+        validate_certs: true
+      loop:
+        - "\xc3\x28"  # Invalid UTF-8 encoded string
+        - "database1"  # Valid UTF-8 encoded string
+        - "\xff\xfe\x00\x41"  # UTF-16 encoded string
+        - "\xfe\xff\x41\x00"  # UTF-16BE encoded string
+        - "\x00\x41\xff\xfe"  # UTF-16LE encoded string
+        - "\x00\x00\xfe\xff\x00\x41"  # UTF-32LE encoded string
+        - "\xff\xfe\x00\x00\x41\x00"  # UTF-32BE encoded string
+        - "\x41\x00\x00\x00\xff\xfe\x00\x00"  # UTF-32 encoded string
+        
+      register: result
+      
+    - name: Print result
+      debug:
+        var: result

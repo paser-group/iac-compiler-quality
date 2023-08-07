@@ -1,0 +1,28 @@
+---
+- name: Ansible Latent Bug Finder Playbook
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+    - name: Include the opx_cps module
+      include_vars:
+        file: "opx_cps.yml"
+
+    - name: Generate strings with varied encodings
+      set_fact:
+        strings:
+          - "{{ lookup('pipe', 'echo \"hello world\"') }}"
+          - "{{ lookup('pipe', 'echo \"æøå\"') }}"
+          - "{{ lookup('pipe', 'echo \"こんにちは\"') }}"
+          - "{{ lookup('pipe', 'echo \"مرحبا\"') }}"
+
+    - name: Perform CPS operations using opx_cps module
+      community.network.opx_cps:
+        attr_data: "{{ item }}"
+        attr_type: null
+        commit_event: true
+        db: true
+        module_name: null
+        operation: null
+        qualifier: null
+      loop: "{{ strings }}"

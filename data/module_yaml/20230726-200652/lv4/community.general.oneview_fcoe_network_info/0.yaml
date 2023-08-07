@@ -1,0 +1,46 @@
+---
+- name: Retrieve FCoE network information
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    api_version: 1200
+    config: path/to/oneview_config.json
+    hostname: 10.0.0.1
+    image_streamer_hostname: 10.0.0.2
+    network_names:
+      - Network1
+      - Network2
+      - Network3
+
+  tasks:
+    - name: Include tasks from the 'community.general.oneview_fcoe_network_info' module
+      include_tasks: oneview_fcoe_network_info_tasks.yml
+      vars:
+        network_name: "{{ item }}"
+      loop: "{{ network_names }}"
+
+- name: Trigger type-related bug with random MAC addresses
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    api_version: 1200
+    config: path/to/oneview_config.json
+    hostname: 10.0.0.1
+    image_streamer_hostname: 10.0.0.2
+    name: Network1
+    params:
+      mac: "{{ fake_mac_address }}"
+
+  tasks:
+    - name: Generate a random MAC address
+      set_fact:
+        fake_mac_address: "{{ '00:16:3e:' + '%02x:%02x:%02x' | format(mac1, mac2, mac3) }}"
+      vars:
+        mac1: "{{ (100 + (ansible_play_batch.index | random * 10)) | int }}"
+        mac2: "{{ (10 + (ansible_play_batch.index | random * 10)) | int }}"
+        mac3: "{{ (10 + (ansible_play_batch.index | random * 10)) | int }}"
+
+    - name: Include tasks from the 'community.general.oneview_fcoe_network_info' module
+      include_tasks: oneview_fcoe_network_info_tasks.yml

@@ -1,0 +1,36 @@
+---
+- name: Generate random IP addresses
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Include ipaddr_module
+      include_vars:
+        file: ipaddr_module.yml
+
+    - name: Generate random IP addresses
+      set_fact:
+        random_ip: "{{ ipaddr_network | ipaddr('network') | ipaddr('nthhost', loop.index0) }}"
+      with_sequence: start=1 end=10
+
+    - name: Debug random IP addresses
+      debug:
+        var: random_ip
+
+- name: Check if generated IP addresses are valid
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Include ipaddr_module
+      include_vars:
+        file: ipaddr_module.yml
+
+    - name: Check if IP addresses are valid
+      ipaddr:
+        address: "{{ random_ip }}"
+      register: result
+
+    - name: Debug IP address validation result
+      debug:
+        var: result

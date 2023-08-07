@@ -1,0 +1,34 @@
+---
+- name: Fetch gRPC Configuration/State Data
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    command: "get-config"
+    data_type: "running"
+    display: "json"
+    section: "interfaces"
+
+  tasks:
+    - name: Introduce byte string values
+      set_fact:
+        byte_string_value: "{{ command | b64encode }}"
+        byte_string_data_type: "{{ data_type | b64encode }}"
+        byte_string_display: "{{ display | b64encode }}"
+        byte_string_section: "{{ section | b64encode }}"
+
+    - name: Print byte string values
+      debug:
+        msg: "Byte String Values - Command: {{ byte_string_value }}, Data Type: {{ byte_string_data_type }}, Display: {{ byte_string_display }}, Section: {{ byte_string_section }}"
+
+    - name: Fetch gRPC Configuration/State Data
+      ansible.netcommon.grpc_get:
+        command: "{{ byte_string_value | b64decode }}"
+        data_type: "{{ byte_string_data_type | b64decode }}"
+        display: "{{ byte_string_display | b64decode }}"
+        section: "{{ byte_string_section | b64decode }}"
+      register: result
+
+    - name: Display result
+      debug:
+        var: result

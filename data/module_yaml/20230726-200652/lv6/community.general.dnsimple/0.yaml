@@ -1,0 +1,40 @@
+---
+- name: Test playbook for community.general.dnsimple
+  hosts: localhost
+  gather_facts: False
+  vars:
+    account_api_token: "YOUR_API_TOKEN"
+    account_email: "YOUR_EMAIL"
+    domain: "YOUR_DOMAIN"  # e.g., example.com
+    record: "YOUR_RECORD_NAME"  # e.g., www
+
+  tasks:
+
+    - name: Create DNS record with varied encodings
+      community.general.dnsimple:
+        account_email: "{{ account_email }}"
+        account_api_token: "{{ account_api_token }}"
+        domain: "{{ domain }}"
+        record: "{{ record }}"
+        type: CNAME
+        value: "{{ item }}"
+        ttl: 300
+        priority: 10
+        state: present
+      loop:
+        - "{{ record }}"
+        - "{{ record | b64encode }}"
+        - "{{ record | urlencode }}"
+        - "{{ record | json_query('0') }}"
+        - "{{ record | ogr2ogr_encode }}"
+        - "{{ record | regex_replace('^', 'PREFIX_') }}"
+        - "{{ record | regex_replace('suffix$', '_SUFFIX') }}"
+        - "{{ record | upper }}"
+        - "{{ record | lower }}"
+        - "{{ record | capitalize }}"
+        - "{{ record | replace(record, 'REPLACED') }}"
+      register: result
+
+    - name: Display result
+      debug:
+        var: result

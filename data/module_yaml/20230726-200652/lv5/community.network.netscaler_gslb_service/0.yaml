@@ -1,0 +1,56 @@
+---
+- name: Manage gslb services
+  hosts: localhost
+  gather_facts: false
+  
+  tasks:
+    - name: Create gslb service
+      community.network.netscaler_gslb_service:
+        nsip: 192.168.1.1
+        nitro_user: admin
+        nitro_pass: admin
+        state: present
+        servicename: "{{ item.servicename }}"
+        sitename: "{{ item.sitename }}"
+        ipaddress: "{{ item.ipaddress }}"
+        port: "{{ item.port }}"
+        servername: "{{ item.servername }}"
+        servicetype: "{{ item.servicetype }}"
+        healthmonitor: "{{ item.healthmonitor }}"
+        monthreshold: "{{ item.monthreshold }}"
+        sitename: "{{ item.sitename }}"
+        sitepersistence: "{{ item.sitepersistence }}"
+      loop:
+        - { servicename: "service1", sitename: "site1", ipaddress: "10.1.1.1", port: 80, servername: "server1", servicetype: "HTTP", healthmonitor: True, monthreshold: 10, sitepersistence: "STATE" }
+        - { servicename: "service2", sitename: "site2", ipaddress: "10.1.1.2", port: 443, servername: "server2", servicetype: "HTTPS", healthmonitor: False, monthreshold: 5, sitepersistence: "COOKIES" }
+
+    - name: Random port test case
+      community.network.netscaler_gslb_service:
+        nsip: 192.168.1.1
+        nitro_user: admin
+        nitro_pass: admin
+        state: present
+        servicename: "service3"
+        sitename: "site3"
+        ipaddress: "10.1.1.3"
+        port: "{{ port_number }}"
+        servername: "server3"
+        servicetype: "HTTP"
+        healthmonitor: True
+        monthreshold: 10
+        sitepersistence: "STATE"
+      vars:
+        port_number: "{{ 10000 | random }}"
+
+    - name: Delete gslb services
+      community.network.netscaler_gslb_service:
+        nsip: 192.168.1.1
+        nitro_user: admin
+        nitro_pass: admin
+        state: absent
+        servicename: "{{ item.servicename }}"
+        sitename: "{{ item.sitename }}"
+      loop:
+        - { servicename: "service1", sitename: "site1" }
+        - { servicename: "service2", sitename: "site2" }
+        - { servicename: "service3", sitename: "site3" }

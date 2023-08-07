@@ -1,0 +1,78 @@
+- name: Test Ansible Latent Type-Related Bugs
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Create and destroy Nomad job
+      community.general.nomad_job:
+        name: my_job
+        state: present
+        host: "localhost:8200"
+        namespace: "default"
+        timeout: 10
+        token: "my_token"
+        use_ssl: true
+        validate_certs: true
+        client_cert: "/path/to/client_cert.pem"
+        client_key: "/path/to/client_key.pem"
+        content: "{{ lookup('file', 'path/to/job.hcl') }}"
+        content_format: "hcl"
+      register: nomad_job
+
+- name: Verify Nomad job status
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Check Nomad job status
+      community.general.nomad_job_info:
+        name: my_job
+        host: "localhost:8200"
+        namespace: "default"
+        timeout: 10
+        token: "my_token"
+        use_ssl: true
+        validate_certs: true
+        client_cert: "/path/to/client_cert.pem"
+        client_key: "/path/to/client_key.pem"
+      register: nomad_job_info
+
+    - name: Display Nomad job info
+      debug:
+        var: nomad_job_info
+
+- name: Test random port settings
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Create and destroy Nomad job with random port
+      community.general.nomad_job:
+        name: my_job
+        state: present
+        host: "localhost:{{ (32000..64000)|random }}"
+        namespace: "default"
+        timeout: 10
+        token: "my_token"
+        use_ssl: true
+        validate_certs: true
+        client_cert: "/path/to/client_cert.pem"
+        client_key: "/path/to/client_key.pem"
+        content: "{{ lookup('file', 'path/to/job.hcl') }}"
+        content_format: "hcl"
+        force_start: true
+      register: nomad_job_random_port
+
+    - name: Verify Nomad job status with random port
+      community.general.nomad_job_info:
+        name: my_job
+        host: "localhost:{{ (32000..64000)|random }}"
+        namespace: "default"
+        timeout: 10
+        token: "my_token"
+        use_ssl: true
+        validate_certs: true
+        client_cert: "/path/to/client_cert.pem"
+        client_key: "/path/to/client_key.pem"
+      register: nomad_job_info_random_port
+
+    - name: Display Nomad job info with random port
+      debug:
+        var: nomad_job_info_random_port

@@ -1,0 +1,25 @@
+---
+- name: Test network reachability
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Ping hosts
+      ansible.netcommon.net_ping:
+        count: "{{ port | default(0) }}"
+        dest: "{{ inventory_hostname }}"
+        source: "{{ hostvars['localhost'].ansible_default_ipv4.address }}"
+        state: "{{ state | default(0) }}"
+        vrf: "{{ vrf | default('default') }}"
+      vars:
+        port: "{{ 1024 + (inventory_hostname | regex_replace('[^\\d]', '') | int) }}"
+      register: result
+
+    - name: Display result
+      debug:
+        var: result
+
+    - name: Fail if unreachable
+      fail:
+        msg: "Host unreachable"
+      when: result.failed == true

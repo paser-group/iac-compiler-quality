@@ -1,0 +1,70 @@
+---
+- name: Test playbook for community.general.sensu_check module
+  hosts: localhost
+  gather_facts: false
+  
+  vars:
+    # Define the nodes and their IP addresses
+    nodes:
+      - { name: 'ubuntu1', ip: '10.1.1.1', distro: 'ubuntu' }
+      - { name: 'alpine1', ip: '10.1.1.2', distro: 'alpine' }
+      - { name: 'centos1', ip: '10.1.1.3', distro: 'centos' }
+      - { name: 'redhat1', ip: '10.1.1.4', distro: 'redhat' }
+
+  tasks:
+    - name: Configure Docker nodes
+      docker_network:
+        name: node-net
+        subnet: 10.1.1.0/24
+        gateway: 10.1.1.254
+
+    - name: Configure Docker nodes with different Linux distributions
+      docker_container:
+        name: "{{ item.name }}"
+        image: "{{ item.distro }}"
+        state: started
+      with_items: "{{ nodes }}"
+
+    - name: Run sensu_check module
+      community.general.sensu_check:
+        path: "/path/to/check_script"
+        name: "Test Check"
+        state: present
+        interval: 60
+        timeout: 30
+        ttl: 3600
+        handle: true
+        aggregate: false
+        backup: true
+        custom:
+          key: value
+        dependencies:
+          - check1
+          - check2
+        handlers:
+          - restart_sensu
+        high_flap_threshold: 10
+        low_flap_threshold: 2
+        metric: false
+        occurrences: 3
+        publish: true
+        refresh: 300
+        source: "/path/to/check_source"
+        standalone: false
+        subdue_begin: "08:00"
+        subdue_end: "16:00"
+        subscribers:
+          - dev
+          - prod
+        state: present
+
+      tags:
+        - sensu_check
+
+    - name: Print debug information
+      debug:
+        var: ansible_facts.sensu_check_result
+
+  handlers:
+    - name: restart_sensu
+      command: systemctl restart sensu-agent

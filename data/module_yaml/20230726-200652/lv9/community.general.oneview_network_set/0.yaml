@@ -1,0 +1,34 @@
+---
+- name: Test playbook for community.general.oneview_network_set module
+  hosts: localhost
+  gather_facts: false
+  
+  tasks:
+    - name: Set random IP address
+      set_fact:
+        ip_address: "{{ lookup('community.general.random_ipv4') }}"
+    
+    - name: Create network in HPE OneView
+      community.general.oneview_network_set:
+        config: /path/to/oneview-config.json
+        api_version: "{{ playbook_var | int }}"
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ my_username }}"
+        password: "{{ my_password }}"
+        validate_etag: "{{ validate_etag }}"
+        data:
+          name: MyNetwork
+          vlanId: 10
+          networkType: Ethernet
+          ethernetNetworkType: Tagged
+          subnet: "{{ ip_address }}/24"
+          gateway: "{{ ip_address.split('.')[0] }}.{{ ip_address.split('.')[1] }}.{{ ip_address.split('.')[2] }}.254"
+          primaryDnsServer: 8.8.8.8
+          secondaryDnsServer: 8.8.4.4
+          dnsDomain: example.com
+          state: present
+      register: result
+
+    - name: Debug network creation result
+      debug:
+        var: result

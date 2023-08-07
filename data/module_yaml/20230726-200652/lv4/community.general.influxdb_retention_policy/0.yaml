@@ -1,0 +1,36 @@
+---
+- name: Ansible Latent Type-Related Bug Exploration Playbook
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+
+    - name: Generate random MAC address for network modules
+      set_fact:
+        random_mac_address: "{{ '%02x' | format(item) }}"
+      loop: "{{ range(0, 6) | random }}"
+      register: mac_address_output
+
+    - name: Debug random MAC address
+      debug:
+        var: mac_address_output
+
+    - name: Create InfluxDB retention policy
+      community.general.influxdb_retention_policy:
+        hostname: your_influxdb_host
+        port: 8086
+        username: your_username
+        password: your_password
+        policy_name: test_policy
+        database_name: test_db
+        duration: 1h
+        shard_group_duration: 24h
+        replication: 1
+        default: false
+        state: present
+        validate_certs: false
+      register: retention_policy_output
+
+    - name: Debug retention policy output
+      debug:
+        var: retention_policy_output

@@ -1,0 +1,64 @@
+---
+
+- name: Triggering Latent Type-Related Bugs
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    pkg_name: "pkg_name"
+    pkg_ports_dir: "/path/to/ports/dir"
+    pkg_state: "present"
+    pkg_build: true
+    pkg_clean: false
+    pkg_quick: true
+    pkg_snapshot: false
+
+  tasks:
+    - name: Test Case 1 - Package Configuration using Bytes and Strings
+      community.general.openbsd_pkg:
+        name: "{{ pkg_name }}"
+        ports_dir: "{{ pkg_ports_dir }}"
+        state: "{{ pkg_state | to_bytes }}"
+        build: "{{ pkg_build }}"
+        clean: "{{ pkg_clean }}"
+        quick: "{{ pkg_quick }}"
+        snapshot: "{{ pkg_snapshot }}"
+      register: pkg_result
+      
+    - name: Test Case 2 - Package Configuration with UTF-8 Encoded Value
+      community.general.openbsd_pkg:
+        name: "{{ pkg_name }}"
+        ports_dir: "{{ pkg_ports_dir }}"
+        state: "present"
+        build: true
+        clean: false
+        quick: true
+        snapshot: false
+      vars:
+        pkg_name: "{{ pkg_name | to_json | to_bytes }}"
+      register: pkg_result_utf8
+
+    - name: Test Case 3 - Package Configuration with Binary Value
+      community.general.openbsd_pkg:
+        name: "{{ pkg_name }}"
+        ports_dir: "{{ pkg_ports_dir }}"
+        state: "present"
+        build: true
+        clean: false
+        quick: true
+        snapshot: false
+      vars:
+        pkg_name: "{{ pkg_name | to_bytes }}"
+      register: pkg_result_binary
+      
+    - name: Display Test Results
+      debug:
+        var: pkg_result
+
+      debug:
+        var: pkg_result_utf8
+      
+      debug:
+        var: pkg_result_binary
+
+...

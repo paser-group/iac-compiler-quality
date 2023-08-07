@@ -1,0 +1,24 @@
+- name: Test ansible_dnspolicy module
+  hosts: all
+  gather_facts: False
+  vars:
+    tenant_name: "Default"
+    policy_name: "dns-policy"
+    invalid_value: 123  # Invalid value to trigger a type-related bug
+
+  tasks:
+    - name: Configure DNS Policy
+      community.network.avi_dnspolicy:
+        controller: "{{ item.value.ansible_host }}"
+        username: "admin"
+        password: "password"
+        tenant: "{{ tenant_name }}"
+        name: 'dns-policy'
+        state: present
+        invalid_attribute: "{{ invalid_value }}"  # Passing an invalid attribute to trigger a type-related bug
+        rule:
+          - index: 1
+            name: 'rule-1'
+            enabled: true
+        api_context: {}
+      loop: "{{ ansible_play_batch }}"

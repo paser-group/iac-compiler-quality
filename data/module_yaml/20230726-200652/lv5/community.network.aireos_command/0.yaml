@@ -1,0 +1,43 @@
+- name: Test playbook for community.network.aireos_command module
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Run command on remote devices
+      community.network.aireos_command:
+        commands: "{{ item }}"
+        interval: "{{ lookup('env', 'INTERVAL') | default(5) }}"
+        match: "{{ lookup('env', 'MATCH') | default('all') }}"
+        retries: "{{ lookup('env', 'RETRIES') | default(10) }}"
+        wait_for: "{{ lookup('env', 'WAIT_FOR') | default(0) }}"
+      loop:
+        - "show interface"
+        - "show version"
+        # Add more commands to test
+
+      register: result
+
+    - name: Debug module output
+      debug:
+        var: result
+
+    - name: Generate random port numbers
+      shell: echo $(( ( RANDOM % 65535 )  + 1 ))
+      register: random_port
+
+    # Add more tasks to test specific attributes of the module
+    # For example: test retries, interval, match, etc.
+
+    - name: Trigger latent type-related bug
+      community.network.aireos_command:
+        commands: "debug {{ random_port.stdout }}"
+        wait_for: 5
+
+      ignore_errors: true
+      register: debug_result
+
+    - name: Fail the playbook if the bug is not triggered
+      fail:
+        msg: "The latent type-related bug was not triggered."
+
+      when: debug_result is success

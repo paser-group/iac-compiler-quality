@@ -1,0 +1,35 @@
+---
+- name: Test awall module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    nodes:
+      - name: ubuntu1
+        ip_address: 10.1.1.1
+        distribution: ubuntu
+      - name: alpine1
+        ip_address: 10.1.1.2
+        distribution: alpine
+      - name: centos1
+        ip_address: 10.1.1.3
+        distribution: centos
+      - name: redhat1
+        ip_address: 10.1.1.4
+        distribution: redhat
+
+  tasks:
+    - name: Generate strings with varied encodings
+      ansible.builtin.debug:
+        msg: "Testing latency bug with varied encodings"
+      loop:
+        - "{{ nodes | to_yaml | b64encode }}"
+        - "{{ nodes | to_json | b64encode }}"
+        - "{{ nodes | to_ini | b64encode }}"
+        - "{{ nodes | to_nice_yaml | b64encode }}"
+
+    - name: Test awall module
+      community.general.awall:
+        name: "{{ item.name }}"
+        state: present
+      loop: "{{ nodes }}"

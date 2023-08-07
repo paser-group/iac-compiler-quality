@@ -1,0 +1,55 @@
+---
+- name: Test playbook for community.general.profitbricks module
+  hosts: localhost
+  gather_facts: False
+
+  tasks:
+    - name: Create ProfitBricks server
+      community.general.profitbricks:
+        name: test-server
+        datacenter: test-datacenter
+        location: us/las
+        cores: 2
+        ram: 4096
+        bus: VIRTIO
+        image: image-id
+        volume_size: 20
+        disk_type: HDD
+        ssh_keys:
+          - ssh-key-1
+          - ssh-key-2
+        assign_public_ip: true
+        wait: true
+        wait_timeout: 600
+        state: present
+      register: server_creation
+
+    - name: Debug server creation output
+      debug:
+        var: server_creation
+
+    - name: Test server port functionality
+      community.general.profitbricks:
+        instance_ids: "{{ server_creation.server_ids }}"
+        lan: 2
+        name: test-server
+        assign_public_ip: true
+        wait: true
+        wait_timeout: 600
+        state: present
+      register: port_update
+
+    - name: Debug port update output
+      debug:
+        var: port_update
+
+    - name: Delete ProfitBricks server
+      community.general.profitbricks:
+        instance_ids: "{{ server_creation.server_ids }}"
+        wait: true
+        wait_timeout: 600
+        state: absent
+
+    - name: Debug server deletion output
+      debug:
+        var: server_deletion

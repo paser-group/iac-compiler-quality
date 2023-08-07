@@ -1,0 +1,36 @@
+---
+- name: Ansible Playbook for sysupgrade module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    node_net_subnet: "10.1.1.0/24"
+    node_net_gateway: "10.1.1.254"
+    nodes:
+      - name: "ubuntu1"
+        ip: "10.1.1.1"
+        distribution: "ubuntu"
+      - name: "alpine1"
+        ip: "10.1.1.2"
+        distribution: "alpine"
+      - name: "centos1"
+        ip: "10.1.1.3"
+        distribution: "centos"
+      - name: "redhat1"
+        ip: "10.1.1.4"
+        distribution: "redhat"
+
+  tasks:
+    - name: Upgrade nodes
+      community.general.sysupgrade:
+        name: "{{ item.name }}"
+        fetch_only: "{{force | bool}}"
+        force: "{{force | bool}}"
+        installurl: "{{installurl | default('http://example.com') | string}}"
+        keep_files: "{{keep_files | bool}}"
+        snapshot: "{{snapshot | bool}}"
+      loop: "{{ nodes }}"
+      register: upgrade_result
+
+    - debug:
+        var: upgrade_result

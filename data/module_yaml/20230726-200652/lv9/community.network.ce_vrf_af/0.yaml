@@ -1,0 +1,32 @@
+---
+- name: Test playbook for 'community.network.ce_vrf_af' module
+  hosts: localhost
+  gather_facts: false
+  
+  tasks:
+    - name: Create random IP addresses
+      set_fact:
+        route_distinguisher: "{{ range_distinguisher | ipaddr('ip') }}"
+        vpn_target_value: "{{ vpn_target_value | default([]) + [item | ipaddr('ip') ] }}"
+      loop: "{{ range(5) }}"
+      loop_control:
+        loop_var: range_distinguisher
+
+    - name: Create VRF instance
+      community.network.ce_vrf_af:
+        vrf: "{{ vrf | default('test_vrf') }}"
+        vrf_aftype: "{{ vrf_aftype | default('ipv4') }}"
+        route_distinguisher: "{{ route_distinguisher }}"
+        state: "{{ state | default('present') }}"
+        vpn_target_state: "{{ vpn_target_state | default('present') }}"
+        vpn_target_type: "{{ vpn_target_type | default('rt_spoke') }}"
+        vpn_target_value: "{{ vpn_target_value | default([]) }}"
+      register: result
+
+    - name: Debug result
+      debug:
+        var: result
+
+  vars:
+    vrf: test_vrf
+    vrf_aftype: ipv4

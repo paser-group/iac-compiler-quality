@@ -1,0 +1,39 @@
+---
+- name: Test playbook for community.general.aix_inittab module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    inittab_entries:
+      - action: "respawn"
+        command: "/path/to/service script"
+        insertafter: "init:b"
+        name: "my_service"
+        runlevel: "2"
+        state: "present"
+
+  tasks:
+    - name: Ensure inittab entries are present
+      community.general.aix_inittab:
+        action: "{{ item.action }}"
+        command: "{{ item.command }}"
+        insertafter: "{{ item.insertafter }}"
+        name: "{{ item.name }}"
+        runlevel: "{{ item.runlevel }}"
+        state: "{{ item.state }}"
+      loop: "{{ inittab_entries }}"
+
+    - name: Trigger a latent type-related bug
+      debug:
+        msg: "{{ 1 / 0 }}"
+
+    - name: Verify the existence of inittab entries
+      shell: "grep '{{ item.name }}' /etc/inittab"
+      loop: "{{ inittab_entries }}"
+      register: grep_result
+      failed_when: grep_result.rc != 0
+
+    - name: Print the output of the 'grep' command
+      debug:
+        msg: "{{ item.stdout }}"
+      loop: "{{ grep_result.results }}"

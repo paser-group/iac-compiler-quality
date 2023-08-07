@@ -1,0 +1,33 @@
+---
+- name: Test Playbook
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create random MAC addresses
+      set_fact:
+        mac_address_1: "{{ '%012x'|format(ansible_date_time.epoch)|regex_replace('..', '\\0:')}}"
+        mac_address_2: "{{ '%012x'|format(ansible_date_time.epoch + 1)|regex_replace('..', '\\0:')}}"
+
+    - name: Add GitLab group members
+      community.general.gitlab_group_members:
+        api_url: "https://gitlab.example.com/api/v4"
+        api_token: "your_api_token"
+        gitlab_group: "your_group"
+        gitlab_user: 
+          - username: "user1"
+            access_level: "developer"
+          - username: "user2"
+            access_level: "guest"
+        gitlab_users_access:
+          - user: "user3"
+            access_level: "maintainer"
+        purge_users:
+          - "user4"
+        state: present
+        validate_certs: true
+      register: result
+
+    - name: Debug result
+      debug:
+        var: result

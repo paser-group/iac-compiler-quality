@@ -1,0 +1,49 @@
+- name: Ansible Latent Type-Related Bug Testing Playbook
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Generate random IP addresses
+      vars:
+        ip_addresses: "{{ lookup('community.general.random_ip_addresses', count=4) }}"
+      run_once: true
+
+    - name: Create Docker network
+      docker_network:
+        name: node-net
+        subnet: 10.1.1.0/24
+        gateway: 10.1.1.254
+
+    - name: Create Docker nodes
+      vars:
+        node_images:
+          - { name: 'ubuntu1', image: 'ubuntu', ip_address: "{{ ip_addresses[0] }}" }
+          - { name: 'alpine1', image: 'alpine', ip_address: "{{ ip_addresses[1] }}" }
+          - { name: 'centos1', image: 'centos', ip_address: "{{ ip_addresses[2] }}" }
+          - { name: 'redhat1', image: 'redhat', ip_address: "{{ ip_addresses[3] }}" }
+      docker_container:
+        name: "{{ item.name }}"
+        image: "{{ item.image }}"
+        command: sleep infinity
+        network_mode: node-net
+      loop: "{{ node_images }}"
+
+    - name: Debug nodes IP addresses
+      debug:
+        var: hostvars[item]['ansible_default_ipv4']['address']
+      loop: "{{ groups['localhost'] }}"
+
+    - name: Test gitlab_branch module
+      community.general.gitlab_branch:
+        api_url: "https://gitlab.example.com/api/v4"
+        api_username: "my_username"
+        api_password: "my_password"
+        project: "my_project"
+        branch: "my_branch"
+        state: "present"
+        validate_certs: true
+      register: result
+
+    - name: Debug gitlab_branch module result
+      debug:
+        var: result

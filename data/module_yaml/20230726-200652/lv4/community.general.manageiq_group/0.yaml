@@ -1,0 +1,27 @@
+---
+- name: Test manageiq_group module
+  hosts: localhost
+  gather_facts: false
+  become: true
+  tasks:
+    - name: Generate random MAC addresses
+      command: echo "{{ '%02x:%02x:%02x:%02x:%02x:%02x' | format(0, 0, 0, 0, 0, 0) }}"
+      register: mac_address
+
+    - name: Test manageiq_group module
+      community.general.manageiq_group:
+        belongsto_filters: "{{ mac_address.stdout_lines }}"
+        belongsto_filters_merge_mode: "and"
+        description: "Test group for manageiq"
+        managed_filters:
+          manageiq_connection: {}
+        managed_filters_merge_mode: "and"
+        role: "test_role"
+        role_id: 123
+        state: "present"
+        tenant: "test_tenant"
+        tenant_id: 456
+      register: result
+
+    - debug:
+        var: result

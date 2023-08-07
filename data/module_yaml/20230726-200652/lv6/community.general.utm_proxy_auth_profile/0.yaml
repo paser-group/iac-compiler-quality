@@ -1,0 +1,70 @@
+---
+- name: Test playbook for community.general.utm_proxy_auth_profile
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    aaa:
+      - username: "{{ 'admin'|b64encode }}"
+        password: "{{ 'admin'|b64encode }}"
+    backend_strip_basic_auth: true
+    frontend_cookie_secret: "{{ lookup('password', '/dev/null length=32 chars=ascii_letters,digits') }}"
+    frontend_form_template: |
+      <html>
+        <body>
+          <form action="{{ '{{ frontend_redirect_uri }}' }}" method="post">
+            <input type="text" name="{{ '{{ frontend_login }}' }}" placeholder="Username"><br>
+            <input type="password" name="{{ '{{ frontend_password }}' }}" placeholder="Password"><br>
+            <button type="submit">Login</button>
+          </form>
+        </body>
+      </html>
+    headers:
+      X-Forwarded-For: "{{ lookup('pipe', 'echo $REMOTE_ADDR') }}"
+    logout_delegation_urls:
+      - "https://{{ utm_host }}/logout"
+    name: "auth_profile_{{ lookup('pipe', 'date +%s') }}"
+    redirect_to_requested_url: true
+    state: present
+    utm_host: "example.com"
+    utm_port: 8443
+    utm_protocol: "https"
+    utm_token: "{{ lookup('password', '/dev/null length=32 chars=ascii_letters,digits') }}"
+    validate_certs: false
+
+  tasks:
+    - name: Create or update the auth profile
+      community.general.utm_proxy_auth_profile:
+        aaa: "{{ aaa }}"
+        backend_mode: "https"
+        backend_strip_basic_auth: "{{ backend_strip_basic_auth }}"
+        backend_user_prefix: "backend_"
+        backend_user_suffix: "_user"
+        basic_prompt: "Please enter your credentials"
+        comment: "Auth profile for reverse_proxy"
+        frontend_cookie: "proxy_cookie"
+        frontend_cookie_secret: "frontend_cookie_secret"
+        frontend_form: "{{ frontend_form_template }}"
+        frontend_login: "proxy_login"
+        frontend_logout: "proxy_logout"
+        frontend_mode: "form"
+        frontend_realm: "MyRealm"
+        frontend_session_allow_persistency: true
+        frontend_session_lifetime: 3600
+        frontend_session_lifetime_limited: false
+        frontend_session_lifetime_scope: "session"
+        frontend_session_timeout: 600
+        frontend_session_timeout_enabled: true
+        frontend_session_timeout_scope: "session"
+        headers: "{{ headers }}"
+        logout_delegation_urls: "{{ logout_delegation_urls }}"
+        logout_mode: "local"
+        name: "{{ name }}"
+        redirect_to_requested_url: "{{ redirect_to_requested_url }}"
+        state: "{{ state }}"
+        utm_host: "{{ utm_host }}"
+        utm_port: "{{ utm_port }}"
+        utm_protocol: "{{ utm_protocol }}"
+        utm_token: "{{ utm_token }}"
+        validate_certs: "{{ validate_certs }}"

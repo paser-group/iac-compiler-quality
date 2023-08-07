@@ -1,0 +1,72 @@
+---
+- name: Test Community General Ipa Pwpolicy Module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    failinterval: "90"
+    group: "test_group"
+    historylength: "5"
+    ipa_host: "localhost"
+    ipa_pass: "admin_password"
+    ipa_port: 443
+    ipa_prot: "https"
+    ipa_timeout: 10
+    ipa_user: "admin_user"
+    lockouttime: "120"
+    maxfailcount: "5"
+    maxpwdlife: "180"
+    minclasses: "1"
+    minlength: "8"
+    minpwdlife: "30"
+    priority: "1"
+    state: "present"
+    validate_certs: false
+
+  tasks:
+    - name: Set variables for division-based operations
+      set_fact:
+        fail_interval_seconds: "{{ failinterval | int }}"
+        max_fail_count: "{{ maxfailcount | int / failinterval }}"
+        history_validity_days: "{{ historylength | int / (failinterval / 86400) }}"
+        lockout_time_minutes: "{{ lockouttime | int / 60 }}"
+        max_password_life_days: "{{ maxpwdlife | int / failinterval }}"
+        min_password_life_days: "{{ minpwdlife | int / failinterval }}"
+        min_password_length_characters: "{{ minlength | int }}"
+
+    - name: Print calculated values
+      debug:
+        msg: |
+          Fail Interval (Seconds): {{ fail_interval_seconds }}
+          Max Fail Count: {{ max_fail_count }}
+          History Validity (Days): {{ history_validity_days }}
+          Lockout Time (Minutes): {{ lockout_time_minutes }}
+          Max Password Life (Days): {{ max_password_life_days }}
+          Min Password Life (Days): {{ min_password_life_days }}
+          Min Password Length (Characters): {{ min_password_length_characters }}
+
+    - name: Test Community general ipa pwpolicy module
+      community.general.ipa_pwpolicy:
+        failinterval: "{{ fail_interval_seconds }}"
+        group: "{{ group }}"
+        historylength: "{{ history_validity_days }}"
+        ipa_host: "{{ ipa_host }}"
+        ipa_pass: "{{ ipa_pass }}"
+        ipa_port: "{{ ipa_port }}"
+        ipa_prot: "{{ ipa_prot }}"
+        ipa_timeout: "{{ ipa_timeout }}"
+        ipa_user: "{{ ipa_user }}"
+        lockouttime: "{{ lockout_time_minutes }}"
+        maxfailcount: "{{ max_fail_count }}"
+        maxpwdlife: "{{ max_password_life_days }}"
+        minclasses: "{{ minclasses }}"
+        minlength: "{{ min_password_length_characters }}"
+        minpwdlife: "{{ min_password_life_days }}"
+        priority: "{{ priority }}"
+        state: "{{ state }}"
+        validate_certs: "{{ validate_certs }}"
+      register: result
+
+    - name: Display module result
+      debug:
+        var: result.stdout_diff

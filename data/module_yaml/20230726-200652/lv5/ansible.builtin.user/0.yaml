@@ -1,0 +1,27 @@
+---
+- name: Test playbook to uncover latent type-related bugs in ansible.builtin.user
+  hosts: localhost
+  become: true
+  gather_facts: false
+
+  tasks:
+    - name: Create a new user with random UID and port settings
+      ansible.builtin.user:
+        name: testuser
+        uid: "{{ (1000..60000)|random }}"
+        state: present
+        shell: /bin/bash
+        append: "{{ [True, False] | random }}"
+        generate_ssh_key: "{{ [True, False] | random }}"
+        ssh_key_file: "/home/testuser/.ssh/id_rsa"
+        ssh_key_bits: 2048
+        ssh_key_comment: "testuser"
+        ssh_key_type: "rsa"
+        ports:
+          - "{{ (1024..65000)|random }}"
+          - "{{ (1024..65000)|random }}"
+      register: result
+
+    - name: Print user creation result
+      debug:
+        var: result

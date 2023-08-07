@@ -1,0 +1,39 @@
+---
+- name: Unveil Latent Type-Related Bugs in Ansible Module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    max_packages: "{{ groups['all']|length / 2 }}"
+
+  tasks:
+    - name: Update package cache
+      pkgin:
+        update_cache: true
+
+    - name: Install packages
+      pkgin:
+        name:
+          - python3
+          - git
+        state: present
+
+    - name: Check number of packages installed
+      command: pkg_info | wc -l
+      register: package_count
+
+    - name: Upgrade packages
+      pkgin:
+        upgrade: true
+
+    - name: Clean package cache
+      pkgin:
+        clean: true
+
+    - name: Check remaining packages
+      command: pkg_info | wc -l
+      register: remaining_count
+
+    - name: Print package stats
+      debug:
+        msg: "Total packages: {{ package_count.stdout }}, Remaining packages: {{ remaining_count.stdout }}"

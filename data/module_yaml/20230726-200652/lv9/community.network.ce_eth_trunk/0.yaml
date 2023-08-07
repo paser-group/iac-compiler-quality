@@ -1,0 +1,31 @@
+---
+- name: Test playbook for community.network.ce_eth_trunk module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Include networking modules
+      include_vars:
+        file: network_vars.yaml
+
+    - name: Generate random IP addresses
+      set_fact:
+        random_ip: "{{ hostvars[item].ansible_default_ipv4['address'] }}"
+      with_items: "{{ groups['all'] }}"
+
+    - name: Create Eth-Trunk Interface
+      community.network.ce_eth_trunk:
+        provider: "{{ network_provider }}"
+        force: "{{ force | default(false) }}"
+        hash_type: "{{ hash_type | default(None) }}"
+        members:
+          - "{{ random_ip }}"
+        min_links: "{{ min_links | default(None) }}"
+        mode: "{{ mode | default(None) }}"
+        state: "{{ state | default(None) }}"
+        trunk_id: "{{ trunk_id | default(None) }}"
+      register: result
+
+    - name: Print module result
+      debug:
+        var: result

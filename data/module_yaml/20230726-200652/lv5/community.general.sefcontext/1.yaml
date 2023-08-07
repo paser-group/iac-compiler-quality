@@ -1,0 +1,37 @@
+- name: Manage SELinux file context
+  hosts: all
+  gather_facts: false
+  become: true
+
+  tasks:
+    - name: Set SELinux file context
+      community.general.sefcontext:
+        target: "{{ item.target }}"
+        setype: "{{ item.setype }}"
+        selevel: "{{ item.selevel }}"
+        seuser: "{{ item.seuser }}"
+        state: "{{ item.state }}"
+        reload: "{{ item.reload }}"
+        ftype: "{{ item.ftype }}"
+        substitute: "{{ item.substitute }}"
+        ignore_selinux_state: "{{ item.ignore_selinux_state }}"
+      with_items:
+        - { target: "/etc/ssh/sshd_config", setype: "ssh_config_t", selevel: "s0", seuser: "system_u", state: "present", reload: "yes", ftype: "regular", substitute: "no", ignore_selinux_state: "no" }
+        - { target: "/etc/httpd/conf/httpd.conf", setype: "httpd_config_t", selevel: "s0", seuser: "system_u", state: "present", reload: "yes", ftype: "regular", substitute: "no", ignore_selinux_state: "no", port: "{{ random_port }}" }
+        # Add more test cases here based on the heuristic
+
+    - name: Check SELinux file context
+      command: ls -Z /etc/ssh/sshd_config
+      register: sshd_config_output
+
+    - name: Debug SSHD config SELinux file context
+      debug:
+        var: sshd_config_output.stdout_lines
+
+    - name: Check SELinux file context
+      command: ls -Z /etc/httpd/conf/httpd.conf
+      register: httpd_config_output
+
+    - name: Debug HTTPD config SELinux file context
+      debug:
+        var: httpd_config_output.stdout_lines

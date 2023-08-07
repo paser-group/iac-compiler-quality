@@ -1,0 +1,64 @@
+---
+- name: Test playbook for 'community.general.ibm_sa_pool' module
+  hosts: localhost
+  gather_facts: false
+  vars:
+    domain: "{{ domain_var }}"
+    endpoints: "{{ endpoints_var }}"
+    password: "{{ password_var }}"
+    perf_class: "{{ perf_class_var }}"
+    pool: "{{ pool_var }}"
+    size: "{{ size_var }}"
+    snapshot_size: "{{ snapshot_size_var }}"
+    state: "{{ state_var }}"
+    username: "{{ username_var }}"
+
+  tasks:
+    - name: Check if pool already exists
+      community.general.ibm_sa_pool:
+        domain: "{{ domain }}"
+        endpoints: "{{ endpoints }}"
+        password: "{{ password }}"
+        perf_class: "{{ perf_class }}"
+        pool: "{{ pool }}"
+        size: "{{ size }}"
+        snapshot_size: "{{ snapshot_size }}"
+        state: "{{ state }}"
+        username: "{{ username }}"
+        operation: get_pool
+      register: pool_exists
+      ignore_errors: true
+
+    - name: Create pool if it doesn't exist
+      community.general.ibm_sa_pool:
+        domain: "{{ domain }}"
+        endpoints: "{{ endpoints }}"
+        password: "{{ password }}"
+        perf_class: "{{ perf_class }}"
+        pool: "{{ pool }}"
+        size: "{{ size }}"
+        snapshot_size: "{{ snapshot_size }}"
+        state: "{{ state }}"
+        username: "{{ username }}"
+        operation: create_pool
+      when: pool_exists.rc != 0
+
+    - name: Validate the pool creation
+      community.general.ibm_sa_pool:
+        domain: "{{ domain }}"
+        endpoints: "{{ endpoints }}"
+        password: "{{ password }}"
+        perf_class: "{{ perf_class }}"
+        pool: "{{ pool }}"
+        size: "{{ size }}"
+        snapshot_size: "{{ snapshot_size }}"
+        state: "{{ state }}"
+        username: "{{ username }}"
+        operation: get_pool
+      register: created_pool
+
+    - name: Debug created pool
+      debug:
+        var: created_pool
+
+...

@@ -1,0 +1,58 @@
+---
+- name: Test Ansible Community Consul Session Module
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Create Consul Session
+      community.general.consul_session:
+        state: present
+        datacenter: dc1
+        node: "{{ host }}"
+        name: "{{ id }}"
+        ttl: 10
+        scheme: http
+        port: "{{ consul_port }}"
+        validate_certs: yes
+      delegate_to: "{{ ansible_default_ipv4.address }}"
+      vars:
+        id: test-session
+        consul_port: 8500
+
+      when: inventory_hostname
+      register: session_create_result
+
+    - name: Print Session Create Result
+      debug:
+        var: session_create_result
+
+- name: Test Ansible Community Consul Session Module
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Create Consul Session with Random Port
+      ansible.builtin.set_fact:
+        consul_port: "{{ random_port }}"
+      vars:
+        random_port: "{{ 10000 | random }}"
+  
+    - name: Create Consul Session
+      community.general.consul_session:
+        state: present
+        datacenter: dc1
+        node: "{{ host }}"
+        name: "{{ id }}"
+        ttl: 10
+        scheme: http
+        port: "{{ consul_port }}"
+        validate_certs: yes
+      delegate_to: "{{ ansible_default_ipv4.address }}"
+      vars:
+        id: test-session
+        consul_port: "{{ consul_port }}"
+  
+      when: inventory_hostname
+      register: session_create_result
+  
+    - name: Print Session Create Result
+      debug:
+        var: session_create_result

@@ -1,0 +1,49 @@
+---
+- name: Test for type-related bugs in Ansible compiler
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Add hosts to Stacki
+      community.general.stacki_host:
+        appliance: 'StackiAppliance'
+        force_install: true
+        name: '{{ item.name }}'
+        network: '{{ item.network }}'
+        prim_intf: '{{ item.prim_intf }}'
+        prim_intf_ip: '{{ item.prim_intf_ip }}'
+        prim_intf_mac: '{{ item.prim_intf_mac }}'
+        rack: '{{ item.rack }}'
+        rank: '{{ item.rank }}'
+        stacki_endpoint: 'https://stacki-api.example.com'
+        stacki_password: 'stackipassword'
+        stacki_user: 'stackiuser'
+        state: 'present'
+      loop:
+        - { name: 'ubuntu1', network: 'node-net', prim_intf: 'eth0', prim_intf_ip: '10.1.1.1', prim_intf_mac: '00:11:22:33:44:55', rack: 1, rank: 1 }
+        - { name: 'alpine1', network: 'node-net', prim_intf: 'eth0', prim_intf_ip: '10.1.1.2', prim_intf_mac: 'AA:BB:CC:DD:EE:FF', rack: 1, rank: 2 }
+        - { name: 'centos1', network: 'node-net', prim_intf: 'eth0', prim_intf_ip: '10.1.1.3', prim_intf_mac: '11:22:33:44:55:66', rack: 2, rank: 1 }
+        - { name: 'redhat1', network: 'node-net', prim_intf: 'eth0', prim_intf_ip: '10.1.1.4', prim_intf_mac: 'AA:BB:CC:DD:EE:FF', rack: 2, rank: 2 }
+
+    - name: Assert host presence
+      assert:
+        that: "'{{ item.name }}' in hostvars"
+      loop:
+        - { name: 'ubuntu1' }
+        - { name: 'alpine1' }
+        - { name: 'centos1' }
+        - { name: 'redhat1' }
+
+    - name: Remove hosts from Stacki
+      community.general.stacki_host:
+        appliance: 'StackiAppliance'
+        name: '{{ item.name }}'
+        stacki_endpoint: 'https://stacki-api.example.com'
+        stacki_password: 'stackipassword'
+        stacki_user: 'stackiuser'
+        state: 'absent'
+      loop:
+        - { name: 'ubuntu1' }
+        - { name: 'alpine1' }
+        - { name: 'centos1' }
+        - { name: 'redhat1' }

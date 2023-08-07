@@ -1,0 +1,26 @@
+---
+- name: Execute command based on condition on device
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Generate random MAC address
+      set_fact:
+        random_mac: "{{ '%12x'|format(ansible_date_time.epoch) | upper | regex_replace('(..)', '\\1:')[:-1] }}"
+
+    - name: Execute command if condition is true
+      community.network.cnos_conditional_command:
+        host: "{{ inventory_hostname }}"
+        username: "{{ ansible_user }}"
+        password: "{{ ansible_password }}"
+        enablePassword: "{{ enable_password | default('') }}"
+        deviceType: "{{ device_type }}"
+        condition: "{{ condition | default(false) }}"
+        password: "{{ passwd }}"
+        clicommand: "command to execute"
+      register: command_result
+      when: condition is defined and condition
+
+    - name: Print command result
+      debug:
+        var: command_result

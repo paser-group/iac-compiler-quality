@@ -1,0 +1,51 @@
+---
+- name: Test playbook for ansible.builtin.lineinfile module
+  hosts: localhost
+  gather_facts: false
+  
+  tasks:
+    - name: Create a sample file with mixed byte and string values
+      copy:
+        content: |
+          test line 1
+          test line 2
+          test line 3
+          test line 4
+          test line 5
+        dest: "/tmp/samplefile"
+  
+    - name: Insert a line after the matching string (byte)
+      lineinfile:
+        path: "/tmp/samplefile"
+        line: b"new line"
+        regexp: "test line 2"
+        insertafter: "test line 2"
+      register: result1
+  
+    - name: Insert a line before the matching string (byte)
+      lineinfile:
+        path: "/tmp/samplefile"
+        line: b"new line"
+        regexp: "test line 3"
+        insertbefore: "test line 3"
+      register: result2
+  
+    - name: Update the line containing the matching string (byte)
+      lineinfile:
+        path: "/tmp/samplefile"
+        line: b"updated line"
+        regexp: "test line 4"
+        backrefs: true
+      register: result3
+  
+    - name: Validate the changes made to the file
+      shell: cat /tmp/samplefile
+      register: file_content
+  
+    - debug:
+        var: file_content.stdout_lines
+    
+    - name: Delete the sample file
+      file:
+        path: "/tmp/samplefile"
+        state: absent

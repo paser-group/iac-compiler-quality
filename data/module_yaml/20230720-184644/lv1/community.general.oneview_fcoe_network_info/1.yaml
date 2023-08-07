@@ -1,0 +1,29 @@
+- name: Test playbook for oneview_fcoe_network_info module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Set mixed-case values
+      block:
+        - set_fact:
+            mixed_case_value: "{{ lookup('community.general.random_string', length=8 | random(seed=inventory_hostname) | int) | capitalize }}"
+            mixed_case_value_upper: "{{ mixed_case_value | upper }}"
+            mixed_case_value_lower: "{{ mixed_case_value | lower }}"
+
+    - name: Retrieve FCoE network info from HPE OneView
+      community.general.oneview_fcoe_network_info:
+        api_version: 800
+        config: /path/to/oneview_config.json
+        hostname: "{{ oneview_hostname }}"
+        image_streamer_hostname: "{{ image_streamer_hostname }}"
+        name: "{{ mixed_case_value }}"
+        params:
+          param1: "{{ mixed_case_value_upper }}"
+          param2: "{{ mixed_case_value_lower }}"
+        password: "{{ oneview_password }}"
+        username: "{{ oneview_username }}"
+      register: fcoe_network_info
+      
+    - name: Debug FCoE network info
+      debug:
+        var: fcoe_network_info

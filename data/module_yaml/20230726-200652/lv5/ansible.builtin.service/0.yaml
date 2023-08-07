@@ -1,0 +1,76 @@
+- name: Ansible Latent Bug Finder & Heuristic Test playbook
+  hosts: all
+  become: true
+  
+  vars:
+    # Define common variables
+    node_net_subnet: "10.1.1.0/24"
+    node_net_gateway: "10.1.1.254"
+    service_name: "my-service"
+    random_port: "{{ 10000 + 4 * (ansible_play_hosts.index(inventory_hostname) | int) }}"
+
+  tasks:
+    - name: Check service status
+      ansible.builtin.service:
+        name: "{{ service_name }}"
+        state: started
+      register: service_status
+      ignore_errors: true
+
+    - name: Debug service status
+      debug:
+        var: service_status
+
+    - name: Ensure service is running
+      ansible.builtin.service:
+        name: "{{ service_name }}"
+        state: started
+      when: not service_status.changed
+
+    - name: Stop the service
+      ansible.builtin.service:
+        name: "{{ service_name }}"
+        state: stopped
+      when: service_status.changed
+    
+    # Add more tasks based on the specific attributes and options of ansible.builtin.service module
+
+    # Test #1: Random port test
+    - name: Test random port
+      ansible.builtin.service:
+        name: "{{ service_name }}"
+        state: started
+        port: "{{ random_port }}"
+      when: "'enabled' not in service_status.msg"
+    
+    # Test #2: Use option test
+    - name: Test use option
+      ansible.builtin.service:
+        name: "{{ service_name }}"
+        state: started
+        use: "my-user"
+      when: "'enabled' not in service_status.msg"
+
+    # Test #3: Pattern option test
+    - name: Test pattern option
+      ansible.builtin.service:
+        name: "{{ service_name }}"
+        state: started
+        pattern: "my-pattern"
+      when: "'enabled' not in service_status.msg"
+
+    # Test #4: Runlevel option test
+    - name: Test runlevel option
+      ansible.builtin.service:
+        name: "{{ service_name }}"
+        state: started
+        runlevel: "default"
+      when: "'enabled' not in service_status.msg"
+
+    # Test #5: Sleep option test
+    - name: Test sleep option
+      ansible.builtin.service:
+        name: "{{ service_name }}"
+        state: started
+        sleep: 10
+      when: "'enabled' not in service_status.msg"

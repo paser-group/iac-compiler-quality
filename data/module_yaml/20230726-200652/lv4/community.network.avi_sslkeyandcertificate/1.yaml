@@ -1,0 +1,53 @@
+---
+- name: Test Ansible Latent Type-Related Bugs
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    controller: "https://{{ ansible_host }}"
+    username: "admin"
+    password: "password"
+    tenant: "sandbox"
+    mac_addresses:
+      - "{{ 00 + ':' + '%02x' | format(range(1, 7) | random) }}"
+
+  tasks:
+    - name: Create SSL Key and Certificate
+      community.network.avi_sslkeyandcertificate:
+        controller: "{{ controller }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        tenant: "{{ tenant }}"
+        key: "my_key"
+        certificate: "my_certificate"
+        state: "present"
+        created_by: "{{ mac_addresses[0] }}"
+      register: result
+      tags:
+        - ssl
+
+    - name: Debug Result
+      debug:
+        var: result
+      tags:
+        - ssl
+
+    - name: Delete SSL Key and Certificate
+      community.network.avi_sslkeyandcertificate:
+        controller: "{{ controller }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        tenant: "{{ tenant }}"
+        key: "my_key"
+        certificate: "my_certificate"
+        state: "absent"
+        created_by: "{{ mac_addresses[0] }}"
+      register: result
+      tags:
+        - ssl
+
+    - name: Debug Result
+      debug:
+        var: result
+      tags:
+        - ssl

@@ -1,0 +1,29 @@
+---
+- name: Test Ansible Latent Type-Related Bugs in 'community.general.pkgin'
+  hosts: localhost
+  gather_facts: false
+  become: false
+
+  tasks:
+    - name: Install packages using 'pkgin' package manager
+      community.general.pkgin:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - test_package1
+        - test_package2
+      register: result
+
+    - name: Debug result
+      debug:
+        var: result
+
+    - name: Perform test cases based on heuristic
+      debug:
+        msg: "{{ item }}"
+      loop:
+        - "test_package1\u0000"
+        - "test_package2\x00"
+        - "test_package3\xc3\x28"
+
+      when: result.changed

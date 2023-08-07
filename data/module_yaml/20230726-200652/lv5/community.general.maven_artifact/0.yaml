@@ -1,0 +1,56 @@
+---
+- name: Test Maven Artifact Download
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    artifact_id: "example-artifact"
+    repository_url: "http://example.com/repository"
+    version: "1.0.0"
+    dest: "/tmp/example-artifact.jar"
+    port_range_start: 1000
+    port_range_end: 2000
+
+  tasks:
+    - name: Download Maven Artifact
+      community.general.maven_artifact:
+        artifact_id: "{{ artifact_id }}"
+        repository_url: "{{ repository_url }}"
+        version: "{{ version }}"
+        dest: "{{ dest }}"
+      register: download_result
+
+    - name: Check Maven Artifact Download
+      assert:
+        that:
+          - download_result is success
+          - "'Downloaded' in download_result.msg"
+      tags: validate
+
+    - name: Verify Artifact
+      stat:
+        path: "{{ dest }}"
+      register: artifact_stat
+
+    - name: Check Artifact Exists
+      assert:
+        that:
+          - artifact_stat.stat.exists is defined
+      tags: validate
+
+    - name: Test Port Settings
+      community.general.maven_artifact:
+        artifact_id: "{{ artifact_id }}"
+        repository_url: "{{ repository_url }}"
+        version: "{{ version }}"
+        dest: "{{ dest }}"
+        port: "{{ item }}"
+      loop: "{{ range(port_range_start,port_range_end + 1) | list }}"
+      register: port_test_result
+      ignore_errors: true
+
+    - name: Check Port Test Result
+      assert:
+        that:
+          - "'Error connecting to port' not in port_test_result.msg"
+      tags: validate

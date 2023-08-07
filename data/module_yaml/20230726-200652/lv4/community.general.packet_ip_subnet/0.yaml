@@ -1,0 +1,51 @@
+---
+- name: Assign IP subnets to devices
+  hosts: localhost
+  gather_facts: false
+  vars:
+    auth_token: "<your_auth_token>"
+    project_id: "<your_project_id>"
+    subnet_name: "node-net"
+    subnet_cidr: "10.1.1.0/24"
+    subnet_gateway: "10.1.1.254"
+    devices:
+      - device_id: "ubuntu1"
+        device_name: "Ubuntu1"
+        device_distribution: "Ubuntu"
+      - device_id: "alpine1"
+        device_name: "Alpine1"
+        device_distribution: "Alpine"
+      - device_id: "centos1"
+        device_name: "CentOS1"
+        device_distribution: "CentOS"
+      - device_id: "redhat1"
+        device_name: "RedHat1"
+        device_distribution: "RedHat"
+  
+  tasks:
+    - name: Create subnet if it doesn't exist
+      community.general.packet_ip_subnet:
+        auth_token: "{{ auth_token }}"
+        state: present
+        subnet_name: "{{ subnet_name }}"
+        subnet_cidr: "{{ subnet_cidr }}"
+        subnet_gateway: "{{ subnet_gateway }}"
+        project_id: "{{ project_id }}"
+      register: subnet_result
+
+    - name: Assign IP subnets to devices
+      community.general.packet_device:
+        auth_token: "{{ auth_token }}"
+        state: "{{ item.state }}"
+        device_id: "{{ item.device_id }}"
+        hostname: "{{ item.device_name }}"
+        project_id: "{{ project_id }}"
+        mac_address: "{{ item.mac_address }}"
+      loop: "{{ devices }}"
+      register: device_result
+
+    - name: Display subnet and device info
+      debug:
+        msg: >
+          Subnet: {{ subnet_result }}
+          Devices: {{ device_result }}

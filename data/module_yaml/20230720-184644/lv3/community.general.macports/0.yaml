@@ -1,0 +1,54 @@
+---
+- name: Test Ansible Macports Module with Type-related Bugs
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    packages:
+      - nginx
+      - redis
+      - postgresql
+    macports_dependencies:
+      - openssl
+      - zlib
+
+  tasks:
+    - name: Install Macports
+      community.general.macports:
+        selfupdate: true
+
+    - name: Install Macports packages
+      community.general.macports:
+        name: "{{ item }}"
+        state: present
+      with_items: "{{ packages }}"
+
+    - name: Upgrade Macports packages
+      community.general.macports:
+        name: "{{ item }}"
+        state: present
+        upgrade: true
+      with_items: "{{ packages }}"
+
+    - name: Install Macports packages with variants
+      community.general.macports:
+        name: "{{ item.name }}"
+        state: present
+        variant: "{{ item.variant }}"
+      with_items:
+        - name: openssl
+          variant: "+universal"
+        - name: zlib
+          variant: "+threads"
+
+    - name: Install additional Macports dependencies
+      community.general.macports:
+        name: "{{ item }}"
+        state: present
+      with_items: "{{ macports_dependencies }}"
+
+    - name: Uninstall Macports packages
+      community.general.macports:
+        name: "{{ item }}"
+        state: absent
+      with_items: "{{ packages }}"

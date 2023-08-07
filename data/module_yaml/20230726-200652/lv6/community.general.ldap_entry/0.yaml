@@ -1,0 +1,40 @@
+---
+- name: Test playbook for community.general.ldap_entry
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Add LDAP entry
+      community.general.ldap_entry:
+        attributes:
+          dn: "{{ dn }}"
+          objectClass:
+            - top
+            - person
+            - organizationalPerson
+            - inetOrgPerson
+        bind_dn: "{{ bind_dn }}"
+        bind_pw: "{{ bind_pw }}"
+        server_uri: "{{ server_uri }}"
+        state: present
+        validate_certs: "{{ validate_certs }}"
+        
+      vars:
+        dn: "cn=John Doe"
+        bind_dn: "cn=admin,dc=example,dc=com"
+        bind_pw: "admin_password"
+        server_uri: "ldap://ldap.example.com:389"
+        validate_certs: false
+
+      register: result
+
+    - name: Debug result
+      debug:
+        var: result
+
+    - name: Validate result
+      fail:
+        msg: "Latent bug uncovered!"
+        when:
+          - result | failed
+          - result | stdout | search('Error')

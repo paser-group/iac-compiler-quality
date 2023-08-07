@@ -1,0 +1,35 @@
+- name: Unveiling latent type-related bugs in 'community.network.avi_customipamdnsprofile' module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Set API credentials
+      set_fact:
+        avi_credentials:
+          username: "{{ username }}"
+          password: "{{ password }}"
+          controller: "{{ controller }}"
+          tenant: "{{ tenant }}"
+
+    - name: Generate byte and string test value
+      set_fact:
+        config_value: "{{ 'test' | to_bytes(encoding='utf-8') }}"
+
+    - name: Create CustomIpamDnsProfile with byte and string values
+      community.network.avi_customipamdnsprofile:
+        state: present
+        name: "TestProfile"
+        config:
+          - value: "{{ config_value }}"
+            type: "string_and_bytes"
+        avi_credentials: "{{ avi_credentials }}"
+
+    - name: Display CustomIpamDnsProfile configuration
+      debug:
+        var: ansible_facts.community_network_avi_customipamdnsprofile
+
+    - name: Delete CustomIpamDnsProfile
+      community.network.avi_customipamdnsprofile:
+        state: absent
+        name: "TestProfile"
+        avi_credentials: "{{ avi_credentials }}"

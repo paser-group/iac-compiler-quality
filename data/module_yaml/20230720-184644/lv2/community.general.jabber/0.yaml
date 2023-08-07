@@ -1,0 +1,55 @@
+---
+- name: Test Jabber Module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    jid: "user@example.com"
+    password: "password123"
+    host: "jabber.org"
+    port: 5222
+    to: "recipient@example.com"
+
+  tasks:
+    - name: Send Jabber Message
+      community.general.jabber:
+        jid: "{{ jid }}"
+        password: "{{ password }}"
+        host: "{{ host }}"
+        port: "{{ port }}"
+        to: "{{ to }}"
+        msg: "{{ 'Hello, World!' }}"
+      connection: local
+      register: result
+
+    - name: Debug Result
+      debug:
+        var: result
+      
+    - name: Introduce byte string values
+      set_fact:
+        jid: !python/object:__main__.MyByteArray |
+          {{"{{ jid }}"}}        
+        password: !python/object:__main__.MyByteArray |
+          {{"{{ password }}"}}   
+        host: !python/object:__main__.MyByteArray |
+          {{"{{ host }}"}}        
+        to: !python/object:__main__.MyByteArray |
+          {{"{{ to }}"}}        
+        port: !python/object:__main__.MyNumber |
+          {{"{{ port }}"}}    
+
+    - name: Send Jabber Message with byte strings
+      community.general.jabber:
+        jid: "{{ jid }}"
+        password: "{{ password }}"
+        host: "{{ host }}"
+        port: "{{ port }}"
+        to: "{{ to }}"
+        msg: "{{ b'Hello, World!' }}"
+      connection: local
+      register: result_byte_strings
+
+    - name: Debug Result with byte strings
+      debug:
+        var: result_byte_strings

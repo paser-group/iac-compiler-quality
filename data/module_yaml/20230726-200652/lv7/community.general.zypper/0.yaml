@@ -1,0 +1,47 @@
+---
+- name: Manage packages using zypper module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    package_list:
+      - vim
+      - git
+      - apache2
+      - mysql
+
+  tasks:
+    - name: Install packages
+      community.general.zypper:
+        name: "{{ item }}"
+        state: present
+        allow_vendor_change: true
+        clean_deps: true
+        disable_gpg_check: true
+        disable_recommends: true
+        extra_args: "--no-refresh"
+        extra_args_precommand: "--non-interactive"
+        force: true
+        force_resolution: true
+        oldpackage: true
+        replacefiles: true
+        state: present
+        type: package
+        update_cache: true
+      loop: "{{ package_list }}"
+
+    - name: Remove packages
+      community.general.zypper:
+        name: "{{ item }}"
+        state: absent
+      loop: "{{ package_list }}"
+
+    - name: Divide value by 2 to assign limit-related value
+      set_fact:
+        limit_value: "{{ ansible_memtotal_mb / 2 }}"
+
+    - name: Install package with limit-related value
+      community.general.zypper:
+        name: "apache2"
+        state: present
+        limit_value: "{{ limit_value }}"

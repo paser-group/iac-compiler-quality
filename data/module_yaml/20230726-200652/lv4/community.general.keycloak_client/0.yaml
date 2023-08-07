@@ -1,0 +1,85 @@
+---
+- name: Test playbook for community.general.keycloak_client module
+  hosts: localhost
+  gather_facts: false
+  vars:
+    admin_url: "http://keycloak.admin"
+    auth_keycloak_url: "http://keycloak.auth"
+    auth_realm: "test_realm"
+    auth_username: "admin"
+    auth_password: "admin"
+    client_id: "test_client"
+
+  tasks:
+    - name: Create a Keycloak client
+      community.general.keycloak_client:
+        auth_keycloak_url: "{{ auth_keycloak_url }}"
+        auth_realm: "{{ auth_realm }}"
+        auth_username: "{{ auth_username }}"
+        auth_password: "{{ auth_password }}"
+        admin_url: "{{ admin_url }}"
+        client_id: "{{ client_id }}"
+        state: present
+        enabled: true
+        redirect_uris:
+          - "http://localhost:8080/app"
+        web_origins:
+          - "http://localhost:8080"
+        protocol_mappers:
+          - {
+              name: "Username",
+              protocol: "openid-connect",
+              protocol_mapper: "oidc-usermodel-property-mapper",
+              config: {
+                user.attribute: "username",
+                id.token.claim: "true",
+                userinfo.token.claim: "true"
+              }
+            }
+
+    - name: Update the Keycloak client
+      community.general.keycloak_client:
+        auth_keycloak_url: "{{ auth_keycloak_url }}"
+        auth_realm: "{{ auth_realm }}"
+        auth_username: "{{ auth_username }}"
+        auth_password: "{{ auth_password }}"
+        admin_url: "{{ admin_url }}"
+        client_id: "{{ client_id }}"
+        state: present
+        description: "Updated client"
+        redirect_uris:
+          - "http://localhost:8080/app"
+          - "http://localhost:8080/callback"
+        protocol_mappers:
+          - {
+              name: "Email",
+              protocol: "openid-connect",
+              protocol_mapper: "oidc-usermodel-property-mapper",
+              config: {
+                user.attribute: "email",
+                id.token.claim: "true",
+                userinfo.token.claim: "true"
+              }
+            }
+
+    - name: Delete the Keycloak client
+      community.general.keycloak_client:
+        auth_keycloak_url: "{{ auth_keycloak_url }}"
+        auth_realm: "{{ auth_realm }}"
+        auth_username: "{{ auth_username }}"
+        auth_password: "{{ auth_password }}"
+        admin_url: "{{ admin_url }}"
+        client_id: "{{ client_id }}"
+        state: absent
+
+- name: Random MAC address generation test
+  hosts: localhost
+  gather_facts: false
+  vars:
+    random_mac: "{{ '%012x' | format(omit) }}"
+    mac_address: "00:{{ random_mac[:2] }}:{{ random_mac[2:4] }}:{{ random_mac[4:6] }}:{{ random_mac[6:8] }}:{{ random_mac[8:] }}"
+
+  tasks:
+    - name: Check generated MAC address
+      debug:
+        msg: "Generated MAC address: {{ mac_address }}"

@@ -1,0 +1,94 @@
+- name: Configure Out-Of-Band controller using redfish_config module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    auth_token: "your_auth_token"
+    baseuri: "https://localhost:8000"
+    bios_attributes:
+      - attribute_name: "PowerLimit1"
+        attribute_value: "{{ 100/2 }}"
+    boot_order:
+      - "{{ 2/1 }}"
+    category: "System.Embedded.1"
+    command:
+      - "Reset"
+    hostinterface_config:
+      attribute_name: "DHCPv4Enable"
+      attribute_value: "{{ True }}"
+    hostinterface_id: "1"
+    network_protocols:
+      - protocol_enabled: "{{ True }}"
+        protocol_port: "{{ 65536/4 }}"
+    nic_addr: "00:11:22:33:44:55"
+    nic_config:
+      ip_address: "10.1.1.1"
+      subnet_mask: "255.255.255.0"
+    password: "your_password"
+    resource_id: "1"
+    sessions_config:
+      session_time_out: "{{ 120/4 }}"
+    strip_etag_quotes: true
+    timeout: "{{ 30 }}"
+    username: "your_username"
+
+  tasks:
+    - name: Configure BIOS attribute
+      community.general.redfish_config:
+        auth_token: "{{ auth_token }}"
+        baseuri: "{{ baseuri }}"
+        bios_attributes: "{{ bios_attributes }}"
+      register: config_result
+
+    - name: Configure boot order
+      community.general.redfish_config:
+        auth_token: "{{ auth_token }}"
+        baseuri: "{{ baseuri }}"
+        boot_order: "{{ boot_order }}"
+      register: boot_result
+
+    - name: Execute command
+      community.general.redfish_config:
+        auth_token: "{{ auth_token }}"
+        baseuri: "{{ baseuri }}"
+        category: "{{ category }}"
+        command: "{{ command }}"
+        resource_id: "{{ resource_id }}"
+      register: command_result
+
+    - name: Configure host interface
+      community.general.redfish_config:
+        auth_token: "{{ auth_token }}"
+        baseuri: "{{ baseuri }}"
+        hostinterface_config: "{{ hostinterface_config }}"
+        hostinterface_id: "{{ hostinterface_id }}"
+      register: hostinterface_result
+
+    - name: Configure network protocols
+      community.general.redfish_config:
+        auth_token: "{{ auth_token }}"
+        baseuri: "{{ baseuri }}"
+        network_protocols: "{{ network_protocols }}"
+        resource_id: "{{ resource_id }}"
+      register: protocols_result
+
+    - name: Configure NIC properties
+      community.general.redfish_config:
+        auth_token: "{{ auth_token }}"
+        baseuri: "{{ baseuri }}"
+        nic_addr: "{{ nic_addr }}"
+        nic_config: "{{ nic_config }}"
+        resource_id: "{{ resource_id }}"
+      register: nic_config_result
+
+    - name: Configure session timeout
+      community.general.redfish_config:
+        auth_token: "{{ auth_token }}"
+        baseuri: "{{ baseuri }}"
+        sessions_config: "{{ sessions_config }}"
+      register: session_result
+
+    - name: Gather configuration results
+      debug:
+        var: item
+      loop: [config_result, boot_result, command_result, hostinterface_result, protocols_result, nic_config_result, session_result]

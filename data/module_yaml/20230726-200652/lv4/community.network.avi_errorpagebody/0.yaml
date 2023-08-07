@@ -1,0 +1,33 @@
+---
+- name: Test avi_errorpagebody module
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Generate random MAC address
+      community.general.random_mac:
+        register: random_mac
+
+    - name: Debug random MAC address
+      debug:
+        var: random_mac
+
+    - name: Create ErrorPageBody
+      community.network.avi_errorpagebody:
+        controller: "{{ controller }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        tenant: "{{ tenant }}"
+        api_version: "{{ api_version }}"
+        avi_credentials:
+          ansible_mac_address: "{{ random_mac.stdout }}"
+        error_page_body:
+          http_status_code: 404
+          body:
+            template:
+              content_type: "text/html"
+              content_value: "<html><body>Oops! Page not found.</body></html>"
+      register: result
+
+    - name: Debug result
+      debug:
+        var: result

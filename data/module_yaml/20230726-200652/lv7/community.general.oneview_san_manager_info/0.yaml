@@ -1,0 +1,50 @@
+---
+- name: Test playbook for oneview_san_manager_info module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    api_version: 400                     # Invalid api_version (should be an integer)
+    config: "/path/to/oneview_config.ini"
+    hostname: "sample.hostname.com"
+    image_streamer_hostname: "imagestreamer.sample.hostname.com"
+    params:
+      field: "value"
+    password: "password"
+    provider_display_name: "Sample Provider"
+    username: "username"
+
+  tasks:
+    - name: Include required role
+      include_role:
+        name: ansible-oneview.latest
+
+    - name: Retrieve SAN manager info
+      community.general.oneview_san_manager_info:
+        api_version: "{{ api_version }}"
+        config: "{{ config }}"
+        hostname: "{{ hostname }}"
+        image_streamer_hostname: "{{ image_streamer_hostname }}"
+        provider_display_name: "{{ provider_display_name }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+      register: san_manager_info
+
+    - name: Display SAN manager info
+      debug:
+        var: san_manager_info
+
+    - name: Test case - Invalid api_version
+      fail:
+        msg: "Invalid api_version {{ api_version }} provided."
+      when: "'api_version' not in san_manager_info or san_manager_info['api_version'] != api_version | int"
+
+    - name: Test case - Invalid password
+      fail:
+        msg: "Invalid password provided."
+      when: "'provider_details' not in san_manager_info or san_manager_info['provider_details']['password'] != password"
+
+    - name: Test case - Invalid username
+      fail:
+        msg: "Invalid username provided."
+      when: "'provider_details' not in san_manager_info or san_manager_info['provider_details']['username'] != username"

@@ -1,0 +1,51 @@
+---
+- name: Test playbook for oneview_fc_network module
+  hosts: localhost
+  gather_facts: false
+  
+  tasks:
+
+    - name: Set random IP address
+      set_fact:
+        random_ip: "{{ (hostvars['localhost'].inventory_hostname | regex_replace('^(.*)-.*$', '\\1')) + '.' + (1 + (hostvars['localhost'].inventory_hostname | regex_replace('^.*-(.*)$', '\\1')) | int) | string }}"
+        
+    - name: Configure Fibre Channel network
+      community.general.oneview_fc_network:
+        config: "/path/to/oneview_config.json"
+        hostname: "{{ image_streamer_hostname }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        api_version: "{{ api_version }}"
+        state: present
+        data:
+          name: "FC Network"
+          fabricType: "DirectAttach"
+          autoLoginRedistribution: true
+          linkStabilityTime: 30
+          linkStabilityTimeUnit: "Seconds"
+          connectionTemplateUri: "/rest/connection-templates/34f769e1-1bce-4cdf-8f5e-b448d8cabf93"
+          bandwidth: "25000"
+          type: "fibre_channel"
+          vlanId: 100
+          connectionType: "Auto"
+          fabricType: "FabricAttach"
+          managedSanUri: "/rest/managed-sans/3492852a-d0bc-4454-9f34-37cc3d40a768"
+          enableManagedSan: true
+          publicAttributes:
+            - name: "NetworkType"
+              value: "Generic"
+            - name: "FCNetworkType"
+              value: "Fabric"
+          privateAttributes:
+            - name: "networkPrivateAttribute"
+              value: "private"
+          stateReason: "None"
+          purpose:
+            - "General"
+            - "Management"
+
+      register: result
+      
+    - name: Print result
+      debug:
+        var: result

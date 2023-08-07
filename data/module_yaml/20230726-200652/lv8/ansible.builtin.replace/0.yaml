@@ -1,0 +1,86 @@
+---
+- name: Test replace module with different attributes
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create test file
+      ansible.builtin.file:
+        path: /tmp/test.txt
+        state: touch
+
+    - name: Add content to test file
+      ansible.builtin.lineinfile:
+        path: /tmp/test.txt
+        line: "This is a test line with some string."
+
+    - name: Replace string in file using replace module
+      ansible.builtin.replace:
+        path: /tmp/test.txt
+        regexp: "test line"
+        replace: "updated line"
+      register: result
+
+    - name: Print replace module output
+      ansible.builtin.debug:
+        msg: "{{ result }}"
+
+    - name: Assert if the string is replaced
+      ansible.builtin.assert:
+        that:
+          - "'updated line' in lookup('file', '/tmp/test.txt')"
+
+    - name: Replace using attributes
+      ansible.builtin.replace:
+        path: /tmp/test.txt
+        regexp: "\\s"
+        replace: "-"
+        before: "with"
+        after: "some"
+        backup: yes
+        encoding: "utf-8"
+        unsafe_writes: yes
+        validate: "echo 'valid'"
+
+    - name: Print replace module output for attributes
+      ansible.builtin.debug:
+        msg: "{{ result }}"
+
+    - name: Assert if the attributes are applied
+      ansible.builtin.assert:
+        that:
+          - "'This-is-a--line-with-some-string.' in lookup('file', '/tmp/test.txt')"
+
+    - name: Replace file without backup
+      ansible.builtin.replace:
+        path: /tmp/test.txt
+        regexp: "is-a--line"
+        replace: "was-a-line"
+        backup: no
+
+    - name: Print replace module output without backup
+      ansible.builtin.debug:
+        msg: "{{ result }}"
+
+    - name: Assert if the string is replaced without backup
+      ansible.builtin.assert:
+        that:
+          - "'This was a line with some string.' in lookup('file', '/tmp/test.txt')"
+
+    - name: Replace using owner, group, and mode
+      ansible.builtin.replace:
+        path: /tmp/test.txt
+        regexp: " with some"
+        replace: " with specific"
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Print replace module output with owner, group, and mode
+      ansible.builtin.debug:
+        msg: "{{ result }}"
+
+    - name: Assert if the string is replaced with owner, group, and mode
+      ansible.builtin.assert:
+        that:
+          - "'This is a line with specific string.' in lookup('file', '/tmp/test.txt')"

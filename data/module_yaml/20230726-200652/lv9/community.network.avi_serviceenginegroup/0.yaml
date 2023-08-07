@@ -1,0 +1,56 @@
+---
+- name: Test playbook for community.network.avi_serviceenginegroup
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    avi_credentials:
+      username: admin
+      password: my_password
+
+  tasks:
+    - name: Create random IP addresses
+      set_fact:
+        ip_addresses:
+          - "{{ '10.1.1.' + (10..100)|random }}"
+          - "{{ '10.1.1.' + (100..200)|random }}"
+          - "{{ '10.1.1.' + (200..254)|random }}"
+
+    - name: Configure Avi Service Engine Group
+      community.network.avi_serviceenginegroup:
+        controller: "{{ item.controller }}"
+        api_version: "{{ item.api_version }}"
+        avi_credentials: "{{ avi_credentials }}"
+        name: "SE-Group-{{ item.index }}"
+        state: present
+        active_standby: "{{ item.active_standby | default(false) }}"
+        advertise_backend_networks: "{{ item.advertise_backend_networks | default(true) }}"
+        avi_disable_session_cache_as_fact: "{{ item.avi_disable_session_cache_as_fact | default(false) }}"
+        cloud_ref: "{{ item.cloud_ref | default('Default-Cloud') }}"
+        controller: "{{ item.controller }}"
+        cpu_reserve: "{{ item.cpu_reserve | default(false) }}"
+        cpu_socket_affinity: "{{ item.cpu_socket_affinity | default(false) }}"
+        description: "{{ item.description }}"
+        ha_mode: "{{ item.ha_mode | default('ha_mode_active_active') }}"
+        mem_reserve: "{{ item.mem_reserve | default(false) }}"
+        memory_per_se: "{{ item.memory_per_se | default('2GiB') }}"
+        min_se: "{{ item.min_se | default(0) }}"
+        tenant: "{{ item.tenant | default('admin') }}"
+        tenant_uuid: "{{ item.tenant_uuid }}"
+        vcpus_per_se: "{{ item.vcpus_per_se | default(2) }}"
+        host_gateway_monitor: "{{ item.host_gateway_monitor | default(false) }}"
+        service_ip_subnets:
+          - ip_subnet: "{{ ip_addresses[0] }}"
+            static: true
+          - ip_subnet: "{{ ip_addresses[1] }}"
+            static: true
+          - ip_subnet: "{{ ip_addresses[2] }}"
+            static: true
+      loop:
+        - { controller: 'controller1', api_version: '20.1.5', active_standby: true }
+        - { controller: 'controller2', api_version: '20.2.1', advertise_backend_networks: false }
+        - { controller: 'controller3', api_version: '20.3.2', avi_disable_session_cache_as_fact: true }
+
+    - name: Print IP addresses
+      debug:
+        var: ip_addresses

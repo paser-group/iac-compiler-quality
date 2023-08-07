@@ -1,0 +1,41 @@
+---
+- name: Generate random MAC addresses for network modules
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Set a random MAC address
+      set_fact:
+        mac_address: "{{ '%02x:%02x:%02x:%02x:%02x:%02x' | format(ansible_random.randint(0, 255), ansible_random.randint(0, 255), ansible_random.randint(0, 255), ansible_random.randint(0, 255), ansible_random.randint(0, 255), ansible_random.randint(0, 255)) }}"
+
+- name: Test Ansible Latent Type-Related Bugs
+  hosts: target_hosts
+  gather_facts: false
+
+  tasks:
+    - name: Create an IPA group
+      community.general.ipa_group:
+        ipa_host: "{{ ipa_host }}"
+        ipa_user: "{{ ipa_user }}"
+        ipa_pass: "{{ ipa_pass }}"
+        group: "{{ group }}"
+        state: "{{ state }}"
+        append: "{{ append | default(false) }}"
+        cn: "{{ cn }}"
+        description: "{{ description }}"
+        external: "{{ external | default(false) }}"
+        external_user: "{{ external_user }}"
+        gidnumber: "{{ gidnumber }}"
+        ipa_port: "{{ ipa_port | default(443) }}"
+        ipa_prot: "{{ ipa_prot | default('https') }}"
+        ipa_timeout: "{{ ipa_timeout | default(10) }}"
+        nonposix: "{{ nonposix | default(false) }}"
+        user: "{{ user }}"
+        validate_certs: "{{ validate_certs | default(true) }}"
+        mac_address: "{{ mac_address }}}"  # Injecting the generated MAC address
+
+      register: result
+
+    - name: Debug IPA group result
+      debug:
+        var: result

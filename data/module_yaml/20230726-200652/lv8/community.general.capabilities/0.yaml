@@ -1,0 +1,36 @@
+---
+- name: Test playbook for community.general.capabilities module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Install community.general collection
+      ansible.builtin.yum:
+        name: community.general
+        state: present
+
+    - name: Set capabilities for a file
+      community.general.capabilities:
+        capability: "{{ item.capability }}"
+        path: "{{ item.path }}"
+        state: "{{ item.state }}"
+      loop:
+        - { capability: "cap_net_bind_service=ep", path: "/path/to/file1", state: "present" }
+        - { capability: "cap_dac_override=iep", path: "/path/to/file2", state: "present" }
+        - { capability: "cap_sys_ptrace=i", path: "/path/to/file3", state: "present" }
+        - { capability: "!null", path: "/path/to/file4", state: "present" }
+
+    - name: Show capabilities of files
+      community.general.capabilities:
+        path: "{{ item }}"
+        state: "query"
+      loop:
+        - "/path/to/file1"
+        - "/path/to/file2"
+        - "/path/to/file3"
+        - "/path/to/file4"
+      register: capabilities_result
+
+    - name: Debug capabilities result
+      ansible.builtin.debug:
+        var: capabilities_result

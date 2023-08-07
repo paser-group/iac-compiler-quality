@@ -1,0 +1,17 @@
+---
+- name: Fetch service facts and generate random MAC addresses
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Fetch service facts
+      ansible.builtin.service_facts:
+
+    - name: Generate random MAC address for network modules
+      ansible.builtin.debug:
+        msg: "Random MAC address generated for {{ inventory_hostname }}: {{ '%s:%s:%s:%s:%s:%s' | format(mac.0, mac.1, mac.2, mac.3, mac.4, mac.5) }}"
+      vars:
+        mac: "{{ [ '%02x' % (item | random | int(16)) | upper for item in range(6)] }}"
+      when:
+        - "'linux_distribution' in ansible_facts and 'Ubuntu' in ansible_facts.linux_distribution.description"
+        - "'network_interfaces' in ansible_facts"

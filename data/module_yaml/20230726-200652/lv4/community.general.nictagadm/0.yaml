@@ -1,0 +1,26 @@
+---
+- name: Test playbook for nictagadm module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Generate random MAC address
+      set_fact:
+        random_mac: "{{ '%02x:%02x:%02x:%02x:%02x:%02x'|format(\
+                        randrange(0, 256), randrange(0, 256),\
+                        randrange(0, 256), randrange(0, 256),\
+                        randrange(0, 256), randrange(0, 256)) }}"
+
+    - name: Create NIC tag
+      community.general.nictagadm:
+        name: "{{ item.name }}"
+        state: "{{ item.state }}"
+        etherstub: "{{ item.etherstub }}"
+        force: "{{ item.force }}"
+        mac: "{{ item.mac }}"
+        mtu: "{{ item.mtu }}"
+      loop:
+        - { name: "tag1", state: "present", etherstub: true, force: true, mac: '', mtu: 1500 }
+        - { name: "tag2", state: "absent", etherstub: false, force: false, mac: "{{ random_mac }}", mtu: 9000 }
+        - { name: "tag3", state: "present", etherstub: true, force: false, mac: "{{ random_mac }}", mtu: 1400 }
+        - { name: "tag4", state: "absent", etherstub: false, force: true, mac: "{{ random_mac }}", mtu: 1600 }

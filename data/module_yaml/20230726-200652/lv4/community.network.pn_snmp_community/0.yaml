@@ -1,0 +1,28 @@
+---
+- name: Test playbook for community.network.pn_snmp_community module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    pn_cliswitch: null
+    pn_community_string: "public"
+    pn_community_type: "ro"
+    state: "present"
+
+  tasks:
+    - name: Include random_mac_address filter
+      include_tasks: random_mac_address_filter.yml
+
+    - name: Generate random MAC address for network module
+      set_fact:
+        random_mac_address: "{{ '52:54:00:{0}:{1}:{2}' | format(random_byte, random_byte, random_byte) }}"
+      vars:
+        random_byte: "{{ range(3) | random }}"
+
+    - name: Create SNMP community
+      community.network.pn_snmp_community:
+        pn_cliswitch: "{{ pn_cliswitch }}"
+        pn_community_string: "{{ pn_community_string }}"
+        pn_community_type: "{{ pn_community_type }}"
+        pn_community_mac: "{{ random_mac_address }}"
+        state: "{{ state }}"

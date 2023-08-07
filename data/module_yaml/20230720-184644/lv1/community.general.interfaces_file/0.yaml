@@ -1,0 +1,35 @@
+- name: Update network interface configuration
+  hosts: localhost
+  gather_facts: false
+  
+  tasks:
+    - name: Configure network interfaces
+      community.general.interfaces_file:
+        dest: /etc/network/interfaces
+        backup: true
+        iface: "{{ item.iface }}"
+        state: "{{ item.state }}"
+        address_family: "{{ item.address_family }}"
+        option: "{{ item.option }}"
+        value: "{{ item.value }}"
+      with_items:
+        - { iface: "eth0", state: "up", address_family: "inet", option: "address", value: "10.1.1.1" }
+        - { iface: "eth1", state: "up", address_family: "inet6", option: "address", value: "2001:db8::1" }
+        - { iface: "eth2", state: "down", address_family: "inet", option: "address", value: "10.1.1.2" }
+        - { iface: "eth3", state: "up", address_family: "inet", option: "address", value: "10.1.1.3" }
+        - { iface: "eth4", state: "up", address_family: "inet", option: "address", value: "10.1.1.4" }
+
+    - name: Verify network interface configuration
+      shell: cat /etc/network/interfaces
+      register: interfaces_content
+      
+    - name: Fail if case sensitivity bug found
+      fail:
+        msg: "Case sensitivity bug identified"
+      when: "'{{ item.value }}' in interfaces_content.stdout and '{{ item.value|lower }}' not in interfaces_content.stdout"
+      loop:
+        - { value: "10.1.1.1" }
+        - { value: "2001:db8::1" }
+        - { value: "10.1.1.2" }
+        - { value: "10.1.1.3" }
+        - { value: "10.1.1.4" }

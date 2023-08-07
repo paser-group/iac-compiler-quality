@@ -1,0 +1,45 @@
+---
+- name: Test Ansible Latent Type-Related Bugs
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    nodes:
+      - name: ubuntu1
+        ip_address: 10.1.1.1
+        distribution: ubuntu
+      - name: alpine1
+        ip_address: 10.1.1.2
+        distribution: alpine
+      - name: centos1
+        ip_address: 10.1.1.3
+        distribution: centos
+      - name: redhat1
+        ip_address: 10.1.1.4
+        distribution: redhat
+
+  tasks:
+    - name: Generate test inventory file
+      copy:
+        content: |
+          [nodes]
+          {% for node in nodes %}
+          {{ node.name }} ansible_host={{ node.ip_address }}
+          {% endfor %}
+        dest: inventory.txt
+
+    - name: Debug inventory file
+      debug:
+        var: inventory_file
+      vars:
+        inventory_file: "{{ lookup('file', 'inventory.txt') }}"
+
+    - name: Generate random port number
+      set_fact:
+        random_port: "{{ (32000..64000) | random }}"
+
+    - name: Test random port settings
+      community.general.installp:
+        name: community_module
+        port: "{{ random_port }}"
+        state: present

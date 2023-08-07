@@ -1,0 +1,43 @@
+---
+- name: Test playbook for community.network.pn_vrouter_loopback_interface module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    pn_cliswitch: "pn-switch"
+    pn_index: "loopback0"
+    pn_vrouter_name: "vrouter1"
+
+  tasks:
+    - name: Generate random MAC address
+      set_fact:
+        random_mac_address: "{{ '%02x:%02x:%02x:%02x:%02x:%02x' | format(0, 0, 0, 0, 0, ansible_random.randint(0, 255)) }}"
+
+    - name: Add vRouter loopback interface
+      community.network.pn_vrouter_loopback_interface:
+        pn_cliswitch: "{{ pn_cliswitch }}"
+        pn_index: "{{ pn_index }}"
+        pn_ip: "{{ pn_ip }}"
+        pn_mac_address: "{{ random_mac_address }}"
+        pn_vrouter_name: "{{ pn_vrouter_name }}"
+        state: present
+      register: result
+      ignore_errors: true
+
+    - name: Debug result
+      debug:
+        var: result
+
+    - name: Remove vRouter loopback interface
+      community.network.pn_vrouter_loopback_interface:
+        pn_cliswitch: "{{ pn_cliswitch }}"
+        pn_index: "{{ pn_index }}"
+        pn_ip: "{{ pn_ip }}"
+        pn_vrouter_name: "{{ pn_vrouter_name }}"
+        state: absent
+      register: result
+      ignore_errors: true
+
+    - name: Debug result
+      debug:
+        var: result

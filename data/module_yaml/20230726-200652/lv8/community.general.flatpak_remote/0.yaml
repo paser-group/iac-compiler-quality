@@ -1,0 +1,42 @@
+---
+- name: Test playbook
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    flatpakrepo_url: "https://flathub.org/repo/flathub.flatpakrepo"
+    flatpak_name: "org.gnome.Epiphany"
+
+  tasks:
+    - name: Install flatpak repository
+      community.general.flatpak_remote:
+        flatpakrepo_url: "{{ flatpakrepo_url }}"
+        name: "{{ flatpak_name }}"
+        state: present
+        executable: /var/tmp/flatpak
+        enabled: true
+        method: user
+      register: flatpak_result
+      ignore_errors: true
+
+    - name: Debug output
+      debug:
+        var: flatpak_result
+
+    - name: Run flatpak command
+      command: /var/tmp/flatpak info "{{ flatpak_name }}"
+      register: flatpak_command_output
+
+    - name: Debug output
+      debug:
+        var: flatpak_command_output
+
+    - name: Cleanup
+      community.general.flatpak_remote:
+        flatpakrepo_url: "{{ flatpakrepo_url }}"
+        name: "{{ flatpak_name }}"
+        state: absent
+        executable: /var/tmp/flatpak
+        enabled: true
+        method: user
+      ignore_errors: true

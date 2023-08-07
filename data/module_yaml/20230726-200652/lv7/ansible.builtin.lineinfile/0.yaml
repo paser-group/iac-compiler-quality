@@ -1,0 +1,72 @@
+- name: Test 'ansible.builtin.lineinfile' module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create inventory file
+      ansible.builtin.file:
+        path: inventory.ini
+        state: touch
+
+    - name: Add hosts to inventory file
+      ansible.builtin.lineinfile:
+        path: inventory.ini
+        line: "{{ item }}"
+      with_items:
+        - ubuntu1 ansible_host=10.1.1.1 ansible_become=true
+        - alpine1 ansible_host=10.1.1.2
+        - centos1 ansible_host=10.1.1.3
+        - redhat1 ansible_host=10.1.1.4
+
+    - name: Restrict SSH access for ubuntu1
+      ansible.builtin.lineinfile:
+        path: inventory.ini
+        regexp: '^ubuntu1 ansible_become=true$'
+        line: "ubuntu1 ansible_become=true ansible_python_interpreter=/usr/bin/python3"
+        backrefs: true
+        state: present
+
+    - name: Set ownership of inventory file
+      ansible.builtin.lineinfile:
+        path: inventory.ini
+        regexp: '^# ownership'
+        line: "# ownership: root:root"
+        firstmatch: true
+        state: present
+
+    - name: Insert Red Hat node before CentOS node in inventory
+      ansible.builtin.lineinfile:
+        path: inventory.ini
+        regexp: '^centos1'
+        line: "redhat1 ansible_host=10.1.1.4"
+        insertbefore: "centos1"
+        state: present
+
+    - name: Add wildcard DNS entry
+      ansible.builtin.lineinfile:
+        path: inventory.ini
+        line: "* ansible_host=10.1.1.0"
+        insertafter: '^\[all\]'
+        state: present
+
+    - name: Set file permissions of inventory file
+      ansible.builtin.lineinfile:
+        path: inventory.ini
+        regexp: '^# permissions'
+        line: "# permissions: 0644"
+        firstmatch: true
+        state: present
+
+    - name: Change the state of the ownership line
+      ansible.builtin.lineinfile:
+        path: inventory.ini
+        regexp: '^# ownership'
+        line: "# ownership: test:test"
+        backrefs: true
+        state: present
+
+    - name: Remove Centos node from inventory
+      ansible.builtin.lineinfile:
+        path: inventory.ini
+        regexp: '^centos1'
+        state: absent

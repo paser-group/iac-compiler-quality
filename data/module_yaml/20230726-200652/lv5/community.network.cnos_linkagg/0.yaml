@@ -1,0 +1,25 @@
+- name: Test playbook for community.network.cnos_linkagg module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+
+    - name: Generate random port numbers
+      set_fact:
+        random_ports: "{{ (ports | random(count=2)) | map('string') | join(',') }}"
+      vars:
+        ports: "{{ range(10000, 20000) | list }}"
+
+    - name: Configure link aggregation
+      community.network.cnos_linkagg:
+        aggregate: "{{ item.aggregate }}"
+        group: "{{ item.group }}"
+        members: "{{ item.members }}"
+        mode: "{{ item.mode }}"
+        purge: "{{ item.purge }}"
+        state: "{{ item.state }}"
+      loop:
+        - { aggregate: None, group: None, members: None, mode: None, purge: False, state: None }
+        - { aggregate: 1, group: "aggr1", members: "{{ random_ports.split(',') }}", mode: "trunk", purge: True, state: "present" }
+
+    # Add more tasks to cover other features/options of the module

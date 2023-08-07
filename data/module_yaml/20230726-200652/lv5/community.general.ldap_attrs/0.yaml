@@ -1,0 +1,45 @@
+---
+- name: Test ldap_attrs module
+  hosts: localhost
+  gather_facts: false
+  vars:
+    bind_dn: "cn=admin,dc=example,dc=com"
+    bind_pw: "password"
+    ca_path: "/path/to/ca.crt"
+    dn: "ou=users,dc=example,dc=com"
+    server_uri: "ldap://localhost:{{ ldap_port }}"
+    state: "present"
+    validate_certs: false
+
+  tasks:
+    - name: Generate random LDAP port
+      set_fact:
+        ldap_port: "{{ 1000 | random }}"
+
+    - name: Add LDAP attribute
+      community.general.ldap_attrs:
+        bind_dn: "{{ bind_dn }}"
+        bind_pw: "{{ bind_pw }}"
+        ca_path: "{{ ca_path }}"
+        dn: "{{ dn }}"
+        attributes:
+          givenName: "John"
+          lastName: "Doe"
+        server_uri: "{{ server_uri }}"
+        state: "{{ state }}"
+        validate_certs: "{{ validate_certs }}"
+      when: ldap_port | default(0) > 0
+
+    - name: Remove LDAP attribute
+      community.general.ldap_attrs:
+        bind_dn: "{{ bind_dn }}"
+        bind_pw: "{{ bind_pw }}"
+        ca_path: "{{ ca_path }}"
+        dn: "{{ dn }}"
+        attributes:
+          givenName: "John"
+          lastName: "Doe"
+        server_uri: "{{ server_uri }}"
+        state: "absent"
+        validate_certs: "{{ validate_certs }}"
+      when: ldap_port | default(0) > 0

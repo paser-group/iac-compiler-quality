@@ -1,0 +1,64 @@
+---
+- name: Ansible Latent Bug Test
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Install required packages
+      apt:
+        name: puppet
+        state: present
+      when: ansible_distribution == 'Ubuntu'
+
+    - name: Install required packages
+      package:
+        name: puppet
+        state: present
+      when: ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
+
+    - name: Create puppet manifest
+      copy:
+        content: |
+          file { '/tmp/testfile':
+            ensure => 'present',
+            content => b'Hello, Ansible!',
+          }
+        dest: "{{ confdir }}/manifests/site.pp"
+
+    - name: Run puppet module
+      community.general.puppet:
+        certname: 'localhost'
+        confdir: '/etc/puppet'
+        debug: true
+        environment: 'production'
+        execute: 'apply'
+        facter_basename: 'puppet'
+        facts:
+          architecture: 'x86_64'
+          os:
+            family: 'Debian'
+            name: 'Ubuntu'
+            release:
+              full: '20.04'
+              major: '20'
+        logdest: '/var/log/puppet/puppet-agent.log'
+        manifest: "{{ confdir }}/manifests/site.pp"
+        modulepath: '/etc/puppet/modules:/usr/share/puppet/modules'
+        noop: false
+        puppetmaster: 'puppet.example.com'
+        show_diff: true
+        skip_tags:
+          - 'tag1'
+          - 'tag2'
+        summarize: false
+        tags:
+          - 'apply'
+          - 'update'
+        timeout: '30s'
+        use_srv_records: true
+        verbose: true
+      register: result
+
+    - name: Show result
+      debug:
+        var: result

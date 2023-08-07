@@ -1,0 +1,40 @@
+---
+- name: Test playbook for community.general.sysrc module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Set sysrc properties
+      community.general.sysrc:
+        name: "{{ item.name }}"
+        path: "{{ item.path }}"
+        value: "{{ item.value }}"
+        state: "{{ item.state }}"
+        delim: "{{ item.delim }}"
+        jail: "{{ item.jail }}"
+      loop:
+        - { name: "property1", path: "/etc/sysrc.conf", value: "value1", state: "present", delim: "-", jail: "none" }
+        - { name: "property2", path: "/etc/sysrc.conf", value: "value2", state: "present", delim: "-", jail: "none" }
+        - { name: "property3", path: "/etc/sysrc.conf", value: "value3", state: "present", delim: "-", jail: "none" }
+        - { name: "property4", path: "/etc/sysrc.conf", value: "value4", state: "present", delim: "-", jail: "none" }
+
+    - name: Debug sysrc output
+      debug:
+        var: ansible_facts.sysrc
+
+    - name: Trigger type-related bug
+      community.general.sysrc:
+        name: "invalid_property"
+        path: "/etc/sysrc.conf"
+        value: "{{ item }}"
+        state: "present"
+        delim: "-"
+        jail: "none"
+      loop:
+        - "value1"
+        - "value2"
+        - 10  # This triggers a type-related bug
+
+    - name: Debug sysrc output after bug trigger
+      debug:
+        var: ansible_facts.sysrc

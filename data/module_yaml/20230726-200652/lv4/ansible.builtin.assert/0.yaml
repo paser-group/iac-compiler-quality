@@ -1,0 +1,44 @@
+- name: Test - Ansible Latent Type-Related Bug Explorer
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Generate random MAC addresses for network modules
+      vars:
+        subnet: "10.1.1.0/24"
+        gateway: "10.1.1.254"
+        node_ips:
+          - "10.1.1.1"
+          - "10.1.1.2"
+          - "10.1.1.3"
+          - "10.1.1.4"
+
+      tasks:
+        - name: Generate MAC addresses
+          set_fact:
+            mac_addresses: "{{ mac_addresses | default([]) + [item] }}"
+          loop: "{{ node_ips }}"
+
+        - name: Print generated MAC addresses
+          debug:
+            var: mac_addresses
+
+    - name: Test - ansible.builtin.assert module
+      vars:
+        fail_msg: "The assertion failed."
+        quiet: false
+        success_msg: "The assertion passed."
+
+      tasks:
+        - name: Execute test cases
+          assert:
+            that: "{{ item.that }}"
+            fail_msg: "{{ fail_msg }}"
+            quiet: "{{ quiet }}"
+            success_msg: "{{ success_msg }}"
+          loop:
+            - that: "'{{ subnet }}' == '10.1.1.0/24'"
+            - that: "'{{ gateway }}' == '10.1.1.254'"
+            - that: "node_ips | difference(['10.1.1.1', '10.1.1.2', '10.1.1.3', '10.1.1.4']) == []"
+            - that: "mac_addresses is defined"
+            - that: "mac_addresses | unique | length == mac_addresses | length"

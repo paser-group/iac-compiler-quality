@@ -1,0 +1,23 @@
+- name: Manage VNICs on Solaris
+  hosts: solaris_hosts
+  gather_facts: false
+
+  tasks:
+    - name: Create VNIC
+      community.network.dladm_vnic:
+        link: "{{ item.link }}"
+        mac: "{{ item.mac }}"
+        name: "{{ item.name }}"
+        state: "{{ item.state }}"
+        temporary: "{{ item.temporary | default(false) }}"
+        vlan: "{{ item.vlan | default(0) }}"
+      loop:
+        - { link: "net0", mac: "00:14:4F:6B:C4:DE", name: "vnic1", state: "present", temporary: true }
+        - { link: "net1", mac: "00:14:4F:6B:C4:DF", name: "vnic2", state: "present", vlan: 10 }
+        - { link: "net2", mac: "00:14:4F:6B:C4:E0", name: "vnic3", state: "absent" }
+        - { link: "net3", mac: "00:14:4F:6B:C4:E1", name: "vnic4", state: "present" }
+
+    - name: Debug VNIC Creation
+      debug:
+        var: item
+      loop: "{{ ansible_facts['dladm_vnic'] }}"

@@ -1,0 +1,48 @@
+---
+- name: Test playbook for community.network.avi_webhook module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    ansible_python_interpreter: /usr/bin/python3 # Use Python 3 interpreter
+
+  tasks:
+    - name: Install required dependencies
+      package:
+        name: requests # Dependency required by Avi Webhook module
+        state: present
+      become: yes
+
+    - name: Create example webhook
+      community.network.avi_webhook:
+        controller: "https://{{ ansible_host }}" # Replace with appropriate controller URL
+        username: "{{ avi_username }}" # Replace with appropriate username
+        password: "{{ avi_password }}" # Replace with appropriate password
+        tenant: "{{ avi_tenant }}" # Replace with appropriate tenant
+        state: present
+        name: "example-webhook"
+        callback_url: "https://example.com/callback" # Replace with appropriate callback URL
+        description: "Example webhook"
+      register: result
+      ignore_errors: true
+
+    - name: Check result
+      debug:
+        var: result
+
+    - name: Update webhook with invalid division calculation
+      community.network.avi_webhook:
+        controller: "https://{{ ansible_host }}" # Replace with appropriate controller URL
+        username: "{{ avi_username }}" # Replace with appropriate username
+        password: "{{ avi_password }}" # Replace with appropriate password
+        tenant: "{{ avi_tenant }}" # Replace with appropriate tenant
+        state: present
+        name: "example-webhook"
+        callback_url: "https://example.com/callback" # Replace with appropriate callback URL
+        description: "{{ 1/0 }}" # Trigger division-by-zero error
+      register: result
+      ignore_errors: true
+
+    - name: Check result
+      debug:
+        var: result

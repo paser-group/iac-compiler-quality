@@ -1,0 +1,38 @@
+---
+- name: Test playbook for latent type-related bugs
+  hosts: localhost
+  gather_facts: false
+  
+  tasks:
+    - name: Install required pip packages
+      pip:
+        name:
+          - psycopg2
+          - pyodbc
+        state: present
+
+    - name: Add Vertica data
+      community.general.vertica_schema:
+        login_user: 'admin'
+        login_password: 123  # Introducing incompatible type (integer) instead of string
+        cluster: "vertica-cluster"
+        db: "mydb"
+        schema: "myschema"
+        state: present
+        owner: "admin"
+        usage_roles: "role1, role2"
+        create_roles: "role1, role2"
+      register: result
+      
+    - name: Debug Vertica schema result
+      debug:
+        var: result
+      
+    - name: Remove Vertica data
+      community.general.vertica_schema:
+        login_user: 'admin'
+        login_password: 'password'
+        cluster: "vertica-cluster"
+        db: "mydb"
+        schema: "myschema"
+        state: absent

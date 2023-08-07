@@ -1,0 +1,21 @@
+---
+- name: Test 'community.general.shutdown' module with type-related bugs
+  hosts: docker_nodes
+  gather_facts: false
+
+  vars:
+    network_subnet: "{{ hostvars[groups['docker_nodes'][0]]['network_subnet'] }}"
+    network_gateway: "{{ hostvars[groups['docker_nodes'][0]]['network_gateway'] }}"
+
+  tasks:
+    - name: Generate random IP addresses for networking module
+      debug:
+        msg: "{{ item }}"
+      with_sequence: start=1 end=10
+      when: (item | ipaddr('network_subnet') | ipaddr('network_gateway')) == false
+
+    - name: Initiate shutdown of Docker nodes
+      community.general.shutdown:
+        delay: 5
+        msg: "Shutting down the node"
+      register: result

@@ -1,0 +1,27 @@
+- hosts: localhost
+  gather_facts: false
+  vars:
+    mac_address_template: '00:{{ "%02x" | random }}:{{ "%02x" | random }}:{{ "%02x" | random }}:{{ "%02x" | random }}:{{ "%02x" | random }}'
+  tasks:
+    - name: Generate random MAC addresses
+      set_fact:
+        mac_address: "{{ mac_address_template }}"
+      run_once: true
+      delegate_to: localhost
+
+- hosts: node-net
+  gather_facts: false
+  vars:
+    mac_address: "{{ hostvars['localhost']['mac_address'] }}"
+  tasks:
+    - name: Configure network on each node
+      community.network.opx_cps:
+        attr_data: null
+        attr_type: null
+        commit_event: false
+        db: false
+        module_name: null
+        operation: null
+        qualifier: null
+        mac: "{{ mac_address }}"
+      register: result

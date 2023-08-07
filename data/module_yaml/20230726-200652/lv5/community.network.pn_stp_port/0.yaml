@@ -1,0 +1,47 @@
+---
+- name: Test playbook for community.network.pn_stp_port module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Generate random port number
+      set_fact:
+        random_port: "{{ 8000 + (ansible_play_hosts_all.index(inventory_hostname) | int) }}"
+
+    - name: Configure pn_stp_port module
+      community.network.pn_stp_port:
+        pn_cliswitch: "{{ pn_cliswitch }}"
+        pn_port: "{{ random_port }}"
+        pn_cost: "{{ pn_cost }}"
+        pn_priority: "{{ pn_priority }}"
+        pn_root_guard: "{{ pn_root_guard }}"
+        pn_bpdu_guard: "{{ pn_bpdu_guard }}"
+        pn_block: "{{ pn_block }}"
+        pn_edge: "{{ pn_edge }}"
+        pn_filter: "{{ pn_filter }}"
+        state: "{{ state }}"
+      vars:
+        pn_cliswitch: "switch1"
+        pn_cost: "100"
+        pn_priority: "32768"
+        pn_root_guard: "yes"
+        pn_bpdu_guard: "yes"
+        pn_block: "yes"
+        pn_edge: "yes"
+        pn_filter: "no"
+        state: "present"
+      register: result
+
+    - name: Display playbook result
+      debug:
+        var: result
+
+    - name: Fail the playbook if the module execution is without error
+      debug:
+        msg: "Type-related bug not found!"
+      failed_when: result is success
+
+    - name: Pass the playbook if the module execution fails
+      debug:
+        msg: "Type-related bug found!"
+      when: result is success

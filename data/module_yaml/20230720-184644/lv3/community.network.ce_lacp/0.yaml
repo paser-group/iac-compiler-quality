@@ -1,0 +1,38 @@
+---
+- name: Test playbook for community.network.ce_lacp
+  hosts: huawei_devices
+  gather_facts: false
+
+  tasks:
+    - name: Configure Eth-Trunk interface
+      community.network.ce_lacp:
+        aggregate_interfaces:
+          - "{{ item.aggregate_interface }}"
+        system_id: "{{ item.system_id }}"
+        mode: "{{ item.mode }}"
+        trunk_id: "{{ item.trunk_id }}"
+        priority: "{{ item.priority | default(32768) }}"
+        select: "{{ item.select }}"
+        unexpected_mac_disable: "{{ item.unexpected_mac_disable }}"
+        global_priority: "{{ item.global_priority }}"
+        state: "{{ item.state }}"
+      loop:
+        - aggregate_interface: 10GE1/0/1 to 10GE1/0/2
+          system_id: '00e0-fc00-0101'
+          mode: 'manual'
+          trunk_id: 1
+          priority: 32768
+          select: 'packets-based'
+          unexpected_mac_disable: false
+          global_priority: 0
+          state: present
+        - aggregate_interface: 10GE2/0/1 to 10GE2/0/2
+          system_id: '00e0-fc00-0102'
+          mode: 'manual'
+          trunk_id: 2
+          state_flapping: true
+      register: result
+
+    - name: Print result
+      debug:
+        var: result

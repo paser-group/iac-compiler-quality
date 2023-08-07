@@ -1,0 +1,30 @@
+- name: Download files from Cisco FTD
+  hosts: localhost
+  gather_facts: false
+  vars:
+    destinations:
+      - "{{ 'MyFile1.txt' | b64encode(force_ascii=True) }}"
+      - "{{ 'MyFile2.txt' | b64encode(force_ascii=True) }}"
+      - "{{ 'MyFile3.txt' | b64encode(force_ascii=True) }}"
+
+  tasks:
+    - name: Download file
+      community.network.ftd_file_download:
+        destination: "/path/to/destination/{{ item }}"
+        operation: "{{ item.operation }}"
+        path_params: "{{ item.path_params }}"
+      loop:
+        - { operation: "GET", path_params: { path: "/path/to/file1.txt" } }
+        - { operation: "GET", path_params: { path: "/path/to/file2.txt" } }
+        - { operation: "GET", path_params: { path: "/path/to/file3.txt" } }
+      loop_control:
+        loop_var: item
+
+      vars:
+        destination: "{{ destinations[loop.index0] | b64decode | force_ascii }}"
+
+      register: result
+
+    - name: Debug result
+      debug:
+        var: result

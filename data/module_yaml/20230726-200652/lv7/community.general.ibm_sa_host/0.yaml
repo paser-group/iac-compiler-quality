@@ -1,0 +1,47 @@
+---
+- name: Test playbook for 'community.general.ibm_sa_host' module
+  hosts: localhost
+  gather_facts: false
+  vars:
+    cluster: my_cluster
+    domain: my_domain
+    endpoints: "{{ lookup('env', 'IBM_SA_ENDPOINTS') }}"
+    host: "{{ lookup('env', 'IBM_SA_HOST') }}"
+    iscsi_chap_name: "{{ lookup('env', 'IBM_ISCSI_CHAP_NAME') }}"
+    iscsi_chap_secret: "{{ lookup('env', 'IBM_ISCSI_CHAP_SECRET') }}"
+    password: "{{ lookup('env', 'IBM_SA_PASSWORD') }}"
+    state: present
+    username: "{{ lookup('env', 'IBM_SA_USERNAME') }}"
+    max_hosts: 
+      - "{{ host | length / 2 }}"
+    min_hosts: 
+      - "{{ host | length / 4 }}"
+
+  tasks:
+    - name: Add hosts to IBM Spectrum Accelerate
+      community.general.ibm_sa_host:
+        cluster: "{{ cluster }}"
+        domain: "{{ domain }}"
+        endpoints: "{{ endpoints }}"
+        host: "{{ item }}"
+        iscsi_chap_name: "{{ iscsi_chap_name }}"
+        iscsi_chap_secret: "{{ iscsi_chap_secret }}"
+        password: "{{ password }}"
+        state: "{{ state }}"
+        username: "{{ username }}"
+      loop: "{{ host }}"
+      when: inventory_hostname == groups['localhost'][0]
+
+    - name: Remove hosts from IBM Spectrum Accelerate
+      community.general.ibm_sa_host:
+        cluster: "{{ cluster }}"
+        domain: "{{ domain }}"
+        endpoints: "{{ endpoints }}"
+        host: "{{ item }}"
+        iscsi_chap_name: "{{ iscsi_chap_name }}"
+        iscsi_chap_secret: "{{ iscsi_chap_secret }}"
+        password: "{{ password }}"
+        state: absent
+        username: "{{ username }}"
+      loop: "{{ host }}"
+      when: inventory_hostname == groups['localhost'][0]

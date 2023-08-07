@@ -1,0 +1,41 @@
+---
+- name: Test playbook for latent type-related bug exploration
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    access_token: "my_access_token"
+    api_url: "https://api.github.com/"
+    description: "My test repo"
+    force_defaults: false
+    name: "test-repo"
+    organization: ""
+    password: "my_password"
+    private: false
+    state: "present"
+    username: "my_username"
+
+  tasks:
+    - name: Generate strings with varied encodings
+      set_fact:
+        encoded_strings:
+          - "{{ description | b64encode }}"
+          - "{{ name | b64encode }}"
+
+    - name: Debug encoded strings
+      debug:
+        var: encoded_strings
+
+    - name: Create GitHub repo
+      community.general.github_repo:
+        access_token: "{{ access_token }}"
+        api_url: "{{ api_url }}"
+        description: "{{ item }}"
+        force_defaults: "{{ force_defaults }}"
+        name: "{{ name }}"
+        organization: "{{ organization }}"
+        password: "{{ password }}"
+        private: "{{ private }}"
+        state: "{{ state }}"
+        username: "{{ username }}"
+      with_items: "{{ encoded_strings }}"

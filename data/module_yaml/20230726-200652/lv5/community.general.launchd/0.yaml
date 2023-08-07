@@ -1,0 +1,33 @@
+---
+- name: Test playbook for latent type-related bugs in community.general.launchd module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Install the community.general collection
+      shell: ansible-galaxy collection install community.general
+
+    - name: Configure launchd service
+      community.general.launchd:
+        name: "com.sample.launchd"
+        state: started
+        enabled: true
+        force_stop: false
+
+    - name: Test random port settings
+      community.general.launchd:
+        name: "com.sample.launchd_with_random_ports"
+        state: started
+        enabled: true
+        force_stop: false
+        random_port_settings:
+          - launch_type: "command"
+            command: "python -m SimpleHTTPServer {{ item }}"
+            ports:
+              - "{{ range(8000, 9000) | random }}"
+              - "{{ range(8000, 9000) | random }}"
+          - launch_type: "daemon"
+            daemon: "/usr/bin/httpd"
+            ports:
+              - "{{ range(8000, 9000) | random }}"
+              - "{{ range(8000, 9000) | random }}"

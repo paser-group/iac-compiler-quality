@@ -1,0 +1,65 @@
+---
+- name: Gather Vertica Info
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Include the Vertica Info module
+      include_role:
+        name: 'community.general.vertica_info'
+        apply:
+          tags:
+            - always_skip
+
+    - name: Gather Vertica info
+      community.general.vertica_info:
+        cluster: "{{ vertica_cluster }}"
+        db: "{{ vertica_db }}"
+        login_user: "{{ vertica_login_user }}"
+        login_password: "{{ vertica_login_password }}"
+        port: "{{ vertica_port }}"
+      register: vertica_info_result
+
+    - name: Debug Vertica Info result
+      debug:
+        var: vertica_info_result
+
+    # Test Case 1
+    - name: Test Case - Division-based Operation
+      vars:
+        vertica_cluster: false/true
+        vertica_db: "test_db"
+        vertica_login_user: "admin"
+        vertica_login_password: "password"
+        vertica_port: "3306/{{ 1/0 }}"
+      community.general.vertica_info:
+        cluster: "{{ vertica_cluster }}"
+        db: "{{ vertica_db }}"
+        login_user: "{{ vertica_login_user }}"
+        login_password: "{{ vertica_login_password }}"
+        port: "{{ vertica_port }}"
+      register: test_case_1_result
+      failed_when: false
+
+    - name: Debug Test Case 1 result
+      debug:
+        var: test_case_1_result
+
+    # Test Case 2
+    - name: Test Case - Division-based Operation (Missing Variables)
+      vars:
+        vertica_login_user: "admin"
+        vertica_login_password: "password"
+        vertica_port: "3306/{{ 1/0 }}"
+      community.general.vertica_info:
+        cluster: "{{ vertica_cluster }}"
+        db: "{{ vertica_db }}"
+        login_user: "{{ vertica_login_user }}"
+        login_password: "{{ vertica_login_password }}"
+        port: "{{ vertica_port }}"
+      register: test_case_2_result
+      failed_when: false
+
+    - name: Debug Test Case 2 result
+      debug:
+        var: test_case_2_result

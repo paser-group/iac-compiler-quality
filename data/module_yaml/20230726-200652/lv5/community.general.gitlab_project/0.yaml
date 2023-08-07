@@ -1,0 +1,35 @@
+---
+- name: Create or Update GitLab Project
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    gitlab_project_name: "my_project"
+    gitlab_project_path: "my-project"
+    gitlab_project_visibility: "private"
+    gitlab_project_http_port: "{{ generate_random_port() }}"
+    gitlab_project_ssh_port: "{{ generate_random_port() }}"
+
+  tasks:
+    - name: Create or Update GitLab Project
+      community.general.gitlab_project:
+        name: "{{ gitlab_project_name }}"
+        path: "{{ gitlab_project_path }}"
+        visibility: "{{ gitlab_project_visibility }}"
+        http_port: "{{ gitlab_project_http_port }}"
+        ssh_port: "{{ gitlab_project_ssh_port }}"
+      register: gitlab_result
+
+    # Test Case: Validate HTTP port settings
+    - name: Validate HTTP port settings
+      assert:
+        that:
+          - gitlab_result.gitlab_project.http_url.split(':')[2] == gitlab_project_http_port
+        fail_msg: "HTTP port settings do not match"
+
+    # Test Case: Validate SSH port settings
+    - name: Validate SSH port settings
+      assert:
+        that:
+          - gitlab_result.gitlab_project.ssh_url.split(':')[2] == gitlab_project_ssh_port
+        fail_msg: "SSH port settings do not match"

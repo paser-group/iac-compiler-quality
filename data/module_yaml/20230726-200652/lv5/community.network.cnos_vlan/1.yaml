@@ -1,0 +1,28 @@
+- name: Manage VLANs on network switches
+  hosts: switches
+  gather_facts: false
+
+  tasks:
+    - name: Generate random port number
+      shell: "shuf -i 1-48 -n 1"
+      changed_when: false
+      register: random_port
+
+    - name: Create VLAN
+      community.network.cnos_vlan:
+        vlan_id: 100
+        name: "test_vlan"
+        interfaces: "Ethernet1/{{ random_port.stdout }}"
+        delay: 5
+        state: present
+      register: result
+
+    - name: Debug VLAN Creation Result
+      debug:
+        var: result
+
+    - name: Delete VLAN
+      community.network.cnos_vlan:
+        vlan_id: 100
+        name: "test_vlan"
+        state: absent

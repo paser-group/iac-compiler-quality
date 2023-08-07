@@ -1,0 +1,38 @@
+---
+- name: Test supervisorctl module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Install supervisor package
+      package:
+        name: supervisor
+        state: present
+
+    - name: Start supervisor service
+      service:
+        name: supervisor
+        state: started
+
+    - name: Create a sample program config file
+      copy:
+        content: |
+          [program:sample_program]
+          command=/usr/bin/sample_program
+        dest: /etc/supervisor/conf.d/sample_program.conf
+
+    - name: Reread supervisorctl config
+      community.general.supervisorctl:
+        name: reread
+
+    - name: Update supervisorctl state using mixed case for 'state' parameter
+      community.general.supervisorctl:
+        name: "{{ item.name }}"
+        state: "{{ item.state | lower }}"  # Using lowercase to test mixed case sensitivity bug
+      loop:
+        - { name: "sample_program", state: "Started" }
+        - { name: "sample_program", state: "Stopped" }
+
+    - name: Display supervisorctl status
+      debug:
+        var: supervisorctl_status

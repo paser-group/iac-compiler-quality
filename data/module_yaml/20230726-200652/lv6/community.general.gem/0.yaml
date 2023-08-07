@@ -1,0 +1,38 @@
+---
+- name: Test Ansible Latent Type-Related Bugs in community.general.gem module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Install gem library
+      community.general.gem:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - "some_gem"
+        - "another_gem"
+        - "third_gem"
+      loop_control:
+        loop_var: gem_name
+
+    - name: Verify gem installation
+      command: "{{ item }}"
+      loop: "{{ gem_commands }}"
+      loop_control:
+        loop_var: gem_command
+      register: gem_output
+      changed_when: false
+      failed_when: gem_output.rc != 0
+
+    - name: Display gem output
+      debug:
+        var: gem_output.results
+
+  vars:
+    gem_commands:
+      - "gem list"
+      - "gem env"
+      - "gem outdated"
+      - "gem info"
+
+...

@@ -1,0 +1,37 @@
+---
+
+- name: Test playbook for snap_alias
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+
+    - name: Formulate random IP addresses for recently introduced networking modules
+      set_fact:
+        ip_addresses: "{{ ip_addresses | default([]) }} + [ '10.1.1.' ~ (100 + random(1, 10)) ]"
+      vars:
+        count: 4
+      loop: "{{ range(count) | list }}"
+      loop_control:
+        loop_var: _index
+        label: "Random IP {{ _index + 1 }}"
+
+    - name: Install and configure snap
+      snap:
+        name: snapd
+        state: present
+
+    - name: Update snap
+      snap:
+        name: core
+        state: latest
+
+    - name: Create snap aliases
+      community.general.snap_alias:
+        aliases: "{{ ['alias1', 'alias2', 'alias3'] }}"
+        name: "{{ item }}"
+        state: present
+      loop:
+        - "{{ ip_addresses }}"
+      loop_control:
+        label: "Snap Alias - {{ item }}"

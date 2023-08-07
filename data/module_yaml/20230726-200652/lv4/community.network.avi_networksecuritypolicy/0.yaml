@@ -1,0 +1,167 @@
+- name: Test playbook for community.network.avi_networksecuritypolicy module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    # Define the network interface names for the nodes
+    ubuntu1_interface: eth0
+    alpine1_interface: eth0
+    centos1_interface: eth0
+    redhat1_interface: eth0
+
+  tasks:
+
+    - name: Generate random MAC address for Ubuntu1 node
+      set_fact:
+        ubuntu1_mac_address: "{{ '%012x'|format(ansible_random.generator.next_int(281474976710655))[:12] }}"
+
+    - name: Generate random MAC address for Alpine1 node
+      set_fact:
+        alpine1_mac_address: "{{ '%012x'|format(ansible_random.generator.next_int(281474976710655))[:12] }}"
+
+    - name: Generate random MAC address for CentOS1 node
+      set_fact:
+        centos1_mac_address: "{{ '%012x'|format(ansible_random.generator.next_int(281474976710655))[:12] }}"
+
+    - name: Generate random MAC address for RedHat1 node
+      set_fact:
+        redhat1_mac_address: "{{ '%012x'|format(ansible_random.generator.next_int(281474976710655))[:12] }}"
+
+    - name: Create network security policy for Ubuntu1 node
+      community.network.avi_networksecuritypolicy:
+        api_context: "{{ avi_api_context }}"
+        api_version: "{{ avi_api_version }}"
+        avi_credentials: "{{ avi_credentials }}"
+        controller: "{{ controller }}"
+        tenant: "{{ tenant }}"
+        name: "Policy for Ubuntu1"
+        description: "Network security policy for Ubuntu1 node"
+        rules: "{{ rules }}"
+        state: present
+        tenant_uuid: "{{ tenant_uuid }}"
+        tenant_ref: "{{ tenant_ref }}"
+        url: "{{ url }}"
+      delegate_to: ubuntu1
+      vars:
+        avi_api_context: "{{ api_context }}"
+        avi_api_version: "{{ api_version }}"
+        avi_credentials: "{{ credentials }}"
+        controller: "{{ controller }}"
+        tenant: "{{ tenant }}"
+        tenant_uuid: "{{ tenant_uuid }}"
+        tenant_ref: "{{ tenant_ref }}"
+        url: "{{ url }}"
+        rules:
+          - name: Allow SSH
+            action:
+              - type: REFLEXIVE_ACL
+            enable: true
+            logs_enabled: false
+            protocol: TCP
+            services:
+              - tcp/22
+
+    - name: Create network security policy for Alpine1 node
+      community.network.avi_networksecuritypolicy:
+        api_context: "{{ avi_api_context }}"
+        api_version: "{{ avi_api_version }}"
+        avi_credentials: "{{ avi_credentials }}"
+        controller: "{{ controller }}"
+        tenant: "{{ tenant }}"
+        name: "Policy for Alpine1"
+        description: "Network security policy for Alpine1 node"
+        rules: "{{ rules }}"
+        state: present
+        tenant_uuid: "{{ tenant_uuid }}"
+        tenant_ref: "{{ tenant_ref }}"
+        url: "{{ url }}"
+      delegate_to: alpine1
+      vars:
+        avi_api_context: "{{ api_context }}"
+        avi_api_version: "{{ api_version }}"
+        avi_credentials: "{{ credentials }}"
+        controller: "{{ controller }}"
+        tenant: "{{ tenant }}"
+        tenant_uuid: "{{ tenant_uuid }}"
+        tenant_ref: "{{ tenant_ref }}"
+        url: "{{ url }}"
+        rules:
+          - name: Allow Web Traffic
+            action:
+              - type: FORWARD
+            enable: true
+            logs_enabled: false
+            protocol: TCP
+            services:
+              - tcp/80
+              - tcp/443
+
+    - name: Create network security policy for CentOS1 node
+      community.network.avi_networksecuritypolicy:
+        api_context: "{{ avi_api_context }}"
+        api_version: "{{ avi_api_version }}"
+        avi_credentials: "{{ avi_credentials }}"
+        controller: "{{ controller }}"
+        tenant: "{{ tenant }}"
+        name: "Policy for CentOS1"
+        description: "Network security policy for CentOS1 node"
+        rules: "{{ rules }}"
+        state: present
+        tenant_uuid: "{{ tenant_uuid }}"
+        tenant_ref: "{{ tenant_ref }}"
+        url: "{{ url }}"
+      delegate_to: centos1
+      vars:
+        avi_api_context: "{{ api_context }}"
+        avi_api_version: "{{ api_version }}"
+        avi_credentials: "{{ credentials }}"
+        controller: "{{ controller }}"
+        tenant: "{{ tenant }}"
+        tenant_uuid: "{{ tenant_uuid }}"
+        tenant_ref: "{{ tenant_ref }}"
+        url: "{{ url }}"
+        rules:
+          - name: Allow DNS
+            action:
+              - type: REFLEXIVE_ACL
+            enable: true
+            logs_enabled: false
+            protocol: UDP
+            services:
+              - udp/53
+
+    - name: Create network security policy for RedHat1 node
+      community.network.avi_networksecuritypolicy:
+        api_context: "{{ avi_api_context }}"
+        api_version: "{{ avi_api_version }}"
+        avi_credentials: "{{ avi_credentials }}"
+        controller: "{{ controller }}"
+        tenant: "{{ tenant }}"
+        name: "Policy for RedHat1"
+        description: "Network security policy for RedHat1 node"
+        rules: "{{ rules }}"
+        state: present
+        tenant_uuid: "{{ tenant_uuid }}"
+        tenant_ref: "{{ tenant_ref }}"
+        url: "{{ url }}"
+      delegate_to: redhat1
+      vars:
+        avi_api_context: "{{ api_context }}"
+        avi_api_version: "{{ api_version }}"
+        avi_credentials: "{{ credentials }}"
+        controller: "{{ controller }}"
+        tenant: "{{ tenant }}"
+        tenant_uuid: "{{ tenant_uuid }}"
+        tenant_ref: "{{ tenant_ref }}"
+        url: "{{ url }}"
+        rules:
+          - name: Allow ICMP
+            action:
+              - type: REFLEXIVE_ACL
+            enable: true
+            logs_enabled: false
+            protocol: ICMP
+
+    - name: Debug message
+      debug:
+        msg: "Network security policies created for all nodes"

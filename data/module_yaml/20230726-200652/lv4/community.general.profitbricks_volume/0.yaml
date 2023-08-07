@@ -1,0 +1,56 @@
+---
+- name: Test playbook for community.general.profitbricks_volume module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create ProfitBricks Volume
+      community.general.profitbricks_volume:
+        auto_increment: "{{ ['yes', 'no'] | random }}"
+        bus: "{{ ['VIRTIO', 'IDE', 'SCSI'] | random }}"
+        count: "{{ range(1, 5) | random }}"
+        datacenter: "{{ ['EU', 'US'] | random }}"
+        disk_type: "{{ ['HDD', 'SSD']| random }}"
+        image: "{{ ['ubuntu', 'centos'] | random }}"
+        image_password: "{{ random_password(10) }}"
+        instance_ids: "{{ ['instance_1', 'instance_2'] | random }}"
+        licence_type: "{{ ['LINUX', 'WINDOWS'] | random }}"
+        name: "volume_{{ item }}"
+        server: "{{ ['server_1', 'server_2'] | random }}"
+        size: "{{ range(10, 31) | random }}"
+        ssh_keys:
+          - "{{ item }}"
+        state: "{{ ['present', 'absent'] | random }}"
+        subscription_password: "{{ random_password(10) }}"
+        subscription_user: "{{ random_password(10) }}"
+        wait: "{{ ['yes', 'no'] | random }}"
+        wait_timeout: "{{ range(1, 10) | random }}"
+      loop: "{{ range(1, 5) | list }}"
+
+    - name: Debug Output
+      debug:
+        var: ansible_facts["community_general_profitbricks_volume_result"]["changed"]
+
+    # Add more tasks to test other attributes/options of the module
+
+  vars:
+    ansible_python_interpreter: "{{ ansible_playbook_python }}"
+    ansible_playbook_python: "{{ ansible_playbook_python or ansible_python_interpreter }}"
+
+  pre_tasks:
+    - name: Install ProfitBricks Python SDK
+      pip:
+        name: "profitbricks"
+        state: present
+
+    - name: Generate random MAC addresses
+      set_fact:
+        mac_addresses: "{{ mac_addresses | default([]) + [random_mac_address()] }}"
+        random_password: "{{ random_password(length) | default('') }}"
+      vars:
+        length: "{{ range(8, 13) | random }}"
+
+  handlers:
+    - name: Random MAC Address Generator
+      debug:
+        msg: "Generated random MAC addresses: {{ mac_addresses }}"

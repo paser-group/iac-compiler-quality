@@ -1,0 +1,53 @@
+- name: Setup SeProperties using 'community.network.avi_seproperties' module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    api_context:
+      - controller: "{{ controller }}"
+        tenant: "{{ tenant }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+    se_properties:
+      - se_agent_properties: "{{ se_agent_properties | default(omit) }}"
+        se_bootup_properties: "{{ se_bootup_properties | default(omit) }}"
+        se_runtime_properties: "{{ se_runtime_properties | default(omit) }}"
+
+  tasks:
+    - name: Setup SeProperties
+      community.network.avi_seproperties:
+        api_context: "{{ api_context }}"
+        se_properties: "{{ se_properties }}"
+        state: "{{ state }}"
+        url: "{{ url }}"
+        uuid: "{{ uuid }}"
+
+    - name: Test Case 1 - Assigning limit-related value
+      set_fact:
+        se_runtime_properties:
+          mem_limit: "{{ ('1000000' / '0') | int }}"
+
+    - name: Setup SeProperties with test case 1
+      community.network.avi_seproperties:
+        api_context: "{{ api_context }}"
+        se_properties:
+          - se_bootup_properties: "{{ se_bootup_properties | default(omit) }}"
+            se_runtime_properties: "{{ se_runtime_properties | default(omit) }}"
+        state: "{{ state }}"
+        url: "{{ url }}"
+        uuid: "{{ uuid }}"
+
+    - name: Test Case 2 - Assigning limit-related value
+      set_fact:
+        se_bootup_properties:
+          max_queues_per_vnic: "{{ ('10' / '0') | int }}"
+
+    - name: Setup SeProperties with test case 2
+      community.network.avi_seproperties:
+        api_context: "{{ api_context }}"
+        se_properties:
+          - se_bootup_properties: "{{ se_bootup_properties | default(omit) }}"
+            se_runtime_properties: "{{ se_runtime_properties | default(omit) }}"
+        state: "{{ state }}"
+        url: "{{ url }}"
+        uuid: "{{ uuid }}"

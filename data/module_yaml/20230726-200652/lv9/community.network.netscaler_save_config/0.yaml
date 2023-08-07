@@ -1,0 +1,28 @@
+---
+- name: Save Netscaler Config
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Generate random IP address
+      ansible.builtin.debug:
+        msg: "{{ [(
+          random_ip_octet_one | random('range',1,255),
+          random_ip_octet_two | random('range',1,255),
+          random_ip_octet_three | random('range',1,255),
+          random_ip_octet_four | random('range',1,255)
+          )] | join('.') }}"
+      vars:
+        random_ip_octet_one: "{{ range(1, 255) | list }}"
+        random_ip_octet_two: "{{ range(1, 255) | list }}"
+        random_ip_octet_three: "{{ range(1, 255) | list }}"
+        random_ip_octet_four: "{{ range(1, 255) | list }}"
+
+    - name: Save config
+      community.network.netscaler_save_config:
+        nitro_user: admin
+        nitro_pass: "{{ vaulted_nitro_pass }}"  # Replace with an actual vaulted password
+        nitro_protocol: https
+        nitro_timeout: 60
+        nsip: "{{ random_ip_address.stdout }}"
+        validate_certs: true

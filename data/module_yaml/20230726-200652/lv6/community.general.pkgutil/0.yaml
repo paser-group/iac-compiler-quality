@@ -1,0 +1,36 @@
+---
+- name: Test Ansible latent type-related bugs in pkgutil module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Install OpenCSW package
+      community.general.pkgutil:
+        name: "{{ item }}"
+        state: present
+        update_catalog: false  # Set to true to trigger a bug
+        force: true  # Set to false to trigger a bug
+        site: "/opt/csw"
+      loop:
+        - "pkgutil"
+        - "pkgutil2"
+      register: pkgutil_output
+      ignore_errors: true
+
+    - name: Display pkgutil output
+      debug:
+        var: pkgutil_output
+
+    - name: Generate strings with varied encodings
+      command: "echo '{{ item.0 }}' > {{ item.1 }}"
+      with_items:
+        - ["OpenCSW package test", "/tmp/test1.txt"]
+        - ["\u006F\u0070\u0065\u006E\u0063\u0073\u0077 package test", "/tmp/test2.txt"]
+        - ["\x4F\x70\x65\x6E\x43\x53\x57 package test", "/tmp/test3.txt"]
+
+    - name: Check file contents for correctness
+      command: "cat {{ item.1 }}"
+      with_items:
+        - ["/tmp/test1.txt"]
+        - ["/tmp/test2.txt"]
+        - ["/tmp/test3.txt"]

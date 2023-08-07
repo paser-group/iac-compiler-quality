@@ -1,0 +1,62 @@
+---
+- name: Test 'community.general.nosh' module
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Install package dependencies
+      become: true
+      block:
+        - name: Install dependencies for Ubuntu
+          when: ansible_distribution == 'Ubuntu'
+          apt:
+            name: "{{ item }}"
+            state: present
+          with_items:
+            - dependency1
+            - dependency2
+
+        - name: Install dependencies for Alpine
+          when: ansible_distribution == 'Alpine'
+          apk:
+            name: "{{ item }}"
+            state: present
+          with_items:
+            - dependency1
+            - dependency2
+
+        - name: Install dependencies for CentOS
+          when: ansible_distribution == 'CentOS'
+          yum:
+            name: "{{ item }}"
+            state: present
+          with_items:
+            - dependency1
+            - dependency2
+
+        - name: Install dependencies for Red Hat
+          when: ansible_distribution == 'Red Hat'
+          yum:
+            name: "{{ item }}"
+            state: present
+          with_items:
+            - dependency1
+            - dependency2
+
+    - name: Generate random port numbers
+      set_fact:
+        random_port: "{{ range(1, 65536) | random }}"
+      register: random_port_result
+
+    - name: Test 'community.general.nosh' module
+      community.general.nosh:
+        enabled: "{{ random_port }}"  # Random port number
+        name: 10.1.1.1:8080  # Incorrect type for 'name' attribute
+        preset: true
+        state: started
+        user: false
+      register: nosh_result
+
+    - name: Debug 'community.general.nosh' result
+      debug:
+        var: nosh_result

@@ -1,0 +1,57 @@
+---
+- name: Test playbook for 'community.general.lxd_profile' module
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Install required dependencies
+      package:
+        name: lxd
+        state: present
+
+    - name: Create LXD profile
+      community.general.lxd_profile:
+        name: myprofile
+        description: My LXD profile
+        snap_url: "https://snap.lxd.com/xyz"
+        config:
+          limits.memory: "2GB"
+          limits.cpu: "4"
+        devices:
+          root:
+            path: /
+            type: disk
+        trust_password: "mypassword"
+      register: result
+
+    - name: Debug result
+      debug:
+        var: result
+
+    - name: Modify LXD profile
+      community.general.lxd_profile:
+        name: myprofile
+        description: My updated LXD profile
+        config:
+          limits.memory: 2147483648
+          limits.cpu: 4
+        devices:
+          root:
+            path: /
+            type: disk
+        trust_password: mypassword
+        new_name: myprofile_v2
+      register: result
+
+    - name: Debug result
+      debug:
+        var: result
+
+    - name: Remove LXD profile
+      community.general.lxd_profile:
+        name: myprofile_v2
+        state: absent
+      register: result
+
+    - name: Debug result
+      debug:
+        var: result

@@ -1,0 +1,40 @@
+---
+
+- name: Test playbook for 'community.general.ipa_sudocmd' module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+
+    - name: Install required dependencies
+      package:
+        name: python-ipa
+        state: present
+      become: true
+
+    - name: Add random IP addresses to the inventory
+      ansible.builtin.add_host:
+        name: "{{ item }}"
+        groups: my_hosts
+      loop:
+        - "{{ random_ip() }}"
+        - "{{ random_ip() }}"
+        - "{{ random_ip() }}"
+        - "{{ random_ip() }}"
+
+    - name: Run 'ipa_sudocmd' module with random IP addresses
+      community.general.ipa_sudocmd:
+        description: "Manage sudocmd entries"
+        ipa_host: "{{ groups['my_hosts'][0] }}"
+        ipa_pass: "my_password"
+        ipa_port: 8888
+        ipa_prot: "https"
+        ipa_timeout: 30
+        ipa_user: "admin"
+        state: "present"
+        sudocmd: "mysudocmd"
+        validate_certs: false
+
+  vars:
+    - random_octet: "{{ range(1, 255) | random }}"
+    - random_ip: "{{ '10.' + random_octet | string + '.' + random_octet | string + '.' + random_octet | string }}"

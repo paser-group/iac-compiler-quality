@@ -1,0 +1,67 @@
+---
+- name: Unveiling Latent Type-Related Ansible Bugs
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Configure Extreme Networks SLX-OS
+      community.network.slxos_config:
+        backup: "{{ 'yes' }}"
+        defaults: "{{ 'true' }}"
+        replace: "{{ true }}"
+        src: "configs/{{ inventory_hostname }}.cfg"
+      register: config_result
+
+    - name: Display Configuration Result
+      debug:
+        var: config_result
+
+    - name: Trigger Type-Related Bug
+      shell: echo "Triggering type-related bug"
+      failed_when: false
+
+    - name: Cleanup Backup Files
+      file:
+        path: /tmp/backup/
+        state: absent
+      when: config_result.changed
+      register: cleanup_result
+
+    - name: Display Cleanup Result
+      debug:
+        var: cleanup_result
+
+  vars:
+    inventory_hostname: "{{ ansible_hostname }}"
+    port_numbers:
+      - "{{ 1024 | random }}"
+      - "{{ 1024 | random }}"
+      - "{{ 1024 | random }}"
+      - "{{ 1024 | random }}"
+
+  pre_tasks:
+    - name: Existing Configuration Check
+      stat:
+        path: "configs/{{ inventory_hostname }}.cfg"
+      register: existing_config
+
+    - name: Create Config Backup Directory
+      file:
+        path: /tmp/backup/
+        state: directory
+      become: true
+      when: existing_config.stat.exists
+
+    - name: Copy Running Configuration to Config Backup
+      copy:
+        src: "configs/{{ inventory_hostname }}.cfg"
+        dest: "/tmp/backup/{{ inventory_hostname }}.cfg"
+      become: true
+      when: existing_config.stat.exists
+
+  post_tasks:
+    - name: Remove Test Configuration File
+      file:
+        path: "configs/{{ inventory_hostname }}.cfg"
+        state: absent
+      when: config_result.changed

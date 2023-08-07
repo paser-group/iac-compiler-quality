@@ -1,0 +1,44 @@
+---
+- name: Test playbook for exposing latent type-related bugs
+  hosts: localhost
+  gather_facts: False
+
+  vars:
+    gslbgeodbprofile_name: test-gslbgeodbprofile
+    gslbgeodbprofile_description: Test Geo DB Profile
+    gslbgeodbprofile_entries: 
+      - description: Test Entry
+        geo_db_ref:
+          url: https://example.com/geo_db_file.txt
+        countries:
+          - name: country1
+        dcc_exempt: true
+
+  tasks:
+    - name: Include the Avi SDK library
+      include_vars:
+        file: "~/ansible/library/community/network/avi/sdk/library/main.yml"
+
+    - name: Create the gslbgeodbprofile
+      community.network.avi_gslbgeodbprofile:
+        controller: "https://{{ inventory_hostname }}"
+        username: "{{ avi_username }}"
+        password: "{{ avi_password }}"
+        tenant: admin
+        state: present
+        name: "{{ gslbgeodbprofile_name }}"
+        description: "{{ gslbgeodbprofile_description }}"
+        entries: "{{ gslbgeodbprofile_entries }}"
+
+    - name: Verify if gslbgeodbprofile is present
+      community.network.avi_gslbgeodbprofile_facts:
+        controller: "https://{{ inventory_hostname }}"
+        username: "{{ avi_username }}"
+        password: "{{ avi_password }}"
+        tenant: admin
+        gslbgeodbprofile_name: "{{ gslbgeodbprofile_name }}"
+      register: gslbgeodbprofile_facts
+
+    - name: Print the gslbgeodbprofile facts
+      debug:
+        var: gslbgeodbprofile_facts

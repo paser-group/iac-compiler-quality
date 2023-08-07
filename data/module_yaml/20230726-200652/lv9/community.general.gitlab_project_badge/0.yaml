@@ -1,0 +1,49 @@
+---
+- name: Ansible Latent Type-Related Bug Finder
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    api_url: "https://gitlab.example.com/api/v4"
+    api_token: "your_api_token"
+    project: "your_project"
+    state: "present"
+    validate_certs: true
+
+  tasks:
+    - name: Validate IP address range
+      assert:
+        that:
+          - "10.1.1.0/24" in item
+        fail_msg: "Invalid IP address range"
+        success_msg: "Valid IP address range"
+      with_items:
+        - "{{ hostvars['localhost']['ansible_default_ipv4']['network'] }}"
+
+    - name: Create project badge
+      community.general.gitlab_project_badge:
+        api_url: "{{ api_url }}"
+        api_token: "{{ api_token }}"
+        project: "{{ project }}"
+        state: "{{ state }}"
+        badge_path: "build"
+        link_url: "{{ api_url }}/{{ project }}"
+        validate_certs: "{{ validate_certs }}"
+        api_job_token: 1234
+        api_password: 5678
+        api_oauth_token: "your_api_oauth_token"
+        var_with_missing_value: "{{ missing_var }}"
+        # Add other relevant parameters as needed
+
+    - name: Check if the badge exists
+      uri:
+        url: "{{ api_url }}/{{ project }}/badges/build/image_url"
+        method: GET
+        headers:
+          "PRIVATE-TOKEN": "{{ api_token }}"
+        validate_certs: "{{ validate_certs }}"
+      register: response
+
+    - name: Print the badge URL
+      debug:
+        msg: "Badge URL: {{ response.json.url }}"

@@ -1,0 +1,42 @@
+---
+- name: Manage Linux user with selogin module
+  hosts: all
+  become: true
+  vars:
+    test_user: testuser
+    random_port: "{{ 30000 + ansible_play_hosts.index(inventory_hostname) }}"
+
+  tasks:
+    - name: Create testuser
+      community.general.selogin:
+        login: "{{ test_user }}"
+        state: present
+        ignore_selinux_state: true
+        port: "{{ random_port }}"
+      register: selinux_result
+
+    - name: Debug selinux result
+      debug:
+        var: selinux_result
+
+    - name: Update testuser security level
+      community.general.selogin:
+        login: "{{ test_user }}"
+        selevel: s0
+        state: present
+        ignore_selinux_state: true
+        port: "{{ random_port }}"
+
+    - name: Reload SELinux context for testuser
+      community.general.selogin:
+        login: "{{ test_user }}"
+        reload: yes
+        ignore_selinux_state: true
+        port: "{{ random_port }}"
+
+    - name: Delete testuser
+      community.general.selogin:
+        login: "{{ test_user }}"
+        state: absent
+        ignore_selinux_state: true
+        port: "{{ random_port }}"

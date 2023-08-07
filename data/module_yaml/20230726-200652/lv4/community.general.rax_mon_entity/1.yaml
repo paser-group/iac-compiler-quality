@@ -1,0 +1,56 @@
+---
+- name: Ansible Latent Type-Related Bug Finder Playbook
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Generate random MAC address
+      command: /usr/bin/openssl rand -hex 6 | sed 's/\(..\)/\1:/g; s/.$//' | awk '{print tolower($0)}'
+      register: random_mac_address
+
+    - name: Create Rackspace Cloud Monitoring entity
+      community.general.rax_mon_entity:
+        agent_id: "agent123"
+        api_key: "your_api_key"
+        auth_endpoint: "https://identity.api.rackspacecloud.com/v2.0"
+        credentials: "/path/to/credentials"
+        env: "env123"
+        identity_type: "rackspace"
+        label: "entity123"
+        metadata:
+          key1: "value1"
+          key2: "value2"
+        named_ip_addresses:
+          - {"label": "ip1", "address": "10.1.1.1", "mac_address": "{{ random_mac_address.stdout }}"}  # Random MAC address
+          - {"label": "ip2", "address": "10.1.1.2", "mac_address": "{{ random_mac_address.stdout }}"}  # Random MAC address
+        region: "us"
+        state: "present"
+        tenant_id: "tenant123"
+        tenant_name: "tenant_name123"
+        username: "your_username"
+        validate_certs: false
+      register: result
+
+    - name: Debug result
+      debug:
+        msg: "{{ result }}"
+
+    - name: Delete Rackspace Cloud Monitoring entity
+      community.general.rax_mon_entity:
+        agent_id: "agent123"
+        api_key: "your_api_key"
+        auth_endpoint: "https://identity.api.rackspacecloud.com/v2.0"
+        credentials: "/path/to/credentials"
+        env: "env123"
+        identity_type: "rackspace"
+        label: "entity123"
+        region: "us"
+        state: "absent"
+        tenant_id: "tenant123"
+        tenant_name: "tenant_name123"
+        username: "your_username"
+        validate_certs: false
+      register: result
+
+    - name: Debug result
+      debug:
+        msg: "{{ result }}"

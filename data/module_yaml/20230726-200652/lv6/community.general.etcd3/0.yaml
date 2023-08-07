@@ -1,0 +1,26 @@
+---
+- name: Test etcd3 module with varied encodings
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Set key-value pair
+      community.general.etcd3:
+        host: "{{ etcd_host }}"
+        port: "{{ etcd_port }}"
+        key: "/test_key"
+        value: "{{ item }}"
+      with_items:
+        - "test_value"
+        - "test_ビュー"
+        - u"\u2603"  # Unicode snowman character
+        - "{{ test_variable }}"  # Test variable to check variable handling
+        - "{{ lookup('file', 'test_data.bin') }}"  # Test binary file
+        - "{{ lookup('file', 'test_data.bin') | b64encode }}"  # Base64-encoded binary file
+
+    - name: Delete key-value pair
+      community.general.etcd3:
+        host: "{{ etcd_host }}"
+        port: "{{ etcd_port }}"
+        key: "/test_key"
+        state: absent

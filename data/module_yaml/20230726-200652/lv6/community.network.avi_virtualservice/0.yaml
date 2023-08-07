@@ -1,0 +1,85 @@
+---
+- name: Test playbook for community.network.avi_virtualservice module
+  hosts: localhost
+  gather_facts: False
+
+  tasks:
+    - name: Create virtual service with varied encodings
+      community.network.avi_virtualservice:
+        controller: "{{ controller }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        state: present
+        tenant: "test_tenant"
+        name: "vs_test"
+        tenant_uuid: "test_tenant_uuid"
+        ip_address: "10.1.1.5"
+        port_uuid: "test_port_uuid"
+        vip: "10.1.1.6"
+        type: "HTTP"
+        username: "{{ username | b64encode }}"
+        password: "{{ password | b64encode }}"
+        analytics_policy: "{ type: 'realtime' }"
+        analytics_profile_ref: "/api/analyticsprofile?name=analytics_profile"
+        api_version: "20.1.1"
+        avi_credentials: { username: "admin", password: "admin" }
+        enable_autogw: "{{ enable_autogw }}"
+        enable_rhi: "{{ enable_rhi }}"
+        enable_rhi_snat: "{{ enable_rhi_snat }}"
+        enabled: True
+        error_page_profile_ref: "/api/errorpageprofile?name=error_page_profile"
+        floating_subnet_uuid: "test_floating_subnet_uuid"
+        flow_dist: "CONSISTENT_HASH_SOURCE_IP_ADDRESS"
+        fqdn: "{{ fqdn }}"
+        http_policies: "{{ http_policies }}"
+        ipam_network_subnet: "/api/ipamnetworksubnet?name=test_subnet"
+        l4_policies: "{{ l4_policies }}"
+        limit_doser: True
+        network_profile_ref: "/api/networkprofile?name=network_profile"
+        network_ref: "/api/network?name=network"
+        services: "{{ services }}"
+
+      vars:
+        controller: "https://mycontroller.com"
+        username: "admin"
+        password: "admin"
+        enable_autogw: True
+        enable_rhi: False
+        enable_rhi_snat: True
+        fqdn: "www.example.com"
+        http_policies:
+          - name: "http_policy_1"
+            action: "http_policy_action_1"
+          - name: "http_policy_2"
+            action: "http_policy_action_2"
+        l4_policies:
+          - name: "l4_policy_1"
+            algorithm: "ROUND_ROBIN"
+          - name: "l4_policy_2"
+            algorithm: "LEAST_CONNECTIONS"
+        services:
+          - service: "service1"
+            type: "http"
+            enable_ssl: true
+            ssl_profile_selectors:
+              - ssl_profile: "ssl_profile_1"
+                enabled: true
+              - ssl_profile: "ssl_profile_2"
+                enabled: false
+
+    - name: Update virtual service with invalid client cert option
+      community.network.avi_virtualservice:
+        controller: "{{ controller }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        state: present
+        tenant: "test_tenant"
+        name: "vs_test"
+        tenant_uuid: "test_tenant_uuid"
+        allow_invalid_client_cert: "{{ allow_invalid_client_cert }}"
+      
+      vars:
+        controller: "https://mycontroller.com"
+        username: "admin"
+        password: "admin"
+        allow_invalid_client_cert: True

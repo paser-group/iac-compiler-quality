@@ -1,0 +1,64 @@
+---
+- name: Test playbook for community.network.avi_gslbgeodbprofile module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create GslbGeoDbProfile
+      community.network.avi_gslbgeodbprofile:
+        controller: "https://{{ controller }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        state: present
+        name: "Test_GeoDbProfile"
+        tenant: "admin"
+        entries:
+          - name: "Entry1"
+            entity_type: "GEO_COUNTRY"
+            external_type: "GEO_EXTERNAL_TYPE_GCC"
+            geodb_file: "/path/to/geodb1_{{ item }}.txt"
+            is_federated: false
+          - name: "Entry2"
+            entity_type: "GEO_CONTINENT"
+            external_type: "GEO_EXTERNAL_TYPE_WHOIS"
+            geodb_file: "/path/to/geodb2_{{ item }}.txt"
+            is_federated: true
+      register: result
+      with_items: "{{ range(10) | random_sequence }}"
+
+    - name: Debug output
+      debug:
+        var: result.ansible_loops
+
+    - name: Update GslbGeoDbProfile
+      community.network.avi_gslbgeodbprofile:
+        controller: "https://{{ controller }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        state: present
+        name: "Test_GeoDbProfile"
+        tenant: "admin"
+        entries:
+          - name: "Entry1"
+            geodb_file: "/path/to/geodb1_updated_{{ item }}.txt"
+            is_federated: true
+      register: result_update
+      with_items: "{{ range(5) | random_sequence }}"
+
+    - name: Debug output
+      debug:
+        var: result_update
+
+    - name: Delete GslbGeoDbProfile
+      community.network.avi_gslbgeodbprofile:
+        controller: "https://{{ controller }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        state: absent
+        name: "Test_GeoDbProfile"
+        tenant: "admin"
+      register: result_delete
+
+    - name: Debug output
+      debug:
+        var: result_delete

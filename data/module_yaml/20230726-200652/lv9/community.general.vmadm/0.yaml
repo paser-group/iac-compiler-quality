@@ -1,0 +1,125 @@
+---
+- name: Unveiling latent type-related bugs in Ansible
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    inventory_file: inventory.ini
+
+  tasks:
+    # Task 1: Create inventory file
+    - name: Create inventory file
+      file:
+        path: "{{ inventory_file }}"
+        state: touch
+      delegate_to: localhost
+
+    # Task 2: Generate random IP addresses for Docker nodes
+    - name: Generate random IP addresses for Docker nodes
+      command: ip -o addr show dev eth0 scope global
+      register: ip_addresses
+      delegate_to: "{{ item }}"
+      with_items:
+        - ubuntu1
+        - alpine1
+        - centos1
+        - redhat1
+
+    # Task 3: Add Docker nodes to inventory file
+    - name: Add Docker nodes to inventory file
+      lineinfile:
+        path: "{{ inventory_file }}"
+        line: "{{ item.item }} ansible_host={{ item.stdout_lines[0].split(' ')[3].split('/')[0] }}"
+        state: present
+      delegate_to: localhost
+      with_items: "{{ ip_addresses.results }}"
+          
+    # Task 4: Provision Docker nodes using 'community.general.vmadm' module
+    - name: Provision Docker nodes
+      vmadm:
+        archive_on_delete: true
+        autoboot: true
+        boot: "boot_device_name"
+        brand: "docker"
+        cpu_cap: 100
+        cpu_shares: 1024
+        cpu_type: "host"
+        customer_metadata:
+          key1: value1
+          key2: value2
+        delegate_dataset: true
+        disk_driver: "disk_driver_name"
+        disks:
+          - "{{ inventory_hostname }}_disk1"
+          - "{{ inventory_hostname }}_disk2"
+        dns_domain: "example.com"
+        docker: true
+        filesystems:
+          - "{{ inventory_hostname }}_fs1"
+          - "{{ inventory_hostname }}_fs2"
+        firewall_enabled: true
+        force: true
+        fs_allowed: "/path/to/allowed_fs"
+        hostname: "{{ inventory_hostname }}"
+        image_uuid: "image_uuid_here"
+        indestructible_delegated: true
+        indestructible_zoneroot: true
+        internal_metadata:
+          key1: value1
+          key2: value2
+        internal_metadata_namespace: "metadata_namespace"
+        kernel_version: "4.19"
+        limit_priv: "limit_privilege"
+        maintain_resolvers: true
+        max_locked_memory: 1024
+        max_lwps: 2048
+        max_physical_memory: 4096
+        max_swap: 8192
+        mdata_exec_timeout: 60
+        name: "{{ inventory_hostname }}"
+        nic_driver: "nic_driver_name"
+        nics:
+          - "{{ inventory_hostname }}_nic1"
+          - "{{ inventory_hostname }}_nic2"
+        nowait: true
+        qemu_extra_opts: "-device intel-igd-passthru"
+        qemu_opts: "-m 8192"
+        quota: 100
+        ram: 4096
+        resolvers:
+          - "8.8.8.8"
+          - "8.8.4.4"
+        routes:
+          default:
+            gateway: "10.1.1.254"
+            network: "0.0.0.0"
+          specific:
+            gateway: "192.168.0.1"
+            network: "192.168.0.0"
+        spice_opts: "-spice port=5912"
+        spice_password: "secretpassword"
+        state: "running"
+        tmpfs: 512
+        uuid: "uuid_here"
+        vcpus: 2
+        vga: "std"
+        virtio_txburst: 64
+        virtio_txtimer: 1000
+        vnc_password: "vncpassword"
+        vnc_port: 5901
+        zfs_data_compression: "map"
+        zfs_data_recsize: 4096
+        zfs_filesystem_limit: 32
+        zfs_io_priority: 16
+        zfs_root_compression: "gzip"
+        zfs_root_recsize: 8192
+        zfs_snapshot_limit: 10
+        zpool: "zpool_name"
+        provider: "vmadm"
+
+      register: result
+      delegate_to: localhost
+      
+      # Include debug output of the module results
+    - debug:
+        var: result

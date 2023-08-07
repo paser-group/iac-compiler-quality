@@ -1,0 +1,38 @@
+---
+- hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Generate random IP address
+      shell: |
+        echo $((RANDOM%255)).$((RANDOM%255)).$((RANDOM%255)).$((RANDOM%255))
+      register: ip_result
+
+    - name: Debug IP address
+      debug:
+        var: ip_result.stdout
+
+    - name: Add host to known hosts file
+      ansible.builtin.known_hosts:
+        name: "{{ ip_result.stdout }}"
+        key: "{{ host_key }}"
+        path: "{{ known_hosts_file }}"
+        state: present
+      register: add_host_result
+      ignore_errors: true
+
+    - name: Debug add host result
+      debug:
+        var: add_host_result
+
+    - name: Remove host from known hosts file
+      ansible.builtin.known_hosts:
+        name: "{{ ip_result.stdout }}"
+        path: "{{ known_hosts_file }}"
+        state: absent
+      register: remove_host_result
+      ignore_errors: true
+
+    - name: Debug remove host result
+      debug:
+        var: remove_host_result

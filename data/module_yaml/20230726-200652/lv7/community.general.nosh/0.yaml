@@ -1,0 +1,45 @@
+---
+- name: Test playbook for exposing latent type-related bugs
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Set variables for subnet and gateway
+      vars:
+        subnet: "10.1.1.0"
+        gateway: "10.1.1.254"
+
+    - name: Generate IP addresses for Docker nodes
+      set_fact:
+        ubuntu1_ip: "{{ subnet + '.1' }}"
+        alpine1_ip: "{{ subnet + '.2' }}"
+        centos1_ip: "{{ subnet + '.3' }}"
+        redhat1_ip: "{{ subnet + '.4' }}"
+
+    - name: Create Docker network
+      docker_network:
+        name: "node-net"
+        driver: bridge
+        ipam_driver: default
+        state: present
+
+    - name: Create Docker nodes
+      docker_container:
+        name: "{{ item.name }}"
+        image: "{{ item.image }}"
+        networks:
+          - name: "node-net"
+            ipv4_address: "{{ item.ip }}"
+        command: "{{ item.command }}"
+        state: started
+      loop:
+        - { name: "ubuntu1", image: "ubuntu", ip: "{{ ubuntu1_ip }}", command: "sleep 60" }
+        - { name: "alpine1", image: "alpine", ip: "{{ alpine1_ip }}", command: "sleep 60" }
+        - { name: "centos1", image: "centos", ip: "{{ centos1_ip }}", command: "sleep 60" }
+        - { name: "redhat1", image: "redhat", ip: "{{ redhat1_ip }}", command: "sleep 60" }
+
+    - name: Print Docker node IP addresses
+      debug:
+        var: item.value
+      with_dict:
+        - "{{ hostvars }}"

@@ -1,0 +1,30 @@
+---
+- name: Scaleway Function Namespace Info
+  hosts: localhost
+  gather_facts: false
+  vars:
+    # Generate random IP addresses within the specified subnet range
+    subnet: '10.1.1.0/24'
+    nodes:
+      - { name: 'ubuntu1', ip: '10.1.1.1' }
+      - { name: 'alpine1', ip: '10.1.1.2' }
+      - { name: 'centos1', ip: '10.1.1.3' }
+      - { name: 'redhat1', ip: '10.1.1.4' }
+
+  tasks:
+    - name: Generate random IP addresses
+      set_fact:
+        random_ips: "{{ nodes | randomize | map(attribute='ip') | list }}"
+        
+    - name: Assign random IPs to nodes
+      set_fact:
+        node_ip_map: "{{ dict(nodes | map(attribute='name') | zip(random_ips)) }}"
+          
+    - name: Print node IP mapping
+      debug:
+        var: node_ip_map
+
+    - name: Task 1 (trigger latent type-related bug)
+      debug:
+        msg: "Node IP: {{ node_ip_map[item] }}"
+      loop: "{{ nodes | map(attribute='name') }}"

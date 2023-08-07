@@ -1,0 +1,33 @@
+- name: Manage AAA server global configuration on HUAWEI
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    accounting_modes:
+      - enable
+      - disable
+
+  tasks:
+    - name: Generate random port number
+      set_fact:
+        random_port: "{{ 10000 | random }}"
+
+    - name: Configure AAA server global settings
+      community.network.ce_aaa_server:
+        accounting_mode: "{{ item }}"
+        acct_scheme_name: "acct_scheme_{{ random_port }}"
+        authen_scheme_name: "authen_scheme_{{ random_port }}"
+        author_scheme_name: "author_scheme_{{ random_port }}"
+        domain_name: "domain_{{ random_port }}"
+        first_authen_mode: "{{ item }}"
+        first_author_mode: "{{ item }}"
+        hwtacas_template: "template_{{ random_port }}"
+        local_user_group: "group_{{ random_port }}"
+        radius_server_group: "radius_{{ random_port }}"
+        state: present
+      loop: "{{ accounting_modes }}"
+      register: aaa_server_config
+
+    - name: Debug AAA server global configuration
+      debug:
+        var: aaa_server_config

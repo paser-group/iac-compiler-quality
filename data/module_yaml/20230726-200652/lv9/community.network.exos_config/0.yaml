@@ -1,0 +1,33 @@
+---
+- name: Test playbook for community.network.exos_config module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Configure network on each node
+      community.network.exos_config:
+        backup: true
+        backup_options:
+          directory: /var/backup
+          prefix: "{{ item.name | regex_replace('[^a-zA-Z0-9_-]', '_') }}"
+        lines:
+          - "ip routing"
+          - "ip route 0.0.0.0/0 {{ hostvars[item.name]['gateway'] }}"
+          - "interface vlan 1"
+          - "ip address {{ hostvars[item.name]['random_ip'] }}/24"
+      with_items:
+        - { name: "ubuntu1", distro: "ubuntu" }
+        - { name: "alpine1", distro: "alpine" }
+        - { name: "centos1", distro: "centos" }
+        - { name: "redhat1", distro: "redhat" }
+
+  vars:
+    gateway: "10.1.1.254"
+    subnet: "10.1.1.0/24"
+
+  vars_prompt:
+    - name: random_ip
+      prompt: "Enter a random IP address within the subnet ({{ subnet }}):"
+      private: no
+
+  gather_facts: false

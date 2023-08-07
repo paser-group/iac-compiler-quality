@@ -1,0 +1,47 @@
+---
+- name: Test Ansible Latent Type-Related Bug
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Load or unload a kernel module
+      community.general.modprobe:
+        name: "{{ item.name }}"
+        params: "{{ item.params }}"
+        persistent: "{{ item.persistent }}"
+        state: "{{ item.state }}"
+      loop:
+        - name: "test_module"
+          params: "param1=value1"
+          persistent: "no"
+          state: "loaded"
+        - name: "test_module"
+          params: "param1=value1"
+          persistent: "no"
+          state: "unloaded"
+
+        # Test case for varied encoding
+        - name: "test_module"
+          params: "param1=value1"
+          persistent: "no"
+          state: "loaded\xD8\x08d"
+
+        - name: "test_module"
+          params: "param1=value1\xD8\x08d"
+          persistent: "no"
+          state: "loaded"
+
+        - name: "test_module"
+          params: "param1=value1"
+          persistent: "El\xC3\xA4viks\xC3\xA4"   # 'Eläviksä' with UTF-8 encoded
+          state: "unload"
+
+        - name: "El\xE4viks\xE4"        # 'Eläviksä' with Latin-1 Encoding
+          params: "param1=value1"
+          persistent: "no"
+          state: "loaded"
+
+        - name: "El\xE4viks\xE4"        # 'Eläviksä' with Latin-1 Encoding
+          params: "param1=value1"
+          persistent: "no"
+          state: "unloaded"

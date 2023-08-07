@@ -1,0 +1,41 @@
+---
+- name: Test pn_vrouter_packet_relay module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Generate random port numbers
+      set_fact:
+        pn_forward_port: "{{ (127.0.0.1|int + 1)|random(start=20000, end=30000) }}"
+        pn_forward_proto: "{{ ['tcp', 'udp']|random }}"
+        pn_nic: "{{ ['eth0', 'eth1']|random }}"
+
+    - name: Add packet relay rule
+      community.network.pn_vrouter_packet_relay:
+        pn_cliswitch: "{{ pn_cliswitch }}"
+        pn_forward_ip: 10.1.1.1
+        pn_forward_port: "{{ pn_forward_port }}"
+        pn_forward_proto: "{{ pn_forward_proto }}"
+        pn_nic: "{{ pn_nic }}"
+        pn_vrouter_name: vrouter1
+        state: present
+      register: result
+
+    - name: debug add result
+      debug:
+        var: result
+
+    - name: Remove packet relay rule
+      community.network.pn_vrouter_packet_relay:
+        pn_cliswitch: "{{ pn_cliswitch }}"
+        pn_forward_ip: 10.1.1.1
+        pn_forward_port: "{{ pn_forward_port }}"
+        pn_forward_proto: "{{ pn_forward_proto }}"
+        pn_nic: "{{ pn_nic }}"
+        pn_vrouter_name: vrouter1
+        state: absent
+      register: result
+
+    - name: debug remove result
+      debug:
+        var: result

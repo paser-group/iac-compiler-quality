@@ -1,0 +1,51 @@
+---
+- name: Test playbook for 'community.general.gitlab_group_members' module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    gitlab_group: "test_group"
+    gitlab_user: "test_user"
+    api_token: "YOUR_GITLAB_TOKEN"
+
+  tasks:
+    - name: Install 'community.general.gitlab' collection
+      ansible.builtin.shell:
+        cmd: ansible-galaxy collection install community.general
+        warn: false
+
+    - name: Add user to GitLab group with specific access level
+      community.general.gitlab_group_members:
+        api_url: "{{ lookup('env', 'GITLAB_API_URL') }}"
+        api_token: "{{ lookup('env', 'GITLAB_API_TOKEN') }}"
+        gitlab_group: "{{ gitlab_group }}"
+        gitlab_user: "{{ gitlab_user }}"
+        gitlab_users_access:
+          - name: "{{ gitlab_user }}"
+            state: present
+            access_level: "guest"  # set the access level here
+        state: present
+        validate_certs: false
+      register: result
+
+    - name: Display 'community.general.gitlab_group_members' module output
+      debug:
+        var: result
+
+    - name: Update access level for user in GitLab group
+      community.general.gitlab_group_members:
+        api_url: "{{ lookup('env', 'GITLAB_API_URL') }}"
+        api_token: "{{ lookup('env', 'GITLAB_API_TOKEN') }}"
+        gitlab_group: "{{ gitlab_group }}"
+        gitlab_user: "{{ gitlab_user }}"
+        gitlab_users_access:
+          - name: "{{ gitlab_user }}"
+            state: present
+            access_level: "developer"  # set the new access level here
+        state: present
+        validate_certs: false
+      register: result_updated
+
+    - name: Display 'community.general.gitlab_group_members' module output
+      debug:
+        var: result_updated

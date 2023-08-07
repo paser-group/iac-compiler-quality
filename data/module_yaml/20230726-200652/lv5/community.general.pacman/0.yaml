@@ -1,0 +1,65 @@
+---
+- name: Test playbook for community.general.pacman module
+  hosts: all
+  gather_facts: false
+  
+  tasks:
+    - name: Install package with random port
+      community.general.pacman:
+        name: package1
+        update_cache: true
+        upgrade: true
+        update_cache_extra_args: "--port={{ (10..65535) | random }}"
+        upgrade_extra_args: "--some-arg --port={{ (10..65535) | random }}"
+      delegate_to: localhost
+      register: result
+      ignore_errors: true
+
+    - name: Debug result
+      debug:
+        msg: "{{ result }}"
+
+    - name: Remove package without saving config
+      community.general.pacman:
+        name: package1
+        remove_nosave: true
+      delegate_to: localhost
+
+    - name: Install with force option
+      community.general.pacman:
+        name: package2
+        state: present
+        force: true
+      delegate_to: localhost
+
+    - name: Update cache without any extra arguments
+      community.general.pacman:
+        update_cache: true
+      delegate_to: localhost
+
+    - name: Return package info
+      community.general.pacman:
+        name: package3
+        state: info
+      delegate_to: localhost
+
+    - name: Handle invalid state
+      community.general.pacman:
+        name: package4
+        state: invalid_state
+        reason: This state is not valid
+      delegate_to: localhost
+
+    - name: Handle invalid reason_for
+      community.general.pacman:
+        name: package4
+        state: present
+        reason_for: invalid_reason
+      delegate_to: localhost
+
+    - name: Handle invalid argument
+      community.general.pacman:
+        name: package5
+        state: present
+        invalid_arg: some_value
+      delegate_to: localhost

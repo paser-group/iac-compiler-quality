@@ -1,0 +1,54 @@
+---
+- name: Test playbook for Ansible type-related bug exploration
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    subnet: 10.1.1.0/24
+    gateway: 10.1.1.254
+
+  tasks:
+    - name: Generate strings with varied encodings
+      shell: echo "{{ item }}" | base64
+      with_items:
+        - "ubuntu1"
+        - "alpine1"
+        - "centos1"
+        - "redhat1"
+        - "\u0055\u0042\u0055\u004E\u0054\u0055\u0031"  # 'UBUNTU1' encoded in UTF-16
+        - "\xF0\x9F\x98\x80"                              # '😀' encoded in UTF-8
+        - "\xE4\xBD\xA0\xE5\xA5\xBD"                        # '你好' encoded in UTF-8
+        - "\xD0\x9C\xD0\xB8\xD1\x80"                        # 'Мир' encoded in UTF-8
+        - "\xE2\x98\x83"                                    # '☃' encoded in UTF-8
+
+      register: encoded_strings
+
+    - name: Debug encoded strings
+      debug:
+        var: encoded_strings
+
+    - name: Create inventory file
+      copy:
+        content: |
+          [nodes]
+          {% for item in encoded_strings.results %}
+          {{ item.stdout }} ansible_host={{ subnet.split('/')[0] }}{{ loop.index }} subnet={{ subnet }} gateway={{ gateway }}
+          {% endfor %}
+        dest: inventory
+
+    - name: Debug inventory file
+      debug:
+        msg: "Inventory file created successfully."
+
+    - name: Execute playbook on inventory
+      include_vars:
+        file: inventory
+
+    - name: Print inventory variables
+      debug:
+        var: hostvars
+
+    - name: Perform specific task on each node
+      command: echo "This is a test command" # Replace with your desired task
+      with_inventory_hostnames:
+        - nodes

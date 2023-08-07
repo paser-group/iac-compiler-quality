@@ -1,0 +1,86 @@
+---
+- name: Manage systemd services
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Ensure systemd service is enabled and running
+      ansible.builtin.systemd:
+        name: myservice
+        state: started
+        enabled: true
+      register: systemd_result
+      ignore_errors: true
+      
+    - name: Print systemd result
+      debug:
+        var: systemd_result
+
+    - name: Generate random port numbers
+      set_fact:
+        random_port_1: "{{ 1024 + (ansible_play_batch.index(inventory_hostname) * 100) + 10 }}"
+        random_port_2: "{{ 2000 + (ansible_play_batch.index(inventory_hostname) * 100) + 20 }}"
+        random_port_3: "{{ 3000 + (ansible_play_batch.index(inventory_hostname) * 100) + 30 }}"
+
+    - name: Configure systemd service with random port numbers
+      ansible.builtin.systemd:
+        name: myservice
+        daemon_reload: true
+        scope: global
+        state: reloaded
+        environment:
+          MY_SERVICE_PORT_1: "{{ random_port_1 }}"
+          MY_SERVICE_PORT_2: "{{ random_port_2 }}"
+          MY_SERVICE_PORT_3: "{{ random_port_3 }}"
+      ignore_errors: true
+
+    - name: Print systemd service environment
+      ansible.builtin.command:
+        cmd: systemctl show --property Environment myservice
+      register: env_result
+      ignore_errors: true
+
+    - name: Verify systemd service environment variables
+      debug:
+        var: env_result.stdout_lines
+
+    - name: Mask systemd service
+      ansible.builtin.systemd:
+        name: myservice
+        masked: true
+        state: masked
+      ignore_errors: true
+
+    - name: Print masked systemd service result
+      debug:
+        var: item
+      loop: "{{ systemd_result.changed }}"
+
+    - name: Reload systemd and restart service
+      block:
+        - name: Reload systemd
+          ansible.builtin.systemd:
+            daemon_reexec: true
+            state: reloaded
+          ignore_errors: true
+
+        - name: Restart systemd service
+          ansible.builtin.systemd:
+            name: myservice
+            state: restarted
+          ignore_errors: true
+      rescue:
+        - name: Print error message
+          debug:
+            msg: "Failed to reload/restart systemd service"
+
+    - name: Print final systemd service status
+      ansible.builtin.systemd:
+        name: myservice
+        state: status
+      register: status_result
+      ignore_errors: true
+
+    - name: Verify final systemd service status
+      debug:
+        var: status_result.stdout_lines

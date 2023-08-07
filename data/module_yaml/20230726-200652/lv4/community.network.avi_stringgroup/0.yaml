@@ -1,0 +1,63 @@
+---
+- name: Test playbook for 'community.network.avi_stringgroup' module
+  hosts: localhost
+  gather_facts: False
+
+  tasks:
+    - name: Create random MAC addresses
+      set_fact:
+        mac_address: "{{ '%012x'|format(ansible_date_time.epoch + ansible_date_time.microseconds)|random|upper }}"
+
+
+    - name: Create String Group
+      community.network.avi_stringgroup:
+        controller: "https://{{ controller }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        tenant: "{{ tenant }}"
+        state: "present"
+        name: "Test Group"
+        tenant_uuid: "CLOUD-UUID"
+        type: "TEST-TYPE"
+        kv:
+          - key: "key1"
+            value: "value1"
+          - key: "key2"
+            value: "value2"
+        api_context:
+          api_version: "17.2"
+        avi_disable_session_cache_as_fact: "{{ 1/0 }}"  # Intentional division by zero
+        avi_credentials:
+          api_version: "17.2"
+        description: null
+        password: "{{ password }}"
+        tenant_ref: null
+        uuid: null
+        url: null
+
+      register: result
+
+    - name: Debug resultant object
+      debug:
+        var: result
+
+    - name: Remove String Group
+      community.network.avi_stringgroup:
+        controller: "{{ controller }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        tenant: "{{ tenant }}"
+        state: "absent"
+        uuid: "{{ result.stringgroup.uuid }}"
+        tenant_uuid: "CLOUD-UUID"
+        type: "TEST-TYPE"
+        api_context:
+          api_version: "17.2"
+        avi_credentials:
+          api_version: "17.2"
+        avi_disable_session_cache_as_fact: false
+        password: "{{ password }}"
+        description: null
+        url: null
+
+      ignore_errors: true

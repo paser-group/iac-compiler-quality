@@ -1,0 +1,57 @@
+---
+- name: Playbook to test community.general.ocapi_info module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    baseuri: "https://example.com"  # Replace with the actual base URI
+    category: "sample_category"  # Replace with the actual category
+    command: "sample_command"  # Replace with the actual command
+    job_name: "sample_job_name"  # Replace with the actual job name
+    password: "sample_password"  # Replace with the actual password
+    proxy_slot_number: 1  # Replace with the actual proxy slot number
+    timeout: 10  # Replace with the actual timeout
+    username: "sample_username"  # Replace with the actual username
+
+  tasks:
+    - name: Validate ocapi_info module options
+      assert:
+        that:
+          - baseuri is string
+          - category is string
+          - command is string
+          - job_name is string
+          - password is string
+          - proxy_slot_number is int
+          - timeout is int
+          - username is string
+
+    - name: Generate random IP addresses for networking modules
+      set_fact:
+        random_ip: "{{ '%d.%d.%d.%d' | format(
+          hostvars[groups['all'][ansible_play_hosts.index(inventory_hostname) - 1]]['ansible_default_ipv4']['address'].split('.')[0] | int(random.randint(0, 255)),
+          hostvars[groups['all'][ansible_play_hosts.index(inventory_hostname) - 1]]['ansible_default_ipv4']['address'].split('.')[1] | int(random.randint(0, 255)),
+          hostvars[groups['all'][ansible_play_hosts.index(inventory_hostname) - 1]]['ansible_default_ipv4']['address'].split('.')[2] | int(random.randint(0, 255)),
+          hostvars[groups['all'][ansible_play_hosts.index(inventory_hostname) - 1]]['ansible_default_ipv4']['address'].split('.')[3] | int(random.randint(0, 255))
+        ) }}"
+
+    - name: Debug random IP address
+      debug:
+        var: random_ip
+
+    - name: Perform ocapi_info command
+      community.general.ocapi_info:
+        baseuri: "{{ baseuri }}"
+        category: "{{ category }}"
+        command: "{{ command }}"
+        job_name: "{{ job_name }}"
+        password: "{{ password }}"
+        proxy_slot_number: "{{ proxy_slot_number }}"
+        timeout: "{{ timeout }}"
+        username: "{{ username }}"
+        ip_address: "{{ random_ip }}"
+      register: ocapi_info_result
+
+    - name: Debug ocapi_info result
+      debug:
+        var: ocapi_info_result

@@ -1,0 +1,45 @@
+- name: Create DNS Policy Configuration
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Include module
+      include_module:
+        name: community.network.avi_dnspolicy
+
+    - name: Create DNS Policy Configuration with bytes and strings
+      community.network.avi_dnspolicy:
+        controller: "{{ controller }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        avi_credentials:
+          api_version: "{{ api_version }}"
+          tenant_ref: "{{ tenant_ref }}"
+          tenant_uuid: "{{ tenant_uuid }}"
+        name: "{{ dns_policy_name }}"
+        description: "{{ dns_policy_description }}"
+        tenant: "{{ tenant }}"
+        rule:
+          - name: "Rule 1"
+            enable: true
+            rate_limit: 50000
+            description: 50,000 bytes
+            actions:
+              - action: AV_DNS_ACTION_RATE_LIMIT
+                rate_limit: 50000
+              - action: AV_DNS_ACTION_DROP
+
+          - name: "Rule 2"
+            enable: true
+            rate_limit: "50mb"
+            description: 50 MB/s
+            actions:
+              - action: AV_DNS_ACTION_RATE_LIMIT
+                rate_limit: "50mb"
+              - action: AV_DNS_ACTION_DROP
+
+      register: result
+
+    - name: Display result
+      debug:
+        var: result

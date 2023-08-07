@@ -1,0 +1,34 @@
+---
+- name: Manage Ruckus ICX user accounts
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    icx_users:
+      - name: admin
+        state: present
+        nopassword: true
+
+      - name: myuser
+        state: absent
+
+      - name: byteuser
+        state: present
+        configured_password: "{{ 'b' | encode_base64 }}"
+
+  tasks:
+    - name: Include module
+      include_role:
+        name: community.network.icx_user
+
+    - name: Create or Update ICX user accounts
+      community.network.icx_user:
+        name: "{{ item.name }}"
+        state: "{{ item.state }}"
+        nopassword: "{{ item.nopassword | default(false) }}"
+        configured_password: "{{ item.configured_password | default('') }}"
+        privilege: "{{ item.privilege | default('') }}"
+        aggregate: "{{ item.aggregate | default([]) }}"
+        purge: "{{ item.purge | default(false) }}"
+        update_password: "{{ item.update_password | default('always') }}"
+      loop: "{{ icx_users }}"

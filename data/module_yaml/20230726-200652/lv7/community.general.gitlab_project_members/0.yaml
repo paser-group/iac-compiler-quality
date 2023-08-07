@@ -1,0 +1,61 @@
+---
+- name: Test playbook for 'community.general.gitlab_project_members' module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    access_level: 10  # Example access level value
+    api_job_token: "job_token"
+    api_oauth_token: "oauth_token"
+    api_password: "password"
+    api_token: "api_token"
+    api_url: "api_url"
+    api_username: "username"
+    gitlab_user:
+      - username: "user1"
+        access_level: 20  # Example access level value
+      - username: "user2"
+        access_level: 30  # Example access level value
+    gitlab_users_access:
+      - username: "user3"
+        access_level: 40  # Example access level value
+      - username: "user4"
+        access_level: 50  # Example access level value
+    project: "project"
+    purge_users: []
+    state: "present"
+    validate_certs: true
+
+  tasks:
+    - name: Install gitlab membership plugin
+      pip:
+        name: "python-gitlab"
+        state: present
+
+    - name: Include gitlab_project_members module
+      include_role:
+        name: "community.general.gitlab_project_members"
+        apply:
+          tags:
+            - always
+
+    - name: Trigger type-related bug
+      community.general.gitlab_project_members:
+        access_level: "{{ access_level }}"  # Possible type-related bug triggered by passing an integer instead of the expected string
+        api_job_token: "{{ api_job_token }}"
+        api_oauth_token: "{{ api_oauth_token }}"
+        api_password: "{{ api_password }}"
+        api_token: "{{ api_token }}"
+        api_url: "{{ api_url }}"
+        api_username: "{{ api_username }}"
+        gitlab_user: "{{ gitlab_user }}"
+        gitlab_users_access: "{{ gitlab_users_access }}"
+        project: "{{ project }}"
+        purge_users: "{{ purge_users }}"
+        state: "{{ state }}"
+        validate_certs: "{{ validate_certs }}"
+      register: result
+
+    - name: Output result
+      debug:
+        var: result

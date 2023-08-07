@@ -1,0 +1,30 @@
+---
+- name: Test playbook for ansible.builtin.sysvinit
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Generate strings with varied encodings
+      set_fact:
+        encodings:
+          - name: Normal string
+            value: "normal_string"
+          - name: UTF-8 encoded string
+            value: "\u01C3\u018F\u03C5\u0424-8_encoded_string"
+          - name: Base64 encoded string
+            value: "YmFzZTY0IGVuY29kaW5n"
+          # Add more varied encodings as needed
+
+    - name: Test sysvinit module with varied encodings
+      sysvinit:
+        name: "{{ item.value }}"
+        pattern: "{{ item.value }}"
+        runlevels: "{{ [2, 3, 4, 5] }}"
+        enabled: true
+        state: started
+      with_items: "{{ encodings }}"
+      register: result
+
+    - name: Print the result
+      debug:
+        var: result

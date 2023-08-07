@@ -1,0 +1,50 @@
+- name: Test playbook for community.general.ilo_redfish_command module
+  hosts: all
+  gather_facts: false
+  become: true
+
+  vars:
+    test_cases:
+      - auth_token: "token1"
+        baseuri: "http://host1:{{ 65535 | random }}"
+        category: "system"
+        command: ["get", "/redfish/v1/Systems/1"]
+        password: "password1"
+        timeout: 60
+        username: "user1"
+      - auth_token: "token2"
+        baseuri: "http://host2:{{ 65536 | random }}"
+        category: "network"
+        command: ["odatapath", "-c"]
+        password: "password2"
+        timeout: 120
+        username: "user2"
+      - auth_token: "token3"
+        baseuri: "http://host3:{{ 65537 | random }}"
+        category: "power"
+        command: ["reset"]
+        password: "password3"
+        timeout: 30
+        username: "user3"
+
+  tasks:
+    - name: Test task - Execute redfish command
+      community.general.ilo_redfish_command:
+        auth_token: "{{ item.auth_token }}"
+        baseuri: "{{ item.baseuri }}"
+        category: "{{ item.category }}"
+        command: "{{ item.command }}"
+        password: "{{ item.password }}"
+        timeout: "{{ item.timeout }}"
+        username: "{{ item.username }}"
+      loop: "{{ test_cases }}"
+      register: result
+
+- name: Debug playbook for community.general.ilo_redfish_command module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Debug task
+      debug:
+        msg: "{{ result }}"

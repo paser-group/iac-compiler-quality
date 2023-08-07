@@ -1,0 +1,53 @@
+---
+- name: Generate mksysb image on AIX
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    backup_crypt_files: true
+    backup_dmapi_fs: false
+    create_map_files: true
+    exclude_files: false
+    exclude_wpar_files: true
+    extended_attrs: false
+    name: my_mksysb
+    new_image_data: true
+    software_packing: false
+    storage_path: /tmp/mksysb_images
+    use_snapshot: true
+
+  tasks:
+    - name: Ensure storage path exists
+      file:
+        path: "{{ storage_path }}"
+        state: directory
+
+    - name: Generate mksysb image
+      community.general.mksysb:
+        backup_crypt_files: "{{ backup_crypt_files }}"
+        backup_dmapi_fs: "{{ backup_dmapi_fs }}"
+        create_map_files: "{{ create_map_files }}"
+        exclude_files: "{{ exclude_files }}"
+        exclude_wpar_files: "{{ exclude_wpar_files }}"
+        extended_attrs: "{{ extended_attrs }}"
+        image_name: "{{ name }}"
+        new_image_data: "{{ new_image_data }}"
+        software_packing: "{{ software_packing }}"
+        target: localhost
+        target_directory: "{{ storage_path }}"
+        use_snapshot: "{{ use_snapshot }}"
+      register: mksysb_result
+
+    - name: Print mksysb result
+      debug:
+        var: mksysb_result
+
+    # Test case: Generate strings with varied encodings
+    - name: Test - Generate strings with varied encodings
+      set_fact:
+        encoded_name: "{{ name | b64encode }}"
+      ignore_errors: true
+
+    - name: Print encoded name
+      debug:
+        var: encoded_name

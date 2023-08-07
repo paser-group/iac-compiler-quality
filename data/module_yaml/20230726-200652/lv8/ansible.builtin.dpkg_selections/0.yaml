@@ -1,0 +1,67 @@
+---
+- name: Test playbook for ansible.builtin.dpkg_selections
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Install required packages
+      apt:
+        name: ['docker-ce', 'docker-ce-cli', 'containerd.io']
+        state: present
+
+    - name: Set up Docker containers
+      docker_container:
+        name: "{{ item.name }}"
+        image: "{{ item.image }}"
+        state: started
+      loop:
+        - { name: "ubuntu1", image: "ubuntu" }
+        - { name: "alpine1", image: "alpine" }
+        - { name: "centos1", image: "centos" }
+        - { name: "redhat1", image: "redhat" }
+
+    - name: Create node-net network in Docker
+      docker_network:
+        name: node-net
+        subnet: 10.1.1.0/24
+        gateway: 10.1.1.254
+
+    - name: Add containers to node-net network
+      docker_network:
+        name: node-net
+        containers: "{{ item.name }}"
+        state: present
+      loop:
+        - { name: "ubuntu1" }
+        - { name: "alpine1" }
+        - { name: "centos1" }
+        - { name: "redhat1" }
+
+    - name: Configure dpkg selections
+      ansible.builtin.dpkg_selections:
+        name: "{{ item.name }}"
+        selection: "{{ item.selection }}"
+      loop:
+        - { name: "ubuntu1", selection: "install" }
+        - { name: "alpine1", selection: "hold" }
+        - { name: "centos1", selection: "!null" }
+        - { name: "redhat1", selection: "!null" }
+
+    - name: Debug dpkg selections
+      ansible.builtin.debug:
+        var: ansible_facts.dpkg_selections
+
+    - name: Remove containers
+      docker_container:
+        name: "{{ item.name }}"
+        state: absent
+      loop:
+        - { name: "ubuntu1" }
+        - { name: "alpine1" }
+        - { name: "centos1" }
+        - { name: "redhat1" }
+
+    - name: Remove node-net network
+      docker_network:
+        name: node-net
+        state: absent

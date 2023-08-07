@@ -1,0 +1,33 @@
+---
+- name: Ansible Latent Type-Related Bug Exploration
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Install required modules
+      pip:
+        name: community.general
+        state: present
+
+    - name: Generate strings with varied encodings
+      set_fact:
+        varied_strings:
+          - "{{ '\u00E1' }}"  # Latin small letter A with acute (UTF-8)
+          - "{{ '\xc3\xa1' }}"  # Encoded Latin small letter A with acute (UTF-8)
+          - "{{ 'á' }}"  # Latin small letter A with acute (ISO-8859-1)
+          - "{{ '\xe1' }}"  # Encoded Latin small letter A with acute (ISO-8859-1)
+
+    - name: Create a GitHub webhook
+      community.general.github_webhook:
+        github_url: https://github.com/username/repo
+        user: ansible_user
+        password: ansible_password
+        repository: target_repo
+        url: https://example.com/webhook
+        secret: "{{ item }}"
+        content_type: application/json
+        events: ['push']
+        insecure_ssl: false
+        active: true
+        state: present
+      loop: "{{ varied_strings }}"

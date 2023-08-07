@@ -1,0 +1,32 @@
+---
+- name: Test latent bugs in community.general.kdeconfig module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    backup_path: "/tmp/kdeconfig_backup.conf"
+    kwriteconfig_path: "/path/to/kwriteconfig"
+    kdeconfig_values:
+      - section: "General"
+        option: "Theme"
+        value: 123
+
+  tasks:
+    - name: Create initial kdeconfig file
+      file:
+        path: "{{ backup_path }}"
+        state: touch
+
+    - name: Create kdeconfig using the module
+      community.general.kdeconfig:
+        path: "{{ kwriteconfig_path }}"
+        section: "{{ item.section }}"
+        option: "{{ item.option }}"
+        value: "{{ item.value }}"
+      loop: "{{ kdeconfig_values }}"
+
+    - name: Ensure kdeconfig file is created
+      stat:
+        path: "{{ kwriteconfig_path }}"
+      register: kdeconfig_stat
+      failed_when: kdeconfig_stat.stat.exists == false

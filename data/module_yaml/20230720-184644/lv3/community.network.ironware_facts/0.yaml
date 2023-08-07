@@ -1,0 +1,32 @@
+---
+- name: Test playbook for community.network.ironware_facts
+  hosts: all
+  gather_facts: no
+  
+  tasks:
+    - name: Set configuration values
+      set_fact:
+        bytes_value: !binary |
+          {{ 'b3JpZ2luYWxlcGFzc3dvcmQ=' | b64decode }}
+        string_value: "{{ bytes_value | string }}"
+      
+    - name: Debug configuration values
+      debug:
+        var: item
+      loop_control:
+        label: '{{ item.key }}'
+      loop:
+        - key: 'bytes_value'
+          value: '{{ bytes_value }}'
+        - key: 'string_value'
+          value: '{{ string_value }}'
+      
+    - name: Collect IronWare facts from devices
+      community.network.ironware_facts:
+        authorize: '{{ bytes_value }}'
+        gather_subset: '{{ string_value }}'
+      register: ironware_facts
+      
+    - name: Print gathered facts
+      debug:
+        var: ironware_facts

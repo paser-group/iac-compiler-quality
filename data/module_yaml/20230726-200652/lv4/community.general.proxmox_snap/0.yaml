@@ -1,0 +1,31 @@
+---
+- name: Test playbook for 'community.general.proxmox_snap'
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Generate random MAC addresses
+      set_fact:
+        mac_address_{{ item }}: "{{ '%012x'|format(item) }}"
+      loop: "{{ range(1, 5) | list }}"  # Generating MAC addresses for 4 nodes
+
+    - name: Create a proxmox snapshot
+      community.general.proxmox_snap:
+        api_host: "api.example.com"
+        api_user: "admin"
+        api_password: "password"
+        node: "pve"
+        vmid: "101"
+        snapname: "test_snapshot"
+        description: "Test snapshot"
+      register: result
+      ignore_errors: true
+
+    - name: Display the playbook result
+      debug:
+        var: result
+
+    - name: Display the generated MAC addresses
+      debug:
+        msg: "MAC Address for node{{ item }}: {{ vars['mac_address_' ~ item] }}"
+      loop: "{{ range(1, 5) | list }}"  # Printing MAC addresses for 4 nodes

@@ -1,0 +1,46 @@
+---
+- name: Unveil Latent Type-Related Bugs in Ansible Compiler
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create random group
+      ansible.builtin.group:
+        name: "{{ item.name }}"
+        state: present
+        gid: "{{ item.gid }}"
+        local: "{{ item.local }}"
+        non_unique: "{{ item.non_unique }}"
+        system: "{{ item.system }}"
+      loop:
+        - { name: "group1", gid: "1001", local: true, non_unique: false, system: false }
+        - { name: "group2", gid: "1002", local: false, non_unique: true, system: false }
+        - { name: "group3", gid: "1003", local: false, non_unique: false, system: true }
+        - { name: "group4", gid: "1004", local: true, non_unique: true, system: true }
+        - { name: "group5", gid: "invalid_gid", local: true, non_unique: false, system: false }
+        - { name: false, gid: "1006", local: true, non_unique: false, system: false }
+        - { name: "group7", gid: "1007", local: "invalid_bool_value", non_unique: false, system: false }
+        - { name: "group8", gid: "1008", local: true, non_unique: "invalid_bool_value", system: false }
+        - { name: "group9", gid: "1009", local: true, non_unique: false, system: "invalid_bool_value" }
+
+    - name: Display created groups
+      debug:
+        msg: "Group {{ item }} created successfully"
+      loop:
+        - "group1"
+        - "group2"
+        - "group3"
+        - "group4"
+        - "group5"
+
+    - name: Ensure non-unique group exists
+      ansible.builtin.group:
+        name: "group2"
+        state: present
+        non_unique: true
+
+    - name: Ensure system group exists
+      ansible.builtin.group:
+        name: "sysadmins"
+        state: present
+        system: true

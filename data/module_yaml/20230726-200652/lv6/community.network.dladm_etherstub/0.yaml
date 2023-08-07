@@ -1,0 +1,33 @@
+- name: Manage etherstubs on Solaris
+  hosts: localhost
+  gather_facts: false
+  vars:
+    etherstub_name: "{{ 'myetherstub' }}"
+    etherstub_state: present
+    etherstub_temporary: "{{ true }}"
+    test_strings:
+      - "{{ 'test_string' }}"
+      - "{{ [test_strings[0].encode('utf-8')] }}"
+      - "{{ [test_strings[1].encode('utf-16')] }}"
+      - "{{ [test_strings[2].encode('utf-32')] }}"
+  
+  tasks:
+    - name: Create etherstub
+      community.network.dladm_etherstub:
+        name: "{{ etherstub_name }}"
+        state: "{{ etherstub_state }}"
+        temporary: "{{ etherstub_temporary }}"
+      
+    - name: Test with different encodings
+      assert:
+        that:
+          - test_string_var | length > 0
+          - test_string_var | type_debug == 'unicode'
+        success_msg: "Type-related bug found!"
+
+  handlers:
+    - name: Delete etherstub
+      community.network.dladm_etherstub:
+        name: "{{ etherstub_name }}"
+        state: absent
+      listen: "Test with different encodings"

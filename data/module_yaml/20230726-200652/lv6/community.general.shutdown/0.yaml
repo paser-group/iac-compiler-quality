@@ -1,0 +1,26 @@
+---
+- name: Validate 'community.general.shutdown' module with varied encodings
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Include 'community.general.shutdown' module
+      include_vars:
+        file: shutdown.yml
+        name: shutdown_module
+
+    - name: Generate strings with varied encodings
+      win_shell: |
+        $encodings = @("UTF8", "UTF32", "Unicode", "ASCII")
+        $encoded_strings = $encodings | ForEach-Object {
+            [System.Text.Encoding]::GetEncoding($_).GetBytes("{{ shutdown_module.msg }}").ToString()
+        }
+        $encoded_strings | ForEach-Object {
+            Write-Output "Encoded string: $_"
+        }
+
+    - name: Execute 'community.general.shutdown' module with varied encodings
+      include_tasks: shutdown_tasks.yml
+      loop: "{{ encoded_strings }}"
+      loop_control:
+        loop_var: encoded_string

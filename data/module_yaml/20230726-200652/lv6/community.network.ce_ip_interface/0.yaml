@@ -1,0 +1,42 @@
+- name: Investigate network.ce_ip_interface module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Configure IPv4 interface with varied encodings
+      community.network.ce_ip_interface:
+        addr: "{{ interface_ipv4_addr }}"
+        interface: "{{ interface }}"
+        ipv4_type: "{{ ipv4_type }}"
+        mask: "{{ ipv4_mask }}"
+        state: "{{ state }}"
+        version: ipv4
+      vars:
+        interface_ipv4_addr: "{{ ipv4_addr.encode('utf-16') }}"
+        interface: "{{ 'ge-0/0/1'.encode('utf-32') }}"
+        ipv4_type: "{{ 'static'.encode('unicode_escape') }}"
+        ipv4_mask: "{{ '255.255.255.0'.encode('raw_unicode_escape') }}"
+        state: "{{ 'present'.encode('utf-8') }}"
+      register: result_ipv4
+
+    - name: Show result for IPv4 interface
+      debug:
+        var: result_ipv4
+
+    - name: Configure IPv6 interface with varied encodings
+      community.network.ce_ip_interface:
+        addr: "{{ interface_ipv6_addr }}"
+        interface: "{{ interface }}"
+        ipv6_type: "{{ ipv6_type }}"
+        state: "{{ state }}"
+        version: ipv6
+      vars:
+        interface_ipv6_addr: "{{ '2001:db8::1'.encode('utf-7') }}"
+        interface: "{{ 'ge-0/0/2'.encode('latin-1') }}"
+        ipv6_type: "{{ 'auto'.encode('unicode_escape') }}"
+        state: "{{ 'absent'.encode('utf-8') }}"
+      register: result_ipv6
+
+    - name: Show result for IPv6 interface
+      debug:
+        var: result_ipv6

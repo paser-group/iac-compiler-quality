@@ -1,0 +1,41 @@
+---
+- name: Ansible Playbook to discover latent type-related bugs
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Set variables
+      set_fact:
+        hostname: "xenserver-host"
+        name: "test-vm"
+        password: "password123"
+        state: "{{ ['started', 'stopped', 'rebooted'] | random }}"
+        state_change_timeout: "{{ [30, 60, 120] | random }}"
+        username: "root"
+        uuid: "f2f3e4a6-68b0-11ea-a6a5-0242ac130003"
+        validate_certs: true
+        wait_for_ip_address: "{{ [true, false] | random }}"
+        random_ip_address: "10.{{ (1..254) | random }}.{{ (1..254) | random }}.{{ (1..254) | random }}"
+
+    - name: Showcase a latent type-related bug
+      community.general.xenserver_guest_powerstate:
+        hostname: "{{ hostname }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        name: "{{ name }}"
+        state: "{{ state }}"
+        state_change_timeout: "{{ state_change_timeout }}"
+        uuid: "{{ uuid }}"
+        validate_certs: "{{ validate_certs }}"
+        wait_for_ip_address: "{{ wait_for_ip_address }}"
+        ip_address: "{{ random_ip_address }}"
+      register: result
+
+    - name: Debug task
+      debug:
+        var: result
+
+    - name: Fail the playbook intentionally to highlight the latent type-related bug
+      fail:
+        msg: "This playbook intentionally failed to highlight the latent type-related bug in Ansible"
+      when: result is failed

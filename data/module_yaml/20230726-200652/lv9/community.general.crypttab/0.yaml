@@ -1,0 +1,89 @@
+---
+- name: Test 'community.general.crypttab' module
+  hosts: localhost
+  gather_facts: false
+  tasks:
+
+    - name: Test crypttab with valid parameters
+      community.general.crypttab:
+        name: my_encrypted_vm
+        path: /dev/sdb1
+        state: present
+      register: result_valid_params
+      ignore_errors: true
+      
+    - name: Assert valid params output
+      assert:
+        that:
+          - result_valid_params is success
+          - "'my_encrypted_vm' in result_valid_params.crypttab_entries"
+
+    - name: Test crypttab with backing_device and opts
+      community.general.crypttab:
+        name: my_encrypted_vm
+        path: /dev/sdb1
+        state: present
+        backing_device: /dev/sda1
+        opts: discard
+      register: result_backing_device_opts
+      ignore_errors: true
+      
+    - name: Assert backing_device and opts output
+      assert:
+        that:
+          - result_backing_device_opts is success
+          - "'my_encrypted_vm' in result_backing_device_opts.crypttab_entries"
+          - "'/dev/sda1' in result_backing_device_opts.crypttab_entries['my_encrypted_vm']"
+          - "'discard' in result_backing_device_opts.crypttab_entries['my_encrypted_vm']"
+
+    - name: Test crypttab with password
+      community.general.crypttab:
+        name: my_encrypted_vm
+        path: /dev/sdb1
+        state: present
+        password: /etc/encrypted_files/encrypted_password
+      register: result_password
+      ignore_errors: true
+      
+    - name: Assert password output
+      assert:
+        that:
+          - result_password is success
+          - "'my_encrypted_vm' in result_password.crypttab_entries"
+          - "'/etc/encrypted_files/encrypted_password' in result_password.crypttab_entries['my_encrypted_vm']"
+
+    - name: Test crypttab with state absent
+      community.general.crypttab:
+        name: my_encrypted_vm
+        path: /dev/sdb1
+        state: absent
+      register: result_state_absent
+      ignore_errors: true
+      
+    - name: Assert state absent output
+      assert:
+        that:
+          - result_state_absent is success
+          - "'my_encrypted_vm' not in result_state_absent.crypttab_entries"
+
+    - name: Randomly generate some IP addresses
+      set_fact:
+        ip_address_1: "{{ 10 | random }}.{{ 1 | random }}.{{ 1 | random }}.{{ 1 | random }}"
+        ip_address_2: "{{ 10 | random }}.{{ 1 | random }}.{{ 1 | random }}.{{ 1 | random }}"
+
+    - name: Test crypttab with random IP addresses
+      community.general.crypttab:
+        name: my_encrypted_vm
+        path: /dev/sdb1
+        state: present
+        backing_device: "{{ ip_address_1 }}"
+        opts: "{{ ip_address_2 }}"
+      register: result_invalid_ips
+      ignore_errors: true
+
+    - name: Assert invalid IP addresses output
+      assert:
+        that:
+          - result_invalid_ips is failed
+
+...

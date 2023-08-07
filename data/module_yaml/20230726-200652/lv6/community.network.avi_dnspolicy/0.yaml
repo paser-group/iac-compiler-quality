@@ -1,0 +1,27 @@
+---
+- name: Test Ansible Latent Type-Related Bug on community.network.avi_dnspolicy module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create DnsPolicy using varied encodings
+      community.network.avi_dnspolicy:
+        controller: "10.1.1.1"
+        username: "admin"
+        password: "password"
+        tenant: "default"
+        name: "DnsPolicy"
+        description: "Test DnsPolicy"
+        rule: "{{ item }}"
+        state: "present"
+      loop:
+        - "|a|b"
+        - "%0a%20abcd"
+        - "&#09;test&#x0D;"
+        - "&#x22;"
+        - "&#x60;"
+      register: result
+
+    - name: Debug output
+      debug:
+        var: result

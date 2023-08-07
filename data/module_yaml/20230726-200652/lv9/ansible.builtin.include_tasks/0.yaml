@@ -1,0 +1,50 @@
+---
+- name: Dynamic Playbook to Unveil Latent Type-Related Bugs
+  hosts: localhost
+  gather_facts: false
+  
+  tasks:
+    - name: Create subnet with random IP addresses
+      include_tasks: networking.yaml
+      vars:
+        subnet: "10.1.1.0/24"
+        gateway: "10.1.1.254"
+        num_nodes: 4
+        node_prefix: "{{ inventory_hostname.split('-')[0] }}"
+      loop_control:
+        loop_var: node
+
+    - name: Debug IP addresses
+      debug:
+        msg: "{{ hostvars[item].ansible_default_ipv4.address }}"
+      loop: "{{ groups['all'] }}"
+      when: item.startswith('node')
+
+    - name: Execute other tasks
+      include_tasks: other_tasks.yaml
+
+- name: Networking tasks
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    subnet: "{{ subnet }}"
+    gateway: "{{ gateway }}"
+    start_node_ip: "10.1.1.1"
+
+  tasks:
+    - name: Generate IP addresses for nodes
+      set_fact:
+        node_ip: "{{ start_node_ip | ipmathext(subnet=subnet) }}"
+        start_node_ip: "{{ node_ip | ipnext }}"
+      loop: "{{ range(num_nodes) | list }}"
+      loop_control:
+        loop_var: _index
+
+    - name: Create network and assign IP addresses
+      debug:
+        msg: "Node: {{ node_prefix }}{{ _index + 1 }}, IP: {{ node_ip }}"
+      when: inventory_hostname == 'localhost'
+      loop: "{{ range(num_nodes) | list }}"
+      loop_control:
+        loop_var: _index

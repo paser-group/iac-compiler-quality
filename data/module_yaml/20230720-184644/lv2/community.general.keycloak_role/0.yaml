@@ -1,0 +1,36 @@
+---
+- name: Ansible Latent Type-Related Bug Finder Playbook
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Set byte string values in place of regular strings
+      set_fact:
+        auth_password: !binary |
+          b'my_password'
+        connection_timeout: !binary |
+          b'10'
+        validate_certs: !binary |
+          b'False'
+
+    - name: Run the Keycloak role with byte string values
+      community.general.keycloak_role:
+        name: my_name
+        state: present
+        realm: my_realm
+        auth_client_id: my_client_id
+        auth_client_secret: my_client_secret
+        auth_keycloak_url: https://example.com/auth
+        auth_username: my_username
+        auth_password: "{{ auth_password }}"
+        client_id: my_client_id
+        connection_timeout: "{{ connection_timeout }}"
+        description: my_description
+        http_agent: Mozilla/5.0
+        token: my_token
+        validate_certs: "{{ validate_certs }}"
+      register: role_result
+
+    - name: Dump role result for analysis
+      debug:
+        var: role_result

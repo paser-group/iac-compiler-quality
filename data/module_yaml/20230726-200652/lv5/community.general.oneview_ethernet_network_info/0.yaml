@@ -1,0 +1,38 @@
+---
+- name: Test oneview_ethernet_network_info module
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Retrieve OneView ethernet network information
+      community.general.oneview_ethernet_network_info:
+        config: /path/to/oneview_config.json
+        hostname: "{{ oneview_hostname }}"
+        username: "{{ oneview_username }}"
+        password: "{{ oneview_password }}"
+        api_version: "{{ oneview_api_version }}"
+        name: "{{ item }}"
+        options:
+          - name
+          - vlanId
+          - purpose
+          - connectionTemplateUri
+          - portId
+      with_items:
+        - eth-net-1
+        - eth-net-2
+        - eth-net-3
+        - eth-net-4
+      register: network_info_result
+
+    - name: Debug network_info_result
+      debug:
+        var: network_info_result
+
+    - name: Verify port settings with random port numbers
+      debug:
+        msg: "Testing port settings for network {{ item.name }} with random port number {{ random_port }}"
+      loop: "{{ network_info_result.results }}"
+      vars:
+        random_port: "{{ 1024 + (item.index | random(65535 - 1024)) }}"
+
+...

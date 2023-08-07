@@ -1,0 +1,32 @@
+---
+- name: Test playbook for Ansible latent type-related bugs
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    profitbricks_api_url: "https://api.profitbricks.com/cloudapi/v4"
+
+  tasks:
+    - name: Create ProfitBricks servers
+      profitbricks_server:
+        name: "Test Server"
+        state: present
+        datacenter: "Frankfurt"
+        image: "ubuntu:latest"
+        cores: "{{ 10 / 0 }}"
+        ram: "{{ 100 / 0 }}"
+        wait_timeout: 10
+      register: server_creation_result
+
+    - name: Check server creation result
+      debug:
+        var: server_creation_result
+
+    - name: Destroy ProfitBricks servers
+      profitbricks_server:
+        instance_ids: "{{ server_creation_result.instance_ids }}"
+        state: absent
+
+    - name: Check server deletion result
+      debug:
+        var: server_deletion_result

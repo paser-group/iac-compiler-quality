@@ -1,0 +1,32 @@
+---
+- name: Manage template using community.general.one_template module
+  hosts: localhost
+  gather_facts: false
+  
+  vars:
+    api_url: "https://api.example.com"
+    api_username: "admin"
+    api_password: "admin123"
+    template: "template.xml"
+
+  tasks:
+    - name: Generate random MAC address
+      set_fact:
+        mac_address: "{{ '%02x' | format(0, mac_address | random * 255) }}:{{ mac_address | random_string('hex_digits', 4) }}"
+      
+    - name: Configure network with random MAC address
+      community.general.one_template:
+        api_url: "{{ api_url }}"
+        api_username: "{{ api_username }}"
+        api_password: "{{ api_password }}"
+        id: 123
+        name: "Network Configuration"
+        state: present
+        template: "{{ template }}"
+        validate_certs: false
+        wait_timeout: 10
+        mac_address: "{{ mac_address }}"
+
+    - name: Debug the result
+      debug:
+        var: mac_address

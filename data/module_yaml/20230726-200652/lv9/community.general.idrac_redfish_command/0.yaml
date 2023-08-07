@@ -1,0 +1,33 @@
+---
+- name: Manage Out-Of-Band Controllers using iDRAC Redfish API
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  tasks:
+    - name: Install required packages
+      package:
+        name: python3-pyvmomi
+        state: present
+
+    - name: Generate random IP address
+      set_fact:
+        ip_address: "{{ hostvars[groups['localhost'][0]].ansible_default_ipv4.address }}"
+      
+    - name: Perform iDRAC Redfish command
+      community.general.idrac_redfish_command:
+        baseuri: "https://{{ ip_address }}"
+        auth_token: "token123"
+        username: "admin"
+        password: "password123"
+        resource_id: "/redfish/v1/Systems/1"
+        category: "Systems"
+        command:
+          - "PowerOn"
+          - "PowerOff"
+        timeout: 30
+      register: result
+
+    - name: Debug module output
+      debug:
+        var: result

@@ -1,0 +1,54 @@
+---
+- name: Test playbook for community.network.avi_scheduler module
+  hosts: localhost
+  gather_facts: false
+ 
+  tasks:
+  
+  - name: Generate random MAC address
+    set_fact:
+      random_mac: "{{ '%02x%02x%02x%02x%02x%02x' | format(0, 0, 0, 0, 0, (item|int)) | upper }}"
+    vars:
+      random_mac_range: "{{ range(1, 256) | list }}"
+    run_once: true
+  
+  - name: Create Schedul
+    community.network.avi_scheduler:
+      controller: "192.168.1.1"
+      username: "admin"
+      password: "password"
+      tenant: "Default"
+      name: "Test Schedule"
+      enabled: true
+      frequency: 5
+      frequency_unit: "minute"
+      start_date_time: 2022-01-01T00:00:00
+      end_date_time: 2022-01-01T06:00:00
+      tenant_uuid: "71e220f6-5d40-4209-b699-5d70f287d61c"
+      avi_credentials:
+        username: "admin"
+        password: "password"
+      tenant_ref: "/api/tenant/71e220f6-5d40-4209-b699-5d70f287d61c"
+      scheduler_action:
+        vs_uuid: "5e972a9f-8d23-4975-a4fb-3601d3406953"
+        enabled: true
+ 
+  - name: Debug output
+    debug:
+      var: inventory_hostname
+
+- name: Generate random MAC addresses for network modules.
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Generate random MAC address
+      set_fact:
+        random_mac: "{{ '%02x:%02x:%02x:%02x:%02x:%02x' | format(0, 0, 0, 0, 0, (item|int)) | upper }}"
+      vars:
+        random_mac_range: "{{ range(1, 256) | list }}"
+      run_once: true
+
+    - name: Display random MAC address
+      debug:
+        var: random_mac

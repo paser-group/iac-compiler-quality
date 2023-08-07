@@ -1,0 +1,36 @@
+- name: Generate random MAC addresses for network modules
+  hosts: localhost
+  gather_facts: false
+  vars:
+    vserver_name: "test_vserver"
+    nitro_user: "admin"
+    nitro_pass: "password"
+    nitro_protocol: "http"
+    nitro_timeout: 60
+    nsip: "10.1.1.1" # Replace with the appropriate NSIP address
+
+  tasks:
+
+    - name: Include random MAC address generator
+      include_vars:
+        file: "mac_address_generator.yml"
+
+    - name: Generate random MAC address
+      set_fact:
+        mac_address: "{{ mac_address | default([]) + [item] }}"
+      with_sequence: count=1
+
+    - name: Create Netscaler CS VServer
+      community.network.netscaler_cs_vserver:
+        nsip: "{{ nsip }}"
+        nitro_user: "{{ nitro_user }}"
+        nitro_pass: "{{ nitro_pass }}"
+        nitro_protocol: "{{ nitro_protocol }}"
+        nitro_timeout: "{{ nitro_timeout }}"
+        vserver_name: "{{ vserver_name }}"
+        mac: "{{ mac_address[0] | mac_convert }}"
+      register: result
+
+    - name: Debug output
+      debug:
+        var: result

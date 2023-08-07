@@ -1,0 +1,26 @@
+---
+- name: Test playbook for community.network.avi_backupconfiguration module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+
+    - name: Create random IP addresses
+      set_fact:
+        random_ip: "{{ lookup('template', template) }}"
+      vars:
+        template: "{{ item.ip }}"
+      with_items:
+        - { ip: '10.1.1.{{ 1 + (ansible_loop.index % 4) }}' }
+
+    - name: Configure backup
+      community.network.avi_backupconfiguration:
+        controller: "{{ random_ip }}"
+        username: admin
+        password: secret
+        state: present
+      register: backup_result
+
+    - name: Debug backup result
+      debug:
+        var: backup_result

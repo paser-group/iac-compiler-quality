@@ -1,0 +1,36 @@
+---
+- name: Test playbook for community.network.avi_errorpageprofile module
+  hosts: localhost
+  gather_facts: False
+
+  tasks:
+    - name: Install required collection
+      ansible.builtin.command: ansible-galaxy collection install community.network
+
+    - name: Set inventory variables
+      set_fact:
+        avi_credentials:
+          username: "{{ 'admin' | b64encode }}"
+          password: "{{ 'password' | b64encode }}"
+        controller: "https://{{ inventory_hostname }}"
+        avi_api_patch_op: "{{ 'add' | b64encode }}"
+
+    - name: Create ErrorPageProfile
+      community.network.avi_errorpageprofile:
+        controller: "{{ controller }}"
+        username: "{{ avi_credentials.username }}"
+        password: "{{ avi_credentials.password }}"
+        api_patch_op: "{{ avi_api_patch_op }}"
+        state: present
+        name: "ErrorPageProfile1"
+        tenant: "TestTenant"
+        error_pages:
+          - code: "404"
+            response_page: "{{ 'byte_string_response.html' | b64encode }}"
+            switch_to_ssl: "{{ 'True' | b64encode }}"
+
+      register: result
+
+    - name: Debug Module Output
+      debug:
+        var: result

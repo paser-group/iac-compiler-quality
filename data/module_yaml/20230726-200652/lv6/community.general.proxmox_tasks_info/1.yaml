@@ -1,0 +1,36 @@
+- name: Retrieve Proxmox Tasks Info
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Generate strings with varied encodings
+      ansible.builtin.set_fact:
+        encodings:
+          - utf-8
+          - utf-16
+          - latin-1
+      vars:
+        api_host: "https://{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}"
+        api_user: "admin@pve"
+        api_password: "password"
+        api_token_id: "token_id"
+        api_token_secret: "token_secret"
+        node: "pve"
+        task: "{{ encodings | random }}"
+        validate_certs: false
+
+    - name: Retrieve Proxmox Tasks Info
+      community.general.proxmox_tasks_info:
+        api_host: "{{ api_host }}"
+        api_user: "{{ api_user }}"
+        api_password: "{{ api_password }}"
+        api_token_id: "{{ api_token_id }}"
+        api_token_secret: "{{ api_token_secret }}"
+        node: "{{ node }}"
+        task: "{{ task }}"
+        validate_certs: "{{ validate_certs }}"
+      register: tasks_info
+
+    - name: Debug tasks info
+      ansible.builtin.debug:
+        var: tasks_info

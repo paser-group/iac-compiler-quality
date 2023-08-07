@@ -1,0 +1,62 @@
+---
+- name: Test Ansible Latent Type-Related Bugs
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    alerta_url: "https://alerta.example.com"
+    api_key: "test-api-key"
+    api_password: "test-api-password"
+    api_username: "test-api-username"
+    customer: "test-customer"
+    match: "match-string"
+    state: "enabled"
+
+  tasks:
+    - name: Install required dependencies
+      pip:
+        name: "ansible>=2.10"
+
+    - name: Create test inventory
+      copy:
+        dest: "{{ playbook_dir }}/inventory.ini"
+        content: |
+          [docker_nodes]
+          ubuntu1 ansible_host=10.1.1.1
+          alpine1 ansible_host=10.1.1.2
+          centos1 ansible_host=10.1.1.3
+          redhat1 ansible_host=10.1.1.4
+
+    - name: Include test inventory
+      include_vars:
+        file: "{{ playbook_dir }}/inventory.ini"
+
+    - name: Test alerta_customer module with default values
+      community.general.alerta_customer:
+        alerta_url: "{{ alerta_url }}"
+        api_key: "{{ api_key }}"
+        api_password: "{{ api_password }}"
+        api_username: "{{ api_username }}"
+        customer: "{{ customer }}"
+        match: "{{ match }}"
+        state: "{{ state }}"
+      register: result_default
+
+    - name: Debug default result
+      debug:
+        var: result_default
+
+    - name: Test alerta_customer module with mixed case configuration values
+      community.general.alerta_customer:
+        alerta_url: "{{ alerta_url.upper() }}"
+        api_key: "{{ api_key.upper() }}"
+        api_password: "{{ api_password.upper() }}"
+        api_username: "{{ api_username.upper() }}"
+        customer: "{{ customer.upper() }}"
+        match: "{{ match.upper() }}"
+        state: "{{ state.upper() }}"
+      register: result_mixed_case
+
+    - name: Debug mixed case result
+      debug:
+        var: result_mixed_case

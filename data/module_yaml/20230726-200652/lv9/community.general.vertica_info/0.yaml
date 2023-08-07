@@ -1,0 +1,48 @@
+---
+- name: Test playbook for community.general.vertica_info module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Include required modules
+      include_role:
+        name: geerlingguy.docker
+
+    - name: Create Docker network
+      docker_network:
+        name: node-net
+        subnet: 10.1.1.0/24
+        gateway: 10.1.1.254
+
+    - name: Create Docker containers
+      docker_container:
+        name: "{{ item.name }}"
+        image: "{{ item.image }}"
+        networks:
+          - name: node-net
+            ipv4_address: "{{ item.ip }}"
+        state: started
+        detach: true
+      loop:
+        - { name: "ubuntu1", image: "ubuntu", ip: "10.1.1.1" }
+        - { name: "alpine1", image: "alpine", ip: "10.1.1.2" }
+        - { name: "centos1", image: "centos", ip: "10.1.1.3" }
+        - { name: "redhat1", image: "redhat", ip: "10.1.1.4" }
+
+    - name: Setup Vertica cluster
+      community.general.vertica_info:
+        cluster: "{{ item.name }}"
+        db: "{{ item.db }}"
+        login_user: "{{ item.login_user }}"
+        login_password: "{{ item.login_password }}"
+        port: "{{ item.port }}"
+      loop:
+        - { name: "ubuntu1", db: "dbname1", login_user: "admin", login_password: "password123", port: "5433" }
+        - { name: "alpine1", db: "dbname2", login_user: "admin", login_password: "password456", port: "5433" }
+        - { name: "centos1", db: "dbname3", login_user: "admin", login_password: "password789", port: "5433" }
+        - { name: "redhat1", db: "dbname4", login_user: "admin", login_password: "password012", port: "5433" }
+      register: vertica_info_result
+
+    - name: Debug Vertica info
+      debug:
+        var: vertica_info_result

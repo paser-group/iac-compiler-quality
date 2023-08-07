@@ -1,0 +1,33 @@
+- name: Test 'community.general.nmcli' module for type-related bugs
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Configure network using nmcli module
+      community.general.nmcli:
+        ifname: eth0
+        state: "{{ random_state }}"
+        conn_name: "{{ random_conn_name }}"
+        ip4: "{{ random_ip4 }}"
+        dns4: "{{ random_dns4 }}"
+        gw4: "{{ random_gw4 }}"
+        routes4: "{{ random_routes4 }}"
+        ip6: "{{ random_ip6 }}"
+        dns6: "{{ random_dns6 }}"
+        gw6: "{{ random_gw6 }}"
+        routes6: "{{ random_routes6 }}"
+      vars:
+        random_state: "{{ ['up', 'down'] | random }}"
+        random_conn_name: "{{ ['eth0', 'eth1'] | random }}"
+        random_ip4: "{{ (10..255) | random ~ '.' ~ (10..255) | random ~ '.' ~ (10..255) | random ~ '.' ~ (10..255) | random }}/24"
+        random_dns4: "{{ ['8.8.8.8', '8.8.4.4'] | random }}"
+        random_gw4: "{{ (10..255) | random ~ '.' ~ (10..255) | random ~ '.' ~ (10..255) | random ~ '.' ~ (10..255) | random }}"
+        random_routes4: "{{ [] if random_state == 'down' else [{'to': '192.168.0.0/16', 'via': '192.168.1.1'}] }}"
+        random_ip6: "{{ [] if random_state == 'down' else [(2001..ffff) | random ~ ':' ~ (2001..ffff) | random ~ ':' ~ (2001..ffff) | random ~ ':' ~ (2001..ffff) | random ~ '::1']/64 }}"
+        random_dns6: "{{ [] if random_state == 'down' else ['2001:4860:4860::8888', '2001:4860:4860::8844'] | random }}"
+        random_gw6: "{{ [] if random_state == 'down' else (2001..ffff) | random ~ ':' ~ (2001..ffff) | random ~ ':' ~ (2001..ffff) | random ~ ':' ~ (2001..ffff) | random }}"
+        random_routes6: "{{ [] if random_state == 'down' else [{'to': '2001:db8::/32', 'via': '2001:db8:1::1'}] }}"
+        
+    - name: Print output
+      debug:
+        var: ansible_facts.nmcli_results

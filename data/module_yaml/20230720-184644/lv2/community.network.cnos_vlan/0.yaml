@@ -1,0 +1,64 @@
+---
+- name: Test playbook for cnos_vlan module
+  hosts: localhost
+  gather_facts: False
+
+  vars:
+    test_vlan_id: 100
+    test_vlan_name: vlan_test
+    test_vlan_associated_interfaces:
+      - eth1
+      - eth2
+    test_vlan_delay: 5
+
+  tasks:
+    - name: Create VLAN with byte string value as name
+      community.network.cnos_vlan:
+        vlan_id: "{{ test_vlan_id }}"
+        name: "{{ test_vlan_name | to_bytes }}"
+        state: present
+      register: result
+      ignore_errors: True
+
+    - name: Debug the result
+      debug:
+        var: result
+
+    - name: Delete VLAN with regular string name
+      community.network.cnos_vlan:
+        vlan_id: "{{ test_vlan_id }}"
+        name: "{{ test_vlan_name }}"
+        state: absent
+      when: result.failed
+
+    - name: Associate interfaces with VLAN using byte string values
+      community.network.cnos_vlan:
+        vlan_id: "{{ test_vlan_id }}"
+        associated_interfaces: "{{ test_vlan_associated_interfaces | map('to_bytes') | list }}"
+        state: present
+      register: association_result
+      ignore_errors: True
+
+    - name: Debug the association result
+      debug:
+        var: association_result
+
+    - name: Dissociate interfaces from VLAN using regular string values
+      community.network.cnos_vlan:
+        vlan_id: "{{ test_vlan_id }}"
+        associated_interfaces: "{{ test_vlan_associated_interfaces }}"
+        state: present
+      when: association_result.failed
+
+    - name: Delay before deleting the VLAN
+      community.general.wait_for:
+        delay: "{{ test_vlan_delay }}"
+      when: result.failed or association_result.failed
+
+    - name: Delete VLAN with associated interfaces
+      community.network.cnos_vlan:
+        vlan_id: "{{ test_vlan_id }}"
+        name: "{{ test_vlan_name }}"
+        purge: yes
+        state: absent
+      when: result.failed or association_result.failed

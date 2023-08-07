@@ -1,0 +1,74 @@
+---
+- name: Ansible Latent Bug Finder & Heuristic Test Playbook
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Configure SLX-OS using community.network.slxos_config module
+      community.network.slxos_config:
+        src: "{{ playbook_dir }}/slxos_config.txt"
+        backup: yes
+        backup_options:
+          dir_path: "{{ playbook_dir }}/backups"
+        defaults: yes
+        intended_config: "{{ playbook_dir }}/intended_config.txt"
+        replace: yes
+        running_config: yes
+        save_when: modified
+
+    - name: Verify backup and running configuration files
+      assert:
+        that:
+          - "'backups/slxos_config.txt' in result.backup"
+          - "'running_configs/slxos_config.txt' in result.running_config"
+        success_msg: "Backup and running configuration files are created successfully."
+        fail_msg: "Backup and/or running configuration files are missing."
+
+    - name: Perform test cases
+      block:
+
+        - name: Test Case 1
+          vars:
+            example_variable: "{{ 'Example variable' | lower }}"
+          community.network.slxos_config:
+            src: "{{ playbook_dir }}/slxos_config.txt"
+            backup: yes
+            backup_options:
+              dir_path: "{{ playbook_dir }}/backups"
+            defaults: yes
+            intended_config: "{{ playbook_dir }}/intended_config.txt"
+            replace: yes
+            running_config: yes
+            save_when: modified
+            lines:
+              - "{{ example_variable }}"
+
+        - name: Test Case 2
+          vars:
+            EXAMPLE_VARIABLE: "{{ 'Example Variable' }}"
+          community.network.slxos_config:
+            src: "{{ playbook_dir }}/slxos_config.txt"
+            backup: yes
+            backup_options:
+              dir_path: "{{ playbook_dir }}/backups"
+            defaults: yes
+            intended_config: "{{ playbook_dir }}/intended_config.txt"
+            replace: yes
+            running_config: yes
+            save_when: modified
+            lines:
+              - "{{ EXAMPLE_VARIABLE | lower }}"
+      
+      rescue:
+        - name: Report failure
+          debug:
+            msg: "Type-related bug triggered by mixed case sensitivity in string configuration values."
+
+        - name: Gather debug information
+          community.network.slxos_command:
+            command_string: "show configuration"
+          register: debug_info
+
+        - name: Display debug information
+          debug:
+            var: debug_info.stdout_lines

@@ -1,0 +1,60 @@
+---
+- name: Generate random IP addresses for Docker nodes
+  hosts: localhost
+  gather_facts: false
+  connection: local
+  vars:
+    docker_ips:
+      - 10.1.1.1
+      - 10.1.1.2
+      - 10.1.1.3
+      - 10.1.1.4
+
+  tasks:
+    - name: Set Docker node IPs as facts
+      set_fact:
+        docker_ip_{{ item.0 }}: "{{ item.1 }}"
+      with_indexed_items:
+        - "{{ docker_ips }}"
+
+- name: Configure GitHub webhook
+  hosts: localhost
+  gather_facts: false
+  connection: local
+  vars:
+    webhook_payload:
+      active: true
+      content_type: "application/json"
+      events:
+        - push
+        - pull_request
+      github_url: "https://github.com/ansible"
+      insecure_ssl: false
+      password: "my_password"
+      repository: "my_repository"
+      secret: "my_secret"
+      state: "present"
+      token: "my_token"
+      url: "https://example.com/webhook"
+      user: "my_user"
+
+  tasks:
+    - name: Configure GitHub webhook
+      community.general.github_webhook:
+        active: "{{ webhook_payload.active }}"
+        content_type: "{{ webhook_payload.content_type }}"
+        events: "{{ webhook_payload.events }}"
+        github_url: "{{ webhook_payload.github_url }}"
+        insecure_ssl: "{{ webhook_payload.insecure_ssl }}"
+        password: "{{ webhook_payload.password }}"
+        repository: "{{ webhook_payload.repository }}"
+        secret: "{{ webhook_payload.secret }}"
+        state: "{{ webhook_payload.state }}"
+        token: "{{ webhook_payload.token }}"
+        url: "{{ webhook_payload.url }}"
+        user: "{{ webhook_payload.user }}"
+      register: result
+
+    - name: Debug module output
+      debug:
+        var: result

@@ -1,0 +1,56 @@
+---
+- name: Test playbook for community.network.ce_facts module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create inventory file
+      command:
+        cmd: echo -e "[nodes]\nubuntu1 ansible_host=10.1.1.1 ansible_user=root ansible_password=pass\nalpine1 ansible_host=10.1.1.2 ansible_user=root ansible_password=pass\ncentos1 ansible_host=10.1.1.3 ansible_user=root ansible_password=pass\nredhat1 ansible_host=10.1.1.4 ansible_user=root ansible_password=pass > inventory.txt"
+      delegate_to: localhost
+
+    - name: Create Docker network
+      shell: docker network create node-net
+      delegate_to: localhost
+
+    - name: Create containers
+      docker_container:
+        name: "{{ item.name }}"
+        image: "{{ item.image }}"
+        state: started
+        detach: true
+        network_mode: node-net
+      with_items:
+        - { name: ubuntu1, image: "ubuntu:latest" }
+        - { name: alpine1, image: "alpine:latest" }
+        - { name: centos1, image: "centos:latest" }
+        - { name: redhat1, image: "registry.access.redhat.com/ubi8/ubi" }
+    
+    - name: Configure network settings for containers
+      docker_host:
+        hostname: "{{ item.name }}"
+        ip_addresses: "{{ item.ip_address }}"
+        hostname_short: true
+        state: started
+      with_items:
+        - { name: ubuntu1, ip_address: "10.1.1.1" }
+        - { name: alpine1, ip_address: "10.1.1.2" }
+        - { name: centos1, ip_address: "10.1.1.3" }
+        - { name: redhat1, ip_address: "10.1.1.4" }
+    
+    - name: Wait for containers to be ready
+      pause:
+        seconds: 5
+    
+    - name: Execute ce_facts module
+      community.network.ce_facts:
+        gather_subset: None
+        provider:
+          host: "{{ inventory_hostname }}"
+          username: "root"
+          password: "pass"
+      register: ce_facts_result
+      
+    - name: Print module result
+      debug:
+        var: ce_facts_result

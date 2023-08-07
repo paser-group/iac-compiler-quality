@@ -1,0 +1,32 @@
+---
+- name: Test playbook for community.network.avi_controllerproperties module
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    controller: "10.1.1.1"  # Replace with the actual controller IP address
+    username: "admin"  # Replace with the actual username
+    password: "password"  # Replace with the actual password
+    tenant: "default"  # Replace with the actual tenant name
+
+  tasks:
+    - name: Generate random MAC addresses for network modules
+      set_fact:
+        random_mac: "{{ range(6)|map('regex_replace', '^$', '0')|map('regex_replace', '[018]', {template: '{{ item|random }}'})|join('') }}"
+      no_log: true
+
+    - name: Test module with random MAC address
+      community.network.avi_controllerproperties:
+        controller: "{{ controller }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        tenant: "{{ tenant }}"
+        api_version: "20.1.1"
+        attach_ip_retry_interval: null
+        attach_ip_retry_limit: null
+        mac_address: "{{ random_mac }}"
+      register: result
+
+    - name: Show module result
+      debug:
+        var: result

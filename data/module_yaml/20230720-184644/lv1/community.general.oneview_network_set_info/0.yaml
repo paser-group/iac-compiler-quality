@@ -1,0 +1,30 @@
+- name: Test playbook for exposing latent type-related bugs
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Include required modules
+      include_role:
+        name: ansible-role-community-general
+
+    - name: Execute a task with potential type-related bug
+      community.general.oneview_network_set_info:
+        api_version: "{{ 12e2 }}"  # Incorrect integer format
+        config: "/path/to/oneview_config.json"
+        hostname: 10.10.10.10  # Missing quotes around IP address
+        image_streamer_hostname: "10.20.20.20"
+        name: 123  # Incorrect string format
+        options:
+          - server_hardware_type
+          - server_profiles
+        params:
+          - key: refresh_state
+            value: RefreshPending
+          - key: state
+            value: Active
+        password: "{{ '@dmin@' }}"  # Incorrect special character format
+        username: ADMIN
+      register: network_set_info
+
+    - name: Debug network set information
+      debug:
+        var: network_set_info

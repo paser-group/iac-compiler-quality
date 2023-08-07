@@ -1,0 +1,65 @@
+---
+- name: Start workflow in Itentia network
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    workflow_name: "example_workflow"
+    description: "Example workflow description"
+    https: true
+    iap_fqdn: "iap.example.com"
+    iap_port: "443"
+    token_key: "example_token_key"
+    validate_certs: true
+    variables:
+      var1: "value1"
+      var2: "value2"
+
+  tasks:
+    - name: Start workflow
+      community.network.iap_start_workflow:
+        workflow_name: "{{ workflow_name }}"
+        description: "{{ description }}"
+        https: "{{ https }}"
+        iap_fqdn: "{{ iap_fqdn }}"
+        iap_port: "{{ iap_port }}"
+        token_key: "{{ token_key }}"
+        validate_certs: "{{ validate_certs }}"
+        variables: "{{ variables }}"
+      register: result
+
+    - name: Debug result
+      debug:
+        var: result
+
+    - name: Test case - Random port number
+      set_fact:
+        random_port: "{{ 1024 + (inventory_hostname | hash) | int }}"
+      when: "'port' in iap_start_workflow_result.stdout"
+
+    - name: Test case - Incorrect port number
+      community.network.iap_start_workflow:
+        workflow_name: "{{ workflow_name }}"
+        description: "{{ description }}"
+        https: "{{ https }}"
+        iap_fqdn: "{{ iap_fqdn }}"
+        iap_port: "invalid_port"
+        token_key: "{{ token_key }}"
+        validate_certs: "{{ validate_certs }}"
+        variables: "{{ variables }}"
+      ignore_errors: true
+      register: invalid_port_result
+
+    - name: Test case - Invalid variable type
+      set_fact:
+        variables: "invalid_type"
+      ignore_errors: true
+      register: invalid_variables_result
+
+    - name: Debug invalid_port_result
+      debug:
+        var: invalid_port_result
+
+    - name: Debug invalid_variables_result
+      debug:
+        var: invalid_variables_result

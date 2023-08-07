@@ -1,0 +1,28 @@
+---
+- name: Test 'community.general.scaleway_function_info' module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Generate random port numbers
+      set_fact:
+        random_port1: "{{ 1024 + (ansible_date_time.microsecond | random(seed=inventory_hostname) | int) % 64512 }}"
+        random_port2: "{{ 1024 + (ansible_date_time.microsecond + 1 | random(seed=inventory_hostname) | int) % 64512 }}"
+
+    - name: Retrieve information using 'community.general.scaleway_function_info' module
+      community.general.scaleway_function_info:
+        api_timeout: 10
+        api_token: "{{ lookup('env', 'SCALEWAY_API_TOKEN') }}"
+        api_url: "https://api.scaleway.com"
+        name: "function1"
+        namespace_id: "namespace1"
+        query_parameters:
+          port1: "{{ random_port1 }}"
+          port2: "{{ random_port2 }}"
+        region: "par1"
+        validate_certs: true
+      register: result
+
+    - name: Debug module output
+      debug:
+        var: result

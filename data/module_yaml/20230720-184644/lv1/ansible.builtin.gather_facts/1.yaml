@@ -1,0 +1,25 @@
+- name: Trigger type-related bugs in Ansible
+  hosts: localhost
+  connection: local
+
+  tasks:
+    - name: Modify inventory file with mixed case sensitivity
+      lineinfile:
+        path: /path/to/inventory/file
+        regex: "{{ item.regex }}"
+        line: "{{ item.line }}"
+      loop:
+        - { regex: '^ubuntu1', line: 'uBuNTu1 ansible_host=10.1.1.1' }
+        - { regex: '^alpine1', line: 'aLpInE1 ansible_host=10.1.1.2' }
+        - { regex: '^centos1', line: 'CeNTos1 ansible_host=10.1.1.3' }
+        - { regex: '^redhat1', line: 'rEdhAt1 ansible_host=10.1.1.4' }
+
+    - name: Test case 1 - Gather facts from Docker nodes with mixed case sensitivity
+      include_tasks: gather_facts.yml
+      vars:
+        ansible_inventory: /path/to/inventory/file
+
+    - name: Test case 2 - Gather facts from Docker nodes without mixed case sensitivity
+      include_tasks: gather_facts.yml
+      vars:
+        ansible_inventory: /path/to/normal/inventory/file

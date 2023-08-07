@@ -1,0 +1,40 @@
+- name: Test playbook for solaris_zone module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    solaris_zone_ip: "{{ '10.1.1.' ~ range(1,256)|random }}"
+
+  tasks:
+    - name: Create a solaris zone
+      community.general.solaris_zone:
+        name: test_zone
+        path: /zones/test_zone
+        state: configured
+        config: /zones/test_zone/config
+        root_password: testpassword
+        sparse: false
+        attach_options: -a
+        create_options: -t non-global
+        install_options: -a
+        timeout: 60
+        network_interfaces:
+          - name: net0
+            ipv4:
+              address: "{{ solaris_zone_ip }}"
+              netmask: 255.255.255.0
+              autoconfigure: true
+              configure_allowed_address: true
+              configure_dhcp: false
+              configure_netmasks: false
+              state: configured
+              exclusive: true
+
+    - name: Verify the solaris zone was created
+      command: zoneadm -z test_zone list -p
+      register: zone_status
+      failed_when: zone_status.rc != 0
+
+    - name: Print zone status
+      debug:
+        var: zone_status.stdout_lines

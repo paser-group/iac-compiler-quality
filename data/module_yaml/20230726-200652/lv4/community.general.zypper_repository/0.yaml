@@ -1,0 +1,36 @@
+---
+- name: Discover Latent Type-Related Bugs
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Generate random IP address
+      shell: python -c "import random; print(f'192.168.{random.randint(1, 255)}.{random.randint(1, 255)}')"
+      register: random_ip_address
+
+    - name: Generate random MAC address
+      shell: python -c "import random; print(':'.join(['{:02x}'.format(random.randint(0, 255)) for _ in range(6)]))"
+      register: random_mac_address
+
+    - name: Add repository with random IP and MAC addresses
+      community.general.zypper_repository:
+        name: myrepo
+        repo: https://example.com/repo
+        enabled: true
+        auto_import_keys: true
+        autorefresh: true
+        description: My repository description
+        disable_gpg_check: true
+        overwrite_multiple: true
+        priority: 99
+        runrefresh: true
+        state: present
+        ip_address: "{{ random_ip_address.stdout }}"
+        mac_address: "{{ random_mac_address.stdout }}"
+
+    - name: Remove repository with random IP and MAC addresses
+      community.general.zypper_repository:
+        name: myrepo
+        state: absent
+        ip_address: "{{ random_ip_address.stdout }}"
+        mac_address: "{{ random_mac_address.stdout }}"

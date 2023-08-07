@@ -1,0 +1,85 @@
+---
+- name: Test Ansible Latent Type-Related Bugs
+  hosts: all
+  gather_facts: false
+
+  vars:
+    inventory_network: '10.1.1'
+    inventory_subnet: '10.1.1.0/24'
+    inventory_gateway: '10.1.1.254'
+
+  tasks:
+    - name: Set network properties
+      set_fact:
+        network_properties:
+          - name: ubuntu1
+            ip: "{{ inventory_network }}.1"
+            os: ubuntu
+          - name: alpine1
+            ip: "{{ inventory_network }}.2"
+            os: alpine
+          - name: centos1
+            ip: "{{ inventory_network }}.3"
+            os: centos
+          - name: redhat1
+            ip: "{{ inventory_network }}.4"
+            os: redhat
+
+    - name: Generate inventory file
+      copy:
+        dest: /etc/ansible/inventory.yaml
+        content: |
+          all:
+            children:
+              docker_nodes:
+                hosts:
+                  ubuntu1:
+                    ansible_host: "{{ network_properties[0].ip }}"
+                  alpine1:
+                    ansible_host: "{{ network_properties[1].ip }}"
+                  centos1:
+                    ansible_host: "{{ network_properties[2].ip }}"
+                  redhat1:
+                    ansible_host: "{{ network_properties[3].ip }}"
+                vars:
+                  ansible_python_interpreter: /usr/bin/python
+                  ansible_user: ansible
+                  ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
+                  ansible_become: true
+                  ansible_become_method: sudo
+
+    - name: Verify inventory file
+      debug:
+        msg:
+          - "Host: {{ inventory_hostname }}"
+          - "IP: {{ ansible_host }}"
+          - "OS: {{ network_properties | selectattr('ip', 'equalto', ansible_host) | map(attribute='os') | list }}"
+          - "Subnet: {{ inventory_subnet }}"
+          - "Gateway: {{ inventory_gateway }}"
+
+    - name: Apply heuristic for dividing a limit-related value
+      set_fact:
+        divided_limit: "{{ network_properties | length / 2 | int }}"
+
+    - name: Verify divided limit value
+      debug:
+        msg: "Divided Limit: {{ divided_limit }}"
+
+    - name: Execute dpkg_selections module
+      ansible.builtin.dpkg_selections:
+        name: "{{ item.1 }}"
+        selection: present
+      with_indexed_items: "{{ network_properties }}"
+      loop_control:
+        label: "{{ item.0.name }}"
+
+    - name: Verify dpkg_selections module output
+      debug:
+        msg: "Module output for {{ item.item.ip }}: {{ item }}"
+      loop: "{{ ansible_loop.all_items }}"
+
+  post_tasks:
+    - name: Clean up inventory file
+      file:
+        path: /etc/ansible/inventory.yaml
+        state: absent

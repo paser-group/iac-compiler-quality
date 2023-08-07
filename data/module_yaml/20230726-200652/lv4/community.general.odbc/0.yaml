@@ -1,0 +1,27 @@
+---
+- name: Ansible Latent Bug Finder & Heuristic Test Playbook
+  hosts: node-net
+  gather_facts: false
+
+  tasks:
+    - name: Generate random MAC address
+      hosts: localhost
+      gather_facts: false
+      tasks:
+        - name: Generate random MAC address
+          set_fact:
+            random_mac: "{{ '%02x'% (item|int + hostvars[inventory_hostname].inventory_hostname.split('.')[3].split('-')[1]) }}:00:00:00:00:00"
+          with_sequence: start=100
+          when: inventory_hostname in groups['node-net']
+          register: mac_addresses
+
+    - name: Install odbc package
+      package:
+        name: odbc
+        state: present
+
+    - name: Configure ODBC
+      community.general.odbc:
+        dsn: "SystemDSN"
+        commit: "{{ random_mac }}"
+        query: "SELECT * FROM Table"

@@ -1,0 +1,33 @@
+- hosts: localhost
+  gather_facts: false
+
+  vars:
+    cnos_username: "admin"
+    cnos_password: "password123"
+    cnos_enable_password: "enable123"
+    device_type: "cnos"
+    host: "10.1.1.1"
+    output_file: "/tmp/output.txt"
+
+  tasks:
+    - name: Trigger Ansible bug with mixed case sensitivity
+      community.network.cnos_conditional_command:
+        host: "{{ host }}"
+        username: "{{ cnos_username }}"
+        password: "{{ cnos_password }}"
+        enable_password: "{{ cnos_enable_password }}"
+        deviceType: "{{ device_type }}"
+        clicommand: "show version"
+        condition: "version == 1.0"
+        outputfile: "{{ output_file }}"
+      register: result
+      ignore_errors: true
+
+    - name: Print bug-triggering command output
+      debug:
+        var: result
+
+    - name: Cleanup output file
+      file:
+        path: "{{ output_file }}"
+        state: absent

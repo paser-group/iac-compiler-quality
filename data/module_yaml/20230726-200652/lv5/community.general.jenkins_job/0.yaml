@@ -1,0 +1,45 @@
+---
+- name: Test Jenkins Job Module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create Jenkins job
+      community.general.jenkins_job:
+        name: "{{ job_name }}"
+        url: "{{ jenkins_url }}"
+        user: "{{ jenkins_user }}"
+        password: "{{ jenkins_password }}"
+        state: present
+        validate_certs: "{{ validate_certs }}"
+        config: |
+          <project>
+            <buildWrappers>
+              <hudson.plugins.build__timeout.BuildTimeoutWrapper>
+                <strategy class="hudson.plugins.build_timeout.impl.AbsoluteTimeOutStrategy">
+                  <timeoutMinutes>120</timeoutMinutes>
+                </strategy>
+              </hudson.plugins.build__timeout.BuildTimeoutWrapper>
+            </buildWrappers>
+          </project>
+
+      vars:
+        job_name: "TestJob"
+        jenkins_url: "http://localhost:8080"
+        jenkins_user: "admin"
+        jenkins_password: "admin"
+        validate_certs: false
+
+    - name: Display Jenkins job details
+      community.general.jenkins_job_info:
+        name: "{{ job_name }}"
+        url: "{{ jenkins_url }}"
+        user: "{{ jenkins_user }}"
+        password: "{{ jenkins_password }}"
+        validate_certs: "{{ validate_certs }}"
+
+      register: job_info
+
+    - name: Debug job info
+      debug:
+        var: job_info

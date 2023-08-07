@@ -1,0 +1,54 @@
+- name: Test 'community.network.ig_unit_information' module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    node_net_subnet: "10.1.1.0/24"
+    node_net_gateway: "10.1.1.254"
+    nodes:
+      - name: ubuntu1
+        ip: "10.1.1.1"
+      - name: alpine1
+        ip: "10.1.1.2"
+      - name: centos1
+        ip: "10.1.1.3"
+      - name: redhat1
+        ip: "10.1.1.4"
+
+  tasks:
+    - name: Set up network
+      community.network.network_cli:
+        cli_command: "ip address add {{ node.ip }}/24 dev eth0"
+      loop: "{{ nodes }}"
+
+    - name: Set up gateway
+      community.network.network_cli:
+        cli_command: "ip route add default via {{ node_net_gateway }} dev eth0"
+      loop: "{{ nodes }}"
+      when: node.name == 'ubuntu1'
+
+    - name: Install apache2 package
+      community.general.package:
+        name: apache2
+      loop: "{{ nodes }}"
+      loop_control:
+        loop_var: node
+      register: package_result
+
+    - name: Print package installation results
+      debug:
+        msg: "{{ item }}"
+      loop: "{{ package_result.results }}"
+
+    - name: Get unit information
+      community.network.ig_unit_information:
+        client: "{{ client }}"
+        provider: "{{ inventory_hostname }}"
+        port: "{{ 1024 | random }}"
+      loop: "{{ nodes }}"
+      register: unit_info_result
+
+    - name: Print unit information
+      debug:
+        msg: "{{ item.ansible_facts }}"
+      loop: "{{ unit_info_result.results }}"

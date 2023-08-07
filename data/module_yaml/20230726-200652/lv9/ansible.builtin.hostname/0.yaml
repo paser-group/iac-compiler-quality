@@ -1,0 +1,26 @@
+---
+- name: Test playbook for ansible.builtin.hostname module
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Set random IP addresses for all hosts
+      set_fact:
+        ip_address: "{{ '10.1.1.' ~ ((hostvars['localhost'].inventory_hostname.split('.')[-1]) + 1) }}"
+      run_once: true
+
+    - name: Configure hostname for each host
+      ansible.builtin.hostname:
+        name: "{{ inventory_hostname }}"
+      when: inventory_hostname != 'localhost'
+
+    - name: Add hosts to /etc/hosts file
+      lineinfile:
+        path: /etc/hosts
+        line: "{{ ip_address }} {{ inventory_hostname }}"
+        state: present
+      when: inventory_hostname != 'localhost'
+
+    - name: Print hostname and IP address for each host
+      debug:
+        msg: "Hostname: {{ inventory_hostname }} | IP Address: {{ ip_address }}"

@@ -1,0 +1,33 @@
+---
+- name: Test Apache2 mod_proxy module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Install Apache2
+      apt:
+        name: apache2
+        state: present
+      
+    - name: Configure mod_proxy
+      community.general.apache2_mod_proxy:
+        balancer_name: my_balancer
+        balancer_url_suffix: "{{ item }}"
+        balancer_vhost: "backend.example.com"
+        member_host: "backend.example.com"
+        state: present
+        tls: true
+        validate_certs: true
+      loop:
+        - "test"
+        - 1
+        - [1, 2, 3]
+
+    - name: Ensure mod_proxy configuration is present
+      stat:
+        path: "/etc/httpd/conf.d/proxy.conf"
+      register: proxy_conf
+
+    - name: Print mod_proxy configuration
+      debug:
+        var: proxy_conf.stat.content

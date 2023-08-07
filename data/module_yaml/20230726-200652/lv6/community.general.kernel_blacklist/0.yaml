@@ -1,0 +1,28 @@
+---
+- name: Testing Ansible Bug - community.general.kernel_blacklist
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Generate strings with varied encodings
+      set_fact:
+        strings: "{{ ['blacklisted', 'not blacklisted'] | map('b64encode') | list }}"
+
+    - name: Create blacklist file
+      copy:
+        content: |
+          {% for item in strings %}
+          {{ item }}
+          {% endfor %}
+        dest: /tmp/blacklist.txt
+
+    - name: Blacklist kernel module
+      community.general.kernel_blacklist:
+        blacklist_file: "{{ playbook_dir }}/tmp/blacklist.txt"
+        name: kernel_module_name
+        state: absent
+      register: result
+
+    - name: Debug result
+      debug:
+        var: result

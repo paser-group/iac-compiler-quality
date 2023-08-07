@@ -1,0 +1,47 @@
+- name: Test playbook for community.general.stacki_host module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Add hosts to Stacki cluster
+      community.general.stacki_host:
+        state: present
+        name: "{{ item.name }}"
+        appliance: "{{ item.appliance }}"
+        network: "{{ item.network }}"
+        prim_intf: "{{ item.prim_intf }}"
+        prim_intf_ip: "{{ item.prim_intf_ip }}"
+        prim_intf_mac: "{{ item.prim_intf_mac }}"
+        rack: "{{ item.rack }}"
+        rank: "{{ item.rank }}"
+        stacki_endpoint: "{{ item.stacki_endpoint }}"
+        stacki_password: "{{ item.stacki_password }}"
+        stacki_user: "{{ item.stacki_user }}"
+      loop:
+        - { name: "ubuntu1", appliance: "StackiAppliance1", network: "node-net", prim_intf: "eth0", prim_intf_ip: "10.1.1.1", prim_intf_mac: "AA:AA:AA:AA:AA:AA", rack: 1, rank: 1, stacki_endpoint: "https://stacki.example.com/api", stacki_user: "admin", stacki_password: "adminpassword" }
+        - { name: "alpine1", appliance: "StackiAppliance1", network: "node-net", prim_intf: "eth0", prim_intf_ip: "10.1.1.2", prim_intf_mac: "BB:BB:BB:BB:BB:BB", rack: 1, rank: 2, stacki_endpoint: "https://stacki.example.com/api", stacki_user: "admin", stacki_password: "adminpassword" }
+        - { name: "centos1", appliance: "StackiAppliance1", network: "node-net", prim_intf: "eth0", prim_intf_ip: "10.1.1.3", prim_intf_mac: "CC:CC:CC:CC:CC:CC", rack: 1, rank: 3, stacki_endpoint: "https://stacki.example.com/api", stacki_user: "admin", stacki_password: "adminpassword" }
+        - { name: "redhat1", appliance: "StackiAppliance1", network: "node-net", prim_intf: "eth0", prim_intf_ip: "10.1.1.4", prim_intf_mac: "DD:DD:DD:DD:DD:DD", rack: 1, rank: 4, stacki_endpoint: "https://stacki.example.com/api", stacki_user: "admin", stacki_password: "adminpassword" }
+
+    - name: Remove hosts from Stacki cluster
+      community.general.stacki_host:
+        state: absent
+        name: "{{ item.name }}"
+        stacki_endpoint: "{{ item.stacki_endpoint }}"
+        stacki_password: "{{ item.stacki_password }}"
+        stacki_user: "{{ item.stacki_user }}"
+      loop:
+        - { name: "ubuntu1", stacki_endpoint: "https://stacki.example.com/api", stacki_user: "admin", stacki_password: "adminpassword" }
+        - { name: "alpine1", stacki_endpoint: "https://stacki.example.com/api", stacki_user: "admin", stacki_password: "adminpassword" }
+        - { name: "centos1", stacki_endpoint: "https://stacki.example.com/api", stacki_user: "admin", stacki_password: "adminpassword" }
+        - { name: "redhat1", stacki_endpoint: "https://stacki.example.com/api", stacki_user: "admin", stacki_password: "adminpassword" }
+
+    - name: Random port number testing
+      # Generate random port numbers for testing
+      set_fact:
+        random_port: "{{ 10000 + (ansible_play_hosts.index(inventory_hostname) * 1000) + (item.0 * 10) + item.1 }}"
+      loop: "{{ query('sequence', start=0, end=9) | list | subelements('0') }}"
+
+    - name: Debug
+      debug:
+        var: random_port

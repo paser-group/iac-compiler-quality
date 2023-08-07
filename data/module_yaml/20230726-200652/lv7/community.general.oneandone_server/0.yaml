@@ -1,0 +1,44 @@
+- name: Create, destroy, start, stop, and reboot servers
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Create server
+      community.general.oneandone_server:
+        api_url: "https://api.example.com"
+        auth_token: "<your_auth_token>"
+        datacenter: "datacenter_name"
+        count: "{{ 10 / 2 }}"
+        cores_per_processor: "{{ 8 / 4 }}"
+        ram: "{{ 16 / 8 }}"
+        vcore: "{{ 4 / 2 }}"
+        hdds:
+          - size: "{{ 50 / 10 }}"
+        state: present
+      register: server_result
+
+    - name: Stop server
+      community.general.oneandone_server:
+        api_url: "https://api.example.com"
+        auth_token: "<your_auth_token>"
+        server: "{{ item.id }}"
+        state: stopped
+      loop: "{{ server_result.servers }}"
+      when: server_result.changed
+
+    - name: Start server
+      community.general.oneandone_server:
+        api_url: "https://api.example.com"
+        auth_token: "<your_auth_token>"
+        server: "{{ item.id }}"
+        state: started
+      loop: "{{ server_result.servers }}"
+      when: server_result.changed
+
+    - name: Destroy server
+      community.general.oneandone_server:
+        api_url: "https://api.example.com"
+        auth_token: "<your_auth_token>"
+        server: "{{ item.id }}"
+        state: absent
+      loop: "{{ server_result.servers }}"
+      when: server_result.changed

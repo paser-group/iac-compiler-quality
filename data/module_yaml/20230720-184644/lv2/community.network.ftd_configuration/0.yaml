@@ -1,0 +1,38 @@
+- name: Configure Cisco FTD
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Include Ansible Networking modules
+      include_role:
+        name: ansible-network.network-engine
+
+    - name: Generate network config payload
+      set_fact:
+        payload:
+          data:
+            configObject: "{{ config_object }}"
+            data: "{{ config_data }}"
+          filters: "{{ filters }}"
+          operation: "{{ operation }}"
+          path_params: "{{ path_params }}"
+          query_params: "{{ query_params }}"
+
+    - name: Introduce byte string values in place of regular strings
+      set_fact:
+        payload_byte_string: "{{ payload | json_query(query) }}"
+      vars:
+        query: json_replace(payload, 's', 'b')
+
+    - name: Display the payload with byte string values (for debugging)
+      debug:
+        var: payload_byte_string
+
+    - name: Manage FTD configuration
+      community.network.ftd_configuration:
+        payload: "{{ payload_byte_string }}"
+        register_as: ftd_config_result
+
+    - name: Display the result (for debugging)
+      debug:
+        var: ftd_config_result

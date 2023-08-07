@@ -1,0 +1,53 @@
+---
+- name: Run gunicorn
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Ensure virtual environment directory exists
+      file:
+        path: "/path/to/{{ venv }}"
+        state: directory
+
+    - name: Install gunicorn package
+      pip:
+        name: gunicorn
+        virtualenv: "/path/to/{{ venv }}"
+
+    - name: Set appropriate permissions for venv directory
+      file:
+        path: "/path/to/{{ venv }}"
+        mode: 0755
+        recurse: yes
+
+    - name: Create the Gunicorn config file
+      template:
+        src: "templates/gunicorn.conf.j2"  # Assuming you have the template file in a templates directory
+        dest: "{{ config }}"
+        mode: 0644
+
+    - name: Start Gunicorn
+      community.general.gunicorn:
+        app: "{{ app }}"
+        chdir: "{{ chdir }}"
+        config: "{{ config }}"
+        pid: "{{ pid }}"
+        user: "{{ user }}"
+        venv: "/path/to/{{ venv }}"
+        worker: "{{ worker }}"
+
+    - name: Stop gunicorn
+      community.general.gunicorn:
+        app: "{{ app }}"
+        chdir: "{{ chdir }}"
+        config: "{{ config }}"
+        pid: "{{ pid }}"
+        user: "{{ user }}"
+        venv: "/path/to/{{ venv }}"
+        worker: "{{ worker }}"
+        state: stopped
+
+    - name: Remove virtual environment directory
+      file:
+        path: "/path/to/{{ venv }}"
+        state: absent

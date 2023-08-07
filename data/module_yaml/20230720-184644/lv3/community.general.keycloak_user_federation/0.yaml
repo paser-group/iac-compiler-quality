@@ -1,0 +1,44 @@
+- name: Test Keycloak User Federation
+  hosts: localhost
+  gather_facts: false
+
+  pre_tasks:
+    - name: Install required dependencies
+      package:
+        name: python3-keycloak
+        state: present
+
+  tasks:
+    - name: Configure Keycloak User Federation
+      community.general.keycloak_user_federation:
+        auth_client_id: "admin-cli"
+        auth_client_secret: "admin-secret"
+        auth_keycloak_url: "http://localhost:8080/auth"
+        auth_password: "admin-password"
+        auth_realm: "master"
+        auth_username: "admin"
+        config:
+          providerType: "custom"
+          providerId: "my-provider"
+          mappers:
+            - name: "email"
+              id: "email"
+              parent_id: "my-provider"
+              tokenClaimName: "email"
+              tokenClaimValue: "email@example.com"
+              claimType: "String"
+          realm: "my-realm"
+        connection_timeout: 10
+        http_agent: "ansible-http-agent"
+        id: "my-user-federation"
+        name: "My User Federation"
+        parent_id: "keycloak"
+        state: present
+        token: "my-token"
+        validate_certs: false
+
+      register: result
+
+    - name: Debug result
+      debug:
+        var: result

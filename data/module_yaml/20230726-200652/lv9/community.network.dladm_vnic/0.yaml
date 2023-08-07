@@ -1,0 +1,28 @@
+- name: Test playbook to expose latent type-related bugs
+  hosts: localhost
+  gather_facts: false
+  vars:
+    link: "{{ ansible_default_ipv4.interface }}"
+    mac: "00:11:22:33:44:55"
+    name: "vnic1"
+    state: "up"
+    temporary: true
+    vlan: 10
+    random_ip: "{{ hostvars['localhost']['ansible_default_ipv4'].address | ipaddr('10.1.1.0/24') }}"
+  
+  tasks:
+    - name: Create a temporary VNIC
+      community.network.dladm_vnic:
+        link: "{{ link }}"
+        mac: "{{ mac }}"
+        name: "{{ name }}"
+        state: "{{ state }}"  # Intentional type-related bug: expecting 'state' as a string
+        temporary: "{{ temporary }}"
+        vlan: "{{ vlan }}"
+        ip: "{{ random_ip | int }}"  # Intentional type-related bug: expecting 'ip' as an integer
+      register: result
+      become: true
+
+    - name: Debug module output
+      debug:
+        var: result

@@ -1,0 +1,25 @@
+---
+- hosts: localhost
+  gather_facts: false
+  vars:
+    virtual_servers:
+      - name: VS1
+        ip_address: '10.1.1.5'
+        ports:
+          - port: "{{ play_port | default(80) }}" # Type-related bug potential
+
+  tasks:
+    - name: Include random port selection
+      include_tasks: port_randomizer.yml
+
+    - name: Configure A10 virtual servers
+      community.network.a10_virtual_server:
+        host: "{{ inventory_hostname }}"
+        username: admin
+        password: password
+        state: present
+        validate_certs: false
+        virtual_server: "{{ item.name }}"
+        virtual_server_ip: "{{ item.ip_address }}"
+        virtual_server_ports: "{{ item.ports }}"
+      loop: "{{ virtual_servers }}"

@@ -1,0 +1,38 @@
+---
+- name: Test playbook for community.general.vertica_configuration
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    cluster: vertica_cluster
+    db: vertica_db
+    login_user: admin
+    login_password: adminpass
+    port: 5433
+
+  tasks:
+    - name: Install community.general.vertica_configuration collection
+      ansible.builtin.shell:
+        cmd: ansible-galaxy collection install community.general
+
+    - name: Update Vertica configuration parameter value
+      community.general.vertica_configuration:
+        cluster: "{{ cluster }}"
+        db: "{{ db }}"
+        login_user: "{{ login_user }}"
+        login_password: "{{ login_password }}"
+        port: "{{ port }}"
+        parameter: changed_param
+        value: "{{ changed_value }}"
+      register: vertica_config_result
+      ignore_errors: true
+
+    - name: Debug vertica_config_result
+      debug:
+        var: vertica_config_result
+
+  handlers:
+    - name: Restart Vertica service
+      ansible.builtin.service:
+        name: vertica
+        state: restarted

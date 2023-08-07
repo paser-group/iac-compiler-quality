@@ -1,0 +1,26 @@
+- name: Test playbook to uncover latent type-related bugs
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Retrieve information on Scaleway function namespace
+      community.general.scaleway_function_namespace_info:
+        api_token: "{{ scaleway_api_token }}"
+        region: "par1"
+        validate_certs: false
+
+    - name: Generate random MAC addresses for network modules test case 1
+      set_fact:
+        mac_address: "{{ '%02x:%02x:%02x:%02x:%02x:%02x' | format(omit('10')) }}"
+        
+    - name: Generate random MAC addresses for network modules test case 2
+      shell: "hexdump -n 6 -e '6/1 \"%02x:\" 1/1 \"%02x\"' /dev/random | sed 's/.$//' "
+      register: mac_address
+        
+    - name: Generate random MAC addresses for network modules test case 3
+      command: "openssl rand -hex 6 | sed 's/\\(..\\)/\\1:/g; s/.$//' "
+      register: mac_address
+
+    - name: Display MAC address
+      debug:
+        var: mac_address

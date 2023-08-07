@@ -1,0 +1,40 @@
+- name: Test playbook for community.network.avi_networkprofile module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    network_profiles:
+      - name: HTTP_Profile
+        tenant: admin
+        password: "{{ avi_password }}"
+        username: "{{ avi_username }}"
+        api_version: 20.1.4
+        tenant_ref: admin
+        controller: 10.1.1.1
+        state: present
+
+  tasks:
+    - name: Set random MAC address
+      set_fact:
+        mac_address: "{{ 0 | random | format('02x') }}:{{ 0 | random | format('02x') }}:{{ 0 | random | format('02x') }}:{{ 0 | random | format('02x') }}:{{ 0 | random | format('02x') }}:{{ 0 | random | format('02x') }}"
+
+    - name: Create network profile
+      community.network.avi_networkprofile:
+        api_version: "{{ item.api_version | default('20.1.4') }}"
+        controller: "{{ item.controller | default('10.1.1.1') }}"
+        name: "{{ item.name }}"
+        tenant: "{{ item.tenant }}"
+        password: "{{ item.password }}"
+        username: "{{ item.username }}"
+        tenant_ref: "{{ item.tenant_ref }}"
+        state: "{{ item.state }}"
+        mac:
+          value: "{{ mac_address }}"
+          connection_mirror: "{{ item.connection_mirror }}"
+        data:
+          - description: Test network profile
+      loop: "{{ network_profiles }}"
+
+    - name: Debug output
+      debug:
+        msg: "Network profile created successfully"

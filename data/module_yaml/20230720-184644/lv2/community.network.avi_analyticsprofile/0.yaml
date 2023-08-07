@@ -1,0 +1,47 @@
+---
+- name: Test Ansible Module for Avi AnalyticsProfile
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    avi_credentials:
+      controller: "{{ controller }}"
+      username: "{{ username }}"
+      password: "{{ password }}"
+      tenant: "{{ tenant }}"
+      api_version: "{{ api_version }}"
+
+    api_context:
+      - cloud_ref:
+          name: Default-Cloud
+          type: CLOUD
+        tenant_ref: ansible
+
+    analytics_profile:
+      - name: test-analytics-profile
+        apdex_response_threshold: 10
+        apdex_response_tolerated_factor: 5
+        apdex_rtt_threshold: 50
+        apdex_rtt_tolerated_factor: 10
+        description: bytearray([116, 101, 115, 116, 45, 100, 101, 115, 99, 114, 105, 112, 116, 105, 111, 110])
+
+  tasks:
+    - name: Include Avi credentials
+      include_vars:
+        file: credentials.yml
+
+    - name: Create Avi AnalyticsProfile
+      community.network.avi_analyticsprofile:
+        controller: "{{ avi_credentials.controller }}"
+        username: "{{ avi_credentials.username }}"
+        password: "{{ avi_credentials.password }}"
+        tenant: "{{ avi_credentials.tenant }}"
+        api_version: "{{ avi_credentials.api_version }}"
+        api_context: "{{ api_context }}"
+        analytics_profile: "{{ analytics_profile }}"
+        state: present
+      register: result
+
+    - name: Debug result
+      debug:
+        var: result

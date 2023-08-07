@@ -1,0 +1,37 @@
+- name: Test playbook for the 'community.general.riak' module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Generate random MAC addresses
+      command: /usr/bin/openssl rand -hex 6 | sed 's/\(..\)/\1:/g; s/.$//' 
+      register: mac_address
+      changed_when: false
+
+    - name: Install 'community.general.riak'
+      pip:
+        name: community.general.riak
+      become: true
+
+    - name: Create Riak config directory
+      file:
+        state: directory
+        path: "{{ config_dir }}"
+        mode: '0755'
+      become: true
+
+    - name: Configure Riak
+      community.general.riak:
+        command: "configure"
+        config_dir: "{{ config_dir }}"
+        http_conn: "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}"
+        target_node: "{{ hostvars[inventory_hostname]['ansible_hostname'] }}"
+        validate_certs: "{{ validate_certs | default(true) }}"
+        wait_for_handoffs: "{{ wait_for_handoffs }}"
+        wait_for_ring: "{{ wait_for_ring }}"
+        wait_for_service: "{{ wait_for_service }}"
+      register: riak_config
+      become: true
+
+    - debug:
+        var: mac_address.stdout_lines

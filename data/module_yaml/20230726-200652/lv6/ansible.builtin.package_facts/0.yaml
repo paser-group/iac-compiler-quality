@@ -1,0 +1,61 @@
+---
+- name: Discover Latent Type-Related Bugs in package_facts Module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Set up inventory
+      add_host:
+        name: "{{ item }}"
+        groups: package_hosts
+        ansible_host: "{{ hostvars[item]['ansible_default_ipv4']['address'] }}"
+        ansible_user: ansible
+      loop:
+        - ubuntu1
+        - alpine1
+        - centos1
+        - redhat1
+
+    - name: Gather package facts
+      package_facts:
+        manager: "{{ hostvars[inventory_hostname]['manager'] }}"
+        strategy: "{{ hostvars[inventory_hostname]['strategy'] }}"
+      register: package_data
+
+    - name: Debug package facts
+      debug:
+        var: package_data
+
+    - name: Print package names
+      debug:
+        msg: "Package name: {{ package_data.ansible_facts[inventory_hostname].packages[0] }}"
+      loop: "{{ groups['package_hosts'] }}"
+      loop_control:
+        loop_var: package_host
+        label: "Debug package names for {{ package_host }}"
+
+    - name: Generate strings with varied encodings
+      set_fact:
+        encoded_string: "{{ item }}"
+      vars:
+        encoded_strings:
+          - "\u2603"   # Snowman unicode
+          - "\u{2937}" # Arrow Unicode
+          - "\U0001F47E"  # Alien Unicode
+      loop: "{{ encoded_strings }}"
+
+    - name: Debug encoded string
+      debug:
+        var: encoded_string
+
+    - name: Package install check
+      package:
+        name: "{{ encoded_string }}"
+        state: present
+        update_cache: yes
+      ignore_errors: true
+      register: package_status
+
+    - name: Debug package installation status
+      debug:
+        var: package_status

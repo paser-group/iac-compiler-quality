@@ -1,0 +1,54 @@
+---
+- name: Test playbook for community.general.hwc_network_vpc module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    cidr: "10.0.0.0/16"
+    name: "test_vpc"
+    region: "us-east-1"
+    domain: "example.com"
+    password: "password"
+    project: "test_project"
+    state: present
+    timeouts:
+      create: 300
+      delete: 300
+    user: "test_user"
+    identity_endpoint: "https://identity.endpoint"
+
+  tasks:
+    - name: Create VPC
+      community.general.hwc_network_vpc:
+        cidr: "{{ cidr }}"
+        name: "{{ name }}"
+        region: "{{ region }}"
+        domain: "{{ domain }}"
+        password: "{{ password }}"
+        project: "{{ project }}"
+        state: "{{ state }}"
+        timeouts: "{{ timeouts }}"
+        user: "{{ user }}"
+        identity_endpoint: "{{ identity_endpoint }}"
+      register: vpc_result
+
+    - name: Debug VPC result
+      debug:
+        var: vpc_result
+
+    - name: Remove VPC
+      community.general.hwc_network_vpc:
+        id: "{{ vpc_result.vpc_id }}"
+        state: absent
+        timeouts: "{{ timeouts }}"
+        identity_endpoint: "{{ identity_endpoint }}"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        project: "{{ project }}"
+        domain: "{{ domain }}"
+      when: vpc_result.vpc_id is defined
+      register: remove_result
+
+    - name: Debug removal result
+      debug:
+        var: remove_result

@@ -1,0 +1,41 @@
+---
+- name: Manage switch configuration using templates
+  hosts: switches
+  gather_facts: false
+  tasks:
+    - name: Render switch configuration template
+      community.network.cnos_template:
+        host: "{{ inventory_hostname }}"
+        username: "{{ switch_username }}"
+        password: "{{ switch_password }}"
+        enablePassword: "{{ switch_enable_password }}"
+        deviceType: "{{ switch_device_type }}"
+        outputfile: "/tmp/switch_config.txt"
+        commandfile: None
+      register: template_result
+
+    - name: Display template output
+      debug:
+        var: template_result
+
+- name: Test Cases - Produce random port numbers to test port settings
+  hosts: switches
+  gather_facts: false
+  vars:
+    random_ports:
+      - 10
+      - 20
+      - 30
+      - 40
+      - 50
+
+  tasks:
+    - name: Configure switch port
+      community.network.cnos_interface:
+        host: "{{ inventory_hostname }}"
+        username: "{{ switch_username }}"
+        password: "{{ switch_password }}"
+        enablePassword: "{{ switch_enable_password }}"
+        name: "Ethernet1/{{ item }}"
+        state: present
+      with_items: "{{ random_ports }}"

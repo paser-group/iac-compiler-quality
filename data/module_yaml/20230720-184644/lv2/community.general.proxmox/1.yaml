@@ -1,0 +1,40 @@
+---
+- name: Test playbook for 'community.general.proxmox' module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    vault_proxmox_password: !vault |
+      $ANSIBLE_VAULT;1.1;AES256
+      64346530623265663132313433323438396163333264653861396163383062643363383462393530
+      3234366238323838663465633339373437343030616530650a306663653363393862316437343935
+      38643137623864356663343639653365383335326439343262333164343164393639333636316531
+      3761323665330a626134333663353930363037646430366639323564353335353034303530636161
+      61663833383339366532633434656331303837333963303930363539613337386630306462353366
+      62363130646638323462303331643831
+
+  tasks:
+    - name: Create Proxmox VM
+      community.general.proxmox:
+        api_host: b'10.1.1.1'
+        api_user: b'root'
+        api_password: b'{{ vault_proxmox_password | b64decode }}'
+        node: b'pve'
+        vmid: 100
+        ostemplate: b'debian-10'
+        storage: b'local-lvm'
+        state: b'present'
+        clone: 1
+        cores: 2
+        memory: 2048
+        disk: b'vm-100-disk-0,size=20G'
+        netif:
+          b'net0': 'name=eth0,bridge=vmbr0,ip=10.1.1.100/24,gw=10.1.1.254'
+        onboot: true
+        validate_certs: false
+        force: false
+      register: proxmox_vm_creation
+
+    - name: Debug Proxmox VM creation result
+      debug:
+        var: proxmox_vm_creation

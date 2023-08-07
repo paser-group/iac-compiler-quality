@@ -1,0 +1,23 @@
+- name: Test apt module for latent bugs
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Generate random port number
+      shell:
+        cmd: "shuf -i 1024-65535 -n 1"
+      register: random_port
+      changed_when: false
+
+    - name: Install package with random port
+      apt:
+        name: my_package
+        state: present
+        force: yes
+        update_cache: no
+        allow_change_held_packages: "{{ random_port.stdout }}"
+        allow_downgrade: "{{ random_port.stdout }}"
+        allow_unauthenticated: "{{ random_port.stdout }}"
+        install_recommends: yes
+        only_upgrade: yes
+      become: yes
+      become_user: root

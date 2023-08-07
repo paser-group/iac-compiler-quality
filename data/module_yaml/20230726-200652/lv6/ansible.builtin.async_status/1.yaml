@@ -1,0 +1,36 @@
+- name: Check async status
+  hosts: localhost
+  gather_facts: false
+  
+  tasks:
+    - name: Start async task
+      command: /bin/sleep {{ item }}
+      async: 300
+      poll: 15
+      register: async_result
+      loop:
+        - 5
+        - 10
+        - 15
+
+    - name: Print async job ID
+      debug:
+        var: ansible_job_id
+
+    - name: Generate encoded jid string
+      set_fact:
+        encoded_jid: "{{ ansible_job_id | regex_replace('(.)', '\\u00\\1') }}"
+
+    - name: Generate encoded mode string
+      set_fact:
+        encoded_mode: "{{ 'completed' | regex_replace('(.)', '\\u00\\1') }}"
+
+    - name: Check async status
+      ansible.builtin.async_status:
+        jid: "{{ encoded_jid }}"
+        mode: "{{ encoded_mode }}"
+      register: async_status
+
+    - name: Display async status
+      debug:
+        var: async_status

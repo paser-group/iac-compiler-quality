@@ -1,0 +1,75 @@
+- name: Create or Terminate VM
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    api_url: "https://api.example.com"
+    api_username: "admin"
+    api_password: "secretpassword"
+    attributes:
+      - name: "CPU"
+        value: "2"
+      - name: "RAM"
+        value: "4096"
+    count: 1
+
+  tasks:
+    - name: Create VM
+      community.general.one_vm:
+        api_url: "{{ api_url }}"
+        api_username: "{{ api_username }}"
+        api_password: "{{ api_password }}"
+        attributes: "{{ attributes }}"
+        count: "{{ count }}"
+      register: vm_creation
+      when: create_vm | default(true)
+
+    - name: Terminate VM
+      community.general.one_vm:
+        api_url: "{{ api_url }}"
+        api_username: "{{ api_username }}"
+        api_password: "{{ api_password }}"
+        attributes: "{{ attributes }}"
+        count: "{{ count }}"
+        state: absent
+      ignore_errors: true
+      when: terminate_vm | default(true)
+
+- name: Test Cases
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Introduce byte string values
+      set_fact:
+        api_url: b"https://api.example.com"
+        api_username: b"admin"
+        api_password: b"secretpassword"
+        attributes:
+          - name: b"CPU"
+            value: b"2"
+          - name: b"RAM"
+            value: b"4096"
+        count: 1
+      when: introduce_byte_strings | default(false)
+
+    - name: Create VM with byte string values
+      community.general.one_vm:
+        api_url: "{{ api_url }}"
+        api_username: "{{ api_username }}"
+        api_password: "{{ api_password }}"
+        attributes: "{{ attributes }}"
+        count: "{{ count }}"
+      register: vm_creation
+      when: create_vm | default(true) and introduce_byte_strings | default(false)
+
+    - name: Terminate VM with byte string values
+      community.general.one_vm:
+        api_url: "{{ api_url }}"
+        api_username: "{{ api_username }}"
+        api_password: "{{ api_password }}"
+        attributes: "{{ attributes }}"
+        count: "{{ count }}"
+        state: absent
+      ignore_errors: true
+      when: terminate_vm | default(true) and introduce_byte_strings | default(false)

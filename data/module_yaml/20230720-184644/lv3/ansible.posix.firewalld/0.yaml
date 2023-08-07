@@ -1,0 +1,80 @@
+---
+- name: Test ansible.posix.firewalld module for latent type-related bugs
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Enable firewalld service
+      service:
+        name: firewalld
+        state: started
+        enabled: true
+
+    - name: Open a port
+      firewalld:
+        port: 8080/tcp
+        permanent: true
+        state: enabled
+
+    - name: Add a masquerade rule
+      firewalld:
+        masquerade: yes
+        permanent: true
+        state: enabled
+
+    - name: Allow icmp_block
+      firewalld:
+        icmp_block: echo-reply
+        icmp_block_inversion: no
+        permanent: true
+        state: enabled
+
+    - name: Set a rich rule
+      firewalld:
+        rich_rule: 'rule family="ipv4" source address="10.1.1.0/24" port port="8080" protocol="tcp" accept'
+        immediate: true
+        permanent: true
+        state: enabled
+
+    - name: Set a port forwarding rule
+      firewalld:
+        port_forward: ['port=8080:proto=tcp:toport=80:toaddr=10.1.1.1']
+        immediate: true
+        permanent: true
+        state: enabled
+
+    - name: Define a zone
+      firewalld:
+        zone: 'public'
+        state: enabled
+
+    - name: Configure a service
+      firewalld:
+        service: 'http'
+        state: enabled
+
+    - name: Add a source
+      firewalld:
+        source: '10.1.1.2'
+        state: enabled
+
+    - name: Block an IP address
+      firewalld:
+        source: '10.1.1.3'
+        state: enabled
+        target: 'DROP'
+
+    - name: Set a timeout
+      firewalld:
+        port: '22/tcp'
+        timeout: 600
+        state: enabled
+
+    - name: Disable firewalld service
+      firewalld:
+        offline: true
+
+    - name: Remove a port
+      firewalld:
+        port: 8080/tcp
+        state: disabled

@@ -1,0 +1,53 @@
+---
+- name: Push Configuration to Network Devices
+  hosts: network_devices
+  gather_facts: false
+
+  vars:
+    config_file: "{{ playbook_dir }}/config.txt"
+    backup_dir: "{{ playbook_dir }}/backup/"
+
+  tasks:
+    - name: Generate random MAC addresses
+      set_fact:
+        mac_address: "{{ '%02x' | format(item) }}:{{ '%02x' | format(item) }}:{{ '%02x' | format(item) }}"
+      loop: "{{ range(1, 7) | list }}"  # Generates 6 random values between 1 and 6
+
+    - name: Create backup directory
+      file:
+        path: "{{ backup_dir }}"
+        state: directory
+
+    - name: Backup running configuration
+      ansible.netcommon.cli_config:
+        backup: true
+        backup_options:
+          dir_path: "{{ backup_dir }}"
+      register: backup_result
+
+    - name: Push configuration to network devices
+      ansible.netcommon.cli_config:
+        config: "{{ lookup('file', config_file) }}"
+        defaults: true
+        replace: running-config
+        commit: true
+        commit_comment: "Pushing configuration with random MAC addresses"
+      register: config_result
+
+    - name: Display configuration diff
+      debug:
+        var: config_result.diff_lines
+
+    - name: Rollback configuration
+      ansible.netcommon.cli_config:
+        rollback: 1
+      when: config_result.changed
+
+    - name: Display rollback diff
+      debug:
+        msg: "Rollback successful"
+      when: config_result.changed and rollback_result.changes > 0
+
+    - name: Display backup path
+      debug:
+        var: backup_result.path

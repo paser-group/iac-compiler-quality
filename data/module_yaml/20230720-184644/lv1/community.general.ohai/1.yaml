@@ -1,0 +1,31 @@
+---
+- name: Retrieve inventory information using ohai module
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Install ohai plugin on Debian-based systems
+      apt:
+        name: ohai
+        state: present
+      when: ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+
+    - name: Install ohai plugin on Red Hat-based systems
+      yum:
+        name: ohai
+        state: present
+      when: ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
+
+    - name: Set mixed case configuration value
+      set_fact:
+        MIXED_CASE_VALUE: "Test Value"
+
+    - name: Gather inventory information using ohai module
+      community.general.ohai:
+        plugins:
+          - network
+        CACHE_VALID_TIME: "{{ MIXED_CASE_VALUE }}"  # Using mixed case sensitivity in the configuration value
+      register: ohai_result
+
+    - name: Print inventory information
+      debug:
+        var: ohai_result.ohai_network_interfaces

@@ -1,0 +1,44 @@
+---
+- name: Test playbook to find type-related bugs in community.network.netscaler_cs_policy module
+  hosts: localhost
+  gather_facts: false
+  vars:
+    nsip: "10.1.1.100"
+    nitro_user: "admin"
+    nitro_pass: "password"
+    nitro_protocol: "http"
+    nitro_timeout: 10
+    validate_certs: false
+
+  tasks:
+    - name: Create and apply a Netscaler Content Switching policy
+      community.network.netscaler_cs_policy:
+        nsip: "{{ nsip }}"
+        nitro_user: "{{ nitro_user }}"
+        nitro_pass: "{{ nitro_pass }}"
+        nitro_protocol: "{{ nitro_protocol }}"
+        nitro_timeout: "{{ nitro_timeout }}"
+        validate_certs: "{{ validate_certs }}"
+        state: present
+        policyname: "{{ item.name }}"
+        rule: "{{ item.rule }}"
+      with_items:
+        - name: test_policy
+          rule: "HTTP.REQ.HOSTNAME.EQ(\"www.example.com\")"
+
+        - name: test_policy2
+          rule: "HTTP.REQ.URL.PATH.EQ(\"/path\")"
+
+    - name: Delete the Netscaler Content Switching policy
+      community.network.netscaler_cs_policy:
+        nsip: "{{ nsip }}"
+        nitro_user: "{{ nitro_user }}"
+        nitro_pass: "{{ nitro_pass }}"
+        nitro_protocol: "{{ nitro_protocol }}"
+        nitro_timeout: "{{ nitro_timeout }}"
+        validate_certs: "{{ validate_certs }}"
+        state: absent
+        policyname: "{{ item.name }}"
+      with_items:
+        - name: test_policy
+        - name: test_policy2

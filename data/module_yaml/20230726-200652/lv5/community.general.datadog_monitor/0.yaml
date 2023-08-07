@@ -1,0 +1,32 @@
+---
+- name: Ansible Latent Bug Finder Playbook
+  hosts: localhost
+  gather_facts: false
+  
+  tasks:
+    - name: Create datadog monitor
+      community.general.datadog_monitor:
+        api_key: "{{ lookup('env', 'DATADOG_API_KEY') }}"
+        app_key: "{{ lookup('env', 'DATADOG_APP_KEY') }}"
+        name: "Test Monitor 1"
+        type: "metric alert"
+        query: "avg(last_5m):sum:system.cpu.user{host:host0} > 80"
+        evaluation_delay: "60"
+        include_tags: true
+        tags:
+          - "tag1"
+          - "tag2"
+        priority: 1
+        notify_no_data: true
+        locked: true
+        thresholds:
+          critical: 90
+          warning: 70
+        silenced:
+          - "maintenance"
+        state: present
+      register: monitor_result
+      
+    - name: Debug monitor result
+      debug:
+        var: monitor_result

@@ -1,0 +1,34 @@
+---
+- name: Test playbook for zypper_repository module
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Add zypper repository
+      community.general.zypper_repository:
+        name: "Test Repo"
+        state: "present"
+        repo: "http://example.com/repo"
+        enabled: true
+        disable_gpg_check: true
+        autorefresh: false
+        runrefresh: false
+        overwrite_multiple: true
+        priority: 10
+        auto_import_keys: false
+        description: "This is a test repository."
+
+    - name: Remove zypper repository
+      community.general.zypper_repository:
+        name: "Test Repo"
+        state: "absent"
+        repo: "http://example.com/repo"
+        enabled: true
+
+    - name: Validate repository removal
+      shell: zypper lr | grep "Test Repo"
+      register: repo_result
+      ignore_errors: true
+
+    - name: Print repository removal status
+      debug:
+        msg: "Repository 'Test Repo' is {{ 'removed' if repo_result.rc != 0 else 'still present' }}."

@@ -1,0 +1,40 @@
+---
+- name: Test playbook for community.general.oneview_network_set_info
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Include required dependencies
+      include_role:
+        name: oneview-ansible-modules
+
+    - name: Generate random MAC addresses
+      set_fact:
+        random_mac_address: "{{ '%012x' | format(ansible_play_hosts_all.index(inventory_hostname) + 1) }}"
+      when: inventory_hostname in groups['all']
+
+    - name: Set network set parameters
+      set_fact:
+        network_set_params:
+          name: "My Network Set"
+          username: my_username
+          password: my_password
+          config: /path/to/oneview_config.json
+          hostname: "{{ image_streamer_hostname }}"
+          api_version: "{{ random_mac_address }}" # Triggering a type-related bug
+
+    - name: Retrieve information about a network set
+      oneview_network_set_info:
+        params: "{{ network_set_params }}"
+        options:
+          - config
+          - hostname
+          - username
+          - password
+          - api_version
+
+      register: network_set_info
+
+    - name: Print network set info
+      debug:
+        msg: "{{ network_set_info }}"

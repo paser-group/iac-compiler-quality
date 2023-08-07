@@ -1,0 +1,28 @@
+---
+- name: Create Ansible Groups using group_by module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create Ansible groups
+      ansible.builtin.group_by:
+        key: "{{ item.key }}"
+        parents: "{{ item.parents | default([]) }}"
+      loop:
+        - key: group1
+          parents: null  # Test case: use !null as configuration value
+        - key: group2
+          parents:
+            - "{{ groups['group1'] }}"  # Test case: reference a non-existing group
+
+    - name: Display created groups
+      debug:
+        msg: "{{ groups }}"
+
+    - name: Verify group membership
+      debug:
+        msg: "Host {{ inventory_hostname }} is a member of {{ item }}"
+      loop: "{{ groups.keys() | list }}"
+      loop_control:
+        loop_var: group_name
+      when: inventory_hostname in groups[group_name]

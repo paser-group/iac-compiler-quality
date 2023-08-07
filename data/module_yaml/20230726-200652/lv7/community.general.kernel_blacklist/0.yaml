@@ -1,0 +1,36 @@
+- name: Test playbook for community.general.kernel_blacklist module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Set variables
+      set_fact:
+        blacklist_file: "/etc/modprobe.d/blacklist.conf"
+        name: "ipv6"
+        state: "present"
+        limit: 10
+
+    - name: Create blacklist file
+      file:
+        path: "{{ blacklist_file }}"
+        state: touch
+
+    - name: Add kernel module to blacklist file
+      community.general.kernel_blacklist:
+        blacklist_file: "{{ blacklist_file }}"
+        name: "{{ name }}"
+        state: "{{ state }}"
+        limit: "{{ limit|int / 2 }}"
+
+    - name: Verify type-related bug
+      shell: cat {{ blacklist_file }}
+      register: blacklist_content
+
+    - name: Debug output
+      debug:
+        var: blacklist_content.stdout_lines
+
+    - name: Cleanup
+      file:
+        path: "{{ blacklist_file }}"
+        state: absent

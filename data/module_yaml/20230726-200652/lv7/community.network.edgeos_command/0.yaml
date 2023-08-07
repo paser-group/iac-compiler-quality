@@ -1,0 +1,40 @@
+- name: Test playbook for 'community.network.edgeos_command' module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Install required dependencies
+      package:
+        name: python3-pip
+        state: present
+
+    - name: Install 'ansible_collections.community.network' collection
+      pip:
+        name: ansible_collections.community.network
+        version: latest
+
+    - name: Run 'community.network.edgeos_command' module with different commands
+      community.network.edgeos_command:
+        command: "{{ item }}"
+        host: 192.168.1.1
+        username: admin
+        password: password
+      loop:
+        - "show interfaces"
+        - "show version"
+        - "show system uptime"
+
+    - name: Trigger division-based type-related bug
+      community.network.edgeos_command:
+        command: "{{ 'a' / 0 }}"
+        host: 192.168.1.1
+        username: admin
+        password: password
+
+    - name: Trigger division-based type-related bug with limit-related value
+      community.network.edgeos_command:
+        command: "set service dns forwarding listen-on '[[ jinja_expression ]]'"
+        jinja_expression: "{{ '10.1.1.' + (4 / 0) }}"
+        host: 192.168.1.1
+        username: admin
+        password: password

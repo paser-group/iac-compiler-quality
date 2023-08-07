@@ -1,0 +1,34 @@
+---
+- name: Manage SELinux network ports
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Allow ports for specific SELinux types
+      community.general.seport:
+        proto: "tcp"
+        ports:
+          - "{{ item.port }}"
+        setype: "{{ item.setype }}"
+        state: "{{ item.state }}"
+        ignore_selinux_state: "{{ item.ignore_selinux_state }}"
+      loop:
+        - { port: 80, setype: "http_port_t", state: "present", ignore_selinux_state: true }
+        - { port: 443, setype: "https_port_t", state: "present", ignore_selinux_state: false }
+        - { port: 8080, setype: "http_port_t", state: "absent" }
+
+    - name: Reload SELinux policy
+      community.general.selinux_policy:
+        state: "{{ item.state }}"
+      loop:
+        - { state: "disabled" }
+        - { state: "enabled" }
+        - { state: "permissive" }
+        - { state: "invalid_state" }
+
+    - name: Display SELinux state
+      community.general.selinux_status:
+      register: selinux_status
+
+    - name: Debug SELinux status
+      debug:
+        var: selinux_status

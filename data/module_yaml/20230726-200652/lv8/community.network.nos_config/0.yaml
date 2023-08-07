@@ -1,0 +1,63 @@
+- name: Configure Extreme Networks NOS
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Include the network.nos_config module
+      include_vars:
+        file: community.network-nos_config.yml
+
+    - name: Ensure configuration file is backed up
+      community.network.nos_config:
+        backup: true
+        backup_options:
+          dest: "{{ backup_dir }}"
+          dir_mode: "{{ backup_dir_mode }}"
+          mode: "{{ backup_mode }}"
+      register: backup_result
+
+    - name: Apply the intended configuration
+      community.network.nos_config:
+        src: "{{ playbook_dir }}/config.txt"
+        before: "{{ backup_result.stat.path }}"
+        match: line
+      register: config_result
+
+    - name: Verify changes in running configuration
+      community.network.nos_config:
+        src: "{{ playbook_dir }}/config.txt"
+        running_config: true
+        diff_against: "{{ backup_result.stat.path }}"
+        diff_ignore_lines: "{{ diff_ignore_lines }}"
+        after: "{{ config_result.changed }}"
+      register: verify_result
+
+    - name: Display diff output
+      debug:
+        var: verify_result.diff_lines
+
+- name: Test Case - Trigger latent bug with NULL configuration value
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Include the network.nos_config module
+      include_vars:
+        file: community.network-nos_config.yml
+
+    - name: Apply configuration with null values
+      community.network.nos_config:
+        src: "{{ playbook_dir }}/null_config.txt"
+        match: line
+      register: config_result
+
+    - name: Verify changes in running configuration
+      community.network.nos_config:
+        src: "{{ playbook_dir }}/null_config.txt"
+        running_config: true
+        diff_against: "{{ backup_result.stat.path }}"
+        diff_ignore_lines: "{{ diff_ignore_lines }}"
+        after: "{{ config_result.changed }}"
+      register: verify_result
+
+    - name: Display diff output
+      debug:
+        var: verify_result.diff_lines

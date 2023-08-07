@@ -1,0 +1,59 @@
+---
+- name: Test Scaleway Private Network Module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create Private Network
+      community.general.scaleway_private_network:
+        api_token: "{{ lookup('env', 'SCALEWAY_API_TOKEN') }}"
+        api_url: "{{ lookup('env', 'SCALEWAY_API_URL', default='https://api.scaleway.com') }}"
+        name: "test-network-{{ ansible_date_time.epoch }}"
+        project: "test-project"
+        region: "fr-par"
+        state: present
+        tags:
+          - ansible-test
+        validate_certs: true
+      register: result
+      ignore_errors: yes
+
+    - name: Fail if module returned an error
+      fail:
+        msg: "Failed to create private network: {{ result }}"
+      when: result.failed
+
+    - name: Display created private network
+      debug:
+        var: result
+
+    - name: Produce random port numbers
+      set_fact:
+        random_port_1: "{{ 10000 + (ansible_date_time.second|int % 1000) }}"
+        random_port_2: "{{ 20000 + (ansible_date_time.second|int % 1000) }}"
+
+    - name: Test port settings
+      community.general.scaleway_private_network:
+        api_token: "{{ lookup('env', 'SCALEWAY_API_TOKEN') }}"
+        api_url: "{{ lookup('env', 'SCALEWAY_API_URL', default='https://api.scaleway.com') }}"
+        name: "test-network-{{ ansible_date_time.epoch }}"
+        project: "test-project"
+        region: "fr-par"
+        state: present
+        tags:
+          - ansible-test
+        validate_certs: true
+        query_parameters:
+          port_1: "{{ random_port_1 }}"
+          port_2: "{{ random_port_2 }}"
+      register: port_result
+      ignore_errors: yes
+
+    - name: Fail if port settings test returned an error
+      fail:
+        msg: "Failed to test port settings: {{ port_result }}"
+      when: port_result.failed
+
+    - name: Display port settings result
+      debug:
+        var: port_result

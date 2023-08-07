@@ -1,0 +1,37 @@
+---
+- name: Test 'community.general.xattr' module for type-related bugs
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Set random MAC address as extended attribute
+      community.general.xattr:
+        path: "{{ item.path }}"
+        key: "{{ item.key }}"
+        value: "{{ item.value }}"
+        state: "{{ item.state }}"
+      with_items:
+        - { path: "/tmp/file1.txt", key: "user.mac_address", value: "{{ random_mac_address }}", state: "present" }
+        - { path: "/tmp/file2.txt", key: "user.mac_address", value: "{{ random_mac_address }}", state: "present" }
+
+    - name: Retrieve extended attribute value
+      community.general.xattr:
+        path: "{{ item.path }}"
+        key: "{{ item.key }}"
+        state: "{{ item.state }}"
+      register: xattr_value
+      with_items:
+        - { path: "/tmp/file1.txt", key: "user.mac_address", state: "present" }
+        - { path: "/tmp/file2.txt", key: "user.mac_address", state: "present" }
+
+    - name: Display retrieved extended attribute values
+      debug:
+        var: item.stdout_lines
+      with_items: "{{ xattr_value.results }}"
+
+
+- hosts: all
+  tasks:
+    - name: Display MAC address of network interface
+      debug:
+        msg: "MAC address for interface eth0: {{ ansible_facts['ansible_' + 'eth0']['macaddress'] }}"

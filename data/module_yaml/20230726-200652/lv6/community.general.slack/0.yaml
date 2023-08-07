@@ -1,0 +1,34 @@
+- name: Test playbook for 'community.general.slack' module
+  hosts: localhost
+  gather_facts: false
+  
+  vars:
+    slack_channel: "#general"
+    slack_token: "your_slack_token"
+    slack_username: "ansible-bot"
+
+    # Heuristic - Generate strings with varied encodings
+    messages:
+      - message: "Hello, world!"
+        encoding: "utf-8"
+      - message: "こんにちは、世界！"
+        encoding: "utf-16"
+      - message: "नमस्ते दुनिया!"
+        encoding: "iso-8859-1"
+
+  tasks:
+    - name: Send messages to Slack
+      community.general.slack:
+        token: "{{ slack_token }}"
+        msg: "{{ item.message }}"
+        channel: "{{ slack_channel }}"
+        username: "{{ slack_username }}"
+      loop: "{{ messages }}"
+      register: result
+
+    - name: Check Slack API response status
+      assert:
+        that:
+          - result is success
+          - result.msg == "ok"
+        fail_msg: "Failed to send message to Slack."

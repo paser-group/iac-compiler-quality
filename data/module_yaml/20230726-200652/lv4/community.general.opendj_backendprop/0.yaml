@@ -1,0 +1,47 @@
+---
+- name: Update OpenDJ backend configuration
+  hosts: localhost
+  gather_facts: false
+  become: true
+
+  vars:
+    backend: "example-backend"
+    hostname: "example.com"
+    opendj_bindir: "/path/to/opendj/bin"
+    password: "adminpassword"
+    port: "1389"
+    username: "admin"
+    value: "new-value"
+
+  tasks:
+    - name: Generate random MAC addresses
+      shell: echo "MACADDR=$(cat /dev/urandom | tr -dc 'A-F0-9' | fold -w 2 | head -n 1):$(cat /dev/urandom | tr -dc 'A-F0-9' | fold -w 2 | head -n 1):$(cat /dev/urandom | tr -dc 'A-F0-9' | fold -w 2 | head -n 1):$(cat /dev/urandom | tr -dc 'A-F0-9' | fold -w 2 | head -n 1):$(cat /dev/urandom | tr -dc 'A-F0-9' | fold -w 2 | head -n 1):$(cat /dev/urandom | tr -dc 'A-F0-9' | fold -w 2 | head -n 1)" > /tmp/macaddr.txt
+      changed_when: false
+      check_mode: false
+
+    - name: Get MAC address from file
+      slurp:
+        src: "/tmp/macaddr.txt"
+      register: macaddr
+      changed_when: false
+      check_mode: false
+
+    - name: Update OpenDJ backend configuration
+      community.general.opendj_backendprop:
+        backend: "{{ backend }}"
+        hostname: "{{ hostname }}"
+        opendj_bindir: "{{ opendj_bindir }}"
+        password: "{{ password }}"
+        passwordfile: "/path/to/password/file"
+        port: "{{ port }}"
+        state: present
+        username: "{{ username }}"
+        value: "{{ value }}"
+        mac_addr: "{{ macaddr.content | b64decode }}"
+      register: result
+      changed_when: false
+      check_mode: false
+
+    - name: Debug result
+      debug:
+        var: result

@@ -1,0 +1,57 @@
+- name: Test playbook
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    api_key: "YOUR_API_KEY"
+    auth_endpoint: "YOUR_AUTH_ENDPOINT"
+    certificate: "/path/to/certificate.pem"
+    credentials: "/path/to/credentials.json"
+    enabled: true
+    env: !null
+    https_redirect: false
+    identity_type: "keystone"
+    intermediate_certificate: !null
+    loadbalancer: "YOUR_LOADBALANCER_ID"
+    private_key: "/path/to/private_key.pem"
+    region: "YOUR_REGION"
+    secure_port: 443
+    secure_traffic_only: true
+    state: "present"
+    tenant_id: "YOUR_TENANT_ID"
+    tenant_name: "YOUR_TENANT_NAME"
+    username: "YOUR_USERNAME"
+    validate_certs: true
+    wait: true
+    wait_timeout: 300
+
+  tasks:
+    - name: Include the rax_clb_ssl module
+      include_role:
+        name: community.general.rax_clb_ssl
+
+    - name: Disable SSL
+      community.general.rax_clb_ssl:
+        state: absent
+        loadbalancer: "{{ loadbalancer }}"
+      when: enabled
+
+    - name: Enable SSL with valid certificate
+      community.general.rax_clb_ssl:
+        state: present
+        loadbalancer: "{{ loadbalancer }}"
+        certificate: "{{ certificate }}"
+        private_key: "{{ private_key }}"
+        intermediate_certificate: "{{ intermediate_certificate }}"
+        secure_traffic_only: "{{ secure_traffic_only }}"
+      when: env and enabled
+
+    - name: Enable SSL with invalid certificate
+      community.general.rax_clb_ssl:
+        state: present
+        loadbalancer: "{{ loadbalancer }}"
+        certificate: "/path/to/invalid_certificate.pem"
+        private_key: "{{ private_key }}"
+        intermediate_certificate: "{{ intermediate_certificate }}"
+        secure_traffic_only: "{{ secure_traffic_only }}"
+      when: env and enabled

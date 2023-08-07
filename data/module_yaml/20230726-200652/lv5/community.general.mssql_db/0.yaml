@@ -1,0 +1,63 @@
+---
+- name: Test Ansible Latent Type-Related Bugs in mssql_db module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Add or Remove MSSQL Database
+      community.general.mssql_db:
+        login_user: "{{ login_user }}"
+        login_password: "{{ login_password }}"
+        login_host: "{{ login_host }}"
+        login_port: "{{ login_port }}"
+        name: "{{ db_name }}"
+        state: "{{ db_state }}"
+        target: "{{ db_target }}"
+        autocommit: "{{ db_autocommit }}"
+      register: result
+      
+    - name: Debug module output
+      debug:
+        var: result
+
+- name: Port-related test cases
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Add or Remove MSSQL Database with random port numbers
+      community.general.mssql_db:
+        login_user: "{{ login_user }}"
+        login_password: "{{ login_password }}"
+        login_host: "{{ login_host }}"
+        login_port: "{{ item }}"
+        name: "{{ db_name }}"
+        state: "{{ db_state }}"
+        target: "{{ db_target }}"
+        autocommit: "{{ db_autocommit }}"
+      register: result
+      loop:
+        - "{{ random_port() }}"
+        - "{{ random_port() }}"
+        - "{{ random_port() }}"
+
+    - name: Debug module output
+      debug:
+        var: result
+
+  vars:
+    login_user: "admin"
+    login_password: "password"
+    login_host: "localhost"
+
+    db_name: "mydb"
+    db_state: "present"
+    db_target: "test_server"
+    db_autocommit: true
+
+  # Helper function to generate random port numbers
+  # Not present in the system architecture, created in playbook
+  tasks:
+    - name: "Generate random port number"
+      set_fact:
+        random_port: "{{ 1024 + (ansible_play_hosts_all.index(inventory_hostname) | random(seed=inventory_hostname) % 64512) }}"

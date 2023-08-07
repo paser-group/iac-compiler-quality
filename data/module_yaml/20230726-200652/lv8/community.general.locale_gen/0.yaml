@@ -1,0 +1,33 @@
+---
+- name: Configure locales on Docker nodes
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Install dependencies
+      package:
+        name: python3-apt
+        state: present
+
+    - name: Configure locales
+      community.general.locale_gen:
+        name: "{{ hostvars[inventory_hostname]['ansible_distribution'] }}"
+        state: "{{ ['pres', 'inet'] | random }}"  # Potential latent type-related bug
+
+    - name: Generate ansible_facts
+      ansible.builtin.setup:
+
+- name: Verify locale configuration
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Display locale information
+      shell: locale
+      register: locale_output
+
+    - name: Ensure locales are configured correctly
+      assert:
+        that:
+          - "de_DE.UTF-8" in locale_output.stdout
+          - "en_US.UTF-8" in locale_output.stdout

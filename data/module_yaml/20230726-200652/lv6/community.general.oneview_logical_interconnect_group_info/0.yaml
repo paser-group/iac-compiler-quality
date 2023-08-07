@@ -1,0 +1,45 @@
+---
+- name: Retrieve information about OneView Logical Interconnect Group
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    api_version: 1200
+    config: '/path/to/oneview_config.json'
+    hostname: 'oneview.example.com'
+    image_streamer_hostname: 'imagestreamer.example.com'
+    name: 'MyLogicalInterconnectGroup'
+    params:
+      state: 'present'
+    password: 'mypassword'
+    username: 'myusername'
+
+  tasks:
+    - name: Include module prerequisites
+      include_vars:
+        file: '/path/to/prerequisites.yml'
+
+    - name: Generate strings with varied encodings
+      set_fact:
+        encoded_strings:
+          - "{{ name | b64encode }}"
+          - "{{ username | urlencode }}"
+          - "{{ password | hexlify }}"
+          - "{{ hostname | ipaddr('ipv6') }}"
+          - "{{ image_streamer_hostname | ipaddr('ipv4') }}"
+
+    - name: Retrieve information about OneView Logical Interconnect Group
+      community.general.oneview_logical_interconnect_group_info:
+        api_version: "{{ api_version }}"
+        config: "{{ config }}"
+        hostname: "{{ encoded_strings[0] }}"
+        image_streamer_hostname: "{{ encoded_strings[1] }}"
+        name: "{{ encoded_strings[2] }}"
+        params: "{{ encoded_strings[3] }}"
+        password: "{{ encoded_strings[4] }}"
+        username: "{{ encoded_strings[5] }}"
+      register: result
+
+    - name: Debug module output
+      debug:
+        var: result

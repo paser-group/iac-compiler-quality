@@ -1,0 +1,18 @@
+---
+- name: Test pn_port_config module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Generate random MAC address
+      set_fact:
+        random_mac: "{{ '%02x:%02x:%02x:%02x:%02x:%02x' | format(play_hosts_index + 1, (node_net | ipaddr('netmask', '24') | ipaddr('network') | ipaddr('packed') | decode('hex') | int) + play_hosts_index + 1) | upper }}"
+
+    - name: Configure port
+      community.network.pn_port_config:
+        pn_port: "eth{{ play_hosts_index + 1 }}"
+        pn_port_mac_address: "{{ random_mac }}"
+        pn_autoneg: "{{ item }}"
+      with_items:
+        - true
+        - false

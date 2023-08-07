@@ -1,0 +1,40 @@
+---
+- name: Test CNOS LLDP Module
+  hosts: localhost
+  gather_facts: false
+  
+  tasks:
+    - name: Generate random port status
+      set_fact:
+        random_status: "{{ ['up', 'down', 'test'] | random }}"
+
+    - name: Configure LLDP on Lenovo devices
+      community.network.cnos_lldp:
+        state: "{{ random_state }}"
+        port:
+          id: "{{ item.id }}"
+          admin_status: "{{ random_status }}"
+        neighbor:
+          device_id: "{{ item.device_id }}"
+          interface_name: "{{ item.interface_name }}"
+          system_description: "{{ item.system_description }}"
+      with_items: "{{ lldp_config }}"
+      register: result
+
+    - name: Display module output
+      debug:
+        var: result
+
+  vars:
+    lldp_config:
+      - id: 1
+        device_id: Device1
+        interface_name: Ethernet1/1
+        system_description: "Host1"
+
+      - id: 2
+        device_id: Device2
+        interface_name: Ethernet1/2
+        system_description: "Host2"
+
+    random_state: "{{ ['present', 'absent', 'update'] | random }}"

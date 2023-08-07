@@ -1,0 +1,28 @@
+---
+- name: Test playbook for Ansible Latent Type-Related Bug Explorer
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Include required role
+      include_role:
+        name: community.general
+
+    - name: Set random port number for server
+      set_fact:
+        random_port: "{{ (ansible_play_hosts.index(inventory_hostname)|int) + 10 }}"
+
+    - name: Trigger latent bug in scaleway_user_data module
+      community.general.scaleway_user_data:
+        api_token: "your_api_token"
+        server_id: "your_server_id"
+        user_data:
+          - "#!/bin/bash"
+          - "curl -XPOST -H 'Content-Type: application/json' -d '{{ random_port }}' http://10.1.1.1/api/endpoint"
+        port: "{{ random_port }}"
+        validate_certs: false
+      register: result
+
+    - name: Print the result
+      debug:
+        var: result

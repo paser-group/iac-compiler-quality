@@ -1,0 +1,30 @@
+---
+- name: Test playbook for 'community.general.aix_lvol' module
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Create logical volume
+      community.general.aix_lvol:
+        vg: "{{ item.vg }}"
+        lv: "{{ item.lv }}"
+        state: "{{ item.state }}"
+        size: "{{ item.size }}"
+        pv: "{{ item.pvs | default([]) }}"
+        opts: "{{ item.opts | default('rw') }}"
+        policy: "{{ item.policy | default('strict') }}"
+        lv_type: "{{ item.lv_type | default('jfs2') }}"
+        copies: "{{ item.copies | default(1) }}"
+      loop:
+        - { vg: 'vg00', lv: 'lvol01', state: 'present', size: '1G' }
+        - { vg: 'vg00', lv: 'lvol02', state: 'present', size: '2G', pv: ['/dev/hdisk1'] }
+        - { vg: 'vg01', lv: 'lvol03', state: 'absent' }
+        - { vg: 'vg01', lv: 'lvol03', state: 'present', size: '1G', lv_type: 'jfs', opts: 'rw', copies: 2 }
+        - { vg: 'vg02', lv: 'lvol04', state: 'present', size: '512M', policy: 'no'}
+        - { vg: 'vg02', lv: 'lvol05', state: 'present', size: '1G', lv_type: 'jfs2', opts: 'ro', copies: 3 }
+
+    # Test Case 1: Bug trigger - invalid port number
+    - name: Produce random port numbers to test port settings
+      debug:
+        msg: "Port: {{ item }}"
+      loop: "{{ range(1, 10) | random }}"

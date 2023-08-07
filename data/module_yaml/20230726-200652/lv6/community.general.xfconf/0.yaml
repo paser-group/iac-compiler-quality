@@ -1,0 +1,46 @@
+---
+- name: Test Ansible module for latent type-related bugs
+  hosts: localhost
+  gather_facts: false
+  
+  tasks:
+    - name: Set xfconf property
+      community.general.xfconf:
+        channel: "{{ item.channel }}"
+        disable_facts: "{{ item.disable_facts }}"
+        force_array: "{{ item.force_array }}"
+        property: "{{ item.property }}"
+        state: "{{ item.state }}"
+        value: "{{ item.value }}"
+        value_type: "{{ item.value_type }}"
+      loop:
+        - channel: "channel1"
+          disable_facts: false
+          force_array: false
+          property: "property1"
+          state: "present"
+          value: ["value1", "value2"]
+          value_type: ["type1", "type2"]
+        - channel: "channel2"
+          disable_facts: true
+          force_array: true
+          property: "property2"
+          state: "present"
+          value: ["value3", "value4"]
+          value_type: ["type3", "type4"]
+  
+  vars:
+    value_encoding:
+      - "value1"
+      - "ŜTŔĮŃĞ1"
+      - "\u017DsTP\u0154\u0128Ň\u01001"
+  
+    value_type_encoding:
+      - "type1"
+      - "ŢŸÞ1"
+      - "\u0162\u0178\u00DE1"
+  
+  pre_tasks:
+    - name: Generate strings with varied encodings
+      set_fact:
+        encoded_values: "{{ value_encoding | product(value_type_encoding) | map('join', '') | list }}"

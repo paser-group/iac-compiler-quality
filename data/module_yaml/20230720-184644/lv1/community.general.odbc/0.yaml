@@ -1,0 +1,30 @@
+---
+- name: Test playbook for community.general.odbc module
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Install pyodbc package
+      ansible.builtin.pip:
+        name: pyodbc
+        state: present
+    
+    - name: Test ODBC module
+      community.general.odbc:
+        dsn: "{{ item.dsn }}"
+        query: "{{ item.query }}"
+        params: "{{ item.params }}"
+      loop:
+        - dsn: 'TestDSN'
+          query: "SELECT * FROM table WHERE col={{ item }}"
+          params: [1, 'string', true]
+        - dsn: 'AnotherDSN'
+          query: "SELECT count(*) FROM table WHERE col={{ item }}"
+          params:
+            - 2
+            - 'another string'
+            - false
+      register: result
+    
+    - name: Display result
+      debug:
+        var: result

@@ -1,0 +1,52 @@
+---
+- name: Manage NIC of a Proxmox VM
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    # Modify these variables to match your Proxmox setup
+    api_host: "https://your-proxmox-host"
+    api_user: "your-proxmox-username"
+    api_password: "your-proxmox-password"
+    vmid: 100  # The ID of the VM to manage
+
+  tasks:
+    - name: Check if Proxmox API is reachable
+      uri:
+        url: "{{ api_host }}/api2/json/access/ticket"
+        method: GET
+        validate_certs: false
+        headers:
+          Accept: "application/json"
+      register: api_response
+      until: api_response.status == 200
+      retries: 3
+      delay: 10
+      no_log: true
+
+    - name: Get API Token
+      set_fact:
+        api_token_id: "{{ api_response.json.data.ticket }}"
+        api_token_secret: "{{ api_response.json.data.CSRFPreventionToken }}"
+
+    - name: Manage NIC
+      community.general.proxmox_nic:
+        api_host: "{{ api_host }}"
+        api_user: "{{ api_user }}"
+        api_password: "{{ api_password }}"
+        vmid: "{{ vmid }}"
+        name: "eth0"
+        bridge: "vmbr0"
+        model: "virtio"
+        mac: "00:11:22:33:44:55"
+        mtu: 1500
+        link_down: false
+        queues: 4
+        rate: 1000
+        state: present
+        validate_certs: false
+      register: nic_result
+
+    - name: Print NIC Result
+      debug:
+        var: nic_result

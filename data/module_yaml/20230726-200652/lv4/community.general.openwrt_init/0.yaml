@@ -1,0 +1,30 @@
+---
+- hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Install community.general collection if not installed
+      command: ansible-galaxy collection install community.general
+      register: collection_install_output
+      changed_when: collection_install_output.rc != 0
+
+    - name: Generate random MAC addresses for network modules
+      set_fact:
+        random_mac: "{{ ('00:16:3e' ~ ':' ~ '%02x' ~ ':' ~ '%02x' ~ ':' ~ '%02x') | random }}"
+      vars:
+        network_modules: [ubuntu1, alpine1, centos1, redhat1]
+
+    - name: Execute openwrt_init module
+      community.general.openwrt_init:
+        enabled: true
+        name: "{{ item }}"
+        pattern: "{{ random_mac }}"
+        state: present
+      with_items: "{{ network_modules }}"
+      loop_control:
+        loop_var: item
+      register: openwrt_init_output
+
+    - name: Debug openwrt_init module output
+      debug:
+        var: openwrt_init_output

@@ -1,0 +1,48 @@
+- name: Generate test cases to trigger latent type-related bug
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Collect facts from devices
+      community.network.exos_facts:
+        gather_network_resources: 
+          - interfaces
+
+        gather_subset:
+          - hardware
+
+      register: exos_facts
+
+    - name: Print gathered facts
+      debug:
+        var: exos_facts
+
+    # Test case 1 - A configuration value that incorporates bytes and strings
+    - name: Test Case 1 - Configuration value with bytes and strings
+      community.network.exos_config:
+        lines:
+          - "ip address 10.1.1.1/24"
+          - "description 'Interface with bytes and strings: {{ exos_facts.interfaces['e1'].speed|random }} GB'"
+
+    # Test case 2 - Another configuration value that incorporates bytes and strings
+    - name: Test Case 2 - Configuration value with bytes and strings
+      community.network.exos_config:
+        lines:
+          - "vlan 100"
+          - "name 'VLAN with bytes and strings: {{ exos_facts.hardware.memory_size|random }}'"
+
+    # ... Add more test cases as needed ...
+
+    - name: Collect facts again to verify changes
+      community.network.exos_facts:
+        gather_network_resources: 
+          - interfaces
+
+        gather_subset:
+          - hardware
+
+      register: updated_exos_facts
+
+    - name: Print updated facts
+      debug:
+        var: updated_exos_facts

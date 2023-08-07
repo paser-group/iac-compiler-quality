@@ -1,0 +1,36 @@
+---
+- name: Test playbook for 'scaleway_security_group' module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create Scaleway security group
+      community.general.scaleway_security_group:
+        api_token: 12345
+        api_url: "https://api.scaleway.com"
+        organization: "my_organization"
+        name: "test_sg"
+        description: "Test security group"
+        state: present
+      register: sg_result
+
+    - name: Debug security group result
+      ansible.builtin.debug:
+        var: sg_result
+
+    - name: Create security group rule with invalid port range
+      community.general.scaleway_security_group_rule:
+        api_token: "{{ sg_result.api_token }}"
+        api_url: "{{ sg_result.api_url }}"
+        organization: "{{ sg_result.organization }}"
+        security_group: "{{ sg_result.security_group.id }}"
+        direction: "inbound"
+        protocol: "tcp"
+        port_from: "{{ range(1, 65535) | random }}"
+        port_to: "{{ range(1, 65535) | random }}"
+        state: present
+      register: rule_result
+
+    - name: Debug security group rule result
+      ansible.builtin.debug:
+        var: rule_result

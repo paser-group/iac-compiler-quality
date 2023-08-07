@@ -1,0 +1,74 @@
+---
+- name: Test playbook to uncover latent type-related bugs
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+
+    - name: Configure firewall policy
+      community.general.oneandone_firewall_policy:
+        api_url: "https://api.oneandone.com/v1"
+        auth_token: "your_auth_token"
+        name: "Test Firewall Policy"
+        description: "Firewall policy for testing"
+        firewall_policy: "{{ item }}"
+        add_rules:
+          - rule: "Allow SSH"
+            protocol: "TCP"
+            port_from: 22
+            port_to: 22
+            source: "10.1.1.0/24"
+            description: "Allow SSH from node-net"
+        state: present
+        wait: true
+        wait_interval: 10
+        wait_timeout: 120
+      loop:
+        - "OUTGOING"
+        - "INCOMING"
+
+    - name: Remove firewall policy
+      community.general.oneandone_firewall_policy:
+        api_url: "https://api.oneandone.com/v1"
+        auth_token: "your_auth_token"
+        name: "Test Firewall Policy"
+        firewall_policy: "{{ item }}"
+        state: absent
+        wait: true
+        wait_interval: 10
+        wait_timeout: 120
+      loop:
+        - "OUTGOING"
+        - "INCOMING"
+
+# Additional test cases to trigger type-related bugs
+
+    - name: Configure firewall policy with mixed case sensitivity
+      community.general.oneandone_firewall_policy:
+        api_url: "https://api.oneandone.com/v1"
+        auth_token: "your_auth_token"
+        name: "Test Firewall Policy"
+        description: "firewall policy for testing"  # lowercase 'firewall'
+        firewall_policy: "outgoing"  # lowercase 'outgoing'
+        add_rules:
+          - rule: "ALLOW HTTP"  # mixed case rule name
+            protocol: "tcp"  # lowercase 'tcp'
+            port_from: 80
+            port_to: 80
+            source: "10.1.1.0/24"
+            description: "Allow HTTP from node-net"
+        state: present
+        wait: true
+        wait_interval: 10
+        wait_timeout: 120
+
+    - name: Remove firewall policy with mixed case sensitivity
+      community.general.oneandone_firewall_policy:
+        api_url: "https://api.oneandone.com/v1"
+        auth_token: "your_auth_token"
+        name: "Test Firewall Policy"
+        firewall_policy: "ONGOING"  # mixed case firewall policy
+        state: absent
+        wait: true
+        wait_interval: 10
+        wait_timeout: 120

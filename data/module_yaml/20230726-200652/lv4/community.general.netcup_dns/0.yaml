@@ -1,0 +1,53 @@
+---
+- name: Test playbook for Ansible Latent Type-Related Bug Exploration
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create random MAC address
+      command: sysctl kernel.random.mac_address
+      register: mac_address
+      changed_when: false
+
+    - name: Set random MAC address
+      set_fact:
+        random_mac_address: "{{ mac_address.stdout | regex_replace('^.*=\\s*(.*)\\s*$', '\\1') }}"
+
+    - name: Debug random MAC address
+      debug:
+        var: random_mac_address
+
+    - name: Create DNS record
+      community.general.netcup_dns:
+        api_key: "{{ api_key }}"
+        api_password: "{{ api_password }}"
+        customer_id: "{{ customer_id }}"
+        domain: "{{ domain }}"
+        priority: "{{ priority }}"
+        record: "{{ record }}"
+        solo: "{{ solo }}"
+        state: "{{ state }}"
+        timeout: "{{ timeout }}"
+        type: "{{ type }}"
+        value: "{{ value }}"
+        mac_address: "{{ random_mac_address }}"
+      register: result
+
+    - name: Debug DNS record creation result
+      debug:
+        var: result
+
+    - name: Delete DNS record
+      community.general.netcup_dns:
+        api_key: "{{ api_key }}"
+        api_password: "{{ api_password }}"
+        customer_id: "{{ customer_id }}"
+        domain: "{{ domain }}"
+        record: "{{ record }}"
+        timeout: "{{ timeout }}"
+        state: absent
+      register: delete_result
+
+    - name: Debug DNS record deletion result
+      debug:
+        var: delete_result

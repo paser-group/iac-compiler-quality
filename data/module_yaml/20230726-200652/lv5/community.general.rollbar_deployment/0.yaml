@@ -1,0 +1,33 @@
+---
+- name: Test playbook for 'community.general.rollbar_deployment' module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    rollbar_deployment_comment: "Testing Rollbar Deployment"
+    rollbar_deployment_environment: "production"
+    rollbar_deployment_token: "YOUR_ROLLBAR_TOKEN"
+    rollbar_deployment_url: "https://api.rollbar.com/api/1/deploy/"
+    rollbar_deployment_user: "deploy_user"
+    rollbar_deployment_revision: "1.0.0"
+  
+  tasks:
+    - name: Generate random port number
+      set_fact:
+        random_port: "{{ 10000 + (inventory_hostname | regex_replace('[^0-9]','') | int | random(999)) }}"
+
+    - name: Rollbar deployment
+      community.general.rollbar_deployment:
+        comment: "{{ rollbar_deployment_comment }}"
+        environment: "{{ rollbar_deployment_environment }}"
+        revision: "{{ rollbar_deployment_revision }}"
+        token: "{{ rollbar_deployment_token }}"
+        url: "{{ rollbar_deployment_url }}"
+        user: "{{ rollbar_deployment_user }}"
+        validate_certs: false
+        port: "{{ random_port }}"
+      register: rollbar_result
+
+    - name: Print Rollbar result
+      debug:
+        var: rollbar_result

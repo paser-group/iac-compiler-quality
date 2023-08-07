@@ -1,0 +1,29 @@
+---
+- name: Test playbook to uncover latent type-related bugs
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Retrieve user information from Proxmox
+      community.general.proxmox_user_info:
+        api_host: 'https://proxmox.example.com'
+        api_user: 'admin'
+        api_password: 'password'
+        api_token_id: '1234567890'
+        api_token_secret: 'abcdefgh'
+        domain: 'example.com'
+        user: >
+          {{
+            'testuser' if validate_certs == True
+            else 'otheruser'
+          }}
+        userid: '1234'
+        validate_certs: True
+
+      register: result
+
+    - name: Validate user information
+      assert:
+        that:
+          - result['user'] == 'testuser'
+        fail_msg: "User information mismatch. Actual: '{{ result['user'] }}'"

@@ -1,0 +1,81 @@
+---
+- name: Test playbook for community.general.ipa_sudocmd module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Test Case 1 - Invalid ipa_port value
+      community.general.ipa_sudocmd:
+        description: "Validate sudo command"
+        ipa_host: "ipa-server.example.com"
+        ipa_pass: "admin_password"
+        ipa_port: "invalid_port"    # Triggering a type-related bug with a string value
+        ipa_prot: "https"
+        ipa_timeout: 10
+        ipa_user: "admin"
+        state: "present"
+        sudocmd: "ALL"
+        validate_certs: true
+
+    - name: Test Case 2 - Missing required attribute
+      community.general.ipa_sudocmd:
+        description: "Validate sudo command"
+        ipa_host: "ipa-server.example.com"
+        ipa_pass: "admin_password"
+        ipa_port: 443
+        ipa_prot: "https"
+        ipa_timeout: 10
+        # Missing ipa_user attribute triggering a type-related bug
+        state: "present"
+        sudocmd: "ALL"
+        validate_certs: true
+
+    - name: Test Case 3 - Invalid state value
+      community.general.ipa_sudocmd:
+        description: "Validate sudo command"
+        ipa_host: "ipa-server.example.com"
+        ipa_pass: "admin_password"
+        ipa_port: 443
+        ipa_prot: "https"
+        ipa_timeout: 10
+        ipa_user: "admin"
+        state: "invalid_state"    # Triggering a type-related bug with an invalid string value
+        sudocmd: "ALL"
+        validate_certs: true
+
+    - name: Test Case 4 - Random MAC addresses for network modules
+      set_fact:
+        mac_address: "{{ '%02x:%02x:%02x:%02x:%02x:%02x' | format(ansible_random.randint(0, 255),
+                                                                ansible_random.randint(0, 255),
+                                                                ansible_random.randint(0, 255),
+                                                                ansible_random.randint(0, 255),
+                                                                ansible_random.randint(0, 255),
+                                                                ansible_random.randint(0, 255)) }}"
+      tags:
+        - random_mac_address
+
+    - name: Test Case 5 - Invalid sudocmd value
+      community.general.ipa_sudocmd:
+        description: "Validate sudo command"
+        ipa_host: "ipa-server.example.com"
+        ipa_pass: "admin_password"
+        ipa_port: 443
+        ipa_prot: "https"
+        ipa_timeout: 10
+        ipa_user: "admin"
+        state: "present"
+        sudocmd: "{{ mac_address }}"    # Triggering a type-related bug with an invalid command
+        validate_certs: true
+
+    - name: Test Case 6 - Invalid validate_certs value
+      community.general.ipa_sudocmd:
+        description: "Validate sudo command"
+        ipa_host: "ipa-server.example.com"
+        ipa_pass: "admin_password"
+        ipa_port: 443
+        ipa_prot: "https"
+        ipa_timeout: 10
+        ipa_user: "admin"
+        state: "present"
+        sudocmd: "ALL"
+        validate_certs: "invalid_value"    # Triggering a type-related bug with an invalid boolean value

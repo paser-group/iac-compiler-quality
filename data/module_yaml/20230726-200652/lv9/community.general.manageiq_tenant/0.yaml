@@ -1,0 +1,68 @@
+---
+- name: Latent Type-Related Bug Explorer
+  hosts: localhost
+  gather_facts: False
+
+  tasks:
+    - name: Create Docker nodes
+      docker_container:
+        name: "{{ item }}"
+        image: "{{ item }}"
+        state: started
+      loop:
+        - ubuntu
+        - alpine
+        - centos
+        - redhat
+
+    - name: Configure network for Docker nodes
+      docker_network:
+        name: node-net
+        subnet: 10.1.1.0/24
+        gateway: 10.1.1.254
+
+    - name: Add IP addresses to Docker nodes
+      community.general.docker_compose:
+        project_src: .
+        files:
+          - docker-compose.yml
+      vars:
+        compose_content: |
+          version: '3'
+          services:
+            ubuntu:
+              networks:
+                node-net:
+                  ipv4_address: 10.1.1.1
+            alpine:
+              networks:
+                node-net:
+                  ipv4_address: 10.1.1.2
+            centos:
+              networks:
+                node-net:
+                  ipv4_address: 10.1.1.3
+            redhat:
+              networks:
+                node-net:
+                  ipv4_address: 10.1.1.4
+
+- hosts: localhost
+  gather_facts: False
+
+  tasks:
+    - name: Perform Ansible operations on Docker nodes
+      community.general.docker_container:
+        name: "{{ item }}"
+        image: "{{ item }}"
+        state: absent
+      loop:
+        - ubuntu
+        - alpine
+        - centos
+        - redhat
+      register: result
+
+    - name: Debug
+      debug:
+        var: result

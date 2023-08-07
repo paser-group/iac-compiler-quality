@@ -1,0 +1,51 @@
+---
+- name: Test playbook for community.general.facter
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Execute facter command
+      command: facter
+      register: result
+
+    - name: Display the facter output
+      debug:
+        var: result.stdout_lines
+
+    - name: Generate random IP address
+      set_fact:
+        random_ip: "{{ '%d.%d.%d.%d' | format(ansible_random | random(256), ansible_random | random(256), ansible_random | random(256), ansible_random | random(256)) }}"
+
+    - name: Print random IP address
+      debug:
+        var: random_ip
+
+    - name: Update inventory file with random IP
+      copy:
+        content: "{{ inventory_hostname }} ansible_host={{ random_ip }}"
+        dest: inventory.yml
+        mode: 0644
+
+    - name: Include inventory file
+      include_vars:
+        file: inventory.yml
+
+    - name: Use facter module to gather new facts
+      facter:
+        file: inventory.yml
+      register: new_facts
+
+    - name: Display new facts
+      debug:
+        var: new_facts
+
+    - name: Remove random IP from inventory file
+      lineinfile:
+        path: inventory.yml
+        state: absent
+        regex: "{{ inventory_hostname }} ansible_host={{ random_ip }}"
+
+    - name: Remove inventory file
+      file:
+        path: inventory.yml
+        state: absent

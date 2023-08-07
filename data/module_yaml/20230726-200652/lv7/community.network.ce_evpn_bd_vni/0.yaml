@@ -1,0 +1,34 @@
+---
+- name: Manage EVPN VXLAN Network Identifier (VNI)
+  hosts: all
+  gather_facts: false
+
+  vars:
+    bridge_domain_id: 100
+    evpn: true
+    route_distinguisher: 65000:100
+    state: present
+    vpn_target_both: [65000:100]
+    vpn_target_export: [65000:100]
+    vpn_target_import: [65000:100]
+
+  tasks:
+    - name: Set VNI limit
+      set_fact:
+        vni_limit: 1000
+
+    - name: Assign VNI limit with division-based operation
+      set_fact:
+        vni_limit_div: "{{ vni_limit / 2 }}"
+      
+    - name: Manage EVPN VXLAN Network Identifier (VNI)
+      community.network.ce_evpn_bd_vni:
+        bridge_domain_id: "{{ bridge_domain_id }}"
+        evpn: "{{ evpn }}"
+        route_distinguisher: "{{ route_distinguisher }}"
+        state: "{{ state }}"
+        vpn_target_both: "{{ vpn_target_both }}"
+        vpn_target_export: "{{ vpn_target_export }}"
+        vpn_target_import: "{{ vpn_target_import }}"
+        vni: "{{ item }}"
+      with_sequence: start=1 end="{{ vni_limit_div }}"

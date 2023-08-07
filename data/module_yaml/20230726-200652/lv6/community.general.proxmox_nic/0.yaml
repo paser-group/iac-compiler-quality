@@ -1,0 +1,48 @@
+---
+- name: Test playbook
+  hosts: localhost
+  gather_facts: false
+  
+  tasks:
+  - name: Set up NIC with varied encodings
+    community.general.proxmox_nic:
+      api_host: "{{ hostvars['localhost'].api_host }}"
+      api_user: "{{ hostvars['localhost'].api_user }}"
+      api_password: "{{ hostvars['localhost'].api_password }}"
+      api_token_id: "{{ hostvars['localhost'].api_token_id }}"
+      api_token_secret: "{{ hostvars['localhost'].api_token_secret }}"
+      vmid: 100
+      name: "{{ item.name }}"
+      mac: "{{ item.mac }}"
+      interface: "{{ item.interface }}"
+      model: "{{ item.model }}"
+      validate_certs: "{{ item.validate_certs }}"
+      mtu: "{{ item.mtu }}"
+    loop:
+    - name: Normal encoding
+      mac: "00:11:22:33:44:55"
+      interface: "eth0"
+      model: "virtio"
+      validate_certs: true
+      mtu: 1500
+  
+    - name: UTF-8 encoding
+      mac: "\u0030\u0030:11:22:33:44:55"
+      interface: "eth0"
+      model: "virtio"
+      validate_certs: true
+      mtu: 1500
+  
+    - name: Invalid encoding
+      mac: "00:11:22:33\xC4:44:55"
+      interface: "eth0"
+      model: "virtio"
+      validate_certs: true
+      mtu: 1500
+  
+    - name: Null byte encoding
+      mac: "00:11:22:33\0:44:55"
+      interface: "eth0"
+      model: "virtio"
+      validate_certs: true
+      mtu: 1500

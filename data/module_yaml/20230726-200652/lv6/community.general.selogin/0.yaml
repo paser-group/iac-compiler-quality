@@ -1,0 +1,19 @@
+---
+- name: Test playbook to reveal latent type-based bugs
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Manage Linux user with varied encodings
+      community.general.selogin:
+        login: "{{ lookup('pipe', 'python3 -c \"print(\'u\'.encode(\'utf-8\').decode(\'utf-16\'))\"') }}"
+        state: present
+        selevel: "{{ lookup('pipe', 'python3 -c \"print(\'s0\'.encode(\'utf-8\').decode(\'utf-16\'))\"') }}"
+        seuser: "{{ lookup('pipe', 'python3 -c \"print(\'admin\'.encode(\'utf-8\').decode(\'utf-16\'))\"') }}"
+      ignore_errors: true
+
+  handlers:
+    - name: Remove the test user
+      community.general.selogin:
+        login: "{{ lookup('pipe', 'python3 -c \"print(\'u\'.encode(\'utf-8\').decode(\'utf-16\'))\"') }}"
+        state: absent

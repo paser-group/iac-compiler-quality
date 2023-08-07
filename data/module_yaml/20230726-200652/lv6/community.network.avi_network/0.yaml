@@ -1,0 +1,56 @@
+- name: Configure Avi network
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Configure network
+      community.network.avi_network:
+        controller: "https://{{ controller_ip }}/api"
+        username: "{{ avi_username }}"
+        password: "{{ avi_password }}"
+        tenant: "{{ avi_tenant }}"
+        name: "{{ avi_network_name }}"
+        api_context:
+          cloud_ref: "/api/cloud?name={{ cloud_name }}"
+          tenant_ref: "/api/tenant?tenant={{ avi_tenant }}"
+          vrf_context_ref: "/api/vrfcontext?name={{ vrf_context_name }}"
+        avi_credentials:
+          username: "{{ avi_controller_username }}"
+          password: "{{ avi_controller_password }}"
+      register: result
+
+    - name: Debug result
+      debug:
+        var: result
+
+    - name: Generate strings with varied encodings
+      set_fact:
+        encoded_string: "{{ item | b64encode }}"
+      loop:
+        - "{{ avi_username }}"
+        - "{{ avi_password }}"
+        - "{{ avi_tenant }}"
+        - "{{ avi_network_name }}"
+        - "{{ avi_controller_username }}"
+        - "{{ avi_controller_password }}"
+        - "{{ cloud_name }}"
+        - "{{ vrf_context_name }}"
+
+    - name: Verify encoding bug
+      community.network.avi_network:
+        controller: "https://{{ controller_ip }}/api"
+        username: "{{ encoded_string }}"
+        password: "{{ encoded_string }}"
+        tenant: "{{ encoded_string }}"
+        name: "{{ encoded_string }}"
+        api_context:
+          cloud_ref: "/api/cloud?name={{ encoded_string }}"
+          tenant_ref: "/api/tenant?tenant={{ encoded_string }}"
+          vrf_context_ref: "/api/vrfcontext?name={{ encoded_string }}"
+        avi_credentials:
+          username: "{{ encoded_string }}"
+          password: "{{ encoded_string }}"
+      register: encoding_result
+
+    - name: Debug encoding result
+      debug:
+        var: encoding_result

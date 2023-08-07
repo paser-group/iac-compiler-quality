@@ -1,0 +1,41 @@
+---
+- name: Test syspatch module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Set random IP address
+      set_fact:
+        random_ip_address: "{{ hostvars[inventory_hostname]['ansible_facts']['ansible_default_ipv4']['address'] }}"
+
+    - name: Install syspatch package
+      community.general.syspatch:
+        name: "pkgA"
+        state: "present"
+        update_cache: true
+      register: result
+      when: inventory_hostname == 'ubuntu1'
+
+    - name: Debug message
+      debug:
+        msg: "Package {{ result.name }} was installed."
+
+    - name: Apply syspatch
+      community.general.syspatch:
+        name: "pkgA"
+        update_cache: true
+        revert: true
+        revert_hostname: "{{ ansible_hostname }}"
+        revert_ip_address: "{{ random_ip_address }}"
+        state: "latest"
+      register: result2
+      when: inventory_hostname == 'ubuntu1'
+
+    - name: Debug message 2
+      debug:
+        msg: "Package {{ result2.name }} was patched."
+
+    - name: Fail if package was not patched
+      fail:
+        msg: "Package {{ result2.name }} was not patched."
+      when: result2.changed == false

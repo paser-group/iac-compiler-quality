@@ -1,0 +1,23 @@
+---
+- name: Latent Bug Finder
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create LXC Container
+      community.general.lxc_container:
+        name: "{{ hostvars[inventory_hostname]['ansible_host'] }}"
+        state: started
+        directory: "/var/lib/lxc"
+        container_command: /sbin/init
+        container_config:
+          - lxc.network.type: veth
+            lxc.network.name: eth0
+            lxc.network.ipv4: "{{ hostvars[inventory_hostname]['ansible_host'] }}/24"
+            lxc.network.ipv4.gateway: 10.1.1.254
+            lxc.network.random_mac_addr: true
+      register: lxc_result
+
+    - name: Debug LXC Result
+      debug:
+        var: lxc_result

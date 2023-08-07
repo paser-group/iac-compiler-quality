@@ -1,0 +1,35 @@
+---
+- name: Deploy database on WebFaction
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Generate strings with varied encodings
+      set_fact:
+        webfaction_login_name: "admin"
+        webfaction_login_password: "{{ lookup('password', '/dev/null length=10') }}"
+        webfaction_database_name: "test_database"
+        webfaction_database_password: "{{ lookup('password', '/dev/null length=10') }}"
+        webfaction_database_state: "present"
+        webfaction_database_type: "{{ item }}"
+
+      loop:
+        - "utf-8"
+        - "latin-1"
+        - "utf-16"
+        - "ascii"
+
+    - name: Add or remove a database
+      community.general.webfaction_db:
+        login_name: "{{ webfaction_login_name }}"
+        login_password: "{{ webfaction_login_password }}"
+        machine: "{{ inventory_hostname }}"
+        name: "{{ webfaction_database_name }}"
+        password: "{{ webfaction_database_password }}"
+        state: "{{ webfaction_database_state }}"
+        type: "{{ webfaction_database_type }}"
+      register: result
+
+    - name: Debug result
+      debug:
+        var: result

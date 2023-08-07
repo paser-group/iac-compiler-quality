@@ -1,0 +1,32 @@
+---
+- name: Test playbook for Ansible type-related bug exploration
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    docker_nodes:
+      - { name: "ubuntu1", ip: "10.1.1.1", distribution: "ubuntu" }
+      - { name: "alpine1", ip: "10.1.1.2", distribution: "alpine" }
+      - { name: "centos1", ip: "10.1.1.3", distribution: "centos" }
+      - { name: "redhat1", ip: "10.1.1.4", distribution: "redhat" }
+    network_subnet: "10.1.1.0/24"
+    network_gateway: "10.1.1.254"
+
+  tasks:
+    - name: Provision Docker nodes
+      docker_container:
+        name: "{{ item.name }}"
+        image: "linux/{{ item.distribution }}"
+        ip_address: "{{ item.ip }}"
+        state: started
+        network_mode: host
+      loop: "{{ docker_nodes }}"
+
+    - name: Verify network configuration
+      command: ip addr show
+      register: network_config
+      changed_when: false
+
+    - name: Print network configuration
+      debug:
+        var: network_config.stdout_lines

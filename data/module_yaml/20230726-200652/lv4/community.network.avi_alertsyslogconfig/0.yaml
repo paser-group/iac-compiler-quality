@@ -1,0 +1,35 @@
+---
+- name: Configure AlertSyslogConf settings in Avi Controller
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    avi_controller: "https://{{ controller }}"
+
+  tasks:
+    - name: Generate random MAC address
+      set_fact:
+        random_mac_address: "{{ '%012x'| format(range(256)|random|int, range(256)|random|int, range(256)|random|int) }}"
+
+    - name: Configure AlertSyslogConf
+      community.network.avi_alertsyslogconfig:
+        controller: "{{ avi_controller }}"
+        username: "{{ avi_credentials.username }}"
+        password: "{{ avi_credentials.password }}"
+        tenant: "{{ tenant }}"
+        syslog_servers:
+          - ip_address: "{{ hostvars[item]['ansible_host'] }}"
+            mac_address: "{{ random_mac_address }}"
+        api_version: "20.1.5"
+
+      loop:
+        - "ubuntu1"
+        - "alpine1"
+        - "centos1"
+        - "redhat1"
+
+      vars:
+        avi_credentials:
+          username: "admin"
+          password: "password"
+        tenant: "Default-Cloud"

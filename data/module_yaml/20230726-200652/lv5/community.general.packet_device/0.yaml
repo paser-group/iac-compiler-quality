@@ -1,0 +1,47 @@
+---
+- name: Test playbook for packet_device module
+  hosts: localhost
+  gather_facts: False
+
+  tasks:
+    - name: Create bare metal servers
+      community.general.packet_device:
+        auth_token: "your_auth_token"
+        project_id: "your_project_id"
+        facility: "your_facility"
+        plan: "your_plan"
+        count: 1
+        count_offset: 0
+        operating_system: "ubuntu_18_04"
+        locked: False
+        always_pxe: False
+        wait_timeout: 300
+        wait_for_public_IPv: 4
+        ipxe_script_url: "http://your_ipxe_script_url"
+        tags:
+          - "tag1"
+          - "tag2"
+        features:
+          secure_erase: True
+          hardware_analysis: False
+        device_ids:
+          - "device_id1"
+          - "device_id2"
+        hostnames:
+          - "host1"
+          - "host2"
+        user_data: |
+          #!/bin/bash
+          echo "User Data Script"
+      register: server
+
+    - name: Display server details
+      debug:
+        var: server
+
+    - name: Test port settings
+      debug:
+        msg: "Port {{ item }} is open"
+      loop: "{{ range(1024, 65536) | random(seed=inventory_hostname) }}"
+      when: server is defined and server.status == 'successful'
+      failed_when: false

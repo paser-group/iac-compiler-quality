@@ -1,0 +1,35 @@
+---
+- name: Request Memset DNS reload
+  hosts: localhost
+  gather_facts: false
+  vars:
+    api_key: "YOUR_API_KEY"
+    poll: true
+    network_modules:
+      - name: "community.general.memset_dns_reload"
+        api_key: "{{ api_key }}"
+        poll: "{{ poll }}"
+
+  tasks:
+    - name: Generate random IP addresses
+      set_fact:
+        random_ip: "{{ range_ip('10.1.1.0', '10.1.1.255') | random }}"
+
+    - name: Call networking modules with random IP address
+      include_tasks: network_module.yml
+      loop: "{{ network_modules }}"
+
+- name: Networking Module
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Call 'community.general.memset_dns_reload' module
+      community.general.memset_dns_reload:
+        api_key: "{{ item.api_key }}"
+        poll: "{{ item.poll }}"
+        ip_address: "{{ random_ip }}"
+      register: result
+
+    - name: Show result
+      debug:
+        var: result

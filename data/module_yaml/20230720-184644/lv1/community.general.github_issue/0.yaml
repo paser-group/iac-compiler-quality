@@ -1,0 +1,45 @@
+---
+- name: Testing Ansible compiler for latent bugs
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Set up inventory
+      shell: echo -e "[nodes]\nubuntu1 ansible_host=10.1.1.1\nalpine1 ansible_host=10.1.1.2\ncentos1 ansible_host=10.1.1.3\nredhat1 ansible_host=10.1.1.4" > inventory.ini
+
+    - name: Define variables and facts
+      set_fact: 
+        issue_title: "Test Issue Title"
+        organization: "Test Organization"
+        repo: "Test Repository"
+        action: "create"
+        issue: 12345
+
+    - name: Install the 'community.general.github_issue' module
+      pip:
+        name: community.general.github_issue
+
+    - name: Test Case 1 - Mixed case sensitivity
+      community.general.github_issue:
+        action: "{{ action | lower }}"
+        issue: "{{ issue | upper }}"
+        organization: "{{ organization | upper }}"
+        repo: "{{ repo | lower }}"
+        title: "{{ issue_title }}"
+      register: result_1
+
+    - name: Debug Test Case 1 result
+      debug:
+        var: result_1
+
+    - name: Test Case 2 - Exact case sensitivity
+      community.general.github_issue:
+        action: "{{ action }}"
+        issue: "{{ issue }}"
+        organization: "{{ organization }}"
+        repo: "{{ repo }}"
+        title: "{{ issue_title }}"
+      register: result_2
+
+    - name: Debug Test Case 2 result
+      debug:
+        var: result_2

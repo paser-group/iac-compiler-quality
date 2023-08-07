@@ -1,0 +1,49 @@
+---
+- name: Test Avi ClusterCloudDetails Module
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Include 'community.network.avi_clusterclouddetails' module
+      include_role:
+        name: community.network.avi_clusterclouddetails
+
+    - name: Test Case 1 - Generate invalid username with varied encodings
+      community.network.avi_clusterclouddetails:
+        controller: "{{ controller }}"
+        api_version: "{{ api_version }}"
+        api_context: "{{ api_context }}"
+        avi_credentials:
+          username: "\xFF\xFEu\x00s\x00e\x00r\x00n\x00a\x00m\x00e\x00"
+          password: "{{ password }}"
+          tenant: "{{ tenant }}"
+      register: result
+      ignore_errors: true
+
+    - name: Test Case 2 - Generate invalid password with varied encodings
+      community.network.avi_clusterclouddetails:
+        controller: "{{ controller }}"
+        api_version: "{{ api_version }}"
+        api_context: "{{ api_context }}"
+        avi_credentials:
+          username: "{{ username }}"
+          password: "\xFF\xFEp\x00a\x00s\x00s\x00w\x00o\x00r\x00d\x00"
+          tenant: "{{ tenant }}"
+      register: result
+      ignore_errors: true
+
+    - name: Test Case 3 - Generate invalid tenant with varied encodings
+      community.network.avi_clusterclouddetails:
+        controller: "{{ controller }}"
+        api_version: "{{ api_version }}"
+        api_context: "{{ api_context }}"
+        avi_credentials:
+          username: "{{ username }}"
+          password: "{{ password }}"
+          tenant: "\xFF\xFEt\x00e\x00n\x00a\x00n\x00t\x00"
+      register: result
+      ignore_errors: true
+
+    - name: Check if any of the test cases failed
+      fail:
+        msg: "Type-related bug found in 'community.network.avi_clusterclouddetails' module"
+      when: result.failed == true

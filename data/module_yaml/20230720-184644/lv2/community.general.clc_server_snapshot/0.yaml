@@ -1,0 +1,52 @@
+---
+- name: Test playbook for clc_server_snapshot module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create server snapshots
+      community.general.clc_server_snapshot:
+        state: create
+        server_ids:
+          - 'ubuntu1'
+          - 'alpine1'
+          - 'centos1'
+          - 'redhat1'
+        expiration_days: 10
+        wait: yes
+      register: create_result
+
+    - name: Debug create Result
+      debug:
+        var: create_result
+
+    - name: Wait for the snapshots to complete creation
+      community.general.clc_server_snapshot:
+        state: wait_for_sync
+        server_ids: '{{ create_result.server_ids }}'
+      register: wait_result
+
+    - name: Debug wait Result
+      debug:
+        var: wait_result
+
+    - name: Delete server snapshots
+      community.general.clc_server_snapshot:
+        state: delete
+        server_ids: '{{ create_result.server_ids }}'
+      register: delete_result
+
+    - name: Debug delete Result
+      debug:
+        var: delete_result
+
+    - name: Restore server snapshots
+      community.general.clc_server_snapshot:
+        state: restore
+        server_ids: '{{ create_result.server_ids }}'
+        wait: yes
+      register: restore_result
+
+    - name: Debug restore Result
+      debug:
+        var: restore_result

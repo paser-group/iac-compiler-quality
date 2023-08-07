@@ -1,0 +1,33 @@
+---
+- name: Test playbook for community.network.avi_seproperties module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Configure SeProperties
+      community.network.avi_seproperties:
+        controller: "https://{{ ansible_host }}"
+        username: "{{ avi_username }}"
+        password: "{{ avi_password }}"
+        tenant: "{{ avi_tenant }}"
+        se_agent_properties:
+          - key: "HostHeaderCaseSensitivity"
+            value: "Mixed"
+          - key: "SomeOtherProperty"
+            value: "MixedCaseValue"
+        se_bootup_properties: []
+        state: present
+      register: se_properties_output
+
+    - name: Display output
+      debug:
+        msg: "{{ se_properties_output }}"
+
+    - name: Verify mixed case sensitivity bug
+      assert:
+        that: >
+          se_properties_output | success == false and
+          "'MixedCaseValue'" not in se_properties_output | stderr and
+          "Mixed" in se_properties_output | stderr
+
+        fail_msg: "Mixed case sensitivity bug not triggered!"

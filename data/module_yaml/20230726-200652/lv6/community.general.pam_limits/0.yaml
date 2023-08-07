@@ -1,0 +1,54 @@
+---
+- name: Test playbook for community.general.pam_limits module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Set up the test environment
+      docker_container:
+        name: "{{ item.name }}"
+        image: "{{ item.image }}"
+        networks:
+          - name: node-net
+        ip_address: "{{ item.ip }}"
+        state: started
+      with_items:
+        - { name: 'ubuntu1', image: 'ubuntu', ip: '10.1.1.1' }
+        - { name: 'alpine1', image: 'alpine', ip: '10.1.1.2' }
+        - { name: 'centos1', image: 'centos', ip: '10.1.1.3' }
+        - { name: 'redhat1', image: 'redhat', ip: '10.1.1.4' }
+
+    - name: Configure PAM limits
+      community.general.pam_limits:
+        domain: root
+        limit_type: "{{ item.limit_type }}"
+        limit_item: "{{ item.limit_item }}"
+        value: "{{ item.value }}"
+        use_min: true
+        use_max: true
+        backup: true
+        comment: "Testing PAM limits"
+        dest: /etc/security/limits.conf
+      with_items:
+        - { limit_type: 'hard', limit_item: 'nofile', value: "{{ '10000' }}" }
+        - { limit_type: 'soft', limit_item: 'nofile', value: "{{ '5000' }}" }
+        - { limit_type: 'hard', limit_item: 'nproc', value: "{{ '2000' }}" }
+        - { limit_type: 'soft', limit_item: 'nproc', value: "{{ '1000' }}" }
+
+    - name: Verify the changes in the limits.conf file
+      shell: cat /etc/security/limits.conf
+      register: limits_conf_output
+
+    - name: Print the limits.conf file content
+      debug:
+        var: limits_conf_output.stdout_lines
+
+    - name: Teardown the test environment
+      docker_container:
+        name: "{{ item.name }}"
+        state: absent
+      with_items:
+        - { name: 'ubuntu1' }
+        - { name: 'alpine1' }
+        - { name: 'centos1' }
+        - { name: 'redhat1' }

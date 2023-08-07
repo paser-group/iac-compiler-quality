@@ -1,0 +1,40 @@
+- name: Test playbook for 'community.general.utm_proxy_frontend' module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    reverse_proxy_frontend_options:
+      - name: "Frontend1"
+        address: "10.1.1.1"
+        port: 8080
+        domain:
+          - "example.com"
+        allowed_networks:
+          - "10.1.1.0/24"
+        certificate: "/path/to/cert.pem"
+        lbmethod: "roundrobin"
+        locations:
+          - match: "/api"
+            backend_address: "192.168.1.10"
+            backend_port: 8000
+            preservehost: yes
+
+  tasks:
+    - name: Create Reverse Proxy Frontend
+      community.general.utm_proxy_frontend:
+        name: "{{ item.name }}"
+        address: "{{ item.address }}"
+        port: "{{item.port}}"
+        domain: "{{ item.domain }}"
+        allowed_networks: "{{ item.allowed_networks }}"
+        certificate: "{{ item.certificate }}"
+        lbmethod: "{{ item.lbmethod }}"
+        locations: "{{ item.locations }}"
+        preservehost: "{{ item.preservehost }}"
+        state: present
+      with_items: "{{ reverse_proxy_frontend_options }}"
+      register: result
+
+    - name: Display result
+      debug:
+        var: result

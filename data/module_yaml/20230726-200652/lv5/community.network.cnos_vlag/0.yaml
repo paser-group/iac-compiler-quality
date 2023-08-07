@@ -1,0 +1,64 @@
+---
+- name: Test CNOS VLAG Module
+  hosts: localhost
+  gather_facts: false
+  
+  tasks:
+    - name: Create VLAG on Device
+      community.network.cnos_vlag:
+        host: "{{ host }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        enablePassword: "{{ enablePassword }}"
+        deviceType: "nos"
+        vlagArg1: "{{ vlagArg1 }}"
+        vlagArg2: "{{ vlagArg2 }}"
+        vlagArg3: "{{ vlagArg3 }}"
+        vlagArg4: "{{ vlagArg4 }}"
+        outputfile: "/tmp/vlag_output.txt"
+      register: vlag_result
+      ignore_errors: true
+
+    - name: Debug CNOS VLAG Result
+      debug:
+        var: vlag_result
+
+    - name: Assert CNOS VLAG Request Successful
+      assert:
+        that: vlag_result.failed == false
+        msg: "Failed to create VLAG on device"
+
+    - name: Assert CNOS VLAG Output File Exists
+      stat:
+        path: "/tmp/vlag_output.txt"
+      register: output_file_stat
+
+    - name: Assert CNOS VLAG Output File Content
+      assert:
+        that: "'Parameter '.format(variable) in lookup('file', '/tmp/vlag_output.txt')"
+        fail_msg: "Invalid output file content"
+        success_msg: "Valid output file content"
+
+    # Test Case 1
+    - name: Test VLAG with random port numbers
+      set_fact:
+        vlagArg1: "{{ range(1, 10) | random }}"
+        vlagArg2: "{{ range(1, 10) | random }}"
+        vlagArg3: "{{ range(1, 10) | random }}"
+        vlagArg4: "{{ range(1, 10) | random }}"
+        host: "10.1.1.1"  # Replace with the actual IP address of the target device
+        username: "admin"  # Replace with the actual username
+        password: "password"  # Replace with the actual password
+        enablePassword: "enablepass"  # Replace with the actual enable password
+
+    # Test Case 2
+    - name: Test VLAG with specific port numbers
+      set_fact:
+        vlagArg1: "1"
+        vlagArg2: "2"
+        vlagArg3: "3"
+        vlagArg4: "4"
+        host: "10.1.1.1"  # Replace with the actual IP address of the target device
+        username: "admin"  # Replace with the actual username
+        password: "password"  # Replace with the actual password
+        enablePassword: "enablepass"  # Replace with the actual enable password

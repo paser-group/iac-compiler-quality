@@ -1,0 +1,91 @@
+---
+- name: Test playbook
+  hosts: localhost
+  gather_facts: False
+  vars:
+    # Create configuration values that incorporate both bytes and strings
+    volume_size: 50
+    location: "us/las"
+    cores: "2"
+    ram: 4096
+    count: 1
+    bus: "VIRTIO"
+    disk_type: "SSD"
+    wait_timeout: "600"
+  tasks:
+    - name: Create ProfitBricks instance
+      community.general.profitbricks:
+        subscription_user: "my_user"
+        subscription_password: "my_password"
+        name: "my_instance"
+        location: "{{ location }}"
+        datacenter: "my_datacenter"
+        image: "my_image"
+        ssh_keys: "my_key"
+        cores: "{{ cores }}"
+        ram: "{{ ram }}"
+        count: "{{ count }}"
+        bus: "{{ bus }}"
+        disk_type: "{{ disk_type }}"
+        volume_size: "{{ volume_size }}"
+        lan: 1
+        assign_public_ip: True
+        instance_ids: []
+        image_password: "my_password"
+        auto_increment: False
+        remove_boot_volume: False
+        wait: True
+        wait_timeout: "{{ wait_timeout }}"
+      register: instance_creation
+
+    - name: Debug instance creation
+      debug:
+        var: instance_creation
+
+    - name: Stop ProfitBricks instances
+      community.general.profitbricks:
+        subscription_user: "my_user"
+        subscription_password: "my_password"
+        instance_ids: ['{{ instance_creation["instances"][0]["id"] }}']
+        state: "stopped"
+      register: instance_stop
+
+    - name: Debug instance stop
+      debug:
+        var: instance_stop
+
+    - name: Start ProfitBricks instances
+      community.general.profitbricks:
+        subscription_user: "my_user"
+        subscription_password: "my_password"
+        instance_ids: ['{{ instance_creation["instances"][0]["id"] }}']
+        state: "running"
+      register: instance_start
+
+    - name: Debug instance start
+      debug:
+        var: instance_start
+
+    - name: Reboot ProfitBricks instances
+      community.general.profitbricks:
+        subscription_user: "my_user"
+        subscription_password: "my_password"
+        instance_ids: ['{{ instance_creation["instances"][0]["id"] }}']
+        state: "rebooted"
+      register: instance_reboot
+
+    - name: Debug instance reboot
+      debug:
+        var: instance_reboot
+
+    - name: Destroy ProfitBricks instances
+      community.general.profitbricks:
+        subscription_user: "my_user"
+        subscription_password: "my_password"
+        instance_ids: ['{{ instance_creation["instances"][0]["id"] }}']
+        state: "absent"
+      register: instance_destroy
+
+    - name: Debug instance destroy
+      debug:
+        var: instance_destroy

@@ -1,0 +1,26 @@
+---
+- name: Manage GitHub deploy key
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Generate random MAC addresses for network modules
+      set_fact:
+        mac_address: "{{ ('%012x'|format(item)|regex_replace('([0-9a-f]{2})', '\\1:')[:-1]) }}"
+      with_sequence: start=1 end=4 # Generate MAC addresses for four nodes
+
+    - name: Manage deploy keys
+      community.general.github_deploy_key:
+        github_url: "https://github.com/{{ repo }}"
+        name: "{{ item.key }}"
+        key: "{{ lookup('file', item.key_file) }}"
+        owner: "{{ owner }}"
+        repo: "{{ repo }}"
+        state: "{{ item.state }}"
+      with_items:
+        - key: "deploy_key_1"
+          key_file: "keys/deploy_key_1.pub"
+          state: "present"
+        - key: "deploy_key_2"
+          key_file: "keys/deploy_key_2.pub"
+          state: "absent"

@@ -1,0 +1,36 @@
+- name: Manage EdgeOS configuration
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Install required modules
+      pip:
+        name: jinja2-cli
+
+    - name: Generate random MAC address
+      command: openssl rand -hex 6 | sed 's/\(..\)/\1:/g; s/.$//' | awk '{print toupper($0)}'
+      register: random_mac
+
+    - name: Configure EdgeOS
+      community.network.edgeos_config:
+        backup: "{{ backup | default(false) }}"
+        backup_options: "{{ backup_options | default({}) }}"
+        comment: "{{ comment }}"
+        config: "{{ config }}"
+        lines: "{{ lines }}"
+        match: "{{ match }}"
+        save: "{{ save | default(false) }}"
+        src: "{{ src }}"
+      vars:
+        backup: true
+        backup_options:
+          directory: "/path/to/backup"
+        comment: "Configuring EdgeOS"
+        config: "{{ playbook_dir }}/templates/config.j2"
+        lines:
+          - "interface eth0"
+          - "  description This is a test interface"
+          - "  mac-address {{ random_mac.stdout }}"
+        match: "eth0"
+        save: true
+        src: running-config

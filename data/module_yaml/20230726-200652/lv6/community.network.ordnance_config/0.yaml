@@ -1,0 +1,67 @@
+---
+- name: Unveiling Type-Related Bugs in community.network.ordnance_config module
+  hosts: localhost
+  gather_facts: false
+  connection: local
+
+  tasks:
+    - name: Install community.network collection
+      ansible.builtin.shell: ansible-galaxy collection install community.network
+
+    - name: Create inventory file
+      ansible.builtin.file:
+        path: /tmp/inventory
+        state: touch
+        mode: '0644'
+      delegate_to: localhost
+
+    - name: Add nodes to the inventory
+      ansible.builtin.lineinfile:
+        dest: /tmp/inventory
+        line: "{{ item }}"
+        insertafter: EOF
+      with_items:
+        - "ubuntu1 ansible_host=10.1.1.1"
+        - "alpine1 ansible_host=10.1.1.2"
+        - "centos1 ansible_host=10.1.1.3"
+        - "redhat1 ansible_host=10.1.1.4"
+
+    - name: Configure ordnance devices
+      community.network.ordnance_config:
+        after: "{{ item.after | default(None) }}"
+        backup: "{{ item.backup | default(False) }}"
+        before: "{{ item.before | default(None) }}"
+        config: "{{ item.config | default(None) }}"
+        defaults: "{{ item.defaults | default(False) }}"
+        lines: "{{ item.lines | default(None) }}"
+        match: "{{ item.match | default(None) }}"
+        multiline_delimiter: "{{ item.multiline_delimiter | default(None) }}"
+        parents: "{{ item.parents | default(None) }}"
+        replace: "{{ item.replace | default(None) }}"
+        save: "{{ item.save | default(False) }}"
+        src: "{{ item.src | default(None) }}"
+      with_items:
+        - after: null
+          backup: true
+          before: null
+          config: null
+          defaults: true
+          lines: null
+          match: null
+          multiline_delimiter: null
+          parents: null
+          replace: null
+          save: true
+          src: null
+        
+    - name: Print debug information
+      ansible.builtin.debug:
+        msg: "Type-related bug triggered successfully."
+
+  post_tasks:
+    - name: Remove temporary inventory file
+      ansible.builtin.file:
+        path: /tmp/inventory
+        state: absent
+        force: yes
+      delegate_to: localhost

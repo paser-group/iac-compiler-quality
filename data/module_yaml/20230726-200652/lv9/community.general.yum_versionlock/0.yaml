@@ -1,0 +1,29 @@
+---
+- name: Test yum_versionlock module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create version lock file
+      tempfile:
+        state: file
+        suffix: .versionlock
+      register: versionlock_file
+
+    - name: Add package(s) to version lock file
+      community.general.yum_versionlock:
+        name: "{{ package }}"
+        state: "{{ lock_state }}"
+        file: "{{ versionlock_file.path }}"
+      loop:
+        - package_1
+        - package_2
+        - package_3
+
+    - name: Verify package(s) in version lock file
+      command: cat "{{ versionlock_file.path }}"
+      register: versionlock_result
+
+    - name: Debug version lock result
+      debug:
+        var: versionlock_result.stdout_lines

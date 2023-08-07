@@ -1,0 +1,36 @@
+---
+- name: Ansible Latent Bug Finder Playbook
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create a project with invalid auth_token
+      community.general.packet_project:
+        auth_token: 12345
+        name: "Test Project"
+        org_id: "org123"
+        state: present
+
+    - name: Generate random MAC addresses
+      set_fact:
+        mac_address: "{{ '02:%02x:%02x:%02x:%02x:%02x'|format(ansible_random.randint(0, 255), ansible_random.randint(0, 255), ansible_random.randint(0, 255), ansible_random.randint(0, 255), ansible_random.randint(0, 255)) }}"
+
+    - name: Create a packet network with incorrect MAC address data type
+      community.general.packet_network:
+        auth_token: "abcd1234"
+        project_id: "proj123"
+        description: "Test Network"
+        facility: "any"
+        plan: "any"
+        state: present
+        assign_premium_ip: false
+        vlan: false
+        mac_addresses:
+          - "{{ mac_address }}"
+          - 12345
+
+    - name: Delete the project with invalid project ID
+      community.general.packet_project:
+        auth_token: "abcd1234"
+        id: 12345
+        state: absent

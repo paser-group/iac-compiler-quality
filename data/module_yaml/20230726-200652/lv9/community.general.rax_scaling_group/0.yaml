@@ -1,0 +1,62 @@
+---
+- name: Test playbook for rax_scaling_group module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    # Configuration variables
+    api_key: "YOUR-RACKSPACE-API-KEY"
+    auth_endpoint: "https://identity.api.rackspacecloud.com/v2.0/"
+    tenant_id: "YOUR-TENANT-ID"
+    tenant_name: "YOUR-TENANT-NAME"
+    username: "YOUR-USERNAME"
+    
+    # Randomly generated IP addresses for networking modules
+    ubuntu1_ip: "10.1.1.1"
+    alpine1_ip: "10.1.1.2"
+    centos1_ip: "10.1.1.3"
+    redhat1_ip: "10.1.1.4"
+
+  tasks:
+    - name: Create Rackspace autoscaling group
+      community.general.rax_scaling_group:
+        api_key: "{{ api_key }}"
+        auth_endpoint: "{{ auth_endpoint }}"
+        config_drive: true
+        credentials: "/path/to/credentials.pem"
+        cooldown: 180
+        disk_config: "AUTO"
+        env: "prod"
+        files: {}
+        flavor: "2GB Standard Instance"
+        identity_type: "rackspace"
+        image: "Ubuntu 20.04 LTS (Focal Fossa)"
+        key_name: "my_keypair"
+        loadbalancers: []
+        max_entities: 5
+        meta: {}
+        min_entities: 2
+        name: "my_scaling_group"
+        networks:
+          - name: "node-net"
+            subnet: "10.1.1.0/24"
+            gateway: "10.1.1.254"
+            allocation_pool_start: "{{ ubuntu1_ip }}"
+            allocation_pool_end: "{{ alpine1_ip }}"
+            dns_nameservers: "{{ centos1_ip }}"
+        region: "IAD"
+        server_name: "auto-scaled-server"
+        state: "present"
+        tenant_id: "{{ tenant_id }}"
+        tenant_name: "{{ tenant_name }}"
+        user_data: "echo 'Hello, World!'"
+        username: "{{ username }}"
+        validate_certs: true
+        wait: true
+        wait_timeout: 600
+
+      register: result
+
+    - name: Debug the result
+      debug:
+        var: result

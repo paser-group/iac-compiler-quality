@@ -1,0 +1,55 @@
+---
+- name: Test community.network.avi_webhook module
+  hosts: webhook_nodes
+  gather_facts: false
+
+  tasks:
+    - name: Install required dependencies
+      block:
+        - name: Install Python pip
+          raw: which pip || (sudo apt -y update && sudo apt install -y python3-pip)
+
+        - name: Install Avi SDK
+          pip:
+            name: avisdk
+
+      rescue:
+        - name: Install Python pip for other Linux distributions
+          raw: which pip || (sudo yum -y update && sudo yum -y install python3-pip)
+
+    - name: Setup Avi webhook
+      community.network.avi_webhook:
+        controller: 'https://{{ inventory_hostname }}'
+        username: 'admin'
+        password: 'password'
+        tenant: 'admin'
+        state: 'present'
+        name: 'webhook_test'
+        description: 'Testing Avi Webhook'
+        url: 'https://example.com/webhook'
+        verification_token: 'secure_token'
+        api_context:
+          - json: |
+              {
+                "name": "webhook_test",
+                "enabled": true,
+                "events": [
+                  {
+                    "enabled": true,
+                    "event_id": "VS_DATAPLANE_UP_PEER_DOWN",
+                    "object_uuids": [],
+                    "sku_uuids": []
+                  }
+                ],
+                "annotations": {},
+                "internal": false,
+                "headers": [],
+                "method": "POST"
+              }
+        api_version: '21.1.3'
+        avi_disable_session_cache_as_fact: true
+      register: webhook_result
+
+    - name: Debug webhook_result
+      debug:
+        var: webhook_result

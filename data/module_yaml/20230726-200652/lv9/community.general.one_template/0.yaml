@@ -1,0 +1,36 @@
+---
+- name: Test Playbook for Ansible Latent Type-Related Bug Exploration
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Generate Random IP Addresses for Networking Modules
+      block:
+        - name: Generate Random IP Address
+          set_fact:
+            random_ip: "{{ lookup('community.general.random_ip_address', network='10.1.1.0/24') }}"
+
+        - name: Debug Random IP Address
+          debug:
+            var: random_ip
+
+        - name: Perform Desired Task Using Random IP Address
+          community.general.one_template:
+            api_url: http://localhost/api
+            api_username: admin
+            api_password: password
+            id: 1
+            name: test_template
+            state: present
+            template: "{{ random_ip }}"
+            validate_certs: false
+            wait_timeout: 10
+          register: result
+
+        - name: Debug Result
+          debug:
+            var: result
+
+    - name: Print Debug Information
+      debug:
+        var: hostvars[localhost]['ansible_facts']['ansible_default_ipv4']['address']

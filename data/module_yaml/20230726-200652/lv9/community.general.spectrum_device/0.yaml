@@ -1,0 +1,48 @@
+- name: Test playbook for community.general.spectrum_device module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create device using random IP address
+      community.general.spectrum_device:
+        device: "{{ item }}"
+        landscape: "{{ random_landscape }}"
+        state: "{{ random_state }}"
+        url: "{{ random_url }}"
+        url_username: "{{ random_username }}"
+        url_password: "{{ random_password }}"
+        use_proxy: "{{ random_use_proxy }}"
+        validate_certs: "{{ random_validate_certs }}"
+      loop:
+        - "{{ random_ip_address() }}"
+        - "{{ random_ip_address() }}"
+      register: result
+
+    - name: Debug module output
+      debug:
+        var: result
+
+    - name: Delete the created devices
+      community.general.spectrum_device:
+        device: "{{ item }}"
+        state: absent
+      loop: "{{ result.results | map(attribute='device') | list }}"
+      when: item.changed
+
+  vars:
+    random_landscape: "{{ ['USA', 'Europe', 'Asia'] | random }}"
+    random_state: "{{ ['present', 'absent'] | random }}"
+    random_url: "{{ ['https://example.com', 'https://test.com'] | random }}"
+    random_username: "{{ ['admin', 'user'] | random }}"
+    random_password: "{{ ['password1', 'password2'] | random }}"
+    random_use_proxy: "{{ ['true', 'false'] | random }}"
+    random_validate_certs: "{{ ['true', 'false'] | random }}"
+
+  tasks:
+    - name: Generate random IP address
+      set_fact:
+        random_octet1: "{{ 1 | random }}"
+        random_octet2: "{{ 1 | random }}"
+        random_octet3: "{{ 1 | random }}"
+        random_octet4: "{{ 1 | random }}"
+        random_ip_address: "{{ random_octet1 }}.{{ random_octet2 }}.{{ random_octet3 }}.{{ random_octet4 }}"

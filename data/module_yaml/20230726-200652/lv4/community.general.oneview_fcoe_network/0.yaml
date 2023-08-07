@@ -1,0 +1,65 @@
+---
+- name: Test OneView FCoE Network Module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create OneView FCoE Network
+      community.general.oneview_fcoe_network:
+        config: /path/to/oneview_config.json
+        hostname: "{{ playbook_hostname }}"
+        username: "{{ playbook_username }}"
+        password: "{{ playbook_password }}"
+        image_streamer_hostname: "{{ playbook_image_streamer_hostname }}"
+        api_version: "{{ playbook_api_version }}"
+        state: present
+        data:
+          name: "Test FCoE Network"
+          vlanId: 100
+          vlanName: "FCoE Network"
+          logicalInterconnectUri: "/rest/logical-interconnects/1"
+          connectionTemplateUri: "/rest/connection-templates/1"
+          fabricUri: "/rest/fabrics/1"
+          bandwidth:
+            maximumBandwidth: 10000
+            typicalBandwidth: 2000
+          type: "fcoe-network"
+          purpose: "General"
+          managedSanUri: "/rest/fc-sans/1"
+          connectionSettings:
+            usePortMac: true
+            macType: "Virtual"
+
+      tags:
+        - create_network
+
+- name: Test Latent Bug Detection
+  hosts: localhost
+  gather_facts: false
+  vars:
+    mac_address: "{{ 00 }}:{{ 25 }}:{{ 96 }}:{{ 93 }}:{{ '%02x' | format(playbook_hostname | regex_replace('\\\\D','','g') | int) }}:{{ '%02x' | format(playbook_api_version | int) }}"
+  
+  tasks:
+    - name: Debug MAC Address
+      debug:
+        var: mac_address
+
+- name: Clean Up
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Delete OneView FCoE Network
+      community.general.oneview_fcoe_network:
+        config: /path/to/oneview_config.json
+        hostname: "{{ playbook_hostname }}"
+        username: "{{ playbook_username }}"
+        password: "{{ playbook_password }}"
+        image_streamer_hostname: "{{ playbook_image_streamer_hostname }}"
+        api_version: "{{ playbook_api_version }}"
+        state: absent
+        data:
+          name: "Test FCoE Network"
+
+      tags:
+        - delete_network

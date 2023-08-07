@@ -1,0 +1,36 @@
+---
+- name: Test playbook for community.network.avi_dnspolicy module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Generate random IP address for URL
+      set_fact:
+        random_ip: "{{ 10|random + 1 }}.{{ 1|random + 1 }}.{{ 1|random + 1 }}.{{ 1|random + 1 }}"
+      register: random_ip_result
+
+    - name: Create a DnsPolicy using avi_dnspolicy module
+      community.network.avi_dnspolicy:
+        controller: "{{ random_ip_result.random_ip }}:{{ 8080|random }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        tenant: "{{ tenant }}"
+        name: "Test DnsPolicy"
+        description: "Test DnsPolicy description"
+        tenant_uuid: "{{ tenant_uuid }}"
+        api_version: "{{ api_version }}"
+        avi_credentials:
+          api_version: "{{ api_version }}"
+          avi_api_update_method: "{{ avi_api_update_method }}"
+          avi_api_patch_op: "{{ avi_api_patch_op }}"
+          avi_disable_session_cache_as_fact: "{{ avi_disable_session_cache_as_fact }}"
+        api_context:
+          "http://{{ random_ip_result.random_ip }}/":
+            cloud_ref: "/api/cloud?name=Default-Cloud"
+        state: present
+
+      register: dnspolicy_result
+
+    - name: Debug the result
+      debug:
+        var: dnspolicy_result

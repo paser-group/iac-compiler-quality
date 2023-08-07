@@ -1,0 +1,32 @@
+---
+- name: Test playbook for community.general.ldap_passwd module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Set random port for ldap server
+      set_fact:
+        ldap_port: "{{ 1024 + (ansible_date_time.microsecond | int % 65535) }}"
+
+    - name: Test random port values
+      debug:
+        msg: "Testing random port: {{ ldap_port }}"
+
+    - name: Create LDAP password
+      community.general.ldap_passwd:
+        bind_dn: "cn=admin,dc=example,dc=com"
+        bind_pw: "admin_password"
+        ca_path: "/etc/ssl/certs/"
+        dn: "uid=testuser,dc=example,dc=com"
+        passwd: "new_password"
+        referrals_chasing: "default"
+        sasl_class: "none"
+        server_uri: "ldap://localhost:{{ ldap_port }}"
+        start_tls: false
+        validate_certs: true
+        xorder_discovery: "f"
+      register: result
+
+    - name: Print result
+      debug:
+        var: result

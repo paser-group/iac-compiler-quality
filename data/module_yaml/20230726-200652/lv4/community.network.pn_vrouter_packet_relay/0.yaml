@@ -1,0 +1,31 @@
+---
+- name: Test playbook for community.network.pn_vrouter_packet_relay module
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Install dependencies for pn_vrouter_packet_relay module
+      pip:
+        name: ipaddress
+        state: present
+
+    - name: Generate random MAC addresses using the heuristic
+      set_fact:
+        random_mac_address: "{{ hostvars[inventory_hostname]['mac_address'] | default('') }}"
+      vars:
+        mac_address: "{{ '%02x'*6|format(255|random,255|random,255|random,255|random,255|random,255|random) }}"
+      run_once: true
+
+    - name: Add packet relay configuration
+      community.network.pn_vrouter_packet_relay:
+        pn_cliswitch: "{{ pn_cliswitch }}"
+        pn_forward_ip: "{{ pn_forward_ip }}"
+        pn_forward_proto: "{{ pn_forward_proto }}"
+        pn_nic: "{{ pn_nic }}"
+        pn_mac: "{{ random_mac_address }}"
+        pn_vrouter_name: "{{ pn_vrouter_name }}"
+        state: "{{ state }}"
+      register: result
+
+    - name: Debug result
+      debug:
+        var: result

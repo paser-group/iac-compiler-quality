@@ -1,0 +1,36 @@
+---
+- name: Test playbook for Ansible bug hunting
+  hosts: all
+  gather_facts: false
+  vars:
+    ssh_keys:
+      ubuntu: "{{ lookup('file', 'ubuntu.pub') }}"
+      alpine: "{{ lookup('file', 'alpine.pub') }}"
+      centos: "{{ lookup('file', 'centos.pub') }}"
+      redhat: "{{ lookup('file', 'redhat.pub') }}"
+
+  tasks:
+    - name: Add SSH public keys to authorized_keys
+      authorized_key:
+        user: "{{ item.key }}"
+        state: present
+        key: "{{ item.value }}"
+      loop: "{{ ssh_keys | dict2items }}"
+      register: authorized_key_result
+
+    - name: Print authorized_key_result
+      debug:
+        var: authorized_key_result
+
+    - name: Remove SSH public keys from authorized_keys
+      authorized_key:
+        user: "{{ item.key }}"
+        state: absent
+        key: "{{ item.value }}"
+      loop: "{{ ssh_keys | dict2items }}"
+      register: authorized_key_result
+
+    - name: Print authorized_key_result
+      debug:
+        var: authorized_key_result
+...

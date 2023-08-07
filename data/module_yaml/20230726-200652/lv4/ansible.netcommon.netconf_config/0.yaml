@@ -1,0 +1,43 @@
+---
+- name: Test ansible.netcommon.netconf_config module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Configure network using netconf_config module
+      ansible.netcommon.netconf_config:
+        backup: true
+        backup_options:
+          dir: /backup
+          prefix: backup
+        commit: true
+        confirm: 5
+        confirm_commit: true
+        content: |
+          system {
+            services {
+              telnet {
+                enable;
+              }
+            }
+          }
+        default_operation: merge
+        delete: false
+        error_option: rollback-on-error
+        format: xml
+        get_filter: "{{ lookup('file', 'filter.xml') }}"
+        lock: target
+        save: true
+        source_datastore: running
+        target: running
+        validate: true
+      register: result
+
+    - name: Show result
+      debug:
+        var: result
+
+    - name: Generate random MAC addresses for network modules
+      debug:
+        msg: "{{ item }}"
+      loop: "{{ query('community.general.random_string', 'format=X:X:X:X:X:X', length=17, count=5) }}"

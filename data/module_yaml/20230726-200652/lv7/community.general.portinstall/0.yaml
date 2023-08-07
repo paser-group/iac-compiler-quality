@@ -1,0 +1,29 @@
+- name: Install packages using portinstall
+  hosts: localhost
+  gather_facts: false
+  become: true
+
+  tasks:
+    - name: Install package with portinstall
+      community.general.portinstall:
+        name: "{{ item.name }}"
+        state: present
+        use_packages: yes
+      with_items:
+        - { name: 'package1' }
+        - { name: 'package2' }
+
+    - name: Ensure package1 is installed
+      package_facts:
+        manager: auto
+      register: installed_packages
+
+    - name: Debug installed packages
+      debug:
+        var: installed_packages
+
+    - name: Ensure package2 is installed
+      assert:
+        that:
+          - "'package2' in installed_packages.packages"
+        fail_msg: "Package2 is not installed."

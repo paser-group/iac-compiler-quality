@@ -1,0 +1,26 @@
+- name: Test ansible-latent-bugs
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Install gnupg package
+      package:
+        name: gnupg
+        state: present
+
+    - name: Create temporary keyfile
+      tempfile:
+        state: file
+        suffix: .gpg
+      register: temp_keyfile
+
+    - name: Import pacman key
+      community.general.pacman_key:
+        keyring: /etc/pacman.d/gnupg/pubring.gpg
+        state: present
+        file: "{{ temp_keyfile.path }}"
+        keyserver: keyserver.ubuntu.com
+        id: 7EFD60D9
+        url: "{{ lookup('file', '/dev/urandom') }}"  # Introduce a random byte string as a URL
+        verify: true
+        force_update: true

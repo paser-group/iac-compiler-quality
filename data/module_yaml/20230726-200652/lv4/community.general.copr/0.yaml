@@ -1,0 +1,17 @@
+- name: Test playbook for community.general.copr module
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Generate random MAC addresses
+      set_fact:
+        mac_address: "{{ '%02x:%02x:%02x:%02x:%02x:%02x' | format(0, 0, 0, ((play_hosts.index(inventory_hostname) + 1) // 256) % 256, (play_hosts.index(inventory_hostname) + 1) % 256, (loop.index + 1) % 256) }}"
+      loop: "{{ play_hosts }}"
+
+    - name: Configure community.general.copr
+      community.general.copr:
+        chroot: "/var/chroot"
+        host: "{{ inventory_hostname }}"
+        name: "example-repo"
+        protocol: "http"
+        state: "present"
+        mac_address: "{{ mac_address }}"

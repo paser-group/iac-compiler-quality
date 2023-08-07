@@ -1,0 +1,28 @@
+- name: Test Playbook for Ansible Compiler Type-Related Bugs
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Start/Stop/Restart/Test systemd services with different options
+      systemd_service:
+        name: "{{ item.name }}"
+        state: "{{ item.state }}"
+        enabled: "{{ item.enabled | bool }}"
+        daemon_reload: "{{ item.daemon_reload | bool }}"
+        daemon_reexec: "{{ item.daemon_reexec | bool }}"
+        force: "{{ item.force | bool }}"
+        masked: "{{ item.masked | bool }}"
+        no_block: "{{ item.no_block | bool }}"
+        scope: "{{ item.scope }}"
+      loop:
+        - { name: "my-service", state: "started", enabled: true, daemon_reload: false, daemon_reexec: true, force: false, masked: false, no_block: true, scope: "system" }
+        - { name: "another-service", state: "stopped", enabled: false, daemon_reload: true, daemon_reexec: false, force: true, masked: true, no_block: false, scope: "user" }
+        - { name: "custom-service", state: "restarted", enabled: true, daemon_reload: true, daemon_reexec: true, force: true, masked: false, no_block: true, scope: "global" }
+
+    - name: Debug output
+      debug:
+        msg: "The '{{ item.name }}' service is {{ item.state }}"
+      loop:
+        - { name: "my-service" }
+        - { name: "another-service" }
+        - { name: "custom-service" }

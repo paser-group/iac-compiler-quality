@@ -1,0 +1,43 @@
+---
+- name: Test HAProxy module with random port numbers
+  hosts: localhost
+  gather_facts: False
+  vars:
+    backend_servers:
+      - name: backend1
+        host: server1
+        port: "{{ server1_port | default(80) }}"
+      - name: backend2
+        host: server2
+        port: "{{ server2_port | default(80) }}"
+
+  tasks:
+    - name: Enable backend servers
+      community.general.haproxy:
+        backend: "{{ item.name }}"
+        host: "{{ item.host }}"
+        port: "{{ item.port }}"
+        state: "enabled"
+      loop: "{{ backend_servers }}"
+      register: result
+      changed_when: result is changed
+
+    - name: Disable backend servers
+      community.general.haproxy:
+        backend: "{{ item.name }}"
+        host: "{{ item.host }}"
+        port: "{{ item.port }}"
+        state: "disabled"
+      loop: "{{ backend_servers }}"
+      register: result
+      changed_when: result is changed
+
+    - name: Set backend server weights
+      community.general.haproxy:
+        backend: "{{ item.name }}"
+        host: "{{ item.host }}"
+        port: "{{ item.port }}"
+        weight: "{{ item.weight }}"
+      loop: "{{ backend_servers }}"
+      register: result
+      changed_when: result is changed

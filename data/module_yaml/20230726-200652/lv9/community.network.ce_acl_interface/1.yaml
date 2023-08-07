@@ -1,0 +1,43 @@
+- name: Manage ACLs on Huawei devices
+  hosts: huawei_devices
+  gather_facts: false
+
+  tasks:
+    - name: Generate random IP addresses
+      set_fact:
+        source_ip: "{{ range(start=start_ip, end=end_ip)|random }}"
+        destination_ip: "{{ range(start=start_ip, end=end_ip)|random }}"
+      vars:
+        start_ip: "10.0.0.0"
+        end_ip: "10.255.255.255"
+      tags: generate_random_ips
+
+    - name: Apply ACL to an interface
+      community.network.ce_acl_interface:
+        acl_name: "{{ acl_name }}"
+        direction: "{{ direction }}"
+        interface: "{{ interface }}"
+        state: "{{ state }}"
+        rule:
+          - permit ip source "{{ source_ip }}" destination "{{ destination_ip }}"
+      register: result
+      tags: apply_acl
+
+    - name: Debug result
+      debug:
+        var: result
+      tags: apply_acl
+
+    - name: Remove ACL from an interface
+      community.network.ce_acl_interface:
+        acl_name: "{{ acl_name }}"
+        direction: "{{ direction }}"
+        interface: "{{ interface }}"
+        state: absent
+      register: result
+      tags: remove_acl
+
+    - name: Debug result
+      debug:
+        var: result
+      tags: remove_acl

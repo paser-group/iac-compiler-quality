@@ -1,0 +1,61 @@
+---
+- name: Ansible Playbook for testing latent type-related bugs
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Include 'community.general.imgadm' module
+      include_role:
+        name: community.general.imgadm
+        tasks_from: main
+
+    - name: Create configuration values that incorporate both bytes and strings
+      block:
+        - name: Set pool name with bytes value
+          set_fact:
+            pool_name_bytes: "{{ 'pool_name_bytes' | b64encode }}"
+
+        - name: Set pool name with string value
+          set_fact:
+            pool_name_string: "default_pool"
+
+        - name: Set source path with bytes value
+          set_fact:
+            source_bytes: "{{ '/code/image.img' | b64encode }}"
+
+        - name: Set source path with string value
+          set_fact:
+            source_string: "/path/to/image.img"
+
+        - name: Set UUID with bytes value
+          set_fact:
+            uuid_bytes: "{{ 'uuid_bytes' | b64encode }}"
+
+        - name: Set UUID with string value
+          set_fact:
+            uuid_string: "12345678-1234-5678-1234-567812345678"
+
+        - name: Create Docker image using 'community.general.imgadm' module with bytes values
+          community.general.imgadm:
+            pool: "{{ pool_name_bytes | string }}"
+            source: "{{ source_bytes | string }}"
+            state: "present"
+            uuid: "{{ uuid_bytes | string }}"
+            type: "qcow2"
+            force: "{{ true | bool }}"
+          register: imgadm_bytes_output
+
+        - name: Create Docker image using 'community.general.imgadm' module with string values
+          community.general.imgadm:
+            pool: "{{ pool_name_string }}"
+            source: "{{ source_string }}"
+            state: "present"
+            uuid: "{{ uuid_string }}"
+            type: "qcow2"
+            force: "{{ true | bool }}"
+          register: imgadm_string_output
+
+      rescue:
+        - name: Print exception details in case of failure
+          debug:
+            msg: "{{ ansible_failed_result }}"

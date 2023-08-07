@@ -1,0 +1,76 @@
+- name: Manage VXLAN tunnel configuration on HUAWEI devices
+  hosts: my_huawei_devices
+  gather_facts: false
+
+  tasks:
+    - name: Configure VXLAN tunnel
+      community.network.ce_vxlan_tunnel:
+        bridge_domain_id: "{{ hostvars[inventory_hostname]['bridge_domain_id'] | default(omit) }}"
+        nve_mode: "{{ hostvars[inventory_hostname]['nve_mode'] | default(omit) }}"
+        nve_name: "{{ hostvars[inventory_hostname]['nve_name'] | default(omit) }}"
+        peer_list_ip: "{{ hostvars[inventory_hostname]['peer_list_ip'] | default(omit) }}"
+        protocol_type: "{{ hostvars[inventory_hostname]['protocol_type'] | default(omit) }}"
+        source_ip: "{{ hostvars[inventory_hostname]['source_ip'] | default(omit) }}"
+        state: "{{ hostvars[inventory_hostname]['state'] | default(omit) }}"
+        vni_id: "{{ hostvars[inventory_hostname]['vni_id'] | default(omit) }}"
+      register: vxlan_config
+
+    - name: Print VXLAN configuration result
+      debug:
+        var: vxlan_config
+
+- name: Test cases
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    test_environment:
+      - name: "Test Case 1"
+        bridge_domain_id: 100
+        nve_mode: "fabric_access"
+        nve_name: "nve1"
+        peer_list_ip: "192.168.0.1"
+        protocol_type: "nve"
+        source_ip: "192.168.0.2"
+        state: "present"
+        vni_id: 1000
+
+      - name: "Test Case 2"
+        bridge_domain_id: 200
+        nve_mode: "fabric_access"
+        nve_name: "nve2"
+        peer_list_ip: "192.168.1.1"
+        protocol_type: "nve"
+        source_ip: "192.168.1.2"
+        state: "present"
+        vni_id: 2000
+
+  tasks:
+    - name: Test VXLAN tunnel configuration
+      include_tasks: "{{ test_item.name }}.yml"
+      loop: "{{ test_environment }}"
+      loop_control:
+        loop_var: test_item
+
+- name: Verify VXLAN tunnel configuration
+  hosts: my_huawei_devices
+  gather_facts: false
+
+  tasks:
+    - name: Verify VXLAN configuration
+      community.network.ce_vxlan_tunnel:
+        bridge_domain_id: "{{ item.bridge_domain_id }}"
+        nve_mode: "{{ item.nve_mode }}"
+        nve_name: "{{ item.nve_name }}"
+        peer_list_ip: "{{ item.peer_list_ip }}"
+        protocol_type: "{{ item.protocol_type }}"
+        source_ip: "{{ item.source_ip }}"
+        state: "{{ item.state }}"
+        vni_id: "{{ item.vni_id }}"
+      register: verified_vxlan_config
+      with_items:
+        - "{{ hostvars['localhost']['test_environment'] }}"
+
+    - name: Print verified VXLAN configuration result
+      debug:
+        var: verified_vxlan_config

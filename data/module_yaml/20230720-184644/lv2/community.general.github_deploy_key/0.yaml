@@ -1,0 +1,21 @@
+---
+- name: Test Ansible Type-Related Bugs
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Set byte string value for test_key
+      set_fact:
+        test_key: !binary |
+          {{ 'Test Key' | b64encode }}
+
+    - name: Ensure GitHub deploy key is managed
+      community.general.github_deploy_key:
+        name: "{{ test_key }}"  # Potential type-related bug: byte string value instead of regular string
+        repo: "organization/repo"
+        state: "present"
+      register: github_deploy_key_result
+
+    - name: Debug GitHub deploy key result
+      debug:
+        var: github_deploy_key_result

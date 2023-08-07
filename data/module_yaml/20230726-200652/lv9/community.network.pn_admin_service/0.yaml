@@ -1,0 +1,37 @@
+---
+- name: Test playbook for community.network.pn_admin_service module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Set random IP addresses
+      set_fact:
+        pn_web_ip: "{{ lookup('pipe', 'echo $(( RANDOM % 256 ))') }}.{{ lookup('pipe', 'echo $(( RANDOM % 256 ))') }}.{{ lookup('pipe', 'echo $(( RANDOM % 256 ))') }}.{{ lookup('pipe', 'echo $(( RANDOM % 256 ))') }}"
+        pn_web_ssl_ip: "{{ lookup('pipe', 'echo $(( RANDOM % 256 ))') }}.{{ lookup('pipe', 'echo $(( RANDOM % 256 ))') }}.{{ lookup('pipe', 'echo $(( RANDOM % 256 ))') }}.{{ lookup('pipe', 'echo $(( RANDOM % 256 ))') }}"
+        pn_web_port: "{{ lookup('pipe', 'echo $(( RANDOM % 65536 ))') }}"
+        pn_web_ssl_port: "{{ lookup('pipe', 'echo $(( RANDOM % 65536 ))') }}"
+
+    - name: Test community.network.pn_admin_service module
+      community.network.pn_admin_service:
+        pn__if: "{{ item.if }}"
+        pn_cliswitch: "{{ item.cliswitch }}"
+        pn_icmp: "{{ item.icmp }}"
+        pn_net_api: "{{ item.net_api }}"
+        pn_nfs: "{{ item.nfs }}"
+        pn_snmp: "{{ item.snmp }}"
+        pn_ssh: "{{ item.ssh }}"
+        pn_web: "{{ item.web }}"
+        pn_web_log: "{{ item.web_log }}"
+        pn_web_port: "{{ pn_web_port }}"
+        pn_web_ssl: "{{ item.web_ssl }}"
+        pn_web_ssl_port: "{{ pn_web_ssl_port }}"
+        state: "{{ item.state }}"
+      loop:
+        - { if: "eth0", cliswitch: "switch1", icmp: true, net_api: true, nfs: false, snmp: false, ssh: true, web: true, web_log: true, web_ssl: false, state: "present" }
+        - { if: "eth1", cliswitch: "switch2", icmp: false, net_api: false, nfs: true, snmp: true, ssh: false, web: false, web_log: false, web_ssl: true, state: "absent" }
+
+      register: result
+
+    - name: Display result
+      debug:
+        var: result

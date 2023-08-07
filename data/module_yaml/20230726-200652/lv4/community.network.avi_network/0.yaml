@@ -1,0 +1,48 @@
+- name: Test playbook for community.network.avi_network module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Generate random MAC address
+      vars:
+        mac_address: "{{ '00:16:3e:' + '%02x' | format(item.0) + ':%02x' | format(item.1) + ':%02x' | format(item.2) }}"
+      loop_control:
+        loop_var: mac_octet
+      loop: "{{ range(3)|product(range(256))|list }}"
+
+    - name: Set network mac_addr variable
+      vars:
+        network_mac_addr: "{{ mac_address }}"
+  
+    - name: Create network using avi_network module
+      community.network.avi_network:
+        controller: "{{ network_mac_addr }}"
+        username: admin
+        password: password
+        tenant: "{{ network_mac_addr }}"
+        state: present
+        name: test_network
+        configured_subnets:
+          - network_prefix: 10.2.2.0/24
+            enable_routing: true
+            mac_pools:
+              - alloc_type: RANDOM
+                start_addr: "{{ network_mac_addr }}"
+                end_addr: "{{ network_mac_addr }}"
+      register: result
+
+    - debug:
+        var: result
+
+    - name: Delete network using avi_network module
+      community.network.avi_network:
+        controller: "{{ network_mac_addr }}"
+        username: admin
+        password: password
+        tenant: "{{ network_mac_addr }}"
+        state: absent
+        name: test_network
+      register: result2
+    
+    - debug:
+        var: result2

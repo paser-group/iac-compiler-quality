@@ -1,0 +1,39 @@
+---
+- name: Test playbook to uncover latent type-related bugs in Ansible's community.general.gem module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    gem_install_dir: "/usr/local/bin/gems"
+    gem_name: "example_gem"
+    gem_version: "1.0.0"
+    gem_executable: "/usr/local/bin/example_gem"
+    gem_repository: "https://example.com/gems"
+    gem_bindir: "/usr/local/bin"
+    random_port: "{{ [8000, 9000, 10000] | random }}"
+
+  tasks:
+    - name: Install a gem with specific version and optional flags
+      community.general.gem:
+        name: "{{ gem_name }}"
+        version: "{{ gem_version }}"
+        executable: "{{ gem_executable }}"
+        repository: "{{ gem_repository }}"
+        bindir: "{{ gem_bindir }}"
+        build_flags: "--with-ssl"
+        include_dependencies: yes
+        include_doc: no
+        install_dir: "{{ gem_install_dir }}"
+        norc: yes
+        pre_release: no
+        state: present
+        user_install: no
+      vars:
+        port_setting: "{{ random_port }}"
+        env_var: "PORT={{ random_port }}"
+      register: gem_installed
+      ignore_errors: true
+
+    - name: Debug gem installation
+      debug:
+        var: gem_installed

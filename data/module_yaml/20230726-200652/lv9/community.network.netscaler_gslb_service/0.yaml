@@ -1,0 +1,72 @@
+- hosts: localhost
+  gather_facts: false
+
+  vars:
+    nitro_user: "admin"
+    nitro_pass: "password"
+    nitro_protocol: "http"
+    nitro_timeout: 10
+    nsip: "10.1.1.1"
+    validate_certs: false
+
+  tasks:
+    - name: Formulate random IP addresses
+      set_fact:
+        random_ips: "{{ range(4) | map('random_ipaddr') | list }}"
+
+    - name: Manage gslb service
+      community.network.netscaler_gslb_service:
+        state: "{{ state }}"
+        nsip: "{{ nsip }}"
+        validate_certs: "{{ validate_certs }}"
+        nitro_user: "{{ nitro_user }}"
+        nitro_pass: "{{ nitro_pass }}"
+        nitro_protocol: "{{ nitro_protocol }}"
+        nitro_timeout: "{{ nitro_timeout }}"
+
+        appflowlog: "{{ appflowlog | default(omit) }}"
+        cip: "{{ cip | default(omit) }}"
+        cipheader: "{{ cipheader | default(omit) }}"
+        clttimeout: "{{ clttimeout | default(omit) }}"
+        cnameentry: "{{ cnameentry | default(omit) }}"
+        comment: "{{ comment | default(omit) }}"
+        downstateflush: "{{ downstateflush | default(omit) }}"
+        hashid: "{{ hashid | default(omit) }}"
+        healthmonitor: "{{ healthmonitor | default(omit) }}"
+        ipaddress: "{{ item }}"
+        maxaaausers: "{{ maxaaausers | default(omit) }}"
+        maxbandwidth: "{{ maxbandwidth | default(omit) }}"
+        maxclient: "{{ maxclient | default(omit) }}"
+        monitor_bindings: "{{ monitor_bindings | default(omit) }}"
+        monthreshold: "{{ monthreshold | default(omit) }}"
+        port: "{{ port | default(omit) }}"
+        publicip: "{{ publicip | default(omit) }}"
+        publicport: "{{ publicport | default(omit) }}"
+        save_config: "{{ save_config | default(omit) }}"
+        servername: "{{ servername | default(omit) }}"
+        servicename: "{{ servicename | default(omit) }}"
+        servicetype: "{{ servicetype | default(omit) }}"
+        sitename: "{{ sitename | default(omit) }}"
+        sitepersistence: "{{ sitepersistence | default(omit) }}"
+        siteprefix: "{{ siteprefix | default(omit) }}"
+
+      register: result
+      with_items: "{{ random_ips }}"
+
+    - debug:
+        var: result
+
+    - name: Save the configuration
+      community.network.netscaler_save_config:
+        nsip: "{{ nsip }}"
+        validate_certs: "{{ validate_certs }}"
+        nitro_user: "{{ nitro_user }}"
+        nitro_pass: "{{ nitro_pass }}"
+        nitro_protocol: "{{ nitro_protocol }}"
+        nitro_timeout: "{{ nitro_timeout }}"
+
+      when: save_config|default(false)
+      register: save_result
+
+    - debug:
+        var: save_result

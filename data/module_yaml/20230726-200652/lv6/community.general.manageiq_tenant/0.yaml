@@ -1,0 +1,41 @@
+- name: Create ManageIQ Tenant
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create tenant
+      community.general.manageiq_tenant:
+        manageiq_connection:
+          url: "https://manageiq.example.com"
+          username: "admin"
+          password: "password123"
+        name: "{{ item.name }}"
+        description: "{{ item.description }}"
+        parent: "{{ item.parent }}"
+        parent_id: "{{ item.parent_id }}"
+        quotas: "{{ item.quotas }}"
+        state: "{{ item.state }}"
+      loop:
+        - name: Test Case 1 - String Encoding Bug
+          description: "{{ '\x80\x81\x82\x83\x84\x85' }}"
+          parent: "Root"
+          parent_id: 1
+          quotas:
+            cpu: 1
+            memory: 1024
+          state: present
+        - name: Test Case 2 - Unicode Helicopter Emoji Bug
+          description: "{{ '\U0001F681' }}"
+          parent: "Root"
+          parent_id: 1
+          quotas:
+            cpu: 2
+            memory: 2048
+          state: present
+        - name: Test Case 3 - Quotas Dictionary Bug
+          description: "Quotas Bug"
+          parent: "Root"
+          parent_id: 1
+          quotas:
+            "{{ 'cpu': 2, 'memory': 2048 }}"
+          state: present

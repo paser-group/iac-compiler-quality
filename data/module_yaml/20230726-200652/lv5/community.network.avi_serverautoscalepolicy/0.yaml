@@ -1,0 +1,65 @@
+- name: Test playbook for community.network.avi_serverautoscalepolicy module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create ServerAutoScalePolicy
+      community.network.avi_serverautoscalepolicy:
+        controller: "{{ ansible_host }}"
+        username: "{{ avi_username }}"
+        password: "{{ avi_password }}"
+        tenant: "{{ avi_tenant }}"
+        name: "{{ item.name }}"
+        tenant_uuid: "{{ item.tenant_uuid }}"
+        use_predicted_load: "{{ item.use_predicted_load }}"
+        intelligent_autoscale: "{{ item.intelligent_autoscale }}"
+        intelligent_scaleout_margin: "{{ item.intelligent_scaleout_margin }}"
+        intelligent_scalein_margin: "{{ item.intelligent_scalein_margin }}"
+        scalein_cooldown: "{{ item.scalein_cooldown }}"
+        scaleout_cooldown: "{{ item.scaleout_cooldown }}"
+        min_size: "{{ item.min_size }}"
+        max_size: "{{ item.max_size }}"
+        max_scaleout_adjustment_step: "{{ item.max_scaleout_adjustment_step }}"
+        max_scalein_adjustment_step: "{{ item.max_scalein_adjustment_step }}"
+        scaleout_alertconfig_refs: "{{ item.scaleout_alertconfig_refs }}"
+        scalein_alertconfig_refs: "{{ item.scalein_alertconfig_refs }}"
+        avi_disable_session_cache_as_fact: "{{ item.avi_disable_session_cache_as_fact }}"
+      loop:
+        - name: "Test Policy 1"
+          tenant_uuid: "tenant-uuid-1"
+          use_predicted_load: true
+          intelligent_autoscale: true
+          intelligent_scaleout_margin: 0.5
+          intelligent_scalein_margin: 0.3
+          scalein_cooldown: 240
+          scaleout_cooldown: 120
+          min_size: 2
+          max_size: 5
+          max_scaleout_adjustment_step: 1
+          max_scalein_adjustment_step: 1
+          scaleout_alertconfig_refs: []
+          scalein_alertconfig_refs: []
+          avi_disable_session_cache_as_fact: false
+
+        - name: "Test Policy 2"
+          tenant_uuid: "tenant-uuid-2"
+          use_predicted_load: false
+          intelligent_autoscale: false
+          intelligent_scaleout_margin: 0.2
+          intelligent_scalein_margin: 0.1
+          scalein_cooldown: 180
+          scaleout_cooldown: 60
+          min_size: 1
+          max_size: 3
+          max_scaleout_adjustment_step: 2
+          max_scalein_adjustment_step: 2
+          scaleout_alertconfig_refs: []
+          scalein_alertconfig_refs: []
+          avi_disable_session_cache_as_fact: true
+    
+    - name: Debug output
+      debug:
+        var: item.stdout
+      loop: "{{ results.results }}"
+      loop_control:
+        label: "{{ item.item.name }}"

@@ -1,0 +1,43 @@
+---
+- name: Configure HP iLO using hponcfg
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Install required dependencies
+      apt:
+        name: ['python3', 'python3-pip']
+        state: present
+
+    - name: Install hponcfg module
+      pip:
+        name: hponcfg
+        state: present
+        executable: pip3
+
+    - name: Ensure hponcfg XML file is present
+      copy:
+        content: |
+          <RIBCL VERSION="2.0">
+            <LOGIN USER_LOGIN="Administrator" PASSWORD="password">
+              <SERVER_INFO MODE="write">
+                <SET_HOST_DATA HOST_NAME="{{ ansible_fqdn }}" MODE="write">
+                  <IP_ADDRESS VALUE="{{ ansible_default_ipv4.address }}"/>
+                </SET_HOST_DATA>
+              </SERVER_INFO>
+            </LOGIN>
+          </RIBCL>
+        dest: /tmp/hponcfg.xml
+
+    - name: Configure HP iLO using hponcfg module
+      community.general.hponcfg:
+        path: /bin/hponcfg
+        minfw: 2.0
+        executable: /sbin/hponcfg
+        file: /tmp/hponcfg.xml
+        verbose: no
+      register: output
+
+    - name: Display output
+      debug:
+        var: output

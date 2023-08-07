@@ -1,0 +1,28 @@
+---
+- name: Run commands on remote devices
+  hosts: docker_nodes
+  gather_facts: false
+
+  vars:
+    commands:
+      - show version
+      - show interfaces
+
+  tasks:
+    - name: Verify connectivity to remote devices
+      wait_for:
+        host: "{{ inventory_hostname }}"
+        port: 22
+        state: started
+
+    - name: Run commands on remote devices
+      community.network.nos_command:
+        command_string: "{{ command }}"
+        provider: "{{ nos_provider }}"
+      loop: "{{ commands }}"
+      ignore_errors: true
+      register: command_output
+
+    - name: Display command output
+      debug:
+        var: command_output.stdout_lines

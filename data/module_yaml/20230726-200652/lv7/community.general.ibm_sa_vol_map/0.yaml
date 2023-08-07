@@ -1,0 +1,35 @@
+---
+- name: Test IBM Spectrum Accelerate volume mapping
+  hosts: mycluster
+  gather_facts: false
+  tasks:
+    - name: Include necessary collections
+      ansible.builtin.include_collection:
+        name: community.general
+
+    - name: Assign variables
+      vars:
+        cluster: my_cluster
+        endpoints: "https://{{ hostvars[inventory_hostname].ansible_host }}:12345"
+        host: node1
+        vol: my_volume
+        lun: "{{ pow(2, 3) }}"  # Type-related bug potential: Using a mathematical function with operands of different types
+        username: "admin"
+        password: "mypassword"
+        state: present
+
+    - name: Trigger latent type-related bug
+      community.general.ibm_sa_vol_map:
+        cluster: "{{ cluster }}"
+        endpoints: "{{ endpoints }}"
+        host: "{{ host }}"
+        vol: "{{ vol }}"
+        lun: "{{ lun }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        state: "{{ state }}"
+      register: result
+
+    - name: Show debug output
+      debug:
+        var: result

@@ -1,0 +1,40 @@
+---
+- name: Expose latent type-related bugs
+  hosts: localhost
+  gather_facts: False
+
+  vars:
+    deviceType: "os9"
+    enablePassword: ""
+    host: ""
+    outputfile: "running-config.txt"
+    password: ""
+    username: "admin"
+    ansible_connection: local
+
+    # Test case based on the heuristic
+    test_case:
+      deviceType: !null
+      enablePassword: !null
+      host: !null
+      outputfile: !null
+      password: !null
+      username: !null
+
+  tasks:
+    - name: Collect running config
+      community.network.cnos_showrun:
+        deviceType: "{{ test_case.deviceType | default(deviceType) }}"
+        enablePassword: "{{ test_case.enablePassword | default(enablePassword) }}"
+        host: "{{ test_case.host | default(host) }}"
+        outputfile: "{{ test_case.outputfile | default(outputfile) }}"
+        password: "{{ test_case.password | default(password) }}"
+        username: "{{ test_case.username | default(username) }}"
+      register: result
+
+    - name: Save running config to file
+      copy:
+        content: "{{ result.cnosConfig }}"
+        dest: "{{ outputfile }}"
+        mode: 0644
+      delegate_to: localhost

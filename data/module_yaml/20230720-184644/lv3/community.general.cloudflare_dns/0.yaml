@@ -1,0 +1,25 @@
+- name: Configure DNS records in Cloudflare
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Create A record with bytes and strings
+      community.general.cloudflare_dns:
+        account_email: "test@example.com"
+        api_token: "my_api_token"
+        zone: "example.com"
+        record: "{{ ansible_hostname }}"
+        type: "A"
+        value: "{{ '10.0.0.1'|ipv4 }}"
+        ttl: 3600
+        state: present
+      register: result
+
+    - name: Debug API response
+      debug:
+        var: result
+
+    - name: Wait for DNS entry to propagate
+      wait_for:
+        host: "{{ '10.0.0.1'|ipv4 }}"
+        port: 53
+        timeout: 10

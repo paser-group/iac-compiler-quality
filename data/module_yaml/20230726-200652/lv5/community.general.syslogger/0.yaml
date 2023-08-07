@@ -1,0 +1,70 @@
+---
+- name: Test playbook for community.general.syslogger module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Install syslogger module requirements
+      pip:
+        name:
+          - syslog-bsd
+          - syslog-rfc5424-logging-handler
+
+    - name: Test syslogger module
+      community.general.syslogger:
+        facility: "{{ syslogger_facility | default('local0') }}"
+        ident: "{{ syslogger_ident | default('ansible_syslog') }}"
+        log_pid: "{{ syslogger_log_pid | default(false) }}"
+        msg: "This is a test log message"
+        priority: "{{ syslogger_priority | default('info') }}"
+        port: "{{ syslogger_port | default(514) }}"
+        destination: "{{ syslogger_destination }}"
+
+      vars:
+        syslogger_facility: "local0"
+        syslogger_ident: "ansible_syslog"
+        syslogger_log_pid: false
+        syslogger_priority: "info"
+        syslogger_port: "{{ random_port }}"
+        syslogger_destination: "192.168.0.100"
+
+      register: syslogger_result
+
+    - name: Print syslogger result
+      debug:
+        var: syslogger_result
+
+- name: Test playbook for community.general.syslogger module with invalid port
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Install syslogger module requirements
+      pip:
+        name:
+          - syslog-bsd
+          - syslog-rfc5424-logging-handler
+
+    - name: Test syslogger module with invalid port
+      community.general.syslogger:
+        facility: "{{ syslogger_facility | default('local0') }}"
+        ident: "{{ syslogger_ident | default('ansible_syslog') }}"
+        log_pid: "{{ syslogger_log_pid | default(false) }}"
+        msg: "This is a test log message"
+        priority: "{{ syslogger_priority | default('info') }}"
+        port: "{{ invalid_port }}"
+        destination: "{{ syslogger_destination }}"
+
+      vars:
+        syslogger_facility: "local0"
+        syslogger_ident: "ansible_syslog"
+        syslogger_log_pid: false
+        syslogger_priority: "info"
+        invalid_port: -1
+        syslogger_destination: "192.168.0.100"
+
+      register: syslogger_result
+
+    - name: Print syslogger result
+      debug:
+        var: syslogger_result

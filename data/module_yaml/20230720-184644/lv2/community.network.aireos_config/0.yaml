@@ -1,0 +1,44 @@
+---
+- name: Manage Cisco AireOS devices
+  hosts: aireos_devices
+  gather_facts: false
+
+  vars:
+    aireos_credentials:
+      username: admin
+      password: secret
+
+  tasks:
+    - name: Configure Cisco AireOS devices
+      community.network.aireos_config:
+        backup: true
+        backup_options:
+          dir_path: /var/backup
+          filename_prefix: backup
+        src: running-config.txt
+        after: null
+        before: null
+        diff_against: null
+        diff_ignore_lines: null
+        intended_config: null
+        lines: null
+        match: null
+        running_config: null
+        save: true
+        save_when: null
+        provider:
+          host: "{{ inventory_hostname }}"
+          username: "{{ aireos_credentials.username }}"
+          password: "{{ aireos_credentials.password | b64decode }}"
+        delegate_to: localhost
+
+  handlers:
+    - name: Reload Cisco AireOS devices
+      community.network.aireos_command:
+        commands:
+          - wr mem
+      provider:
+        host: "{{ inventory_hostname }}"
+        username: "{{ aireos_credentials.username | b64decode }}"
+        password: "{{ aireos_credentials.password }}"
+      delegate_to: localhost

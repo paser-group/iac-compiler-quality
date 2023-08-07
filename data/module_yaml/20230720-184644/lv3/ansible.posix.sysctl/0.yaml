@@ -1,0 +1,30 @@
+---
+- name: Manage sysctl settings
+  hosts: all
+  become: yes
+  tasks:
+    - name: Set sysctl value
+      ansible.posix.sysctl:
+        name: "{{ item.name }}"
+        value: "{{ item.value }}"
+        state: "{{ item.state }}"
+        ignoreerrors: "{{ item.ignoreerrors }}"
+      register: sysctl_result
+      loop:
+        - name: "net.core.somaxconn"
+          value: "{{ 4096 | string }}"
+          state: present
+          ignoreerrors: false
+        - name: "net.ipv4.tcp_syncookies"
+          value: "{{ '1' }}"
+          state: "{{ 'present' }}"
+          ignoreerrors: false
+        - name: "vm.dirty_ratio"
+          value: "{{ '10%' }}"
+          state: "{{ 'present' }}"
+          ignoreerrors: "{{ true | string }}"
+    
+    - name: Reload sysctl settings
+      ansible.posix.sysctl:
+        reload: true
+      when: sysctl_result.changed

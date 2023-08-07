@@ -1,0 +1,77 @@
+- name: Test playbook for latent type-related bugs in 'community.general.ufw' module
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Install ufw on host machine
+      package:
+        name: ufw
+        state: present
+
+    - name: Enable UFW
+      community.general.ufw:
+        state: enabled
+        logging: "{{ item }}"
+      loop:
+        - "low"
+        - "medium"
+        - "high"
+        - "critical"
+
+    - name: Allow SSH access from specific IP
+      community.general.ufw:
+        rule: allow
+        direction: "{{ item.direction }}"
+        from_ip: "{{ item.from_ip }}"
+        proto: tcp
+        to_port: 22
+        state: enabled
+      loop:
+        - { direction: "in", from_ip: "10.1.1.1" }
+        - { direction: "in", from_ip: "10.1.1.2" }
+        - { direction: "in", from_ip: "10.1.1.3" }
+        - { direction: "in", from_ip: "10.1.1.4" }
+
+    - name: Deny HTTP access from all
+      community.general.ufw:
+        rule: deny
+        direction: in
+        proto: tcp
+        to_port: 80
+        state: enabled
+
+    - name: Delete a UFW rule
+      community.general.ufw:
+        rule: "{{ item.rule }}"
+        state: disabled
+        delete: true
+      loop:
+        - { rule: "deny in proto tcp to any port 443" }
+        - { rule: "allow out to any port 53" }
+        - { rule: "allow in from any to any port 1234" }
+        - { rule: "deny in log all" }
+
+    - name: Add a UFW rule with specific insert position
+      community.general.ufw:
+        rule: allow
+        direction: in
+        proto: tcp
+        to_port: 8080
+        state: enabled
+        insert: "{{ item.insert }}"
+        insert_relative_to: "{{ item.insert_relative_to }}"
+      loop:
+        - { insert: 1, insert_relative_to: "deny in from any to any port 22" }
+        - { insert: 2, insert_relative_to: "deny in from any to any" }
+        - { insert: 3, insert_relative_to: "deny in from any" }
+
+    - name: Delete all UFW rules
+      community.general.ufw:
+        rule: "{{ item.rule }}"
+        state: disabled
+        delete: true
+      loop:
+        - { rule: "allow out to any" }
+        - { rule: "allow out 53" }
+        - { rule: "allow in from any" }
+        - { rule: "deny in log all" }
+        - { rule: "deny" }

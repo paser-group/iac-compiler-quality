@@ -1,0 +1,39 @@
+---
+- name: Test playbook for community.network.pn_access_list_ip module
+  hosts: localhost
+  gather_facts: false
+  vars:
+    pn_cliswitch: "{{ pn_cliswitch | default('admin') }}"
+    pn_ip: "{{ pn_ip | default('10.1.1.1') }}"
+    pn_name: "{{ pn_name | default('access-list') }}"
+    state: "{{ state | default('present') }}"
+    mac_address: "{{ mac_address | random_mac }}"
+
+  tasks:
+    - name: Install required dependencies for community.network.pn_access_list_ip module
+      package:
+        name:
+          - python3-netmiko
+          - python3-pexpect
+        state: latest
+
+    - name: Add access list IP
+      community.network.pn_access_list_ip:
+        pn_cliswitch: "{{ pn_cliswitch }}"
+        pn_ip: "{{ pn_ip }}"
+        pn_name: "{{ pn_name }}"
+        state: "{{ state }}"
+      register: access_list_result
+
+    - name: Print access list result
+      debug:
+        var: access_list_result
+
+    - name: Verify access list configuration
+      shell: echo "Verify access list configuration"
+      when: access_list_result.changed
+      register: verify_result
+
+    - name: Print verification result
+      debug:
+        var: verify_result

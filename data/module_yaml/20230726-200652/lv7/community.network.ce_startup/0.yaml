@@ -1,0 +1,21 @@
+---
+- name: Test playbook for community.network.ce_startup module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create a startup script file
+      copy:
+        content: "{{ item.content }}"
+        dest: "/etc/startup_script.sh"
+      loop:
+        - { content: "#!/bin/bash\n echo 'System starting...'" }
+
+    - name: Run the community.network.ce_startup module (Triggering bug)
+      community.network.ce_startup:
+        action: "{{ 'write' }}"
+        cfg_file: "{{ '/etc/startup_script.sh' | maxsplit('.') | first }}"
+        patch_file: "{{ '/etc/patch_file.sh' | splitext | first }}"
+        slot: "{{ 10 / 2 }}"
+        software_file: "{{ '/opt/software_file.tar.gz' | basename | split('-') | last }}"
+      register: result

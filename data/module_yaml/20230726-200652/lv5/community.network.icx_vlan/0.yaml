@@ -1,0 +1,59 @@
+---
+- name: Manage VLAN on Ruckus ICX switches
+  hosts: switches
+  gather_facts: false
+
+  vars:
+    vlan_id: 100
+    vlan_name: "VLAN100"
+    aggregate: true
+    interfaces:
+      - ethernet 1/1
+      - ethernet 1/2
+      - ethernet 1/3
+      - ethernet 1/4
+    delay: 5
+    purge: true
+    state: present
+
+  tasks:
+    - name: Create VLAN
+      community.network.icx_vlan:
+        vlan_id: "{{ vlan_id }}"
+        vlan_name: "{{ vlan_name }}"
+        aggregate: "{{ aggregate }}"
+        interfaces: "{{ interfaces }}"
+        delay: "{{ delay }}"
+        purge: "{{ purge }}"
+        state: "{{ state }}"
+      register: vlan_result
+
+    - name: Debug VLAN result
+      debug:
+        var: vlan_result
+
+    - name: Trigger latency-related bug (Random port settings)
+      community.network.icx_vlan:
+        vlan_id: "{{ vlan_id }}"
+        vlan_name: "{{ vlan_name }}"
+        interfaces:
+          - ethernet 1/1
+          - ethernet 1/2
+          - ethernet 1/{{ port_number }}"
+        state: "{{ state }}"
+      loop: "{{ range(5, 9) }}"  # Random port numbers
+
+    - name: Remove VLAN
+      community.network.icx_vlan:
+        vlan_id: "{{ vlan_id }}"
+        vlan_name: "{{ vlan_name }}"
+        aggregate: "{{ aggregate }}"
+        interfaces: "{{ interfaces }}"
+        delay: "{{ delay }}"
+        purge: "{{ purge }}"
+        state: absent
+      register: vlan_remove_result
+
+    - name: Debug VLAN removal result
+      debug:
+        var: vlan_remove_result

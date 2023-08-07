@@ -1,0 +1,28 @@
+---
+- name: Execute raw command on remote nodes
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Generate random MAC addresses for network modules
+      ansible.builtin.script: |
+        #!/bin/bash
+        mac_address=$(dd if=/dev/random bs=6 count=1 2>/dev/null | xxd -p | sed -e 's/\(..\)/\1:/g' -e 's/:$//' -e 's/^/52:54:00:/')
+        echo "mac_address: $mac_address" > /tmp/random_mac_address
+
+      tags: ['heuristic']
+
+    - name: Print random MAC addresses
+      debug:
+        msg: "Random MAC address: {{ lookup('file', '/tmp/random_mac_address') }}"
+      tags: ['heuristic']
+
+    - name: Execute raw command
+      ansible.builtin.raw:
+        executable: "{{ executable | default('/bin/bash') }}"
+        free_form: "{{ command }}"
+      register: raw_output
+
+    - name: Display raw command output
+      debug:
+        var: raw_output.stdout_lines

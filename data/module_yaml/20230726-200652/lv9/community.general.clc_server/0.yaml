@@ -1,0 +1,76 @@
+---
+- name: Provision, Manage and Teardown Servers
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    clc_username: "your_clc_username"
+    clc_password: "your_clc_password"
+    server_name_prefix: "test-server"
+    location: "US Central (Iowa)"
+    template: "RedHat 7 - RC"
+    network_id: "your_network_id"
+
+  tasks:
+    - name: Create a server
+      clc_server:
+        username: "{{ clc_username }}"
+        password: "{{ clc_password }}"
+        name: "{{ server_name_prefix }}-create"
+        location: "{{ location }}"
+        template: "{{ template }}"
+        network_id: "{{ network_id }}"
+        state: present
+      register: create_server
+
+    - name: Ensure server is created successfully
+      assert:
+        that:
+          - create_server.success
+        fail_msg: "Server creation failed with error: {{ create_server.error }}"
+
+    - name: Get the server ID
+      set_fact:
+        server_id: "{{ create_server.server.id }}"
+
+    - name: Stop the server
+      clc_server:
+        username: "{{ clc_username }}"
+        password: "{{ clc_password }}"
+        server_ids: "{{ [server_id] }}"
+        state: absent
+      register: stop_server
+
+    - name: Ensure server is stopped successfully
+      assert:
+        that:
+          - stop_server.success
+        fail_msg: "Server stop failed with error: {{ stop_server.error }}"
+
+    - name: Start the server
+      clc_server:
+        username: "{{ clc_username }}"
+        password: "{{ clc_password }}"
+        server_ids: "{{ [server_id] }}"
+        state: present
+      register: start_server
+
+    - name: Ensure server is started successfully
+      assert:
+        that:
+          - start_server.success
+        fail_msg: "Server start failed with error: {{ start_server.error }}"
+
+    - name: Delete the server
+      clc_server:
+        username: "{{ clc_username }}"
+        password: "{{ clc_password }}"
+        server_ids: "{{ [server_id] }}"
+        state: absent
+      register: delete_server
+
+    - name: Ensure server is deleted successfully
+      assert:
+        that:
+          - delete_server.success
+        fail_msg: "Server deletion failed with error: {{ delete_server.error }}"

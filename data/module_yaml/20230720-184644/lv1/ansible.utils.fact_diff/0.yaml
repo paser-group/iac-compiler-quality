@@ -1,0 +1,54 @@
+---
+- name: Ansible Heuristic Test
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Set up test environment
+      shell: |
+        docker network create --subnet=10.1.1.0/24 node-net
+        docker run --name ubuntu1 -d --network node-net --ip 10.1.1.1 ubuntu:latest sleep infinity
+        docker run --name alpine1 -d --network node-net --ip 10.1.1.2 alpine:latest sleep infinity
+        docker run --name centos1 -d --network node-net --ip 10.1.1.3 centos:latest sleep infinity
+        docker run --name redhat1 -d --network node-net --ip 10.1.1.4 redhat:latest sleep infinity
+      delegate_to: localhost
+
+    - name: Gather facts for all nodes
+      command: ansible -i inventory.ini all -m setup
+      register: facts
+
+    - name: Store facts in before variable
+      set_fact:
+        before: "{{ facts.stdout }}"
+
+    - name: Wait for facts to be stored
+      pause:
+        seconds: 5
+
+    - name: Gather facts for all nodes again
+      command: ansible -i inventory.ini all -m setup
+      register: facts_after
+
+    - name: Store facts in after variable
+      set_fact:
+        after: "{{ facts_after.stdout }}"
+
+    - name: Find the difference in facts
+      ansible.utils.fact_diff:
+        before: "{{ before }}"
+        after: "{{ after }}"
+        plugin: dict
+      register: fact_diff
+
+    - name: Display fact differences
+      debug:
+        var: fact_diff
+
+    - name: Clean up test environment
+      shell: |
+        docker rm -f ubuntu1
+        docker rm -f alpine1
+        docker rm -f centos1
+        docker rm -f redhat1
+        docker network rm node-net
+      delegate_to: localhost

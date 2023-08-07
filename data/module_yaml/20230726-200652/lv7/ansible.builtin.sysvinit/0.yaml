@@ -1,0 +1,42 @@
+---
+- name: Test playbook for sysvinit module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    service_name: "apache2"
+    runlevel: "2"
+    enabled: "yes"
+    daemonize: "true"
+    sleep_time: 5
+    state: "started"
+
+  tasks:
+    - name: Install sysvinit
+      apt:
+        name: sysvinit
+        state: latest
+
+    - name: Create test service script
+      copy:
+        content: |
+          #!/bin/bash
+          echo "Test service script"
+        dest: "/usr/local/bin/testservice"
+        mode: "0755"
+
+    - name: Configure sysvinit service
+      ansible.builtin.sysvinit:
+        name: "{{ service_name }}"
+        enabled: "{{ enabled }}"
+        daemonize: "{{ daemonize }}"
+        runlevels: "{{ runlevel }}"
+        sleep: "{{ sleep_time }}"
+        state: "{{ state }}"
+      become: true
+
+    - name: Start sysvinit service
+      ansible.builtin.sysvinit:
+        name: "{{ service_name }}"
+        state: started
+      become: true

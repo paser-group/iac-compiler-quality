@@ -1,0 +1,46 @@
+---
+- name: Test playbook for btrfs_subvolume module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create btrfs subvolume
+      community.general.btrfs_subvolume:
+        name: subvol1
+        state: present
+        filesystem_device: /dev/sdb
+        automount: true
+        default: true
+      register: subvol1_result
+
+    - name: Print btrfs subvolume result
+      debug:
+        msg: "{{ subvol1_result }}"
+
+    - name: Create btrfs subvolume with invalid value for automount
+      community.general.btrfs_subvolume:
+        name: subvol2
+        state: present
+        filesystem_device: /dev/sdb
+        automount: "invalid value"
+      register: subvol2_result
+      failed_when: false
+
+    - name: Print btrfs subvolume result with invalid automount value
+      debug:
+        msg: "{{ subvol2_result }}"
+
+    - name: Create btrfs subvolume with limit-related values
+      community.general.btrfs_subvolume:
+        name: subvol3
+        state: present
+        filesystem_device: /dev/sdb
+        automount: true
+        default: true
+        snapshot_conflict: "limit_{{ 10 / 0 }}"  # Trigger a division-by-zero error
+      register: subvol3_result
+      failed_when: false
+
+    - name: Print btrfs subvolume result with limit-related values
+      debug:
+        msg: "{{ subvol3_result }}"

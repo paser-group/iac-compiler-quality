@@ -1,0 +1,51 @@
+---
+- name: Test playbook for community.general.archive module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+
+    - name: Create test files
+      file:
+        path: "{{ item }}"
+        state: touch
+        mode: "0644"
+      loop:
+        - /tmp/testfile1.txt
+        - /tmp/testfile2.txt
+
+    - name: Create compressed archive
+      community.general.archive:
+        dest: "/tmp/archive.tar.gz"
+        exclude_path: ["/tmp/testfile2.txt"]
+        exclusion_patterns: ["*.txt"]
+        force_archive: true
+        format: "gz"
+        group: "{{ ansible_ssh_user }}"
+        mode: "0755"
+        owner: "{{ ansible_ssh_user }}"
+        path: ["/tmp/testfile1.txt", "/tmp/testfile2.txt"]
+        remove: true
+        selevel: "s0"
+        serole: "object_r"
+        setype: "public_content_t"
+        seuser: "system_u"
+        unsafe_writes: false
+
+    - name: Verify the archive is created
+      stat:
+        path: "/tmp/archive.tar.gz"
+      register: archive_stat
+
+    - name: Print archive file details
+      debug:
+        var: archive_stat
+
+    - name: Clean up test files
+      file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /tmp/testfile1.txt
+        - /tmp/testfile2.txt
+        - /tmp/archive.tar.gz

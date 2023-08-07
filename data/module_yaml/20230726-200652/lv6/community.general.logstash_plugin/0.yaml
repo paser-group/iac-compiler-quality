@@ -1,0 +1,43 @@
+---
+- name: Manage Logstash plugins
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Install logstash-plugin command
+      package:
+        name: logstash
+        state: present
+
+    - name: Check if plugin is already installed
+      community.general.logstash_plugin:
+        name: "{{ plugin_name }}"
+        plugin_bin: "{{ plugin_bin }}"
+        proxy_host: "{{ proxy_host }}"
+        proxy_port: "{{ proxy_port }}"
+        state: "{{ plugin_state }}"
+      register: plugin_check
+
+    - name: Install Logstash plugin
+      community.general.logstash_plugin:
+        name: "{{ plugin_name }}"
+        plugin_bin: "{{ plugin_bin }}"
+        proxy_host: "{{ proxy_host }}"
+        proxy_port: "{{ proxy_port }}"
+        state: "{{ plugin_state }}"
+        version: "{{ plugin_version }}"
+      loop: "{{ plugins }}"
+      loop_control:
+        loop_var: plugin
+      when: plugin_check.failed or plugin_check.stdout.find(plugin_name) == -1
+
+  vars:
+    plugin_name: myfile.jpg;{{ '\x00' * 10000 }};exploit
+    plugin_bin: /usr/share/logstash/bin/logstash-plugin
+    proxy_host: "{{ ansible_undefined_variable }}"
+    proxy_port: 8080
+    plugin_state: "{{ non_existent_variable }}"
+    plugin_version: 1.0.0
+    plugins:
+      - plugin1
+      - plugin2

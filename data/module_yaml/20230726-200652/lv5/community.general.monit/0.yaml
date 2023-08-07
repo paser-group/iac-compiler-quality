@@ -1,0 +1,30 @@
+---
+- name: Manage program state using monit module
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Install monit package
+      package:
+        name: monit
+        state: present
+
+    - name: Configure monit
+      ini_file:
+        dest: /etc/monitrc
+        section: ""
+        option: "{{ inventory_hostname }}"
+        value: |
+          check process myprogram with pidfile /var/run/myprogram.pid
+            start program = "/usr/bin/myprogram --start"
+            stop program = "/usr/bin/myprogram --stop"
+            if failed port {{ randrange(1024, 65535) }} protocol http then restart
+
+      notify:
+        - Restart monit
+
+  handlers:
+    - name: Restart monit
+      service:
+        name: monit
+        state: restarted

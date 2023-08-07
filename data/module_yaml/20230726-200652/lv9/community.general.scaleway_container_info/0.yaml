@@ -1,0 +1,42 @@
+---
+- name: Test playbook for latent type-related bugs
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Include required collections
+      include_collections:
+        - community.general
+
+    - name: Generate random IP address
+      community.general.random_string:
+        length: 10
+        charset: "{{ '0123456789.' }}"
+        register: random_ip
+
+    - name: Print random IP address
+      debug:
+        msg: "Random IP Address: {{ random_ip.stdout }}"
+
+    - name: Trigger latent type-related bug
+      community.general.scaleway_container_info:
+        api_token: "YOUR_API_TOKEN"
+        api_url: "https://api.scaleway.com"
+        name: "{{ random_ip.stdout }}"
+        namespace_id: "NAMESPACE_ID"
+        query_parameters:
+          field: "{{ item }}"
+        region: "fr-par"
+      loop:
+        - id
+        - image
+        - status
+        - created_at
+        - started_at
+        - stopped_at
+        - tags
+      register: container_info
+
+    - name: Print container information
+      debug:
+        var: container_info

@@ -1,0 +1,38 @@
+---
+- name: Test playbook for Ansible latent bug exploration
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    login_name: "admin"
+    login_password: "password"
+    machine: "localhost"
+    name: "test_db"
+    password: "db_password"
+    state: "present"
+    type: "mysql"
+    limit: "{{ 1024 / 0 }}"   # Division by zero to trigger potential type-related bugs
+
+  tasks:
+    - name: Install required dependencies
+      package:
+        name: python3-pip
+        state: present
+
+    - name: Install required Python packages
+      pip:
+        name:
+          - webfaction
+          - ansible
+        state: present
+
+    - name: Add or remove database
+      community.general.webfaction_db:
+        login_name: "{{ login_name }}"
+        login_password: "{{ login_password }}"
+        machine: "{{ machine }}"
+        name: "{{ name }}"
+        password: "{{ password }}"
+        state: "{{ state }}"
+        type: "{{ type }}"
+        limit: "{{ limit }}"

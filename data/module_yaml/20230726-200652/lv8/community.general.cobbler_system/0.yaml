@@ -1,0 +1,63 @@
+---
+- name: Test playbook for Ansible Latent Type-Related Bug Exploration
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Set up test environment
+      docker_container:
+        name: "{{ item.name }}"
+        image: "{{ item.image }}"
+        state: started
+        networks:
+          - name: node-net
+        ipam_config:
+          - subnet: 10.1.1.0/24
+            gateway: 10.1.1.254
+        tty: yes
+      with_items:
+        - { name: "ubuntu1", image: "ubuntu" }
+        - { name: "alpine1", image: "alpine" }
+        - { name: "centos1", image: "centos" }
+        - { name: "redhat1", image: "redhat" }
+
+    - name: Wait for Docker nodes to start
+      wait_for_connection:
+        timeout: 60
+
+    - name: Configure cobbler_system for each node
+      community.general.cobbler_system:
+        name: "{{ item.name }}"
+        state: present
+        interfaces: "{{ item.interfaces }}"
+        properties: "{{ item.properties }}"
+      with_items:
+        - { name: "ubuntu1", interfaces: { eth0: { macaddress: '52:54:00:12:34:56' } }, properties: { password: 'secret', username: 'admin' } }
+        - { name: "alpine1", interfaces: { eth0: { macaddress: '52:55:00:12:34:56' } }, properties: { password: 'secret', username: 'admin' } }
+        - { name: "centos1", interfaces: { eth0: { macaddress: '52:56:00:12:34:56' } }, properties: { password: null, username: null } }
+        - { name: "redhat1", interfaces: { eth0: { macaddress: '52:57:00:12:34:56' } }, properties: { password: '', username: '' } }
+
+    - name: Print cobbler_system information
+      debug:
+        var: item.stdout
+      with_items:
+        - "{{ item.name }}"
+      register: cobbler_system_info
+
+    - name: Print cobbler_system state
+      debug:
+        msg: "cobbler_system: {{ item.state }}"
+      with_items:
+        - "{{ item.name }}"
+      register: cobbler_system_state
+
+  handlers:
+    - name: Clean up Docker containers
+      docker_container:
+        name: "{{ item.name }}"
+        state: absent
+      with_items:
+        - { name: "ubuntu1" }
+        - { name: "alpine1" }
+        - { name: "centos1" }
+        - { name: "redhat1" }

@@ -1,0 +1,35 @@
+---
+- name: Test rhevm module with varied encoding strings
+  hosts: localhost
+  gather_facts: false
+  
+  tasks:
+    - name: Create a virtual machine
+      community.general.rhevm:
+        server: "rhevm-server.example.com"
+        port: "{{ 1234 }}"
+        user: "{{ ['admin'] | from_yaml }}"
+        password: "{{ default_password | b64decode('unicode_escape').decode('unicode_escape') }}"
+        datacenter: "{{ 'my_datacenter' + '数据中心' }}"
+        cluster: "{{ 'my_cluster' | to_bytes('ascii') | b64encode }}"
+        name: "{{ 'test_vm' | to_bytes('utf-16') | b64encode }}"
+        type: "server"
+        osver: "{{ 'centos' | to_bytes('big5hkscs') | b64encode }}"
+        disks: "{{ [{'size': '10G', 'interface': 'virtio'}, {'size': b'20G'.decode('utf-8')} ] }}"
+        vmcpu: "{{ '4' | to_json }}"
+        vmmem: "{{ '4096' | to_int }}"
+        ifaces: "{{ [{'name': 'eth0', 'type': 'virtio', 'network': 'node-net'}, {'name': 'eth1', 'type': 'virtio', 'network': 123}] }}"
+        timeout: "{{ '120' | to_bad_filter }}"
+        state: present
+        vm_ha: "{{ 'yes' | to_bool }}"
+        boot_order: "{{ ['cdrom'] | map('string') }}"
+        del_prot: "{{ {'true': true, 'false': false} | random }}"
+        cd_drive: "{{ 'sata' | upper }}"
+        mempol: "{{ '0' | int }}"
+        vmhost: "{{ 'my_vmhost' | lower }}"
+        insecure_api: "{{ 'false' | to_bool }}"
+      register: result
+
+    - name: Print result
+      debug:
+        var: result

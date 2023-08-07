@@ -1,0 +1,78 @@
+---
+- name: Test playbook for the community.general.sensu_check module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Install sensu_check module
+      pip:
+        name: sensu_check
+        state: present
+
+    - name: Generate random MAC addresses for network modules
+      set_fact:
+        random_mac: "{{ '%012x' | format((257|random + 256) * 256 * 256 * 256 | random) }}"
+        random_ipv6: "2001:{{ random_mac[0:2] }}:{{ random_mac[2:4] }}ff:fe{{ random_mac[4:6] }}:{{ random_mac[6:8] }}ff:fe{{ random_mac[8:10] }}:{{ random_mac[10:12] }}"
+
+    - name: Create inventory
+      add_host:
+        name: "{{ item.name }}"
+        ansible_host: "{{ item.ip }}"
+        ansible_user: root
+        ansible_ssh_pass: root
+        ansible_connection: docker
+        ansible_python_interpreter: /usr/bin/python3
+      loop:
+        - { name: "ubuntu1", ip: "10.1.1.1" }
+        - { name: "alpine1", ip: "10.1.1.2" }
+        - { name: "centos1", ip: "10.1.1.3" }
+        - { name: "redhat1", ip: "10.1.1.4" }
+
+    - name: Create network
+      docker_network:
+        name: node-net
+        subnet: 10.1.1.0/24
+        gateway: 10.1.1.254
+
+    - name: Configure Docker nodes
+      docker_container:
+        name: "{{ item.name }}"
+        image: "{{ item.image }}"
+        command: sleep infinity
+        network_mode: node-net
+      loop:
+        - { name: "ubuntu1", image: "ubuntu:latest" }
+        - { name: "alpine1", image: "alpine:latest" }
+        - { name: "centos1", image: "centos:latest" }
+        - { name: "redhat1", image: "redhat:latest" }
+
+    - name: Configure sensu check
+      community.general.sensu_check:
+        name: "example_check"
+        command: "echo 'Hello from {{ inventory_hostname }}'"
+        standalone: true
+        publish: true
+        interval: 60
+        handle: true
+        ttl: 60
+        occurrences: 3
+        low_flap_threshold: 2
+        high_flap_threshold: 5
+        metric: true
+        path: "/etc/sensu/conf.d/checks/"
+        state: present
+        dependencies:
+          - "dependencies_check"
+        subscribers:
+          - "web"
+        handlers:
+          - "notification"
+        subdue_begin: "08:00:00"
+        subdue_end: "20:00:00"
+        custom:
+          key1: "value1"
+          key2: "value2"
+      register: sensu_check_result
+
+    - debug:
+        var: sensu_check_result

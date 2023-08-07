@@ -1,0 +1,35 @@
+---
+- name: Test playbook for community.network.avi_virtualservice
+  hosts: localhost
+  connection: local
+  gather_facts: no
+  
+  tasks:
+    - name: Setup VirtualService
+      community.network.avi_virtualservice:
+        vs_name: "Test-VS"
+        avi_credentials:
+          username: "{{ username }}"
+          password: "{{ password }}"
+        ip_address: "{{ item.ip_address }}"
+        mac_address: "{{ item.mac_address }}"
+      loop:
+        - { ip_address: "10.1.1.1", mac_address: "{{ mac_address }}"}
+        - { ip_address: "10.1.1.2", mac_address: "{{ mac_address }}"}
+        - { ip_address: "10.1.1.3", mac_address: "{{ mac_address }}"}
+        - { ip_address: "10.1.1.4", mac_address: "{{ mac_address }}"}
+      when: inventory_hostname == "localhost"
+
+  vars:
+    mac_address: "{% for n in mac_addresses %}{{ n }}.{% endfor %}"
+    mac_addresses:
+      - "52:54:00:12:34:56"
+      - "52:54:00:98:76:54"
+      - "52:54:00:ab:cd:ef"
+      - "52:54:00:fe:dc:ba"
+
+  pre_tasks:
+    - name: Generate random MAC addresses for all network devices
+      set_fact:
+        mac_addresses: "{{ mac_addresses | random }}"
+      when: inventory_hostname == "localhost"

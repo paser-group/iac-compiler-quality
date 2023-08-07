@@ -1,0 +1,36 @@
+- name: Manage Eth-Trunk interfaces on HUAWEI
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Generate random MAC address
+      set_fact:
+        random_mac: "{{ '%012x' | format((item | random) % 281474976710656) | regex_replace('(..)', '\\1:') | regex_replace(':$', '') }}"
+      loop:
+        - "{{ range(0,10) | list }}"
+
+    - name: Configure Eth-Trunk interface with random MAC address
+      community.network.ce_lacp:
+        collector_delay: 3
+        fast_timeout: 60
+        global_priority: 32768
+        max_active_linknumber: 16
+        mixed_rate_link_enable: false
+        mode: static
+        port_id_extension_enable: true
+        preempt_delay: 200
+        preempt_enable: true
+        priority: 100
+        select: minimum-active
+        state: present
+        state_flapping: false
+        system_id: "00:11:22:33:44:55"
+        timeout_type: long
+        trunk_id: 1
+        unexpected_mac_disable: false
+        mac: "{{ random_mac }}"
+      register: result
+
+    - name: Show result
+      debug:
+        var: result

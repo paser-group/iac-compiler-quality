@@ -1,0 +1,28 @@
+---
+- name: Configure network interfaces
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Set network interfaces
+      community.general.interfaces_file:
+        dest: /etc/network/interfaces
+        option: "{{ inventory_hostname }}"
+        state: present
+        backup: yes
+        iface: "{{ inventory_hostname }}"
+        address_family: inet
+        attributes: "hwaddress ether {{ lookup('community.general.mac_random', format='windows') }}"
+        value: |
+          auto {{ inventory_hostname }}
+          iface {{ inventory_hostname }} inet static
+            address 10.1.1.{{ (addr_list.index(inventory_hostname) + 1) }}
+            netmask 255.255.255.0
+            gateway 10.1.1.254
+
+  vars:
+    addr_list:
+      - ubuntu1
+      - alpine1
+      - centos1
+      - redhat1

@@ -1,0 +1,46 @@
+---
+- name: Test community.network.avi_gslb module
+  hosts: localhost
+  gather_facts: false
+  
+  vars:
+    api_context:
+      - cloud_ref: /api/cloud?tenant=admin
+
+    avi_credentials:
+      - username: admin
+        password: secret
+  
+  tasks:
+    - name: Create GSLB virtual service
+      community.network.avi_gslb:
+        controller: "{{ controller }}"
+        username: "{{ avi_credentials[0].username }}"
+        password: "{{ avi_credentials[0].password }}"
+        state: present
+        name: "{{ item.name }}"
+        tenant: "{{ item.tenant }}"
+        tenant_uuid: "{{ item.tenant_uuid }}"
+        api_context: "{{ api_context }}"
+        dns_configs:
+          - type: GSLBDnsConfig
+            gslb_service_domain: "{{ item.service_domain }}"
+            ttl: "{{ item.ttl }}"
+            enabled: "{{ item.enabled }}"
+            health_monitor_refs:
+              - /api/healthmonitor?name=hm1
+
+      loop:
+        - name: Gslb Virtual Service 1
+          tenant: admin
+          tenant_uuid: /api/tenant?tenant=admin
+          service_domain: gslb1.example.com
+          ttl: 60
+          enabled: true
+
+        - name: Gslb Virtual Service 2
+          tenant: admin
+          tenant_uuid: /api/tenant?tenant=admin
+          service_domain: gslb2.example.com
+          ttl: 120
+          enabled: false

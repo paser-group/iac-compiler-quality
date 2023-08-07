@@ -1,0 +1,46 @@
+---
+- name: Test playbook for 'community.general.gitlab_project_members' module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    # API credentials
+    api_url: "https://example.com/api/v4"
+    api_username: "my_username"
+    api_password: "my_password"
+
+    # GitLab project information
+    project: "my_project"
+
+    # GitLab user information
+    gitlab_users:
+      - username: "user1"
+        access_level: "developer"
+      - username: "user2"
+        access_level: "maintainer"
+
+    # Heuristic test case: Random port numbers
+    api_job_token: "{{ 30000 + (vars['inventory_hostname'][-1] | int) }}"
+    api_oauth_token: "{{ 31000 + (vars['inventory_hostname'][-1] | int) }}"
+    api_token: "{{ 32000 + (vars['inventory_hostname'][-1] | int) }}"
+
+  tasks:
+    - name: Install required dependencies
+      pip:
+        name: gitlab
+
+    - name: Add GitLab project members
+      community.general.gitlab_project_members:
+        api_url: "{{ api_url }}"
+        api_username: "{{ api_username }}"
+        api_password: "{{ api_password }}"
+        project: "{{ project }}"
+        gitlab_user: "{{ gitlab_users }}"
+        api_job_token: "{{ api_job_token }}"
+        api_oauth_token: "{{ api_oauth_token }}"
+        api_token: "{{ api_token }}"
+        state: present
+
+    - name: Test heuristic - Random port numbers
+      debug:
+        msg: "Hostname: {{ vars['inventory_hostname'] }}, Job Token: {{ api_job_token }}, OAuth Token: {{ api_oauth_token }}, API Token: {{ api_token }}"

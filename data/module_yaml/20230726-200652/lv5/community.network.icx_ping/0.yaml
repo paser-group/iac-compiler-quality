@@ -1,0 +1,47 @@
+---
+- name: Test Ruckus ICX Reachability
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Ping Ruckus ICX devices
+      community.network.icx_ping:
+        dest: "{{ item }}"
+        count: 5
+        size: 100
+        source: 192.168.1.100
+        state: present
+        timeout: 2
+        ttl: 64
+        vrf: default
+      loop:
+        - 10.1.1.1
+        - 10.1.1.2
+        - 10.1.1.3
+        - 10.1.1.4
+      register: result
+
+    - name: Print Ping Results
+      debug:
+        var: result
+
+    - name: Generate Random Port Numbers
+      set_fact:
+        random_ports: "{{ [1234, 5678, 9876] | random(seed=42) }}"
+
+    - name: Test Port Settings
+      community.network.icx_ping:
+        dest: 10.1.1.1
+        count: 1
+        size: 100
+        source: 192.168.1.100
+        state: present
+        timeout: 2
+        ttl: 64
+        vrf: default
+        dest_port: "{{ random_ports }}"
+      register: port_result
+
+    - name: Print Port Test Result
+      debug:
+        var: port_result

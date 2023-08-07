@@ -1,0 +1,74 @@
+---
+- name: Test playbook for community.network.pn_log_audit_exception module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create pn_log_audit_exception with random IP
+      community.network.pn_log_audit_exception:
+        pn_access: "{{ item.pn_access }}"
+        pn_audit_type: "{{ item.pn_audit_type }}"
+        pn_cliswitch: "{{ item.pn_cliswitch }}"
+        pn_pattern: "{{ item.pn_pattern }}"
+        pn_scope: "{{ item.pn_scope }}"
+        state: "{{ item.state }}"
+      loop:
+        - pn_access: "{{ random_ip() }}"
+          pn_audit_type: "{{ random_string() }}"
+          pn_cliswitch: "{{ random_string() }}"
+          pn_pattern: "{{ random_string() }}"
+          pn_scope: "{{ random_string() }}"
+          state: present
+        - pn_access: "{{ random_ip() }}"
+          pn_audit_type: "{{ random_integer() }}"
+          pn_cliswitch: "{{ random_integer() }}"
+          pn_pattern: "{{ random_integer() }}"
+          pn_scope: "{{ random_integer() }}"
+          state: absent
+      
+    - name: Debug output of pn_log_audit_exception module
+      debug:
+        var: ansible_facts
+
+# Random IP generation function
+- name: Generate random IP
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Set random IP
+      set_fact:
+        random_ip: "{{ ['10.1.1.1', '10.1.1.2', '10.1.1.3', '10.1.1.4'] | random }}"
+        random_string: "{{ random_string() }}"
+        random_integer: "{{ random_integer() }}"
+
+  vars:
+    characters: "{{ 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ' }}"
+    string_length: 8
+
+  handlers:
+    - name: random_string
+      set_fact:
+        random_string: "{{ random_chars() }}"
+
+    - name: random_integer
+      set_fact:
+        random_integer: "{{ random_int() }}"
+
+  tasks:
+    - name: Generate random characters
+      set_fact:
+        random_chars: "{{ characters | random(seed=inventory_hostname | hash | abs | to_string | int) | countby(random(length)) | map('lower') | join('') }}"
+
+    - name: Generate random integer
+      set_fact:
+        random_int: "{{ range(4) | random(seed=inventory_hostname | hash | abs | to_string | int) }}"
+
+
+# Debug IP addresses
+- name: Debug IP addresses
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Debug IP addresses
+      debug:
+        var: random_ip

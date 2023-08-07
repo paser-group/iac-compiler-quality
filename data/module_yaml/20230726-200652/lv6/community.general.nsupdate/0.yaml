@@ -1,0 +1,48 @@
+---
+- name: Ansible Latent Type-Related Bug Finder
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Set up the test environment
+      delegate_to: localhost
+      run_once: true
+      shell: |
+        docker network create -d bridge node-net
+        docker run -d --name ubuntu1 --hostname ubuntu1 --network node-net -p 10001:10001 ubuntu:latest sleep infinity
+        docker run -d --name alpine1 --hostname alpine1 --network node-net -p 10002:10002 alpine:latest sleep infinity
+        docker run -d --name centos1 --hostname centos1 --network node-net -p 10003:10003 centos:latest sleep infinity
+        docker run -d --name redhat1 --hostname redhat1 --network node-net -p 10004:10004 redhat:latest sleep infinity
+
+    - name: Update DNS record using nsupdate module with various encodings
+      community.general.nsupdate:
+        key_algorithm: "hmac-md5"
+        key_name: "keyname"
+        key_secret: "mykey"
+        port: 53
+        protocol: "udp"
+        record: "testrecord"
+        server: "example.com"
+        state: "present"
+        ttl: 3600
+        type: "{{ item.type }}"
+        value: "{{ item.value }}"
+        zone: "example.com"
+      loop:
+        - { type: "A", value: "10.1.1.1" }
+        - { type: "AAAA", value: "::1" }
+        - { type: "CNAME", value: "www.example.com" }
+        - { type: "TXT", value: "Hello, world!" }
+      register: dns_result
+
+    - name: Debug nsupdate output
+      debug:
+        var: dns_result
+
+    - name: Clean up the test environment
+      delegate_to: localhost
+      run_once: true
+      shell: |
+        docker stop ubuntu1 alpine1 centos1 redhat1
+        docker rm ubuntu1 alpine1 centos1 redhat1
+        docker network rm node-net
+      changed_when: false

@@ -1,0 +1,52 @@
+---
+- name: Filesize module test
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create a file with a given size
+      community.general.filesize:
+        path: /tmp/filesize_test.txt
+        size: "{{ test_size }}"
+        sparse: "{{ test_sparse }}"
+        unsafe_writes: "{{ test_unsafe_writes }}"
+      register: result
+
+    - name: Show output
+      debug:
+        var: result
+
+- name: Generate strings with varied encodings
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    test_size: "{{ random_string | b64encode | length }}"
+    test_sparse: true
+    test_unsafe_writes: "{{ unsafe_writes }}"
+
+  tasks:
+    - name: Set random string with varied encodings
+      set_fact:
+        random_string: "{{ lookup('pipe', 'openssl rand -base64 10') }}"
+
+    - name: Create a file with a given size
+      community.general.filesize:
+        path: /tmp/filesize_test_{{ encoding }}.txt
+        size: "{{ test_size }}"
+        sparse: "{{ test_sparse }}"
+        unsafe_writes: "{{ test_unsafe_writes }}"
+      register: result
+      vars:
+        encoding: "{{ item }}"
+      with_items:
+        - ascii
+        - utf-8
+        - utf-16
+        - utf-32
+        - latin-1
+        - iso-8859-1
+
+    - name: Show output
+      debug:
+        var: result

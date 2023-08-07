@@ -1,0 +1,25 @@
+---
+- name: Test playbook for community.network.sros_config
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Generate random MAC addresses
+      ansible.builtin.debug:
+        msg: "{{ '%012x'|format(ansible_date_time.epoch + 86400*item)|replace(':','') }}"
+      loop: "{{ range(4) | list }}"
+
+    - name: Configure Nokia SR OS
+      community.network.sros_config:
+        backup: true
+        backup_options:
+          dest: /path/to/backup
+          name: "{{ inventory_hostname }}_backup"
+        force: "true"
+        defaults: "true"
+        before: null
+        after: null
+        lines: |
+          set system host-name {{ inventory_hostname }}
+          set interfaces ge-0/0/0 unit 0 family inet address 192.0.2.{{ item }}/24
+        config: running-config

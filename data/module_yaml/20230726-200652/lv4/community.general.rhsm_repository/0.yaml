@@ -1,0 +1,22 @@
+---
+- name: Manage RHSM Repositories
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Generate random MAC address for network interface
+      shell: echo "02:$(openssl rand -hex 5 | sed 's/\(..\)/\1:/g; s/.$//')" | awk 1 ORS=' '
+
+    - name: Register Red Hat Subscription
+      community.general.rhsm_repository:
+        name: '{{ item.name }}'
+        purge: '{{ item.purge }}'
+        state: '{{ item.state }}'
+      loop:
+        - { name: 'Repo1', purge: true, state: 'absent' }
+        - { name: 'Repo2', purge: false, state: 'present' }
+      register: rhsm
+
+    - name: Debug RHSM Output
+      debug:
+        var: rhsm

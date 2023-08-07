@@ -1,0 +1,74 @@
+---
+- name: Ansible playbook to manage Cisco IMC hardware
+  hosts: localhost
+  gather_facts: false
+  
+  tasks:
+    - name: Install required python modules
+      pip:
+        name: imcsdk
+      
+    - name: Test Case 1 - Valid IMC REST API request
+      community.general.imc_rest:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ imc_username }}"
+        password: "{{ imc_password }}"
+        validate_certs: "{{ imc_validate_certs }}"
+        content: 'org/root'
+        protocol: 'https'
+      register: api_response1
+      ignore_errors: true
+
+    - name: Test Case 2 - Invalid IMC REST API request
+      community.general.imc_rest:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ imc_username }}"
+        password: "{{ imc_password }}"
+        validate_certs: "{{ imc_validate_certs }}"
+        content: 'invalid_content'
+        protocol: 'https'
+      register: api_response2
+      ignore_errors: true
+
+    - name: Test Case 3 - Timeout for IMC REST API request
+      community.general.imc_rest:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ imc_username }}"
+        password: "{{ imc_password }}"
+        validate_certs: "{{ imc_validate_certs }}"
+        content: 'org/root'
+        protocol: 'https'
+        timeout: 1
+      register: api_response3
+      ignore_errors: true
+
+    - name: Test Case 4 - Invalid validation for IMC REST API request
+      community.general.imc_rest:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ imc_username }}"
+        password: "{{ imc_password }}"
+        validate_certs: "invalid_validate_certs"
+        content: 'org/root'
+        protocol: 'https'
+      register: api_response4
+      ignore_errors: true
+
+    - name: Debug API response
+      debug:
+        var: api_response1
+      when: api_response1|default({}) != {}
+    
+    - name: Debug API response
+      debug:
+        var: api_response2
+      when: api_response2|default({}) != {}
+    
+    - name: Debug API response
+      debug:
+        var: api_response3
+      when: api_response3|default({}) != {}
+    
+    - name: Debug API response
+      debug:
+        var: api_response4
+      when: api_response4|default({}) != {}

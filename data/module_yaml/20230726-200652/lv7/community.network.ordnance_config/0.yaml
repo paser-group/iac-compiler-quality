@@ -1,0 +1,46 @@
+---
+- name: Test Ordnance Config
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create test inventory file
+      copy:
+        content: |
+          [docker_nodes]
+          ubuntu1 ansible_host=10.1.1.1
+          alpine1 ansible_host=10.1.1.2
+          centos1 ansible_host=10.1.1.3
+          redhat1 ansible_host=10.1.1.4
+
+          [node-net]
+          ubuntu1 ansible_host=10.1.1.1 gateway=10.1.1.254
+          alpine1 ansible_host=10.1.1.2 gateway=10.1.1.254
+          centos1 ansible_host=10.1.1.3 gateway=10.1.1.254
+          redhat1 ansible_host=10.1.1.4 gateway=10.1.1.254
+        dest: inventory.ini
+
+    - name: Test Ordnance Config module
+      community.network.ordnance_config:
+        src: "{{ src }}"
+        backup: "{{ backup | default(True) }}"
+        save: "{{ save | default(True) }}"
+        multiline_delimiter: "{{ multiline_delimiter | default(None) }}"
+        config: |
+          {%- for host in groups['docker_nodes'] %}
+           system
+           exit
+          {%- endfor %}
+      vars:
+        src: "inventory.ini"
+        save: false
+      register: output
+
+    - name: Display module output
+      debug:
+        var: output
+
+    - name: Cleanup test files
+      file:
+        path: inventory.ini
+        state: absent

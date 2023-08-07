@@ -1,0 +1,43 @@
+---
+- name: Test beadm module with type-related bugs
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    beadm_description: "Test boot environment"
+    beadm_snapshot: "snapshot-test"
+    beadm_state: "present"
+    beadm_force: true
+    beadm_name: "test-be"
+
+  tasks:
+    - name: Generate random MAC address
+      ansible.builtin.set_fact:
+        random_mac: "{{ '%02x%02x.%02x%02x.%02x%02x' | format(
+            hostvars.localhost.random_mac_1[0]|random*100,
+            hostvars.localhost.random_mac_2[0]|random*100,
+            hostvars.localhost.random_mac_3[0]|random*100,
+            hostvars.localhost.random_mac_4[0]|random*100,
+            hostvars.localhost.random_mac_5[0]|random*100,
+            hostvars.localhost.random_mac_6[0]|random*100
+          ) }}"
+
+    - name: Capture MAC address in a variable
+      ansible.builtin.set_fact:
+        mac_address: "{{ random_mac }}"
+
+    - name: Execute beadm module command
+      community.general.beadm:
+        description: "{{ beadm_description }}"
+        force: "{{ beadm_force }}"
+        mountpoint: "/"
+        name: "{{ beadm_name }}"
+        options: "mountpoint=/tank"
+        snapshot: "{{ beadm_snapshot }}"
+        state: "{{ beadm_state }}"
+      register: beadm_result
+
+    - name: Print the result
+      ansible.builtin.debug:
+        var: beadm_result

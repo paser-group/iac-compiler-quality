@@ -1,0 +1,28 @@
+---
+- name: Test Ansible latent bugs with scaleway_ip_info module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Gather information about Scaleway IPs
+      community.general.scaleway_ip_info:
+        api_timeout: "{{ random_value }}"
+        api_token: "{{ random_value }}"
+        api_url: "{{ random_value }}"
+        query_parameters: "{{ random_value }}"
+        region: "{{ random_value }}"
+        validate_certs: "{{ random_value }}"
+
+      vars:
+        random_value: "{{ lookup('community.general.random_string', '?={{ 10 ** 9 }}&length=10') }}"
+
+      register: ip_info
+
+      # Validate the response
+      failed_when:
+        - ip_info.rc != 0
+        - ip_info.stderr | search('ERROR')
+
+    - name: Print the Scaleway IP information
+      debug:
+        var: ip_info

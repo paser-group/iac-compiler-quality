@@ -1,0 +1,69 @@
+---
+- name: Manage disks of Qemu(KVM) VMs
+  hosts: all
+  gather_facts: false
+  vars:
+    vmid: 100
+    target_storage: local
+
+  tasks:
+    - name: Create disk with dynamic limit-related value
+      community.general.proxmox_disk:
+        api_host: "https://{{ inventory_hostname }}"
+        api_user: "root@pam"
+        api_password: "mysecretpassword"
+        vmid: "{{ vmid }}"
+        disk: "virtio0"
+        size: "{{ (1000/queues)|int }}M"
+        state: present
+      when: inventory_hostname in groups['node1']
+
+    - name: Create disk with static limit-related value
+      community.general.proxmox_disk:
+        api_host: "https://{{ inventory_hostname }}"
+        api_user: "root@pam"
+        api_password: "mysecretpassword"
+        vmid: "{{ vmid }}"
+        disk: "virtio1"
+        size: "10G"
+        storage: "{{ target_storage }}"
+        state: present
+      when: inventory_hostname in groups['node2']
+
+    - name: Create disk with dynamic limit-related value
+      community.general.proxmox_disk:
+        api_host: "https://{{ inventory_hostname }}"
+        api_user: "root@pam"
+        api_password: "mysecretpassword"
+        vmid: "{{ vmid }}"
+        disk: "virtio2"
+        size: "{{ (1/queues)|int }}T"
+        state: present
+      when: inventory_hostname in groups['node3']
+
+    - name: Create disk with invalid limit-related value
+      community.general.proxmox_disk:
+        api_host: "https://{{ inventory_hostname }}"
+        api_user: "root@pam"
+        api_password: "mysecretpassword"
+        vmid: "{{ vmid }}"
+        disk: "virtio3"
+        size: "{{ (0/queues)|int }}G"
+        state: present
+      when: inventory_hostname in groups['node4']
+
+    - debug:
+        var: ansible_facts['ansible_facts|json_query(\"{{ inventory_hostname }}.disks.virtio0.size\")'] | first
+      when: inventory_hostname in groups['node1']
+
+    - debug:
+        var: ansible_facts['ansible_facts|json_query(\"{{ inventory_hostname }}.disks.virtio1.size\")'] | first
+      when: inventory_hostname in groups['node2']
+
+    - debug:
+        var: ansible_facts['ansible_facts|json_query(\"{{ inventory_hostname }}.disks.virtio2.size\")'] | first
+      when: inventory_hostname in groups['node3']
+
+    - debug:
+        var: ansible_facts['ansible_facts|json_query(\"{{ inventory_hostname }}.disks.virtio3.size\")'] | first
+      when: inventory_hostname in groups['node4']

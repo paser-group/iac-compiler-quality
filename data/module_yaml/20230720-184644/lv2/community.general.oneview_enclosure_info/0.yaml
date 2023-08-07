@@ -1,0 +1,66 @@
+- name: Retrieve information about OneView enclosure
+  hosts: localhost
+  gather_facts: False
+
+  vars:
+    api_version: 1200
+    config: "/path/to/oneview_config.json"
+    hostname: "oneview.example.com"
+    image_streamer_hostname: "imagestreamer.example.com"
+    name: "EnclosureName"
+    options:
+      - option1
+      - option2
+    params:
+      param1: value1
+      param2: value2
+    username: "admin"
+    password: "password"
+
+  tasks:
+    - name: Include bytes filter plugin
+      include_vars:
+        file: "plugins/filters/bytes_filter.yaml"
+      no_log: True
+
+    - name: Convert strings to bytes
+      set_fact:
+        api_version_bytes: "{{ api_version | bytes_filter }}"
+        config_bytes: "{{ config | bytes_filter }}"
+        hostname_bytes: "{{ hostname | bytes_filter }}"
+        image_streamer_hostname_bytes: "{{ image_streamer_hostname | bytes_filter }}"
+        name_bytes: "{{ name | bytes_filter }}"
+        options_bytes: "{{ options | bytes_filter }}"
+        params_bytes: "{{ params | bytes_filter }}"
+        username_bytes: "{{ username | bytes_filter }}"
+        password_bytes: "{{ password | bytes_filter }}"
+
+    - name: Print byte string values
+      debug:
+        msg:
+          - "api_version_bytes = {{ api_version_bytes }}"
+          - "config_bytes = {{ config_bytes }}"
+          - "hostname_bytes = {{ hostname_bytes }}"
+          - "image_streamer_hostname_bytes = {{ image_streamer_hostname_bytes }}"
+          - "name_bytes = {{ name_bytes }}"
+          - "options_bytes = {{ options_bytes }}"
+          - "params_bytes = {{ params_bytes }}"
+          - "username_bytes = {{ username_bytes }}"
+          - "password_bytes = {{ password_bytes }}"
+
+    - name: Retrieve OneView enclosure info
+      community.general.oneview_enclosure_info:
+        api_version: "{{ api_version_bytes }}"
+        config: "{{ config_bytes }}"
+        hostname: "{{ hostname_bytes }}"
+        image_streamer_hostname: "{{ image_streamer_hostname_bytes }}"
+        name: "{{ name_bytes }}"
+        options: "{{ options_bytes }}"
+        params: "{{ params_bytes }}"
+        username: "{{ username_bytes }}"
+        password: "{{ password_bytes }}"
+      register: result
+
+    - name: Print module result
+      debug:
+        var: result

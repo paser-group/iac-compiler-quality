@@ -1,0 +1,48 @@
+---
+- name: Test open_iscsi module for type-related bugs
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    iscsi_targets:
+      - target: "10.1.1.1"
+        portal: "172.16.0.1:3260"
+        node_user: "admin"
+        node_pass: "password123"
+        auto_node_startup: true
+        auto_portal_startup: true
+      - target: "10.1.1.2"
+        portal: "172.16.0.2:3260"
+        node_user: "admin"
+        node_pass: "password123"
+        auto_node_startup: false
+        auto_portal_startup: false
+      - target: "10.1.1.3"
+        portal: "172.16.0.3:3260"
+        node_user: "admin"
+        node_pass: "password123"
+        auto_node_startup: true
+        auto_portal_startup: false
+
+  tasks:
+    - name: Discover and log in to iSCSI targets
+      community.general.open_iscsi:
+        target: "{{ item.target }}"
+        portal: "{{ item.portal }}"
+        discover: true
+        login: true
+        node_user: "{{ item.node_user }}"
+        node_pass: "{{ item.node_pass }}"
+        auto_node_startup: "{{ item.auto_node_startup }}"
+        auto_portal_startup: "{{ item.auto_portal_startup }}"
+      loop: "{{ iscsi_targets }}"
+      register: iscsi_result
+
+    - name: Show discovered iSCSI nodes
+      community.general.open_iscsi:
+        show_nodes: true
+      register: node_result
+
+    - name: Rescan iSCSI targets
+      community.general.open_iscsi:
+        rescan: true

@@ -1,0 +1,68 @@
+- name: Create, update or delete Spotinst Elastigroup
+  hosts: localhost
+  connection: local
+
+  vars:
+    # Provide the required variables here
+    account_id: "YOUR_ACCOUNT_ID"
+    token: "YOUR_SPOTINST_TOKEN"
+    name: "test-group"
+    region: "us-west-2"
+    capacity:
+      minimum: 1
+      maximum: 5
+      target: 3
+    spot_instance_types:
+      - "m5.large"
+      - "c5.large"
+    tags:
+      - key: "Environment"
+        value: "dev"
+      - key: "Application"
+        value: "web"
+
+  tasks:
+    - name: Create Spotinst Elastigroup
+      community.general.spotinst_aws_elastigroup:
+        state: present
+        account_id: "{{ account_id }}"
+        token: "{{ token }}"
+        name: "{{ name }}"
+        region: "{{ region }}"
+        capacity:
+          minimum: "{{ capacity.minimum }}"
+          maximum: "{{ capacity.maximum }}"
+          target: "{{ capacity.target }}"
+        spot_instance_types: "{{ spot_instance_types }}"
+        tags: "{{ tags }}"
+      register: elastigroup
+
+    - name: Update Spotinst Elastigroup
+      community.general.spotinst_aws_elastigroup:
+        state: present
+        account_id: "{{ account_id }}"
+        token: "{{ token }}"
+        name: "{{ name }}"
+        region: "{{ region }}"
+        capacity:
+          minimum: "{{ capacity.maximum }}"  # Intentional bug: capacity.minimum replaced with capacity.maximum
+          maximum: "{{ capacity.minimum }}"  # Intentional bug: capacity.maximum replaced with capacity.minimum
+          target: "{{ capacity.maximum }}"  # Intentional bug: capacity.target replaced with capacity.maximum
+        spot_instance_types: "{{ spot_instance_types }}"
+        tags: "{{ tags }}"
+      register: elastigroup
+
+    - name: Delete Spotinst Elastigroup
+      community.general.spotinst_aws_elastigroup:
+        state: absent
+        account_id: "{{ account_id }}"
+        token: "{{ token }}"
+        name: "{{ name }}"
+        region: "{{ region }}"
+      register: elastigroup
+
+    - name: Fail the playbook deliberately with a mixed-case string value
+      debug:
+        var: MixedCaseString
+      vars:
+        MixedCaseString: "MiXeDcAsE"

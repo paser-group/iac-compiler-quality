@@ -1,0 +1,47 @@
+---
+- name: Test playbook to reveal type-related bugs in community.network.ce_netstream_template module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    - template_options:
+        collect_counter: None
+        collect_interface: None
+        description: None
+        match: None
+        record_name: None
+        state: None
+        type: None
+
+  tasks:
+    - name: Include the ce_netstream_template module
+      include_vars:
+        file: "ce_netstream_template.yml"
+        name: ce_netstream_template_config
+
+    - name: Test case 1 - Null/None value for each attribute
+      community.network.ce_netstream_template:
+        description: "{{ template_options.description }}"
+        match: "{{ template_options.match }}"
+        record_name: "{{ template_options.record_name }}"
+        state: "{{ template_options.state }}"
+        type: "{{ template_options.type }}"
+      ignore_errors: true
+
+    - name: Test case 2 - Non-string value for each attribute
+      community.network.ce_netstream_template:
+        description: 12345
+        match: 12345
+        record_name: true
+        state: 1
+        type: false
+      ignore_errors: true
+
+    - name: Test case 3 - String values with different encodings
+      community.network.ce_netstream_template:
+        description: "\u00A9 Copyright Symbol"
+        match: "\u00AE Registered Trademark Symbol"
+        record_name: "UTF-8 encoded string"
+        state: "String with é character"
+        type: "String with ç character"
+      ignore_errors: true

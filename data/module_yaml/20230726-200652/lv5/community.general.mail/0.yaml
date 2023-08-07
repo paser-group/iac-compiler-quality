@@ -1,0 +1,27 @@
+- name: Test Ansible Latent Type-Related Bugs
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Generate random port numbers
+      set_fact:
+        random_port: "{{ 1024 + (ansible_play_hosts_all.index(inventory_hostname) * 100) + (omit | random | int) }}"
+      loop: "{{ groups['all'] }}"
+      run_once: true
+      delegate_to: localhost
+
+    - name: Send email
+      community.general.mail:
+        host: "smtp.example.com"
+        port: "{{ random_port }}"  # Randomly generated port number
+        sender: "sender@example.com"
+        to: "recipient@example.com"
+        subject: "Testing Ansible mail module"
+        body: "This is a test email sent using the Ansible mail module"
+        charset: "utf-8"
+        timeout: 10
+      register: result
+
+    - name: Display result
+      debug:
+        var: result

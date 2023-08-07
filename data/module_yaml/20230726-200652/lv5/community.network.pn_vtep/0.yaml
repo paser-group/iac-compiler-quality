@@ -1,0 +1,37 @@
+---
+- name: Unveiling Latent Type-Related Bugs in community.network.pn_vtep module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Set random port number
+      set_fact:
+        random_port: "{{ 10000 + (ansible_play_hosts_all.index(inventory_hostname) * 1000 + 1) | random }}"
+        pnip: "10.1.1.{{ ansible_play_hosts_all.index(inventory_hostname) + 1 }}"
+
+    - name: Add random port number to inventory
+      add_host:
+        name: "{{ inventory_hostname }}"
+        ansible_host: "{{ pnip }}"
+        pn_vtep_port: "{{ random_port }}"
+        pn_vpeer: "{{ pnip }}:{{ random_port + 100 }}"
+
+  tasks:
+    - name: Test community.network.pn_vtep module
+      community.network.pn_vtep:
+        pn_cliswitch: "switch"
+        pn_ip: "{{ pnip }}"
+        pn_location: "/root/ansible/network"
+        pn_name: "vtep"
+        pn_switch_in_cluster: true
+        pn_virtual_ip: "192.168.1.1"
+        pn_vrouter_name: "vrouter"
+        state: "present"
+      register: result
+      tags: test
+
+  handlers:
+    - name: Print debug information
+      debug:
+        msg: "{{ result }}"
+      tags: test

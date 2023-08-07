@@ -1,0 +1,39 @@
+---
+- name: Test Playbook
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+
+    - name: Include required module
+      include_vars:
+        file: stackdriver_vars.yml
+
+    - name: Generate strings with varied encodings
+      set_fact:
+        test_strings:
+          - "{{ deployed_by | b64encode }}"
+          - "{{ deployed_to | b64encode }}"
+          - "{{ event | b64encode }}"
+          - "{{ event_epoch | b64encode }}"
+          - "{{ instance_id | b64encode }}"
+          - "{{ key | b64encode }}"
+          - "{{ level | b64encode }}"
+          - "{{ msg | b64encode }}"
+          - "{{ repository | b64encode }}"
+          - "{{ revision_id | b64encode }}"
+
+    - name: Send code deploy and annotation
+      community.general.stackdriver:
+        authenticated_user_email: "{{ annotated_by | b64decode }}"
+        code_deployed_by: "{{ item | b64decode }}"
+        deployment_target: "{{ item | b64decode }}"
+        event_text: "{{ item | b64decode }}"
+        event_time: "{{ item | b64decode }}"
+        instance_id: "{{ item | b64decode }}"
+        key: "{{ item | b64decode }}"
+        severity: "{{ item | b64decode }}"
+        payload: "{{ item | b64decode }}"
+        project_id: "{{ item | b64decode }}"
+        revision_id: "{{ item | b64decode }}"
+      loop: "{{ test_strings }}"

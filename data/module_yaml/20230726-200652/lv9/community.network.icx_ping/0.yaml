@@ -1,0 +1,39 @@
+---
+- name: Test reachability with icx_ping module
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Generate random IP addresses for testing
+      script: >
+        import random
+        import socket
+        import struct
+        
+        def generate_random_ip():
+          return socket.inet_ntoa(struct.pack('>I', random.randint(1, 0xffffffff)))
+        
+        ip_addresses = []
+        for _ in range(5):
+          ip_addresses.append(generate_random_ip())
+        
+        print(json.dumps({'ip_addresses': ip_addresses}))
+        
+      register: generated_ips
+
+    - name: Test reachability with random IP addresses
+      community.network.icx_ping:
+        count: "{{ item }}"
+        dest: "{{ item2 }}"
+        size: 64
+        state: present
+        timeout: 1
+        ttl: 255
+        vrf: default
+      loop: "{{ generated_ips.stdout | from_json }}"
+      loop_control:
+        loop_var: item2
+      register: ping_result
+
+    - name: Debug ping results
+      debug:
+        var: ping_result

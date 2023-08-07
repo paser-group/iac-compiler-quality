@@ -1,0 +1,44 @@
+- name: Test playbook for redis_data_incr module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Set random port
+      set_fact:
+        redis_port: "{{ 42000 + (ansible_play_batch.index(inventory_hostname) * 1000) | random }}"
+
+    - name: Increase data by a float value
+      community.general.redis_data_incr:
+        ca_certs: /path/to/ca_certs.pem
+        increment_float: 1.5
+        key: test_key
+        login_host: "{{ inventory_hostname }}"
+        login_user: admin
+        login_password: admin_password
+        login_port: "{{ redis_port }}"
+        tls: true
+        validate_certs: true
+      register: result_float
+      ignore_errors: true
+
+    - name: Increase data by an int value
+      community.general.redis_data_incr:
+        ca_certs: /path/to/ca_certs.pem
+        increment_int: 5
+        key: test_key
+        login_host: "{{ inventory_hostname }}"
+        login_user: admin
+        login_password: admin_password
+        login_port: "{{ redis_port }}"
+        tls: true
+        validate_certs: true
+      register: result_int
+      ignore_errors: true
+
+    - name: Debug float result
+      debug:
+        var: result_float
+
+    - name: Debug int result
+      debug:
+        var: result_int

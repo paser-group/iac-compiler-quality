@@ -1,0 +1,50 @@
+- name: Ansible Latent Bug Finder & Heuristic Test Playbook
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Set ACL on a file
+      ansible.posix.acl:
+        entity: "{{ item.entity }}"
+        entry: "{{ item.entry }}"
+        path: "/path/to/file.txt"
+        state: "{{ item.state }}"
+      loop:
+        - { entity: "user:user1", entry: "rwx", state: "present" }
+        - { entity: "user:user2", entry: "rx", state: "present" }
+
+    - name: Retrieve ACL of a file
+      ansible.posix.acl:
+        path: "/path/to/file.txt"
+      register: acl_result
+
+    - name: Debug ACL result
+      debug:
+        var: acl_result
+
+    - name: Generate random MAC address
+      include_role:
+        name: network_module_random_mac_address
+      vars:
+        iface: eth0
+
+    - name: Recalculate mask for ACL entry
+      ansible.posix.acl:
+        entry: "{{ item }}"
+        path: "/path/to/file.txt"
+        recalculate_mask: "{{ acl_result.acl[0].entry }}"
+        state: "present"
+      loop:
+        - "user:user1:r-x" 
+        - "user:user2:r-x"
+
+    - name: Set and retrieve NFSv4 ACL
+      ansible.posix.acl:
+        entity: "{{ item.entity }}"
+        entry: "{{ item.entry }}"
+        path: "/path/to/file.txt"
+        state: "{{ item.state }}"
+        use_nfsv4_acls: true
+      loop:
+        - { entity: "user:user1", entry: "rw", state: "present" }
+        - { entity: "user:user2", entry: "r", state: "present" }

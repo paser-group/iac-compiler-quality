@@ -1,0 +1,48 @@
+---
+- name: Test playbook for community.general.proxmox_storage_info
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    api_host: "your_proxmox_host_ip"
+    api_user: "your_proxmox_username"
+    api_password: "your_proxmox_password"
+    api_token_id: "your_proxmox_token_id"
+    api_token_secret: "your_proxmox_token_secret"
+    storage: "your_storage_name"
+    type: "your_storage_type"
+    validate_certs: false
+
+  tasks:
+    - name: Include required roles
+      include_role:
+        name: community.general.proxmox
+
+    - name: Generate random IP addresses for networking testing
+      vars:
+        subnet: "10.1.1.0/24"
+        gateway: "10.1.1.254"
+        node_count: 4
+        hostnames:
+          - ubuntu1
+          - alpine1
+          - centos1
+          - redhat1
+      ansible.builtin.debug:
+        msg: "{{ hostnames | map('regex_replace', '^(.*)$', subnet + '/\\g<1>') | list }}"
+
+    - name: Retrieve proxmox storage info
+      community.general.proxmox_storage_info:
+        api_host: "{{ api_host }}"
+        api_user: "{{ api_user }}"
+        api_password: "{{ api_password }}"
+        api_token_id: "{{ api_token_id }}"
+        api_token_secret: "{{ api_token_secret }}"
+        storage: "{{ storage }}"
+        type: "{{ type }}"
+        validate_certs: "{{ validate_certs }}"
+      register: storage_info
+
+    - name: Display storage info
+      ansible.builtin.debug:
+        var: storage_info

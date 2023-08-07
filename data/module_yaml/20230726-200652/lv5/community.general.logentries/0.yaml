@@ -1,0 +1,51 @@
+---
+- name: Test Ansible Latent Bug Finder & Heuristic Test
+  hosts: localhost
+  gather_facts: false
+  
+  tasks:
+    - name: Install dependencies
+      package:
+        name: python-pip
+        state: present
+
+    - name: Install logentries module
+      pip:
+        name: logentries
+        state: present
+        
+    - name: Set random port number for testing
+      set_fact:
+        random_port: "{{ 32768 + (ansible_play_hosts_all.index(inventory_hostname) * 100) | random(99) }}"
+        
+    - name: Configure logentries
+      community.general.logentries:
+        logtype: "{{ logtype }}"
+        name: "{{ name }}"
+        path: "{{ path }}"
+        state: "{{ state }}"
+        port: "{{ random_port }}"
+      register: le_result
+      
+    - name: Debug logentries result
+      debug:
+        var: le_result
+        
+    - name: Verify logentries configuration
+      community.general.logentries_info:
+        logtype: "{{ logtype }}"
+      register: le_info_result
+      
+    - name: Debug logentries_info result
+      debug:
+        var: le_info_result
+
+    - name: Remove logentries configuration
+      community.general.logentries:
+        logtype: "{{ logtype }}"
+        state: absent
+      register: le_remove_result
+      
+    - name: Debug logentries removal result
+      debug:
+        var: le_remove_result

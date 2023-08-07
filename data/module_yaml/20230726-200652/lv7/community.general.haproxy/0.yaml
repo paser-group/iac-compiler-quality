@@ -1,0 +1,41 @@
+---
+- name: Configure HAProxy backend servers
+  hosts: localhost
+  gather_facts: false
+  become: true
+
+  tasks:
+    - name: Enable backend servers
+      community.general.haproxy:
+        backend: app_backend
+        state: present
+        host: "{{ item }}"
+      loop:
+        - backend1
+        - backend2
+      when: agent | bool
+
+    - name: Disable backend servers
+      community.general.haproxy:
+        backend: app_backend
+        state: disabled
+        host: "{{ item }}"
+      loop:
+        - backend2
+        - backend3
+      when: not agent | bool
+
+    - name: Set weights for backend servers
+      community.general.haproxy:
+        backend: app_backend
+        state: present
+        host: "{{ item.host }}"
+        weight: "{{ item.weight }}"
+      loop:
+        - { host: backend1, weight: "1/0" }
+        - { host: backend2, weight: "3/4" }
+        - { host: backend3, weight: "5/6" }
+      when: weight is defined and weight != ""
+
+    - debug:
+        var: result

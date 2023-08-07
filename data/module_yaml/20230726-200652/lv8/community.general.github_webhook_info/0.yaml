@@ -1,0 +1,27 @@
+- name: Query GitHub webhook information
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Set variables
+      vars:
+        github_url: "https://api.github.com/repos/{{ repository }}/{{ user }}/hooks/{{ webhook_id }}"
+        headers:
+          Content-Type: "application/json"
+          Authorization: "Bearer {{ token }}"
+      register: my_vars
+
+    - name: Create a null file
+      command: touch /tmp/null_file
+      when: not my_vars.test_config | default(false)
+
+    - name: Query webhook info
+      community.general.github_webhook_info:
+        url: "{{ github_url }}"
+        headers: "{{ headers }}"
+        test_config: "{{ my_vars.test_config | default(false) }}"
+      register: webhook_info
+
+    - name: Debug webhook info
+      debug:
+        var: webhook_info

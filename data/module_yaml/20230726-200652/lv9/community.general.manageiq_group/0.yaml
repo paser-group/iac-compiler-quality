@@ -1,0 +1,59 @@
+---
+- name: Test playbook to uncover latent type-related bugs
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    belongsto_filters:
+      - datastore: datastore1
+        folder: /root
+      - datastore: datastore2
+        folder: /tmp
+
+    managed_filters:
+      folder: /home
+
+    network_subnet: 10.1.1.0/24
+    gateway: 10.1.1.254
+    node_ips:
+      - 10.1.1.1
+      - 10.1.1.2
+      - 10.1.1.3
+      - 10.1.1.4
+
+  tasks:
+    - name: Generate random IP address
+      set_fact:
+        random_ip: "{{ network_subnet.split('/')[0] | ipmath('/' ~ network_subnet.split('/')[1]) | ipmath('+' ~ gateway) }}"
+
+    - name: Create random attribute values for testing
+      set_fact:
+        random_tenant_id: "{{ random_ip.split('.')[3] }}"
+        random_role_id: "{{ random_ip.split('.')[2] }}"
+
+    - name: Call the manageiq_group module
+      community.general.manageiq_group:
+        manageiq_connection:
+          url: "https://{{ random_ip }}"
+          username: admin
+          password: password
+        description: "Testing manageiq_group module"
+        belongsto_filters: "{{ belongsto_filters }}"
+        belongsto_filters_merge_mode: any
+        managed_filters: "{{ managed_filters }}"
+        managed_filters_merge_mode: all
+        role: "Test Role"
+        role_id: "{{ random_role_id | int }}"
+        state: present
+        tenant: "Test Tenant"
+        tenant_id: "{{ random_tenant_id | int }}"
+      register: result
+
+    - name: Debug module response
+      debug:
+        var: result
+
+    - name: Assert the module response status
+      assert:
+        that:
+          - result is success

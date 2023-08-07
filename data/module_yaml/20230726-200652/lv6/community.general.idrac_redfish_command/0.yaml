@@ -1,0 +1,22 @@
+- name: Trigger Type-Related Bugs in idrac_redfish_command module
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Generate strings with varied encodings
+      ansible.builtin.debug:
+        msg: "{{ item }}"
+      loop:
+        - "{{ 'auth_token: Hello World' }}"
+        - "{{ 'auth_token: Hello World' | b64encode }}"
+        - "{{ 'auth_token: Hello World' | urlencode }}"
+        - "{{ 'auth_token: Hello World' | json_query('to_string(@)') }}"
+      register: encoded_strings
+
+    - name: Execute idrac_redfish_command
+      community.general.idrac_redfish_command:
+        baseuri: "https://example.com"
+        username: "admin"
+        password: "password"
+        resource_id: "server-001"
+        command: "{{ item }}"
+      loop: "{{ encoded_strings.results | map(attribute='msg') }}"

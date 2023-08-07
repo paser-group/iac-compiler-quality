@@ -1,0 +1,45 @@
+---
+- name: Test for latent type-related bugs in ibm_sa_vol module
+  hosts: localhost
+  gather_facts: false
+  vars:
+    endpoints: "https://example.com/api"
+    username: "admin"
+    password: "secret"
+    pool: "my_pool"
+    vol: "my_volume"
+
+  tasks:
+    - name: Generate strings with varied encodings
+      set_fact:
+        encoded_vol: "{{ vol | b64encode }}"
+
+    - name: Test case 1 - Encoded vol as an integer
+      community.general.ibm_sa_vol:
+        endpoints: "{{ endpoints }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        pool: "{{ pool }}"
+        state: present
+        size: "10"
+        vol: "{{ encoded_vol | int }}"
+      register: result1
+  
+    - name: Debug test case 1 result
+      debug:
+        var: result1
+
+    - name: Test case 2 - vol as a list
+      community.general.ibm_sa_vol:
+        endpoints: "{{ endpoints }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        pool: "{{ pool }}"
+        state: present
+        size: "10"
+        vol: "[{{ vol }}]"
+      register: result2
+  
+    - name: Debug test case 2 result
+      debug:
+        var: result2

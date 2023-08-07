@@ -1,0 +1,53 @@
+---
+- name: Configure Custom IPAM DNS Profile
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    avi_controller: "controller.example.com"
+    avi_username: "admin"
+    avi_password: "password"
+    avi_tenant: "admin"
+    avi_tenant_uuid: "tenant_uuid_here"
+
+  tasks:
+    - name: Create Custom IPAM DNS Profile
+      community.network.avi_customipamdnsprofile:
+        controller: "{{ avi_controller }}"
+        username: "{{ avi_username }}"
+        password: "{{ avi_password }}"
+        tenant: "{{ avi_tenant }}"
+        tenant_uuid: "{{ avi_tenant_uuid }}"
+        name: "my_custom_ipam_dns_profile"
+        state: present
+        dns_service_domain: "example.com"
+        dns_virtualservices:
+          - "/api/virtualservice/{{ avi_tenant_uuid }}/virtualservice-1"
+          - "/api/virtualservice/{{ avi_tenant_uuid }}/virtualservice-2"
+        ip6_autocfg_dns: true
+      register: result
+
+    - name: Display Result
+      debug:
+        var: result
+
+- name: Generate Random MAC Addresses for Network Modules
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    mac_addresses:
+      - "{{ '%02x' | format(item.0)|upper }}:{{ '%02x' | format(item.1)|upper }}:{{ '%02x' | format(item.2)|upper }}:{{ '%02x' | format(item.3)|upper }}:{{ '%02x' | format(item.4)|upper }}:{{ '%02x' | format(item.5)|upper }}"
+    num_addresses: 5
+
+  tasks:
+    - name: Generate Random MAC Addresses
+      debug:
+        msg: "{{ mac_addresses }}"
+      vars:
+        - mac_addresses: "{{ mac_addresses }}"
+        - num_addresses: "{{ num_addresses }}"
+      loop_control:
+        loop_var: item
+        label: "{{ item }}"  
+      loop: "{{ range(0, num_addresses)|product(range(0, num_addresses))|product(range(0, num_addresses))|product(range(0, num_addresses))|product(range(0, num_addresses))|product(range(0, num_addresses))) }}"

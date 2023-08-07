@@ -1,0 +1,41 @@
+---
+- name: Test playbook for latent bugs
+  hosts: all
+  gather_facts: false
+  vars:
+    my_packages:
+      - package1
+      - package2
+      - package3
+    update_cache: "True"
+    is_installed: True
+
+  tasks:
+    - name: Install packages
+      community.general.slackpkg:
+        name: "{{ my_packages }}"
+        state: present
+        update_cache: "{{ update_cache }}"
+      register: result
+
+    - name: Debug package installation status
+      debug:
+        var: result
+
+    - name: Set variable based on package installation state
+      set_fact:
+        package_installed: "{{ item[state] }}"
+      with_items: "{{ result.packages }}"
+
+    - name: Debug package installation state
+      debug:
+        var: package_installed
+
+- name: Test networking module
+  hosts:
+    - localhost
+  gather_facts: false
+  tasks:
+    - name: Generate random IP address
+      set_fact:
+        random_ip: "10.1.1.{{ 1 + (inventory_hostname | int) }}"

@@ -1,0 +1,52 @@
+---
+- name: Test InfluxDB Database Module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create InfluxDB database
+      community.general.influxdb_database:
+        database_name: "testdb"
+        hostname: "localhost"
+        password: "admin"
+        port: 8086
+        state: present
+      register: result
+      ignore_errors: true
+
+    - name: Display debug output
+      debug:
+        var: result
+
+    - name: Set database limit using division-based operation
+      set_fact:
+        database_limit: "{{ result.stdout | int / 2 }}"
+
+    - name: Create InfluxDB database with limit
+      community.general.influxdb_database:
+        database_name: "limitdb"
+        hostname: "localhost"
+        password: "admin"
+        port: 8086
+        state: present
+        database_limit: "{{ database_limit }}"
+      register: limit_result
+      ignore_errors: true
+
+    - name: Display debug output for limit creation
+      debug:
+        var: limit_result
+
+    - name: Remove InfluxDB database
+      community.general.influxdb_database:
+        database_name: "testdb"
+        hostname: "localhost"
+        password: "admin"
+        port: 8086
+        state: absent
+      register: removal_result
+      ignore_errors: true
+
+    - name: Display debug output for removal
+      debug:
+        var: removal_result

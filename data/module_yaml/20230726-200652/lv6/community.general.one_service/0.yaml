@@ -1,0 +1,76 @@
+---
+
+- name: Test playbook for exposing latent type-related bugs
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    api_url: "https://example.org/api"
+    api_username: "admin"
+    api_password: "password"
+    service_name: "MyService"
+    state: "present"
+    role: "admin"
+    mode: "0755"
+    owner_id: 1001
+    group_id: 1001
+    unique: true
+    template_name: "my_template"
+    template_id: 1234
+    custom_attrs:
+      attr1: "value1"
+      attr2: "value2"
+    force: false
+    wait: true
+    wait_timeout: 60
+    service_id: 5678
+    cardinality: 3
+
+  tasks:
+    - name: Create and manage a service
+      community.general.one_service:
+        api_url: "{{ api_url }}"
+        api_username: "{{ api_username }}"
+        api_password: "{{ api_password }}"
+        service_name: "{{ service_name }}"
+        state: "{{ state }}"
+        role: "{{ role }}"
+        mode: "{{ mode }}"
+        owner_id: "{{ owner_id }}"
+        group_id: "{{ group_id }}"
+        unique: "{{ unique }}"
+        template_name: "{{ template_name }}"
+        template_id: "{{ template_id }}"
+        custom_attrs: "{{ custom_attrs }}"
+        force: "{{ force }}"
+        wait: "{{ wait }}"
+        wait_timeout: "{{ wait_timeout }}"
+        service_id: "{{ service_id }}"
+        cardinality: "{{ cardinality }}"
+      register: result
+      ignore_errors: true
+
+    - name: Display result
+      debug:
+        var: result
+
+- name: Test playbook for varied string encodings
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create files with varied string encodings
+      copy:
+        dest: "{{ item.dest }}"
+        content: "{{ item.content }}"
+      with_items:
+        - { dest: "/tmp/utf8.txt", content: "\u03B1\u03B2\u03B3" }              # UTF-8 encoded strings
+        - { dest: "/tmp/utf16.txt", content: "\U0001F600\U0001F601\U0001F602" }  # UTF-16 encoded strings
+        - { dest: "/tmp/utf32.txt", content: "\U0001F680\U0001F681\U0001F682" }  # UTF-32 encoded strings
+
+    - name: Display file contents
+      command: cat "{{ item }}"
+      with_items:
+        - "/tmp/utf8.txt"
+        - "/tmp/utf16.txt"
+        - "/tmp/utf32.txt"

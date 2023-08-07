@@ -1,0 +1,29 @@
+---
+- name: Test network_resource module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Configure network resources for node
+      ansible.netcommon.network_resource:
+        config: "{{ lookup('file', 'network_config.json') }}"
+        name: "{{ item.name }}"
+        os_name: "{{ item.os_name }}"
+        running_config: "{{ item.running_config }}"
+        state: "{{ item.state }}"
+      with_items:
+        - { name: "ubuntu1", os_name: "ubuntu", running_config: null, state: null }
+        - { name: "alpine1", os_name: "alpine", running_config: null, state: null }
+        - { name: "centos1", os_name: "centos", running_config: null, state: null }
+        - { name: "redhat1", os_name: "redhat", running_config: null, state: null }
+
+  post_tasks:
+    - name: Test port settings
+      ansible.builtin.debug:
+        msg: "Testing random port: {{ item }}"
+      vars:
+        ports:
+          - "{{ (range(10000, 65535) | random) }}"
+          - "{{ (range(10000, 65535) | random) }}"
+          - "{{ (range(10000, 65535) | random) }}"
+      loop: "{{ ports }}"

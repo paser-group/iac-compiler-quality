@@ -1,0 +1,36 @@
+---
+- name: Testing the community.network.nos_config module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Generate random MAC addresses
+      set_fact:
+        random_mac: "{{ '%02x:%02x:%02x:%02x:%02x:%02x' | format(
+                        0x00, 0x16, 0x3e,
+                        0x00, 0x00, 0x00 | random(256),
+                        0x00 | random(256)
+                      ) }}"
+
+    - name: Configure network switches
+      community.network.nos_config:
+        after: null
+        backup: false
+        backup_options:
+          directory: "/tmp/network_backups"
+        before: null
+        diff_against: ''
+        diff_ignore_lines:
+          - 'ignore me'
+        intended_config: null
+        lines:
+          - "interface Ethernet1"
+          - "   no switchport"
+          - "   ip address 10.1.1.1/24"
+          - "   mac-address {{ random_mac }}"
+        match: 'exact'
+        multiline_delimiter: ''
+        parents: null
+        replace: false
+        running_config: /etc/network/running_config.txt
+        src: null

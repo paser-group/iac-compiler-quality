@@ -1,0 +1,37 @@
+---
+- name: Template a file and trigger type-related bugs
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Copy template file
+      copy:
+        content: |
+          This is a template file.
+          {{ undefined_variable }}  # Triggering undefined variable bug
+          {{ null_variable | default('default value') }}  # Using default filter with a null value
+        dest: /tmp/template.txt
+
+    - name: Template a file
+      ansible.builtin.template:
+        src: /tmp/template.txt
+        dest: /tmp/template_output.txt
+        backup: !null  # Triggering latent type-related bug by using !null as a configuration value
+        unsafe_writes: true
+      register: template_result
+
+    - name: Debug template output
+      debug:
+        var: template_result
+
+    - name: Verify output file
+      assert:
+        that: "'default value' in template_result.stdout"
+        success_msg: "Template output file is correct"
+        fail_msg: "Template output file is incorrect or missing 'default value'"
+
+    - name: Verify error message
+      assert:
+        that: "'undefined_variable' in template_result.stderr"
+        success_msg: "Undefined variable error is present"
+        fail_msg: "Undefined variable error is missing"

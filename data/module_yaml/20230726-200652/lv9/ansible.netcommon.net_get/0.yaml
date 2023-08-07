@@ -1,0 +1,51 @@
+- name: Copy file from network device
+  hosts: network_device
+  gather_facts: false
+
+  vars:
+    subnet: "10.1.1"
+    gateway: "10.1.1.254"
+    device_ips:
+      - "10.1.1.1"
+      - "10.1.1.2"
+      - "10.1.1.3"
+      - "10.1.1.4"
+    src_file: "/path/to/source/file"
+    dest_file: "/path/to/destination/file"
+
+  tasks:
+    - name: Generate random IP address within subnet
+      set_fact:
+        random_ip: "{{ subnet + '.' + [1, 2, 3, 4] | random }}"
+
+    - name: Set networking facts for random IP address
+      set_fact:
+        ansible_network_resources: {
+          'interfaces': {
+            'eth0': {
+              'ipv4': {
+                'address': "{{ random_ip }}",
+                'netmask': "255.255.255.0",
+                'gateway': "{{ gateway }}"
+              }
+            }
+          }
+        }
+
+    - name: Gather facts for network device
+      ansible.netcommon.net_get:
+        gather_subset:
+          - hardware
+          - config
+          - interfaces
+      register: device_facts
+
+    - name: Copy file from network device
+      ansible.netcommon.net_get:
+        src: "{{ src_file }}"
+        dest: "{{ dest_file }}"
+        protocol: "{{ item }}"
+      loop:
+        - scp
+        - ssh
+      register: copy_result

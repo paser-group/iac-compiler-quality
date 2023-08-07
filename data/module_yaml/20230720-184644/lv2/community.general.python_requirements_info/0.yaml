@@ -1,0 +1,30 @@
+---
+- name: Test ansible bug - python_requirements_info
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Install required modules
+      pip:
+        name: community.general
+
+    - name: Set python version to 3
+      set_fact:
+        ansible_python_interpreter: python3
+
+    - name: Run python_requirements_info
+      community.general.python_requirements_info:
+        paths:
+          - b'{{ inventory_hostname }}:/path/to/requirements.txt'
+      register: requirements_info
+
+    - name: Show python path
+      debug:
+        var:
+          requirements_info.results[0].python
+
+    - name: Assert byte string value
+      assert:
+        that:
+          - requirements_info.results[0].python | isinstance(bytearray(), str)
+        fail_msg: "Type-related bug found: byte string value is not being handled properly."

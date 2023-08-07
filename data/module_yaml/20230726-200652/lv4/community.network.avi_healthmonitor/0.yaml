@@ -1,0 +1,38 @@
+---
+- name: Ansible Latent Bug Finder Playbook
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    api_context:
+      tenant_name: admin
+    avi_credentials:
+      username: admin
+      password: password
+    controller: 10.1.1.1
+    tenant: admin
+
+  tasks:
+    - name: Set random MAC addresses for network modules
+      set_fact:
+        mac_address: "{{ '%02x:%02x:%02x:%02x:%02x:%02x' | format('0x' ~ (item | random) % 256, '0x' ~ (item | random) % 256, '0x' ~ (item | random) % 256, '0x' ~ (item | random) % 256, '0x' ~ (item | random) % 256, '0x' ~ (item | random) % 256) }}"
+      loop: "{{ range(0, 4) | list }}"
+
+    - name: Test case - Create Health Monitor with invalid attribute type
+      community.network.avi_healthmonitor:
+        controller: "{{ controller }}"
+        name: "monitor-1"
+        tenant: "{{ tenant }}"
+        avi_credentials: "{{ avi_credentials }}"
+        api_context: "{{ api_context }}"
+        type: 123
+        url: "http://10.1.1.2"
+        receive_timeout: "5"
+        failed_checks: "2"
+        successful_checks: "3"
+        send_interval: "10"
+        register: result
+
+    - name: Debug task
+      debug:
+        var: result

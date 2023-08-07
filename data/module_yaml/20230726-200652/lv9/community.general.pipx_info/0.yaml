@@ -1,0 +1,71 @@
+---
+- name: Test playbook for community.general.pipx_info module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+
+    - name: Install pipx package
+      pip:
+        name: pipx
+        state: present
+
+    - name: Retrieve pipx info
+      community.general.pipx_info:
+        name: ansible
+        executable: "{{ lookup('env', 'HOME') }}/.local/bin/pipx"
+        include_deps: false
+        include_injected: true
+        include_raw: true
+      register: pipx_info_result
+
+    - name: Debug pipx info
+      debug:
+        var: pipx_info_result
+
+    - name: Test case - Invalid executable path
+      community.general.pipx_info:
+        name: ansible
+        executable: "/nonexistent/path"
+        include_deps: false
+        include_injected: true
+        include_raw: true
+      register: invalid_executable_result
+      ignore_errors: true
+
+    - name: Test case - Include dependencies
+      community.general.pipx_info:
+        name: ansible
+        executable: "{{ lookup('env', 'HOME') }}/.local/bin/pipx"
+        include_deps: true
+        include_injected: true
+        include_raw: true
+      register: include_deps_result
+
+    - name: Test case - Include injected packages
+      community.general.pipx_info:
+        name: ansible
+        executable: "{{ lookup('env', 'HOME') }}/.local/bin/pipx"
+        include_deps: false
+        include_injected: true
+        include_raw: true
+      register: include_injected_result
+
+    - name: Test case - Include raw output
+      community.general.pipx_info:
+        name: ansible
+        executable: "{{ lookup('env', 'HOME') }}/.local/bin/pipx"
+        include_deps: false
+        include_injected: false
+        include_raw: true
+      register: include_raw_result
+
+    - name: Test case - Non-existing package
+      community.general.pipx_info:
+        name: non_existing_package
+        executable: "{{ lookup('env', 'HOME') }}/.local/bin/pipx"
+        include_deps: false
+        include_injected: false
+        include_raw: false
+      register: non_existing_package_result
+      ignore_errors: true

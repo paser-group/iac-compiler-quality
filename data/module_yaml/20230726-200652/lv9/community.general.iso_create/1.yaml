@@ -1,0 +1,41 @@
+- name: Generate ISO File
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Formulate random IP addresses
+      set_fact:
+        ubuntu1_ip: "{{ ansible_host_ip | stripr('X.X.X') }}1"
+        alpine1_ip: "{{ ansible_host_ip | stripr('X.X.X') }}2"
+        centos1_ip: "{{ ansible_host_ip | stripr('X.X.X') }}3"
+        redhat1_ip: "{{ ansible_host_ip | stripr('X.X.X') }}4"
+
+    - name: Create temporary directory
+      tempfile:
+        state: directory
+      register: temp_dir
+
+    - name: Create ISO file
+      community.general.iso_create:
+        dest_iso: "{{ temp_dir.path }}/test.iso"
+        interchange_level: 3
+        joliet: 1
+        rock_ridge: "1.09"
+        src_files:
+          - /path/to/source/file1
+          - /path/to/source/file2
+        udf: false
+        vol_ident: "Test ISO"
+
+        # Additional parameters for networking modules
+        ubuntu1: "{{ ubuntu1_ip }}"
+        alpine1: "{{ alpine1_ip }}"
+        centos1: "{{ centos1_ip }}"
+        redhat1: "{{ redhat1_ip }}"
+
+    - debug:
+        var: temp_dir
+
+    - name: Remove temporary directory
+      file:
+        path: "{{ temp_dir.path }}"
+        state: absent

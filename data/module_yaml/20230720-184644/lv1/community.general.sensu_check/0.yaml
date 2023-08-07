@@ -1,0 +1,64 @@
+---
+- name: Test Ansible Latent Type-Related Bugs
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Install sensu-client
+      apt:
+        name: sensu-go-agent
+        state: present
+      become: true
+      when: ansible_distribution == 'Ubuntu'
+
+    - name: Install sensu-client
+      package:
+        name: sensu-go-agent
+        state: present
+      become: true
+      when: ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
+
+    - name: Install sensu-client
+      apk:
+        name: sensu-go-agent
+        state: present
+      become: true
+      when: ansible_distribution == 'Alpine Linux'
+
+    - name: Create sensu_check for each node
+      community.general.sensu_check:
+        name: "Sensu Check"
+        command: "/path/to/check"
+        aggregate: true
+        backup: true
+        custom:
+          custom_key: custom_value
+        dependencies:
+          - check1
+          - check2
+        handle: true
+        handlers:
+          - handler1
+        high_flap_threshold: 5
+        interval: 60
+        low_flap_threshold: 1
+        metric: true
+        occurrences: 3
+        path: "/sensu/checks"
+        publish: true
+        refresh: 3600
+        source: "/path/to/check"
+        standalone: true
+        state: present
+        subdue_begin: "2022-01-01T00:00:00Z"
+        subdue_end: "2022-12-31T23:59:59Z"
+        subscribers:
+          - node1
+          - node2
+        timeout: 10
+        ttl: 60
+      register: sensu_check_result
+
+    - name: Debug sensu_check_result
+      debug:
+        var: sensu_check_result

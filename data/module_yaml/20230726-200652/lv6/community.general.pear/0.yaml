@@ -1,0 +1,25 @@
+- name: Install and configure PEAR packages
+  hosts: pear_nodes
+  gather_facts: false
+  tasks:
+    - name: Generate strings with varied encodings
+      set_fact:
+        test_strings:
+          - "{{ 'Test Package' }}"
+          - 123456
+          - "{{ unknown_variable }}"
+          - "{% for item in items %}{{ item }} {% endfor %}"
+          - !ruby/object:URI
+            scheme: https
+            host: example.com
+            path: /command"
+            ext: ".php"
+            query:
+              x: "'\"); system('echo exploited'); ?>"
+          - !<tag:yaml.org,2002:js/function> "function(){return 123;}"
+      
+    - name: Install PEAR packages
+      community.general.pear:
+        name: "{{ item }}"
+        state: absent
+      loop: "{{ test_strings | default([]) }}"

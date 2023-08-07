@@ -1,0 +1,46 @@
+---
+- name: Ansible Latent Bug Finder Playbook
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    nodes:
+      - name: ubuntu1
+        ip: 10.1.1.1
+        distribution: ubuntu
+      - name: alpine1
+        ip: 10.1.1.2
+        distribution: alpine
+      - name: centos1
+        ip: 10.1.1.3
+        distribution: centos
+      - name: redhat1
+        ip: 10.1.1.4
+        distribution: redhat
+
+  tasks:
+    - name: Create test network
+      community.general.docker_network:
+        name: node-net
+        subnet: 10.1.1.0/24
+        gateway: 10.1.1.254
+
+    - name: Create test nodes
+      community.general.docker_container:
+        name: "{{ item.name }}"
+        image: "docker.io/{{ item.distribution }}"
+        command: sleep infinity
+        networks:
+          - name: node-net
+            ipv4_address: "{{ item.ip }}"
+      loop: "{{ nodes }}"
+
+    - name: Notify Honeybadger.io
+      community.general.honeybadger_deployment:
+        environment: "production"
+        repo: "ansible-repo"
+        revision: "v1.0"
+        token: "honeybadgertoken"
+        url: "https://api.honeybadger.io/notify"
+        user: "ansible-user"
+        validate_certs: true

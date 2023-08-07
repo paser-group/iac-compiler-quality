@@ -1,0 +1,53 @@
+---
+- name: Test Ansible Latent Type-Related Bugs
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    docker_nodes:
+      - name: ubuntu1
+        ip: 10.1.1.1
+        distro: ubuntu
+      - name: alpine1
+        ip: 10.1.1.2
+        distro: alpine
+      - name: centos1
+        ip: 10.1.1.3
+        distro: centos
+      - name: redhat1
+        ip: 10.1.1.4
+        distro: redhat
+
+  tasks:
+    - name: Set up test inventory
+      add_host:
+        name: "{{ item.name }}"
+        ansible_host: "{{ item.ip }}"
+        ansible_user: root
+        ansible_ssh_pass: root
+      with_items: "{{ docker_nodes }}"
+
+    - name: Test 'community.general.packet_project' module
+      hosts: localhost
+      tasks:
+        - name: Create project
+          community.general.packet_project:
+            auth_token: "{{ auth_token }}"
+            custom_data: "{{ custom_data }}"
+            id: "{{ project_id }}"
+            name: "{{ project_name }}"
+            org_id: "{{ org_id }}"
+            payment_method: "{{ payment_method }}"
+            state: present
+          vars:
+            auth_token: b"MyAuthTokenBytes"
+            custom_data: "MyCustomDataString"
+            project_id: b"MyProjectIDBytes"
+            project_name: "MyProjectNameString"
+            org_id: b"MyOrgIDBytes"
+            payment_method: "MyPaymentMethodString"
+          register: result
+
+        - name: Debug result
+          debug:
+            var: result

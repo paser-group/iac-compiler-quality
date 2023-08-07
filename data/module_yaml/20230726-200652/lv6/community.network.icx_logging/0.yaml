@@ -1,0 +1,57 @@
+- hosts: icx_devices
+  gather_facts: false
+  
+  tasks:
+    - name: Manage ICX Logging
+      community.network.icx_logging:
+        aggregate: "{{ icx_logging_data.aggregate }}"
+        check_running_config: "{{ icx_logging_data.check_running_config }}"
+        dest: "{{ icx_logging_data.dest }}"
+        facility: "{{ icx_logging_data.facility }}"
+        level: "{{ icx_logging_data.level }}"
+        name: "{{ icx_logging_data.name }}"
+        state: "{{ icx_logging_data.state }}"
+        udp_port: "{{ icx_logging_data.udp_port }}"
+      vars:
+        icx_logging_data:
+          aggregate:
+            - "{{ generate_string_with_varied_encodings('aggregate1') }}"
+            - "{{ generate_string_with_varied_encodings('aggregate2') }}"
+          check_running_config: "{{ generate_boolean_with_varied_encoding() }}"
+          dest: "{{ generate_string_with_varied_encodings('dest') }}"
+          facility: "{{ generate_string_with_varied_encodings('facility') }}"
+          level:
+            - "{{ generate_string_with_varied_encodings('level1') }}"
+            - "{{ generate_string_with_varied_encodings('level2') }}"
+          name: "{{ generate_string_with_varied_encodings('name') }}"
+          state: "{{ generate_string_with_varied_encodings('state') }}"
+          udp_port: "{{ generate_string_with_varied_encodings('udp_port') }}"
+  
+  vars:
+    encoding_variations:
+      - binary
+      - utf-8
+      - utf-16
+      - ascii
+      - iso8859-1
+  
+  tasks:
+    - name: Generate strings with varied encodings
+      set_fact:
+        varied_encodings_strings: "{{ varied_encodings_strings | default([]) + [item] }}"
+      loop: "{{ encoding_variations }}"
+      run_once: true
+  
+  tasks:
+    - name: Generate string with varied encodings
+      set_fact:
+        varied_encodings_strings: "{{ varied_encodings_strings | default([]) + [lookup('template', 'generate_string_with_varied_encodings.j2') | trim] }}"
+      loop: "{{ ['aggregate1', 'aggregate2', 'dest', 'facility', 'level1', 'level2', 'name', 'state', 'udp_port'] }}"
+      run_once: true
+      
+  tasks:
+    - name: Create test directory if it does not exist
+      file:
+        path: "/tmp/test"
+        state: directory
+        mode: 0755

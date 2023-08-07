@@ -1,0 +1,44 @@
+---
+- name: Test playbook for latent type-related bugs
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    ansible_python_interpreter: "/usr/bin/env python3"
+    controller: "avi-controller"
+    username: "admin"
+    password: "password"
+    tenant: "default"
+    uuid: "alertconfig-1"
+
+  tasks:
+    - name: Create AlertConfig
+      community.network.avi_alertconfig:
+        controller: "{{ controller }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        tenant: "{{ tenant }}"
+        name: "AlertConfig Test"
+        enabled: True
+        autoscale_alert: True
+        avi_credentials: "{{ avi_credentials }}"
+        uuid: "{{ uuid }}"
+        state: present
+        alert_rule:
+          - obj_uuid: "{{ 600 / 0 }}"
+            object_type: "pool"
+            tenant_ref: "/api/tenant?name={{ tenant }}"
+            threshold:
+              - threshold:
+                  metric: "is_active_server_connections"
+                  operator: "GT"
+                  value: 100
+        recommendation: "Alert Triggered"
+        throttle: True
+        url: "/api/alert/uuid={{ uuid }}"
+        tenant: "{{ tenant }}"
+      register: result
+
+    - name: Display the result
+      debug:
+        var: result

@@ -1,0 +1,60 @@
+---
+- name: Manage Perl dependencies
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    cpanm_install_path: /usr/local/bin/cpanm
+    cpanm_from_path: /tmp/perl/cpanm
+    cpanm_mirror: http://cpan.metacpan.org/
+    cpanm_mode: 0755
+    cpanm_name: DBI
+    cpanm_version: 1.643
+    cpanm_notest: true
+
+  tasks:
+    - name: Copy cpanm executable
+      copy:
+        src: "{{ cpanm_from_path }}"
+        dest: "{{ cpanm_install_path }}"
+        mode: "{{ cpanm_mode }}"
+      become: true
+
+    - name: Install Perl dependencies
+      community.general.cpanm:
+        name: "{{ cpanm_name }}"
+        version: "{{ cpanm_version }}"
+        mirror: "{{ cpanm_mirror }}"
+        notest: "{{ cpanm_notest }}"
+      become: true
+
+- name: Test CPANM module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    test_cpanm_name: Test-Perl-Cpan
+    test_cpanm_version: 0.100
+
+  tasks:
+    - name: Install Test Perl module
+      community.general.cpanm:
+        name: "{{ test_cpanm_name }}"
+        version: "{{ test_cpanm_version }}"
+      become: true
+
+    - name: Debug installed Perl modules
+      debug:
+        var: ansible_perl.module_info
+
+- name: Test module with random port number
+  hosts: localhost
+  gather_facts: false
+  vars:
+    test_cpanm_port: "{{ 10000 | random }}"
+  tasks:
+    - name: Install Perl module with random port
+      community.general.cpanm:
+        name: "{{ test_cpanm_name }}"
+        port: "{{ test_cpanm_port }}"
+      become: true

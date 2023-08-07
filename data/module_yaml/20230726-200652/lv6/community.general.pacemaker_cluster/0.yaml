@@ -1,0 +1,29 @@
+---
+
+- name: Test playbook for latent type-related bugs in Ansible compiler
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Install the pacemaker_cluster module
+      pip:
+        name: ansible-module-community.general.pacemaker_cluster
+        state: present
+
+    - name: Generate strings with varied encodings
+      set_fact:
+        strings:
+          - "normal string"
+          - "!@#$%^&*()_+"
+          - "containing whitespace"
+          - "\xE2\x98\x83"  # Snowman emoji (UTF-8 encoded)
+          - "\u2603"       # Snowman emoji (Unicode encoded)
+
+    - name: Test type-related bugs with varied encodings
+      community.general.pacemaker_cluster:
+        force: "{{ item.force }}"
+        node: "{{ item.node }}"
+        state: "{{ item.state }}"
+        timeout: "{{ item.timeout }}"
+      loop:
+        - { force: "{{ strings | random }}" , node: "{{ strings | random }}", state: "{{ strings | random }}", timeout: "{{ strings | random }}" }

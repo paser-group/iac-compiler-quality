@@ -1,0 +1,40 @@
+- name: Test playbook for community.general.open_iscsi module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Set up iSCSI target
+      community.general.open_iscsi:
+        state: present
+        target: "iqn.2021-07.com.example:target"
+        portal: "10.1.1.1:3260"
+        discover: true
+        login: true
+      register: iscsi_result
+
+    - name: Display iSCSI node details
+      community.general.open_iscsi:
+        show_nodes: true
+      register: iscsi_nodes
+
+    - name: Print iSCSI node details
+      debug:
+        var: iscsi_nodes
+
+    - name: Introduce type-related bug
+      set_fact:
+        byte_string_target: "{{ 'iqn.2021-07.com.example:target' | b64encode | to_bytes('utf-8') }}"
+        byte_string_portal: "{{ '10.1.1.1:3260' | b64encode | to_bytes('utf-8') }}"
+
+    - name: Set up iSCSI target with byte string values
+      community.general.open_iscsi:
+        state: present
+        target: "{{ byte_string_target }}"
+        portal: "{{ byte_string_portal }}"
+        discover: true
+        login: true
+      register: byte_string_result
+
+    - name: Print byte string result
+      debug:
+        var: byte_string_result

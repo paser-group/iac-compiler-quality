@@ -1,0 +1,33 @@
+---
+- name: Test playbook for 'community.general.ldap_search' module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Test LDAP search
+      community.general.ldap_search:
+        attrs:
+          - name
+          - mail
+        bind_dn: "cn=admin,dc=example,dc=com"
+        bind_pw: "password"
+        ca_path: "/etc/ssl/certs"
+        dn: "ou=users,dc=example,dc=com"
+        filter: "(objectClass=person)"
+        referrals_chasing: "always"
+        sasl_class: "EXTERNAL"
+        schema: true
+        scope: "base"
+        server_uri: "ldaps://ldap.example.com:{{ ldap_port }}"
+        start_tls: false
+        validate_certs: true
+        xorder_discovery: "ATTRIBUTE"
+      vars:
+        ldap_port: "{{ ldap_port | default(389) }}"
+        ldap_port: "{{ ldap_port | random(range_start=10000, range_end=20000) }}"
+
+      register: ldap_search_result
+
+    - name: Debug LDAP search result
+      debug:
+        var: ldap_search_result

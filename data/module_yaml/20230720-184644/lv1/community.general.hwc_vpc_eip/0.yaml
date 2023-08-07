@@ -1,0 +1,29 @@
+---
+- name: Test playbook for 'community.general.hwc_vpc_eip' module
+  hosts: localhost
+  gather_facts: False
+
+  vars:
+    eip_info:
+      id: "eip-123456"
+      ipv4_address: "10.1.1.5"
+      port_id: "port-123456"
+      type: "elastic"
+
+  tasks:
+    - name: Test the 'community.general.hwc_vpc_eip' module
+      community.general.hwc_vpc_eip:
+        id: "{{ eip_info.id }}"
+        ipv4_address: "{{ eip_info.ipv4_address }}"
+        port_id: "{{ eip_info.port_id }}"
+        type: "{{ eip_info.type }}"
+
+      register: result
+
+    - name: Check for potential bugs triggered by case sensitivity
+      assert:
+        that:
+          - result['changed']  # A new bug can be triggered by mixed case sensitivity in responses
+          - result['msg'] | search("ipv4_address")  # A bug can be triggered if IPv4 address is not returned with exact case sensitivity
+        success_msg: "Potential type-related bug triggered by mixed case sensitivity for string configuration values!"
+        fail_msg: "No potential bug found."

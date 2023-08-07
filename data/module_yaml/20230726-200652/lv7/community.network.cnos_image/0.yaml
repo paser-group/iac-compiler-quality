@@ -1,0 +1,60 @@
+---
+- name: Firmware Upgrade/Download
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    deviceType: 'cnos'
+    enablePassword: 'enablepass'
+    host: '10.1.1.1'
+    imgpath: null
+    imgtype: null
+    outputfile: '/tmp/output.txt'
+    password: 'password'
+    protocol: null
+    serverip: null
+    serverpassword: null
+    serverusername: null
+    username: 'admin'
+    limit_value: 0
+
+  tasks:
+    - name: Perform firmware upgrade/download from a remote server on device
+      community.network.cnos_image:
+        deviceType: "{{ deviceType }}"
+        enablePassword: "{{ enablePassword }}"
+        host: "{{ host }}"
+        imgpath: "{{ imgpath }}"
+        imgtype: "{{ imgtype }}"
+        outputfile: "{{ outputfile }}"
+        password: "{{ password }}"
+        protocol: "{{ protocol }}"
+        serverip: "{{ serverip }}"
+        serverpassword: "{{ serverpassword }}"
+        serverusername: "{{ serverusername }}"
+        username: "{{ username }}"
+        limit: "{{ limit_value }}"
+      register: result
+
+    - debug:
+        var: result
+
+    # Test Case 1: Attempt to provide a non-integer value for limit parameter
+    - name: Test Case 1 - Non-integer value for limit
+      set_fact:
+        limit_value: 'not_an_integer'
+      when: result.changed | default(false)
+
+    - debug:
+        var: limit_value
+      when: limit_value is defined
+
+    # Test Case 2: Provide a valid integer value for limit
+    - name: Test Case 2 - Valid value for limit
+      set_fact:
+        limit_value: 10
+      when: result.changed | default(false)
+
+    - debug:
+        var: limit_value
+      when: limit_value is defined

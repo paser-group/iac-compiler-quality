@@ -1,0 +1,62 @@
+---
+- name: Test playbook for ansible.builtin.user module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    random_mac_address: "{{ '%02x%02x%02x%02x%02x%02x' | format(0, 0, 0, 0, 0, (range(256) | random)) }}"
+
+  tasks:
+    - name: Create users
+      ansible.builtin.user:
+        name: john
+        state: present
+        comment: "Test User"
+        uid: 1001
+        home: /home/john
+        shell: /bin/bash
+        password: "mysecretpassword"
+        append: true
+        create_home: true
+        expires: 30
+        force: true
+        generate_ssh_key: true
+        hidden: true
+        local: true
+        move_home: true
+        non_unique: true
+        system: false
+        umask: "0022"
+        update_password: "always"
+      register: result
+
+    - name: Display user creation result
+      debug:
+        var: result
+
+    - name: Modify user
+      ansible.builtin.user:
+        name: john
+        state: present
+        password: "newsecretpassword"
+        uid: 1002
+      register: result
+
+    - name: Display user modification result
+      debug:
+        var: result
+
+    - name: Remove user
+      ansible.builtin.user:
+        name: john
+        state: absent
+      register: result
+
+    - name: Display user removal result
+      debug:
+        var: result
+
+    # Test case for generating random MAC address
+    - name: Generate random MAC address
+      debug:
+        msg: "{{ random_mac_address }}"

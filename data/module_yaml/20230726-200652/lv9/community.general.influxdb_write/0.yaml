@@ -1,0 +1,52 @@
+---
+- name: Test playbook for 'community.general.influxdb_write' module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Include helper variables
+      include_vars:
+        file: helper_vars.yml
+
+    - name: Generate random IP address
+      set_fact:
+        random_ip_address: "{{ hostvars['localhost'].ansible_default_ipv4.address | ipnetwork(hostvars['localhost'].inventory_hostname, '10.1.1.0/24') | ipaddress }}"
+      run_once: true
+
+    - name: Write data to InfluxDB
+      community.general.influxdb_write:
+        hostname: "{{ random_ip_address }}"
+        port: 8086
+        database_name: testdb
+        username: testuser
+        password: testpassword
+        ssl: false
+        timeout: 30
+        validate_certs: true
+        retries: 3
+        data_points:
+          - measurement: cpu
+            tags:
+              host: "{{ inventory_hostname }}"
+            fields:
+              value: 0.64
+        state: write
+
+- name: Random IP address generation helper module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Install required Python libraries
+      pip:
+        name: ipaddress
+
+    - name: Generate random IP address
+      set_fact:
+        random_ip_address: "{{ hostvars['localhost'].ansible_default_ipv4.address | ipnetwork(hostvars['localhost'].inventory_hostname, '10.1.1.0/24') | ipaddress }}"
+      run_once: true
+
+  handlers:
+    - name: Print random IP address
+      debug:
+        var: random_ip_address

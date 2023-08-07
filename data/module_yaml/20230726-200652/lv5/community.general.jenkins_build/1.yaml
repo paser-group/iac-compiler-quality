@@ -1,0 +1,36 @@
+- name: Test playbook for community.general.jenkins_build module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Generate random port number
+      set_fact:
+        jenkins_port: "{{ 8000 + (ansible_play_hosts_all.index(inventory_hostname) | random(seed=inventory_hostname) | int) }}"
+
+    - name: Install Jenkins package
+      apt:
+        name: jenkins
+        state: present
+
+    - name: Start Jenkins service
+      service:
+        name: jenkins
+        state: started
+
+    - name: Configure Jenkins job
+      community.general.jenkins_build:
+        url: "http://localhost:{{ jenkins_port }}"
+        user: admin
+        password: admin
+        name: ansible-example
+        state: present
+        token: "{{ ansible_date_time.epoch }}"
+        build_number: 50
+        args:
+          foo: bar
+
+      register: result
+
+    - name: Debug result
+      debug:
+        var: result

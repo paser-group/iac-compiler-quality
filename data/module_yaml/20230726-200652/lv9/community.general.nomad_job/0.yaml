@@ -1,0 +1,57 @@
+---
+- name: Test playbook for Ansible latent type-related bugs
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    client_cert: "/tmp/client.crt"
+    client_key: "/tmp/client.key"
+    content: "{{ lookup('file', '/tmp/job.hcl') }}"
+    content_format: "hcl"
+    force_start: true
+    host: "localhost"
+    name: "nomad-job"
+    namespace: "default"
+    state: "present"
+    timeout: 60
+    token: "abcd1234"
+    use_ssl: false
+    validate_certs: true
+
+  tasks:
+    - name: Create temporary client certificate file
+      file:
+        path: "{{ client_cert }}"
+        state: touch
+
+    - name: Create temporary client key file
+      file:
+        path: "{{ client_key }}"
+        state: touch
+
+    - name: Write content to a temporary file
+      copy:
+        content: "{{ content }}"
+        dest: "/tmp/job.hcl"
+        mode: "0644"
+
+    - name: Run the 'community.general.nomad_job' module
+      nomad_job:
+        client_cert: "{{ client_cert }}"
+        client_key: "{{ client_key }}"
+        content: "{{ content }}"
+        content_format: "{{ content_format }}"
+        force_start: "{{ force_start }}"
+        host: "{{ host }}"
+        name: "{{ name }}"
+        namespace: "{{ namespace }}"
+        state: "{{ state }}"
+        timeout: "{{ timeout }}"
+        token: "{{ token }}"
+        use_ssl: "{{ use_ssl }}"
+        validate_certs: "{{ validate_certs }}"
+      register: nomad_job_result
+
+    - name: Debug nomad_job_result
+      debug:
+        var: nomad_job_result

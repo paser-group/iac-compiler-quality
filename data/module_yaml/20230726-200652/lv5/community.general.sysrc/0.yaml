@@ -1,0 +1,53 @@
+---
+- name: Test playbook for community.general.sysrc module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Set sysrc key-value pair
+      community.general.sysrc:
+        delim: '='
+        jail: "{{ jail }}"
+        name: "{{ name }}"
+        path: "{{ path }}"
+        state: "{{ state }}"
+        value: "{{ value }}"
+      register: result
+
+    - debug:
+        var: result
+
+  vars:
+    jail: "myjail"
+    path: "/etc/sysrc.conf"
+
+  tasks:
+    - name: Test case 1 - Valid port number for name and value
+      set_fact:
+        name: "Port_{{ (4 * ansible_play_batch_index) + item }}"
+        value: "{{ (4 * ansible_play_batch_index) + item }}"
+      loop: [1, 2, 3, 4]
+
+    # Add more test cases based on different heuristic scenarios
+
+    - name: Test case 2 - Invalid port number for name and value
+      set_fact:
+        name: "Port_{{ (4 * ansible_play_batch_index) + item }}"
+        value: "{{ (4 * ansible_play_batch_index) + item }}"
+      loop: [1, 2, 3, -1]  # Negative value
+
+    - name: Test case 3 - Non-integer port number for name and value
+      set_fact:
+        name: "Port_{{ (4 * ansible_play_batch_index) + item }}"
+        value: "example"
+      loop: [1, 2, 3, 4]
+
+    - name: Test case 4 - Invalid jail name
+      set_fact:
+        jail: "{{ item }}"
+      loop: ["myjail", "invalid_jail", "another_jail"]
+
+    - name: Test case 5 - Invalid sysrc path
+      set_fact:
+        path: "{{ item }}"
+      loop: ["/etc/sysrc.conf", "/tmp/sysrc.conf", "/var/sysrc.conf", "/nonexistent.conf"]

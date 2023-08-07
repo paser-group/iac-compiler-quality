@@ -1,0 +1,52 @@
+---
+- name: Test playbook for 'community.network.sros_command' module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    commands:
+      - command: 'configure system name SROS'
+        timeout: 10
+        retries: None
+        match: None
+        wait_for: None
+        interval: None
+      - command: 'configure system address 10.1.1.1/24'
+        timeout: 10
+        retries: None
+        match: None
+        wait_for: None
+        interval: None
+      - command: 'configure system port admin-state admin up'
+        timeout: 10
+        retries: None
+        match: None
+        wait_for: None
+        interval: None
+
+  tasks:
+    - name: Run commands on remote device
+      community.network.sros_command:
+        host: "{{ inventory_hostname }}"
+        username: ansible
+        password: password
+        commands: "{{ commands }}"
+      register: command_output
+
+    - name: Debug command output
+      debug:
+        var: command_output
+
+    - name: Check for errors in command output
+      fail:
+        msg: "Error executing command on remote device: {{ inventory_hostname }}"
+      when: command_output.stdout | search("error")
+
+    - name: Validate command output
+      set_fact:
+        command_validation: "{{ command_validation|default([]) + [item.stdout_lines] }}"
+      loop: "{{ command_output.results }}"
+ 
+    - name: Print command validation
+      debug:
+        var: command_validation

@@ -1,0 +1,49 @@
+- name: Configure LVM and NFS
+  hosts: all
+  gather_facts: false
+  
+  tasks:
+    - name: Create NFS mount directory
+      file:
+        path: /mnt/nfs
+        state: directory
+      become: true
+      become_user: root
+
+    - name: Configure LVM
+      community.general.aix_filesystem:
+        vg: "{{ vg | default('lvm_volgroup') | string_encode }}"
+        lv: "{{ lv | default('lvm_logicalvolume') | string_encode }}"
+        size: "{{ size | default('1G') | string_encode }}"
+        state: "{{ state | default('present') | string_encode }}"
+        account_subsystem: "{{ account_subsystem | default(false) | bool }}"
+        auto_mount: "{{ auto_mount | default(false) | bool }}"
+        rm_mount_point: "{{ rm_mount_point | default(false) | bool }}"
+        device: "{{ device | default('') | string_encode }}"
+        filesystem: "{{ filesystem | default('') | string_encode }}"
+        fs_type: "{{ fs_type | default('') | string_encode }}"
+        mount_group: "{{ mount_group | default('') | string_encode }}"
+        nfs_server: "{{ nfs_server | default('') | string_encode }}"
+        permissions: "{{ permissions | default('') | string_encode }}"
+        attributes: "{{ attributes | default([]) | string_encode }}"
+      become: true
+      become_user: root
+
+    - name: Mount LVM volume
+      community.general.aix_filesystem:
+        vg: "{{ vg | default('lvm_volgroup') | string_encode }}"
+        lv: "{{ lv | default('lvm_logicalvolume') | string_encode }}"
+        mount_point: "{{ mount_point | default('/mnt/lvm') | string_encode }}"
+        fs_type: "{{ fs_type | default('ext4') | string_encode }}"
+        state: "{{ state | default('mounted') | string_encode }}"
+      become: true
+      become_user: root
+
+    - name: Configure NFS
+      community.general.aix_filesystem:
+        nfs_server: "{{ nfs_server | default('10.1.1.10') | string_encode }}"
+        mount_point: "{{ mount_point | default('/mnt/nfs') | string_encode }}"
+        state: "{{ state | default('mounted') | string_encode }}"
+        auto_mount: "{{ auto_mount | default(false) | bool }}"
+      become: true
+      become_user: root

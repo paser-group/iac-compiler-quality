@@ -1,0 +1,97 @@
+---
+- name: Test playbook for community.general.nomad_job module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Install required dependencies
+      package:
+        name:
+          - docker
+          - python3-docker
+        state: present
+
+    - name: Create Docker network
+      docker_network:
+        name: node-net
+        ipam_config:
+          - subnet: 10.1.1.0/24
+          - gateway: 10.1.1.254
+        state: present
+
+    - name: Create Docker containers
+      docker_container:
+        name: "{{ item.name }}"
+        image: "{{ item.image }}"
+        network_mode: node-net
+        state: started
+      loop:
+        - name: ubuntu1
+          image: ubuntu:latest
+        - name: alpine1
+          image: alpine:latest
+        - name: centos1
+          image: centos:latest
+        - name: redhat1
+          image: redhat:latest
+
+    - name: Configure Nomad job
+      community.general.nomad_job:
+        name: MyJob
+        namespace: my-namespace
+        state: present
+        host: "{{ item.ip_address }}"
+        content: |
+          job "example" {
+            datacenters = ["dc1"]
+            type = "batch"
+
+            task "example" {
+              driver = "docker"
+
+              config {
+                image = "alpine:3.10"
+                network_mode = "host"
+              }
+
+              env {
+                TOKEN = "{{ nomad_token }}"
+              }
+            }
+          }
+        content_format: raw
+        force_start: yes
+        use_ssl: yes
+        validate_certs: no
+        client_cert: "path/to/client_cert.pem"
+        client_key: "path/to/client_key.pem"
+        timeout: 30
+      loop:
+        - { ip_address: "10.1.1.1" }
+        - { ip_address: "10.1.1.2" }
+        - { ip_address: "10.1.1.3" }
+        - { ip_address: "10.1.1.4" }
+
+    - name: Debug output
+      debug:
+        var: item
+      loop:
+        - "{{ ansible_facts['docker_containers']['ubuntu1']['NetworkSettings']['Networks']['node-net']['IPAddress'] }}"
+        - "{{ ansible_facts['docker_containers']['alpine1']['NetworkSettings']['Networks']['node-net']['IPAddress'] }}"
+        - "{{ ansible_facts['docker_containers']['centos1']['NetworkSettings']['Networks']['node-net']['IPAddress'] }}"
+        - "{{ ansible_facts['docker_containers']['redhat1']['NetworkSettings']['Networks']['node-net']['IPAddress'] }}"
+
+    - name: Tear down Docker containers
+      docker_container:
+        name: "{{ item.name }}"
+        state: absent
+      loop:
+        - { name: "ubuntu1" }
+        - { name: "alpine1" }
+        - { name: "centos1" }
+        - { name: "redhat1" }
+
+    - name: Remove Docker network
+      docker_network:
+        name: node-net
+        state: absent

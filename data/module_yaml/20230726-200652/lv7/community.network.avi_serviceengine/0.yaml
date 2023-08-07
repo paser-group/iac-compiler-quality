@@ -1,0 +1,42 @@
+---
+- name: Test playbook for exposing latent type-related bugs
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Configure ServiceEngine
+      community.network.avi_serviceengine:
+        controller: "https://{{ controller_ip }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        tenant: "{{ tenant }}"
+        tenant_uuid: "{{ tenant_uuid }}"
+        api_version: "{{ api_version }}"
+        avi_credentials:
+          ca_bundle_path: "/path/to/ca_bundle.pem"
+          client_cert_path: "/path/to/client_cert.pem"
+          client_key_path: "/path/to/client_key.pem"
+        name: "se1"
+        password: "{{ password }}"
+        tenant_ref: "/api/tenant/{{ tenant_uuid }}"
+        resources:
+          - name: "resource1"
+            vcpus: "{{ vcpus_limit | default(100) // 2 }}"
+            memory: "{{ memory_limit | default(8192) * 2.5 }}"
+        state: "present"
+      register: result
+
+    - debug:
+        var: result
+
+  vars:
+    controller_ip: "10.1.1.1"
+    username: "admin"
+    password: "password"
+    tenant: "Default-Cloud"
+    tenant_uuid: "abcd1234"
+    api_version:
+      version: "21.1.1"
+
+    vcpus_limit: "5"
+    memory_limit: "4096"

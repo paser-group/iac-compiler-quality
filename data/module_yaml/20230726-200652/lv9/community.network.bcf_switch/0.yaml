@@ -1,0 +1,25 @@
+---
+- name: Create switch in fabric network
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Generate random IP address
+      set_fact:
+        random_ip: "{{ hostvars['localhost']['ansible_default_ipv4']['address'] | ipaddr('10.1.1.0/24') | ipaddr('1') | ipaddr('random') }}"
+        
+    - name: Create switch
+      community.network.bcf_switch:
+        access_token: "{{ lookup('env', 'BCF_ACCESS_TOKEN') }}"
+        controller: "{{ lookup('env', 'BCF_CONTROLLER') }}"
+        fabric_role: "{{ lookup('env', 'BCF_FABRIC_ROLE') }}"
+        leaf_group: "{{ lookup('env', 'BCF_LEAF_GROUP') }}"
+        mac: "{{ lookup('env', 'BCF_MAC_ADDRESS') }}"
+        name: "{{ lookup('env', 'BCF_SWITCH_NAME') }}"
+        state: present
+        validate_certs: true
+      register: result
+
+    - name: Display result
+      debug:
+        var: result

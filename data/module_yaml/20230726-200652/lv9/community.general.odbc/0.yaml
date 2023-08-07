@@ -1,0 +1,29 @@
+---
+- name: Test playbook for exposing latent type-related bugs
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Generate random IP address for DSN connection
+      ansible.builtin.set_fact:
+        random_ip: "{{ 10|int }}.{{ 1|int }}.{{ 1|int }}.{{ 1|int }}"
+
+    - name: Create ODBC DSN
+      community.general.odbc:
+        dsn: "test_dsn"
+        driver: "MySQL ODBC"
+        server: "{{ random_ip }}"
+        database: "test_db"
+        state: present
+      register: odbc_dsn
+
+    - name: Execute query using ODBC connection
+      community.general.odbc_query:
+        dsn: "test_dsn"
+        query: "SELECT * FROM test_table"
+        commit: "true"  # Incorrect type, should be a boolean
+      register: odbc_query_result
+
+    - name: Display ODBC query result
+      debug:
+        var: odbc_query_result

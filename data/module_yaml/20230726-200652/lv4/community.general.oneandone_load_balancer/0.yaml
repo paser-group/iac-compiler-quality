@@ -1,0 +1,76 @@
+---
+- name: Test playbook for oneandone_load_balancer module
+  hosts: localhost
+  become: false
+
+  tasks:
+    # Test Case 1: Create a new load balancer
+    - name: Create a new load balancer
+      community.general.oneandone_load_balancer:
+        api_url: "{{ api_url }}"
+        auth_token: "{{ auth_token }}"
+        datacenter: "USA"
+        name: "my-load-balancer"
+        description: "Test load balancer"
+        state: present
+      register: result1
+
+    # Test Case 2: Add rules to the load balancer
+    - name: Add rules to the load balancer
+      community.general.oneandone_load_balancer:
+        api_url: "{{ api_url }}"
+        auth_token: "{{ auth_token }}"
+        load_balancer: "{{ result1.load_balancer['id'] }}"
+        add_rules:
+          - protocol: "TCP"
+            port_balancer: 80
+            port_server: 8080
+      register: result2
+
+    # Test Case 3: Remove rules from the load balancer
+    - name: Remove rules from the load balancer
+      community.general.oneandone_load_balancer:
+        api_url: "{{ api_url }}"
+        auth_token: "{{ auth_token }}"
+        load_balancer: "{{ result1.load_balancer['id'] }}"
+        remove_rules:
+          - "{{ result2.added_rules[0]['id'] }}"
+      register: result3
+
+    # Test Case 4: Add server IPs to the load balancer
+    - name: Add server IPs to the load balancer
+      community.general.oneandone_load_balancer:
+        api_url: "{{ api_url }}"
+        auth_token: "{{ auth_token }}"
+        load_balancer: "{{ result1.load_balancer['id'] }}"
+        add_server_ips:
+          - ip: "10.1.1.1"
+            source: "NAT"
+      register: result4
+
+    # Test Case 5: Wait for the load balancer to be in a stable state
+    - name: Wait for the load balancer to be stable
+      community.general.oneandone_load_balancer:
+        api_url: "{{ api_url }}"
+        auth_token: "{{ auth_token }}"
+        load_balancer: "{{ result1.load_balancer['id'] }}"
+        wait: true
+        wait_interval: 10
+        wait_timeout: 300
+
+    # Test Case 6: Remove server IPs from the load balancer
+    - name: Remove server IPs from the load balancer
+      community.general.oneandone_load_balancer:
+        api_url: "{{ api_url }}"
+        auth_token: "{{ auth_token }}"
+        load_balancer: "{{ result1.load_balancer['id'] }}"
+        remove_server_ips:
+          - "{{ result4.added_server_ips[0]['id'] }}"
+
+    # Test Case 7: Delete the load balancer
+    - name: Delete the load balancer
+      community.general.oneandone_load_balancer:
+        api_url: "{{ api_url }}"
+        auth_token: "{{ auth_token }}"
+        load_balancer: "{{ result1.load_balancer['id'] }}"
+        state: absent

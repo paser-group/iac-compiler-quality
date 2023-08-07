@@ -1,0 +1,41 @@
+---
+- name: Update Vertica Configuration
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    cluster: my_cluster
+    db: my_database
+    login_password: my_password
+    login_user: my_user
+    parameter: my_parameter
+    port: "{{ lookup('pipe', 'shuf -i 1024-65535 -n 1') }}"  # Generate a random port
+    value: my_value
+
+    # Generate random IP addresses for networking modules
+    node_net: 10.1.1.0/24
+    gateway: "{{ lookup('pipe', 'shuf -i 2-253 -n 1') }}"  # Generate a random gateway
+    ubuntu1_ip: "{{ node_net|ipaddr(node_net|ipaddr('network'))|ipaddr('host', 1)|ipaddr('cooked') }}"
+    alpine1_ip: "{{ node_net|ipaddr(node_net|ipaddr('network'))|ipaddr('host', 2)|ipaddr('cooked') }}"
+    centos1_ip: "{{ node_net|ipaddr(node_net|ipaddr('network'))|ipaddr('host', 3)|ipaddr('cooked') }}"
+    redhat1_ip: "{{ node_net|ipaddr(node_net|ipaddr('network'))|ipaddr('host', 4)|ipaddr('cooked') }}"
+
+  tasks:
+    - name: Include the required role
+      include_role:
+        name: community.general.vertica
+
+    - name: Update Vertica Configuration
+      community.general.vertica_configuration:
+        cluster: "{{ cluster }}"
+        db: "{{ db }}"
+        login_password: "{{ login_password }}"
+        login_user: "{{ login_user }}"
+        parameter: "{{ parameter }}"
+        port: "{{ port }}"
+        value: "{{ value }}"
+      register: result
+
+    - name: Debug the result
+      debug:
+        var: result

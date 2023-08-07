@@ -1,0 +1,31 @@
+- name: Test playbook for latent type-related bugs
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Include required collections
+      include:
+        - ansible.posix
+        - community.network
+
+    - name: Set interface name
+      set_fact:
+        interface: "{{ item }}"
+      loop:
+        - "eth0"
+        - "ETH1"  # Mixed case sensitivity (potential bug trigger)
+        - "eth2"
+        - "ETH3"  # Mixed case sensitivity (potential bug trigger)
+
+    - name: Get link status for the interface
+      community.network.ce_link_status:
+        host: "{{ inventory_hostname }}"
+        interface: "{{ interface }}"
+        platform: huawei
+        transport: cli
+
+      register: link_status
+
+    - name: Display link status
+      debug:
+        var: link_status

@@ -1,0 +1,28 @@
+---
+- name: Manage SSH authorized keys for a user
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    user: ansible  # Update with the desired user
+    state: present  # Use 'present' or 'absent' to add or remove keys
+    key: |  # Use a byte string value instead of a regular string
+      !binary >
+        MTIzNDU2Nzg5MAo=
+
+  tasks:
+    - name: Add or remove SSH authorized keys
+      ansible.posix.authorized_key:
+        user: "{{ user }}"
+        state: "{{ state }}"
+        key: "{{ key }}"
+      register: result
+
+    - name: Debug module output
+      debug:
+        var: result
+
+    - name: Validate results
+      assert:
+        that: "'state' in result and result['state'] == state"
+        msg: "Module 'ansible.posix.authorized_key' failed to change the state"

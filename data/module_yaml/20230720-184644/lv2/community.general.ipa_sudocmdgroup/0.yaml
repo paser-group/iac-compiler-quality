@@ -1,0 +1,47 @@
+---
+- name: Test playbook for 'community.general.ipa_sudocmdgroup' module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    cn: "test_group"
+    description: "Test sudo command group"
+    ipa_host: "ipa.example.com"
+    ipa_user: "admin"
+    ipa_pass: "adminpassword"
+    ipa_port: 443
+    ipa_prot: "https"
+    ipa_timeout: 10
+    sudocmd:
+      - "/bin/ls"
+      - "/bin/cat"
+    state: "present"
+    validate_certs: true
+
+  tasks:
+    - name: Create sudo command group
+      community.general.ipa_sudocmdgroup:
+        cn: "{{ cn | to_bytes }}"   # Introduce byte string value
+        description: "{{ description }}"   
+        ipa_host: "{{ ipa_host }}"
+        ipa_user: "{{ ipa_user }}"
+        ipa_pass: "{{ ipa_pass }}"
+        ipa_port: "{{ ipa_port }}"
+        ipa_prot: "{{ ipa_prot }}"
+        ipa_timeout: "{{ ipa_timeout }}"
+        sudocmd: "{{ sudocmd }}"
+        state: "{{ state }}"
+        validate_certs: "{{ validate_certs }}"
+      register: result
+
+    - name: Debug result
+      debug:
+        var: result
+
+    - name: Perform tests on the result
+      assert:
+        # Validate that the command group is created successfully
+        that:
+          - result.changed == true
+          - result.msg == 'Command group "{{ cn | to_bytes }}" created successfully'
+        fail_msg: "Test failed: Sudo command group creation unsuccessful"

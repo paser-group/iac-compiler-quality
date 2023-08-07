@@ -1,0 +1,70 @@
+---
+- name: Test crypttab module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Install community.general collection
+      command: ansible-galaxy collection install community.general
+
+    - name: Include crypttab task from community.general collection
+      include_tasks: "collections/community/general/crypttab.yml"
+      vars:
+        backing_device: "/dev/sdb"
+        name: "encrypted_device"
+        opts: "noauto"
+        password: "/tmp/password_file"
+        path: "/dev/mapper/encrypted_device"
+        state: "present"
+
+    - name: Test case: backing_device as byte string
+      set_fact:
+        backing_device: !binary |
+          {{ backing_device | b64encode() }}
+      tags:
+        - test_case
+
+    - name: Test case: name as byte string
+      set_fact:
+        name: !binary |
+          {{ name | b64encode() }}
+      tags:
+        - test_case
+
+    - name: Test case: opts as byte string
+      set_fact:
+        opts: !binary |
+          {{ opts | b64encode() }}
+      tags:
+        - test_case
+
+    - name: Test case: password as byte string
+      set_fact:
+        password: !binary |
+          {{ password | b64encode() }}
+      tags:
+        - test_case
+
+    - name: Test case: path as byte string
+      set_fact:
+        path: !binary |
+          {{ path | b64encode() }}
+      tags:
+        - test_case
+
+    - name: Test case: state as byte string
+      set_fact:
+        state: !binary |
+          {{ state | b64encode() }}
+      tags:
+        - test_case
+
+    - name: Execute crypttab task
+      include_tasks: "collections/community/general/crypttab.yml"
+      vars:
+        backing_device: "{{ backing_device }}"
+        name: "{{ name }}"
+        opts: "{{ opts }}"
+        password: "{{ password }}"
+        path: "{{ path }}"
+        state: "{{ state }}"

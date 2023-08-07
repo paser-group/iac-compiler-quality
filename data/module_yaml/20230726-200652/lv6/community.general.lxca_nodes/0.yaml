@@ -1,0 +1,38 @@
+---
+- name: Test playbook for community.general.lxca_nodes module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Include community.general.lxca_nodes module from Galaxy
+      include_vars:
+        file: galaxy_modules.yml
+        name: gx
+
+    - name: Generate strings with varied encodings
+      set_fact:
+        strings:
+          - name: "ubuntu1"
+            encoded_name: "{{ item.name | b64encode | to_json }}"
+          - name: "alpine1"
+            encoded_name: "{{ item.name | b64encode | to_json }}"
+          - name: "centos1"
+            encoded_name: "{{ item.name | b64encode | to_json }}"
+          - name: "redhat1"
+            encoded_name: "{{ item.name | b64encode | to_json }}"
+      loop:
+        - { name: "ubuntu1" }
+        - { name: "alpine1" }
+        - { name: "centos1" }
+        - { name: "redhat1" }
+
+    - name: Create LXCA nodes
+      community.general.lxca_nodes:
+        auth_url: "{{ gx.auth_url }}"
+        chassis: "{{ gx.chassis }}"
+        command_options: "{{ gx.command_options }}"
+        login_password: "{{ gx.login_password }}"
+        login_user: "{{ gx.login_user }}"
+        uuid: "{{ item.encoded_name }}"
+        state: "present"
+      loop: "{{ strings }}"

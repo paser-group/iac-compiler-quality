@@ -1,0 +1,28 @@
+- name: Create or Delete Alert Policies
+  hosts: localhost
+  gather_facts: False
+
+  tasks:
+    - name: Create Alert Policy
+      community.general.clc_alert_policy:
+        name: "Test Alert Policy"
+        alias: "test-alert"
+        metric: "CPU Usage"
+        threshold: 90
+        duration: "2m"
+        alert_recipients: null
+        state: present
+      register: alert_policy_result
+      ignore_errors: True
+
+    - name: Check if Alert Policy was created successfully
+      assert:
+        that:
+          - "'failed' not in alert_policy_result"
+          - "'msg': 'deleted' not in alert_policy_result"
+
+    - name: Delete Alert Policy if it was created successfully
+      community.general.clc_alert_policy:
+        id: "{{ alert_policy_result.clc_alert_policy.id }}"
+        state: absent
+      ignore_errors: True

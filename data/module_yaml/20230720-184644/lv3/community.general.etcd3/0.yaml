@@ -1,0 +1,51 @@
+---
+- name: Test playbook for latent type-related bugs
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    etcd_host: "http://{{ hostvars['localhost']['ansible_default_ipv4']['address'] }}:{{ etcd_port }}"
+    mixed_types_value: "{{ mixed_types_bytes | to_json }}"
+    numeric_value: 12345
+    string_value: "this is a string"
+
+  tasks:
+    - name: Set key-value pair with mixed data types (bytes and strings)
+      community.general.etcd3:
+        host: "{{ etcd_host }}"
+        key: "/test/mixed_types_key"
+        value: "{{ mixed_types_value }}"
+      register: result
+      failed_when: result.failed == false
+
+    - name: Set key-value pair with numeric value
+      community.general.etcd3:
+        host: "{{ etcd_host }}"
+        key: "/test/numeric_value_key"
+        value: "{{ numeric_value }}"
+      register: result
+      failed_when: result.failed == false
+
+    - name: Set key-value pair with string value
+      community.general.etcd3:
+        host: "{{ etcd_host }}"
+        key: "/test/string_value_key"
+        value: "{{ string_value }}"
+      register: result
+      failed_when: result.failed == false
+
+    - name: Delete key-value pair
+      community.general.etcd3:
+        host: "{{ etcd_host }}"
+        key: "/test/mixed_types_key"
+        state: absent
+      register: result
+      failed_when: result.failed == false
+
+    - name: Verify key-value pair is deleted
+      community.general.etcd3:
+        host: "{{ etcd_host }}"
+        key: "/test/mixed_types_key"
+      register: result
+      failed_when: result.failed == false

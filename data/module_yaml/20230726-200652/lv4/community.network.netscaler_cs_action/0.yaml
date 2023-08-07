@@ -1,0 +1,39 @@
+---
+- name: Test Ansible Latent Type-Related Bugs
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    nitro_user: admin
+    nitro_pass: password
+    nitro_protocol: http
+    nitro_timeout: 10
+    nsip: 10.1.1.5
+    validate_certs: false
+
+  tasks:
+    - name: Create network subnet with random IPv4 address
+      set_fact:
+        subnet: "{{ (10, 1, 1, random(1, 254)) | join('.') }}"
+
+    - name: Configure netscaler_cs_action module
+      community.network.netscaler_cs_action:
+        nitro_user: "{{ nitro_user }}"
+        nitro_pass: "{{ nitro_pass }}"
+        nitro_protocol: "{{ nitro_protocol }}"
+        nitro_timeout: "{{ nitro_timeout }}"
+        nsip: "{{ nsip }}"
+        validate_certs: "{{ validate_certs }}"
+        state: present
+        name: "{{ subnet }}"
+        comment: null
+        targetlbvserver: null
+        targetvserver: null
+        targetvserverexpr: null
+        save_config: true
+        subnet: "{{ subnet }}"
+      register: result
+
+    - name: Debug result
+      debug:
+        var: result

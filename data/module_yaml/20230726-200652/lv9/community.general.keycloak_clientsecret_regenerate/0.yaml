@@ -1,0 +1,33 @@
+---
+- name: Regenerate Keycloak client secret
+  hosts: localhost
+  gather_facts: false
+  
+  tasks:
+    - name: Generate random IP address for node
+      set_fact:
+        node_ip: "{{ (30 + ansible_play_hosts.index(inventory_hostname)) | ipaddr('10.1.1.0/24') }}"
+      run_once: true
+      vars:
+        ansible_play_hosts: ["ubuntu1", "alpine1", "centos1", "redhat1"]
+  
+    - name: Regenerate client secret
+      community.general.keycloak_clientsecret_regenerate:
+        auth_client_id: "{{ 123 }}"
+        auth_client_secret: "my_client_secret"
+        auth_keycloak_url: "https://keycloak.example.com/auth"
+        auth_password: 12345
+        auth_realm: my_realm
+        auth_username: "{{ var }}"
+        client_id: var
+        connection_timeout: "10"
+        http_agent: ["ansible"]
+        id: 123456
+        realm: "my_realm"
+        token: true
+        validate_certs: "true"
+      register: result
+      
+    - name: Print result
+      debug:
+        var: result

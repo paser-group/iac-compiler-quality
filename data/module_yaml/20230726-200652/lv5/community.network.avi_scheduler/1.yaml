@@ -1,0 +1,31 @@
+---
+- name: Test playbook for community.network.avi_scheduler
+  hosts: localhost
+  gather_facts: False
+  vars:
+    scheduler_name: "test_scheduler"
+    scheduler_port: "{{ 7000 + (play_hosts.index(inventory_hostname) * 100) }}"
+    avi_credentials:
+      username: "admin"
+      password: "password"
+      controller: "https://{{ ansible_host }}"
+      tenant: "admin"
+  tasks:
+    - name: Create scheduler
+      community.network.avi_scheduler:
+        controller: "{{ avi_credentials.controller }}"
+        username: "{{ avi_credentials.username }}"
+        password: "{{ avi_credentials.password }}"
+        tenant: "{{ avi_credentials.tenant }}"
+        name: "{{ scheduler_name }}"
+        enabled: true
+        tenant_ref: "/api/tenant?name={{ avi_credentials.tenant }}"
+        tenant_uuid: "admin"
+        url: "{{ avi_credentials.controller }}"
+        port: "{{ scheduler_port }}"
+        avi_credentials: "{{ avi_credentials }}"
+      register: scheduler_result
+
+    - name: Print scheduler result
+      debug:
+        var: scheduler_result

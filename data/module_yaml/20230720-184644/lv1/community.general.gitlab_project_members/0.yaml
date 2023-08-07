@@ -1,0 +1,55 @@
+---
+- name: Test Ansible Latent Type-Related Bugs
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Set up test environment
+      docker_container:
+        name: "{{ item.name }}"
+        image: "{{ item.image }}"
+        state: started
+        networks:
+          - name: node-net
+        ports:
+          - "{{ item.port }}:22/tcp"
+      with_items:
+        - { name: "ubuntu1", image: "ubuntu:latest", port: 2201 }
+        - { name: "alpine1", image: "alpine:latest", port: 2202 }
+        - { name: "centos1", image: "centos:latest", port: 2203 }
+        - { name: "redhat1", image: "redhat:latest", port: 2204 }
+
+    - name: Pause for container startup
+      pause:
+        seconds: 5
+
+    - name: Install GitLab project members module
+      pip:
+        name: "ansible-community.gitlab"
+        state: present
+      become: true
+
+    - name: Test case for mixed case sensitivity in access_level
+      community.general.gitlab_project_members:
+        project: "my_project"
+        gitlab_user: "my_user"
+        access_level: "DEveloper"  # Mixed case
+        state: present
+      register: result
+      ignore_errors: true
+
+    - name: Debug mixed case sensitivity bug
+      debug:
+        var: result
+
+    # Add more test cases that cover different attributes and options of the gitlab_project_members module
+
+    - name: Clean up test environment
+      docker_container:
+        name: "{{ item.name }}"
+        state: absent
+      with_items:
+        - { name: "ubuntu1" }
+        - { name: "alpine1" }
+        - { name: "centos1" }
+        - { name: "redhat1" }

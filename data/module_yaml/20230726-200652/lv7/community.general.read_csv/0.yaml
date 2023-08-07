@@ -1,0 +1,43 @@
+---
+- name: Test latent type-related bugs in 'community.general.read_csv'
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    csv_file_path: "/tmp/test.csv"
+
+  tasks:
+    - name: Create test CSV file
+      copy:
+        content: |
+          name,age,salary
+          John,25,50000
+          Jane,30,60000
+        dest: "{{ csv_file_path }}"
+
+    - name: Read CSV file
+      community.general.read_csv:
+        path: "{{ csv_file_path }}"
+        delimiter: ","
+        fieldnames: "name,age,salary"
+        skipinitialspace: true
+        unique: true
+      register: csv_data
+
+    - name: Debug CSV data
+      debug:
+        var: csv_data
+
+    - name: Perform division-based operation
+      set_fact:
+        calculated_salary: "{{ item.salary|int / 12 }}"
+      loop: "{{ csv_data.list }}"
+      loop_control:
+        label: "{{ item.name }}"
+
+    - name: Show calculated salary
+      debug:
+        msg: "{{ item.name }} - Monthly Salary: {{ item.calculated_salary }}"
+      loop: "{{ csv_data.list }}"
+      loop_control:
+        label: "{{ item.name }}"

@@ -1,0 +1,45 @@
+---
+- name: Test Avi Tenant Module
+  hosts: localhost
+  connection: local
+  gather_facts: False
+
+  vars:
+    avi_credentials:
+      controller: "{{ controller }}"
+      username: "{{ username }}"
+      password: "{{ password }}"
+      api_version: "{{ api_version }}"
+
+  tasks:
+    - name: Create Avi Tenant
+      community.network.avi_tenant:
+        avi_credentials: "{{ avi_credentials }}"
+        tenant: "test_tenant"
+        state: present
+      register: result
+      ignore_errors: True
+
+    - name: Debug Result
+      debug:
+        var: result
+
+    - name: Test Port Settings
+      set_fact:
+        random_port: "{{ 8000 + (ansible_random | random | int) % 100 }}"
+      ignore_errors: True
+
+    - name: Update Avi Tenant Port
+      community.network.avi_tenant:
+        avi_credentials: "{{ avi_credentials }}"
+        tenant: "test_tenant"
+        config_settings:
+          - key: "port"
+            value: "{{ random_port }}"
+        state: present
+      register: result
+      ignore_errors: True
+
+    - name: Debug Result
+      debug:
+        var: result

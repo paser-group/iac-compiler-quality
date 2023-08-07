@@ -1,0 +1,50 @@
+---
+- name: Test playbook to reveal latent type-based bugs
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    domain: com.example
+    host: localhost
+    key: test_key
+    path: /Users/ansible/Library/Preferences/test.plist
+    state: present
+    type: array
+    value:
+      - value1
+      - value2
+
+  tasks:
+    - name: Install dependencies
+      become: true
+      package:
+        name: git
+        state: present
+
+    - name: Clone ansible-osx-defaults repository
+      git:
+        repo: https://github.com/ygini/ansible-osx-defaults.git
+        dest: /tmp/ansible-osx-defaults
+        version: master
+      register: git_clone
+
+    - name: Install ansible-osx-defaults module
+      pip:
+        name: ansible-osx-defaults
+        state: present
+      when: git_clone.changed
+
+    - name: Set OSX defaults
+      osx_defaults:
+        domain: "{{ domain }}"
+        host: "{{ host }}"
+        key: "{{ key }}"
+        path: "{{ path }}"
+        state: "{{ state }}"
+        type: "{{ type }}"
+        value: "{{ value }}"
+      register: result
+
+    - name: Debug output
+      debug:
+        var: result

@@ -1,0 +1,55 @@
+- name: Configure sensu checks
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Install sensu-checks dependencies
+      package:
+        name: "{{ item }}"
+        state: present
+      loop: "{{ dependencies }}"
+
+    - name: Create sensu checks directory
+      file:
+        path: "{{ path }}"
+        state: directory
+        mode: "0755"
+
+    - name: Create sensu check script
+      copy:
+        content: |
+          #!/bin/bash
+
+          echo "This is a sample sensu check script"
+        dest: "{{ path }}/{{ name }}"
+        mode: "0755"
+
+    - name: Configure sensu checks
+      community.general.sensu_check:
+        name: "{{ name }}"
+        command: "{{ path }}/{{ name }}"
+        aggregate: "{{ aggregate | default(false) }}"
+        backup: "{{ backup | default(false) }}"
+        custom: "{{ custom | default({}) }}"
+        handle: "{{ handle | default(false) }}"
+        handlers: "{{ handlers | default([]) }}"
+        high_flap_threshold: "{{ high_flap_threshold | default(0) }}"
+        interval: "{{ interval | default(60) }}"
+        low_flap_threshold: "{{ low_flap_threshold | default(0) }}"
+        metric: "{{ metric | default(false) }}"
+        occurrences: "{{ occurrences | default(1) }}"
+        publish: "{{ publish | default(true) }}"
+        refresh: "{{ refresh | default(1800) }}"
+        source: "{{ source | default('default') }}"
+        standalone: "{{ standalone | default(false) }}"
+        state: "{{ state | default('present') }}"
+        subdue_begin: "{{ subdue_begin | default('') }}"
+        subdue_end: "{{ subdue_end | default('') }}"
+        subscribers: "{{ subscribers | default([]) }}"
+        timeout: "{{ timeout | default(60) }}"
+        ttl: "{{ ttl | default(0) }}"
+      register: result
+
+    - name: Debug sensu checks result
+      debug:
+        var: result

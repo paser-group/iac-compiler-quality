@@ -1,0 +1,48 @@
+---
+- name: Test for Ansible Latent Type-Related Bugs in avi_healthmonitor module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    healthmonitor_name: "Test Health Monitor"
+    healthmonitor_description: "This is a test health monitor"
+    healthmonitor_tenant: "Default"
+
+  tasks:
+    - name: Create Health Monitor with division-based operation
+      community.network.avi_healthmonitor:
+        controller: "{{ controller }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        state: present
+        name: "{{ healthmonitor_name }}"
+        description: "{{ healthmonitor_description }}"
+        tenant: "{{ healthmonitor_tenant }}"
+        tenant_uuid: "{{ tenant_uuid }}"
+        send_interval: "{{ 100/0 }}"  # Division-based operation to trigger potential bug
+        fail_on_errors: false
+      register: result
+      ignore_errors: true
+
+    - name: Debug result
+      debug:
+        var: result
+
+    # Add more test cases as needed
+
+    - name: Create Health Monitor with valid send_interval value
+      community.network.avi_healthmonitor:
+        controller: "{{ controller }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        state: present
+        name: "{{ healthmonitor_name }}"
+        description: "{{ healthmonitor_description }}"
+        tenant: "{{ healthmonitor_tenant }}"
+        tenant_uuid: "{{ tenant_uuid }}"
+        send_interval: 10
+      register: result_valid_interval
+
+    - name: Debug valid interval result
+      debug:
+        var: result_valid_interval

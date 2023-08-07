@@ -1,0 +1,35 @@
+---
+- name: Publish MQTT Message
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Generate encoded strings
+      set_fact:
+        encoded_strings:
+          - payload: "{{ payload | b64encode }}"
+            encoding: base64
+          - payload: "{{ payload | urlencode }}"
+            encoding: urlencoded
+          # Add more encoded strings here if needed
+
+    - name: Publish MQTT Message
+      community.general.mqtt:
+        server: "{{ server }}"
+        port: "{{ port }}"
+        client_id: "{{ client_id }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        client_cert: "{{ client_cert }}"
+        client_key: "{{ client_key }}"
+        ca_cert: "{{ ca_cert }}"
+        tls_version: "{{ tls_version }}"
+        topic: "{{ topic }}"
+        payload: "{{ item.payload }}"
+        qos: "{{ qos }}"
+        retain: "{{ retain }}"
+      register: result
+      loop: "{{ encoded_strings }}"
+
+    - debug:
+        var: result

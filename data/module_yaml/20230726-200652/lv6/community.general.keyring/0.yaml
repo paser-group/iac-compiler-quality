@@ -1,0 +1,24 @@
+- name: Test playbook for exposing latent type-related bugs
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Set keyring passphrase with varied encodings
+      community.general.keyring:
+        keyring_password: "{{ item }}"
+        state: present
+        service: mykeyring
+        user_password: "{{ vault_user_password }}"
+        username: "{{ vault_username }}"
+        vault_password: "{{ vault_password }}"
+      loop:
+        - "password1"
+        - ["password2"]
+        - "pass" ~ "word3"
+        - "password4\u202e"
+        - "password".encode("utf-8").decode("latin-1")
+      register: result
+
+    - name: Display keyring state
+      debug:
+        var: result

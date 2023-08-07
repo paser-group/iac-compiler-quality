@@ -1,0 +1,68 @@
+---
+- name: Test for Ansible Latent Type-Related Bugs
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Configure MLAG
+      community.network.ce_mlag_config:
+        dfs_group_id: "{{ item.dfs_group_id }}"
+        eth_trunk_id: "{{ item.eth_trunk_id }}"
+        ip_address: "{{ item.ip_address }}"
+        nickname: "{{ item.nickname }}"
+        peer_link_id: "{{ item.peer_link_id }}"
+        priority_id: "{{ item.priority_id }}"
+        pseudo_nickname: "{{ item.pseudo_nickname }}"
+        pseudo_priority: "{{ item.pseudo_priority }}"
+        state: "{{ item.state }}"
+        vpn_instance_name: "{{ item.vpn_instance_name }}"
+      vars:
+        mlag_configs:
+          - dfs_group_id: "{{ random_port() }}"
+            eth_trunk_id: "{{ random_port() }}"
+            ip_address: "{{ random_ip() }}"
+            nickname: "{{ random_string() }}"
+            peer_link_id: "{{ random_port() }}"
+            priority_id: "{{ random_port() }}"
+            pseudo_nickname: "{{ random_string() }}"
+            pseudo_priority: "{{ random_port() }}"
+            state: "{{ random_state() }}"
+            vpn_instance_name: "{{ random_string() }}"
+          - dfs_group_id: None
+            eth_trunk_id: None
+            ip_address: None
+            nickname: None
+            peer_link_id: None
+            priority_id: None
+            pseudo_nickname: None
+            pseudo_priority: None
+            state: None
+            vpn_instance_name: None
+      loop: "{{ mlag_configs }}"
+      register: mlag_result
+
+    - name: Debug MLAG Result
+      debug:
+        var: mlag_result
+      when: mlag_result.changed
+
+  vars:
+    port_range_start: 1000
+    port_range_end: 2000
+
+  tasks:
+    - name: Generate random port number
+      set_fact:
+        random_port: "{{ random(range(port_range_start, port_range_end)) }}"
+
+    - name: Generate random IP address
+      set_fact:
+        random_ip: "{{ ['10.1.1.1', '10.1.1.2', '10.1.1.3', '10.1.1.4'] | random }}"
+
+    - name: Generate random string
+      set_fact:
+        random_string: "{{ lookup('community.general.random_string', length=8, characters='abcdefghijklmnopqrstuvwxyz') }}"
+
+    - name: Generate random state
+      set_fact:
+        random_state: "{{ ['present', 'absent'] | random }}"

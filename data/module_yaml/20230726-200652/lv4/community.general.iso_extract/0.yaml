@@ -1,0 +1,39 @@
+- name: Extract files from ISO image
+  hosts: all
+  become: true
+
+  vars:
+    dest: "/tmp/extracted_files"
+    executable: "/usr/bin/7z"
+    files:
+      - file1.txt
+      - file2.txt
+    force: false
+    image: "/path/to/image.iso"
+
+  tasks:
+    - name: Generate random MAC address
+      set_fact:
+        mac_address: "{{ mac_address | default([]) + [item] }}"
+      loop: "{{ query('network_mac', namespace='ansible.network') }}"
+      when: mac_address is undefined
+
+    - name: Debug MAC address
+      debug:
+        var: mac_address
+
+    - name: Extract files
+      iso_extract:
+        dest: "{{ dest }}"
+        executable: "{{ executable }}"
+        files: "{{ files }}"
+        force: "{{ force }}"
+        image: "{{ image }}"
+      
+    - name: Display extracted files
+      command: ls -l "{{ dest }}"
+      register: extracted_files
+      
+    - name: Debug extracted files
+      debug:
+        var: extracted_files.stdout_lines

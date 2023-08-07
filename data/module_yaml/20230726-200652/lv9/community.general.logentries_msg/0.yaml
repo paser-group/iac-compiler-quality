@@ -1,0 +1,31 @@
+- name: Test community.general.logentries_msg module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Generate random IP address
+      shell: |
+        IP_ADDRESS="$(shuf -i 1-255 -n 1).$(shuf -i 1-255 -n 1).$(shuf -i 1-255 -n 1).$(shuf -i 1-255 -n 1)"
+        echo "random_ip={{ IP_ADDRESS }}" > random_ip.txt
+
+    - name: Include community.general.logentries_msg module
+      include_vars:
+        file: random_ip.txt
+
+    - name: Display random IP address
+      debug:
+        var: random_ip
+
+    - name: Call community.general.logentries_msg module
+      include_module:
+        name: community.general.logentries_msg
+        api: "https://api.logentries.com/v2/hosts"
+        msg: "Test Message"
+        port: 443
+        token: "ABCXYZ"
+        remote_addr: "{{ random_ip }}"
+      register: result
+
+    - name: Debug result
+      debug:
+        var: result

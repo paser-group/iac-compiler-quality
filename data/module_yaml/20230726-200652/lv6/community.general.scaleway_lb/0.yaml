@@ -1,0 +1,59 @@
+- name: Test playbook for community.general.scaleway_lb module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    api_token: "your_scaleway_api_token_here"
+    organization_id: "your_scaleway_organization_id_here"
+
+  tasks:
+    - name: Test the community.general.scaleway_lb module
+      community.general.scaleway_lb:
+        api_token: "{{ api_token }}"
+        organization_id: "{{ organization_id }}"
+        name: "test_lb"
+        region: "ams1"
+        state: present
+        description: "Test Load Balancer"
+        tags:
+          - test
+          - lb
+        wait: true
+        wait_sleep_time: 5
+        wait_timeout: 300
+      register: lb_result
+
+    - debug:
+        var: lb_result
+
+    - name: Test the community.general.scaleway_lb module with encoding test cases
+      community.general.scaleway_lb:
+        api_token: "{{ api_token }}"
+        organization_id: "{{ organization_id }}"
+        name: "test_lb_encoding"
+        region: "ams1"
+        state: present
+        description: "Test Load Balancer encoding"
+        tags:
+          - test
+          - lb
+        wait: true
+        wait_sleep_time: 5
+        wait_timeout: 300
+        api_url: "\u0074\u0065\u0073\u0074\u002e\u0063\u006f\u006d"
+        # Encoded value for "test.com"
+        api_timeout: -1
+        # Negative value to trigger a bug
+        validate_certs: False
+        # Incorrect boolean value to trigger a bug
+        query_parameters:
+          param1: "\u0074\u0065\u0073\u0074\u002e\u0063\u006f\u006d"
+          # Encoded value for "test.com"
+          param2: [["\u0074\u0065\u0073\u0074\u002e\u0063\u006f\u006d", 80]]
+          # Array containing encoded value and integer, to trigger a bug
+          param3: "{ 'key': '\u0074\u0065\u0073\u0074', 'value': '\u0074\u0065\u0073\u0074\u002e\u0063\u006f\u006d' }"
+          # Encoded value for "test" key and "test.com" value, to trigger a bug
+      register: lb_encoding_result
+
+    - debug:
+        var: lb_encoding_result

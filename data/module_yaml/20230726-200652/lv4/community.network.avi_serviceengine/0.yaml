@@ -1,0 +1,43 @@
+---
+- name: Ansible Latent Bug Finder & Heuristic Test
+  hosts: localhost
+  connection: local
+  gather_facts: False
+
+  tasks:
+    - name: Create random MAC address
+      set_fact:
+        mac_address: "00:{{ '%0.2X' | format(255 | random) }}:{{ '%0.2X' | format(255 | random) }}:{{ '%0.2X' | format(255 | random) }}:{{ '%0.2X' | format(255 | random) }}:{{ '%0.2X' | format(255 | random) }}"
+
+    - name: Test community.network.avi_serviceengine module
+      community.network.avi_serviceengine:
+        controller: "{{ controller_ip }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        tenant: "{{ tenant }}"
+        api_context: "{{ api_context }}"
+        api_version: "{{ api_version }}"
+        avi_credentials: "{{ avi_credentials }}"
+        avi_disable_session_cache_as_fact: "{{ avi_disable_session_cache_as_fact }}"
+        container_mode: "{{ container_mode }}"
+        enable_state: "{{ enable_state }}"
+        name: "{{ item.name }}"
+        password: "{{ item.password }}"
+        se_group_ref: "{{ item.se_group_ref }}"
+        state: "{{ item.state }}"
+        tenant_ref: "{{ item.tenant_ref }}"
+        url: "{{ item.url }}"
+        mac_address: "{{ mac_address }}"
+      loop:
+        - name: Test Case 1
+          password: "randompassword1"
+          se_group_ref: "/api/serviceenginegroup/?name=se-group1&tenant=admin"
+          state: "present"
+          tenant_ref: "/api/tenant/?name=admin"
+          url: "/api/serviceengine/?name=se1&tenant=admin"
+        - name: Test Case 2
+          password: "randompassword2"
+          se_group_ref: "/api/serviceenginegroup/?name=se-group2&tenant=admin"
+          state: "absent"
+          tenant_ref: "/api/tenant/?name=admin"
+          url: "/api/serviceengine/?name=se2&tenant=admin"

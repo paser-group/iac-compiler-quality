@@ -1,0 +1,40 @@
+---
+- name: Test playbook for 'community.general.hwc_vpc_port' module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Generate random MAC addresses for network modules
+      set_fact:
+        mac_address: "{{ '%02x:%02x:%02x:%02x:%02x:%02x' | format( hostvars[inventory_hostname]['ansible_random.randint_0_255'], hostvars[inventory_hostname]['ansible_random.randint_0_255'], hostvars[inventory_hostname]['ansible_random.randint_0_255'], hostvars[inventory_hostname]['ansible_random.randint_0_255'], hostvars[inventory_hostname]['ansible_random.randint_0_255'], hostvars[inventory_hostname]['ansible_random.randint_0_255']) }}"
+
+    - name: Create VPC port
+      community.general.hwc_vpc_port:
+        admin_state_up: true
+        allowed_address_pairs:
+          - ip_address: "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}"
+            mac_address: "{{ mac_address }}"
+        domain: example.com
+        extra_dhcp_opts:
+          - {opt_name: name1, opt_value: value1}
+          - {opt_name: name2, opt_value: value2}
+        id: vpc-port-id
+        identity_endpoint: http://identity.example.com
+        ip_address: "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}"
+        name: vpc-port
+        password: secret
+        project: myproject
+        region: europe-west1
+        security_groups: "sg-1, sg-2"
+        state: "present"
+        subnet_id: subnet-1
+        timeouts:
+          create: 60
+          delete: 120
+        user: ansible
+
+      register: result
+
+    - name: Debug result
+      debug:
+        var: result

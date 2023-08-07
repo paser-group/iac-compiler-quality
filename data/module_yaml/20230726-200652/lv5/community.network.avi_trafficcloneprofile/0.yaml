@@ -1,0 +1,93 @@
+---
+- name: Test playbook for the 'community.network.avi_trafficcloneprofile' module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Include the Avi Configuration
+      include_vars:
+        file: avi_config.yml
+
+    - name: Install dependencies
+      pip:
+        name: "{{ item }}"
+      loop:
+        - ansible-avi-sdk
+        - aviator
+
+    - name: Create a Traffic Clone Profile
+      community.network.avi_trafficcloneprofile:
+        controller: "{{ avi_config.controller }}"
+        username: "{{ avi_config.username }}"
+        password: "{{ avi_config.password }}"
+        name: "test_trafficcloneprofile"
+        tenant: "admin"
+        state: present
+        preserve_client_ip: true
+        clone_servers:
+          - server:
+              ip:
+                addr: "{{ hostvars[item].ansible_host.split('/')[0] }}"
+                type: for_nat_pool
+              port:
+                start: "{{ hostvars[item].ansible_host.split('/')[1] }}"
+                end: "{{ hostvars[item].ansible_host.split('/')[1] }}"
+              enabled: true
+              ipam_network_subnet:
+                subnet_ip:
+                  addr: "10.1.1.0"
+                  mask: 255.255.255.0
+          - server:
+              ip:
+                addr: "{{ hostvars[item].ansible_host.split('/')[0] }}"
+                type: for_nat_pool
+              port:
+                start: "{{ hostvars[item].ansible_host.split('/')[1] }}"
+                end: "{{ hostvars[item].ansible_host.split('/')[1] }}"
+              enabled: true
+              ipam_network_subnet:
+                subnet_ip:
+                  addr: "10.1.1.0"
+                  mask: 255.255.255.0
+      loop:
+        - "ubuntu1/8080"
+        - "alpine1/9090"
+        - "centos1/7070"
+        - "redhat1/6060"
+
+    - name: Debug
+      debug:
+        msg: "Traffic Clone Profile created successfully!"
+
+    - name: Get the Traffic Clone Profile details
+      community.network.avi_trafficcloneprofile:
+        controller: "{{ avi_config.controller }}"
+        username: "{{ avi_config.username }}"
+        password: "{{ avi_config.password }}"
+        name: "test_trafficcloneprofile"
+        tenant: "admin"
+        state: present
+        avi_disable_session_cache_as_fact: true
+      register: profile_details
+
+    - name: Debug
+      debug:
+        var: profile_details
+
+    - name: Delete the Traffic Clone Profile
+      community.network.avi_trafficcloneprofile:
+        controller: "{{ avi_config.controller }}"
+        username: "{{ avi_config.username }}"
+        password: "{{ avi_config.password }}"
+        name: "test_trafficcloneprofile"
+        tenant: "admin"
+        state: absent
+      loop:
+        - "ubuntu1/8080"
+        - "alpine1/9090"
+        - "centos1/7070"
+        - "redhat1/6060"
+
+    - name: Debug
+      debug:
+        msg: "Traffic Clone Profile deleted successfully!"

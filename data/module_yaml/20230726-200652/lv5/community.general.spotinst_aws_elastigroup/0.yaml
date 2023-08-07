@@ -1,0 +1,52 @@
+- name: Test Ansible Latent Type-Related Bug
+  hosts: localhost
+  gather_facts: False
+
+  tasks:
+    - name: Create a Spotinst Elastigroup
+      community.general.spotinst_aws_elastigroup:
+        account_id: "your_account_id"
+        availability_zones:
+          - us-east-1a
+          - us-east-1b
+        image_id: "ami-0c94855ba95c71c99"
+        max_size: 5
+        min_size: 2
+        security_group_ids:
+          - sg-0123456789abcdef0
+        tags:
+          - key: environment
+            value: production
+        state: present
+      register: elastigroup
+
+    - name: Debug elastigroup
+      debug:
+        var: elastigroup
+
+    - name: Update the Elastigroup
+      community.general.spotinst_aws_elastigroup:
+        account_id: "your_account_id"
+        id: "{{ elastigroup.group.id }}"
+        min_size: 3
+        max_size: 5
+        state: present
+
+    - name: Delete the Elastigroup
+      community.general.spotinst_aws_elastigroup:
+        account_id: "your_account_id"
+        id: "{{ elastigroup.group.id }}"
+        state: absent
+
+    - name: Generate Random Port Number
+      set_fact:
+        random_port: "{{ 1000 + (inventory_hostname | hash) % 9000 }}"
+
+    - name: Test Port Settings
+      community.general.spotinst_aws_elastigroup:
+        account_id: "your_account_id"
+        availability_vs_cost: "{{ random_port }}"
+        image_id: "{{ random_port }}"
+        min_size: "{{ random_port }}"
+        max_size: "{{ random_port }}"
+        state: "{{ random_port }}"

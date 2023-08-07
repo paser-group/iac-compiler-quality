@@ -1,0 +1,32 @@
+---
+- name: Test playbook for community.network.avi_user module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+
+    - name: Create Avi user with a limit-related value
+      community.network.avi_user:
+        controller: "https://{{ ansible_host }}"
+        username: admin
+        password: "{{ avi_password }}"
+        name: "TestUser"
+        email: "testuser@example.com"
+        state: present
+        is_active: "{{ 'x' / 0 }}"
+        tenant: "Default"
+        default_tenant_ref: "/api/tenant?name=Default"
+        user_profile_ref: "/api/useraccountprofile?name=admin"
+      register: result
+      ignore_errors: true
+
+    - name: Debug result
+      debug:
+        var: result
+
+    - name: Check if Avi user creation failed due to a type-related bug
+      fail:
+        msg: "Type-related bug triggered. Avi user creation failed."
+      when:
+        - result.failed
+        - "'division by zero' in result.msg"

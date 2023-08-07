@@ -1,0 +1,37 @@
+---
+- name: Test playbook for iptables_state module
+  hosts: localhost
+  gather_facts: false
+  
+  vars:
+    iptables_state_path: "/tmp/iptables_state.txt"
+
+  tasks:
+    - name: Save iptables state into a file
+      community.general.iptables_state:
+        path: "{{ iptables_state_path }}"
+        state: present
+
+    - name: Display the contents of the iptables_state file
+      command: cat "{{ iptables_state_path }}"
+      register: iptables_state_output
+
+    - name: Debug iptables state output
+      debug:
+        var: iptables_state_output.stdout_lines
+
+    - name: Generate a random IP address
+      command: python -c "import random; print('.'.join(map(str, (random.randint(0, 255) for _ in range(4)))));"
+      register: random_ip
+
+    - name: Ping the randomly generated IP address
+      community.general.netmiko_send_command:
+        command_string: ping -c 1 "{{ random_ip.stdout }}"
+        use_keys: true
+        keys_file: "/path/to/ssh_key"
+        host: "{{ ansible_host }}"
+      register: ping_result
+
+    - name: Debug ping result
+      debug:
+        var: ping_result.stdout

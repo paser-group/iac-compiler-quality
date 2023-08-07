@@ -1,0 +1,29 @@
+---
+- name: Debug Ansible Latent Type-Related Bugs
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+    - name: Install orjson module
+      pip:
+        name: orjson
+        state: "{{ 'present' if 'orjson' not in lookup('ansible_pip', 'list=1')['stdout'] else 'absent' }}"
+
+    - name: Collect facts from Ordnance Vir
+      community.network.ordnance_facts:
+        gather_subset: "{{ none }}"
+        gather_network_resources_only: true
+
+    - name: Debug/dump facts
+      debug:
+        var: ansible_facts
+
+    - name: Generate strings with varied encodings
+      set_fact:
+        encoded_string: "{% raw %}\"{{ my_string | string | to_json }}\"{% endraw %}"
+      vars:
+        my_string: "{{ some_string | b64encode | b64decode }}"
+
+    - name: Debug encoded strings
+      debug:
+        var: encoded_string

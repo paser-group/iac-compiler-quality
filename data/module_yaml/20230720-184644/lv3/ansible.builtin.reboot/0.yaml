@@ -1,0 +1,41 @@
+---
+- name: Reboot Test
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Reboot the node
+      ansible.builtin.reboot:
+        msg: "Rebooting the node"
+        pre_reboot_delay: 10
+        post_reboot_delay: 20
+        reboot_command: "sudo reboot"
+        reboot_timeout: "300"
+
+      register: reboot_result
+  
+    - name: Check if the system has rebooted
+      wait_for:
+        host: "{{ inventory_hostname }}"
+        port: 22
+        delay: 10
+        timeout: 300
+
+    - name: Check the uptime after reboot
+      shell: "uptime -s"
+      delegate_to: "{{ inventory_hostname }}"
+      register: uptime_result
+
+    - name: Display the uptime after reboot
+      debug:
+        msg: "The uptime after reboot is {{ uptime_result.stdout }}"
+
+    - name: Perform the post-reboot tasks
+      debug:
+        msg: "Performing post-reboot tasks"
+
+  post_tasks:
+    - name: Ensure the system is up and running
+      wait_for_connection:
+        delay: 10
+        timeout: 300

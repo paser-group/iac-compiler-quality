@@ -1,0 +1,40 @@
+---
+- name: Test Nagios module with type-related bugs
+  hosts: localhost
+  gather_facts: false
+  vars:
+    nagios_plugins_path: /usr/local/nagios/libexec
+
+  tasks:
+    - name: Install Nagios plugin dependencies
+      apt:
+        name: nagios-plugins
+        state: present
+
+    - name: Create downtime for a service using division-based limit
+      community.general.nagios:
+        action: "downtime"
+        host: "localhost"
+        servicegroup: "example-servicegroup"
+        services: ["example-service"]
+        start: "2022-01-01 00:00:00"
+        minutes: "{{ 60 / 2 }}"  # division-based limit assignment
+      register: result
+
+    - name: Debug downtime result
+      debug:
+        var: result
+
+    - name: Remove the downtime
+      community.general.nagios:
+        action: "downtime"
+        host: "localhost"
+        servicegroup: "example-servicegroup"
+        services: ["example-service"]
+        start: "2022-01-01 00:00:00"
+        minutes: 0  # Remove downtime
+      register: result
+
+    - name: Debug downtime removal result
+      debug:
+        var: result

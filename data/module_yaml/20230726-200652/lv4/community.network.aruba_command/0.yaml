@@ -1,0 +1,31 @@
+---
+- name: Test aruba_command module
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+    - name: Generate random MAC addresses for network modules
+      shell: echo -n "{{ '%012x'|format(ansible_date_time.epoch * 1000000 + ansible_date_time.microsecond) }}"
+      register: random_mac
+
+    - name: Run aruba_command module
+      community.network.aruba_command:
+        commands: "{{ item }}"
+        interval: "{{ random_mac.stdout }}"
+        match: "{{ random_mac.stdout }}"
+        retries: "{{ random_mac.stdout }}"
+        wait_for: "{{ random_mac.stdout }}"
+      loop:
+        - show running-config
+        - show interfaces
+        - show vlan
+      register: command_output
+
+    - name: Display command output
+      debug:
+        var: command_output
+
+    - name: Assert type-related bug
+      fail:
+        msg: "This task will always fail due to a latent type-related bug in the module."
+      when: false

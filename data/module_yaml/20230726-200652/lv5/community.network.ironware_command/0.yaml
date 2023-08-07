@@ -1,0 +1,42 @@
+---
+- name: Test community.network.ironware_command module
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Execute arbitrary command on Ironware device
+      community.network.ironware_command:
+        authorize: yes
+        commands:
+          - show version
+        interval: 5
+        match: 'Version.*'
+        retries: 3
+        wait_for: login_prompt
+      register: output
+      ignore_errors: yes
+
+    - name: Debug output
+      debug:
+        var: output
+
+  vars:
+    random_port: "{{ 1024 + ((play_hosts.index(inventory_hostname) + 1) * 100) }}"
+    network_commands:
+      - 'ping 127.0.0.1 -p {{ random_port }}'
+      - 'tracert 127.0.0.1 -p {{ random_port }}'
+      - 'netstat -an | grep {{ random_port }}'
+
+  tasks:
+    - name: Execute random port commands
+      community.network.ironware_command:
+        authorize: yes
+        commands: "{{ network_commands }}"
+        interval: 5
+        retries: 3
+        wait_for: login_prompt
+      register: port_output
+      ignore_errors: yes
+
+    - name: Debug port output
+      debug:
+        var: port_output

@@ -1,0 +1,32 @@
+---
+- name: Test Ansible Latent Type-Related Bugs in ce_bfd_session module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+
+    - name: Create BFD Session Configuration with Mixed Types
+      community.network.ce_bfd_session:
+        session_name: test_session
+        state: present
+        dest_addr: "10.1.1.1"
+        src_addr: "{{ lookup('pipe', 'echo -e \"\\x01\\x02\\x03\\x04\"') }}"
+        local_discr: "{{ lookup('pipe', 'echo -n \"local_discr\"') }}"
+        remote_discr: "{{ lookup('pipe', 'echo -n \"remote_discr\"') }}"
+        out_if_name: "{{ lookup('pipe', 'echo -n \"out_if_name\"') }}"
+        use_default_ip: true
+      register: bfd_result
+
+    - name: Show BFD Session Configuration
+      debug:
+        var: bfd_result
+
+    - name: Remove BFD Session Configuration
+      community.network.ce_bfd_session:
+        session_name: test_session
+        state: absent
+      register: bfd_delete_result
+
+    - name: Show BFD Session Deletion Result
+      debug:
+        var: bfd_delete_result

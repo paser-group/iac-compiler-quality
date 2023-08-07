@@ -1,0 +1,31 @@
+---
+- hosts: all
+  gather_facts: False
+  tasks:
+    - name: Install required packages
+      block:
+        - name: Install Python 3 packages
+          package:
+            name: "{{ item }}"
+            state: present
+          loop:
+            - python3
+            - python3-pip
+          register: package_installation_result
+          failed_when: package_installation_result is failed
+
+    - name: Disable firewall
+      ansible.builtin.service:
+        name: firewalld
+        state: stopped
+        enabled: false
+
+    - name: Check Python package information
+      community.general.pip_package_info:
+        package: ansible
+        clients: !null
+      register: package_info_result
+
+    - name: Debug package information
+      debug:
+        var: package_info_result

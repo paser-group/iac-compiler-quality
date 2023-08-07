@@ -1,0 +1,40 @@
+---
+- name: Test playbook for Ansible bug finding
+  hosts: localhost
+  gather_facts: false
+  
+  vars:
+    ansible_become: false
+    
+  tasks:
+    - name: Set AVI credentials
+      set_fact:
+        avi_credentials:
+          username: admin
+          password: ansible
+          controller: 10.1.1.1
+          tenant: admin
+    
+    - name: Set AVI useraccount parameters
+      set_fact:
+        user_account_params:
+          old_password: null
+          force_change: null
+    
+    - name: Create AVI user account
+      community.network.avi_useraccount:
+        controller: "{{ avi_credentials.controller }}"
+        username: "{{ avi_credentials.username }}"
+        password: "{{ avi_credentials.password }}"
+        tenant: "{{ avi_credentials.tenant }}"
+        user_params: "{{ user_account_params }}"
+        state: present
+        api_context:
+          api_version: '20.1.4'
+        avi_disable_session_cache_as_fact: true
+        tenant_uuid: 'abcd-efgh-ijkl-mnop'
+  
+  handlers:
+    - name: Print result
+      debug:
+        var: result

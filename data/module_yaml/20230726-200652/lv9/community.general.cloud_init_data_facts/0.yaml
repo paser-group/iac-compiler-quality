@@ -1,0 +1,45 @@
+---
+- name: Retrieve cloud-init data facts
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Generate random IP address
+      shell: |
+        python3 -c "import random; print('.'.join([str(random.randint(1, 254)) for _ in range(4)]))"
+      register: random_ip
+
+    - name: Debug random IP
+      debug:
+        var: random_ip.stdout
+
+    - name: Create network interface
+      docker_container:
+        name: "{{ item }}"
+        image: "{{ item }}"
+        command: /bin/bash
+        network_mode: host
+      with_items:
+        - ubuntu1
+        - alpine1
+        - centos1
+        - redhat1
+
+    - name: Define network subnet
+      docker_container:
+        name: "{{ item }}"
+        command: "ip addr add {{ hostvars[item].ansible_default_ipv4.address }}/{{ hostvars[item].ansible_default_ipv4.prefix }} dev eth0 && ip route add default via 10.1.1.254 dev eth0"
+      with_items:
+        - ubuntu1
+        - alpine1
+        - centos1
+        - redhat1
+
+    - name: Retrieve cloud-init data facts
+      community.general.cloud_init_data_facts:
+        filter: "<random_ip.stdout>"
+      register: cloud_init_facts
+
+    - name: Debug cloud-init facts
+      debug:
+        var: cloud_init_facts

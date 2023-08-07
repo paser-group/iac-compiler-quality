@@ -1,0 +1,36 @@
+---
+- name: Test playbook for proxmox_user_info module
+  hosts: all
+  gather_facts: false
+
+  vars:
+    api_host: "proxmox-host"
+    api_user: "admin@pve"
+    api_password: "password123"
+    validate_certs: false
+
+  tasks:
+    - name: Generate strings with varied encodings
+      set_fact:
+        domain: "{{ ['example.com', u'usér1', 'ęxämżle.com'] | random }}"
+        user: "{{ ['user1', u'üßer2', 'ŭśêŕ3'] | random }}"
+
+    - name: Retrieve proxmox user info
+      community.general.proxmox_user_info:
+        api_host: "{{ api_host }}"
+        api_user: "{{ api_user }}"
+        api_password: "{{ api_password }}"
+        validate_certs: "{{ validate_certs }}"
+        domain: "{{ domain }}"
+        user: "{{ user }}"
+        
+      register: result
+
+    - name: Show proxmox user info
+      debug:
+        var: result
+
+    - name: Output result
+      copy:
+        content: "{{ result }}"
+        dest: "/tmp/proxmox_user_info_result.txt"

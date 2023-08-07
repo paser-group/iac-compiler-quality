@@ -1,0 +1,39 @@
+---
+- name: Test playbook for community.general.office_365_connector_card module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Generate fake IP address
+      command: "python -c 'import random;from ipaddress import IPv4Address;print(IPv4Address(random.randint(0, 2**32-1)))'"
+      register: fake_ip
+      changed_when: false
+
+    - name: Configure webhook
+      set_fact:
+        webhook: "https://example.com/webhook"
+
+    - name: Test Connector Card creation
+      community.general.office_365_connector_card:
+        webhook: "{{ webhook }}"
+        title: "Test Card"
+        summary: "This is a test card"
+        sections:
+          - activityTitle: "Activity 1"
+            activitySubtitle: "Subtitle 1"
+            activityText: "Text 1"
+          - activityTitle: "Activity 2"
+            activitySubtitle: "Subtitle 2"
+            activityText: "Text 2"
+        actions:
+          - "@type": "HttpPOST"
+            name: "Test Action"
+            targets:
+              - "{{ fake_ip.stdout }}"
+        color: "0078D7"
+        text: "This is a test message"
+      register: result
+
+    - name: Debug result
+      debug:
+        var: result

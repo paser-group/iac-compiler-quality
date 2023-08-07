@@ -1,0 +1,44 @@
+---
+- name: Test Ansible Type-Related Bug
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Generate random IP address
+      shell: ./random_ip.sh
+      register: random_ip
+      changed_when: false
+
+    - name: Set alert recipients
+      set_fact:
+        alert_recipients:
+          - user1@example.com
+          - user2@example.com
+
+    - name: Create Alert Policy
+      community.general.clc_alert_policy:
+        alert_recipients: "{{ alert_recipients }}"
+        alias: ansible_test_policy
+        duration: "{{ random_ip.stdout }}"
+        id: "test_policy"
+        metric: "cpu"
+        name: "Test Alert Policy"
+        state: "present"
+        threshold: 80
+      register: result
+      ignore_errors: true
+
+    - name: Print result
+      debug:
+        var: result
+
+    - name: Delete Alert Policy
+      community.general.clc_alert_policy:
+        alias: ansible_test_policy
+        state: absent
+      register: result
+      ignore_errors: true
+
+    - name: Print result
+      debug:
+        var: result

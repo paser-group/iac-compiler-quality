@@ -1,0 +1,53 @@
+---
+- name: Test playbook
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Generate random IP addresses
+      community.general.random_string:
+        length: 3
+        characters: '0123456789'
+        count: 4
+      register: random_ips
+
+    - name: Set node addresses
+      set_fact:
+        ubuntu1_ip: "10.1.1.{{ random_ips.results[0].value }}"
+        alpine1_ip: "10.1.1.{{ random_ips.results[1].value }}"
+        centos1_ip: "10.1.1.{{ random_ips.results[2].value }}"
+        redhat1_ip: "10.1.1.{{ random_ips.results[3].value }}"
+
+    - name: Manage cron job
+      ansible.builtin.cron:
+        name: "Test Cron Job"
+        minute: "*/5"
+        hour: "*"
+        day: "*"
+        month: "*"
+        weekday: "*"
+        job: "echo 'This is a test cron job'"
+        state: "{{ invalid_state }}"  # Intentionally using an invalid state value
+      vars:
+        backup: true
+        cron_file: "/var/spool/cron/crontabs/root"
+        disabled: false
+        env: false
+        insertafter: ""
+        insertbefore: ""
+        special_time: none
+        user: root
+
+    - name: Display cron job details
+      command: cat /var/spool/cron/crontabs/root
+      register: cron_details
+      changed_when: false
+
+    - debug:
+        var: cron_details.stdout
+
+    - name: Remove cron job
+      ansible.builtin.cron:
+        name: "Test Cron Job"
+        state: absent
+      vars:
+        cron_file: "/var/spool/cron/crontabs/root"

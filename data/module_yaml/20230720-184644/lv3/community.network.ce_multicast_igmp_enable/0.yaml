@@ -1,0 +1,35 @@
+---
+- name: Test playbook for exposing latent type-related bugs
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    - multicast_vars:
+        aftype: 1
+        features: ['pim', 'mld']
+        igmp: 1
+        proxy: 'true'
+        state: 'present'
+        version: 'ipv4'
+        vlan_id: '1'
+
+  tasks:
+    - name: Set multicast igmp enable configuration
+      set_fact:
+        multicast_config: "{{ 0/0 }}"
+        multicast_vars: "{{ multicast_vars | combine({item: multicast_vars[item] | random}) }}"
+      with_items: "{{ multicast_vars.keys() }}"
+
+    - name: Enable multicast IGMP configuration
+      community.network.ce_multicast_igmp_enable:
+        aftype: "{{ multicast_vars.aftype }}"
+        features: "{{ multicast_vars.features }}"
+        igmp: "{{ multicast_vars.igmp }}"
+        proxy: "{{ multicast_vars.proxy }}"
+        state: "{{ multicast_vars.state }}"
+        version: "{{ multicast_vars.version }}"
+        vlan_id: "{{ multicast_vars.vlan_id }}"
+      register: result
+
+    - debug:
+        var: result

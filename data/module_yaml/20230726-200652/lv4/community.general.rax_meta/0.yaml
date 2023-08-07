@@ -1,0 +1,28 @@
+---
+- name: Manipulate metadata for Rackspace cloud servers
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Generate random MAC addresses
+      command: /usr/bin/shuf -e -n 1 /usr/share/dict/words | tr '[:lower:]' '[:upper:]' | sed -e 's/\(.\)\(.*\)/\1\2\2/' | head -c2; echo -n ":"; od -An -N2 -t x2 < /dev/urandom | sed -e 's| |\n|g' | tr -d '\n'; echo
+      register: mac_address
+      changed_when: false
+
+    - name: Set metadata for Rackspace server
+      community.general.rax_meta:
+        address: "10.1.1.1"
+        api_key: "your_api_key"
+        auth_endpoint: "https://identity.api.rackspacecloud.com/v2.0"
+        credentials: "/path/to/credentials.yaml"
+        env: "prod"
+        id: "server-id"
+        identity_type: "rackspace"
+        meta:
+          mac_address: "{{ mac_address.stdout }}"
+        name: "server-name"
+        region: "DFW"
+        tenant_id: "tenant-id"
+        tenant_name: "tenant-name"
+        username: "your-username"
+        validate_certs: true

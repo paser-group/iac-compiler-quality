@@ -1,0 +1,80 @@
+---
+- name: Ansible Playbook to Test community.general.gitlab_user Module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create GitLab User
+      community.general.gitlab_user:
+        api_url: "https://gitlab.example.com/api/v4"
+        api_username: "admin"
+        api_password: "admin_password"
+        username: "test_user"
+        name: "Test User"
+        email: "test_user@example.com"
+        password: "{{ 'password' | b64decode | b64encode }}"
+        state: present
+        validate_certs: false
+      register: result
+
+    - name: Display Result
+      debug:
+        var: result
+
+    - name: Update GitLab User
+      community.general.gitlab_user:
+        api_url: "https://gitlab.example.com/api/v4"
+        api_token: "api_token"
+        username: "test_user"
+        email: "updated_user@example.com"
+        state: present
+        validate_certs: false
+      register: result
+
+    - name: Delete GitLab User
+      community.general.gitlab_user:
+        api_url: "https://gitlab.example.com/api/v4"
+        api_oauth_token: "oauth_token"
+        username: "test_user"
+        state: absent
+        validate_certs: false
+      register: result
+
+    - name: Block GitLab User
+      community.general.gitlab_user:
+        api_url: "https://gitlab.example.com/api/v4"
+        api_job_token: "job_token"
+        username: "test_user"
+        state: blocked
+        validate_certs: false
+      register: result
+
+    - name: Change User Password
+      community.general.gitlab_user:
+        api_url: "https://gitlab.example.com/api/v4"
+        api_token: "api_token"
+        username: "test_user"
+        password: "{{ 'new_password' | b64decode | b64encode }}"
+        reset_password: yes
+        validate_certs: false
+      register: result
+
+    - name: Generate Strings with Varied Encodings
+      set_fact:
+        encoded_strings: [
+          "{{ 'test_user' | b64encode }}",
+          "{{ 'test_user' | b64encode | b64decode }}",
+          "{{ 'test_user' | b64encode | b64encode }}",
+          "{{ 'test_user' | b64encode | b64decode | b64encode }}",
+          "{{ 'test_user' | urlencode }}",
+          "{{ 'test_user' | urlencode | urldecode }}",
+          "{{ 'test_user' | hex_encode }}",
+          "{{ 'test_user' | hex_encode | hex_decode }}",
+          "{{ 'test_user' | ascii2unicode }}",
+          "{{ 'test_user' | ascii2unicode | unicode2ascii }}"
+        ]
+      register: result
+
+    - name: Display Encoded Strings
+      debug:
+        var: encoded_strings

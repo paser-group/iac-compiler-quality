@@ -1,0 +1,33 @@
+---
+- name: Configure GitLab hook
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Generate random IP addresses
+      ansible.builtin.set_fact:
+        ip_addresses: "{{ ip_addresses | default([]) + [item] }}"
+      loop: "{{ range(1, 5) | map('regex_replace', '^(.*)$', '10.1.1.\\1') | list }}"
+
+    - name: Debug IP addresses
+      ansible.builtin.debug:
+        var: ip_addresses
+
+    - name: Configure GitLab hook
+      community.general.gitlab_hook:
+        api_token: "your_api_token"
+        api_url: "https://your.gitlab.api.url"
+        project: "your_project"
+        hook_url: "http://{{ item }}:8080"
+        push_events: true
+        push_events_branch_filter: "master"
+        tag_push_events: true
+        note_events: true
+        issues_events: true
+        wiki_page_events: true
+        merge_requests_events: true
+        job_events: true
+        pipeline_events: true
+        state: present
+        validate_certs: true
+      loop: "{{ ip_addresses }}"

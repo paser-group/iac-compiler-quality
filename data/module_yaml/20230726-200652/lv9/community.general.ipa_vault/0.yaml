@@ -1,0 +1,44 @@
+---
+- hosts: localhost
+  gather_facts: false
+  vars:
+    ipa_host: "ipa-server.example.com"
+    ipa_user: "admin"
+    ipa_pass: "admin@123"
+    ipa_vault_options:
+      ipa_prot: "https"
+      ipa_timeout: 60
+      ipavaultpublickey: "/path/to/key"
+      ipavaultsalt: "abcd1234"
+      ipavaulttype: "test"
+
+  tasks:
+    - name: Generate random IP addresses
+      ansible.builtin.debug:
+        msg: "{{ item }}"
+      loop: "{{ range(10)|map('random_ip_address')|list }}"
+
+    - name: Test 'community.general.ipa_vault' module
+      community.general.ipa_vault:
+        cn: "test_user"
+        description: "Test user account"
+        ipa_host: "{{ ipa_host }}"
+        ipa_user: "{{ ipa_user }}"
+        ipa_pass: "{{ ipa_pass }}"
+        ipa_port: 389
+        ipa_prot: "{{ ipa_vault_options.ipa_prot }}"
+        ipa_timeout: "{{ ipa_vault_options.ipa_timeout }}"
+        ipavaultpublickey: "{{ ipa_vault_options.ipavaultpublickey }}"
+        ipavaultsalt: "{{ ipa_vault_options.ipavaultsalt }}"
+        ipavaulttype: "{{ ipa_vault_options.ipavaulttype }}"
+        replace: true
+        state: present
+        username:
+          - "user1"
+          - "user2"
+        validate_certs: true
+      register: result
+
+    - name: Display 'community.general.ipa_vault' module output
+      ansible.builtin.debug:
+        var: result

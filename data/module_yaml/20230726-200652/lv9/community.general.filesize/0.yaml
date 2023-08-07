@@ -1,0 +1,30 @@
+---
+- name: Test filesize module with random IP addresses
+  hosts: localhost
+  gather_facts: false
+  
+  tasks:
+    - name: Generate random IP address
+      set_fact:
+        random_ip: "{{ range(4)|map('regex_replace','^(.*)$','{{((range(1,255)|random))}}')|join('.') }}"
+        
+    - name: Create file with specified size
+      community.general.filesize:
+        path: "/tmp/test_file"
+        size: 1M
+        owner: ansible
+        group: ansible
+        mode: '0644'
+        sparse: true
+        unsafe_writes: true
+        source: "{{ random_ip }}"
+      register: result
+
+    - name: Debug the output
+      debug:
+        var: result
+        
+    - name: Remove the test file
+      file:
+        path: "/tmp/test_file"
+        state: absent

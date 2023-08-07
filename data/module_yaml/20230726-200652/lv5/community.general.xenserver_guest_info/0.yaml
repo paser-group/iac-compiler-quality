@@ -1,0 +1,51 @@
+---
+- name: Test community.general.xenserver_guest_info module
+  hosts: localhost
+  gather_facts: False
+
+  tasks:
+    - name: Gather information for virtual machines
+      community.general.xenserver_guest_info:
+        hostname: "{{ xenserver_hostname }}"
+        username: "{{ xenserver_username }}"
+        password: "{{ xenserver_password }}"
+        validate_certs: "{{ xenserver_validate_certs }}"
+        name: "{{ xenserver_vm_name }}"
+        uuid: "{{ xenserver_vm_uuid }}"
+      register: vm_info
+
+    - name: Debug output
+      debug:
+        var: vm_info
+
+- name: Test Case 1 - Randomize port numbers
+  hosts: localhost
+  gather_facts: False
+
+  vars:
+    xenserver_hostname: "xenserver_ip"
+    xenserver_username: "admin"
+    xenserver_password: "password"
+    xenserver_validate_certs: False
+    xenserver_vm_name: "vm_name"
+    xenserver_vm_uuid: "vm_uuid"
+
+  tasks:
+    - name: Generate random port number
+      set_fact:
+        random_port: "{{ 2000 + (ansible_random | random | int) % 50000 }}"
+
+    - name: Gather information for virtual machines with random port number
+      community.general.xenserver_guest_info:
+        hostname: "{{ xenserver_hostname }}"
+        username: "{{ xenserver_username }}"
+        password: "{{ xenserver_password }}"
+        validate_certs: "{{ xenserver_validate_certs }}"
+        name: "{{ xenserver_vm_name }}"
+        uuid: "{{ xenserver_vm_uuid }}"
+        port: "{{ random_port }}"
+      register: vm_info_random_port
+
+    - name: Debug output
+      debug:
+        var: vm_info_random_port

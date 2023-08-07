@@ -1,0 +1,41 @@
+- name: Create and Delete Packet Project
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create Packet Project
+      community.general.packet_project:
+        auth_token: "your_auth_token"
+        name: "test_project"
+        org_id: "your_org_id"
+        state: "present"
+      register: project
+
+    - name: Print Project ID
+      debug:
+        var: project.id
+
+    - name: Perform tests on port settings
+      block:
+        - name: Generate Random Port Number
+          set_fact:
+            random_port: "{{ 60000 + (inventory_hostname | hash ) % 1000 }}"
+
+        - name: Test Port Setting
+          community.general.packet_project:
+            auth_token: "your_auth_token"
+            id: "{{ project.id }}"
+            state: "present"
+            custom_data: "{{ random_port }}"
+          register: test_result
+
+        - name: Print Test Result
+          debug:
+            var: test_result
+
+    - name: Delete Packet Project
+      when: project is defined
+      community.general.packet_project:
+        auth_token: "your_auth_token"
+        id: "{{ project.id }}"
+        state: "absent"

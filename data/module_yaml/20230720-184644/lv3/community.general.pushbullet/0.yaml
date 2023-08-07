@@ -1,0 +1,34 @@
+---
+- name: Test playbook for 'community.general.pushbullet' module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    pushbullet_api_key: "{{ lookup('env', 'PUSHBULLET_API_KEY') }}"
+    message_body: "This is a test notification"
+    notification_title: "Test Notification"
+    notification_url: "https://example.com/notification"
+
+  tasks:
+    - name: Include pushbullet API key
+      include_vars:
+        file: credentials.yml
+        name: pushbullet
+
+    - name: Send push notification
+      community.general.pushbullet:
+        api_key: "{{ pushbullet.api_key }}"
+        body: "{{ message_body | combine_bytes_strings }}"
+        title: "{{ notification_title }}"
+        url: "{{ notification_url }}"
+        channel: "general"
+        device: "phone"
+        push_type: "note"
+      register: pushbullet_notification
+
+    - name: Display pushbullet notification response
+      debug:
+        var: pushbullet_notification
+
+  vars_files:
+    - credentials.yml

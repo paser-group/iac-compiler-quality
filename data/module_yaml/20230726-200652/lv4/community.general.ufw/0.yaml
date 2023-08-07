@@ -1,0 +1,42 @@
+- name: Test playbook for Ansible latent type-related bugs
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Generate random source MAC address
+      set_fact:
+        source_mac: "{{ '%02x' | format(range(0, 256)|random) }}:{{ '%02x' | format(range(0, 256)|random) }}:{{ '%02x' | format(range(0, 256)|random) }}:{{ '%02x' | format(range(0, 256)|random) }}:{{ '%02x' | format(range(0, 256)|random) }}:{{ '%02x' | format(range(0, 256)|random) }}"
+
+    - name: Generate random destination MAC address
+      set_fact:
+        destination_mac: "{{ '%02x' | format(range(0, 256)|random) }}:{{ '%02x' | format(range(0, 256)|random) }}:{{ '%02x' | format(range(0, 256)|random) }}:{{ '%02x' | format(range(0, 256)|random) }}:{{ '%02x' | format(range(0, 256)|random) }}:{{ '%02x' | format(range(0, 256)|random) }}"
+
+    - name: Configure UFW rule
+      community.general.ufw:
+        comment: Testing UFW rule
+        default: disabled
+        delete: no
+        direction: in
+        from_ip: 10.1.1.1
+        from_port: 22
+        insert: 0
+        insert_relative_to: null
+        interface: eth0
+        interface_in: null
+        interface_out: null
+        log: yes
+        logging: full
+        name: Allow SSH
+        proto: tcp
+        route: yes
+        rule: null
+        state: enabled
+        to_ip: 0.0.0.0/0
+        to_port: null
+        src_mac: "{{ source_mac }}"  # Random source MAC address
+        dst_mac: "{{ destination_mac }}"  # Random destination MAC address
+      register: ufw_result
+
+    - name: Debug UFW result
+      debug:
+        var: ufw_result

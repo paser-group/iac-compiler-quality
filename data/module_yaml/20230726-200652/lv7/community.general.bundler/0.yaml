@@ -1,0 +1,50 @@
+---
+- name: Test playbook for 'community.general.bundler' module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Install Ruby dependencies using bundler
+      community.general.bundler:
+        chdir: "/path/to/app"
+        gemfile: "/path/to/Gemfile"
+        state: present
+        user_install: false
+        binstub_directory: "/path/to/binstub"
+
+    - name: Test invalid binstub_directory value
+      community.general.bundler:
+        chdir: "/path/to/app"
+        gemfile: "/path/to/Gemfile"
+        state: present
+        user_install: false
+        binstub_directory: "{{ 10/0 }}"    # Trigger division by zero error
+
+    - name: Test invalid exclude_groups value
+      community.general.bundler:
+        chdir: "/path/to/app"
+        gemfile: "/path/to/Gemfile"
+        state: present
+        user_install: false
+        exclude_groups: "{{ 'group1,group2' | split(',') }}"    # Trigger undefined variable error
+
+    - name: Test invalid gemfile path
+      community.general.bundler:
+        chdir: "/path/to/app"
+        gemfile: "/path/{{ 'invalid' }}"    # Trigger runtime error due to invalid path
+        state: present
+        user_install: false
+
+    - name: Test invalid state value
+      community.general.bundler:
+        chdir: "/path/to/app"
+        gemfile: "/path/to/Gemfile"
+        state: installed    # Trigger unexpected state value error
+        user_install: false
+
+    - name: Test invalid user_install value
+      community.general.bundler:
+        chdir: "/path/to/app"
+        gemfile: "/path/to/Gemfile"
+        state: present
+        user_install: "yes"    # Trigger unexpected boolean value error

@@ -1,0 +1,36 @@
+---
+- name: Manage firewalld rules
+  hosts: localhost
+  gather_facts: false
+  vars:
+    firewall_ports: []
+  tasks:
+    - name: Generate random port numbers
+      set_fact:
+        random_port: "{{ 1024 + (ansible_play_hosts_all.index(inventory_hostname) * 100) + (item | random.randint(0, 99)) }}"
+      loop: "{{ groups['all'] }}"
+
+    - name: Add random ports to firewall_ports variable
+      set_fact:
+        firewall_ports: "{{ firewall_ports + [random_port] }}"
+
+    - name: Ensure firewalld is running
+      service:
+        name: firewalld
+        state: started
+
+    - name: Allow specified ports
+      firewalld:
+        port: "{{ item }}"
+        state: enabled
+      loop: "{{ firewall_ports }}"
+
+    - name: Deny all other incoming connections
+      firewalld:
+        state: disabled
+        immediate: true
+
+    - name: Save firewall rules
+      firewalld:
+        state: saved
+        permanent: true

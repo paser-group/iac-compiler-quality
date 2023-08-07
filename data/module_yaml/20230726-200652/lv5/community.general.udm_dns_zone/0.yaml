@@ -1,0 +1,30 @@
+---
+- name: Unveil Latent Type-Related Bugs in Ansible Compiler
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Test DNS Zone Creation
+      community.general.udm_dns_zone:
+        zone: example.com
+        type: forward
+        nameserver:
+          - ns1.example.com
+          - ns2.example.com
+        expire: "{{ random_port }}"
+        refresh: "{{ random_port }}"
+        retry: "{{ random_port }}"
+        ttl: "{{ random_ttl }}"
+        contact: "John Doe"
+        state: present
+      register: result
+      when: "'bug_trigger' in ansible_play_tags"
+
+    - name: Print Result
+      debug:
+        var: result
+      when: "'bug_trigger' in ansible_play_tags"
+
+  vars:
+    random_port: "{{ 30000 + (ansible_play_hosts_all.index(inventory_hostname) | default(0)) }}"
+    random_ttl: "{{ (inventory_hostname | length % 2 == 0) | ternary(300, 600) }}"

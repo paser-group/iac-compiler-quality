@@ -1,0 +1,36 @@
+---
+- name: Test playbook for community.network.ce_link_status module
+  hosts: ansible_host
+
+  tasks:
+    - name: Get interface link status
+      community.network.ce_link_status:
+        provider:
+          host: "{{ inventory_hostname }}"
+          username: "{{ ansible_user }}"
+          password: "{{ ansible_password }}"
+          transport: cli
+
+        interface: "{{ interface | default('None') }}"
+      
+      register: link_status_result
+
+    - name: Debug link status result
+      debug:
+        var: link_status_result
+
+- name: Test cases
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Set random MAC address
+      set_fact:
+        random_mac_address: "00:{{ '%02x' | format((256*random())) }}:{{ '%02x' | format((256*random())) }}:{{ '%02x' | format((256*random())) }}:{{ '%02x' | format((256*random())) }}:{{ '%02x' | format((256*random())) }}"
+
+    - name: Execute playbook with random MAC address
+      command: ansible-playbook -i inventory.ini playbook.yml -e "interface={{ random_mac_address }}"
+
+    - name: Check for type-related bug
+      fail:
+        msg: "Type-related bug found in community.network.ce_link_status module!"

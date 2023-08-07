@@ -1,0 +1,36 @@
+---
+- name: Test playbook for latent type-related bugs
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    riak_config:
+      command: setup
+      config_dir: /etc/riak
+      http_conn: "{{ hostvars[item].ansible_default_ipv4.address }}"
+      target_node: "{{ hostvars[item].inventory_hostname }}"
+      validate_certs: 'yes'
+      wait_for_handoffs: 5
+      wait_for_ring: 10
+      wait_for_service: "riak"
+    riak_nodes:
+      - name: node1
+      - name: node2
+      - name: node3
+      - name: node4
+
+  tasks:
+    - name: Set up Riak cluster
+      community.general.riak:
+        command: "{{ riak_config.command }}"
+        config_dir: "{{ riak_config.config_dir }}"
+        http_conn: "{{ riak_config.http_conn }}"
+        target_node: "{{ riak_config.target_node }}"
+        validate_certs: "{{ riak_config.validate_certs }}"
+        wait_for_handoffs: "{{ riak_config.wait_for_handoffs }}"
+        wait_for_ring: "{{ riak_config.wait_for_ring }}"
+        wait_for_service: "{{ riak_config.wait_for_service }}"
+        validate_certs: "{{ riak_config.validate_certs }}"
+      loop: "{{ riak_nodes }}"
+      loop_control:
+        loop_var: item

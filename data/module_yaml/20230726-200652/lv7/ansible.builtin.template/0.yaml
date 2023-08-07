@@ -1,0 +1,58 @@
+---
+- name: Template a File with Division-Based Operations
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create a temporary directory
+      tempfile:
+        state: directory
+      register: temp_dir
+
+    - name: Create the inventory file
+      file:
+        path: "{{ temp_dir.path }}/inventory.ini"
+        state: touch
+
+    - name: Add hosts to inventory
+      lineinfile:
+        path: "{{ temp_dir.path }}/inventory.ini"
+        line: "{{ item }}"
+      loop:
+        - "ubuntu ansible_host=10.1.1.1 ansible_user=root ansible_become=true"
+        - "alpine ansible_host=10.1.1.2 ansible_user=root ansible_become=true"
+        - "centos ansible_host=10.1.1.3 ansible_user=root ansible_become=true"
+        - "redhat ansible_host=10.1.1.4 ansible_user=root ansible_become=true"
+
+    - name: Create the template file
+      tempfile:
+        dir: "{{ temp_dir.path }}"
+      register: template_file
+
+    - name: Generate template content
+      set_fact:
+        template_content: |
+          {% for host in groups['all'] %}
+          {{ hostvars[host]['ansible_distribution'] }}: {{ hostvars[host]['ansible_default_ipv4']['address'] }}
+          {% endfor %}
+
+    - name: Template the file with division-based operations
+      template:
+        src: "{{ template_file.path }}"
+        dest: "/tmp/template_output.txt"
+        backup: yes
+        lstrip_blocks: no
+        trim_blocks: no
+        vars:
+          division_result: "{{ (2 / groups['all'] | length) }}"
+          division_result_unsafe: "{{ (2 / (groups['all'] | length | int)) | int }}"
+      register: template_result
+
+    - name: Show the template result
+      debug:
+        var: template_result
+
+    - name: Remove temporary directory
+      file:
+        path: "{{ temp_dir.path }}"
+        state: absent

@@ -1,0 +1,58 @@
+---
+     - name: Test 'community.general.utm_proxy_frontend' module
+       hosts: nodes
+       gather_facts: false
+       become: true
+
+       tasks:
+         - name: Install required dependencies
+           package:
+             name: '{{ item }}'
+             state: present
+           with_items:
+             - python3-docker
+             - python3-netaddr
+
+         - name: Create/reverse proxy frontend
+           community.general.utm_proxy_frontend:
+             name: 'my_proxy_frontend'
+             address: '10.1.1.1'
+             allowed_networks:
+               - '10.1.1.0/24'
+             certificate: '/path/to/certificate'
+             comment: 'Proxy frontend for my service'
+             disable_compression: false
+             domain:
+               - 'example.com'
+             exceptions:
+               - '10.1.1.2'
+             headers:
+               X-Forwarded-For: '10.1.1.1'
+               X-Forwarded-Proto: 'https'
+             htmlrewrite: false
+             htmlrewrite_cookies: false
+             implicitredirect: false
+             lbmethod: 'roundrobin'
+             locations:
+               - path: '/app1'
+                 address: 'http://backend1.example.com'
+                 weight: 5
+               - path: '/app2'
+                 address: 'http://backend2.example.com'
+                 weight: 10
+             port: 443
+             preservehost: true
+             profile: 'my_profile'
+             state: 'present'
+             status: true
+             type: 'reverse_proxy'
+             utm_host: 'utm.example.com'
+             utm_port: 8001
+             utm_protocol: 'https'
+             utm_token: 'my_token'
+             validate_certs: true
+             xheaders: true
+           register: result
+
+         - debug:
+             var: result

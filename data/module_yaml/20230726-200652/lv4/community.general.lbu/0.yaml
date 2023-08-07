@@ -1,0 +1,60 @@
+---
+- name: Test lbu module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Install community.general collection
+      ansible.builtin.shell:
+        cmd: ansible-galaxy collection install community.general
+      changed_when: false
+
+    - name: Include lbu role
+      ansible.builtin.include_role:
+        name: community.general.lbu
+        tasks_from: lbu
+
+    - name: Create lbu directory
+      ansible.builtin.file:
+        path: /tmp/lbu
+        state: directory
+
+    - name: Take a local backup
+      community.general.lbu:
+        src: /etc/
+        dest: /tmp/lbu/etc_bak/
+        commit: "{{ commit }}"
+        exclude: "{{ exclude }}"
+        include: "{{ include }}"
+      register: lbu_result
+
+    - name: Debug lbu_result
+      ansible.builtin.debug:
+        var: lbu_result
+
+    - name: Verify lbu_result
+      ansible.builtin.assert:
+        that: lbu_result is failed
+        fail_msg: "The lbu playbook did not fail as expected."
+
+    - name: Cleanup lbu directory
+      ansible.builtin.file:
+        path: /tmp/lbu
+        state: absent
+        recurse: true
+      ignore_errors: true
+
+  vars:
+    commit: false
+    exclude:
+      - /etc/passwd
+    include:
+      - /etc/ssh/
+
+    # Generate test cases based on the heuristic: 'Generate random MAC addresses for network modules.'
+    mac_addresses:
+      - "00:11:22:33:44:55"
+      - "11:22:33:44:55:66"
+      - "22:33:44:55:66:77"
+      - "33:44:55:66:77:88"
+      - "44:55:66:77:88:99"

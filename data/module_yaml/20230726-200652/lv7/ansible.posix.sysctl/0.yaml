@@ -1,0 +1,43 @@
+---
+- name: Triggering Latent Type-Related Bugs in ansible.posix.sysctl module
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Set sysctl parameters
+      ansible.posix.sysctl:
+        name: "{{ item.sysctl_name }}"
+        value: "{{ item.sysctl_value }}"
+        sysctl_set: "{{ item.sysctl_set }}"
+        state: "{{ item.sysctl_state }}"
+      vars:
+        items:
+          - { sysctl_name: "net.ipv4.ip_forward", sysctl_value: "1", sysctl_set: "foo", sysctl_state: "present" }
+          - { sysctl_name: "net.ipv4.tcp_syncookies", sysctl_value: "1", sysctl_set: 1, sysctl_state: "present" }
+
+      loop: "{{ items }}"
+
+    - name: Reload sysctl parameters
+      ansible.posix.sysctl:
+        name: "{{ item.sysctl_name }}"
+        reload: "{{ item.reload }}"
+      vars:
+        items:
+          - { sysctl_name: "net.ipv4.ip_forward", reload: true }
+          - { sysctl_name: "net.ipv4.tcp_syncookies", reload: false }
+
+      loop: "{{ items }}"
+
+    - name: Ignore errors when setting sysctl parameters
+      ansible.posix.sysctl:
+        name: "{{ item.sysctl_name }}"
+        value: "{{ item.sysctl_value }}"
+        sysctl_set: "{{ item.sysctl_set }}"
+        state: "{{ item.sysctl_state }}"
+        ignoreerrors: "{{ item.ignoreerrors }}"
+      vars:
+        items:
+          - { sysctl_name: "net.ipv4.ip_forward", sysctl_value: "1", sysctl_set: false, sysctl_state: "absent", ignoreerrors: 1 }
+          - { sysctl_name: "net.ipv4.tcp_syncookies", sysctl_value: "1", sysctl_set: false, sysctl_state: "absent", ignoreerrors: true }
+
+      loop: "{{ items }}"

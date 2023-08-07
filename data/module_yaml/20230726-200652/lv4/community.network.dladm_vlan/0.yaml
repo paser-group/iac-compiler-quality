@@ -1,0 +1,38 @@
+---
+- name: Install community.network.dladm_vlan module
+  hosts: localhost
+  become: yes
+  gather_facts: false
+
+  tasks:
+    - name: Install required modules
+      pip:
+        name: community.network
+        state: present
+
+- name: Generate random MAC addresses
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Generate random MAC address
+      set_fact:
+        random_mac: "{{ '%02x:%02x:%02x:%02x:%02x:%02x' | format(
+                        0x00, 0x16, 0x3e,
+                        range(0, 256) | random,
+                        range(0, 256) | random,
+                        range(0, 256) | random
+                      ) }}"
+
+- name: Manage VLAN interfaces
+  hosts: all
+  gather_facts: true
+
+  tasks:
+    - name: Manage VLAN interface
+      community.network.dladm_vlan:
+        link: "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['interface'] }}"
+        name: "{{ hostvars[inventory_hostname]['ansible_fqdn'] }}"
+        state: present
+        temporary: "{{ random_mac }}"
+        vlan_id: "{{ 100 | random }}"

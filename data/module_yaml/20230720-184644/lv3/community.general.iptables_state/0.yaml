@@ -1,0 +1,48 @@
+---
+- name: Test playbook for community.general.iptables_state module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    iptables_conf:
+      - name: Allow SSH
+        rule: "-A INPUT -p tcp --dport 22 -j ACCEPT"
+        state: present
+        table: filter
+        counter: true
+        path: "/etc/iptables/rules.v4"
+
+      - name: Allow HTTP
+        rule: 80
+        state: 1
+        table: filter
+        counter: yes
+        path: 123
+
+    iptables_ip_version: 'ipv4'
+    iptables_modprobe: "/sbin/iptables-modprobe"
+    iptables_noflush: True
+    iptables_wait: "5"
+
+  tasks:
+    - name: Save iptables state
+      community.general.iptables_state:
+        config: "{{ item.rule }}"
+        state: "{{ item.state }}"
+        table: "{{ item.table }}"
+        counter: "{{ item.counter }}"
+        path: "{{ item.path }}"
+        ip_version: "{{ iptables_ip_version }}"
+        modprobe: "{{ iptables_modprobe }}"
+        noflush: "{{ iptables_noflush }}"
+        wait: "{{ iptables_wait }}"
+      loop: "{{ iptables_conf }}"
+
+    - name: Display iptables rules
+      shell: cat "{{ item.path }}"
+      loop: "{{ iptables_conf }}"
+      register: iptables_rules
+
+    - name: Debug iptables rules
+      debug:
+        var: iptables_rules

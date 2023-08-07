@@ -1,0 +1,40 @@
+---
+- name: Test playbook for 'community.network.avi_networksecuritypolicy' module
+  hosts: localhost
+  gather_facts: False
+  tasks:
+    - name: Set random port numbers
+      set_fact:
+        src_port: "{{ 10 + (inventory_hostname | int) }}"
+        dst_port: "{{ 100 + (inventory_hostname | int) }}"
+
+    - name: Configure Network Security Policy
+      community.network.avi_networksecuritypolicy:
+        controller: "controller_ip"
+        username: "admin"
+        password: "password"
+        tenant: "default"
+        name: "test_policy"
+        rules:
+          - index: 1
+            name: "Rule 1"
+            enable: true
+            action:
+              type: "NETWORK_SECURITY_POLICY_ACTION_TYPE_DENY"
+            network_security_policy_rule_match:
+              protocol:
+                type: "IS_IN"
+                value:
+                  - "TCP"
+              src:
+                rules:
+                  - filter_type: "IS_IN"
+                    sub_filter: "{{ src_port }}"
+              dst:
+                rules:
+                  - filter_type: "IS_IN"
+                    sub_filter: "{{ dst_port }}"
+
+    - name: Debug output
+      debug:
+        var: ansible_facts.community_network_avi_networksecuritypolicy

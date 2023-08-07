@@ -1,0 +1,71 @@
+---
+- name: Configure block devices using community.general.parted module
+  hosts: docker_nodes
+  gather_facts: false
+  vars:
+    # Configuration values incorporating both bytes and strings
+    block_size: 512B
+    partition_size: 1GB
+
+  tasks:
+    - name: Check existing partitions
+      parted:
+        device: "/dev/sdb"
+        unit: "s"
+      register: existing_partitions
+      ignore_errors: true
+
+    - name: Create partition
+      parted:
+        device: "/dev/sdb"
+        name: "Test Partition"
+        state: present
+        part_start: "1s"
+        part_end: "{{ partition_size }}"
+        unit: "{{ block_size }}"
+      when: existing_partitions is failed
+
+    - name: Resize partition
+      parted:
+        device: "/dev/sdb"
+        number: 1
+        resize: true
+        part_end: "{{ partition_size }}"
+        unit: "{{ block_size }}"
+      when: existing_partitions is succeeded
+
+    - name: Format partition
+      parted:
+        device: "/dev/sdb"
+        number: 1
+        fs_type: ext4
+        unit: "{{ block_size }}"
+
+    - name: Label partition
+      parted:
+        device: "/dev/sdb"
+        number: 1
+        label: "Data"
+        unit: "{{ block_size }}"
+
+    - name: Add flags to partition
+      parted:
+        device: "/dev/sdb"
+        number: 1
+        flags: ["boot", "lvm"]
+        unit: "{{ block_size }}"
+
+    - name: Change partition type
+      parted:
+        device: "/dev/sdb"
+        number: 1
+        part_type: primary
+        unit: "{{ block_size }}"
+
+    - name: Remove partition
+      parted:
+        device: "/dev/sdb"
+        number: 1
+        state: absent
+        unit: "{{ block_size }}"
+      when: existing_partitions is succeeded

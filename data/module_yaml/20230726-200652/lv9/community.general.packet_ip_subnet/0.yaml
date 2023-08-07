@@ -1,0 +1,37 @@
+---
+- name: Assign IP Subnet to Devices
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Generate random IP addresses
+      ansible.builtin.debug:
+        msg: "Random IP: {{ item }}"
+      loop:
+        - "{{ ansible_random_ipv4.network }}/{{ item }} "
+      loop_control:
+        loop_var: item
+      when: inventory_hostname.startswith('random_ip_generator')
+
+    - name: Create network devices
+      community.general.packet_ip_subnet:
+        auth_token: "YOUR_AUTH_TOKEN"
+        project_id: "YOUR_PROJECT_ID"
+        cidr: "10.1.1.0/24"
+        device_count: 4
+        state: present
+      register: subnet_result
+
+    - name: Display subnet result
+      ansible.builtin.debug:
+        var: subnet_result
+
+    - name: Display device details
+      ansible.builtin.debug:
+        msg: "Device ID: {{ item.id }}, Hostname: {{ item.hostname }}, IP: {{ item.ip_addresses[0].address }}"
+      loop: "{{ subnet_result.result.devices }}"
+
+  vars:
+    ansible_random_ipv4:
+      network: "10.1.1.0"
+      mask: "24"

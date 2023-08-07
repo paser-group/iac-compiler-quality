@@ -1,0 +1,31 @@
+- name: Configure Logical Volumes on AIX
+  hosts: aix_servers
+  gather_facts: false
+
+  tasks:
+    - name: Create a logical volume
+      community.general.aix_lvol:
+        lv: /dev/myvg/mylv
+        vg: myvg
+        state: present
+        size: 1G
+      register: lvol_created
+
+    - name: Debug output
+      debug:
+        var: lvol_created
+
+    - name: Test case 1 - Check if logical volume is created
+      assert:
+        that:
+          - lvol_created.changed is defined
+          - lvol_created.changed == true
+        fail_msg: "Logical volume creation failed"
+      when: lvol_created is defined
+
+    - name: Test case 2 - Check logical volume size
+      assert:
+        that:
+          - lvol_created.size_mb == 1024
+        fail_msg: "Incorrect logical volume size"
+      when: lvol_created is defined

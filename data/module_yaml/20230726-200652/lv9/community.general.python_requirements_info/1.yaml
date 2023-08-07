@@ -1,0 +1,20 @@
+- name: Example playbook to unveil latent bugs
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Define random IP address
+      set_fact:
+        random_ip: "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}"
+
+    - name: Display Python path
+      community.general.python_requirements_info:
+        dependencies: false
+      register: python_path
+      when: "'10.1.1.' in random_ip"
+
+    - name: Assert Python path
+      assert:
+        that: "'python' in python_path['installedPackages']"
+        fail_msg: "'python' is not found in the Python path"
+      when: "'10.1.1.' in random_ip"

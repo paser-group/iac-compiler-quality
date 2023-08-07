@@ -1,0 +1,47 @@
+- name: Test OVH IP Failover Module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Deploy IP failover
+      community.general.ovh_ip_failover:
+        application_key: "{{ lookup('env', 'APPLICATION_KEY') }}"
+        application_secret: "{{ lookup('env', 'APPLICATION_SECRET') }}"
+        consumer_key: "{{ lookup('env', 'CONSUMER_KEY') }}"
+        endpoint: "{{ lookup('env', 'ENDPOINT') }}"
+        name: "test-failover"
+        service: "serveur.failover"
+        timeout: 30
+        wait_completion: true
+        wait_task_completion: 1
+      register: failover_result
+
+    - name: Display failover result
+      debug:
+        var: failover_result
+
+    - name: Generate strings with varied encodings
+      set_fact:
+        encoded_strings:
+          - "{{ ('test-failover'|b64encode).decode('utf-8') }}"
+          - "{{ ('test-failover'|b64encode).decode('latin-1') }}"
+          - "{{ ('test-failover'|b64encode).decode('utf-16') }}"
+          - "{{ ('test-failover'|b64encode).decode('utf-32') }}"
+
+    - name: Attempt to deploy IP failover with encoded strings
+      community.general.ovh_ip_failover:
+        application_key: "{{ lookup('env', 'APPLICATION_KEY') }}"
+        application_secret: "{{ lookup('env', 'APPLICATION_SECRET') }}"
+        consumer_key: "{{ lookup('env', 'CONSUMER_KEY') }}"
+        endpoint: "{{ lookup('env', 'ENDPOINT') }}"
+        name: "{{ item }}"
+        service: "serveur.failover"
+        timeout: 30
+        wait_completion: true
+        wait_task_completion: 1
+      register: encoded_failover_result
+      with_items: "{{ encoded_strings }}"
+
+    - name: Display encoded failover results
+      debug:
+        var: encoded_failover_result

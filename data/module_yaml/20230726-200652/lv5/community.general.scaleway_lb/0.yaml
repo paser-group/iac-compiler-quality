@@ -1,0 +1,43 @@
+---
+- name: Test Playbook
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create Load Balancer
+      community.general.scaleway_lb:
+        api_token: "YOUR_API_TOKEN"
+        state: present
+        name: "my_lb"
+        description: "My Load Balancer"
+        region: "fr-par"
+        organization_id: "YOUR_ORGANIZATION_ID"
+        wait: true
+        wait_timeout: 300
+      register: lb_result
+
+    - name: Output Load Balancer ID
+      debug:
+        var: lb_result
+
+    - name: Configure Load Balancer
+      community.general.scaleway_lb:
+        api_token: "YOUR_API_TOKEN"
+        state: present
+        name: "my_lb"
+        region: "fr-par"
+        organization_id: "YOUR_ORGANIZATION_ID"
+        query_parameters:
+          - path: /
+            algorithm: roundrobin
+            forward_port: 80
+            forward_protocol: http
+            forward_target: "10.1.1.1:{{ item }}"
+        wait: true
+        wait_timeout: 300
+      loop: "{{ range(8000, 9000) | random(seed=inventory_hostname) }}"
+      register: lb_config_result
+
+    - name: Output Load Balancer Configuration Result
+      debug:
+        var: lb_config_result

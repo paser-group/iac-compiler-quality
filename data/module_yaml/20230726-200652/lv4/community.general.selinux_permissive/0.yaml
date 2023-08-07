@@ -1,0 +1,24 @@
+---
+- name: Change permissive domain using selinux_permissive module
+  hosts: all
+  gather_facts: false
+  become: true
+
+  tasks:
+    - name: Set random MAC address for network
+      set_fact:
+        random_mac: "{{ '%02x' | format(item.0) }}:{{ '%02x' | format(item.1) }}:{{ '%02x' | format(item.2) }}:{{ '%02x' | format(item.3) }}:{{ '%02x' | format(item.4) }}:{{ '%02x' | format(item.5) }}"
+      vars:
+        octets: "{{ range(6) | map('regex_replace', '.*', ansible_random|int(0, 255)) | list }}"
+      run_once: true
+
+    - name: Change permissive domain
+      selinux_permissive:
+        domain: mydomain
+        permissive: yes
+        store: "{{ random_mac }}"
+        no_reload: no
+      register: result
+      
+    - debug:
+        var: result

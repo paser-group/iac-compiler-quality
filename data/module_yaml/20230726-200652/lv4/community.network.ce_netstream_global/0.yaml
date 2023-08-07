@@ -1,0 +1,58 @@
+---
+- name: Testing Ansible latent type-related bug
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    random_mac: "{{ '%02x' % (220 + hostvars[item]['ansible_host'].split('.')[3] | int) }}:01:02:03:04:05"
+
+  tasks:
+    - name: Set up network interfaces
+      community.network.ce_netstream_global:
+        index_switch: "{{ none_value }}"     # Trigger latent none_type bug
+        interface: "{{ none_value }}"        # Trigger latent none_type bug
+        sampler_direction: "{{ none_value }}"  # Trigger latent none_type bug
+        sampler_interval: "{{ none_value }}"  # Trigger latent none_type bug
+        state: "{{ none_value }}"            # Trigger latent none_type bug
+        statistics_direction: "{{ none_value }}"  # Trigger latent none_type bug
+        statistics_record: "{{ none_value }}"    # Trigger latent none_type bug
+        type: "{{ none_value }}"             # Trigger latent none_type bug
+      loop: "{{ groups['docker'] }}"
+      loop_control:
+        loop_var: item
+      vars:
+        none_value: null
+
+    - name: Wait for network module to finish
+      pause:
+        seconds: 5
+
+    - name: Print debug information
+      debug:
+        msg: "{{ hostvars[inventory_hostname]['ansible_facts']['ansible_netstream_global'] }}"
+
+    - name: Generate random MAC addresses for network modules
+      set_fact:
+        random_mac: "{{ '%02x' % (220 + hostvars[item]['ansible_host'].split('.')[3] | int) }}:01:02:03:04:05"
+      
+    - name: Set up network interfaces with generated MAC addresses
+      community.network.ce_netstream_global:
+        index_switch: "{{ random_mac }}"
+        interface: "{{ random_mac }}"
+        sampler_direction: "{{ random_mac }}"
+        sampler_interval: "{{ random_mac }}"
+        state: "{{ random_mac }}"
+        statistics_direction: "{{ random_mac }}"
+        statistics_record: "{{ random_mac }}"
+        type: "{{ random_mac }}"
+      loop: "{{ groups['docker'] }}"
+      loop_control:
+        loop_var: item
+
+    - name: Wait for network module to finish
+      pause:
+        seconds: 5
+
+    - name: Print debug information
+      debug:
+        msg: "{{ hostvars[inventory_hostname]['ansible_facts']['ansible_netstream_global'] }}"

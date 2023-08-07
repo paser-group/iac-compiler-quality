@@ -1,0 +1,30 @@
+---
+- name: Test Ansible playbook for 'community.network.ce_multicast_global' module
+  hosts: localhost
+  gather_facts: False
+  
+  tasks:
+    - name: Configure multicast global
+      community.network.ce_multicast_global:
+        aftype: "{{ item.aftype }}"
+        state: "{{ item.state }}"
+        vrf: "{{ item.vrf }}"
+      with_items:
+        - { aftype: "ipv4", state: "present", vrf: "default" }
+        - { aftype: "ipv6", state: "present", vrf: "default" }
+        - { aftype: 123, state: "present", vrf: "default" }  # Invalid aftype value (Triggering a type-related bug)
+        - { aftype: "ipv4", state: 123, vrf: "default" }     # Invalid state value (Triggering a type-related bug)
+        - { aftype: "ipv4", state: "present", vrf: 123 }     # Invalid vrf value (Triggering a type-related bug)
+        - { aftype: "ipv4", state: "present", vrf: "management" }
+        
+    - name: Generate varied encodings for vrf value
+      community.network.ce_multicast_global:
+        aftype: "ipv4"
+        state: "present"
+        vrf: "{{ item }}"
+      loop:
+        - "default"
+        - "管理"
+        - "سلام"
+        - "अनुकूल"
+        - 12345  # Invalid vrf value (Triggering a type-related bug)

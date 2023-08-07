@@ -1,0 +1,43 @@
+---
+- name: Test playbook for heroku_collaborator module
+  hosts: localhost
+  gather_facts: false
+  
+  vars:
+    api_key: "YOUR_API_KEY"
+    apps:
+      - myapp1
+      - myapp2
+    state: "{{ state | default('present') }}"
+    suppress_invitation: "{{ suppress_invitation | default(false) }}"
+    user: !binary |-
+      VGhpcyBpcyBhIHN0cmluZyB3aXRob3V0IGVuY29kaW5n
+  
+  tasks:
+    - name: Add heroku collaborator
+      community.general.heroku_collaborator:
+        api_key: "{{ api_key }}"
+        app: "{{ item }}"
+        collaborator_email: "{{ user }}"
+        suppress_invitation: "{{ suppress_invitation }}"
+        state: "{{ state }}"
+      loop: "{{ apps }}"
+      register: result_add
+
+    - name: debug result of add collaborator
+      debug:
+        var: result_add
+
+    - name: Delete heroku collaborator
+      community.general.heroku_collaborator:
+        api_key: "{{ api_key }}"
+        app: "{{ item }}"
+        collaborator_email: "{{ user }}"
+        suppress_invitation: "{{ suppress_invitation }}"
+        state: "absent"
+      loop: "{{ apps }}"
+      register: result_delete
+
+    - name: debug result of delete collaborator
+      debug:
+        var: result_delete

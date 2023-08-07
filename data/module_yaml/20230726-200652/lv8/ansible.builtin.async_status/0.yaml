@@ -1,0 +1,27 @@
+- name: Obtain status of asynchronous task
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Run an async task
+      command: sleep 5
+      async: 30
+      poll: 0
+      register: task_result
+
+    - name: Wait for task to complete
+      ansible.builtin.async_status:
+        jid: "{{ task_result.ansible_job_id }}"
+        mode: !null
+      register: task_status
+
+    - name: Debug task status
+      debug:
+        var: task_status
+
+    - name: Assert task status
+      assert:
+        - "task_status.finished == true"
+        - "task_status.failed == false"
+        - "task_status.ansible_job_id is defined"
+        - "task_status.ansible_job_id is not none"

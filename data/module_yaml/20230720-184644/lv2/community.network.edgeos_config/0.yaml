@@ -1,0 +1,38 @@
+---
+- name: Test playbook for exposing latent type-related bugs
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Set up variables
+      set_fact:
+        backup: true
+        backup_options:
+          backup_dir: "/tmp/edgeos_backups"
+        comment: null
+        config: null
+        lines:
+          - "{{ item }}"
+        match: null
+        save: true
+        src: null
+      with_items:
+        - b"set interfaces ethernet eth0 description 'Test'"
+        - b"set interfaces ethernet eth0 address '192.168.0.1/24'"
+        - b"commit"
+
+    - name: Execute community.network.edgeos_config module
+      community.network.edgeos_config:
+        backup: "{{ backup }}"
+        backup_options: "{{ backup_options }}"
+        comment: "{{ comment }}"
+        config: "{{ config }}"
+        lines: "{{ lines }}"
+        match: "{{ match }}"
+        save: "{{ save }}"
+        src: "{{ src }}"
+      register: result
+
+    - name: Debug module output
+      debug:
+        var: result

@@ -1,0 +1,41 @@
+---
+- name: Test playbook for Ansible latent type-related bug exploration
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create Sudorule
+      community.general.ipa_sudorule:
+        ipa_user: admin
+        ipa_pass: admin_password
+        ipa_host: ipa_server.example.com
+        ipa_port: 443
+        ipa_prot: https
+        ipa_timeout: 10
+        cmd: sudorule_add
+        cn: sudorule_name
+        description: "Description of sudorule"
+
+        # Trigger latent type-related bug by passing byte string as a parameter value
+        sudoopt:
+          - !!binary |     # Use !!binary tag to introduce byte string value
+              YnVmZW5nZXJzOiBkZW1vX2J5IHN5c3RlbSBrZXkNCg==
+          - !!binary |
+              cmVxdWlyZXM6IGludGVybmFsLCBlbmNvZGluZzogc3RhcnRzLCByZXN1bHQ6IHN0YXJ0cw0K
+
+      register: sudorule_result
+
+    - name: Debug Sudorule Result
+      debug:
+        var: sudorule_result
+
+    - name: Delete Sudorule
+      community.general.ipa_sudorule:
+        ipa_user: admin
+        ipa_pass: admin_password
+        ipa_host: ipa_server.example.com
+        ipa_port: 443
+        ipa_prot: https
+        ipa_timeout: 10
+        cmd: sudorule_del
+        cn: sudorule_name

@@ -1,0 +1,28 @@
+- name: Test Ansible Avi API Session Module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Generate random port numbers
+      set_fact:
+        random_port: "{{ 33000 + (ansible_play_hosts.index(inventory_hostname) * 100) | random(99) }}"
+
+    - name: Test API session module with random port
+      community.network.avi_api_session:
+        controller: "controller.example.com"
+        username: "admin"
+        password: "secretpassword"
+        tenant: "default"
+        avi_disable_session_cache_as_fact: true
+        avi_credentials:
+          - username: "{{ username }}"
+            password: "{{ password }}"
+            controller: "{{ controller }}"
+        api_context:
+          - api_version: ["20.1.4"]   # Incorrect type: Should be a string, but provided a list
+            port: "{{ random_port }}"
+      register: api_session
+
+    - name: Display API session output
+      debug:
+        var: api_session

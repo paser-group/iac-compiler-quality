@@ -1,0 +1,29 @@
+---
+- name: Manage OneView using oneview_san_manager module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Configure OneView SAN Manager
+      community.general.oneview_san_manager:
+        hostname: "{{ image_streamer_hostname }}"
+        api_version: "{{ api_version }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        config: "{{ config }}"
+        data:
+          state: "{{ state }}"
+          validate_etag: "{{ validate_etag }}"
+      delegate_to: localhost
+
+    - name: Formulate random IP addresses
+      set_fact:
+        random_ip: "{{ range(4) | map('regex_replace', '.*', (hostvars[item]['ansible_default_ipv4']['address'][:-1] + item | int)) | list }}"
+      vars:
+        subnet: "10.1.1.0/24"
+        gateway: "10.1.1.254"
+        hosts: ["ubuntu1", "alpine1", "centos1", "redhat1"]
+
+    - name: Debug random IP addresses
+      debug:
+        var: random_ip

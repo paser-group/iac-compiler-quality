@@ -1,0 +1,51 @@
+---
+- name: Test playbook for ansible.builtin.getent module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Test getent using a specific service
+      ansible.builtin.getent:
+        database: "{{ lookup('random_string', '/tmp/lookup_random_string_chars') }}"
+        key: "{{ lookup('random_string', '/tmp/lookup_random_string_chars') }}"
+        service: ssh
+        split: ":"
+      register: getent_output
+
+    - name: Debug getent_output
+      ansible.builtin.debug:
+        var: getent_output
+
+    - name: Test getent using the 'fail_key' option
+      block:
+        - ansible.builtin.getent:
+            database: hosts
+            key: localhost
+            fail_key: false
+          register: getent_output_1
+        - debug:
+            var: getent_output_1
+      rescue:
+        - debug:
+            var: getent_output_1
+
+    - name: Test getent by splitting the 'key' attribute
+      ansible.builtin.getent:
+        database: passwd
+        key: root:mail
+        split: ":"
+      register: getent_output_2
+
+    - name: Debug getent_output_2
+      ansible.builtin.debug:
+        var: getent_output_2
+
+    - name: Test getent using a non-existent service
+      ansible.builtin.getent:
+        database: protocols
+        key: ICMP123456
+      register: getent_output_3
+
+    - name: Debug getent_output_3
+      ansible.builtin.debug:
+        var: getent_output_3

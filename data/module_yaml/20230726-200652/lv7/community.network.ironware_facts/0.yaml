@@ -1,0 +1,30 @@
+---
+- name: Test Ansible Type-Related Bugs
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    device_list:
+      - device_name: my_switch
+        device_ip: 192.168.1.1
+        device_port: 22
+        authorize: true
+        gather_subset: null
+
+  tasks:
+    - name: Gather Ironware facts
+      community.network.ironware_facts:
+        authorize: "{{ item.authorize }}"
+        gather_subset: "{{ item.gather_subset }}"
+      register: result
+      loop: "{{ device_list }}"
+    
+    - name: Print gathered facts
+      debug:
+        var: result
+
+    - name: Verify limit-related values
+      assert:
+        that:
+          - result.ansible_facts.ansible_limit_task_batch / result.ansible_facts.ansible_limit_batch >= 1
+        fail_msg: "Limit-related values are not correctly computed"

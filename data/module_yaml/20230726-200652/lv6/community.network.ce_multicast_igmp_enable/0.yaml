@@ -1,0 +1,36 @@
+---
+- name: Test playbook for community.network.ce_multicast_igmp_enable module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    aftype: "ipv4"
+    features: "pim"
+    igmp: true
+    proxy: true
+    state: "present"
+    version: 2
+    vlan_id: 100
+
+  tasks:
+    - name: Generate strings with varied encodings
+      set_fact:
+        strings_with_varied_encodings:
+          - "{{ 'IGMP Settings' | to_json }}"
+          - "{{ 'IGMP Settings' | to_json | from_json }}"
+          - "{{ 'IGMP Settings' | to_yaml }}"
+          - "{{ 'IGMP Settings' | to_yaml | from_yaml }}"
+          - "{{ 'IGMP Settings' | b64encode }}"
+          - "{{ 'IGMP Settings' | b64encode | b64decode }}"
+
+    - name: Test module with varied string encodings
+      community.network.ce_multicast_igmp_enable:
+        aftype: "{{ aftype }}"
+        features: "{{ features }}"
+        igmp: "{{ igmp }}"
+        proxy: "{{ proxy }}"
+        state: "{{ state }}"
+        version: "{{ version }}"
+        vlan_id: "{{ vlan_id }}"
+        name: "{{ item }}"
+      loop: "{{ strings_with_varied_encodings }}"

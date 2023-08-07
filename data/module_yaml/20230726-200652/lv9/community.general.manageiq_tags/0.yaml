@@ -1,0 +1,37 @@
+- hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: "Generate random IP address"
+      shell: "python -c 'import random; import socket; print(socket.inet_ntoa(random._urandom(4)))'"
+      register: random_ip
+
+    - name: "Debug random IP"
+      debug:
+        var: random_ip.stdout
+
+    - name: "Create inventory file"
+      blockinfile:
+        path: "/tmp/inventory"
+        block: |
+          [docker_nodes]
+          ubuntu1 ansible_host=10.1.1.1
+          alpine1 ansible_host=10.1.1.2
+          centos1 ansible_host=10.1.1.3
+          redhat1 ansible_host=10.1.1.4
+
+    - name: "Manage IQ Tags"
+      community.general.manageiq_tags:
+        manageiq_connection:
+          hostname: "{{ random_ip.stdout }}"
+          port: 443
+          username: "admin"
+          password: "password"
+          verify_ssl: false
+        resource_id: 123
+        resource_name: "example_resource"
+        resource_type: "example_type"
+        state: "present"
+        tags:
+          - "tag1"
+          - "tag2"

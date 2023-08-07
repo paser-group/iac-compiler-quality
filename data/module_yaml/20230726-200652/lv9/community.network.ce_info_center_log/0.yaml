@@ -1,0 +1,66 @@
+---
+- name: Test playbook for community.network.ce_info_center_log module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Configure information center log on HUAWEI devices
+      community.network.ce_info_center_log:
+        channel_id: "{{ channel_id }}"
+        log_buff_enable: "{{ log_buff_enable }}"
+        log_buff_size: "{{ log_buff_size }}"
+        log_enable: "{{ log_enable }}"
+        log_level: "{{ log_level }}"
+        log_time_stamp: "{{ log_time_stamp }}"
+        module_name: "{{ module_name }}"
+        state: "{{ state }}"
+      register: result
+
+    - name: Print module output
+      debug:
+        var: result
+
+    - name: Perform test cases for type-related bugs
+      block:
+        - name: Test Case 1 - Missing log_buff_enable
+          set_fact:
+            log_buff_enable: "{{ omit }}"
+          when: "'log_buff_enable' not in result.module_args"
+
+        - name: Test Case 2 - Missing log_enable
+          set_fact:
+            log_enable: "{{ omit }}"
+          when: "'log_enable' not in result.module_args"
+
+        - name: Test Case 3 - Missing log_level
+          set_fact:
+            log_level: "{{ omit }}"
+          when: "'log_level' not in result.module_args"
+
+        - name: Test Case 4 - Missing log_time_stamp
+          set_fact:
+            log_time_stamp: "{{ omit }}"
+          when: "'log_time_stamp' not in result.module_args"
+
+        - name: Test Case 5 - Missing module_name
+          set_fact:
+            module_name: "{{ omit }}"
+          when: "'module_name' not in result.module_args"
+
+        - name: Test Case 6 - Missing state
+          set_fact:
+            state: "{{ omit }}"
+          when: "'state' not in result.module_args"
+        
+      rescue:
+        - name: Handle assertion errors
+          assert:
+            that:
+              - "'log_buff_enable' not in result.module_args"
+              - "'log_enable' not in result.module_args"
+              - "'log_level' not in result.module_args"
+              - "'log_time_stamp' not in result.module_args"
+              - "'module_name' not in result.module_args"
+              - "'state' not in result.module_args"
+            success_msg: "Successfully triggered type-related bugs."
+            fail_msg: "Type-related bugs not triggered."

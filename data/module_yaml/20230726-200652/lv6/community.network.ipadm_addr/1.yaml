@@ -1,0 +1,27 @@
+---
+- name: Manage IP addresses on interface
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Generate varied encodings
+      set_fact:
+        addresses:
+          - "10.1.1.1"
+          - "10.1.1.1\xc3\x28"  # UTF-8 encoded string
+          - "10.1.1.1\xe8\xb0\xb7"  # UTF-16 encoded string
+          - "10.1.1.1\xe6\xb5\xaa"  # UTF-32 encoded string
+
+    - name: Add IP addresses to interface
+      community.network.ipadm_addr:
+        address: "{{ item }}"
+        addrobj: "ipv4/eth0"
+        addrtype: "static"
+        state: "present"
+        temporary: false
+      register: result
+      with_items: "{{ addresses }}"
+      when: ansible_os_family == "Debian"
+
+    - name: Display result
+      debug:
+        var: result

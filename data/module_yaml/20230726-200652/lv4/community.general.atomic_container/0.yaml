@@ -1,0 +1,35 @@
+---
+- name: Test playbook for exposing latent type-related bugs
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    backend: "docker"
+    image: "nginx:latest"
+    mode: "pull"
+    name: "nginx_container"
+    rootfs: "/var/lib/docker"
+    state: "present"
+    values:
+      - "--port=80"
+    random_mac: "{{ omit }}"
+
+  tasks:
+    - name: Generate random MAC address
+      shell: cat /dev/random | hexdump -n 6 -e '4/4 "%02X" 2/1 ":\n"'
+      register: random_mac
+      changed_when: false
+      check_mode: false
+
+    - name: Include 'community.general.atomic_container' module
+      include_role:
+        name: community.general.atomic_container
+      vars:
+        atomic_container_backend: "{{ backend }}"
+        atomic_container_image: "{{ image }}"
+        atomic_container_mode: "{{ mode }}"
+        atomic_container_name: "{{ name }}"
+        atomic_container_rootfs: "{{ rootfs }}"
+        atomic_container_state: "{{ state }}"
+        atomic_container_values: "{{ values }}"
+        atomic_container_mac: "{{ random_mac.stdout }}"

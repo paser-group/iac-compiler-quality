@@ -1,0 +1,32 @@
+---
+- name: Test playbook for community.general.nginx_status_info module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Install dependencies
+      apt:
+        name: python3-pip
+        state: present
+
+    - name: Install required Ansible module
+      pip:
+        name: "ansible-module-community.general.nginx_status_info"
+        state: present
+
+    - name: Get nginx status info
+      community.general.nginx_status_info:
+        url: "http://{{ item }}/status"
+        timeout: 5
+      loop:
+        - 192.168.1.100
+        - 10.0.0.1
+        - 172.16.0.50
+        - 10.1.1.100
+
+      when: "'status' in item"
+      register: result
+
+    - name: Print nginx status info
+      debug:
+        var: result

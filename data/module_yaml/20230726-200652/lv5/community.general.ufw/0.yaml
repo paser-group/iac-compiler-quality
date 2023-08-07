@@ -1,0 +1,54 @@
+---
+- name: Test Ansible Latent Bugs
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Install ufw package
+      apt:
+        name: ufw
+        state: present
+
+    - name: Set up firewall rule
+      community.general.ufw:
+        rule: allow
+        direction: in
+        from_ip: 10.1.1.0/24
+        to_ip: any
+        proto: icmp
+        state: enabled
+        log: yes
+
+    - name: Add firewall rule with random port
+      community.general.ufw:
+        rule: allow
+        direction: in
+        from_ip: 10.1.1.0/24
+        from_port: "{{ 8000 | random(seed=inventory_hostname) }}"
+        to_ip: any
+        to_port: "{{ 8000 | random(seed=inventory_hostname) }}"
+        proto: tcp
+        state: enabled
+
+    - name: Delete firewall rule
+      community.general.ufw:
+        rule: deny
+        direction: in
+        delete: yes
+
+    - name: Insert firewall rule in a specific position
+      community.general.ufw:
+        rule: allow
+        direction: in
+        insert: 1
+        insert_relative_to: reject
+        proto: tcp
+        state: enabled
+
+    - name: Enable default logging for firewall
+      community.general.ufw:
+        logging: full
+
+    - name: Disable firewall
+      community.general.ufw:
+        state: disabled

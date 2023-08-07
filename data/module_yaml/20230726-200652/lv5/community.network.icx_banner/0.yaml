@@ -1,0 +1,32 @@
+---
+- name: Test Ansible Latent Type-Related Bugs
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    banner: "Test banner"
+    check_running_config: true
+    enterkey: true
+    state: "present"
+    text: |
+      This is a multiline banner.
+      Line 2 of the banner.
+
+  tasks:
+    - name: Random Port Number
+      set_fact:
+        test_port: "{{ 1024 + (hostvars['localhost'].inventory_hostname | hash|int) % 65535 }}"
+
+    - name: Configure ICX Banner
+      community.network.icx_banner:
+        banner: "{{ banner }}"
+        check_running_config: "{{ check_running_config }}"
+        enterkey: "{{ enterkey }}"
+        state: "{{ state }}"
+        text: "{{ text }}"
+        port: "{{ test_port }}"
+      register: result
+
+    - name: Debug Result
+      debug:
+        var: result

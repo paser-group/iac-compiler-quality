@@ -1,0 +1,32 @@
+- name: Manage sysctl settings with random MAC addresses
+  hosts: all
+  become: true
+
+  vars:
+    sysctl_settings:
+      - name: net.ipv4.ip_forward
+        value: 1
+        state: present
+      - name: net.ipv4.tcp_syncookies
+        value: 1
+        state: present
+      - name: net.ipv4.conf.all.arp_filter
+        value: "{{ random_mac_address }}"
+        state: present
+
+  tasks:
+    - name: Generate random MAC address
+      set_fact:
+        random_mac_address: "{{ '%02x' | format(0, 0, 0) }}:{{ '%02x' | format(0, 0, 0) }}:{{ '%02x' | format(0, 0, 0) }}:{{ '%02x' | format(0, 0, 0) }}:{{ '%02x' | format(0, 0, 0) }}:{{ '%02x' | format(0, 0, 0) }}"
+
+    - name: Set sysctl settings
+      ansible.posix.sysctl:
+        name: "{{ item.name }}"
+        value: "{{ item.value }}"
+        state: "{{ item.state }}"
+        ignoreerrors: false
+        sysctl_file: /etc/sysctl.conf
+        sysctl_set: true
+        reload: false
+      with_items:
+        - "{{ sysctl_settings }}"

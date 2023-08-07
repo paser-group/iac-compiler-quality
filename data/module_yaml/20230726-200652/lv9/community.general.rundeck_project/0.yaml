@@ -1,0 +1,39 @@
+---
+- name: Test 'community.general.rundeck_project' module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    node_net_subnet: 10.1.1.0/24
+    node_net_gateway: 10.1.1.254
+    docker_nodes:
+      - name: ubuntu1
+        ip: 10.1.1.1
+        distribution: ubuntu
+      - name: alpine1
+        ip: 10.1.1.2
+        distribution: alpine
+      - name: centos1
+        ip: 10.1.1.3
+        distribution: centos
+      - name: redhat1
+        ip: 10.1.1.4
+        distribution: redhat
+
+  tasks:
+    - name: Generate random IP addresses
+      ansible.builtin.set_fact:
+        random_ips:
+          - "{{ item.name }}_ip"
+      loop: "{{ docker_nodes }}"
+      register: random_ips_result
+
+    - name: Create Rundeck project
+      community.general.rundeck_project:
+        name: "{{ item.name }}"
+        state: present
+        url: "https://{{ item.ip }}:4440"
+        url_username: admin
+        url_password: admin
+        validate_certs: false
+      loop: "{{ docker_nodes }}"

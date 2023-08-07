@@ -1,0 +1,34 @@
+---
+- name: Manage MLAG configuration
+  hosts: network_devices
+  gather_facts: false
+  vars:
+    dfs_group_id: "{{ ansible_default_ipv4.address | regex_replace('.', '/') }}"   # Test case 1: division-based operation when assigning limit-related value
+    eth_trunk_id: "{{ django_version|int / 2 }}"   # Test case 2: division-based operation when assigning limit-related value
+    ip_address: "10.1.1.{{ ansible_play_hosts.index(inventory_hostname) + 1 }}"   # Test case 3: incrementing IP address based on host index
+    nickname: "switch{{ ansible_play_hosts.index(inventory_hostname) }}"   # Test case 4: appending host index to nickname
+    peer_link_id: "{{ ansible_play_hosts[0] }}"   # Test case 5: using first host as peer_link_id
+    priority_id: "{{ ansible_play_hosts.index(inventory_hostname) }}"   # Test case 6: using host index as priority_id
+    pseudo_nickname: "{{ nickname | capitalize }}"   # Test case 7: capitalizing nickname
+    pseudo_priority: "{{ priority_id | int + 1 }}"   # Test case 8: incrementing priority_id
+    state: present
+    vpn_instance_name: "VPN_{{ nickname }}"   # Test case 9: appending 'VPN_' to nickname
+
+  tasks:
+    - name: Configure MLAG
+      community.network.ce_mlag_config:
+        dfs_group_id: "{{ dfs_group_id }}"
+        eth_trunk_id: "{{ eth_trunk_id }}"
+        ip_address: "{{ ip_address }}"
+        nickname: "{{ nickname }}"
+        peer_link_id: "{{ peer_link_id }}"
+        priority_id: "{{ priority_id }}"
+        pseudo_nickname: "{{ pseudo_nickname }}"
+        pseudo_priority: "{{ pseudo_priority }}"
+        state: "{{ state }}"
+        vpn_instance_name: "{{ vpn_instance_name }}"
+      register: result
+
+    - name: Debug result
+      debug:
+        var: result

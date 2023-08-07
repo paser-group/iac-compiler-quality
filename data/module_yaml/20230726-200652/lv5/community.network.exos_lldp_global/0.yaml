@@ -1,0 +1,42 @@
+---
+- name: Debug Latent Bugs in community.network.exos_lldp_global module
+  hosts: localhost
+  gather_facts: false
+  vars:
+    # Define test variables
+    test_port: "{{ lookup('pipe', 'shuf -i 1024-65535 -n 1') }}"
+    test_timeout: 10
+
+  tasks:
+    - name: Configure LLDP Global Settings
+      community.network.exos_lldp_global:
+        config:
+          adminStatus: enable
+          adminCompatibilityMode: SNMPv1
+          receiveDelay: 2
+          stateAdvertisement: systemName
+          state: present
+        state: present
+      register: result
+          
+    - name: Debug Output
+      debug:
+        var: result
+
+    - name: Test Port Settings
+      community.network.exos_lldp_global:
+        config:
+          adminStatus: enable
+          adminCompatibilityMode: SNMPv1
+          receiveDelay: 2
+          stateAdvertisement: systemDescription
+          state: present
+        state: present
+        port: "{{ test_port }}"
+        timeout: "{{ test_timeout }}"
+        retries: 3
+      register: test_result
+
+    - name: Debug Test Output
+      debug:
+        var: test_result

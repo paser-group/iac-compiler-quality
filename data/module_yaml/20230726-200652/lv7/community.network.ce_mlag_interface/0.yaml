@@ -1,0 +1,54 @@
+- name: Test Playbook for mlag_interface module
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Include the mlag_interface module
+      include_tasks: mlag_interface.yml
+
+    - name: Ensure mlag_interface module was executed successfully
+      assert:
+        that:
+          - mlag_interface_success is defined
+          - mlag_interface_success is eq(true)
+        msg: "mlag_interface module failed to execute successfully"
+
+- name: MLAG Interface Module
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Setup MLAG Interface
+      community.network.ce_mlag_interface:
+        interface: "{{ item.interface | default(undefined_variable) }}"
+        state: present
+        mlag_id: "{{ item.mlag_id | default(undefined_variable) }}"
+        mlag_priority_id: "{{ item.mlag_priority_id | default(undefined_variable) }}"
+        mlag_system_id: "{{ item.mlag_system_id | default(undefined_variable) }}"
+        eth_trunk_id: "{{ item.eth_trunk_id | default(undefined_variable) }}"
+        dfs_group_id: "{{ item.dfs_group_id | default(undefined_variable) }}"
+        mlag_error_down: "{{ item.mlag_error_down | default(undefined_variable) }}"
+      loop:
+        - interface: "{{ some_undefined_variable }}"
+          mlag_id: 1
+          mlag_priority_id: 100
+          mlag_system_id: 1234-abcd
+          eth_trunk_id: None
+          dfs_group_id: None
+          mlag_error_down: None
+        - interface: "GigabitEthernet0/1"
+          mlag_id: 2
+          mlag_priority_id: 200
+          mlag_system_id: 5678-efgh
+          eth_trunk_id: None
+          dfs_group_id: None
+          mlag_error_down: None
+
+      register: mlag_interface_result
+
+    - name: Set mlag_interface_success if module ran successfully
+      set_fact:
+        mlag_interface_success: true
+      when: mlag_interface_result is success
+
+    - name: Debug mlag_interface_result
+      debug:
+        var: mlag_interface_result

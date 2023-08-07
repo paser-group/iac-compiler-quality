@@ -1,0 +1,30 @@
+---
+- name: Test playbook for 'community.general.gunicorn' module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    app_path: /path/to/app
+    venv_path: /path/to/venv
+    config_path: /path/to/gunicorn.conf.py
+    pid_path: /path/to/gunicorn.pid
+
+  tasks:
+    - name: Install required Python package
+      pip:
+        name: gunicorn
+
+    - name: Start gunicorn
+      community.general.gunicorn:
+        app: "{{ app_path }}"
+        chdir: "{{ app_path }}"
+        config: "{{ config_path }}"
+        pid: "{{ pid_path }}"
+        user: "{{ lookup('env', 'USER') }}"
+        venv: "{{ venv_path }}"
+        worker: "{{ 'sync' if ansible_distribution == 'Ubuntu' else 'eventlet' }}"
+      register: gunicorn_output
+
+    - name: Print gunicorn output
+      debug:
+        var: gunicorn_output

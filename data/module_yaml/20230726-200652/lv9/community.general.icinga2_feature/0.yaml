@@ -1,0 +1,54 @@
+---
+- name: Test playbook for 'community.general.icinga2_feature' module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+
+    - name: Define network details
+      set_fact:
+        subnet: "10.1.1.0/24"
+        gateway: "10.1.1.254"
+
+    - name: Create Docker network
+      command: docker network create --subnet={{ subnet }} --gateway={{ gateway }} node-net
+      become: true
+      become_user: root
+
+    - name: Create Docker containers
+      command: docker run -d --net=node-net --ip={{ item.ip_address }} {{ item.image }} sleep infinity
+      with_items:
+        - { ip_address: "10.1.1.1", image: "ubuntu" }
+        - { ip_address: "10.1.1.2", image: "alpine" }
+        - { ip_address: "10.1.1.3", image: "centos" }
+        - { ip_address: "10.1.1.4", image: "redhat" }
+      become: true
+      become_user: root
+
+    - name: Install Icinga2
+      community.general.icinga2_feature:
+        name: "{{ item.name }}"
+        state: "{{ item.state }}"
+      with_items:
+        - { name: "feature-command", state: "present" }
+        - { name: "feature-web", state: "present" }
+      register: icinga2_feature_result
+
+    - name: Debug icinga2_feature_result
+      debug:
+        var: icinga2_feature_result
+
+    - name: Remove Docker containers
+      command: docker rm -f {{ item.ip_address }}
+      with_items:
+        - { ip_address: "10.1.1.1" }
+        - { ip_address: "10.1.1.2" }
+        - { ip_address: "10.1.1.3" }
+        - { ip_address: "10.1.1.4" }
+      become: true
+      become_user: root
+
+    - name: Remove Docker network
+      command: docker network rm node-net
+      become: true
+      become_user: root

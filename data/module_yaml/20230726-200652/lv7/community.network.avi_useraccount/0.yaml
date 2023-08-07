@@ -1,0 +1,39 @@
+---
+- name: Test playbook for ansible latent type-related bugs
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
+    avi_user_accounts:
+      - username: test_user
+        password: test_password
+        old_password: null
+        force_change: null
+        tenant: test_tenant
+        tenant_uuid: test_tenant_uuid
+        controller: 10.1.1.1
+        api_version: 20.1.3
+        api_context:
+          - cloud_ref: /api/cloud?name=test_cloud
+        avi_credentials:
+          - username: admin
+            password: admin_password
+        avi_disable_session_cache_as_fact: false
+
+  tasks:
+    - name: Install Avi plugin dependency
+      pip:
+        name: avisdk
+
+    - name: Include Avi ansible collection
+      include_role:
+        name: community.network.avi_useraccount
+
+      vars:
+        ansible_network_os: Avi
+        avi_user_accounts: "{{ avi_user_accounts }}"
+
+    - name: Print debug info
+      debug:
+        var: avi_network_useraccount_result

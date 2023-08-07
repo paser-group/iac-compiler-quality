@@ -1,0 +1,27 @@
+---
+- name: Test playbook for community.network.cnos_user module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create a local user with varied encodings
+      community.network.cnos_user:
+        aggregate: "{{ item.aggregate | default(lookup('password', '/etc/passwd')) }}"
+        configured_password: "{{ item.configured_password }}"
+        name: "{{ item.name }}"
+        purge: "{{ item.purge }}"
+        role: "{{ item.role | default(lookup('password', '/etc/passwd')) }}"
+        sshkey: "{{ item.sshkey }}"
+        state: "{{ item.state | default(lookup('password', '/etc/passwd')) }}"
+        update_password: "{{ item.update_password }}"
+      loop:
+        - { aggregate: None, configured_password: None, name: "test_user1", purge: True, sshkey: None, state: None, update_password: None }
+        - { aggregate: None, configured_password: None, name: "test_user2".encode('utf-8'), purge: True, sshkey: None, state: None, update_password: None }
+        - { aggregate: None, configured_password: None, name: "test_user3".encode('utf-16'), purge: True, sshkey: None, state: None, update_password: None }
+        - { aggregate: None, configured_password: None, name: "test_user4".encode('utf-32'), purge: True, sshkey: None, state: None, update_password: None }
+      register: result
+      ignore_errors: yes
+
+    - name: Debug module output
+      debug:
+        var: result

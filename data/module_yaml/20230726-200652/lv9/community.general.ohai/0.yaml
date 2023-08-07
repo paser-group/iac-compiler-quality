@@ -1,0 +1,33 @@
+---
+- name: Ansible Latent Bug Finder Playbook
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Install community.general collection
+      ansible.utils.collection_install:
+        name: community.general
+
+    - name: Generate random IP addresses
+      shell: |
+        ip1="{{ lookup('pipe', 'shuf -i 1-254 -n 1') }}"
+        ip2="{{ lookup('pipe', 'shuf -i 1-254 -n 1') }}"
+        ip3="{{ lookup('pipe', 'shuf -i 1-254 -n 1') }}"
+        ip4="{{ lookup('pipe', 'shuf -i 1-254 -n 1') }}"
+        echo "{{ ip1 }}.{{ ip2 }}.{{ ip3 }}.{{ ip4 }}"
+      register: random_ip_address
+
+    - name: Set the random IP address in the inventory
+      lineinfile:
+        path: /path/to/inventory.ini
+        line: 'random_ip_address={{ random_ip_address.stdout }}'
+      delegate_to: localhost
+
+    - name: Run community.general.ohai module
+      community.general.ohai:
+        plugins: []
+      register: ohai_output
+
+    - name: Print community.general.ohai module output
+      debug:
+        var: ohai_output

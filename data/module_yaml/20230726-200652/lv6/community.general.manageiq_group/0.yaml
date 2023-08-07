@@ -1,0 +1,53 @@
+---
+- name: Test playbook for community.general.manageiq_group
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    group_name: "Test Group"
+    group_description: "This is a test group"
+    group_role: "group_admin"
+    group_tenant: "My Tenant"
+
+  tasks:
+    - name: Create a new ManageIQ group
+      community.general.manageiq_group:
+        manageiq_connection:
+          url: https://manageiq.example.com/api
+          username: admin
+          password: secret
+        name: "{{ group_name }}"
+        description: "{{ group_description }}"
+        role: "{{ group_role }}"
+        tenant: "{{ group_tenant }}"
+        state: present
+      register: result
+      ignore_errors: true
+
+    - name: Display the result
+      debug:
+        var: result
+
+    - name: Manipulate the 'group_description' variable
+      set_fact:
+        group_description: "{{ group_description|encode('rot_13') }}"
+      when: result.failed
+
+    - name: Retry creating the ManageIQ group
+      community.general.manageiq_group:
+        manageiq_connection:
+          url: https://manageiq.example.com/api
+          username: admin
+          password: secret
+        name: "{{ group_name }}"
+        description: "{{ group_description }}"
+        role: "{{ group_role }}"
+        tenant: "{{ group_tenant }}"
+        state: present
+      register: retry_result
+      until: retry_result is success
+      retries: 3
+
+    - name: Display the retry result
+      debug:
+        var: retry_result

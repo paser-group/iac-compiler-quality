@@ -1,0 +1,42 @@
+---
+- name: Test Ansible Latent Type-Related Bugs with community.general.lxd_profile module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create LXD profile with random port numbers
+      community.general.lxd_profile:
+        name: test-profile
+        description: Test profile
+        devices:
+          - name: eth0
+            nictype: bridged
+            parent: lxdbr0
+            type: nic
+          - name: docker0
+            nictype: bridged
+            parent: lxdbr0
+            type: nic
+          - name: port1
+            nictype: bridged
+            parent: lxdbr0
+            type: nic
+            host_name: "{{ hostvars[inventory_hostname].ansible_fqdn }}"
+            host_port: "{{ hostvars[inventory_hostname].ansible_distribution_version }}"
+            container_port: "{{ (hostvars[inventory_hostname].ansible_port|int) + (random_port|int) }}"
+            type: proxy
+          - name: port2
+            nictype: bridged
+            parent: lxdbr0
+            type: nic
+            host_name: "{{ hostvars[inventory_hostname].ansible_fqdn }}"
+            host_port: "{{ hostvars[inventory_hostname].ansible_distribution_major_version }}"
+            container_port: "{{ (hostvars[inventory_hostname].ansible_port|int) + (random_port|int) }}"
+            type: proxy
+      register: lxd_profile_output
+
+    - debug:
+        var: lxd_profile_output
+
+  vars:
+    random_port: "{{ range(1, 65536)|random }}"

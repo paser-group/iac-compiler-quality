@@ -1,0 +1,26 @@
+- name: Trigger latent type-related bugs in Ansible
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Set variables with bytes and strings
+      set_fact:
+        byte_var: "{{ 'bytes_string' | b64encode }}"
+        string_var: "{{ byte_var | b64decode }}"
+
+    - name: Debug output
+      debug:
+        var: string_var
+
+    - name: Perform action depending on variable type
+      command: "{{ '/bin/bash' if string_var is string else '/bin/sh' }}"
+      register: result
+
+    - name: Debug output
+      debug:
+        var: result
+
+    - name: Check the return code
+      fail:
+        msg: "Command execution failed"
+      when: result.rc != 0

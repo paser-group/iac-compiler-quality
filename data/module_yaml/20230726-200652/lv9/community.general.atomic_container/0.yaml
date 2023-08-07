@@ -1,0 +1,41 @@
+---
+- name: Test playbook for community.general.atomic_container module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create atomic container
+      community.general.atomic_container:
+        backend: "{{ item.backend }}"
+        image: "{{ item.image }}"
+        mode: "{{ item.mode }}"
+        name: "{{ item.name }}"
+        rootfs: "{{ item.rootfs }}"
+        state: present
+      loop:
+        - { backend: 'docker', image: 'nginx', mode: 'pull', name: 'container1', rootfs: '/var/lib/atomic/containers/container1'}
+        - { backend: 'docker', image: 'httpd', mode: 'pull', name: 'container2', rootfs: '/var/lib/atomic/containers/container2'}
+        - { backend: 'rkt', image: 'alpine', mode: 'fetch', name: 'container3', rootfs: '/var/lib/atomic/containers/container3'}
+        - { backend: 'rkt', image: 'ubuntu', mode: 'fetch', name: 'container4', rootfs: '/var/lib/atomic/containers/container4'}
+        - { backend: 'docker', image: 'redis', mode: 'pull', name: 'container5', rootfs: '/var/lib/atomic/containers/container5'}
+
+    - name: Print container details
+      debug:
+        var: item
+      loop:
+        - "{{ item.name }}"
+      loop_control:
+        loop_var: item
+
+    - name: Remove atomic container
+      community.general.atomic_container:
+        backend: "{{ item.backend }}"
+        image: "{{ item.image }}"
+        name: "{{ item.name }}"
+        state: absent
+      loop:
+        - { backend: 'docker', image: 'nginx', name: 'container1'}
+        - { backend: 'docker', image: 'httpd', name: 'container2'}
+        - { backend: 'rkt', image: 'alpine', name: 'container3'}
+        - { backend: 'rkt', image: 'ubuntu', name: 'container4'}
+        - { backend: 'docker', image: 'redis', name: 'container5'}

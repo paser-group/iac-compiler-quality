@@ -1,0 +1,41 @@
+---
+- name: Retrieve ManageIQ tags info
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Get resource info
+      community.general.manageiq_tags_info:
+        manageiq_connection:
+          url: "https://manageiq.example.com"
+          username: "admin"
+          password: "password"
+        resource_id: "{{ my_resource_id }}"
+        resource_name: "{{ my_resource_name }}"
+        resource_type: "{{ my_resource_type }}"
+      register: resource_info
+
+    - name: Print resource info
+      debug:
+        var: resource_info
+
+- name: Test Cases for varied string encodings
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Set resource variables
+      set_fact:
+        my_resource_id: "{{ item.resource_id }}"
+        my_resource_name: "{{ item.resource_name }}"
+        my_resource_type: "{{ item.resource_type }}"
+      loop:
+        - { resource_id: 123, resource_name: "example", resource_type: "test" }
+        - { resource_id: "ABC", resource_name: "áéíóú", resource_type: "टेस्ट" }
+      register: test_variables
+
+    - name: Execute playbook with varied encodings
+      include_tasks: manageiq_tags_info.yml
+      loop: "{{ test_variables.results }}"
+      loop_control:
+        loop_var: item

@@ -1,0 +1,39 @@
+---
+- name: Manage VLANs on Ubiquiti Edgeswitch
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create VLAN
+      community.network.edgeswitch_vlan:
+        vlan_id: "{{ vlan_id }}"
+        name: "{{ vlan_name }}"
+        tagged_interfaces: "{{ tagged_interfaces }}"
+        untagged_interfaces: "{{ untagged_interfaces }}"
+        auto_exclude: "{{ auto_exclude | default(false) }}"
+        auto_tag: "{{ auto_tag | default(false) }}"
+        auto_untag: "{{ auto_untag | default(false) }}"
+        purge: "{{ purge | default(false) }}"
+        state: present
+      register: result
+      when: vlan_id is defined
+
+    - name: Debug output
+      debug:
+        msg: "{{ result }}"
+
+    - name: Delete VLAN
+      community.network.edgeswitch_vlan:
+        vlan_id: "{{ vlan_id }}"
+        state: absent
+      when: vlan_id is defined and purge | default(false)
+
+  vars:
+    vlan_id: "10"        # Introducing quotation marks to trigger a type-related bug
+    vlan_name: "VLAN10"
+    tagged_interfaces: []
+    untagged_interfaces: []
+    auto_exclude: false
+    auto_tag: false
+    auto_untag: false
+    purge: false

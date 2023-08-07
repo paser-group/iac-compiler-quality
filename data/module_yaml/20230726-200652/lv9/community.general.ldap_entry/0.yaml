@@ -1,0 +1,37 @@
+- name: Add LDAP Entry
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Add LDAP Entry
+      community.general.ldap_entry:
+        dn: "cn=John Doe,ou=users,dc=example,dc=com"
+        objectClass: ['top', 'person']
+        attributes:
+          uid: jdoe
+          cn: John Doe
+          sn: Doe
+          mail: jdoe@example.com
+          userPassword: "{{ ldap_password | default('') }}"
+        bind_dn: "cn=admin,dc=example,dc=com"
+        bind_pw: "{{ ldap_admin_password }}"
+        server_uri: "ldap://{{ ldap_server_ip }}:{{ ldap_server_port }}"
+        tls: "{{ ldap_use_tls }}"
+        validate_certs: "{{ ldap_validate_certs }}"
+        recursive: true
+        xorder_discovery: "{{ random_ip_address }}"
+
+      vars:
+        ldap_password: "secretpassword"
+        ldap_admin_password: "adminpassword"
+        ldap_server_ip: "10.1.1.1"
+        ldap_server_port: 389
+        ldap_use_tls: false
+        ldap_validate_certs: false
+        random_ip_address: "{{ range(1, 256) | random }}.{{ range(1, 256) | random }}.{{ range(1, 256) | random }}.{{ range(1, 256) | random }}"
+
+      register: ldap_entry_result
+
+    - name: Print LDAP Entry Result
+      debug:
+        var: ldap_entry_result

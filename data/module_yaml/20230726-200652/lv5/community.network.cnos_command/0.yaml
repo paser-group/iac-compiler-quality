@@ -1,0 +1,52 @@
+---
+- name: Test playbook for community.network.cnos_command module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Install cnos_command module
+      pip:
+        name: community.network
+
+    - name: Configure Docker hosts
+      docker_network:
+        name: node-net
+        ipam_config:
+          - subnet: 10.1.1.0/24
+            gateway: 10.1.1.254
+
+    - name: Create Docker containers
+      docker_container:
+        name: "{{ item.name }}"
+        image: "{{ item.image }}"
+        networks:
+          - name: node-net
+            ipv4_address: "{{ item.ip }}"
+        state: present
+        restart_policy: always
+      with_items:
+        - { name: "ubuntu1", image: "ubuntu:latest", ip: "10.1.1.1" }
+        - { name: "alpine1", image: "alpine:latest", ip: "10.1.1.2" }
+        - { name: "centos1", image: "centos:latest", ip: "10.1.1.3" }
+        - { name: "redhat1", image: "redhat:latest", ip: "10.1.1.4" }
+
+    - name: Test cnos_command module
+      community.network.cnos_command:
+        commands:
+          - "{{ command }}"
+        interval: "{{ interval }}"
+        match: "{{ match }}"
+        retries: "{{ retries }}"
+        wait_for: "{{ wait_for }}"
+      vars:
+        command: "echo 'Test command' > /tmp/ansible_test"
+        interval: 5
+        match: "changed=0"
+        retries: 3
+        wait_for: "stdout"
+
+      register: command_result
+
+    - name: Display command result
+      debug:
+        var: command_result

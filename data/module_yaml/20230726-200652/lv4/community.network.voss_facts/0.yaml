@@ -1,0 +1,27 @@
+---
+- name: Test playbook for community.network.voss_facts module
+  hosts: localhost
+  gather_facts: false
+  vars:
+    gather_subset: None
+
+  tasks:
+    - name: Generate random MAC addresses for network modules
+      set_fact:
+        mac_address: "{{ '%012x' | format(item) }}"
+      loop: "{{ range(4) }}"
+      register: mac_addresses
+
+    - name: Print generated MAC addresses
+      debug:
+        msg: "{{ mac_addresses.results | map(attribute='ansible_facts.mac_address') | list }}"
+    
+    - name: Collect facts from remote devices
+      community.network.voss_facts:
+        gather_subset: "{{ gather_subset }}"
+      delegate_to: localhost
+      register: facts_result
+  
+    - name: Output collected facts
+      debug:
+        var: facts_result

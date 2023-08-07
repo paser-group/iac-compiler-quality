@@ -1,0 +1,70 @@
+- name: Invoke avi_tenant module
+  hosts: localhost
+  gather_facts: False
+  tasks:
+    - name: Create tenant with varied encodings
+      community.network.avi_tenant:
+        controller: "{{ controller }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        tenant: "{{ tenant }}"
+        description: "{{ description }}"
+        api_version: "{{ api_version }}"
+        avi_credentials:
+          api_context: "{{ api_context }}"
+        state: present
+        created_by: xyz
+      register: result
+      ignore_errors: True
+
+    - name: Display result
+      debug:
+        var: result
+
+- name: Generate strings with varied encodings
+  hosts: localhost
+  gather_facts: False
+  tasks:
+    - name: Create tenant with UTF-8 encoded name
+      community.network.avi_tenant:
+        controller: "{{ controller }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        tenant: "テナント"
+        description: "{{ description }}"
+        api_version: "{{ api_version }}"
+        avi_credentials:
+          api_context: "{{ api_context }}"
+        state: present
+        created_by: xyz
+      register: result_utf8
+      ignore_errors: True
+
+    - name: Create tenant with ASCII encoded name
+      community.network.avi_tenant:
+        controller: "{{ controller }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        tenant: "tenant"
+        description: "{{ description }}"
+        api_version: "{{ api_version }}"
+        avi_credentials:
+          api_context: "{{ api_context }}"
+        state: present
+        created_by: xyz
+      register: result_ascii
+      ignore_errors: True
+
+- name: Verify results
+  hosts: localhost
+  gather_facts: False
+  tasks:
+    - name: Check if type-related bug is triggered with UTF-8 encoding
+      fail:
+        msg: "Type-related bug triggered with UTF-8 encoding!"
+      when: result_utf8 is failed
+
+    - name: Check if type-related bug is triggered with ASCII encoding
+      fail:
+        msg: "Type-related bug triggered with ASCII encoding!"
+      when: result_ascii is failed

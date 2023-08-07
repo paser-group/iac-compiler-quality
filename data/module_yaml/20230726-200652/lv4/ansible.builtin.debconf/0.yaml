@@ -1,0 +1,26 @@
+- name: Test ansible.builtin.debconf module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Generate random MAC addresses for network modules
+      set_fact:
+        mac_address: "{{ '%02x:%02x:%02x:%02x:%02x:%02x' | format((0, 0, 0, 0, 0, 0)|random,
+                                                                  (0, 0, 0, 0, 0, 0)|random,
+                                                                  (0, 0, 0, 0, 0, 0)|random,
+                                                                  (0, 0, 0, 0, 0, 0)|random,
+                                                                  (0, 0, 0, 0, 0, 0)|random,
+                                                                  (0, 0, 0, 0, 0, 0)|random) }}"
+
+    - name: Set debconf value
+      debconf:
+        name: "my_package/config_option"
+        question: "What is your preferred configuration for my_package?"
+        unseen: false
+        value: "{{ mac_address }}"
+        vtype: string
+      register: result
+
+    - name: Verify debconf value
+      debug:
+        var: result

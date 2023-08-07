@@ -1,0 +1,66 @@
+---
+- name: Test Ansible latent type-related bugs in xbps module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    node_names:
+      - ubuntu1
+      - alpine1
+      - centos1
+      - redhat1
+
+  tasks:
+    - name: Install xbps package manager
+      package:
+        name: xbps
+        state: present
+      become: true
+
+    - name: Install xbps package for each node
+      community.general.xbps:
+        name: "{{ item }}"
+        state: present
+        update_cache: true
+      loop: "{{ node_names }}"
+      become: true
+
+    - name: Upgrade xbps package for each node
+      community.general.xbps:
+        name: "{{ item }}"
+        state: latest
+        update_cache: true
+        upgrade: true
+      loop: "{{ node_names }}"
+      become: true
+
+    - name: Install specific package version for each node
+      community.general.xbps:
+        name: openssh-server
+        state: present
+        version: 8.5p1_1
+      loop: "{{ node_names }}"
+      become: true
+
+    - name: Remove xbps package for each node
+      community.general.xbps:
+        name: "{{ item }}"
+        state: absent
+      loop: "{{ node_names }}"
+      become: true
+
+    - name: Run xbps package task with recurse option
+      community.general.xbps:
+        name: test-package
+        state: present
+        recurse: true
+      become: true
+
+    - name: Upgrade xbps package manager
+      community.general.xbps:
+        name: xbps
+        state: present
+        upgrade_xbps: true
+      become: true
+
+    # Add more tasks or test cases here as needed

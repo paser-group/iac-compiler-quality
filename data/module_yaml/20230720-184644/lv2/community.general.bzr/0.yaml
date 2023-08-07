@@ -1,0 +1,44 @@
+---
+- name: Deploy software using 'community.general.bzr' module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Clone bzr repository
+      community.general.bzr:
+        dest: "/tmp/myrepo"
+        name: "lp:myrepo"
+        version: "release/1.0"
+      register: bzr_clone
+
+    - name: Check if bzr repository was cloned successfully
+      debug:
+        msg: "bzr repository was cloned successfully"
+      when: bzr_clone is succeeded
+
+    - name: Introduce byte string value in 'name' parameter
+      community.general.bzr:
+        dest: "/tmp/myrepo"
+        name: !!binary |-
+          c3RyaW5nCg==
+      register: bzr_byte_string_name
+      failed_when: false
+
+    - name: Check if byte string in 'name' parameter triggered an error
+      debug:
+        msg: "Byte string in 'name' parameter triggered an error"
+      when: bzr_byte_string_name is failed
+
+    - name: Introduce byte string value in 'version' parameter
+      community.general.bzr:
+        dest: "/tmp/myrepo"
+        name: "lp:myrepo"
+        version: !!binary |-
+          bHZlcnNlcwo=
+      register: bzr_byte_string_version
+      failed_when: false
+
+    - name: Check if byte string in 'version' parameter triggered an error
+      debug:
+        msg: "Byte string in 'version' parameter triggered an error"
+      when: bzr_byte_string_version is failed

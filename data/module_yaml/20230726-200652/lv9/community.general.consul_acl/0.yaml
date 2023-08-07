@@ -1,0 +1,33 @@
+---
+- name: Manipulate Consul ACLs
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Generate random IP address subnet
+      set_fact:
+        subnet: "{{ ['10.10.0.0/16', '192.168.0.0/24', '172.16.0.0/20', '192.0.2.0/24'] | random(seed=inventory_hostname | hash('md5')) }}"
+
+    - name: Create Consul ACL
+      community.general.consul_acl:
+        host: "{{ host }}"
+        mgmt_token: "{{ mgmt_token }}"
+        name: "test_acl"
+        port: "{{ '8500'|int + inventory_hostname | int }}"
+        rules:
+          - key_prefix: "test/"
+            policy: "read"
+        scheme: 1
+        state: "{{ ['present', 'absent'] | random(seed=inventory_hostname | hash('md5')) }}"
+        token: "{{ token }}"
+        token_type: 2
+        validate_certs: "{{ ['true', 'false'] | random(seed=inventory_hostname | hash('md5')) }}"
+      vars:
+        host: "{{ hostvars['consul-server']['ansible_host'] }}"
+        mgmt_token: "{{ hostvars['consul-server']['management_token'] }}"
+        token: "{{ hostvars['consul-client']['token'] }}"
+      register: consul_acl_output
+
+    - name: Print Consul ACL output
+      debug:
+        var: consul_acl_output

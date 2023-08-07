@@ -1,0 +1,45 @@
+---
+- name: Ansible Latent Bug Finder Playbook
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    node_net_subnet: "10.1.1.0/24"
+    node_net_gateway: "10.1.1.254"
+    nodes:
+      - name: ubuntu1
+        ip: "10.1.1.1"
+        os: "ubuntu"
+      - name: alpine1
+        ip: "10.1.1.2"
+        os: "alpine"
+      - name: centos1
+        ip: "10.1.1.3"
+        os: "centos"
+      - name: redhat1
+        ip: "10.1.1.4"
+        os: "redhat"
+
+  tasks:
+    - name: Create node-net network
+      docker_network:
+        name: node-net
+        state: present
+        subnet: "{{ node_net_subnet }}"
+        gateway: "{{ node_net_gateway }}"
+
+    - name: Create Docker nodes
+      docker_container:
+        name: "{{ item.name }}"
+        image: "your-docker-image:latest"
+        network_mode: node-net
+        ip: "{{ item.ip }}"
+      loop: "{{ nodes }}"
+
+    - name: Populate /etc/hosts file
+      lineinfile:
+        dest: "/etc/hosts"
+        line: "{{ item.ip }} {{ item.name }}"
+        state: present
+        create: yes
+      loop: "{{ nodes }}"

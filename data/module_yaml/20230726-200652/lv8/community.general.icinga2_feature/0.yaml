@@ -1,0 +1,51 @@
+---
+- name: Test playbook for exposing latent type-related bugs
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Install icinga2 feature with non-existing state
+      community.general.icinga2_feature:
+        name: "{{ test_feature }}"
+        state: absent
+      register: result
+      ignore_errors: true
+    
+    - name: Verify the task fails as expected
+      debug:
+        msg: "The task should fail but it didn't."
+      when: result is success
+
+    - name: Install icinga2 feature with non-null name
+      community.general.icinga2_feature:
+        name: "{{ test_feature }}"
+        state: present
+      register: result
+    
+    - name: Verify the task succeeds
+      debug:
+        msg: "The task should succeed but it didn't."
+      when: result is failed
+
+    - name: Ensure icinga2 feature is absent
+      community.general.icinga2_feature:
+        name: "{{ test_feature }}"
+        state: present
+      register: result
+
+    - name: Verify the task fails as expected
+      debug:
+        msg: "The task should fail but it didn't."
+      when: result is success
+
+    - name: Ensure icinga2 feature is present with null name
+      community.general.icinga2_feature:
+        name: null
+        state: present
+      register: result
+      ignore_errors: true
+    
+    - name: Verify the task fails as expected
+      debug:
+        msg: "The task should fail but it didn't."
+      when: result is success

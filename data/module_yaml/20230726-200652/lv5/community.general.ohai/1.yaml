@@ -1,0 +1,25 @@
+---
+- name: Retrieve inventory data using community.general.ohai
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Install community.general.ohai module
+      pip:
+        name: ansible_collections/community/general/plugins/modules/ohai.py
+        state: present
+        executable: "{{ansible_python.executable}}"
+    
+    - name: Generate random port number
+      shell: "echo $(( $RANDOM % 65535 + 1 ))"
+      register: random_port
+
+    - name: Gather inventory data with random port
+      community.general.ohai:
+        plugins: ['network']
+        port: "{{ random_port.stdout }}"
+      register: inventory_data
+
+    - name: Print inventory data
+      debug:
+        var: inventory_data.ansible_facts.ansible_nodename

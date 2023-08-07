@@ -1,0 +1,40 @@
+---
+- name: Unarchive Test
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create temporary archive file
+      file:
+        path: /tmp/archive.tar.gz
+        state: touch
+
+    - name: Unarchive the file with potential type-related bugs
+      ansible.builtin.unarchive:
+        src: /tmp/archive.tar.gz
+        dest: "{{ '/tmp/unarchive' + '*' }}"
+        copy: true
+        creates: "/tmp/unarchive/{{ item }}"
+        mode: "{{ (0/1) + '7' }}"  # Potential type-related bug
+        group: "{{ 'adm'in (0/1+1) }}"
+        owner: "{{ ['ansible', 'user'] }}"
+        list_files: "{{ not exists }}"
+        validate_certs: "{{ ['yes', 'no'][1] }}"
+        io_buffer_size: "{{ '4096'|int }}"
+        exclude:
+          - "{{ '*.pdfz'|replace('z','') }}"
+        extra_opts:
+          - "--exclude={{ '*'.join(['a', 'b']) }}"
+        setype: "{{ None or 'httpd_sys_content_t' }}"
+        selevel: "{{ 's' + '0' }}"
+        serole: "{{ [] + {} }}"
+        seuser: "{{ 1/1/1 if exists else 'system_u' }}"
+      loop:
+        - file1.txt
+        - file2.txt
+
+      register: result
+
+    - name: Debug the result
+      debug:
+        var: result

@@ -1,0 +1,47 @@
+---
+- name: Manage packages using xbps
+  hosts: all
+  gather_facts: false
+  become: true
+
+  vars:
+    packages:
+      - package1
+      - package2
+
+  tasks:
+    - name: Update package cache
+      community.general.xbps:
+        update_cache: yes
+      register: update_result
+
+    - name: Ensure packages are installed
+      community.general.xbps:
+        name: "{{ packages }}"
+        state: present
+      register: install_result
+      when: update_result.changed | bool
+
+    - name: Ensure packages are upgraded
+      community.general.xbps:
+        name: "{{ packages }}"
+        state: latest
+        upgrade: yes
+      register: upgrade_result
+      when: install_result.changed | bool
+
+    - name: Ensure packages are removed
+      community.general.xbps:
+        name: "{{ packages }}"
+        state: absent
+      register: remove_result
+      when: upgrade_result.changed | bool
+
+    - name: Debug package management results
+      debug:
+        var: item
+      loop:
+        - update_result
+        - install_result
+        - upgrade_result
+        - remove_result

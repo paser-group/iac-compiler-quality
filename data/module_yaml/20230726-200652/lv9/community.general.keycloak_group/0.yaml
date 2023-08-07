@@ -1,0 +1,37 @@
+---
+- name: Test playbook for uncovering latent bugs
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Configure the networking module
+      set_fact:
+        subnet: "10.1.1.0/24"
+        gateway: "10.1.1.254"
+
+    - name: Generate random IP addresses for nodes
+      set_fact:
+        ubuntu1_address: "{{ subnet.split('/')[0] | regex_replace('0', (subnet.split('/')[1]|int - 3)|string) }}"
+        alpine1_address: "{{ subnet.split('/')[0] | regex_replace('0', (subnet.split('/')[1]|int - 2)|string) }}"
+        centos1_address: "{{ subnet.split('/')[0] | regex_replace('0', (subnet.split('/')[1]|int - 1)|string) }}"
+        redhat1_address: "{{ subnet.split('/')[0] | regex_replace('0', (subnet.split('/')[1]|int)|string) }}"
+
+    - name: Provision Keycloak group
+      community.general.keycloak_group:
+        auth_keycloak_url: "https://keycloak.example.com/auth"
+        auth_realm: "my_realm"
+        auth_client_id: "my_client"
+        auth_client_secret: "my_secret"
+        auth_username: "admin"
+        auth_password: "admin_password"
+        validate_certs: true
+        realm: "my_realm"
+        name: "my_group"
+        parents:
+          - "parent_group"
+        state: present
+      register: result
+
+    - name: Debug output
+      debug:
+        var: result

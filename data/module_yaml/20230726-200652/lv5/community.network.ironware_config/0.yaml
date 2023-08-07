@@ -1,0 +1,61 @@
+---
+- name: Test playbook for community.network.ironware_config module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+
+    - name: Configure ironware
+      community.network.ironware_config:
+        src: initial_config.txt
+        backup: true
+        backup_options:
+          dir: backups
+          prefix: initial_config_
+        authorize: true
+        lines: |
+          random_port {{ random_port_number() }}
+          random_port {{ random_port_number() }}
+      register: output
+      check_mode: yes
+      no_log: true
+
+    - name: Show output
+      debug:
+        var: output.stdout_lines
+
+  vars:
+    random_min_port: 1000
+    random_max_port: 65535
+
+  tasks:
+
+    - name: Generate random port number
+      set_fact:
+        random_port_number: "{{ test_port | default(omit) | random(start=random_min_port, end=random_max_port) }}"
+      tags: provision
+
+    - name: Configure ironware
+      community.network.ironware_config:
+        src: test_config.txt
+        authorize: true
+        backup: true
+        backup_options:
+          dir: backups
+          prefix: test_config_
+        lines: |
+          random_port {{ random_port_number() }}
+          random_port {{ random_port_number() }}
+      register: output
+      check_mode: yes
+      no_log: true
+
+    - name: Show output
+      debug:
+        var: output.stdout_lines
+
+    - name: Verify port numbers are set correctly
+      assert:
+        that: >
+          "'random_port' in output.stdout_lines[0] and 'random_port' in output.stdout_lines[1]"
+      tags: verification

@@ -1,0 +1,42 @@
+---
+- name: Configure LVM and NFS
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create LVM
+      community.general.aix_filesystem:
+        vg: "myvg"
+        size: "10G"
+        state: present
+
+    - name: Create NFS mount point
+      community.general.aix_filesystem:
+        filesystem: "/mnt/nfs"
+        state: directory
+        permissions: "0755"
+
+    - name: Mount NFS share
+      community.general.aix_filesystem:
+        device: "{{ nfs_server }}:/export"
+        filesystem: "/mnt/nfs"
+        state: mounted
+        fs_type: nfs
+        auto_mount: true
+        nfs_server: "nfsserver.example.com"
+        mount_group: "staff"
+        attributes: null
+        account_subsystem: false
+        rm_mount_point: false
+
+    - name: Set NFS mount options
+      community.general.aix_filesystem:
+        device: "/mnt/nfs"
+        options: "rw,bg,hard,intr"
+        state: options
+
+    - name: Ensure NFS mount point is in /etc/filesystems
+      community.general.aix_filesystem:
+        filesystem: "/mnt/nfs"
+        vg: "myvg"
+        state: mounted

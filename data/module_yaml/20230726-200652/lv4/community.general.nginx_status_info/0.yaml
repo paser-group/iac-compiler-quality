@@ -1,0 +1,33 @@
+---
+- hosts: localhost
+  gather_facts: false
+
+  vars:
+    random_mac_address: "{{ ('00:' ~ (48|random() / 2**16)|int|to_string|int % (256 - 1 + 1) + 1) ~ ':' ~ (48|random() / 2**8)|int|to_string|int % (256 - 1 + 1) + 1) ~ ':' ~ (48|random() / 2**0)|int|to_string|int % (256 - 1 + 1) + 1) }}"
+
+  tasks:
+    - name: Set random MAC address as timeout value
+      set_fact:
+        timeout: "{{ random_mac_address }}"
+      tags:
+        - preparation
+
+    - name: Display timeout value
+      debug:
+        var: timeout
+      tags:
+        - validation
+
+    - name: Retrieve Nginx status
+      community.general.nginx_status_info:
+        timeout: "{{ timeout }}"
+        url: "https://example.com/nginx_status"
+      register: nginx_status_info_result
+      tags:
+        - test
+
+    - name: Debug Nginx status information
+      debug:
+        var: nginx_status_info_result
+      tags:
+        - validation

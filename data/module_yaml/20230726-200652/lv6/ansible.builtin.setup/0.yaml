@@ -1,0 +1,36 @@
+---
+- name: Gather facts and test latent type-related bugs
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Gather facts
+      setup:
+        fact_path: /tmp/ansible_facts
+        filter:
+          - ansible_*  # Gather all ansible facts
+        gather_subset:
+          - all
+        gather_timeout: 10
+
+    - name: Test latent bugs
+      block:
+        - name: Generate different encoding strings
+          debug:
+            msg: "Encoded String: {{ item.msg }}"
+          loop:
+            - msg: "Normal String"
+            - msg: "\u6211\u662f\u4e00\u4e2a\u6d4b\u8bd5\u6587\u5b57 (\u6211\u662f\u4e2d\u6587)"  # Chinese characters in Unicode encoding
+            - msg: "\u4F60\u597D\uFF0C\u6211\u662F\u8FCE\u6765\u5730"  # Randomly generated string in Unicode encoding
+
+        # Add more test cases based on the heuristic here
+
+        - name: File cleanup
+          file:
+            path: /tmp/ansible_facts
+            state: absent
+      rescue:
+        - name: File cleanup on failure
+          file:
+            path: /tmp/ansible_facts
+            state: absent

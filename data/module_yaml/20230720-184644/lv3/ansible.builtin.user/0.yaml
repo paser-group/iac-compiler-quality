@@ -1,0 +1,59 @@
+---
+- name: Generate test cases for ansible.builtin.user module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create Ansible inventory file
+      file:
+        path: "{{ inventory_path }}"
+        state: touch
+        mode: u=rw,g=r,o=r
+
+    - name: Add Docker nodes to inventory
+      lineinfile:
+        path: "{{ inventory_path }}"
+        line: "{{ item }}"
+      loop:
+        - "ubuntu1 ansible_host=10.1.1.1 ansible_user=root"
+        - "alpine1 ansible_host=10.1.1.2 ansible_user=root"
+        - "centos1 ansible_host=10.1.1.3 ansible_user=root"
+        - "redhat1 ansible_host=10.1.1.4 ansible_user=root"
+
+    - name: Create network subnet
+      shell: iptables -t nat -L node-net -v
+      register: nat_output
+      ignore_errors: true
+      changed_when: nat_output.rc != 0
+
+    - name: Configure subnet if not exists
+      shell: iptables -t nat -N node-net
+      when: nat_output is changed
+
+    - name: Configure gateway for subnet if not exists
+      shell: iptables -t nat -A POSTROUTING -s 10.1.1.0/24 '!' -d 10.1.1.0/24 -j MASQUERADE
+      when: nat_output is changed
+
+    - name: Display subnet and gateway information
+      debug:
+        msg: "Subnet: 10.1.1.0/24, Gateway: 10.1.1.254"
+
+    - name: Create test cases with mixed byte and string values
+      ansible.builtin.user:
+        name: "ansible_test_{{ item }}"
+        password: "test_password_{{ item | random }}"
+        uid: "{{ 1000 + item }}"
+        comment: "{{ item }}"
+        home: "/home/ansible_test_{{ item }}"
+        shell: "/bin/bash"
+      loop: [1, 2, 3, 4]
+
+    - name: Display test users information
+      shell: getent passwd ansible_test_*
+      register: user_output
+
+    - name: Debug test users information
+      debug:
+        var: user_output.stdout_lines
+
+...

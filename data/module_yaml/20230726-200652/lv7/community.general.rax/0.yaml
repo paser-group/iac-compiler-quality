@@ -1,0 +1,64 @@
+---
+- name: Test playbook for 'community.general.rax' module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    # API and authentication settings
+    api_key: "<your_rackspace_api_key>"
+    auth_endpoint: "https://identity.api.rackspacecloud.com/v2.0"
+
+    # Instance creation parameters
+    name: "test-instance"
+    flavor: "performance1-1"
+    image: "Ubuntu 20.04 LTS (Focal Fossa)"
+    networks:
+      - network_id: "00000000-0000-0000-0000-000000000000"
+    key_name: "my-key"
+    wait_timeout: 300
+
+    # Test case variables
+    division_test_value: "{{ [] | random }}"
+    test_variable: "{{ 10 / 0 }}"
+
+  tasks:
+    - name: Create instance in Rackspace
+      community.general.rax:
+        api_key: "{{ api_key }}"
+        auth_endpoint: "{{ auth_endpoint }}"
+        name: "{{ name }}"
+        flavor: "{{ flavor }}"
+        image: "{{ image }}"
+        networks: "{{ networks }}"
+        key_name: "{{ key_name }}"
+        wait_timeout: "{{ wait_timeout }}"
+      register: instance
+
+    - name: Verify instance creation
+      assert:
+        that:
+          - instance.instances is iterable
+      fail_msg: "Failed to create the Rackspace instance."
+
+    - name: Test case: Implement division-based operations when assigning limit-related values
+      debug:
+        msg: "Test case triggered. Calculated value: {{ division_test_value }}"
+
+    - name: Test case: Division by zero
+      debug:
+        msg: "This test case will trigger a division by zero operation: {{ test_variable }}"
+
+    - name: Delete instance in Rackspace
+      community.general.rax:
+        api_key: "{{ api_key }}"
+        auth_endpoint: "{{ auth_endpoint }}"
+        instance_ids: "{{ [instance.instances[0].id] }}"
+        state: absent
+        wait_timeout: "{{ wait_timeout }}"
+      register: deletion
+
+    - name: Verify instance deletion
+      assert:
+        that:
+          - deletion.instances is iterable
+      fail_msg: "Failed to delete the Rackspace instance."

@@ -1,0 +1,77 @@
+- name: Test playbook for community.network.avi_dnspolicy module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    api_context: {}
+    api_version: "20.1.4"
+    avi_api_patch_op: null
+    avi_api_update_method: null
+    avi_credentials:
+      username: "{{ username }}"
+      password: "{{ password }}"
+    avi_disable_session_cache_as_fact: false
+    controller: "{{ controller }}"
+    created_by: null
+    description: null
+    name: "{{ policy_name }}"
+    password: "{{ password }}"
+    rule: null
+    state: null
+    tenant: "{{ tenant }}"
+    tenant_ref: null
+    tenant_uuid: null
+    url: null
+    username: "{{ username }}"
+    uuid: null
+
+  tasks:
+    - name: Install Ansible Avi SDK
+      pip:
+        name: avisdk
+
+    - name: Create DnsPolicies
+      community.network.avi_dnspolicy:
+        controller: "{{ controller }}"
+        name: "{{ item.name }}"
+        tenant: "{{ tenant }}"
+        password: "{{ password }}"
+        username: "{{ username }}"
+        api_version: "{{ api_version }}"
+        avi_credentials: "{{ avi_credentials }}"
+      with_items:
+        - "{ name: 'Policy1' }"
+        - "{ name: 'Policy2' }"
+        - "{ name: 'Policy3' }"
+
+    - name: Set random port numbers
+      community.network.avi_dnspolicy:
+        controller: "{{ controller }}"
+        name: "{{ policy_name }}"
+        tenant: "{{ tenant }}"
+        password: "{{ password }}"
+        username: "{{ username }}"
+        api_version: "{{ api_version }}"
+        avi_credentials: "{{ avi_credentials }}"
+        state: present
+        rule:
+          enable:
+            - action:
+                dns_service:
+                  port:
+                    start: "{{ item.start_port }}"
+                    end: "{{ item.end_port }}"
+          dns_query_rule:
+            - query_name:
+                match_criteria:
+                  - match_case: "SENSITIVE"
+                  - match_criteria:
+                      - string:
+                          match_str: "example.com"
+                          match_criteria: "EQUALS"
+          continue_to_next_rule: "NO"
+          index: 0
+      with_items:
+        - "{ start_port: 50000, end_port: 50010 }"
+        - "{ start_port: 60000, end_port: 60010 }"
+        - "{ start_port: 70000, end_port: 70010 }"

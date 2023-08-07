@@ -1,0 +1,30 @@
+---
+- name: Test playbook for ansible.netcommon.grpc_config
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    mac_address: '{{ "00:01:02:03:04:" + "%02x" | format(item) }}'
+
+  tasks:
+    - name: Generate random MAC address
+      set_fact:
+        mac_address_var: '{{ mac_address | format(item) }}'
+      loop: "{{ range(1, 5) | list }}"
+
+    - name: Fetch configuration/state data from gRPC
+      ansible.netcommon.grpc_config:
+        backup: true
+        backup_options:
+          method: "ftp"
+          server: "backup.example.com"
+          username: "admin"
+          password: "password"
+        config: "{{ config }}"
+        state: "{{ state }}"
+        mac_address: "{{ mac_address_var }}"
+      register: grpc_config_result
+
+    - name: Debug gRPC config result
+      debug:
+        var: grpc_config_result

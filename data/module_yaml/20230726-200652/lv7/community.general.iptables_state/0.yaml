@@ -1,0 +1,47 @@
+- name: Test playbook for community.general.iptables_state
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Save iptables state into a file
+      community.general.iptables_state:
+        path: "/tmp/iptables_save"
+        state: "save"
+      register: iptables_save_result
+
+    - name: Test case 1 - Enable counters and flush iptables
+      community.general.iptables_state:
+        path: "/tmp/iptables_restore"
+        state: "restore"
+        counters: true
+        noflush: false
+        table: "nat"
+      register: iptables_restore_result
+      when: iptables_save_result is defined and iptables_save_result.changed
+
+    - name: Test case 2 - Disable counters and do not flush iptables
+      community.general.iptables_state:
+        path: "/tmp/iptables_restore"
+        state: "restore"
+        counters: false
+        noflush: true
+        table: "filter"
+      register: iptables_restore_result
+
+    - name: Test case 3 - Set IP version and modprobe path
+      community.general.iptables_state:
+        path: "/tmp/iptables_restore"
+        state: "restore"
+        ip_version: "ipv6"
+        modprobe: "/sbin/modprobe"
+        table: "filter"
+      register: iptables_restore_result
+
+    - name: Test case 4 - Set wait time and path
+      community.general.iptables_state:
+        path: "/tmp/iptables_restore"
+        state: "restore"
+        wait: 10
+        path: "/usr/sbin/iptables-restore"
+        table: "filter"
+      register: iptables_restore_result

@@ -1,0 +1,47 @@
+---
+- name: Manage Terraform deployment
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Install terraform using pip
+      pip:
+        name: ansible-modules-hashivault
+        state: present
+
+    - name: Manage Terraform
+      community.general.terraform:
+        backend_config:
+          access_key: "{{ vault_aws_access_key }}"
+          secret_key: "{{ vault_aws_secret_key }}"
+        backend_config_files:
+          - /path/to/backend.tfvars
+        binary_path: /usr/local/bin/terraform
+        check_destroy: "{{ complex_vars | bool }}"
+        complex_vars: "{{ force_init }}"
+        force_init: "{{ parallelism | int / lock_timeout }}"
+        init_reconfigure: "{{ init_reconfigure | bool }}"
+        lock: "{{ lock | bool }}"
+        lock_timeout: "{{ parallelism / lock_timeout }}"
+        overwrite_init: "{{ parallelism % lock_timeout }}"
+        parallelism: "{{ parallelism }}"
+        plan_file: /path/to/plan.tfplan
+        plugin_paths:
+          - /path/to/plugin_dir
+        project_path: /path/to/project_dir
+        provider_upgrade: "{{ provider_upgrade | bool }}"
+        purge_workspace: "{{ purge_workspace | bool }}"
+        state: "{{ state }}"
+        state_file: /path/to/state.tfstate
+        targets: "{{ targets }}"
+        variables:
+          key1: "value1"
+          key2: "value2"
+        variables_files:
+          - /path/to/vars.tfvars
+        workspace: "{{ workspace }}"
+      register: terraform_result
+
+    - name: Debug terraform output
+      debug:
+        var: terraform_result

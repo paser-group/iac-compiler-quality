@@ -1,0 +1,28 @@
+---
+- name: Test Playbook
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Set random IP address
+      set_fact:
+        random_ip: "{{ hostvars[item]['ansible_default_ipv4']['address'] }}"
+      with_items:
+        - ubuntu1
+        - alpine1
+        - centos1
+        - redhat1
+
+    - name: Boot system using specific media
+      community.general.hpilo_boot:
+        host: "{{ random_ip }}"
+        login: admin
+        password: changeme
+        media: "cdrom"
+        image: "centos.iso"
+      when: media | random | bool
+
+    - name: Verify system boots successfully
+      debug:
+        msg: "System booted successfully."
+      when: media | random | bool

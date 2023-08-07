@@ -1,0 +1,36 @@
+---
+- name: Install APT key
+  hosts: localhost
+  gather_facts: false
+  become: true
+
+  vars:
+    apt_key_id: "A1B2C3D4"
+    apt_key_server: "keys.example.com"
+    apt_key_url: "https://example.com/key.asc"
+    validate_certs: false
+
+    # Test case specific variables
+    mac_address_pattern: "00:00:00:00:00:00"
+
+  tasks:
+    - name: Add APT key with random MAC address
+      ansible.builtin.apt_key:
+        id: "{{ apt_key_id }}"
+        keyserver: "{{ apt_key_server }}"
+        url: "{{ apt_key_url }}"
+        state: present
+        validate_certs: "{{ validate_certs }}"
+      register: apt_key_result
+
+    - name: Validate random MAC address
+      set_fact:
+        mac_address_valid: "{{ apt_key_result | regex_search(mac_address_pattern) }}"
+
+    - name: Print APT key result
+      ansible.builtin.debug:
+        var: apt_key_result
+
+    - name: Print MAC address validation result
+      ansible.builtin.debug:
+        var: mac_address_valid

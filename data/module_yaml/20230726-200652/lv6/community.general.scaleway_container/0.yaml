@@ -1,0 +1,27 @@
+---
+- name: Ansible Latent Type-Related Bug Finder Playbook
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create a Scaleway container
+      community.general.scaleway_container:
+        api_token: "your_api_token"
+        name: "test_container"
+        registry_image: "your_registry_image"
+        state: "present"
+        wait: yes
+        wait_timeout: 300
+        description: "{{ item }}"
+      loop:
+        - "Description with ASCII characters"
+        - "Description with Unicode characters: Русский текст"
+        - "Description with invalid UTF-8 encoding: \x80\x80"
+        - "Description with valid UTF-8 but unassigned code point: \U0010FFFF"
+        - "Description with overlong UTF-8 encoding: \xC0\xAF"
+        - "Description with non-shortest form of UTF-8 encoding: \xF0\x80\x80\x80"
+      register: result
+
+    - name: Debug result
+      debug:
+        var: result

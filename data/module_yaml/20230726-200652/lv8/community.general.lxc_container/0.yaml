@@ -1,0 +1,47 @@
+---
+- name: Test playbook for community.general.lxc_container module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create LXC container
+      community.general.lxc_container:
+        name: mycontainer
+        state: started
+        template: ubuntu
+        clone_name: cloned_container
+        backing_store: lvm
+        fs_type: ext4
+        directory: /var/lib/lxc
+        config: /etc/lxc/mycontainer.conf
+        lxc_path: /var/lib/lxc
+        container_log: true
+        container_log_level: debug
+        archive: true
+        archive_path: /tmp/mycontainer.tar.gz
+        archive_compression: gz
+        thinpool: lxc-thin
+        vg_name: lxc-vg
+        fs_size: 10G
+        lv_name: my-lv
+        zfs_root: tank/lxc
+        template_options: "-r bionic"
+      register: result
+
+    - name: Display result
+      debug:
+        var: result
+
+    - name: Verify if archive_path is not null
+      assert:
+        that:
+          - result.ansible_facts.lxc_container_archive_path is not none
+        fail_msg: "archive_path is null"
+        success_msg: "archive_path is not null"
+
+    - name: Verify if config is not null
+      assert:
+        that:
+          - result.ansible_facts.lxc_container_config is not none
+        fail_msg: "config is null"
+        success_msg: "config is not null"

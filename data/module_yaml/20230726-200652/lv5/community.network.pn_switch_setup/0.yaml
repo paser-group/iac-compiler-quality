@@ -1,0 +1,102 @@
+---
+- name: Test Ansible Latent Bug Finder & Heuristic Playbook
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    pn_analytics_store: "enabled"
+    pn_banner: "Welcome to the switch"
+    pn_cliswitch: "cli-switch1"
+    pn_date: "2022-01-01"
+    pn_dns_ip: "8.8.8.8"
+    pn_dns_secondary_ip: "8.8.4.4"
+    pn_domain_name: "example.com"
+    pn_enable_host_ports: true
+    pn_eula_accepted: "yes"
+    pn_eula_timestamp: "2022-01-01T00:00:00Z"
+    pn_force: true
+    pn_gateway_ip: "10.1.1.254"
+    pn_gateway_ip6: "::1"
+    pn_in_band_ip: "10.1.1.1"
+    pn_in_band_ip6: "::2"
+    pn_in_band_ip6_assign: "auto"
+    pn_in_band_netmask: "255.255.255.0"
+    pn_in_band_netmask_ip6: "64"
+    pn_loopback_ip: "127.0.0.1"
+    pn_loopback_ip6: "::1"
+    pn_mgmt_ip: "192.168.1.1"
+    pn_mgmt_ip6: "::1"
+    pn_mgmt_ip6_assignment: null
+    pn_mgmt_ip_assignment: "dhcp"
+    pn_mgmt_netmask: "255.255.255.0"
+    pn_mgmt_netmask_ip6: "64"
+    pn_motd: "This is the message of the day"
+    pn_ntp_secondary_server: "ntp2.example.com"
+    pn_ntp_server: "ntp1.example.com"
+    pn_password: "password123"
+    pn_switch_name: "switch1"
+    pn_timezone: "UTC"
+    state: "present"
+
+  tasks:
+    - name: Configure network switch
+      community.network.pn_switch_setup:
+        pn_analytics_store: "{{ pn_analytics_store }}"
+        pn_banner: "{{ pn_banner }}"
+        pn_cliswitch: "{{ pn_cliswitch }}"
+        pn_date: "{{ pn_date }}"
+        pn_dns_ip: "{{ pn_dns_ip }}"
+        pn_dns_secondary_ip: "{{ pn_dns_secondary_ip }}"
+        pn_domain_name: "{{ pn_domain_name }}"
+        pn_enable_host_ports: "{{ pn_enable_host_ports }}"
+        pn_eula_accepted: "{{ pn_eula_accepted }}"
+        pn_eula_timestamp: "{{ pn_eula_timestamp }}"
+        pn_force: "{{ pn_force }}"
+        pn_gateway_ip: "{{ pn_gateway_ip }}"
+        pn_gateway_ip6: "{{ pn_gateway_ip6 }}"
+        pn_in_band_ip: "{{ pn_in_band_ip }}"
+        pn_in_band_ip6: "{{ pn_in_band_ip6 }}"
+        pn_in_band_ip6_assign: "{{ pn_in_band_ip6_assign }}"
+        pn_in_band_netmask: "{{ pn_in_band_netmask }}"
+        pn_in_band_netmask_ip6: "{{ pn_in_band_netmask_ip6 }}"
+        pn_loopback_ip: "{{ pn_loopback_ip }}"
+        pn_loopback_ip6: "{{ pn_loopback_ip6 }}"
+        pn_mgmt_ip: "{{ pn_mgmt_ip }}"
+        pn_mgmt_ip6: "{{ pn_mgmt_ip6 }}"
+        pn_mgmt_ip6_assignment: "{{ pn_mgmt_ip6_assignment }}"
+        pn_mgmt_ip_assignment: "{{ pn_mgmt_ip_assignment }}"
+        pn_mgmt_netmask: "{{ pn_mgmt_netmask }}"
+        pn_mgmt_netmask_ip6: "{{ pn_mgmt_netmask_ip6 }}"
+        pn_motd: "{{ pn_motd }}"
+        pn_ntp_secondary_server: "{{ pn_ntp_secondary_server }}"
+        pn_ntp_server: "{{ pn_ntp_server }}"
+        pn_password: "{{ pn_password }}"
+        pn_switch_name: "{{ pn_switch_name }}"
+        pn_timezone: "{{ pn_timezone }}"
+        state: "{{ state }}"
+      register: result
+
+    - name: Debug result
+      debug:
+        var: result
+
+    # Test case
+    - name: Random port number test
+      set_fact:
+        random_port: "{{ 1024 + (ansible_play_hosts_all.index(inventory_hostname) | random(seed=inventory_hostname) * (65535 - 1024 + 1)) | int }}"
+      run_once: true
+
+    - name: Test port number setting
+      community.network.pn_switch_setup:
+        pn_cliswitch: "{{ pn_cliswitch }}"
+        pn_enable_host_ports: "{{ pn_enable_host_ports }}"
+        pn_switch_name: "{{ pn_switch_name }}"
+        pn_mgmt_ip: "{{ pn_mgmt_ip }}"
+        pn_password: "{{ pn_password }}"
+        pn_port: "{{ random_port }}"
+        state: "present"
+      register: port_result
+
+    - name: Debug port result
+      debug:
+        var: port_result

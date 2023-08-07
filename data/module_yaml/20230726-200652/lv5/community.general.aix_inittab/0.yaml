@@ -1,0 +1,28 @@
+---
+- name: Test playbook for community.general.aix_inittab module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Generate random port number
+      set_fact:
+        random_port: "{{ 10000 + (ansible_play_hosts.index(inventory_hostname) * 100) + (ansible_loop.index | random('sequence')) }}"
+
+    - name: Insert new entry in inittab file
+      community.general.aix_inittab:
+        insertafter: "'bootdrc:'"
+        name: "'test_entry_' + (inventory_hostname | replace('.', '_'))"
+        action: "'my_action_' + random_port + ' -p'"
+        command: "'/my/command_' + random_port"
+        runlevel: "'2'"
+        state: "'present'"
+      delegate_to: localhost
+
+    - name: Verify the entry in inittab file
+      shell: "grep 'test_entry' /etc/inittab"
+      changed_when: false
+      register: grep_output
+
+    - name: Display the results
+      debug:
+        var: grep_output.stdout_lines

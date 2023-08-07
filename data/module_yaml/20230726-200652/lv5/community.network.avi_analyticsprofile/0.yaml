@@ -1,0 +1,59 @@
+---
+- hosts: localhost
+  gather_facts: false
+  vars:
+    avi_api_endpoint: "https://{{ controller }}"
+    avi_username: "{{ username }}"
+    avi_password: "{{ password }}"
+    avi_tenant: "{{ tenant }}"
+
+  tasks:
+    - name: Create AnalyticsProfile with random port settings
+      community.network.avi_analyticsprofile:
+        controller: "{{ controller }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        tenant: "{{ tenant }}"
+        name: "Random Analytics Profile"
+        enable_advanced_analytics: true
+        ranges:
+          - name: "Random Port Range"
+            begin: "{{ random_port }}"
+            end: "{{ random_port }}"
+      register: analytics_profile
+
+    - name: Debug output
+      debug:
+        var: analytics_profile
+
+
+    - name: Update AnalyticsProfile with random port settings
+      community.network.avi_analyticsprofile:
+        controller: "{{ controller }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        tenant: "{{ tenant }}"
+        uuid: "{{ analytics_profile.object.uuid }}"
+        disable_se_analytics: "{{ random_bool }}"
+        disable_server_analytics: "{{ random_bool }}"
+        disable_vs_analytics: "{{ random_bool }}"
+      register: updated_profile
+
+    - name: Debug output
+      debug:
+        var: updated_profile
+
+
+    - name: Delete AnalyticsProfile
+      community.network.avi_analyticsprofile:
+        controller: "{{ controller }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        tenant: "{{ tenant }}"
+        state: absent
+        uuid: "{{ updated_profile.object.uuid }}"
+      register: deleted_profile
+
+    - name: Debug output
+      debug:
+        var: deleted_profile

@@ -1,0 +1,31 @@
+---
+- name: Find latent type-related bugs in Ansible 'community.network.pn_admin_syslog' module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create syslog admin
+      community.network.pn_admin_syslog:
+        pn_cliswitch: "cli"
+        pn_host: "10.1.1.1"
+        pn_message_format: "RFC5424"
+        pn_name: "syslog_admin"
+        pn_port: "514"
+        pn_scope: "local"
+        pn_transport: "TCP"
+        state: "present"
+      register: result
+      ignore_errors: true
+
+    - name: Check if the 'community.network.pn_admin_syslog' module has a type-related bug
+      fail:
+        msg: "A latent type-related bug exists in the 'community.network.pn_admin_syslog' module"
+      when: result is failed and "'TypeError' in result.msg"
+
+    - name: Delete syslog admin
+      community.network.pn_admin_syslog:
+        pn_cliswitch: "cli"
+        pn_host: "10.1.1.1"
+        pn_name: "syslog_admin"
+        state: "absent"
+      ignore_errors: true

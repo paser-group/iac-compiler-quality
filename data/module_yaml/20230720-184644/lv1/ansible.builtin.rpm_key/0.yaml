@@ -1,0 +1,20 @@
+---
+- name: Test rpm_key module for type-related bugs
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    rpm_keys:
+      - fingerprint: "{{ ansible_facts['distribution'] == 'Ubuntu' | ternary('ABCDEF', '123456') }}"
+        key: "{{ ansible_facts['distribution'] }} key"
+        state: present
+        validate_certs: "{{ true if ansible_facts['distribution'] == 'Ubuntu' else false }}"
+
+  tasks:
+    - name: Add or remove RPM keys
+      ansible.builtin.rpm_key:
+        fingerprint: "{{ item.fingerprint }}"
+        key: "{{ item.key }}"
+        state: "{{ item.state }}"
+        validate_certs: "{{ item.validate_certs }}"
+      loop: "{{ rpm_keys }}"

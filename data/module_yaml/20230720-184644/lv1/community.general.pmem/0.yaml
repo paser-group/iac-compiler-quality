@@ -1,0 +1,35 @@
+---
+- name: Configure Intel Optane Persistent Memory
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    appdirect: 1
+    appdirect_interleaved: true
+    memorymode: 2
+    namespace:
+      - my_namespace
+    namespace_append: false
+    reserved: 128
+    socket:
+      - 0
+
+  tasks:
+    - name: Install pmem
+      ansible.builtin.shell: "dnf install libpmemobj -y"  
+      changed_when: false
+
+    - name: Configure pmem using community.general.pmem module
+      community.general.pmem:
+        appdirect: "{{ appdirect }}"
+        appdirect_interleaved: "{{ appdirect_interleaved }}"
+        memorymode: "{{ memorymode }}"
+        namespace: "{{ namespace }}"
+        namespace_append: "{{ namespace_append }}"
+        reserved: "{{ reserved }}"
+        socket: "{{ socket }}"
+      register: pmem_config
+
+    - name: Display pmem configuration
+      debug:
+        var: pmem_config

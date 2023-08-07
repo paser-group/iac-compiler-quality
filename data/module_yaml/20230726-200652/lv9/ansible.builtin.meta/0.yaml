@@ -1,0 +1,42 @@
+- name: Ansible Latent Bug Finder and Heuristic Test Playbook
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Generate random IP addresses for networking modules
+      set_fact:
+        subnet: "10.1.1.0"
+        gateway: "10.1.1.254"
+        ip_addresses:
+          - "{{ subnet | ipmath('add', 1) }}"
+          - "{{ subnet | ipmath('add', 2) }}"
+          - "{{ subnet | ipmath('add', 3) }}"
+          - "{{ subnet | ipmath('add', 4) }}"
+
+    - name: Debug IP addresses
+      debug:
+        var: ip_addresses
+
+    - name: Create inventory file with random IP addresses
+      copy:
+        content: |
+          ubuntu1 ansible_host={{ ip_addresses[0] }}
+          alpine1 ansible_host={{ ip_addresses[1] }}
+          centos1 ansible_host={{ ip_addresses[2] }}
+          redhat1 ansible_host={{ ip_addresses[3] }}
+        dest: "/path/to/inventory"
+
+    - name: Execute meta module with free_form option
+      meta:
+        free_form: "command arg1 arg2"
+        vars:
+          ansible_network_os: "linux"
+
+    - name: Debug output of meta module
+      debug:
+        var: ansible_meta
+
+    - name: Clean up inventory file
+      file:
+        path: "/path/to/inventory"
+        state: absent

@@ -1,0 +1,71 @@
+---
+- name: Test playbook for puppet module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Install required python modules
+      pip:
+        name:
+          - puppet
+          - facter
+          - ipaddress
+        state: present
+
+    - name: Configure networking modules
+      block:
+        - name: Set random IP addresses
+          set_fact:
+            subnet: "10.{{range(1,256)|random}}.{{range(1,256)|random}}.0/24"
+            gateway: "10.{{range(1,256)|random}}.{{range(1,256)|random}}.254"
+            ip_address_1: "10.{{range(1,256)|random}}.{{range(1,256)|random}}.1"
+            ip_address_2: "10.{{range(1,256)|random}}.{{range(1,256)|random}}.2"
+
+        - name: Debug subnet
+          debug:
+            var: subnet
+
+        - name: Debug gateway
+          debug:
+            var: gateway
+
+        - name: Debug IP address 1
+          debug:
+            var: ip_address_1
+
+        - name: Debug IP address 2
+          debug:
+            var: ip_address_2
+
+    - name: Execute puppet module
+      community.general.puppet:
+        certname: "localhost"
+        confdir: "/etc/puppetlabs/puppet"
+        debug: false
+        environment: "production"
+        execute: "apply"
+        facter_basename: "facter"
+        facts:
+          ip_address_1: "{{ ip_address_1 }}"
+          ip_address_2: "{{ ip_address_2 }}"
+        logdest: "/var/log/puppet/apply.log"
+        manifest: "site.pp"
+        modulepath: "/etc/puppetlabs/code/environments/production/modules"
+        noop: false
+        puppetmaster: "localhost"
+        show_diff: false
+        skip_tags:
+          - security
+          - packages
+        summarize: true
+        tags:
+          - apply
+        timeout: "30s"
+        use_srv_records: true
+        verbose: false
+      register: puppet_result
+
+    - name: Check puppet result
+      debug:
+        var: puppet_result
+        verbosity: 2

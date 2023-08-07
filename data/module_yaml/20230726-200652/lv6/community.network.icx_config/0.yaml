@@ -1,0 +1,44 @@
+- name: Unveil latent type-related bugs in Ansible compiler
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    nodes:
+      - name: ubuntu1
+        ip: 10.1.1.1
+        distro: ubuntu
+      - name: alpine1
+        ip: 10.1.1.2
+        distro: alpine
+      - name: centos1
+        ip: 10.1.1.3
+        distro: centos
+      - name: redhat1
+        ip: 10.1.1.4
+        distro: redhat
+
+  tasks:
+    - name: Configure Network on ICX switches
+      community.network.icx_config:
+        provider:
+          host: "{{ inventory_hostname }}"
+          username: admin
+          password: password
+        backup: no
+        running_config: "/path/to/running_config"
+        intended_config: "/path/to/intended_config"
+        src: "/path/to/ansible_config"
+        before: "{{ running_config }}"
+        after: "{{ intended_config }}"
+        parents: 
+          - "interface ethernet {{ item.name }}"
+          - "ipv4 address"
+        lines: |
+          ip address {{ item.ip }} 255.255.255.0
+          no shutdown
+      loop: "{{ nodes }}"
+      register: config_result
+
+    - name: Debug config_result
+      debug:
+        var: config_result

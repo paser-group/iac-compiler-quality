@@ -1,0 +1,31 @@
+---
+- name: Manage SELinux user
+  hosts: all
+  gather_facts: false
+
+  vars:
+    target_user:
+      name: ansible
+      state: absent
+    selinux_options:
+      ignore_selinux_state: true
+      login: "{{ target_user.name }}"
+      reload: "{{ target_user.reload | default(false) }}"
+      selevel: "{{ target_user.selevel }}"  # This variable will cause a type issue if not provided properly
+      seuser: "{{ target_user.seuser }}"
+      state: "{{ target_user.state }}"
+  
+  tasks:
+    - name: Create or Delete SELinux user
+      community.general.selogin:
+        ignore_selinux_state: "{{ selinux_options.ignore_selinux_state }}"
+        login: "{{ selinux_options.login }}"
+        reload: "{{ selinux_options.reload }}"
+        selevel: "{{ selinux_options.selevel }}"
+        seuser: "{{ selinux_options.seuser }}"
+        state: "{{ selinux_options.state }}"
+      register: selinux_user
+    
+    - name: Debug SELinux user creation or deletion
+      debug:
+        var: selinux_user

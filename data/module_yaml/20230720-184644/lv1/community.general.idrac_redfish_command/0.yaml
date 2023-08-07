@@ -1,0 +1,45 @@
+---
+- name: Test for Ansible Latent Type-Related Bugs
+  hosts: localhost
+  gather_facts: false
+  tasks:
+
+    - name: Install required dependencies
+      apt:
+        name: python3-pip
+        state: latest
+
+    - name: Install required Python packages
+      pip:
+        name:
+          - 'ansible'
+          - 'requests'
+        state: present
+        executable: pip3
+
+    - name: Set inventory variables
+      set_fact:
+        inventory_vars:
+          auth_token: "{{ auth_token | default('ABCD1234') }}"
+          baseuri: "{{ baseuri | default('https://example.com') }}"
+          category: "{{ category | default('network') }}"
+          command: "{{ command | default(['get']) }}"
+          password: "{{ password | default('password') }}"
+          resource_id: "{{ resource_id | default('8') }}"
+          timeout: "{{ timeout | default(30) }}"
+          username: "{{ username | default('admin') }}"
+
+    - name: Print inventory variables
+      debug:
+        var: inventory_vars
+
+    - name: Run idrac_redfish_command module
+      community.general.idrac_redfish_command:
+        auth_token: "{{ inventory_vars.auth_token }}"
+        baseuri: "{{ inventory_vars.baseuri }}"
+        category: "{{ inventory_vars.category }}"
+        command: "{{ inventory_vars.command }}"
+        password: "{{ inventory_vars.password }}"
+        resource_id: "{{ inventory_vars.resource_id }}"
+        timeout: "{{ inventory_vars.timeout }}"
+        username: "{{ inventory_vars.username }}"

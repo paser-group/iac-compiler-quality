@@ -1,0 +1,29 @@
+---
+- name: Create Rackspace instance and test type-related bugs
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create Rackspace instance
+      community.general.rax:
+        name: my-instance
+        flavor: 2GB Standard Instance
+        region: DFW
+        image: CentOS 7 (PVHVM)
+        networks:
+          - { uuid: abcd-1234, fixed_ip_v4: "10.1.1.1", mac: "{{ hostvars[inventory_hostname].mac_address }}" }
+          - { uuid: efgh-5678, fixed_ip_v4: "10.1.1.2", mac: "{{ hostvars[inventory_hostname].mac_address }}" }
+        wait: true
+        auto_increment: false
+        validate_certs: false
+      register: instance_info
+
+    - name: Debug instance details
+      debug:
+        var: instance_info
+
+    # Add more tasks, assertions, and test cases here based on the heuristic
+
+  vars:
+    # Generate random MAC addresses for network modules
+    mac_address: "{{ '%02x' | format(hostvars[inventory_hostname].inventory_index + loop.index0) + ':af:12:34:56:78' }}"

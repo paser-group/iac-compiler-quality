@@ -1,0 +1,30 @@
+- name: Test community.network.flowadm module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Generate random MAC address
+      set_fact:
+        random_mac: "{{ '%02x:%02x:%02x:%02x:%02x:%02x' |
+                        format(0x00, 0x16, 0x3e, 0x00,
+                            0x00, 0x00 | random('int', 0, 255)) }}"
+
+    - name: Set bandwidth resource control
+      community.network.flowadm:
+        state: "{{ true }}"
+        dsfield: "{{ 10 }}"
+        link: "{{ 'eth0' }}"
+        local_ip: "{{ '10.1.1.1' }}"
+        local_port: "{{ 8080 }}"
+        maxbw: "{{ 100 }}"
+        name: "{{ 'test_interface' }}"
+        priority: "{{ 'high' }}"
+        remote_ip: "{{ '10.1.1.2' }}"
+        temporary: "{{ true }}"
+        transport: "{{ 'tcp' }}"
+        mac: "{{ random_mac }}"
+      register: result
+
+    - name: Debug flowadm result
+      debug:
+        var: result

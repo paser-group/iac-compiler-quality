@@ -1,0 +1,35 @@
+---
+- name: Set and retrieve ACLs on a file
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create a test file
+      file:
+        path: /tmp/test.txt
+        state: touch
+        mode: '0600'
+
+    - name: Set an ACL on the test file with varied encoding in entity
+      ansible.posix.acl:
+        path: /tmp/test.txt
+        entity: "{{ lookup('pipe', 'python -c print(chr(113) + chr(8701), end="")') }}"
+        entry: allow
+        etype: user
+        permissions: r
+        state: present
+      register: acl_result
+
+    - name: Print ACL result
+      debug:
+        var: acl_result
+
+    - name: Retrieve ACLs on the test file
+      ansible.posix.acl:
+        path: /tmp/test.txt
+        state: retrieve
+      register: retrieved_acl
+
+    - name: Print retrieved ACLs
+      debug:
+        var: retrieved_acl

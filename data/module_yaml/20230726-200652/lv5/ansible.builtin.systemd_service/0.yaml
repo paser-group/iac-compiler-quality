@@ -1,0 +1,55 @@
+- name: Test playbook for systemd_service module
+  hosts: all
+  become: true
+  vars:
+    service_name: "my_service"
+    service_path: "/opt/my_service"
+    service_port: "{{ ansible_random_port }}"
+    daemon_reexec: false
+    daemon_reload: false
+    enabled: true
+    force: false
+    masked: false
+    no_block: false
+    scope: ""
+    state: "started"
+
+  tasks:
+    - name: Copy service file
+      copy:
+        dest: "{{ service_path }}/{{ service_name }}.service"
+        content: |
+          [Unit]
+          Description=My Service
+          After=network.target
+          
+          [Service]
+          ExecStart=/usr/bin/python3 /opt/my_service/server.py
+          Restart=always
+          User=myuser
+          Group=mygroup
+          
+          [Install]
+          WantedBy=multi-user.target
+
+    - name: Enable and Start the service
+      systemd_service:
+        daemon_reexec: "{{ daemon_reexec }}"
+        daemon_reload: "{{ daemon_reload }}"
+        enabled: "{{ enabled }}"
+        force: "{{ force }}"
+        masked: "{{ masked }}"
+        name: "{{ service_name }}"
+        no_block: "{{ no_block }}"
+        scope: "{{ scope }}"
+        state: "{{ state }}"
+
+    - name: Verify service status
+      systemd:
+        name: "{{ service_name }}"
+        state: "{{ state }}"
+      register: service_status
+
+    - name: Show service status
+      debug:
+        var: service_status

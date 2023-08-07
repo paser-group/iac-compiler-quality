@@ -1,0 +1,43 @@
+---
+- name: Test playbook to uncover latent type-related bugs
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    path_to_deploy: "/path/to/deploy"
+    releases_dir: "{{ path_to_deploy }}/releases"
+    shared_dir: "{{ path_to_deploy }}/shared"
+    current_dir: "{{ path_to_deploy }}/current"
+
+  tasks:
+    - name: Create necessary directories
+      file:
+        path: "{{ item }}"
+        state: directory
+      loop:
+        - "{{ path_to_deploy }}"
+        - "{{ releases_dir }}"
+        - "{{ shared_dir }}"
+
+    - name: Set deployment attributes
+      community.general.deploy_helper:
+        path: "{{ path_to_deploy }}"
+        release: "{{ releases_dir }}"
+        current_path: "{{ current_dir }}"
+        shared_path: "{{ shared_dir }}"
+        state: present
+        owner: "test_user"
+        group: "test_group"
+        mode: "0755"
+        clean: true
+        keep_releases: 5
+        unfinished_filename: "unfinished"
+        unsafe_writes: false
+        serole: "object_r"
+        setype: "httpd_sys_content_t"
+        seuser: "system_u"
+        selevel: "s0"
+      register: deployment_result
+
+    - debug:
+        var: deployment_result

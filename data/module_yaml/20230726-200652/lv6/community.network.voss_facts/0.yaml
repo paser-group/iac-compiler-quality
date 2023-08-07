@@ -1,0 +1,35 @@
+---
+- name: Collect Facts from Remote Devices with varied encodings
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: Include required collections
+      include_collections:
+        - name: community.network
+          version: 1.4.0
+
+    - name: Generate strings with varied encodings
+      set_fact:
+        encoded_strings:
+          - "{{ item }}"
+      loop:
+        - !binary |
+            YXNkYXNkYXNk
+        - |-
+            \u00C3\u00B6\u00C3\u00A4\u00C3\u00BC
+        - |-
+            \u0645\u062B\u0627\u0644
+        - |-
+            \uD83D\uDE02\uD83D\uDE02\uD83D\uDE02
+
+    - name: Collect Facts with varied encodings
+      community.network.voss_facts:
+        gather_subset: None
+        encoding: "{{ item }}"
+      loop: "{{ encoded_strings }}"
+      register: result
+
+    - name: Print collected facts
+      debug:
+        var: result

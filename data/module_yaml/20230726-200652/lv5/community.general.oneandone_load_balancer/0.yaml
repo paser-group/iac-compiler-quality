@@ -1,0 +1,55 @@
+---
+- name: Test for latent type-related bugs in oneandone_load_balancer module
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Create a load balancer with random port numbers
+      community.general.oneandone_load_balancer:
+        api_url: "{{ api_url }}"
+        auth_token: "{{ auth_token }}"
+        datacenter: "{{ datacenter }}"
+        name: "test_lb"
+        description: "Test Load Balancer"
+        wait: true
+        wait_interval: 5
+        wait_timeout: 600
+        load_balancer: "{{ lb_id }}"
+        state: present
+        rules:
+          - rule_id: "{{ item.rule_id }}"
+            port_balancer: "{{ item.port_balancer }}"
+        add_rules:
+          - port_balancer: "{{ item.port_balancer }}"
+        add_server_ips:
+          - server_ip: "{{ item.server_ip }}"
+        remove_rules:
+          - rule_id: "{{ item.rule_id }}"
+        remove_server_ips:
+          - server_ip: "{{ item.server_ip }}"
+        persistence: true
+        persistence_time: "00:30:00"
+        method: round_robin
+        health_check_test: 'TCP'
+        health_check_interval: "00:01:00"
+        health_check_path: "/"
+        health_check_parse: "SUCCESS"
+      loop:
+        - { rule_id: 1, port_balancer: "{{ random_port() }}" }
+        - { rule_id: 2, port_balancer: "{{ random_port() }}" }
+      register: result
+
+    - name: Display Playbook's Output
+      debug:
+        var: result
+
+  vars:
+    api_url: "https://api_url"
+    auth_token: "auth_token"
+    datacenter: "datacenter_id"
+
+  # Helper function to generate random port numbers
+  # Replace this with your own logic if required
+  tasks:
+    - name: Generate random port number
+      set_fact:
+        random_port: "{{ 1024 + (ansible_play_hosts_all.index(inventory_hostname) + 1) }}"

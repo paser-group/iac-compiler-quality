@@ -1,0 +1,118 @@
+---
+- name: Test for Ansible latent type-related bugs
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create random IP addresses for network nodes
+      hosts:
+        - localhost
+      gather_facts: false
+      vars:
+        network_nodes:
+          - name: ubuntu1
+            ip_address: "10.1.1.1"
+            os: "ubuntu"
+          - name: alpine1
+            ip_address: "10.1.1.2"
+            os: "alpine"
+          - name: centos1
+            ip_address: "10.1.1.3"
+            os: "centos"
+          - name: redhat1
+            ip_address: "10.1.1.4"
+            os: "redhat"
+      tasks:
+        - debug:
+            var: network_nodes
+
+    - name: Configure Docker nodes
+      hosts: localhost
+      gather_facts: false
+      tasks:
+        - name: Add Docker network interface
+          hosts: "{{ item.name }}"
+          gather_facts: false
+          shell: ip link add docker0 type bridge
+          changed_when: false
+
+        - name: Set Docker IP address
+          hosts: "{{ item.name }}"
+          gather_facts: false
+          shell: ip addr add 10.1.1.{{ item.ip_address.split('.')[-1] }}/24 dev docker0
+          changed_when: false
+
+        - name: Set Docker gateway
+          hosts: "{{ item.name }}"
+          gather_facts: false
+          shell: ip route add default via 10.1.1.254 dev docker0
+          changed_when: false
+
+    - name: Install required dependencies on nodes
+      hosts: docker_nodes
+      gather_facts: false
+      tasks:
+        - name: Install Docker package
+          yum:
+            name: docker
+            state: present
+          when: ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
+
+        - name: Install Docker package
+          apk:
+            name: docker
+            state: present
+          when: ansible_distribution == 'Alpine'
+
+        - name: Install Docker package
+          package:
+            name: docker.io
+            state: present
+          when: ansible_distribution == 'Ubuntu'
+
+        - name: Start Docker service
+          service:
+            name: docker
+            state: started
+          changed_when: false
+
+    - name: Test datadog_monitor module
+      hosts: localhost
+      gather_facts: false
+      tasks:
+        - name: Create datadog monitor
+          community.general.datadog_monitor:
+            api_host: "https://api.datadoghq.com"
+            api_key: "YOUR_API_KEY"
+            app_key: "YOUR_APP_KEY"
+            escalation_message: "Issue with the monitor"
+            evaluation_delay: "10m"
+            id: "monitor_1"
+            include_tags: true
+            locked: true
+            name: "Sample Monitor"
+            new_host_delay: "5m"
+            no_data_timeframe: "30s"
+            notification_message: "Notification message"
+            notify_audit: true
+            notify_no_data: true
+            priority: 2
+            query: "avg(last_5m):sum:system.cpu.user{host:*} by {host} > 100"
+            renotify_interval: "1h"
+            require_full_window: true
+            silenced:
+              - "*"
+            state: "present"
+            tags:
+              - "tag1"
+              - "tag2"
+            thresholds:
+              critical: 100
+              warning: 75
+            timeout_h: "1h"
+            type: "metric"
+          register: result
+
+        - name: Print result
+          debug:
+            var: result

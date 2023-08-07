@@ -1,0 +1,39 @@
+---
+- name: Test playbook for community.network.pn_cpu_mgmt_class module
+  hosts: localhost
+  gather_facts: false
+  
+  tasks:
+    - name: Configure CPU management class
+      community.network.pn_cpu_mgmt_class:
+        pn_cliswitch: "{{ pn_cliswitch }}"
+        pn_name: "{{ pn_name }}"
+        pn_rate_limit: "{{ pn_rate_limit }}"
+        pn_burst_size: "{{ pn_burst_size }}"
+        state: "{{ state }}"
+      register: result
+      ignore_errors: true
+
+    - name: Debug output
+      debug:
+        var: result
+    
+    - name: Generate random port numbers
+      shell: "echo $(( ( RANDOM % 65535 )  + 1 ))"
+      register: random_port
+      changed_when: false
+
+    - name: Test port settings
+      community.network.pn_cpu_mgmt_class:
+        pn_cliswitch: "{{ pn_cliswitch }}"
+        pn_name: "{{ pn_name }}"
+        pn_rate_limit: "{{ pn_rate_limit }}"
+        pn_burst_size: "{{ pn_burst_size }}"
+        pn_port: "{{ random_port.stdout }}"
+        state: "{{ state }}"
+      register: test_result
+      ignore_errors: true
+        
+    - name: Debug output for port test
+      debug:
+        var: test_result

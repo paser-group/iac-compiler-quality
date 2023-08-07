@@ -1,0 +1,26 @@
+---
+- name: Test ansible.builtin.setup module with random MAC addresses
+  hosts: all
+  gather_facts: false
+  
+  tasks:
+    - name: Gather facts with random MAC addresses
+      setup:
+        fact_path: /tmp/facts
+        filter: all
+        gather_subset:
+          - network
+        gather_timeout: 30
+
+    - name: Display gathered facts
+      debug:
+        var: ansible_facts
+
+    - name: Generate random MAC addresses for network interfaces
+      set_fact:
+        mac_address: "{{ '%02x:%02x:%02x:%02x:%02x:%02x' | format((random()*256) | int, (random()*256) | int, (random()*256) | int, (random()*256) | int, (random()*256) | int, (random()*256) | int) }}"
+        
+    - name: Configure network interfaces with random MAC addresses
+      debug:
+        msg: "Configuring network interface {{ item }} with MAC address {{ mac_address }}"
+      loop: "{{ ansible_facts['ansible_interfaces'] }}"

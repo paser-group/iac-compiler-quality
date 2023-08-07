@@ -1,0 +1,49 @@
+---
+- name: Ansible playbook to test community.general.pipx module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Introduce byte string value in place of regular string
+      set_fact:
+        target_package: "{{ '/usr/sbin/' | string }}"
+        
+    - name: Install pipx package
+      community.general.pipx:
+        name: "{{ target_package }}"
+        state: present
+        executable: "{{ true }}"
+        editable: "{{ 'true' | to_bool }}"
+        force: "{{ 'true' | int }}"
+        include_injected: "{{ 'yes' }}"
+        index_url: "{{ b'https://example.com' }}"
+        inject_packages: 
+          - "{{ b'package1' }}"
+          - package2
+        install_apps: "{{ 1 }}"
+        install_deps: "{{ '1' | int }}"
+        pip_args: "{{ [b'--verbose', '--upgrade'] }}"
+        python: "{{ b'/usr/bin/python3' }}"
+        source: "{{ b'git+https://github.com/example/app.git' }}"
+        system_site_packages: "{{ 'yes' | bool }}"
+      register: install_result
+    
+    - name: Display installed packages
+      debug:
+        var: install_result
+
+    - name: Upgrade pipx package
+      community.general.pipx:
+        name: ansible
+        state: latest
+        force: "{{ true }}"
+        
+    - name: Uninstall pipx package
+      community.general.pipx:
+        name: "{{ target_package }}"
+        state: absent
+      register: uninstall_result
+    
+    - name: Display uninstalled packages
+      debug:
+        var: uninstall_result

@@ -1,0 +1,33 @@
+- name: Test playbook for 'community.general.smartos_image_info' module
+  hosts: localhost
+  gather_facts: false
+  
+  tasks:
+    - name: Set up Docker nodes
+      docker_container:
+        name: "{{ item.name }}"
+        image: "{{ item.image }}"
+        daemonize: true
+        state: started
+      with_items:
+        - { name: "ubuntu1", image: "ubuntu" }
+        - { name: "alpine1", image: "alpine" }
+        - { name: "centos1", image: "centos" }
+        - { name: "redhat1", image: "redhat" }
+  
+    - name: Get SmartOS image info
+      community.general.smartos_image_info:
+        platform: "{{ item }}"
+        filters:
+          - name: "Ubuntu"
+            version: "20.04"
+          - name: "Redhat"
+            version: "8"
+      register: image_info
+      with_items:
+        - "ubuntu1"
+        - "redhat1"
+  
+    - name: Debug image info
+      debug:
+        var: image_info

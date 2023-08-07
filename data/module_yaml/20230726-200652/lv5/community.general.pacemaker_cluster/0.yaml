@@ -1,0 +1,27 @@
+---
+- name: Test playbook for pacemaker_cluster module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Install required dependencies
+      package:
+        name: "{{ item }}"
+        state: present
+      with_items:
+        - pacemaker
+        - corosync
+
+    - name: Create pacemaker cluster
+      community.general.pacemaker_cluster:
+        force: "{{ item.force | default(False) }}"
+        node: "{{ item.node }}"
+        state: "{{ item.state }}"
+        timeout: "{{ item.timeout | default(30) }}"
+        port: "{{ item.port | default(0) }}"
+      loop:
+        - { node: "ubuntu1", state: "started", force: false, timeout: 60 }
+        - { node: "alpine1", state: "stopped", force: true, timeout: 120 }
+        - { node: "centos1", state: "started", port: 8080 }
+        - { node: "redhat1", state: "stopped", port: 9000 }
+        - { node: "redhat1", state: "started", port: 0 }

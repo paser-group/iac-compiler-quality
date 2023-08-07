@@ -1,0 +1,56 @@
+---
+- name: Test playbook for clc_server_snapshot module
+  hosts: localhost
+  gather_facts: false
+  vars:
+    expiration_days: 5
+    server_ids:
+      - S1234
+      - S5678 
+    state: present
+    wait: no
+  tasks:
+    - name: Create server snapshots
+      community.general.clc_server_snapshot:
+        expiration_days: "{{ expiration_days }}"
+        server_ids: "{{ server_ids }}"
+        state: "{{ state }}"
+        wait: "{{ wait }}"
+      register: snapshot_result
+      when: server_ids is defined
+      ignore_errors: true
+
+    - name: Delete server snapshots
+      community.general.clc_server_snapshot:
+        expiration_days: "{{ expiration_days }}"
+        server_ids: "{{ server_ids }}"
+        state: absent
+        wait: "{{ wait }}"
+      register: delete_result
+      when: snapshot_result is defined and snapshot_result.stdout is not defined
+      ignore_errors: true
+
+    - name: Restore server snapshots
+      community.general.clc_server_snapshot:
+        expiration_days: "{{ expiration_days }}"
+        server_ids: "{{ server_ids }}"
+        state: absent
+        wait: "{{ wait }}"
+      register: restore_result
+      when: delete_result is defined and delete_result.stdout is not defined
+      ignore_errors: true
+
+    - name: Show snapshots logs
+      debug:
+        var: snapshot_result
+      when: snapshot_result is defined
+
+    - name: Show delete snapshots logs
+      debug:
+        var: delete_result
+      when: delete_result is defined
+
+    - name: Show restore snapshots logs
+      debug:
+        var: restore_result
+      when: restore_result is defined

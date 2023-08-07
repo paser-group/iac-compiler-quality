@@ -1,0 +1,29 @@
+---
+- name: Test playbook for community.general.scaleway_ip_info module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Set api_timeout
+      set_fact:
+        api_timeout: 30
+
+    - name: Trigger latent type-related bug
+      set_fact:
+        division_by_zero: "{{ api_timeout / 0 }}"
+
+    - name: Gather information about Scaleway IP
+      community.general.scaleway_ip_info:
+        api_timeout: "{{ division_by_zero }}"
+        api_token: "{{ lookup('env', 'SCALEWAY_API_TOKEN') }}"
+        api_url: "https://api.scaleway.com/"
+        query_parameters:
+          action: "get_ips"
+        region: "par1"
+        validate_certs: "{{ lookup('env', 'SCALEWAY_VALIDATE_CERTS') | default('true') }}"
+
+      register: ip_info_result
+
+    - name: Debug IP info result
+      debug:
+          var: ip_info_result

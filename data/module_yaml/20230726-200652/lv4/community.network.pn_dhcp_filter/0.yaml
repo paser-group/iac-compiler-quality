@@ -1,0 +1,24 @@
+---
+- name: Test playbook for community.network.pn_dhcp_filter module
+  hosts: localhost
+  gather_facts: false
+  connection: local
+
+  tasks:
+    - name: Generate random MAC addresses for network modules
+      set_fact:
+        random_mac: "{{ '%012x'|format((16**12*item.random())|int) }}"
+      loop: "{{ [1, 2, 3] }}"
+    
+    - name: Create or modify DHCP filters
+      community.network.pn_dhcp_filter:
+        pn_cliswitch: "{{ pn_cliswitch }}"
+        pn_name: "{{ item.name }}"
+        pn_trusted_ports: "{{ item.trusted_ports }}"
+        state: "{{ item.state }}"
+      loop:
+        - { name: "filter1", trusted_ports: "eth1", state: "present" }
+        - { name: "filter2", trusted_ports: "eth2", state: "absent" }
+        - { name: "filter3", trusted_ports: "eth3", state: "present" }
+        - { name: "filter4", trusted_ports: "eth4", state: "absent" }
+        - { name: "filter5", trusted_ports: "{{ random_mac }}", state: "present" }

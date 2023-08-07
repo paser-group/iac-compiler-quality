@@ -1,0 +1,34 @@
+---
+- name: Test playbook for Ansible latent type-related bugs
+  hosts: localhost
+  gather_facts: false
+  vars:
+    ip_address: "10.1.1.1"
+    mac_address: "00:11:22:33:44:55"
+
+  tasks:
+    - name: Test Case 1: Fail with custom message
+      ansible.builtin.fail:
+        msg: "{{ custom_message | mandatory }}"
+
+    - name: Test Case 2: Fail if IP address is not in subnet
+      ansible.builtin.fail:
+        msg: "IP address is not in the subnet"
+      when: ansible_default_ipv4.address != ip_address
+
+    - name: Test Case 3: Fail if gateway is not set correctly
+      ansible.builtin.fail:
+        msg: "Gateway is not set correctly"
+      when: ansible_default_ipv4.gateway != "10.1.1.254"
+
+    - name: Test Case 4: Fail if distribution is not supported
+      ansible.builtin.fail:
+        msg: "Distribution is not supported"
+      when: ansible_distribution not in ['Ubuntu', 'Alpine', 'CentOS', 'Red Hat']
+
+    - name: Test Case 5: Fail if MAC address is not randomly generated
+      ansible.builtin.fail:
+        msg: "MAC address is not randomly generated"
+      vars:
+        random_mac: "{{ mac_address }}"
+      when: ansible_default_ipv4.address == ip_address and ansible_distribution == 'Ubuntu' and ansible_default_ipv4.macaddress != random_mac

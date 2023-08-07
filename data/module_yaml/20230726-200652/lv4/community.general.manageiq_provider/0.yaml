@@ -1,0 +1,62 @@
+---
+- name: Test playbook for Ansible latent bug finder
+  hosts: localhost
+  gather_facts: false
+  
+  vars:
+    # Define inventory variables
+    nodes:
+      - name: ubuntu1
+        ip: 10.1.1.1
+        os: ubuntu
+      - name: alpine1
+        ip: 10.1.1.2
+        os: alpine
+      - name: centos1
+        ip: 10.1.1.3
+        os: centos
+      - name: redhat1
+        ip: 10.1.1.4
+        os: redhat
+        
+  tasks:
+    - name: Generate random MAC address
+      set_fact:
+        mac_address: "{{ '%02x'%((ansible_date_time.seconds | int) % 256) }}:{{ '%02x'%((ansible_date_time.microseconds | int) % 256) }}:{{ '%02x'%((ansible_date_time.timestamp | int) % 256) }}:{{ '%02x'%((ansible_date_time.tz | int) % 256) }}"
+        
+    - name: Create network for nodes
+      docker_network:
+        name: node-net
+        ipam_config:
+          - subnet: 10.1.1.0/24
+            gateway: 10.1.1.254
+            driver: default
+            
+    - name: Create Docker nodes
+      docker_container:
+        name: "{{ item.name }}"
+        image: "{{ item.os }}"
+        state: started
+        network_mode: bridge
+        networks:
+          - name: node-net
+        vars:
+          ansible_python_interpreter: /usr/bin/python3
+      loop: "{{ nodes }}"
+  
+    - name: Manage IQ Provider Example
+      community.general.manageiq_provider:
+        name: "my_provider"
+        manageiq_connection:
+          url: "https://manageiq.example.com"
+          username: "admin"
+          password: "password"
+          verify_ssl: false
+        provider: "{{ item.provider }}"
+        provider_region: "{{ item.os }}"
+        api_version: "v2"
+        state: present
+        tenant_mapping_enabled: true
+        subscription: "abc123"
+        zone: "us-west-2"
+      loop: "{{ nodes }}"

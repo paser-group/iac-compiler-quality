@@ -1,0 +1,35 @@
+- name: Configure Extreme Networks EXOS switches
+  hosts: switches
+  gather_facts: false
+  
+  tasks:
+    - name: Backup running configuration
+      community.network.exos_config:
+        backup: yes
+        backup_options:
+          f: "{{ backup_file_path }}"
+          overwrite: true
+  
+    - name: Apply intended configuration
+      community.network.exos_config:
+        src: "{{ intended_config_file }}"
+        defaults: false
+  
+    - name: Test port settings with random port numbers
+      community.network.exos_config:
+        lines:
+          - interface 1/1
+          - port-description: "Random Port {{ (1, 48) | random }}"
+          - interface 1/2
+          - port-description: "Random Port {{ (1, 48) | random }}"
+          - attribute1: 10.1.1.1
+          - attribute2: "10.1.1.{{ (1, 254) | random }}"
+  
+      vars:
+        attribute1: 1.2.3.4
+        attribute2: "5.6.7.8"
+  
+    - name: Save configuration
+      community.network.exos_config:
+        running_config: no
+        save_when: always

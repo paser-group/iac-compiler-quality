@@ -1,0 +1,55 @@
+---
+- name: Create ProfitBricks server with random IP
+  hosts: localhost
+  gather_facts: false
+  vars:
+    profitbricks_datacenter: "your_datacenter"
+    profitbricks_subscription_user: "your_subscription_user"
+    profitbricks_subscription_password: "your_subscription_password"
+    profitbricks_instance_name: "random-ip-server"
+    profitbricks_image: "your_image_name"
+    profitbricks_image_password: "your_image_password"
+    profitbricks_location: "your_location"
+    profitbricks_cores: 2
+    profitbricks_ram: 4096
+    profitbricks_volume_size: 50
+    profitbricks_lan: 1
+    profitbricks_wait_timeout: 120
+
+  tasks:
+    - name: Generate random IP addresses for LAN
+      set_fact:
+        profitbricks_lan_ip: "{{ '10.1.1.' ~ (1 + (ansible_play_hosts.index(inventory_hostname)) % (groups['all'] | length)) }}"
+
+    - name: Create ProfitBricks server
+      community.general.profitbricks:
+        assign_public_ip: true
+        auto_increment: true
+        bus: virtio
+        cores: "{{ profitbricks_cores }}"
+        count: 1
+        cpu_family: AMD_OPTERON
+        datacenter: "{{ profitbricks_datacenter }}"
+        disk_type: HDD
+        image: "{{ profitbricks_image }}"
+        image_password: "{{ profitbricks_image_password }}"
+        instance_ids:
+          - server1
+        lan: "{{ profitbricks_lan }}"
+        location: "{{ profitbricks_location }}"
+        name: "{{ profitbricks_instance_name }}"
+        ram: "{{ profitbricks_ram }}"
+        remove_boot_volume: false
+        ssh_keys: []
+        state: present
+        subscription_password: "{{ profitbricks_subscription_password }}"
+        subscription_user: "{{ profitbricks_subscription_user }}"
+        volume_size: "{{ profitbricks_volume_size }}"
+        wait: true
+        wait_timeout: "{{ profitbricks_wait_timeout }}"
+
+      register: result
+
+    - name: Show ProfitBricks server IP
+      debug:
+        var: profitbricks_lan_ip

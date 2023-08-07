@@ -1,0 +1,44 @@
+---
+- name: Test playbook for community.network.eric_eccli_command module with random IP addresses
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    commands:
+      - show version
+      - show interfaces
+      - show routing
+    interval: "{{ interval }}"
+    match: "System ID"
+    retries: 3
+    wait_for:
+      - "System ID:.*"
+    random_ip: "{{ '?'.rjust(3, '0') }}.{{ '?'.rjust(3, '0') }}.{{ '?'.rjust(3, '0') }}.{{ '?'.rjust(3, '0') }}"
+
+  tasks:
+    - name: Generate random IP address
+      set_fact:
+        random_ip_address: "{{ random_ip | regex_replace('\\?', [hostvars[item].host.split('.')[-2] | int + hostvars[item].host.split('.')[-1] | int]) }}"
+      loop: "{{ groups['all'] }}"
+
+    - name: Include inventory file
+      include_vars:
+        file: inventory.yml
+
+    - name: Run commands on remote devices with random IP addresses
+      community.network.eric_eccli_command:
+        provider:
+          host: "{{ host }}"
+          username: "{{ username }}"
+          password: "{{ password }}"
+        commands: "{{ commands }}"
+        interval: "{{ interval }}"
+        match: "{{ match }}"
+        retries: "{{ retries }}"
+        wait_for: "{{ wait_for }}"
+        random_ip_address: "{{ random_ip_address }}"
+      register: result
+
+    - name: Debug result
+      debug:
+        var: result

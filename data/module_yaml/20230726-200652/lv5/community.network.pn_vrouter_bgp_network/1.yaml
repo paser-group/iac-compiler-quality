@@ -1,0 +1,37 @@
+---
+- name: Configure BGP network on vRouter
+  hosts: all
+  become: true
+
+  vars:
+    pn_vrouter_name: "my_vrouter"
+
+  tasks:
+    - name: Install community.general collection
+      ansible.builtin.raw: "ansible-galaxy collection install community.general"
+      when: "'community.general' not in ansible_collections"
+
+    - name: Configure BGP network
+      community.network.pn_vrouter_bgp_network:
+        pn_vrouter_name: "{{ pn_vrouter_name }}"
+        pn_cliswitch: "{{ inventory_hostname }}"
+        pn_network: "{{ item.network }}"
+        pn_netmask: "{{ item.netmask }}"
+        state: "{{ item.state }}"
+        pn_port: "{{ item.port }}"
+      loop:
+        - { network: "10.1.1.0", netmask: "255.255.255.0", state: "present", port: "{{ 1024 | random }}" }
+
+    - name: Remove BGP network
+      community.network.pn_vrouter_bgp_network:
+        pn_vrouter_name: "{{ pn_vrouter_name }}"
+        pn_cliswitch: "{{ inventory_hostname }}"
+        pn_network: "{{ item }}"
+        state: "absent"
+        pn_port: "{{ 1024 | random }}"
+      loop:
+        - "10.1.1.0"
+
+    - name: Debug
+      debug:
+        msg: "Debug message"

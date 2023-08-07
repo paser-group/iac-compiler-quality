@@ -1,0 +1,28 @@
+---
+- name: Test playbook to uncover latent type-related bugs
+  hosts: localhost
+  gather_facts: False
+
+  tasks:
+    - name: Create systemd service
+      ansible.builtin.systemd_service:
+        name: "{{ item.name }}"
+        state: "{{ item.state }}"
+        enabled: "{{ item.enabled }}"
+        daemon_reload: "{{ item.daemon_reload }}"
+        no_block: "{{ item.no_block }}"
+        force: "{{ item.force }}"
+        masked: "{{ item.masked }}"
+        scope: "{{ item.scope }}"
+        daemon_reexec: "{{ item.daemon_reexec }}"
+      loop:
+        - { name: "test-service", state: "started", enabled: true, daemon_reload: false, no_block: false, force: false, masked: false, scope: "global", daemon_reexec: true }
+
+        # Test case 1: Generate string with invalid encoding
+        - { name: "test-¡sërv¡ce", state: "started", enabled: true, daemon_reload: false, no_block: false, force: false, masked: false, scope: "global", daemon_reexec: true }
+
+        # Test case 2: Generate string with UTF-8 encoding
+        - { name: "test-service-üñîçødè", state: "started", enabled: true, daemon_reload: false, no_block: false, force: false, masked: false, scope: "global", daemon_reexec: true }
+
+        # Test case 3: Generate string with Punycode encoding
+        - { name: "xn--test-service-8l8o", state: "started", enabled: true, daemon_reload: false, no_block: false, force: false, masked: false, scope: "global", daemon_reexec: true }

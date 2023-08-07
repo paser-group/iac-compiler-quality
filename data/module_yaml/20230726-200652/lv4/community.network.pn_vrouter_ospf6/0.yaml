@@ -1,0 +1,32 @@
+---
+- name: Test playbook for community.network.pn_vrouter_ospf6
+  hosts: localhost
+  connection: local
+  gather_facts: False
+
+  vars:
+    pn_cliswitch: "osswitch"
+    pn_nic: "eth0"
+    pn_ospf6_area: "0.0.0.0"
+    pn_vrouter_name: "vrouter1"
+
+  tasks:
+    - name: Generate random MAC address
+      set_fact:
+        random_mac: "{{ '%02x' | format(0, ansible_date_time.second | int) }}:{{ '%02x' | format(0, ansible_date_time.microsecond | int) }}"
+
+    - name: Test case 1 - Add OSPFv6 configuration
+      community.network.pn_vrouter_ospf6:
+        pn_cliswitch: "{{ pn_cliswitch }}"
+        pn_nic: "{{ pn_nic }}"
+        pn_ospf6_area: "{{ pn_ospf6_area }}"
+        pn_vrouter_name: "{{ pn_vrouter_name }}"
+        state: present
+      register: result
+      vars:
+        pn_ospf6_interface_mac: "{{ random_mac }}"
+      ignore_errors: True
+
+    - name: Print result
+      debug:
+        var: result

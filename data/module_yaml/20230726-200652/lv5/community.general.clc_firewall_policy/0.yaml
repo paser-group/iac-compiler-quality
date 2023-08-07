@@ -1,0 +1,49 @@
+---
+- name: Test Ansible Latent Type-Related Bugs
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  
+  vars:
+    destination_account_alias: "test-destination-account"
+    source_account_alias: "test-source-account"
+    location: "test-location"
+    
+  tasks:
+    - name: Create Firewall Policy
+      community.general.clc_firewall_policy:
+        destination: "{{ ['10.1.1.1', '10.1.1.2'] }}"
+        destination_account_alias: "{{ destination_account_alias }}"
+        enabled: "{{ ['yes', 'no'] | random }}"
+        firewall_policy_id: "test-policy"
+        location: "{{ location }}"
+        ports: "{{ [22, 80, 443] | random }}"
+        source: "{{ ['10.1.1.3', '10.1.1.4'] }}"
+        source_account_alias: "{{ source_account_alias }}"
+        state: "present"
+      register: create_result
+  
+    - name: Debug Create Result
+      debug:
+        var: create_result
+  
+    - name: Update Firewall Policy
+      community.general.clc_firewall_policy:
+        firewall_policy_id: "test-policy"
+        state: "update"
+        enabled: "{{ ['yes', 'no'] | random }}"
+      register: update_result
+  
+    - name: Debug Update Result
+      debug:
+        var: update_result
+  
+    - name: Delete Firewall Policy
+      community.general.clc_firewall_policy:
+        firewall_policy_id: "test-policy"
+        state: "absent"
+      register: delete_result
+  
+    - name: Debug Delete Result
+      debug:
+        var: delete_result

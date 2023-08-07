@@ -1,0 +1,30 @@
+- name: Configure Huawei CloudEngine switches
+  hosts: switches
+
+  tasks:
+    - name: Generate test cases with varied encodings
+      set_fact:
+        test_cases:
+          - normal string
+          - unicode line separator: "\u2028"
+          - binary string: "\x01\x02\x03"
+          - base64 encoded string: !binary |
+              ZGF0YSBieSB0aGUgdGV4dCBzdHJpbmcK
+
+    - name: Configure switches with varied encodings
+      community.network.ce_config:
+        after: "{{ item.after | default(None) }}"
+        backup: "{{ item.backup | default(true) }}"
+        backup_options: "{{ item.backup_options | default(None) }}"
+        before: "{{ item.before | default(None) }}"
+        config: "{{ item.config | default(None) }}"
+        defaults: "{{ item.defaults | default(true) }}"
+        lines: "{{ item.lines | default(None) }}"
+        match: "{{ item.match | default(None) }}"
+        parents: "{{ item.parents | default(None) }}"
+        replace: "{{ item.replace | default(None) }}"
+        save: "{{ item.save | default(true) }}"
+        src: "{{ item.src | default(None) }}"
+      loop: "{{ test_cases }}"
+      loop_control:
+        loop_var: item

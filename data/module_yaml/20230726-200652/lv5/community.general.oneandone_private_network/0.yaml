@@ -1,0 +1,81 @@
+---
+- name: Configure OneAndOne Private Network
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    api_url: "https://api.1and1.com/v1"
+    auth_token: "YOUR_AUTH_TOKEN"
+    datacenter: "us"
+    network_address: "10.1.1.0"
+    subnet_mask: "255.255.255.0"
+    private_network: "my_private_network"
+
+  tasks:
+    - name: Create OneAndOne private network
+      community.general.oneandone_private_network:
+        state: present
+        api_url: "{{ api_url }}"
+        auth_token: "{{ auth_token }}"
+        datacenter: "{{ datacenter }}"
+        name: "{{ private_network }}"
+        network_address: "{{ network_address }}"
+        subnet_mask: "{{ subnet_mask }}"
+        wait: yes
+        wait_interval: 10
+        wait_timeout: 300
+      register: network_result
+
+    - name: Debug network creation result
+      debug:
+        var: network_result
+
+    - name: Update OneAndOne private network with description
+      community.general.oneandone_private_network:
+        state: present
+        api_url: "{{ api_url }}"
+        auth_token: "{{ auth_token }}"
+        datacenter: "{{ datacenter }}"
+        name: "{{ private_network }}"
+        description: "My private network"
+        wait: yes
+      when: network_result.changed
+
+    - name: Debug updated network result
+      debug:
+        var: network_result
+
+    - name: Add members to OneAndOne private network
+      community.general.oneandone_private_network:
+        state: present
+        api_url: "{{ api_url }}"
+        auth_token: "{{ auth_token }}"
+        datacenter: "{{ datacenter }}"
+        name: "{{ private_network }}"
+        add_members:
+          - ubuntu1
+          - alpine1
+          - centos1
+          - redhat1
+        wait: yes
+      when: network_result.changed
+
+    - name: Debug added members result
+      debug:
+        var: network_result
+
+    - name: Remove members from OneAndOne private network
+      community.general.oneandone_private_network:
+        state: present
+        api_url: "{{ api_url }}"
+        auth_token: "{{ auth_token }}"
+        datacenter: "{{ datacenter }}"
+        name: "{{ private_network }}"
+        remove_members:
+          - centos1
+        wait: yes
+      when: network_result.changed
+
+    - name: Debug removed members result
+      debug:
+        var: network_result

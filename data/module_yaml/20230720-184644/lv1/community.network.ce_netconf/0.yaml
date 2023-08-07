@@ -1,0 +1,43 @@
+---
+- name: Ansible Latent Bug Finder & Heuristic Test Playbook
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    huawei_commands:
+      - show running-configuration
+      - display interfaces brief
+      - display version
+    mixed_case_sensitive_string: "HuaweiDevice"
+
+  tasks:
+    - name: Install community.network collection
+      ansible.builtin.command: ansible-galaxy collection install community.network
+
+    - name: Test command execution with mixed case sensitivity
+      community.network.ce_netconf:
+        host: "{{ mixed_case_sensitive_string }}"
+        cfg_xml: |
+          <rpc>
+            <get-config>
+              <source>
+                <running/>
+              </source>
+            </get-config>
+          </rpc>
+      vars:
+        ansible_command_timeout: 10
+      register: result
+      ignore_errors: true
+
+    - name: Debug command execution result
+      ansible.builtin.debug:
+        var: result
+
+    - name: Validate if type-related bug was triggered
+      fail:
+        msg: "Type-related bug triggered - Mixed case sensitivity for string configuration values does not work as expected"
+
+    - name: Debug message if no type-related bug is triggered
+      ansible.builtin.debug:
+        msg: "No type-related bug triggered - Mixed case sensitivity for string configuration values functions correctly"

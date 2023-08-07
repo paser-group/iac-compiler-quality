@@ -1,0 +1,48 @@
+---
+- name: Test Ansible Latent Type-Related Bug
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    inventory_file: /path/to/inventory.ini
+
+  tasks:
+    - name: Generate random port numbers
+      set_fact:
+        random_port: "{{ 5000 + (inventory_hostname | hash) | random(seed=inventory_hostname | length) % 1000 }}"
+
+    - name: Include inventory file
+      include_vars:
+        file: "{{ inventory_file }}"
+
+    - name: Create user with random port
+      community.network.avi_user:
+        controller: "{{ controller }}"
+        username: "testuser"
+        password: "testpassword"
+        avi_credentials: "{{ avi_credentials }}"
+        avi_disable_session_cache_as_fact: True
+        state: present
+        email: "testuser@example.com"
+        is_active: True
+        is_superuser: False
+        user_profile_ref: "/api/userprofile/UP-123456"
+        api_context:
+          tenant: "{{ tenant }}"
+          tenant_uuid: "{{ tenant_uuid }}"
+          default_tenant_ref: "{{ tenant_uuid }}"
+          api_version: "17.2.4"
+          avi_api_update_method: "PUT"
+          avi_api_patch_op: "PATCH"
+        tenant_ref: "/api/tenant/T-123456"
+        roles:
+          - "Role1"
+          - "Role2"
+        tenant: "{{ tenant }}"
+        obj_username: "testobject"
+        obj_password: "testobjectpassword"
+        tenant_uuid: "{{ tenant_uuid }}"
+        password: "testpassword"
+
+    - debug:
+        var: random_port

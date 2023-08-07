@@ -1,0 +1,62 @@
+---
+- name: Ansible Latent Bug Finder & Heuristic Playbook
+  hosts: localhost
+  connection: local
+  gather_facts: False
+  
+  vars:
+    avi_controller: "controller.example.com"
+    avi_username: "admin"
+    avi_password: "password"
+    avi_tenant: "Default-Cloud"
+  
+  tasks:
+    - name: Create VsVip
+      community.network.avi_vsvip:
+        controller: "{{ avi_controller }}"
+        username: "{{ avi_username }}"
+        password: "{{ avi_password }}"
+        tenant: "{{ avi_tenant }}"
+        vip: "10.1.1.100"
+        name: "vs-vip-1"
+        vrf_context_ref: "/api/vrfcontext?name=default"
+        east_west_placement: True
+        cloud_ref: "/api/cloud?name=default-cloud"
+        avi_credentials:
+          - username: "{{ avi_username }}"
+            password: "{{ avi_password }}"
+            tenant: "{{ avi_tenant }}"
+      register: vsvip_result
+
+    - debug:
+        var: vsvip_result
+
+    - name: Update VsVip
+      community.network.avi_vsvip:
+        controller: "{{ avi_controller }}"
+        username: "{{ avi_username }}"
+        password: "{{ avi_password }}"
+        tenant: "{{ avi_tenant }}"
+        uuid: "{{ vsvip_result.uuid }}"
+        name: "vs-vip-1-updated"
+      register: vsvip_update_result
+
+    - debug:
+        var: vsvip_update_result
+
+    - name: Delete VsVip
+      community.network.avi_vsvip:
+        controller: "{{ avi_controller }}"
+        username: "{{ avi_username }}"
+        password: "{{ avi_password }}"
+        tenant: "{{ avi_tenant }}"
+        uuid: "{{ vsvip_result.uuid }}"
+        state: absent
+      register: vsvip_delete_result
+
+    - debug:
+        var: vsvip_delete_result
+
+    - name: Produce random port numbers to test port settings
+      debug:
+        msg: "Random port number: {{ range(10000, 20000) | random }}"

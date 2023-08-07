@@ -1,0 +1,37 @@
+---
+- name: Test playbook for community.network.avi_seproperties module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    api_context:
+      api_version: 20.1.6
+    avi_credentials:
+      controller: "{{ controller }}"
+      username: "{{ username }}"
+      password: "{{ password }}"
+
+  tasks:
+    - name: Set byte string as controller value
+      community.network.avi_seproperties:
+        controller: "{{ controller | b64encode }}"
+        avi_credentials: "{{ avi_credentials }}"
+        se_agent_properties: "{{ se_agent_properties }}"
+        se_bootup_properties: "{{ se_bootup_properties }}"
+        se_runtime_properties: "{{ se_runtime_properties }}"
+        state: "{{ state }}"
+        tenant: "{{ tenant }}"
+        tenant_uuid: "{{ tenant_uuid }}"
+        url: "{{ url }}"
+        uuid: "{{ uuid }}"
+      register: result
+      ignore_errors: true
+
+    - name: Check for type-related bug
+      fail:
+        msg: "Type-related bug triggered by introducing byte string value"
+      when: result.failed
+
+    - name: Print success message if no type-related bug triggered
+      debug:
+        msg: "No type-related bug triggered. Playbook executed successfully."

@@ -1,0 +1,56 @@
+---
+- name: Fetch configuration/state data from gRPC
+  hosts: localhost
+  gather_facts: False
+
+  vars:
+    command: "{{ lookup('template', command_template) }}"
+    data_type: "{{ lookup('template', data_type_template) }}"
+    display: "{{ lookup('template', display_template) }}"
+    section: "{{ lookup('template', section_template) }}"
+
+  tasks:
+    - name: Include Jinja2 template files
+      include_vars:
+        file: "{{ item }}"
+      with_items:
+        - command_template.j2
+        - data_type_template.j2
+        - display_template.j2
+        - section_template.j2
+
+    - name: Fetch configuration/state data
+      ansible.netcommon.grpc_get:
+        command: "{{ command }}"
+        data_type: "{{ data_type }}"
+        display: "{{ display }}"
+        section: "{{ section }}"
+      register: result
+
+    - name: Print the fetched data
+      debug:
+        var: result
+
+- name: Create configuration templates
+  hosts: localhost
+  gather_facts: False
+  tasks:
+    - name: Create command template
+      template:
+        src: command_template.j2
+        dest: command_template
+
+    - name: Create data_type template
+      template:
+        src: data_type_template.j2
+        dest: data_type_template
+
+    - name: Create display template
+      template:
+        src: display_template.j2
+        dest: display_template
+
+    - name: Create section template
+      template:
+        src: section_template.j2
+        dest: section_template

@@ -1,0 +1,39 @@
+---
+- name: Test playbook for community.general.sudoers module
+  hosts: [localhost]
+  gather_facts: false
+
+  vars:
+    sudoers_path: "/etc/sudoers"
+
+  tasks:
+
+    - name: Install community.general collection
+      command: ansible-galaxy collection install community.general
+
+    - name: Create test sudoers file
+      file:
+        path: "{{ sudoers_path }}"
+        state: touch
+
+    - name: Add sudoers entries
+      community.general.sudoers:
+        name: "{{ item.name }}"
+        validation: "{{ item.validation }}"
+        runas: "{{ item.runas }}"
+        command: "{{ item.command }}"
+        setenv: "{{ item.setenv }}"
+        state: present
+        sudoers_path: "{{ sudoers_path }}"
+      loop:
+        - { name: 'admin', validation: 'ALL=(ALL:ALL) NOPASSWD: ALL', runas: 'ALL', command: 'ALL', setenv: false }
+        - { name: 'web_admin', validation: 'ALL=(ALL:ALL) NOPASSWD: /usr/bin/httpd', runas: 'ALL', command: '/usr/bin/httpd', setenv: true }
+        - { name: 'deployer', validation: 'ALL=(ALL) NOPASSWD: /usr/bin/systemctl start nginx', runas: 'ALL', command: '/usr/bin/systemctl start nginx', setenv: true }
+
+    - name: Verify contents of sudoers file
+      command: cat "{{ sudoers_path }}"
+      register: sudoers_file_content
+
+    - name: Debug sudoers file content
+      debug:
+        msg: "{{ sudoers_file_content.stdout }}"

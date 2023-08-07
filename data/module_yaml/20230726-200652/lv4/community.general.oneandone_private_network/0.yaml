@@ -1,0 +1,51 @@
+---
+- name: Configure private network
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    # Define the network details
+    api_url: "https://api.1and1.com/v1"
+    auth_token: "YOUR_AUTH_TOKEN"
+    datacenter: "datacenter"
+    private_network: "private_network_name"
+    network_address: "10.1.1.0"
+    subnet_mask: "255.255.255.0"
+    description: "Private network description"
+    add_members:
+      - ubuntu1
+      - alpine1
+      - centos1
+      - redhat1
+    remove_members:
+      - centos1
+
+  tasks:
+    - name: Configure private network
+      community.general.oneandone_private_network:
+        api_url: "{{ api_url }}"
+        auth_token: "{{ auth_token }}"
+        datacenter: "{{ datacenter }}"
+        private_network: "{{ private_network }}"
+        network_address: "{{ network_address }}"
+        subnet_mask: "{{ subnet_mask }}"
+        description: "{{ description }}"
+        add_members: "{{ add_members }}"
+        remove_members: "{{ remove_members }}"
+        state: present
+        wait: true
+        wait_interval: 5
+        wait_timeout: 300
+      register: result
+
+    - name: Show debug output
+      debug:
+        var: result
+
+    - name: Generate random MAC addresses
+      set_fact:
+        random_mac: "{{ '%02x%02x%02x%02x%02x%02x' | format(range(256)|random, range(256)|random, range(256)|random, range(256)|random, range(256)|random, range(256)|random) }}"
+
+    - name: Trigger a type-related bug
+      debug:
+        msg: "{{ random_mac }}"

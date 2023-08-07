@@ -1,0 +1,34 @@
+---
+- name: Upload files to Cisco FTD
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Upload files
+      community.network.ftd_file_upload:
+        file_to_upload: "{{ item }}"
+        operation: "{{ operation }}"
+        register_as: "{{ register_as }}"
+        port: "{{ port }}"
+      loop:
+        - file1.txt
+        - file2.txt
+      loop_control:
+        index_var: loop_index
+      register: result
+      ignore_errors: true
+
+    - name: Debug file upload output
+      debug:
+        var: result
+
+    - name: Check for failed uploads
+      fail:
+        msg: "{{ item.file_to_upload }} failed to upload"
+      loop: "{{ result.results }}"
+      when: item.failed
+
+    - name: Check for successful uploads
+      debug:
+        msg: "{{ item.item }} uploaded successfully"
+      loop: "{{ result.results }}"
+      when: not item.failed

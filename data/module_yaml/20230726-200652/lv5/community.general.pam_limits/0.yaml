@@ -1,0 +1,51 @@
+---
+- name: Test Ansible Latent Type-Related Bugs in community.general.pam_limits module
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Set default values
+      set_fact:
+        backup: false
+        dest: "/etc/security/limits.d/ansible-limits.conf"
+        domain: "ansible"
+        limit_item: "{{ _random_limit_item }}"
+        limit_type: "{{ _random_limit_type }}"
+        comment: "Ansible test"
+        use_max: true
+        use_min: false
+        value: "{{ _random_value }}"
+
+    - name: Generate random limit_item
+      set_fact:
+        _random_limit_item: "{{ ['nofile', 'nproc'] | random }}"
+      run_once: true
+
+    - name: Generate random limit_type
+      set_fact:
+        _random_limit_type: "{{ ['soft', 'hard'] | random }}"
+      run_once: true
+
+    - name: Generate random value
+      set_fact:
+        _random_value: "{{ range(100,1000) | random }}"
+      run_once: true
+
+    - name: Configure PAM limits
+      community.general.pam_limits:
+        backup: "{{ backup }}"
+        comment: "{{ comment }}"
+        dest: "{{ dest }}"
+        domain: "{{ domain }}"
+        limit_item: "{{ limit_item }}"
+        limit_type: "{{ limit_type }}"
+        use_max: "{{ use_max }}"
+        use_min: "{{ use_min }}"
+        value: "{{ value }}"
+
+    - name: Verify limits configuration
+      shell: "cat {{ dest }}"
+      register: limits_config
+
+    - name: Debug limits configuration
+      debug:
+        var: limits_config.stdout_lines

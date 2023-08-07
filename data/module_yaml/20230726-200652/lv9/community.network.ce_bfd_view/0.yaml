@@ -1,0 +1,43 @@
+- name: Test playbook for community.network.ce_bfd_view module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    bfd_views:
+      - session_name: bfd-view-1
+        admin_down: true
+        description: "BFD Session View 1"
+        detect_multi: 5
+        local_discr: 100
+        min_rx_interval: 1000
+        min_tx_interval: 1000
+        remote_discr: 200
+        tos_exp: 4
+        wtr_interval: 3000
+      - session_name: bfd-view-2
+        admin_down: false
+        description: "BFD Session View 2"
+        detect_multi: 10
+        local_discr: 200
+        min_rx_interval: 2000
+        min_tx_interval: 2000
+        remote_discr: 300
+        tos_exp: 7
+        wtr_interval: 5000
+
+  tasks:
+    - name: Generate random IP addresses
+      vars:
+        bfd_views_with_ips: "{{ bfd_views | random_ip_addresses(start_ip='10.0.0.0', count=2) }}"
+      debug:
+        var: bfd_views_with_ips
+
+    - name: Print BFD session views with IP addresses
+      debug:
+        var: bfd_views_with_ips
+
+    - name: Configure BFD session views
+      community.network.ce_bfd_view:
+        provider: "{{ network_provider }}"
+        bfd_views: "{{ bfd_views_with_ips }}"
+        state: present

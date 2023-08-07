@@ -1,0 +1,39 @@
+- name: Configure LVM and NFS
+  hosts: all
+  gather_facts: false
+  
+  tasks:
+    - name: Create NFS mount directory
+      file:
+        path: /mnt/nfs
+        state: directory
+      become: true
+      become_user: root
+
+    - name: Configure LVM
+      community.general.aix_filesystem:
+        vg: lvm_volgroup
+        lv: lvm_logicalvolume
+        size: 1G
+        state: present
+      become: true
+      become_user: root
+
+    - name: Mount LVM volume
+      community.general.aix_filesystem:
+        vg: lvm_volgroup
+        lv: lvm_logicalvolume
+        mount_point: /mnt/lvm
+        fs_type: ext4
+        state: mounted
+      become: true
+      become_user: root
+
+    - name: Configure NFS
+      community.general.aix_filesystem:
+        nfs_server: 10.1.1.10
+        mount_point: /mnt/nfs
+        state: mounted
+        auto_mount: false
+      become: true
+      become_user: root

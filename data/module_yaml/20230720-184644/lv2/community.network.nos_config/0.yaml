@@ -1,0 +1,42 @@
+---
+- name: Ansible Latent Type-Related Bug Finder
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Install required dependencies
+      package:
+        name: python3-pip
+        state: present
+
+    - name: Install ansible
+      pip:
+        name: ansible
+        state: present
+        executable: pip3
+
+    - name: Configure inventory
+      copy:
+        content: |
+          [network-devices]
+          localhost ansible_python_interpreter=/usr/bin/python3
+        dest: inventory.ini
+
+    - name: Generate test case
+      hosts: network-devices
+      gather_facts: false
+
+      tasks:
+        - name: Configure Extreme Networks NOS
+          community.network.nos_config:
+            backup: "{{ backup | default(true) | bool }}"
+            backup_options: "{{ backup_options }}"
+            intended_config: "config.txt"
+            lines: "{{
+              [
+                'command1',
+                'command2'
+              ] | map('encode', 'utf-8') | list }}"
+            parents: "{{ parents }}"
+            running_config: 1234
+            src: null

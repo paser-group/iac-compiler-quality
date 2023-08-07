@@ -1,0 +1,30 @@
+---
+- name: Unveil latent type-related bugs in Ansible
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Generate random MAC addresses
+      ansible.builtin.set_fact:
+        mac_address: "{{ '%012x' | format(ansible_random.randint(0, 281474976710655)) }}"
+
+    - name: Install profitbricks module
+      ansible.builtin.pip:
+        name: "profitbricks-sdk"
+        state: present
+
+    - name: Create ProfitBricks volume attachment
+      community.general.profitbricks_volume_attachments:
+        datacenter: "{{ datacenter }}"
+        server: "{{ server }}"
+        state: "{{ state }}"
+        subscription_password: "{{ subscription_password }}"
+        subscription_user: "{{ subscription_user }}"
+        volume: "{{ volume }}"
+        wait: "{{ wait }}"
+        wait_timeout: "{{ wait_timeout }}"
+        nic_mac_address: "{{ mac_address }}"
+      register: result
+
+    - debug:
+        var: result

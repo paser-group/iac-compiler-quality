@@ -1,0 +1,37 @@
+---
+- name: Test playbook for ansible.posix.acl module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create test file
+      file:
+        path: "/tmp/test_file.txt"
+        state: touch
+
+    - name: Set ACL permissions using ansible.posix.acl module
+      ansible.posix.acl:
+        entity: "{{ item.entity }}"
+        entry: "{{ item.entry }}"
+        etype: "{{ item.etype }}"
+        follow: "{{ item.follow }}"
+        path: "/tmp/test_file.txt"
+        permissions: "{{ item.permissions }}"
+        recalculate_mask: "{{ item.recalculate_mask }}"
+        recursive: "{{ item.recursive }}"
+        state: "{{ item.state }}"
+        use_nfsv4_acls: "{{ item.use_nfsv4_acls }}"
+      loop:
+        - { entity: 'user', entry: 'testuser', etype: 'user', follow: true, path: '/tmp/test_file.txt', permissions: 'rwx', recalculate_mask: 'yes', recursive: true, state: 'present', use_nfsv4_acls: true }
+        - { entity: 'group', entry: 'testgroup', etype: 'group', follow: true, path: '/tmp/test_file.txt', permissions: 'r-x', recalculate_mask: 'no', recursive: false, state: 'present', use_nfsv4_acls: false }
+        - { entity: 'other', entry: 'everyone', etype: 'other', follow: true, path: '/tmp/test_file.txt', permissions: 'r--', recalculate_mask: 'yes', recursive: true, state: 'present', use_nfsv4_acls: true }
+
+    - name: Get ACL permissions using ansible.posix.acl module
+      ansible.posix.acl:
+        path: "/tmp/test_file.txt"
+        state: 'list'
+      register: acl_result
+
+    - name: Print ACL results
+      debug:
+        var: acl_result

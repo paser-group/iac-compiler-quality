@@ -1,0 +1,62 @@
+---
+- name: Test playbook for 'community.general.gitlab_group_variable'
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create GitLab group variables
+      community.general.gitlab_group_variable:
+        api_url: "https://gitlab.example.com/api/v4"
+        api_token: "your_api_token"
+        api_username: "your_username"
+        group: "your_group"
+        variables:
+          - key: "var1"
+            value: 10
+          - key: "var2"
+            value: "20"
+          - key: "var3"
+            value: "{{ 10 / 0 }}"  # To trigger a division-based error
+        state: present
+      register: result_create
+
+    - name: Debug create result
+      debug:
+        var: result_create
+
+    - name: Update GitLab group variables
+      community.general.gitlab_group_variable:
+        api_url: "https://gitlab.example.com/api/v4"
+        api_token: "your_api_token"
+        api_username: "your_username"
+        group: "your_group"
+        variables:
+          - key: "var1"
+            value: 100
+          - key: "var2"
+            value: "{{ '20' + '30' }}"  # To trigger a concatenation error
+          - key: "var3"
+            value: 30
+        state: present
+      register: result_update
+
+    - name: Debug update result
+      debug:
+        var: result_update
+
+    - name: Delete GitLab group variables
+      community.general.gitlab_group_variable:
+        api_url: "https://gitlab.example.com/api/v4"
+        api_token: "your_api_token"
+        api_username: "your_username"
+        group: "your_group"
+        variables:
+          - key: "var1"
+          - key: "var2"
+          - key: "var3"
+        state: absent
+      register: result_delete
+
+    - name: Debug delete result
+      debug:
+        var: result_delete

@@ -1,0 +1,42 @@
+---
+- name: Test playbook for 'community.general.zfs_delegate_admin'
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Install 'community.general.zfs_delegate_admin' collection
+      command: ansible-galaxy collection install community.general
+
+    - name: Create random port numbers
+      set_fact:
+        random_ports:
+          - "{{ 10000 | random }}"
+          - "{{ 10000 | random }}"
+          - "{{ 10000 | random }}"
+
+    - name: Test the 'community.general.zfs_delegate_admin' module
+      community.general.zfs_delegate_admin:
+        name: delegate1
+        permissions:
+          - "send,receive"
+          - "create,receive"
+        users:
+          - user1
+          - user2
+        groups:
+          - group1
+        state: present
+        recursive: true
+        descendents: true
+        local: true
+        everyone: true
+        port_settings:
+          - port: "{{ random_ports[0] }}"
+            protocol: tcp
+          - port: "{{ random_ports[1] }}"
+            protocol: udp
+      register: delegate_admin_result
+
+    - name: Debug the output
+      debug:
+        var: delegate_admin_result

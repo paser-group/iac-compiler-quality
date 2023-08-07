@@ -1,0 +1,40 @@
+---
+- name: Test Ansible module for swupd
+  hosts: localhost
+  gather_facts: false
+  
+  tasks:
+    - name: Install swupd module dependencies
+      package:
+        name: swupd-client
+        state: present
+
+    - name: Update swupd bundles
+      community.general.swupd:
+        name: "test-bundle"
+        state: "{{ item }}"
+      loop:
+        - absent
+        - present
+        - absent
+        - present
+        - absent
+
+    - name: Generate strings with varied encodings
+      community.general.swupd:
+        name: "test-bundle"
+        state: already_installed
+        format: "{{ encoding }}"
+      vars:
+        encoding: "{{ item }}"
+      loop: "{{ ['utf-8', 'ascii', 'latin-1'] }}"
+
+    - name: Check swupd bundles status
+      community.general.swupd:
+        name: "test-bundle"
+        state: status
+      register: bundle_status
+
+    - name: Show bundle status
+      debug:
+        var: bundle_status

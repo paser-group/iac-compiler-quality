@@ -1,0 +1,30 @@
+---
+- name: Manage protocol properties on Solaris network interfaces
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Set protocol property
+      community.network.ipadm_prop:
+        property: "{{ item.property }}"
+        protocol: "{{ item.protocol }}"
+        state: "{{ item.state }}"
+        temporary: "{{ item.temporary }}"
+        value: "{{ item.value }}"
+        interface: "{{ item.interface }}"
+      with_items:
+        - { property: None, protocol: 'tcp', state: 'present', temporary: true, value: None, interface: 'net0' }
+        - { property: 'max_bw', protocol: 'tcp', state: 'present', temporary: true, value: 1000, interface: 'net0' }
+        - { property: 'max_conn', protocol: None, state: 'present', temporary: false, value: 500, interface: 'net0' }
+        - { property: 'connection_timeout', protocol: 'icmp', state: None, temporary: false, value: 60, interface: 'net0' }
+
+      # Add more test cases based on the heuristic to find hidden type-related bugs
+
+    - name: Debug interface properties
+      community.network.ipadm_prop:
+        interface: 'net0'
+      register: interface_props
+
+    - name: Display interface properties
+      debug:
+        var: interface_props

@@ -1,0 +1,57 @@
+---
+- name: Test ansible.builtin.git module
+  hosts: localhost
+  gather_facts: false
+  vars:
+    repo_url: "https://github.com/sample-repo.git"
+    dest_dir: "/tmp/sample-repo"
+    version: "v1.0"
+    depth: 1
+    gpg_whitelist:
+      - "GPG_KEY_ID"
+    ssh_opts: "-o StrictHostKeyChecking=no"
+    umask: "0022"
+
+  tasks:
+    - name: Clone repository
+      ansible.builtin.git:
+        accept_hostkey: yes
+        clone: yes
+        depth: "{{ depth }}"
+        dest: "{{ dest_dir }}"
+        gpg_whitelist: "{{ gpg_whitelist }}"
+        ssh_opts: "{{ ssh_opts }}"
+        umask: "{{ umask }}"
+        version: "{{ version }}"
+        repo: "{{ repo_url }}"
+      register: git_result
+
+    - name: Display git output
+      debug:
+        var: git_result
+
+    - name: Update repository
+      ansible.builtin.git:
+        update: yes
+        repo: "{{ repo_url }}"
+        version: "{{ version }}"
+        dest: "{{ dest_dir }}"
+        ssh_opts: "{{ ssh_opts }}"
+      register: git_update_result
+
+    - name: Display git update output
+      debug:
+        var: git_update_result
+
+    - name: Validate repository
+      ansible.builtin.git:
+        verify_commit: yes
+        repo: "{{ repo_url }}"
+        version: "{{ version }}"
+        dest: "{{ dest_dir }}"
+        ssh_opts: "{{ ssh_opts }}"
+      register: git_verify_result
+
+    - name: Display git verify output
+      debug:
+        var: git_verify_result

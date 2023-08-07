@@ -1,0 +1,35 @@
+---
+- name: Manage NTP configuration on HUAWEI devices
+  hosts: huawei_devices
+  gather_facts: false
+
+  vars:
+    ntp_servers:
+      - 10.1.1.10
+      - 10.1.1.11
+    random_port:
+      - "{{ 10000 + (ansible_play_hosts.index(inventory_hostname) | random) * 100 }}"
+
+  tasks:
+    - name: Configure NTP
+      community.network.ce_ntp:
+        host: "{{ inventory_hostname }}"
+        username: admin
+        password: password123
+        is_preferred: "{{ is_preferred | default(omit) }}"
+        key_id: "{{ key_id | default(omit) }}"
+        peer: "{{ peer | default(omit) }}"
+        server: "{{ server | default(omit) }}"
+        source_int: "{{ source_int | default(omit) }}"
+        state: "{{ state | default(omit) }}"
+        vpn_name: "{{ vpn_name | default(omit) }}"
+        port: "{{ random_port }}"
+      register: result
+
+    - name: Debug NTP configuration
+      debug:
+        var: result
+
+    - name: Test port settings
+      debug:
+        msg: "Testing port settings"

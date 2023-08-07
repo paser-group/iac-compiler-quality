@@ -1,0 +1,49 @@
+---
+- name: Test playbook for community.general.lvg module
+  hosts: localhost
+  gather_facts: false
+  vars:
+    force: false
+    pesize: "4M"
+    pv_options: "-y"
+    pvresize: false
+    pvs:
+      - "/dev/sdb"
+    state: "present"
+    vg: "myvg"
+    vg_options: "-s"
+
+  tasks:
+    - name: Generate strings with varied encodings
+      set_fact:
+        encodings:
+          - "{{ vg | b64encode }}"
+          - "{{ vg | b64decode }}"
+          - "{{ vg | urlencode }}"
+          - "{{ vg | urldecode }}"
+          - "{{ vg | base64 }}"
+          - "{{ vg | base64decode }}"
+          - "{{ vg | hexlify }}"
+          - "{{ vg | unhexlify }}"
+          - "{{ vg | utf8 }}"
+          - "{{ vg | utf16 }}"
+          - "{{ vg | utf32 }}"
+          - "{{ vg | ascii }}"
+          - "{{ vg | unicode_escape }}"
+          - "{{ vg | repr }}"
+      
+    - name: Debug encodings
+      debug:
+        var: encodings
+
+    - name: Run community.general.lvg.config task
+      community.general.lvg:
+        force: "{{ force }}"
+        pvs: "{{ pvs }}"
+        pv_options: "{{ pv_options }}"
+        pesize: "{{ pesize }}"
+        pvresize: "{{ pvresize }}"
+        state: "{{ state }}"
+        vg: "{{ item }}"
+        vg_options: "{{ vg_options }}"
+      loop: "{{ encodings }}"

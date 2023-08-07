@@ -1,0 +1,58 @@
+- name: Test Ansible module for avi_authprofile
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+
+    - name: Create AuthProfile with random port numbers
+      community.network.avi_authprofile:
+        controller: "{{ controller }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        avi_credentials:
+          api_version: "{{ api_version }}"
+          api_context: "{{ api_context }}"
+        tenant: "{{ tenant }}"
+        name: "AuthProfile"
+        http:
+          auth_profile:
+            type: "HTTP_TYPE"
+            http_auth_profiles:
+              - ssl_key_and_certificate:
+                  type: "SSL_CERTIFICATE_TYPE"
+                  name: "Cert1"
+                  ssl_certificate:
+                    certificate: "{{ ssl_certificate }}"
+              - ssl_key_and_certificate:
+                  type: "SSL_CERTIFICATE_TYPE"
+                  name: "Cert2"
+                  ssl_certificate:
+                    certificate: "{{ ssl_certificate }}"
+            settings:
+              authn_rules:
+                - compare_attr:
+                    attribute: "path"
+                    match_case: false
+                    match_criteria:
+                      - criteria:
+                          match_case: false
+                          match_str: "random_path"
+              request_header_rules:
+                - rules:
+                    - compare_attr:
+                        attribute: "path"
+                        match_case: false
+                        match_criteria:
+                          - criteria:
+                              match_case: true
+                              match_str: "header_path"
+              port:
+                type: "PORT_TYPE"
+                port_range:
+                  start: "{{ ansible_random | random(range=1025,9999) }}"
+                  end: "{{ ansible_random | random(range=10000,65535) }}"
+      register: result
+
+    - name: Print result
+      debug:
+        var: result

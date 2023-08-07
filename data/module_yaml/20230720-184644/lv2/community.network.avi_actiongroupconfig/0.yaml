@@ -1,0 +1,84 @@
+- name: Test playbook for community.network.avi_actiongroupconfig module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    inventory_file: inventory.ini
+    ansible_connection: docker
+
+  tasks:
+    - name: Set up Docker containers
+      docker_container:
+        name: "{{ item.name }}"
+        image: "{{ item.image }}"
+        state: started
+      with_items:
+        - { name: "ubuntu1", image: "ubuntu" }
+        - { name: "alpine1", image: "alpine" }
+        - { name: "centos1", image: "centos" }
+        - { name: "redhat1", image: "redhat" }
+
+    - name: Create inventory file
+      file:
+        path: "{{ inventory_file }}"
+        state: touch
+
+    - name: Add hosts to inventory file
+      lineinfile:
+        path: "{{ inventory_file }}"
+        line: "{{ item.name }} ansible_host={{ item.ip }}"
+        create: yes
+      with_items:
+        - { name: "ubuntu1", ip: "10.1.1.1" }
+        - { name: "alpine1", ip: "10.1.1.2" }
+        - { name: "centos1", ip: "10.1.1.3" }
+        - { name: "redhat1", ip: "10.1.1.4" }
+
+    - name: Add Docker network
+      docker_network:
+        name: node-net
+        state: present
+        ipam_config:
+          - subnet: 10.1.1.0/24
+            gateway: 10.1.1.254
+
+    - name: Connect Docker containers to network
+      docker_network_connect:
+        name: node-net
+        containers: "{{ item.name }}"
+      with_items:
+        - { name: "ubuntu1" }
+        - { name: "alpine1" }
+        - { name: "centos1" }
+        - { name: "redhat1" }
+
+    - name: Install required modules
+      pip:
+        name:
+          - ansible
+          - aviator
+          - ansible-lint
+
+    - name: Test community.network.avi_actiongroupconfig module
+      avi_actiongroupconfig:
+        controller: "https://{{ ansible_host }}"
+        username: b'admin'
+        password: b'admin'
+        tenant: "admin"
+        name: "Test Group"
+        tenant_ref: "admin"
+        autoscale_trigger_notification: true
+        api_version: "17.2.12"
+        svm_cluster_uuid: "92b31f86-2528-44fd-a47d-144f3a0c7c4f"
+        state: "present"
+        api_context:
+          - api_version: "17.2.12"
+            avi_credentials:
+              - api_version: "17.2.12"
+                username: b'admin'
+                password: b'admin'
+                tenant_ref: "admin"
+                tenant_uuid: "06efe291-9d87-43e0-90a4-b5f8d6d40627"
+            tenant_ref: "admin"
+      delegate_to: "{{ item }}"
+      with_inventory_hostnames: ansible_host

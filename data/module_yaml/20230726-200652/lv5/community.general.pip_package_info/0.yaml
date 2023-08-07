@@ -1,0 +1,59 @@
+---
+- name: Test playbook for community.general.pip_package_info
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Install required Python packages
+      ansible.builtin.pip:
+        name:
+          - docker
+          - ansible
+          - community.general
+        state: latest
+
+    - name: Set up Docker network
+      community.general.docker_network:
+        name: node-net
+        subnet: 10.1.1.0/24
+        gateway: 10.1.1.254
+
+    - name: Create Docker containers
+      community.general.docker_container:
+        name: "{{ item.name }}"
+        image: "{{ item.image }}"
+        state: started
+        networks_cli_compatible: yes
+        networks:
+          - name: node-net
+        ip_address: "{{ item.ip_address }}"
+      loop:
+        - name: ubuntu1
+          image: "ubuntu:latest"
+          ip_address: "10.1.1.1"
+        - name: alpine1
+          image: "alpine:latest"
+          ip_address: "10.1.1.2"
+        - name: centos1
+          image: "centos:latest"
+          ip_address: "10.1.1.3"
+        - name: redhat1
+          image: "redhat:latest"
+          ip_address: "10.1.1.4"
+
+    - name: Debug information
+      debug:
+        msg: "The Docker containers have been successfully created."
+
+    - name: Get pip package information on Docker nodes
+      community.general.pip_package_info:
+        client: "{{ item.client }}"
+      loop:
+        - client: "{{ groups['ubuntu'] | random }}"
+        - client: "{{ groups['alpine'] | random }}"
+        - client: "{{ groups['centos'] | random }}"
+        - client: "{{ groups['redhat'] | random }}"
+
+    - name: Debug information
+      debug:
+        msg: "The pip package information has been retrieved successfully."

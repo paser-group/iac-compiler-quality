@@ -1,0 +1,71 @@
+- name: Test playbook for community.network.avi_useraccount module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    avi_credentials:
+      controller: "{{ controller }}"
+      username: "{{ username }}"
+      password: "{{ password }}"
+      tenant: "{{ tenant }}"
+
+    api_context:
+      tenant_uuid: "{{ tenant_uuid }}"
+      api_version: "{{ api_version }}"
+      avi_disable_session_cache_as_fact: False
+
+  tasks:
+    - name: Create user account
+      community.network.avi_useraccount:
+        avi_credentials: "{{ avi_credentials }}"
+        api_context: "{{ api_context }}"
+        state: present
+        user:
+          username: "{{ username }}"
+          password: "{{ password }}"
+          force_change: null
+          old_password: null
+
+    - name: Update user password
+      community.network.avi_useraccount:
+        avi_credentials: "{{ avi_credentials }}"
+        api_context: "{{ api_context }}"
+        state: present
+        user:
+          username: "{{ username }}"
+          password: "{{ password }}"
+          force_change: true
+          old_password: "{{ old_password }}"
+
+    - name: Delete user account
+      community.network.avi_useraccount:
+        avi_credentials: "{{ avi_credentials }}"
+        api_context: "{{ api_context }}"
+        state: absent
+        user:
+          username: "{{ username }}"
+
+# Test case to trigger a latent type-related bug
+- name: Test with incorrect data type for username
+  hosts: localhost
+  gather_facts: false
+  vars:
+    avi_credentials:
+      controller: "{{ controller }}"
+      username: "{{ username }}"
+      password: "{{ password }}"
+    api_context:
+      tenant_uuid: "{{ tenant_uuid }}"
+      api_version: "{{ api_version }}"
+      avi_disable_session_cache_as_fact: False
+  tasks:
+    - name: Create user account with different data type for username
+      community.network.avi_useraccount:
+        avi_credentials: "{{ avi_credentials }}"
+        api_context: "{{ api_context }}"
+        state: present
+        user:
+          username: 12345  # Incorrect data type
+          password: "{{ password }}"
+          force_change: null
+          old_password: null

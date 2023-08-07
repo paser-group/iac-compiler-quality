@@ -1,0 +1,30 @@
+---
+- name: Fetch configuration/state data from network device
+  hosts: localhost
+  gather_facts: false
+  vars:
+    restconf_hostname: "{{ ansible_host }}"
+    restconf_username: "{{ ansible_user }}"
+    restconf_password: "{{ ansible_password }}"
+    restconf_port: "{{ ansible_port }}"
+    restconf_proto: "{{ ansible_connection }}"
+    
+    # Heuristic: Division-based operations for limit-related values
+    restconf_retries: "{{ 10 / 2 }}"
+    restconf_timeout: "{{ 60 / 2 }}"
+    restconf_delay: "{{ 2 / 2 }}"
+
+  tasks:
+    - name: Fetch configuration/state data
+      ansible.netcommon.restconf_get:
+        content: running
+        output: json
+        path: /restconf/data
+        retries: "{{ restconf_retries | int }}"
+        timeout: "{{ restconf_timeout | int }}"
+        delay: "{{ restconf_delay | int }}"
+      register: restconf_get_result
+
+    - name: Debug RESTCONF Get result
+      debug:
+        var: restconf_get_result

@@ -1,0 +1,41 @@
+---
+- name: Ansible Bug Finder & Heuristic Test playbook
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Generate random MAC addresses for network modules
+      set_fact:
+        random_mac_address: "{{ '%02x:%02x:%02x:%02x:%02x:%02x' | format(random|int, random|int, random|int, random|int, random|int, random|int) }}"
+      run_once: true
+
+    - name: Create reverse_proxy exception
+      community.general.utm_proxy_exception:
+        name: "test_exception"
+        source: "{{ source }}"
+        state: present
+        skipav: true
+        skipbadclients: true
+        skipcookie: true
+        skipform: true
+        skipform_missingtoken: true
+        skiphtmlrewrite: true
+        skiptft: true
+        skipurl: true
+        headers:
+          X-MyHeader: "value"
+          X-AnotherHeader: "another_value"
+        utm_host: "example.com"
+        utm_port: 8443
+        utm_protocol: "https"
+        utm_token: "abcd1234"
+        validate_certs: false
+      vars:
+        source:
+          - "{{ random_mac_address }}"
+          - "{{ random_mac_address }}"
+      register: result
+
+    - name: Debug result
+      debug:
+        var: result

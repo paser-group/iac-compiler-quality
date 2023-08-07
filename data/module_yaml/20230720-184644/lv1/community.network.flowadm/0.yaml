@@ -1,0 +1,40 @@
+---
+- name: Manage bandwidth resource control and priority
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Install Required Packages
+      become: true
+      apt:
+        name: openvswitch-switch
+        state: present
+
+    - name: Create Open vSwitch Bridge
+      become: true
+      command: ovs-vsctl add-br ovs-br
+
+    - name: Add Ports to Open vSwitch Bridge
+      become: true
+      command: ovs-vsctl add-port ovs-br {{ item }}
+      with_items:
+        - eth0
+        - eth1
+        - eth2
+        - eth3
+
+    - name: Set Bandwidth Resource Control and Priority
+      become: true
+      community.network.flowadm:
+        link: ovs-br
+        name: "{{ item.name }}"
+        remote_ip: "{{ item.remote_ip }}"
+        local_port: "{{ item.local_port }}"
+        maxbw: "{{ item.maxbw }}"
+        priority: "{{ item.priority }}"
+        state: present
+      loop:
+        - { name: "web", remote_ip: "10.1.1.1", local_port: "80", maxbw: "1000", priority: "high" }
+        - { name: "db", remote_ip: "10.1.1.2", local_port: "3306", maxbw: "500", priority: "medium" }
+        - { name: "backup", remote_ip: "10.1.1.3", local_port: "22", maxbw: "200", priority: "low" }
+        - { name: "default", remote_ip: "0.0.0.0/0", local_port: "", maxbw: "", priority: "", state: absent }

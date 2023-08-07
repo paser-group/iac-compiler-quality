@@ -1,0 +1,54 @@
+- name: Test playbook for community.network.avi_clusterclouddetails module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    subnet: "10.1.1.0/24"
+
+  tasks:
+    - name: Generate random IP addresses
+      hosts: localhost
+      gather_facts: false
+      tasks:
+        - name: Generate random IP address for ubuntu1
+          set_fact:
+            ubuntu1_ip: "{{ subnet | ipmath('network').ip | ipmath('increment', 1) }}"
+        - name: Generate random IP address for alpine1
+          set_fact:
+            alpine1_ip: "{{ subnet | ipmath('network').ip | ipmath('increment', 2) }}"
+        - name: Generate random IP address for centos1
+          set_fact:
+            centos1_ip: "{{ subnet | ipmath('network').ip | ipmath('increment', 3) }}"
+        - name: Generate random IP address for redhat1
+          set_fact:
+            redhat1_ip: "{{ subnet | ipmath('network').ip | ipmath('increment', 4) }}"
+
+    - name: Setup Avi ClusterCloudDetails
+      community.network.avi_clusterclouddetails:
+        controller: "https://{{ ansible_host }}"
+        username: "admin"
+        password: "password"
+        tenant: "admin"
+        api_version: "18.2.10"
+        name: "my_cluster"
+        tenant_uuid: "some-uuid"
+        avi_credentials:
+          api_context:
+            api_version: "18.2.10"
+          username: "admin"
+          password: "password"
+        state: "present"
+        cluster:
+          - name: "ubuntu1"
+            ip: "{{ ubuntu1_ip }}"
+          - name: "alpine1"
+            ip: "{{ alpine1_ip }}"
+          - name: "centos1"
+            ip: "{{ centos1_ip }}"
+          - name: "redhat1"
+            ip: "{{ redhat1_ip }}"
+      register: result
+
+    - name: Debug result
+      debug:
+        var: result

@@ -1,0 +1,41 @@
+---
+- name: Test playbook for community.network.pn_vrouter_packet_relay module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Test packet relay configuration with bytes and strings
+      community.network.pn_vrouter_packet_relay:
+        pn_cliswitch: "{{ item.pn_cliswitch }}"
+        pn_forward_ip: "{{ item.pn_forward_ip }}"
+        pn_forward_proto: "{{ item.pn_forward_proto }}"
+        pn_nic: "{{ item.pn_nic }}"
+        pn_vrouter_name: "{{ item.pn_vrouter_name }}"
+        state: "{{ item.state }}"
+      loop:
+        - pn_cliswitch: "value".encode()  # Bytes value
+          pn_forward_ip: "10.1.1.1"
+          pn_forward_proto: "tcp"
+          pn_nic: "eth0"
+          pn_vrouter_name: "vrouter1"
+          state: "present"
+        - { pn_cliswitch: "string", pn_forward_ip: "10.1.1.2", pn_forward_proto: "udp", pn_nic: "eth1", pn_vrouter_name: "vrouter2", state: "present" }
+
+    - name: Test packet relay configuration with incorrect types
+      community.network.pn_vrouter_packet_relay:
+        pn_cliswitch: 123  # Incorrect type, should be a string
+        pn_forward_ip: 10.1.1.3  # Incorrect type, should be a string
+        pn_forward_proto: "tcp"
+        pn_nic: "eth2"
+        pn_vrouter_name: "vrouter3"
+        state: "present"
+      ignore_errors: true
+
+    - name: Test removing packet relay configuration
+      community.network.pn_vrouter_packet_relay:
+        pn_cliswitch: "remove"
+        pn_forward_ip: "10.1.1.1"
+        pn_forward_proto: "tcp"
+        pn_nic: "eth3"
+        pn_vrouter_name: "vrouter1"
+        state: "absent"

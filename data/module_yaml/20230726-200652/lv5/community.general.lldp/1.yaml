@@ -1,0 +1,31 @@
+- name: Test community.general.lldp module - Random port numbers
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Install required dependencies
+      command: "{{ item }}"
+      loop:
+        - apt-get update
+        - apt-get install -y lldpd
+
+    - name: Enable LLDP on network interfaces
+      command: lldpcli configure lldp portidsubtype interface-name
+
+    - name: Generate random port numbers
+      ansible.builtin.set_fact:
+        random_ports: "{{ random_port_numbers }}"
+
+    - name: Gather LLDP information with random port numbers
+      community.general.lldp:
+          interfaces: "{{ item }}"
+          port_settings:
+            - "{{ random_ports[item] }}"
+      loop:
+          - eth0
+          - eth1
+      register: lldp_info
+
+    - name: Display LLDP information with random port numbers
+      debug:
+          var: lldp_info

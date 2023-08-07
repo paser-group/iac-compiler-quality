@@ -1,0 +1,32 @@
+---
+- name: Test playbook to uncover type-related bugs in Ansible module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Generate strings with varied encodings
+      set_fact:
+        encodings:
+          - "{{ inventory_hostname | b64encode }}"
+          - "{{ inventory_hostname | b64decode }}"
+          - "{{ inventory_hostname | to_uuid }}"
+          - "{{ inventory_hostname | int }}"
+          # Add more encoding methods as needed
+
+    - name: Test community.general.nomad_job_info module
+      community.general.nomad_job_info:
+        host: "{{ inventory_hostname }}"
+        validate_certs: "{{ hostvars[inventory_hostname]['validate_certs'] }}"
+        token: "{{ hostvars[inventory_hostname]['token'] }}"
+        timeout: "{{ hostvars[inventory_hostname]['timeout'] }}"
+        use_ssl: "{{ hostvars[inventory_hostname]['use_ssl'] }}"
+        client_cert: "{{ hostvars[inventory_hostname]['client_cert'] }}"
+        client_key: "{{ hostvars[inventory_hostname]['client_key'] }}"
+        namespace: "{{ hostvars[inventory_hostname]['namespace'] }}"
+        name: "{{ hostvars[inventory_hostname]['name'] }}"
+      register: result_nomad_job_info
+      loop: "{{ encodings }}"
+      
+    - name: Debug nomad_job_info results
+      debug:
+        var: result_nomad_job_info

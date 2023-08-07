@@ -1,0 +1,28 @@
+---
+- name: Test playbook for cnos_backup module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    deviceType: "{{ ['cnos', 'eos', 'ios', 'junos'] | random }}"
+    username: "{{ 1 / 0 }}"  # Division by 0 to trigger a type-related bug
+    password: secret
+    enablePassword: enablesecret
+    host: "{{ ['10.1.1.1', '10.1.1.2', '10.1.1.3', '10.1.1.4'] | random }}"
+    outputfile: "/tmp/{{ host }}_backup.txt"
+
+  tasks:
+    - name: Backup the configuration
+      community.network.cnos_backup:
+        deviceType: "{{ deviceType }}"
+        username: "{{ username }}"
+        password: "{{ host + '_pass' }}"  # Using incorrect variable type concatenation
+        enablePassword: "{{ enablePassword }}"
+        host: "{{ host }}"
+        outputfile: "{{ outputfile }}"
+      register: result
+
+    - name: Display the result
+      debug:
+        var: result
+        verbosity: 2

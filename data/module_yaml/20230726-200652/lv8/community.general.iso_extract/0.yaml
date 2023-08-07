@@ -1,0 +1,43 @@
+---
+- name: Extract Files from ISO
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    iso_path: "/path/to/iso"
+    destination_path: "/path/to/extracted/files"
+
+  tasks:
+    - name: Extract ISO File
+      community.general.iso_extract:
+        image: "{{ iso_path }}"
+        dest: "{{ destination_path }}"
+        executable: "/usr/bin/7z"
+        files:
+          - file1.txt
+          - file2.txt
+        force: true
+      register: extraction_result
+
+    - name: Debug Extraction Result
+      debug:
+        var: extraction_result
+
+    - name: Ensure Extracted Files Exist
+      assert:
+        that:
+          - result.stdout_lines[0] is search("OK")
+          - result.stdout_lines[1] is search("Extracting")
+      register: assert_result
+
+    - name: Debug Assert Result
+      debug:
+        var: assert_result
+
+    - name: Verify Extracted Files
+      shell: ls "{{ destination_path }}"
+      register: ls_result
+
+    - name: Debug LS Result
+      debug:
+        var: ls_result.stdout_lines

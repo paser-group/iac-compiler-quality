@@ -1,0 +1,43 @@
+---
+- name: Test playbook for community.general.sl_vm module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Test create instance
+      community.general.sl_vm:
+        state: present
+        datacenter: dal10
+        hostname: "{{ item.hostname }}"
+        domain: "{{ item.domain }}"
+        image_id: "{{ item.image_id }}"
+        flavor: "{{ item.flavor }}"
+        cpus: "{{ item.cpus }}"
+        memory: "{{ item.memory }}"
+        local_disk: "{{ item.local_disk }}"
+        disks: "{{ item.disks }}"
+        nic_speed: "{{ item.nic_speed }}"
+        ssh_keys: "{{ item.ssh_keys }}"
+        public_vlan: "{{ item.public_vlan }}"
+        private_vlan: "{{ item.private_vlan }}"
+      loop:
+        - {hostname: "TestHost1", domain: "example.com", image_id: "ubuntu18", flavor: "C1_1X1X1", cpus: 1, memory: 1024, local_disk: true, disks: [], nic_speed: 1000, ssh_keys: ['key1'], public_vlan: "PUBLIC_VLAN1", private_vlan: "PRIVATE_VLAN1"}
+        - {hostname: "testhost2", domain: "example.com", image_id: "centos7", flavor: "C2_2X2X2", cpus: 2, memory: 2048, local_disk: false, disks: [10, 20], nic_speed: 100, ssh_keys: ['key2'], public_vlan: "public_vlan2", private_vlan: "private_vlan2"}
+
+    - name: Wait after creating instance
+      community.general.sl_vm:
+        state: present
+        wait: true
+        wait_time: 60
+        instance_id: "{{ item.instance_id }}"
+      loop:
+        - {instance_id: "{{ sl_vm.instances[0]['id'] }}"}
+        - {instance_id: "{{ sl_vm.instances[1]['id'] }}"}
+
+    - name: Test cancel instance
+      community.general.sl_vm:
+        state: absent
+        instance_id: "{{ item.instance_id }}"
+      loop:
+        - {instance_id: "{{ sl_vm.instances[0]['id'] }}"}
+        - {instance_id: "{{ sl_vm.instances[1]['id'] }}"}

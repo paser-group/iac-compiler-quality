@@ -1,0 +1,34 @@
+- name: Test playbook for Ansible latent bug identification
+  hosts: localhost
+  tasks:
+    - name: Create a ZFS dataset with invalid division-based value
+      community.general.zfs:
+        extra_zfs_properties:
+          quota: "{{ 10/0 }}"  # Trigger division by zero bug
+        name: "tank/dataset1"
+        origin: "tank/snapshot1"
+        state: "present"
+
+    - name: Create a ZFS dataset with valid division-based value
+      community.general.zfs:
+        extra_zfs_properties:
+          quota: "{{ 100/2 }}"  # Valid division-based value
+        name: "tank/dataset2"
+        origin: "tank/snapshot2"
+        state: "present"
+
+    - name: Create a ZFS dataset with invalid division-based value using Jinja2 math filter
+      community.general.zfs:
+        extra_zfs_properties:
+          quota: "{{ 50 | float | divideby(0) }}"  # Trigger division by zero bug using Jinja2 filter
+        name: "tank/dataset3"
+        origin: "tank/snapshot3"
+        state: "present"
+
+    - name: Create a ZFS dataset with valid division-based value using Jinja2 math filter
+      community.general.zfs:
+        extra_zfs_properties:
+          quota: "{{ 200 | float | divideby(4) }}"  # Valid division-based value using Jinja2 filter
+        name: "tank/dataset4"
+        origin: "tank/snapshot4"
+        state: "present"

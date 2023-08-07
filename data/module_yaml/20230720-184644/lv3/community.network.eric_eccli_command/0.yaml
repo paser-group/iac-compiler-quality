@@ -1,0 +1,55 @@
+---
+- name: Run commands on remote devices with community.network.eric_eccli_command module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+  - name: Configure ERIC devices
+    community.network.eric_eccli_command:
+      commands:
+        - configure system extra "bytes_and_strings"
+      interval: 10
+      match: none
+      retries: 3
+      wait_for:
+        - command:
+            - show system info
+          match:
+            - loaded.*
+            - Model.*
+          retries: 5
+          delay: 5
+          interval: 10
+
+    register: configure_output
+
+  - name: Show configured output
+    debug:
+      var: configure_output
+
+  - name: Check for errors
+    fail:
+      msg: "An error occurred during configuration"
+    when: configure_output is failed
+
+  - name: Verify configuration
+    community.network.eric_eccli_command:
+      commands:
+        - show system info
+      interval: 10
+      match: none
+      retries: 3
+      wait_for:
+        - command:
+            - show system info
+          match:
+            - bytes_and_strings
+          retries: 5
+          delay: 5
+          interval: 10
+
+    register: verify_output
+
+  - name: Show verified output
+    debug:
+      var: verify_output

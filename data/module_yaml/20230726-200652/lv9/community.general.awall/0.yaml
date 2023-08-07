@@ -1,0 +1,42 @@
+---
+- name: Test Ansible Awall Module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    node_net_subnet: "10.1.1.0"
+    node_net_gateway: "10.1.1.254"
+    awall_rules:
+      - name: "allow_ssh"
+        state: "present"
+        activate: true
+        source: "10.1.1.0/24"
+        destination: "10.1.1.0/24"
+        protocol: "tcp"
+        ports: "22"
+      - name: "block_http"
+        state: "present"
+        activate: true
+        source: "10.1.1.0/24"
+        destination: "10.1.1.0/24"
+        protocol: "tcp"
+        ports: "80"
+
+  tasks:
+    - name: Configure networking
+      action: "raw ip addr add {{ hostvars[ansible_hostname]['ansible_default_ipv4']['address'] }}/24 dev eth0"
+
+    - name: Set default gateway
+      action: "raw ip route add default via {{ node_net_gateway }} dev eth0"
+
+    - name: Install community.general.awall
+      pip:
+        name: community.general.awall
+        state: present
+
+    - name: Execute awall module
+      community.general.awall:
+        rules: "{{ awall_rules }}"
+        activate: "{{ item.activate }}"
+        state: "{{ item.state }}"
+      loop: "{{ awall_rules }}"

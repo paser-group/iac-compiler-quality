@@ -1,0 +1,61 @@
+---
+- name: Test Ansible Latent Type-Related Bugs
+  hosts: localhost
+  gather_facts: false
+  
+  tasks:
+    - name: Configure Huawei CloudEngine
+      community.network.ce_config:
+        backup: true
+        backup_options:
+          dir_path: '/etc/ansible/backups'
+          filename: 'ce_config.cfg'
+        defaults: true
+        save: true
+        src: "{{ inventory_dir }}/config_files/ce_config.txt"
+
+      vars:
+        ce_config_lines:
+          - '@@hostname switch1'
+          - '@@vlan 10'
+          - '@@description This is a test switch'
+          - '@@interface GigabitEthernet 1/0/1'
+          - '@@port link-type access'
+          - '@@port default vlan 10'
+          - '@@stpd instance 1'
+          - '@@enable stp'
+          - '@@interface GigabitEthernet 1/0/2'
+          - '@@port link-type access'
+          - '@@port default vlan 10'
+          - '@@stpd instance 1'
+          - '@@enable stp'
+        
+        ce_config_bytes: "@@hostname b'switch2'"
+      
+        ce_config_combined:
+          - ['@@hostname switch3']
+          - '@@vlan 20'
+          - "@@description b'This is a test switch'"
+          - '@@interface GigabitEthernet 1/0/3'
+          - "@@port link-type b'access'"
+          - '@@port default vlan 20' 
+    
+      tasks:
+        - name: Create configuration lines with bytes and strings
+          community.general.list_append:
+            var: ce_config_lines
+            value: "{{ ce_config_bytes }}"
+        
+        - name: Include combined configuration in the main configuration
+          community.general.list_extend:
+            var: ce_config_lines
+            value: "{{ ce_config_combined }}"
+        
+        - name: Generate Huawei CloudEngine configuration file
+          ansible.builtin.copy:
+            content: "{{ ce_config_lines | join('\n') }}"
+            dest: "{{ ansible_env.HOME }}/switch.cfg"
+        
+        - name: Debug configured lines
+          ansible.builtin.debug:
+            var: ce_config_lines

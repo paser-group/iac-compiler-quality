@@ -1,0 +1,68 @@
+---
+- name: Test playbook for community.general.webfaction_domain module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Add domain with varied encodings
+      community.general.webfaction_domain:
+        login_name: "{{ login_name }}"
+        login_password: "{{ login_password }}"
+        name: "{{ name }}"
+        state: present
+        subdomains:
+          - "{{ subdomain | encoding }}"
+      vars:
+        login_name: "my_username"
+        login_password: "my_password"
+        name: "example.com"
+        subdomain: "test"
+
+    - name: Remove domain with varied encodings
+      community.general.webfaction_domain:
+        login_name: "{{ login_name }}"
+        login_password: "{{ login_password }}"
+        name: "{{ name }}"
+        state: absent
+        subdomains:
+          - "{{ subdomain | encoding }}"
+      vars:
+        login_name: "my_username"
+        login_password: "my_password"
+        name: "example.com"
+        subdomain: "test"
+
+  vars:
+    encoding: "{{ item }}"
+  
+  # Test case: Generate strings with varied encodings
+  vars_prompt:
+    - name: "encoding_variants"
+      prompt: "Enter encoding variants (comma-separated):"
+  
+  # Convert comma-separated string to list
+  vars:
+    encoding_variants: "{{ encoding_variants.split(',') }}"
+  
+  tasks:
+    - name: Run test cases
+      block:
+        - name: Add domain with varied encodings
+          community.general.webfaction_domain:
+            login_name: "{{ login_name }}"
+            login_password: "{{ login_password }}"
+            name: "{{ name }}"
+            state: present
+            subdomains:
+              - "{{ subdomain | encoding }}"
+          loop: "{{ encoding_variants }}"
+  
+        - name: Remove domain with varied encodings
+          community.general.webfaction_domain:
+            login_name: "{{ login_name }}"
+            login_password: "{{ login_password }}"
+            name: "{{ name }}"
+            state: absent
+            subdomains:
+              - "{{ subdomain | encoding }}"
+          loop: "{{ encoding_variants }}"

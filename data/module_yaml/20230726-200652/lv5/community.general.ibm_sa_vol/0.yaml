@@ -1,0 +1,52 @@
+- name: Test playbook for community.general.ibm_sa_vol module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    endpoint: "https://example.com"
+    username: "admin"
+    password: "secret"
+    pool: "pool01"
+    vol: "test_volume"
+    size: "10GB"
+    state: "present"
+
+  tasks:
+    - name: Install community.general.ibm_sa_vol module dependencies
+      ansible.builtin.package:
+        name:
+          - paramiko
+          - six
+        state: present
+
+    - name: Test volume creation
+      community.general.ibm_sa_vol:
+        endpoint: "{{ endpoint }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        pool: "{{ pool }}"
+        vol: "{{ vol }}"
+        size: "{{ size }}"
+        state: "{{ state }}"
+      register: result
+
+    - name: Display module output
+      debug:
+        var: result
+
+    - name: Test port settings
+      vars:
+        endpoint_port: "{{ [8080, 8443, 8888, 9999] | random }}"
+      community.general.ibm_sa_vol:
+        endpoint: "{{ endpoint }}:{{ endpoint_port }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        pool: "{{ pool }}"
+        vol: "{{ vol }}"
+        size: "{{ size }}"
+        state: "{{ state }}"
+      register: port_result
+
+    - name: Display module output for port test case
+      debug:
+        var: port_result

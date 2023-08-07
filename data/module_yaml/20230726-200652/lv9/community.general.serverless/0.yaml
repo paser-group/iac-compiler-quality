@@ -1,0 +1,51 @@
+---
+- name: Test playbook for 'community.general.serverless' module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Generate random IP address
+      set_fact:
+        random_ip: "{{ hostvars['localhost']['ansible_eth0']['ipv4']['address'] }}"
+
+    - name: Debug random IP address
+      debug:
+        var: random_ip
+
+    - name: Install 'docker' package
+      package:
+        name: docker
+        state: present
+
+    - name: Create a network
+      command: docker network create --subnet=10.1.1.0/24 node-net
+
+    - name: Create Docker nodes
+      docker_container:
+        name: "{{ item.name }}"
+        image: "{{ item.image }}"
+        state: started
+        hostname: "{{ item.hostname }}"
+        network_mode: node-net
+        ip_address: "{{ item.ip }}"
+      with_items:
+        - { name: "ubuntu1", image: "ubuntu", hostname: "ubuntu1", ip: "10.1.1.1" }
+        - { name: "alpine1", image: "alpine", hostname: "alpine1", ip: "10.1.1.2" }
+        - { name: "centos1", image: "centos", hostname: "centos1", ip: "10.1.1.3" }
+        - { name: "redhat1", image: "redhat", hostname: "redhat1", ip: "10.1.1.4" }
+
+    - name: Install 'community.general.serverless' collection
+      ansible_galaxy_collection:
+        name: community.general
+        state: present
+
+    - name: Run 'community.general.serverless' module
+      community.general.serverless:
+        deploy: true
+        force: true
+        region: "{{ random_ip }}"
+        serverless_bin_path: /path/to/serverless/bin
+        service_path: /path/to/service
+        stage: testing
+        state: present
+        verbose: true

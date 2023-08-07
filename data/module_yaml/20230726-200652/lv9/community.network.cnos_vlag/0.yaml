@@ -1,0 +1,40 @@
+- name: Ansible Playbook for cnos_vlag module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    deviceType: "{{ cnos_device_type }}"
+    enablePassword: "{{ cnos_enable_password }}"
+    host: "{{ cnos_host }}"
+    outputfile: "{{ cnos_outputfile }}"
+    password: "{{ cnos_password }}"
+    username: "{{ cnos_username }}"
+
+  tasks:
+    - name: Set random IP addresses
+      set_fact:
+        subnet: "10.{{ range(1, 255) | random }}.{{ range(1, 255) | random }}.0/24"
+        gateway: "10.{{ range(1, 255) | random }}.{{ range(1, 255) | random }}.254"
+
+    - name: Create inventory file
+      blockinfile:
+        path: ./inventory.ini
+        block: |
+          [nodes]
+          ubuntu1 ansible_host=10.1.1.1 ansible_user=root ansible_password="password"
+          alpine1 ansible_host=10.1.1.2 ansible_user=root ansible_password="password"
+          centos1 ansible_host=10.1.1.3 ansible_user=root ansible_password="password"
+          redhat1 ansible_host=10.1.1.4 ansible_user=root ansible_password="password"
+
+    - name: Manage VLAG resources and attributes
+      community.network.cnos_vlag:
+        deviceType: "{{ deviceType }}"
+        enablePassword: "{{ enablePassword }}"
+        host: "{{ host }}"
+        outputfile: "{{ outputfile }}"
+        password: "{{ password }}"
+        username: "{{ username }}"
+        vlagArg1: "{{ subnet }}"
+        vlagArg2: "{{ gateway }}"
+        vlagArg3: "{{ vlagArg3 }}"
+        vlagArg4: "{{ vlagArg4 }}"

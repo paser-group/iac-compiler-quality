@@ -1,0 +1,37 @@
+---
+- name: Create L4PolicySet objects
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    mac_addresses:
+      - "00:11:22:33:44:55"
+      - "AA:BB:CC:DD:EE:FF"
+      - "11:22:33:44:55:66"
+
+  tasks:
+    - name: Create L4PolicySet using random MAC addresses
+      community.network.avi_l4policyset:
+        controller: "https://<controller IP>"
+        username: "<avi username>"
+        password: "<avi password>"
+        tenant: "admin"
+        name: "MyL4PolicySet"
+        l4_connection_policy:
+          - index: 0
+            l4_connection_policy_id: "1"
+            enabled: true
+            app_profile_ref: "/api/applicationprofile/?tenant=admin&name=System-DNS"
+            policy_set_actions:
+              - index: 0
+                type: "PER_CONNECTION"
+                action: "ACCEPT"
+        api_context:
+          - field1: "{{ mac_addresses[0] }}"
+            field2: "{{ mac_addresses[1] }}"
+            field3: "{{ mac_addresses[2] }}"
+      register: result
+
+    - name: Display result
+      debug:
+        var: result

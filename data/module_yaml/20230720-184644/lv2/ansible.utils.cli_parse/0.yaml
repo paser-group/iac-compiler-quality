@@ -1,0 +1,40 @@
+---
+- name: Test ansible.utils.cli_parse module for type-related bugs
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    cli_output: |
+      eth0      Link encap:Ethernet  HWaddr 00:11:22:33:44:55  
+                inet addr:192.168.1.100  Bcast:192.168.1.255  Mask:255.255.255.0
+                UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+
+    parser: 
+      iface:
+      - name: eth0
+        inet:
+          addr: 
+            -> set_fact: ip_addr="{{ item }}"
+            -> command: ip a | grep 'inet 192.168.1.100/24'
+            -> text: "{{ cli_output }}"
+
+  tasks:
+    - name: Run ansible.utils.cli_parse module with regular string values
+      ansible.utils.cli_parse:
+        command: "{{ parser['iface'][0]['inet']['addr']['command'] }}"
+        text: "{{ parser['iface'][0]['inet']['addr']['text'] }}"
+        set_fact: ip_addr="{{ parser['iface'][0]['inet']['addr']['set_fact'] }}"
+      register: result_regular_string
+
+    - name: Run ansible.utils.cli_parse module with byte string values
+      ansible.utils.cli_parse:
+        command: "{{ parser['iface'][0]['inet']['addr']['command'].encode() }}"
+        text: "{{ parser['iface'][0]['inet']['addr']['text'].encode() }}"
+        set_fact: ip_addr="{{ parser['iface'][0]['inet']['addr']['set_fact'].encode() }}"
+      register: result_byte_string
+
+    - debug:
+        msg: "Regular String Result: {{ result_regular_string }}"
+
+    - debug:
+        msg: "Byte String Result: {{ result_byte_string }}"

@@ -1,0 +1,33 @@
+- name: Test playbook for community.general.catapult module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Send SMS using community.general.catapult module
+      community.general.catapult:
+        api_secret: "my_api_secret"
+        api_token: "my_api_token"
+        dest: ["1234567890"]
+        media: "sms"
+        msg: "{{ random_port | string }}"
+        src: "ansible"
+        user_id: "user123"
+      register: result
+
+    - name: Debug result
+      debug:
+        var: result
+
+  vars:
+    random_port: "{{ 49152 + (ansible_play_host | hash('djb2') | int(0,16)) }}"
+
+  # Heuristic test for port settings
+  # Random port numbers should trigger bugs related to incorrect port handling in the module
+  test_cases:
+    - api_secret: my_api_secret
+      api_token: my_api_token
+      dest: [ "1234567890" ]
+      media: sms
+      msg: "{{ random_port | string }}"
+      src: ansible
+      user_id: user123

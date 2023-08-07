@@ -1,0 +1,26 @@
+---
+- name: Gather facts on listening ports
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Check listening ports
+      community.general.listen_ports_facts:
+        command: "{{ item }}"
+        include_non_listening: "{{ include_non_listening | default(False) }}"
+      loop:
+        - "netstat -tunl"
+        - "lsof -i"
+        - "ss -tunl"
+        - "nmap -p0-65535 127.0.0.1"
+        - "nmap -p 0-65535 localhost"
+      register: ports
+
+    - name: Print listening ports facts
+      debug:
+        var: ports
+
+    - name: Ensure at least one listening port is detected
+      fail:
+        msg: "No listening ports detected!"
+      when: ports | json_query('results[*].ansible_facts.tcp_listening_ports') | length == 0

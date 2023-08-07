@@ -1,0 +1,95 @@
+---
+- name: Test playbook for ansible.posix.firewalld module
+  hosts: localhost
+  gather_facts: False
+  vars:
+    zone_name: "public"
+    port_number: "8080"
+    service_name: "http"
+    protocol_type: "tcp"
+    icmp_block_value: "echo-request"
+    icmp_block_inversion_value: "yes"
+    immediate_value: true
+    interface_name: "eth0"
+    masquerade_value: "yes"
+    offline_value: false
+    permanent_value: true
+    source_value: "192.168.1.0/24"
+    state_value: "enabled"
+    target_value: "ACCEPT"
+    timeout_value: 300
+
+  tasks:
+    - name: Enable firewalld service
+      service:
+        name: firewalld
+        state: started
+        enabled: true
+
+    - name: Add port to firewalld
+      firewalld:
+        zone: "{{ zone_name }}"
+        port: "{{ port_number }}"
+        state: present
+        permanent: "{{ permanent_value }}"
+        immediate: "{{ immediate_value }}"
+
+    - name: Add service to firewalld
+      firewalld:
+        zone: "{{ zone_name }}"
+        service: "{{ service_name }}"
+        state: present
+        permanent: "{{ permanent_value }}"
+        immediate: "{{ immediate_value }}"
+
+    - name: Add port forwarding to firewalld
+      firewalld:
+        zone: "{{ zone_name }}"
+        port_forward:
+          - "{{ port_number }}:192.168.1.10"
+          - "{{ port_number }}:192.168.1.20"
+        state: enabled
+        permanent: "{{ permanent_value }}"
+        immediate: "{{ immediate_value }}"
+
+    - name: Allow ICMP block
+      firewalld:
+        zone: "{{ zone_name }}"
+        icmp_block: "{{ icmp_block_value }}"
+        icmp_block_inversion: "{{ icmp_block_inversion_value }}"
+        state: "{{ state_value }}"
+
+    - name: Add rich rules
+      firewalld:
+        zone: "{{ zone_name }}"
+        rich_rule: "rule family='ipv4' source address='{{ source_value }}' port protocol='{{ protocol_type }}' port port='{{ port_number }}' accept"
+        state: "{{ state_value }}"
+
+    - name: Masquerade the zone
+      firewalld:
+        zone: "{{ zone_name }}"
+        masquerade: "{{ masquerade_value }}"
+        state: "{{ state_value }}"
+
+    - name: Set default zone options
+      firewalld:
+        zone: "{{ zone_name }}"
+        offline: "{{ offline_value }}"
+        interface: "{{ interface_name }}"
+        state: "{{ state_value }}"
+
+    - name: Set timeout for zone
+      firewalld:
+        zone: "{{ zone_name }}"
+        timeout: "{{ timeout_value }}"
+        state: "{{ state_value }}"
+
+    - name: Test state value of a zone
+      firewalld:
+        zone: "{{ zone_name }}"
+        state: "{{ state_value }}"
+      register: result
+
+    - name: Debug the result
+      debug:
+        var: result

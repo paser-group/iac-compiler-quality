@@ -1,0 +1,33 @@
+---
+- name: Test playbook for 'community.general.pamd' module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Install 'community.general' collection
+      ansible.builtin.command:
+        cmd: ansible-galaxy collection install community.general
+
+    - name: Ensure pam.d configuration file exists
+      ansible.builtin.file:
+        path: /etc/pam.d/my_config
+        state: touch
+
+    - name: Set pam.d configuration
+      community.general.pamd:
+        name: my_config
+        type: auth
+        control: required
+        module_path: pam_unix.so
+        module_arguments:
+          - likeauth nullok
+        state: present
+
+    - name: Print the contents of the configuration file
+      ansible.builtin.command:
+        cmd: cat /etc/pam.d/my_config
+      register: cat_output
+
+    - name: Debug
+      ansible.builtin.debug:
+        var: cat_output.stdout_lines

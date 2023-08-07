@@ -1,0 +1,28 @@
+---
+- name: Run script on remote node
+  hosts: all
+  become: true
+  vars:
+    script_path: "/path/to/script.sh"
+  tasks:
+    - name: Copy script to remote node
+      ansible.builtin.copy:
+        src: "{{ script_path }}"
+        dest: "{{ remote_script_path | default('/tmp/script.sh') }}"
+        mode: '0744'
+
+    - name: Run script on remote node
+      ansible.builtin.script:
+        chdir: "{{ script_dir | default('/') }}"
+        cmd: |-
+          python "{{ remote_script_path | default('/tmp/script.sh') }}"
+        creates: "{{ script_output_path | default('/tmp/output.txt') }}"
+        decrypt: no
+        executable: "{{ interpreter | default('/usr/bin/python') }}"
+        free_form: "{{ script_args | default('') }}"
+        removes: "{{ remote_script_path | default('/tmp/script.sh') }}"
+      register: script_output
+
+    - name: Debug script output
+      ansible.builtin.debug:
+        var: script_output.stdout_lines

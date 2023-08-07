@@ -1,0 +1,58 @@
+---
+- name: Test playbook for exposing latent type-related bugs
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    webhook: "https://mywebhookurl.com"
+    title: "Test Message"
+    summary: "This is a test message"
+    text: "Hello from Ansible!"
+    random_port: "{{ 10000 | random }}"
+  
+  tasks:
+    - name: Create Connector Card using community.general.office_365_connector_card module
+      community.general.office_365_connector_card:
+        webhook: "{{ webhook }}"
+        title: "{{ title }}"
+        summary: "{{ summary }}"
+        text: "{{ text }}"
+        sections:
+          - title: "Section 1"
+            text: "This is section 1"
+          - title: "Section 2"
+            text: "This is section 2"
+        actions:
+          - name: "Action 1"
+            type: "OpenUri"
+            targets:
+              - os: "default"
+                uri: "https://mywebsite.com"
+            target: "http://{{ hostvars[item]['ansible_default_ipv4']['address'] }}:{{ random_port }}"
+
+      loop: "{{ groups['docker_nodes'] }}"
+      become: true
+      become_user: root
+
+      register: result
+
+    - name: Debug result
+      debug:
+        var: result
+
+    - name: Print individual result values
+      debug:
+        var: item.stdout
+      loop: "{{ result.results }}"
+      loop_control:
+        label: "{{ item.item }}"
+
+  vars:
+    ansible_python_interpreter: "/usr/bin/python3"
+    ansible_become_password: "my_sudo_password"
+    groups:
+      docker_nodes:
+        - ubuntu1
+        - alpine1
+        - centos1
+        - redhat1

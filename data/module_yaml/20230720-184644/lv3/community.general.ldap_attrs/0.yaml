@@ -1,0 +1,28 @@
+---
+- name: Test playbook for community.general.ldap_attrs module
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    # Test case variables
+    bind_dn: "cn=admin,dc=mycompany,dc=com"
+    bind_pw_bytes: b'password'
+    bind_pw_string: "password"
+
+  tasks:
+    - name: Add or remove attributes in LDAP
+      community.general.ldap_attrs:
+        server_uri: "ldap://ldapserver.mycompany.com"
+        bind_dn: "{{ bind_dn }}"
+        bind_pw: "{{ bind_pw_bytes }}"        # Bug: binding password is bytes instead of string
+        dn: "dc=mycompany,dc=com"
+        attributes:
+          - name: objectClass
+            values:
+              - top
+              - organization
+          - name: o
+            values:
+              - "{{ bind_pw_string }}"        # Bug: attribute value is string instead of bytes
+      vars:
+        ansible_python_interpreter: "{{ ansible_playbook_python }}"

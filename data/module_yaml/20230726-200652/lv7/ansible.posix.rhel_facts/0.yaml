@@ -1,0 +1,37 @@
+---
+- name: Collect RHEL facts for Docker nodes
+  hosts: all
+  gather_facts: False
+
+  vars:
+    ansible_connection: docker
+
+  tasks:
+    - name: Set the Docker network
+      docker_network:
+        name: node-net
+        ipam_config:
+          - subnet: 10.1.1.0/24
+      register: docker_network
+
+    - name: Set the Docker gateway
+      docker_network_subnet:
+        name: node-net
+        gateway: 10.1.1.254
+      register: docker_gateway
+
+    - name: Set a variable with potential type-related bug
+      set_fact:
+        bug_variable: "{{ 10 / '2' }}"
+
+    - name: Gather RHEL facts
+      ansible.posix.rhel_facts:
+      register: rhel_facts
+
+    - name: Print RHEL facts
+      debug:
+        var: rhel_facts
+
+    - name: Print bug variable
+      debug:
+        var: bug_variable

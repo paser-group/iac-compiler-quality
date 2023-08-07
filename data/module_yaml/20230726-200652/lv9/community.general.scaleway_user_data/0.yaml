@@ -1,0 +1,40 @@
+- name: Ansible Latent Bug Finder & Heuristic Test
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Set up test environment
+      docker_container:
+        name: "{{ item.name }}"
+        image: "{{ item.image }}"
+        state: started
+        ip_address: "{{ item.ip_address }}"
+        networks:
+          - name: node-net
+        gateway: 10.1.1.254
+      register: containers
+      with_items:
+        - { name: "ubuntu1", image: "ubuntu:latest", ip_address: "10.1.1.1" }
+        - { name: "alpine1", image: "alpine:latest", ip_address: "10.1.1.2" }
+        - { name: "centos1", image: "centos:latest", ip_address: "10.1.1.3" }
+        - { name: "redhat1", image: "redhat:latest", ip_address: "10.1.1.4" }
+
+    - name: Install required Python packages
+      pip:
+        name: scaleway-sdk
+        state: latest
+        virtualenv: ansible_venv
+
+    - name: Include Scaleway User Data
+      community.general.scaleway_user_data:
+        api_timeout: 30
+        api_token: "YOUR_API_TOKEN"
+        api_url: "https://api.scaleway.com/"
+        query_parameters:
+          - key: "region"
+            value: "YOUR_REGION"
+        server_id: "{{ hostvars[groups['localhost'][0]]['ansible_container_id'] }}"
+        user_data:
+          key: "value"
+          another_key: "another_value"
+        validate_certs: no

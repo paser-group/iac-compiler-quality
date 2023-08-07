@@ -1,0 +1,45 @@
+- name: Ansible Latent Bug Finder Playbook
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Generate random MAC address
+      set_fact:
+        random_mac: "{{ '%012x'|format(ansible_date_time.epoch + 10**10)|upper[:12] }}"
+      run_once: true
+
+    - name: Test Case 1 - Run command with default options
+      community.network.slxos_command:
+        commands: show version
+      register: result1
+      ignore_errors: true
+
+    - name: Test Case 2 - Run command with interval, retries, and wait_for
+      community.network.slxos_command:
+        commands: show mac address-table
+        interval: 5
+        retries: 3
+        wait_for: prompt
+      register: result2
+      ignore_errors: true
+
+    - name: Test Case 3 - Run command with custom match
+      community.network.slxos_command:
+        commands: show interfaces
+        match: "{{ random_mac }}"
+      register: result3
+      ignore_errors: true
+
+    - name: Test Case 4 - Run command with commands as None
+      community.network.slxos_command:
+        commands: None
+      register: result4
+      ignore_errors: true
+
+    - name: Print Results
+      debug:
+        var: item
+      loop:
+        - result1
+        - result2
+        - result3
+        - result4

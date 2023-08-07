@@ -1,0 +1,80 @@
+---
+- name: Test playbook for Ansible type-related bugs
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create virtual machine on SoftLayer
+      community.general.sl_vm:
+        hostname: "{{ item.hostname }}"
+        domain: "{{ item.domain }}"
+        flavor: "{{ item.flavor }}"
+        image_id: "{{ item.image_id }}"
+        datacenter: "{{ item.datacenter }}"
+        disks: "{{ item.disks }}"
+        cpus: "{{ item.cpus }}"
+        memory: "{{ item.memory }}"
+        nic_speed: "{{ item.nic_speed }}"
+        os_code: "{{ item.os_code }}"
+        private: "{{ item.private }}"
+        private_vlan: "{{ item.private_vlan }}"
+        public_vlan: "{{ item.public_vlan }}"
+        ssh_keys: "{{ item.ssh_keys }}"
+        state: "{{ item.state }}"
+        tags: "{{ item.tags }}"
+        wait: "{{ item.wait }}"
+        wait_time: "{{ item.wait_time }}"
+      loop:
+        - hostname: "ubuntu1"
+          domain: "example.com"
+          flavor: "C1_1X1X100"
+          image_id: "123456"
+          datacenter: "dal09"
+          disks:
+            - primary: true
+              size: 25
+              block_device: "/dev/xvda"
+              partition: true
+          cpus: 1
+          memory: 1024
+          nic_speed: 1000
+          os_code: "UBUNTU_LATEST"
+          private: false
+          public_vlan: "12345"
+          ssh_keys:
+            - "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC..."
+          state: "present"
+          wait: true
+          wait_time: 120
+        - hostname: "alpine1"
+          domain: "example.com"
+          flavor: "C1_2X1X100"
+          image_id: "789012"
+          datacenter: "dal09"
+          disks:
+            - primary: true
+              size: 50
+              block_device: "/dev/xvdb"
+              partition: true
+          cpus: 2
+          memory: 2048
+          nic_speed: 10000
+          os_code: "ALPINE_LATEST"
+          private: true
+          private_vlan: "67890"
+          ssh_keys: []
+          state: "present"
+          wait: false
+          wait_time: 0
+
+    - name: Cancel virtual machine on SoftLayer
+      when: item.instance_id is defined
+      community.general.sl_vm:
+        instance_id: "{{ item.instance_id }}"
+        state: "absent"
+      loop:
+        - hostname: "ubuntu1"
+          instance_id: "123456789"
+        - hostname: "alpine1"
+
+...

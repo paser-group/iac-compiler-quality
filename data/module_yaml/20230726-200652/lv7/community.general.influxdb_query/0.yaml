@@ -1,0 +1,61 @@
+---
+- name: Test Suite
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Query data from InfluxDB
+      community.general.influxdb_query:
+        database_name: "mydb"
+        hostname: "localhost"
+        password: "password"
+        path: "/api/v2/query"
+        port: 8086
+        proxies:
+          http: "http://proxy.example.com:8080"
+          https: "http://proxy.example.com:8080"
+        query: "SELECT * FROM my_measurement"
+        retries: 3
+        ssl: true
+        timeout: 10
+        udp_port: 8089
+        use_udp: false
+        username: "admin"
+        validate_certs: true
+      register: result
+
+    - name: Debug result
+      debug:
+        var: result
+
+- name: Test Suite with Limit
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Query data from InfluxDB with limit
+      community.general.influxdb_query:
+        database_name: "{{ item.database_name }}"
+        hostname: "localhost"
+        password: "password"
+        path: "/api/v2/query"
+        port: 8086
+        proxies:
+          http: "http://proxy.example.com:8080"
+          https: "http://proxy.example.com:8080"
+        query: "SELECT * FROM my_measurement LIMIT {{ item.limit / 2 }}"
+        retries: 3
+        ssl: true
+        timeout: 10
+        udp_port: 8089
+        use_udp: false
+        username: "admin"
+        validate_certs: true
+      with_items:
+        - { database_name: "mydb", limit: 10 }
+        - { database_name: "anotherdb", limit: 20 }
+      register: result_with_limit
+
+    - name: Debug result with limit
+      debug:
+        var: result_with_limit

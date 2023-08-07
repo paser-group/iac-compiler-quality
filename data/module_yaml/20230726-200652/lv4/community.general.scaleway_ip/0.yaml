@@ -1,0 +1,27 @@
+---
+- name: Test Ansible Latent Type-Related Bugs
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Generate random MAC addresses for network modules
+      set_fact:
+        mac_address: "{{ '%02x:'|format('0x'+(item|int)|string) }}"
+      loop: "{{ range(1, 5) | list }}"
+      loop_control:
+        loop_var: item
+
+    - name: Get Scaleway IP
+      community.general.scaleway_ip:
+        api_token: "YOUR_API_TOKEN"
+        query_parameters:
+          organization: "YOUR_ORGANIZATION_ID"
+          region: "fr-par-1"
+        state: "present"
+        reverse: "ansible_nodes"
+        server: "{{ inventory_hostname }}"
+        validate_certs: false
+      register: scaleway_ip_result
+
+    - debug:
+        var: scaleway_ip_result

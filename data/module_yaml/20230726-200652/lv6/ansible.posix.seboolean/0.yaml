@@ -1,0 +1,41 @@
+---
+- name: Test playbook for ansible.posix.seboolean module
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Setsebool - Ignore SELinux state
+      ansible.posix.seboolean:
+        name: "{{ item.name }}"
+        ignore_selinux_state: "{{ item.ignore_selinux_state }}"
+      loop:
+        - { name: "httpd_can_sendmail", ignore_selinux_state: true }
+        - { name: "httpd_can_sendmail", ignore_selinux_state: false }
+
+    - name: Setsebool - Persistent state
+      ansible.posix.seboolean:
+        name: "{{ item.name }}"
+        persistent: "{{ item.persistent }}"
+      loop:
+        - { name: "httpd_can_network_connect", persistent: true }
+        - { name: "httpd_can_network_connect", persistent: false }
+
+    - name: Setsebool - State as bool
+      ansible.posix.seboolean:
+        name: "{{ item.name }}"
+        state: "{{ item.state | bool }}"
+      loop:
+        - { name: "httpd_execmem", state: "yes" }
+        - { name: "httpd_execmem", state: "no" }
+        - { name: "httpd_execmem", state: "true" }
+        - { name: "httpd_execmem", state: "false" }
+
+    - name: Setsebool - Name with varied encodings
+      ansible.posix.seboolean:
+        name: "{{ item.name }}"
+        state: "{{ item.state }}"
+      loop:
+        - { name: "httpd_can_sendmail" }
+        - { name: "{{ 'httpd_can_sendmail' | b64encode | from_json }}" }
+        - { name: "{{ 'httpd_can_sendmail' | b64encode }}" }
+        - { name: "{{ 'httpd_can_sendmail' | b64encode | to_json }}" }

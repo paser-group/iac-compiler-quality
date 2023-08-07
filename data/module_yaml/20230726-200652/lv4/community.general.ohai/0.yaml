@@ -1,0 +1,28 @@
+---
+- name: Retrieve inventory information using community.general.ohai
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Generate random MAC address
+      set_fact:
+        random_mac_address: "{{ '%02x' | format(item | random | int) }}"
+      loop: "{{ range(6) }}"
+      vars:
+        item: 255
+
+    - name: Set MAC address for each host
+      set_fact:
+        mac_address: "00:00:{{ random_mac_address }}:{{ random_mac_address }}:{{ random_mac_address }}"
+      vars:
+        random_mac_address: "{{ [hostvars[item].random_mac_address for item in groups['all']] }}"
+      run_once: true
+
+    - name: Run community.general.ohai module
+      community.general.ohai:
+        plugins: all
+      register: ohai_result
+
+    - name: Debug ohai_result
+      debug:
+        var: ohai_result

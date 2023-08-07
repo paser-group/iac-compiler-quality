@@ -1,0 +1,25 @@
+---
+- name: Test playbook for exposing latent type-related bugs
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Generate random MAC address
+      set_fact:
+        random_mac_address: "{{ '%012x' | format((1024 * 1024 * 1024 * 1024 + 4294967296 * random(0, 16777216) + 65536 * random(0, 65536) + 256 * random(0, 256) + random(0, 256)) % 72057594037927936) }}"
+
+    - name: Print random MAC address
+      debug:
+        var: random_mac_address
+
+    - name: Execute module with type-related bugs
+      community.network.avi_gslbservice_patch_member:
+        controller: "{{ controller }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        tenant: "{{ tenant }}"
+        avi_credentials: "{{ avi_credentials }}"
+        api_version: "{{ api_version }}"
+        api_context: "{{ api_context }}"
+        data:
+          - name: "{{ random_mac_address }}"

@@ -1,0 +1,20 @@
+- name: Test Ansible Latent Type-Related Bugs
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Set random port number
+      set_fact:
+        random_port: "{{ 10000 + (ansible_play_hosts_all.index(inventory_hostname) * 100) + (1 | random | int) }}"
+
+    - name: Configure multicast global options on HUAWEI devices
+      community.network.ce_multicast_global:
+        aftype: 123  # Latent type-related bug: Providing an incorrect type for aftype
+        state: present
+        vrf: "{{ hostvars['localhost']['ansible_network_os'] }}"
+        port: "{{ random_port }}"
+      register: result
+
+    - name: Print debug information
+      debug:
+        var: result

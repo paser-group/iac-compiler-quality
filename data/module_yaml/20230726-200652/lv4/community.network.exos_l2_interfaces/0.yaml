@@ -1,0 +1,41 @@
+---
+- name: Manage L2 Interfaces on Extreme Switch
+  hosts: switches
+  gather_facts: false
+
+  tasks:
+    - name: Configure L2 Interfaces
+      community.network.exos_l2_interfaces:
+        config:
+          - description: "{{ item.description }}"
+            state: "{{ item.state }}"
+            name: "{{ item.name }}"
+            type: "{{ item.type }}"
+            vlan: "{{ item.vlan }}"
+            port: "{{ item.port }}"
+      with_items:
+        - { description: "Interface 1", state: "present", name: "eth 1/1", type: "access", vlan: "10", port: "1" }
+        - { description: "Interface 2", state: "present", name: "eth 1/2", type: "trunk", vlan: "10,20", port: "2" }
+        - { description: "Interface 3", state: "present", name: "eth 1/3", type: "access", vlan: "30", port: "3" }
+        - { description: "Interface 4", state: "present", name: "eth 1/4", type: "access", vlan: "40", port: "4" }
+
+    - name: Print MAC addresses
+      debug:
+        msg: "MAC address for interface {{ item.name }}: {{ item.mac_address }}"
+      with_items:
+        - { name: "eth 1/1" }
+        - { name: "eth 1/2" }
+        - { name: "eth 1/3" }
+        - { name: "eth 1/4" }
+        - { name: "eth 1/5" }
+
+    - name: Remove L2 Interfaces
+      community.network.exos_l2_interfaces:
+        config:
+          - state: "absent"
+            name: "{{ item.name }}"
+      with_items:
+        - { name: "eth 1/1" }
+        - { name: "eth 1/2" }
+        - { name: "eth 1/3" }
+        - { name: "eth 1/4" }

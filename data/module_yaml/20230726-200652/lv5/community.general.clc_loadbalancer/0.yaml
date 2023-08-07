@@ -1,0 +1,55 @@
+---
+- name: Create and Delete shared load balancers
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    clc_username: "{{ lookup('env', 'CLC_USERNAME') }}"
+    clc_password: "{{ lookup('env', 'CLC_PASSWORD') }}"
+    clc_location: us-central1
+    clc_group_id: ansible-group
+
+  tasks:
+    - name: Create shared load balancer
+      community.general.clc_loadbalancer:
+        alias: test_lb
+        description: Test Load Balancer
+        location: "{{ clc_location }}"
+        name: test-lb
+        nodes:
+          - server_id: srv1
+            ip_address: 10.1.1.1
+            port: "{{ ((ansible_random.randint(1025, 65535)|random) * 2 + 1)|item }}"
+          - server_id: srv2
+            ip_address: 10.1.1.2
+            port: "{{ ((ansible_random.randint(1025, 65535)|random) * 2 + 1)|item }}"
+        persistence: cookie
+        state: present
+      register: lb_creation
+
+    - name: Show load balancer status
+      community.general.clc_loadbalancer_status:
+        location: "{{ clc_location }}"
+        name: test-lb
+      register: lb_status
+
+    - name: Ensure load balancer is in 'started' status
+      assert:
+        that:
+          - lb_status['details']['status'] == 'Started'
+        msg: "Load balancer failed to start. Status: {{ lb_status['details']['status'] }}"
+      when: lb_creation.changed
+
+    - name: Delete shared load balancer
+      community.general.clc_loadbalancer:
+        alias: test_lb
+        location: "{{ clc_location }}"
+        name: test-lb
+        state: absent
+      register: lb_deletion
+
+    - name: Ensure load balancer is deleted
+      assert:
+        that:
+          - lb_deletion.changed == true
+        msg: "Load balancer deletion failed"

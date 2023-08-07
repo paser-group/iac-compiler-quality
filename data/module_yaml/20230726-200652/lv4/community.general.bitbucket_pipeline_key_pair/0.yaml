@@ -1,0 +1,70 @@
+---
+- name: Ansible Latent Bug Finder Playbook
+  hosts: localhost
+  gather_facts: false
+  vars:
+    client_id: "my_client_id"
+    client_secret: "my_client_secret"
+    password: "my_password"
+    private_key: "my_private_key"
+    public_key: "my_public_key"
+    repository: "my_repository"
+    state: "present"
+    user: "my_user"
+    workspace: "my_workspace"
+
+  tasks:
+    - name: Include random_mac_address generation
+      import_tasks: random_mac_address.yml
+
+    - name: Test Case 1 - Missing required variable
+      community.general.bitbucket_pipeline_key_pair:
+        client_secret: "{{ client_secret }}"
+        password: "{{ password }}"
+        private_key: "{{ private_key }}"
+        public_key: "{{ public_key }}"
+        repository: "{{ repository }}"
+        state: "{{ state }}"
+        user: "{{ user }}"
+        workspace: "{{ workspace }}"
+      register: result1
+      ignore_errors: true
+
+    - name: Debug Test Case 1
+      debug:
+        var: result1
+      when: result1 is failed
+
+    - name: Test Case 2 - Invalid value type for 'state'
+      community.general.bitbucket_pipeline_key_pair:
+        client_id: "{{ client_id }}"
+        client_secret: "{{ client_secret }}"
+        password: "{{ password }}"
+        private_key: "{{ private_key }}"
+        public_key: "{{ public_key }}"
+        repository: "{{ repository }}"
+        state: 123  # Invalid value type
+        user: "{{ user }}"
+        workspace: "{{ workspace }}"
+      register: result2
+      ignore_errors: true
+
+    - name: Debug Test Case 2
+      debug:
+        var: result2
+      when: result2 is failed
+
+    # Additional test cases can be added here based on other attributes and their specific type-related bugs
+
+# random_mac_address.yml
+- name: Generate random MAC address
+  community.general.random_string:
+    length: 17
+    chars: "0123456789abcdef"
+  register: mac_address
+
+- set_fact:
+    random_mac_address: "{{ mac_address['result'] }}"
+
+- debug:
+    var: random_mac_address

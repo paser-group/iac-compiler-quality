@@ -1,0 +1,35 @@
+---
+- name: Test playbook for OVH IP Failover
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Install required Python dependencies
+      pip:
+        name: ovh
+
+    - name: Set OVH API credentials
+      set_fact:
+        api_credentials:
+          application_key: "{{ lookup('env', 'APPLICATION_KEY') | to_string }}"
+          application_secret: "{{ lookup('env', 'APPLICATION_SECRET') | to_string }}"
+          consumer_key: "{{ lookup('env', 'CONSUMER_KEY') | to_string }}"
+
+    - name: Manage OVH IP Failover
+      community.general.ovh_ip_failover:
+        endpoint: "{{ lookup('env', 'ENDPOINT') | to_string }}"
+        name: "Test Failover"
+        service: "{{ lookup('env', 'SERVICE') | to_string }}"
+        timeout: "{{ lookup('env', 'TIMEOUT') | int }}"
+        wait_completion: "{{ lookup('env', 'WAIT_COMPLETION') | bool }}"
+        wait_task_completion: "{{ lookup('env', 'WAIT_TASK_COMPLETION') | int }}"
+        validate_certs: false
+        state: "present"
+        application_key: "{{ api_credentials.application_key }}"
+        application_secret: "{{ api_credentials.application_secret }}"
+        consumer_key: "{{ api_credentials.consumer_key }}"
+      register: result
+
+    - name: Debug OVH IP Failover response
+      debug:
+        var: result

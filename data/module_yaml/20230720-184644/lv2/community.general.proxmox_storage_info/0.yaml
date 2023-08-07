@@ -1,0 +1,44 @@
+---
+- name: Retrieve Proxmox storage information
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Include necessary collections
+      include_tasks: tasks/require_collections.yml
+
+    - name: Set byte string values as regular strings
+      vars:
+        api_host: "{{ (api_host | default('10.0.0.1')) | to_nice_yaml }}"
+        api_password: "{{ (api_password | default('password123')) | to_nice_yaml }}"
+        api_token_id: "{{ (api_token_id | default(b'1234567890')) | to_nice_yaml }}"
+        api_token_secret: "{{ (api_token_secret | default(b'secretkey')) | to_nice_yaml }}"
+        api_user: "{{ (api_user | default('admin')) | to_nice_yaml }}"
+        storage: "{{ (storage | default('local')) | to_nice_yaml }}"
+        type: "{{ (type | default('raw')) | to_nice_yaml }}"
+        validate_certs: "{{ (validate_certs | default(false)) | to_nice_yaml }}"
+      set_fact:
+        regular_api_host: "{{ api_host | b64decode }}"
+        regular_api_password: "{{ api_password | b64decode }}"
+        regular_api_token_id: "{{ api_token_id | b64decode }}"
+        regular_api_token_secret: "{{ api_token_secret | b64decode }}"
+        regular_api_user: "{{ api_user | b64decode }}"
+        regular_storage: "{{ storage | b64decode }}"
+        regular_type: "{{ type | b64decode }}"
+        regular_validate_certs: "{{ validate_certs | b64decode }}"
+
+    - name: Retrieve storage information
+      community.general.proxmox_storage_info:
+        api_host: "{{ regular_api_host }}"
+        api_password: "{{ regular_api_password }}"
+        api_token_id: "{{ regular_api_token_id }}"
+        api_token_secret: "{{ regular_api_token_secret }}"
+        api_user: "{{ regular_api_user }}"
+        storage: "{{ regular_storage }}"
+        type: "{{ regular_type }}"
+        validate_certs: "{{ regular_validate_certs }}"
+      register: storage_info
+
+    - name: Print storage information
+      debug:
+        var: storage_info

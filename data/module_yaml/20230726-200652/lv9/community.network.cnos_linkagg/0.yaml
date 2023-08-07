@@ -1,0 +1,39 @@
+---
+- name: Test Playbook
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create random IP addresses for link aggregation groups
+      set_fact:
+        aggregate_ips: "{{ aggregate_ips|default([]) + [hostvars[item].ansible_default_ipv4.address] }}"
+      with_items:
+        - ubuntu1
+        - alpine1
+        - centos1
+        - redhat1
+
+    - name: Print aggregate IPs
+      debug:
+        var: aggregate_ips
+
+    - name: Create link aggregation groups
+      become: yes
+      community.network.cnos_linkagg:
+        aggregate: "{{ item.aggregate }}"
+        group: "{{ item.group }}"
+        members: "{{ item.members }}"
+        mode: "{{ item.mode }}"
+        purge: "{{ item.purge | default(false) }}"
+        state: present
+      loop:
+        - { aggregate: "{{ aggregate_ips[0] }}", group: "lag1", members: "eth1,eth2", mode: "active" }
+        - { aggregate: "{{ aggregate_ips[1] }}", group: "lag2", members: "eth3,eth4", mode: "passive" }
+        - { aggregate: "{{ aggregate_ips[2] }}", group: "lag3", members: "eth5,eth6", mode: "on" }
+        - { aggregate: "{{ aggregate_ips[3] }}", group: "lag4", members: "eth7,eth8", mode: "active" }
+
+    - name: Print result of link aggregation group creation
+      debug:
+        var: ansible_facts
+
+    # Add more tasks to further test the module based on your specific heuristic

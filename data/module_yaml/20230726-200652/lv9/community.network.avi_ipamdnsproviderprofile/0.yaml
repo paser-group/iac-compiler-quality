@@ -1,0 +1,61 @@
+---
+- name: Test community.network.avi_ipamdnsproviderprofile module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    inventory_file: "my_inventory.yaml"
+    subnet: "10.1.1.0/24"
+    gateway: "10.1.1.254"
+    nodes:
+      - name: ubuntu1
+        ip_address: "10.1.1.1"
+        distribution: "ubuntu"
+      - name: alpine1
+        ip_address: "10.1.1.2"
+        distribution: "alpine"
+      - name: centos1
+        ip_address: "10.1.1.3"
+        distribution: "centos"
+      - name: redhat1
+        ip_address: "10.1.1.4"
+        distribution: "redhat"
+
+  tasks:
+    - name: Create inventory file
+      file:
+        path: "{{ inventory_file }}"
+        state: touch
+
+    - name: Add hosts to inventory file
+      lineinfile:
+        path: "{{ inventory_file }}"
+        line: "{{ item.ip_address }} ansible_user=root ansible_ssh_pass=ansible inventory_hostname={{ item.name }}"
+      loop: "{{ nodes }}"
+
+    - name: Formulate random IP addresses
+      set_fact:
+        random_ip: "{{ subnet.split('/')[0] | ipaddr('n') | rand_ipaddr(subnet.split('/')[1] | int) }}"
+
+    - name: Include generated IP addresses in hosts' variables
+      lineinfile:
+        path: "{{ inventory_file }}"
+        line: "{{ item.name }}_ip={{ random_ip }}"
+      loop: "{{ nodes }}"
+
+    - name: Test avi_ipamdnsproviderprofile module
+      community.network.avi_ipamdnsproviderprofile:
+        controller: "https://{{ item.ip_address }}"
+        username: "admin"
+        password: "password"
+        tenant: "default"
+        allocate_ip_in_vrf: true
+        api_context:
+          api_version: "20.1.3"
+      loop: "{{ nodes }}"
+
+  post_tasks:
+    - name: Cleanup inventory file
+      file:
+        path: "{{ inventory_file }}"
+        state: absent

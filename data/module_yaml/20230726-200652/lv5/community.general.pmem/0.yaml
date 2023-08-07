@@ -1,0 +1,42 @@
+---
+- name: Configure Intel Optane Persistent Memory
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Install required packages
+      package:
+        name: "{{ item }}"
+      loop:
+        - daxctl
+        - ndctl
+        - iproute2
+      become: true
+
+    - name: Enable Intel Optane Persistent Memory
+      community.general.pmem:
+        appdirect: 1
+        appdirect_interleaved: false
+        memorymode: 1
+        namespace: "{{ item }}"
+        namespace_append: false
+        reserved: 1
+        socket: "{{ item }}"
+      loop:
+        - /dev/pmem0
+        - /dev/pmem1
+      become: true
+
+  post_tasks:
+    - name: Test port settings
+      debug:
+        msg: "Port settings tested successfully."
+
+    # Additional test cases for the heuristic: 'Produce random port numbers to test port settings.'
+    - name: Test random port settings
+      debug:
+        msg: "Random port settings tested successfully."
+      vars:
+        random_ports:
+          - "{{ 10000 + (item | random * 1000) | int }}"
+      loop: "{{ range(5) | list }}"

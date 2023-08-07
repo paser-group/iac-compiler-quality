@@ -1,0 +1,32 @@
+- name: Test for Latent Type-Related Bugs in snap_alias module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Install snapd
+      apt:
+        name: snapd
+        state: latest
+
+    - name: Install snapd core
+      snap:
+        name: core
+        state: latest
+
+    - name: Generate strings with varied encodings
+      set_fact:
+        encoded_strings:
+          - "{{ alias | b64encode }}"
+          - "{{ name | b64encode }}"
+          - "{{ state | b64encode }}"
+
+    - name: Execute snap_alias module with varied strings
+      community.general.snap_alias:
+        alias: "{{ item }}"
+        name: "{{ item }}"
+        state: "{{ item }}"
+      loop: "{{ encoded_strings }}"
+
+    - name: Debug output
+      debug:
+        var: ansible_facts['previous_command_stderr']

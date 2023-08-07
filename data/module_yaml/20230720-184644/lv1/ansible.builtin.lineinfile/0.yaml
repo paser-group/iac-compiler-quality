@@ -1,0 +1,75 @@
+- name: Ansible Latent Bug Finder - lineinfile module
+  hosts: localhost
+  gather_facts: false
+  
+  vars:
+    # Define your test cases based on the specified heuristic
+    test_cases:
+      - name: Test case 1 - Mixed case sensitivity
+        line: "This is a test line"
+        search_string: "this is a test line"
+        state: present
+      - name: Test case 2 - Mixed case sensitivity
+        line: "Another test line"
+        search_string: "ANOTHER TEST LINE"
+        state: absent
+
+  tasks:
+    - name: Create a test inventory file
+      ansible.builtin.file:
+        path: "{{ inventory_file }}"
+        state: touch
+
+    - name: Add test hosts to inventory
+      ansible.builtin.lineinfile:
+        path: "{{ inventory_file }}"
+        line: "{{ inventory_line }}"
+        create: true
+      vars:
+        inventory_file: "hosts"
+        inventory_line: "{{ item.key }} ansible_host={{ item.value }} ansible_connection=docker"
+      loop:
+        - { key: 'ubuntu1', value: '10.1.1.1' }
+        - { key: 'alpine1', value: '10.1.1.2' }
+        - { key: 'centos1', value: '10.1.1.3' }
+        - { key: 'redhat1', value: '10.1.1.4' }
+
+    - name: Set lineinfile options and test cases
+      ansible.builtin.set_fact:
+        lineinfile_options:
+          path: "{{ inventory_file }}"
+          line: "{{ item.line }}"
+          search_string: "{{ item.search_string }}"
+          state: "{{ item.state }}"
+      loop: "{{ test_cases }}"
+
+    - name: Trigger lineinfile module with test cases
+      ansible.builtin.lineinfile:
+        path: "{{ lineinfile_options.path }}"
+        line: "{{ lineinfile_options.line }}"
+        search_string: "{{ lineinfile_options.search_string }}"
+        state: "{{ lineinfile_options.state }}"
+        backrefs: true
+        backup: true
+        create: true
+        firstmatch: true
+        group: root
+        insertafter: ""
+        insertbefore: ""
+        mode: "0644"
+        others: ""
+        owner: root
+        regexp: ""
+        selevel: s0
+        serole: system_r
+        setype: etc_t
+        seuser: system_u
+        unsafe_writes: true
+        validate: ""
+
+      # You can add assertions here to validate the behavior of the lineinfile module
+      # based on the specific test cases
+
+    - name: Print the results
+      debug:
+        var: ansible_facts.lineinfile_result

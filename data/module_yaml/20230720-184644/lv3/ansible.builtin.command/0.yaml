@@ -1,0 +1,29 @@
+- name: Execute command
+  hosts: all
+  gather_facts: false
+
+  vars:
+    command: "echo"
+
+  tasks:
+    - name: Run command with bytes and strings
+      ansible.builtin.command:
+        argv:
+          - '{{ command | b64encode }}'
+          - "{{ command }}"
+        chdir: /tmp
+        cmd: python -c
+        args:
+          cmd: "import base64; import sys; decoded_cmd = base64.b64decode(sys.argv[1]).decode('utf-8'); exec(decoded_cmd)"
+          argv:
+            - '{{ command | b64encode }}'
+        creates: "/tmp/output.txt".encode('utf-8')
+        removes: "/tmp/output.txt".encode('utf-8')
+        stdin: "{{ 'This is a string input' }}"
+        stdin_add_newline: true
+        strip_empty_ends: true
+      register: result
+
+    - name: Debug result
+      debug:
+        var: result

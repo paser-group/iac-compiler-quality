@@ -1,0 +1,51 @@
+- name: Test Ansible Latent Type-Related Bugs
+  hosts: localhost
+  tasks:
+    - name: Set project variables
+      set_fact:
+        project_path: /path/to/django/project
+        pythonpath: /path/to/venv/bin/python
+        settings: /path/to/django/project/settings.py
+        database: dbname
+        apps: myapp1,myapp2
+        fixtures: initial_data.json
+        testrunner: xmlrunner.XMLTestRunner
+        virtualenv: /path/to/venv
+        cache_table: cache_table_name
+
+    - name: Create random port number
+      set_fact:
+        random_port: "{{ 10000 + (play_hosts.index(inventory_hostname) + 1) }}"
+      run_once: true
+
+    - name: Run Django manage command
+      community.general.django_manage:
+        project_path: "{{ project_path }}"
+        pythonpath: "{{ pythonpath }}"
+        settings: "{{ settings }}"
+        command: migrate
+        virtualenv: "{{ virtualenv }}"
+        database: "{{ database }}"
+        cache_table: "{{ cache_table }}"
+        link: yes
+        merge: yes
+        apps: "{{ apps }}"
+        failfast: yes
+        fixtures: "{{ fixtures }}"
+        clear: yes
+        ack_venv_creation_deprecation: yes
+        skip: yes
+        testrunner: "{{ testrunner }}"
+      register: result
+      vars:
+        project_path: "{{ project_path }}"
+        pythonpath: "{{ pythonpath }}"
+        settings: "{{ settings }}"
+        plugins:
+          - name: "{{ inventory_hostname }}"
+            port: "{{ random_port }}"
+            ssl: false
+
+    - name: Debug result
+      debug:
+        var: result

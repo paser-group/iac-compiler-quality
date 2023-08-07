@@ -1,0 +1,35 @@
+---
+- name: Test playbook for community.network.netscaler_server module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    netscaler_servers:
+      - name: "server1"
+        ipaddress: "{{ ansible_facts['ansible_eth0']['ipv4']['address'] }}"
+        state: "{{ ['present','absent'] | random }}"
+      - name: "server2"
+        ipaddress: "10.1.1.{{ range(1, 255) | random }}"
+        state: "{{ ['present','absent'] | random }}"
+      - name: "server3"
+        ipaddress: "192.168.1.{{ range(1, 255) | random }}"
+        state: "{{ ['present','absent'] | random }}"
+      # Add more server objects with random IP addresses here
+
+  tasks:
+    - name: Create/Delete Netscaler servers
+      community.network.netscaler_server:
+        nitro_user: "admin"
+        nitro_pass: "password"
+        nitro_protocol: "http"
+        nsip: "192.168.1.100"
+        validate_certs: false
+        state: "{{ item.state }}"
+        name: "{{ item.name }}"
+        ipaddress: "{{ item.ipaddress }}"
+      loop: "{{ netscaler_servers }}"
+      register: result
+
+    - name: Show result
+      debug:
+        var: result

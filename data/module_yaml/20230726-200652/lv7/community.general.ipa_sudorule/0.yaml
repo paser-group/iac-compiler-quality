@@ -1,0 +1,42 @@
+---
+- name: Test playbook for 'community.general.ipa_sudorule' module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    ipa_host: "<ipa_host>"
+    ipa_user: "<ipa_user>"
+    ipa_pass: "<ipa_password>"
+    ipa_port: "<ipa_port>"
+    ipa_prot: "<ipa_protocol>"
+    ipa_timeout: "<ipa_timeout>"
+    validate_certs: false
+
+  tasks:
+    - name: Create Sudorule with division-based limit
+      community.general.ipa_sudorule:
+        state: present
+        cn: sudorule1
+        description: Sudorule with division-based limit
+        user: ['user1']
+        usercategory: 'all'
+        runasextusers: ['extuser1']
+        runasusercategory: 'all'
+        sudoopt: ['!authenticate']
+        host: ['{{ item }}']
+        hostcategory: 'all'
+        cmd: ['ALL']
+        cmdcategory: 'all'
+        cmdgroup: ['group1']
+        limits:
+          surfright2qty:
+            - maxval: "{{ 4 // item }}"
+              surftype: 'surfright2'
+      vars:
+        item: 2
+      register: result
+      when: item in [2, 4]
+
+    - name: Show results
+      debug:
+        var: result

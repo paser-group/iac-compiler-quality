@@ -1,0 +1,57 @@
+---
+- name: Test playbook to uncover latent type-related bugs
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    dfs_group_id: "{{ random_ip() }}"
+    eth_trunk_id: 1
+    ip_address: "{{ random_ip() }}"
+    nickname: 12345
+    peer_link_id: 2
+    priority_id: 1
+    pseudo_nickname: ""
+    pseudo_priority: 1
+    state: present
+    vpn_instance_name: ""
+
+  tasks:
+    - name: Generate random IP address
+      set_fact:
+        random_ip_address: "{{ host_ip.split('.')[:-1] | join('.') }}.{{ range(1, 256) | random }}"
+
+    - name: Generate random string
+      set_fact:
+        random_string: "{{ range(20) | random | string }}"
+
+    - name: Setup MLAG configuration
+      community.network.ce_mlag_config:
+        provider:
+          host: "{{ host_ip }}"
+          username: "{{ host_username }}"
+          password: "{{ host_password }}"
+          transport: cli
+
+        dfs_group_id: "{{ dfs_group_id }}"
+        eth_trunk_id: "{{ eth_trunk_id }}"
+        ip_address: "{{ ip_address }}"
+        nickname: "{{ nickname }}"
+        peer_link_id: "{{ peer_link_id }}"
+        priority_id: "{{ priority_id }}"
+        pseudo_nickname: "{{ pseudo_nickname }}"
+        pseudo_priority: "{{ pseudo_priority }}"
+        state: "{{ state }}"
+        vpn_instance_name: "{{ vpn_instance_name }}"
+
+  handlers:
+    - name: Print result
+      debug:
+        var: result
+
+  # Helper functions to generate random IP address and string
+  functions:
+    random_ip:
+      - "{{ random_ip_address }}"
+    
+    random_string:
+      - "{{ random_string }}"

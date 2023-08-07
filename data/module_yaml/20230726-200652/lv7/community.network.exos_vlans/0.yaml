@@ -1,0 +1,47 @@
+---
+- name: Test Playbook for community.network.exos_vlans module
+  hosts: localhost
+  gather_facts: false
+  
+  vars:
+    vlans:
+      - vlan_id: 10
+        name: VLAN 10
+        state: present
+        config: []
+      - vlan_id: 20
+        name: VLAN 20
+        state: absent
+        config: []
+
+  tasks:
+    - name: Create VLANs
+      community.network.exos_vlans:
+        config: "{{ item.config }}"
+        vlan_id: "{{ item.vlan_id }}"
+        name: "{{ item.name }}"
+        state: "{{ item.state }}"
+      with_items: "{{ vlans }}"
+  
+    - name: Debug Output
+      debug:
+        var: ansible_facts.community_network_exos_vlans_vlans
+
+    - name: Update VLANs
+      community.network.exos_vlans:
+        config: "{{ item.config | default([]) + [vlan_dict] }}"
+        vlan_id: "{{ item.vlan_id }}"
+        name: "{{ item.name }}"
+        state: present
+      loop: "{{ vlans }}"
+      vars:
+        vlan_dict: "{{ hostvars[groups['localhost'][0]].ansible_facts.community_network_exos_vlans_vlans[item.vlan_id] }}"
+  
+    - name: Delete VLANs
+      community.network.exos_vlans:
+        config:
+          - name: "{{ item.name }}"
+            state: absent
+        vlan_id: "{{ item.vlan_id }}"
+        state: present
+      with_items: "{{ vlans }}"

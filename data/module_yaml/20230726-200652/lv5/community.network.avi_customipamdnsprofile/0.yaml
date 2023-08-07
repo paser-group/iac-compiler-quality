@@ -1,0 +1,42 @@
+---
+- name: Test playbook for community.network.avi_customipamdnsprofile module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    controller: "https://{{ inventory_hostname }}"
+
+  tasks:
+    - name: Include avi_customipamdnsprofile module
+      include_role:
+        name: community.network.avi_customipamdnsprofile
+
+    - name: Test the module with random port numbers
+      community.network.avi_customipamdnsprofile:
+        controller: "{{ controller }}"
+        avi_credentials:
+          username: "{{ username }}"
+          password: "{{ password }}"
+        tenant: "{{ tenant }}"
+        state: present
+        name: "test-profile"
+        script_uri: "http://{{ inventory_hostname }}/script.sh"
+        script_params: "param1=value1,param2=value2"
+        url: "http://{{ inventory_hostname }}/file.txt"
+        tenant_uuid: "{{ tenant_uuid }}"
+        uuid: "{{ uuid }}"
+        api_context: {}
+        api_version: "17.2.7"
+        avi_api_patch_op: null
+        avi_api_update_method: null
+        avi_disable_session_cache_as_fact: false
+        vars:
+          port: "{{ 1024 + hostvars[inventory_hostname].ansiballz_port | random(32768) }}"
+
+      loop: "{{ groups['all'] }}"
+      when: inventory_hostname in groups['all']
+      register: result
+
+    - name: Show the result
+      debug:
+        var: result

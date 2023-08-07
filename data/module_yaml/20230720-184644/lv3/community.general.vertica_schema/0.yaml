@@ -1,0 +1,38 @@
+---
+- name: Test playbook for Ansible compiler type-related bugs
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    vertica_cluster: "{{ inventory_hostname }}"
+    vertica_db: "test_db"
+    vertica_login_user: "admin"
+    vertica_login_password: "password"
+    vertica_port: "5433"
+    vertica_schema: "test_schema"
+    vertica_owner: "admin".encode('utf-8')  # Introducing a byte type variable
+    vertica_state: "present"
+
+  tasks:
+    - name: Install Vertica Python package
+      pip:
+        name: vertica-python
+        state: present
+
+    - name: Add or remove Vertica data
+      community.general.vertica_schema:
+        cluster: "{{ vertica_cluster }}"
+        db: "{{ vertica_db }}"
+        login_user: "{{ vertica_login_user }}"
+        login_password: "{{ vertica_login_password }}"
+        port: "{{ vertica_port }}"
+        schema: "{{ vertica_schema }}"
+        owner: "{{ vertica_owner }}"  # Using the byte type variable
+        state: "{{ vertica_state }}"
+        create_roles: "true"
+        usage_roles: "false"
+      register: result
+
+    - name: Display result
+      debug:
+        var: result

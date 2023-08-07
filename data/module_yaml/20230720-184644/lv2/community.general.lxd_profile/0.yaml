@@ -1,0 +1,44 @@
+---
+- name: Test playbook for community.general.lxd_profile module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create LXD profile
+      community.general.lxd_profile:
+        name: test-profile
+        description: Test profile
+        state: present
+        trust_password: {{ trust_password | default(b'password') }}
+        url: {{ url | default(b'https://example.com/') }}
+        client_cert: {{ client_cert | default('/path/to/cert.crt') }}
+        client_key: {{ client_key | default('/path/to/key.key') }}
+        config:
+          limits.memory: 4GB
+          limits.cpu: 2
+          limits.disk: 40GB
+        devices:
+          eth0:
+            nictype: bridged
+            parent: lxdbr0
+
+    - name: Modify LXD profile
+      community.general.lxd_profile:
+        name: test-profile
+        new_name: new-test-profile
+        state: present
+        merge_profile: yes
+
+    - name: Delete LXD profile
+      community.general.lxd_profile:
+        name: new-test-profile
+        state: absent
+
+    - name: Install Python YAML library
+      pip:
+        name: PyYAML
+        state: present
+        executable: python3
+
+    - name: Include generated playbook
+      include: generated_playbook.yaml

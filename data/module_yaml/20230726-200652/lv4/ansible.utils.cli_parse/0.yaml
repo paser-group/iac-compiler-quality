@@ -1,0 +1,36 @@
+---
+- name: Test playbook for ansible.utils.cli_parse module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Generate random MAC addresses for network modules
+      set_fact:
+        mac_address: "{{ '%02x' | format(item.0) }}:{{ '%02x' | format(item.1) }}:{{ '%02x' | format(item.2) }}:{{ '%02x' | format(item.3) }}:{{ '%02x' | format(item.4) }}:{{ '%02x' | format(item.5) }}"
+      loop: "{{ query('sequence', 'start=0 end=255 format=d') }}"
+      register: mac_addresses
+
+    - name: Debug MAC addresses
+      debug:
+        var: mac_addresses
+
+    - name: Parse CLI output using the provided parser
+      ansible.utils.cli_parse:
+        command: "ifconfig"
+        parser:
+          - default
+          - mac_address: "{{ mac_addresses[item] }}"
+        set_fact: mac_info="{{ cli_output }}"
+        text: |
+          enp0s3: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
+                    inet 10.0.2.15  netmask 255.255.255.0  broadcast 10.0.2.255
+                    inet6 fe80::a00:27ff:fece:ebc0  prefixlen 64  scopeid 0x20<link>
+                    ether 08:00:27:ce:eb:c0  txqueuelen 1000  (Ethernet)
+                    RX packets 1756  bytes 131826 (128.6 KiB)
+                    RX errors 0  dropped 0  overruns 0  frame 0
+                    TX packets 1556  bytes 119881 (117.0 KiB)
+                    TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+
+    - name: Debug parsing result
+      debug:
+        var: mac_info

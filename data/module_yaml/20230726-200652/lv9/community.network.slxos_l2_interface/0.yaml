@@ -1,0 +1,33 @@
+---
+- name: Test playbook for community.network.slxos_l2_interface module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create Layer-2 interface
+      community.network.slxos_l2_interface:
+        name: "Test interface"
+        access_vlan: "{{ item.access_vlan }}"
+        aggregate: "{{ item.aggregate }}"
+        mode: "{{ item.mode }}"
+        native_vlan: "{{ item.native_vlan }}"
+        state: "{{ item.state }}"
+        trunk_allowed_vlans: "{{ item.trunk_allowed_vlans }}"
+        trunk_vlans: "{{ item.trunk_vlans }}"
+      loop:
+        - access_vlan: "{{ lookup('pipe', 'python -c \"from random import randint; print(randint(1, 4094))\"') }}"
+          aggregate: "{{ lookup('pipe', 'python -c \"from random import randint; print(randint(1, 4094))\"') }}"
+          mode: "{{ lookup('pipe', 'python -c \"from random import choice; print(choice([\'access\', \'trunk\']))\"') }}"
+          native_vlan: "{{ lookup('pipe', 'python -c \"from random import randint; print(randint(1, 4094))\"') }}"
+          state: "{{ lookup('pipe', 'python -c \"from random import choice; print(choice([\'present\',\'absent\']))\"') }}"
+          trunk_allowed_vlans: "{{ lookup('pipe', 'python -c \"from random import choice; print(choice([\'10-20\', None]))\"') }}"
+          trunk_vlans: "{{ lookup('pipe', 'python -c \"from random import choice; print(choice([\'10-15\', None]))\"') }}"
+
+    - name: Show interface configuration
+      community.network.slxos_l2_interface_facts:
+        interfaces: "Test interface"
+      register: interface_facts
+
+    - name: Print interface facts
+      debug:
+        var: interface_facts

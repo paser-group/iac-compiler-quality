@@ -1,0 +1,26 @@
+- name: Test playbook for community.general.ipa_sudorule module
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Create sudorule with invalid cmdcategory value
+      community.general.ipa_sudorule:
+        cmd: ['sudo', '/bin/echo', 'test_command']
+        cmdcategory: 123
+        cn: my_sudorule
+        description: My sudorule
+        host: [localhost]
+        hostcategory: all
+        user: [test_user]
+        usercategory: 'test_category'
+        validate_certs: false
+      register: result
+      ignore_errors: true
+
+    - name: Debug output
+      debug:
+        var: result
+
+    - name: Fail task if return code is not 2
+      fail:
+        msg: "Expected return code 2 but got {{ result | default({}) | json_query('failed', default='notfound') }}"
+      when: result is not defined or result.rc != 2

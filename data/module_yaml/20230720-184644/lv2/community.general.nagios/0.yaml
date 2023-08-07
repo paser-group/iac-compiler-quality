@@ -1,0 +1,57 @@
+- name: Latent Type Bug Finder for community.general.nagios module
+  hosts: localhost
+  gather_facts: false
+  
+  tasks:
+    - name: Install required Python packages
+      pip:
+        name: nagiosplugin
+        state: latest
+
+    - name: Create Nagios downtime
+      community.general.nagios:
+        action: downtime
+        author: 'admin'
+        cmdfile: '/usr/local/nagios/var/rw/nagios.cmd'
+        command: 'DOWNTIME'
+        comment: 'Maintenance window'
+        host: 'localhost'
+        minutes: 60
+        servicegroup: 'All Services'
+        services: 'check_http,check_ssh'
+        start: '2022-01-01 00:00:00'
+
+    - name: Validate Nagios downtime creation
+      community.general.nagios:
+        action: get
+        cmdfile: '/usr/local/nagios/var/rw/nagios.cmd'
+        servicegroup: 'All Services'
+      register: result
+
+    - name: Display downtime status
+      debug:
+        var: result
+
+    - name: Introduce byte string in 'action' attribute
+      community.general.nagios:
+        action: b'downtime'
+        author: 'admin'
+        cmdfile: '/usr/local/nagios/var/rw/nagios.cmd'
+        command: 'DOWNTIME'
+        comment: 'Maintenance window'
+        host: 'localhost'
+        minutes: 60
+        servicegroup: 'All Services'
+        services: 'check_http,check_ssh'
+        start: '2022-01-01 00:00:00'
+
+    - name: Validate Nagios downtime creation with byte string
+      community.general.nagios:
+        action: get
+        cmdfile: '/usr/local/nagios/var/rw/nagios.cmd'
+        servicegroup: 'All Services'
+      register: result_byte_string
+
+    - name: Display downtime status with byte string
+      debug:
+        var: result_byte_string

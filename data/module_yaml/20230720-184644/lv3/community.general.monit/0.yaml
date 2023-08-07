@@ -1,0 +1,31 @@
+---
+- name: Test playbook for 'community.general.monit' module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    process_name: "test_process"
+    process_state: "running"
+    process_timeout: 60
+
+  tasks:
+    - name: Install Monit
+      package:
+        name: monit
+        state: present
+
+    - name: Create Monit configuration for test process
+      community.general.monit:
+        name: "{{ process_name }}"
+        state: "{{ process_state }}"
+        timeout: "{{ process_timeout }}"
+      register: monit_result
+
+    - name: Debug Monit configuration
+      debug:
+        var: monit_result
+
+    - name: Trigger type-related bug
+      command: >
+        echo "Triggering type-related bug: {{ monit_result.stdout_bytes }}"
+      when: monit_result.changed

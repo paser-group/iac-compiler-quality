@@ -1,0 +1,31 @@
+---
+- name: Manage Bitbucket Pipeline Variables
+  hosts: localhost
+  gather_facts: false
+  
+  tasks:
+    - name: Generate Random IP Address
+      set_fact:
+        random_ip: "{{ (hostvars[inventory_hostname].ansible_default_ipv4.address.split('.')[:-1] + [item])|join('.') }}"
+      run_once: true
+      loop: "{{ range(1, 255)|random }}"
+      when: inventory_hostname == 'localhost'
+
+    - name: Create Bitbucket Pipeline Variable
+      community.general.bitbucket_pipeline_variable:
+        client_id: "{{ client_id }}"
+        client_secret: "{{ client_secret }}"
+        name: "{{ name }}"
+        password: "{{ password }}"
+        repository: "{{ repository }}"
+        secured: "{{ secured }}"
+        state: "{{ state }}"
+        user: "{{ user }}"
+        value: "{{ value }}"
+        workspace: "{{ workspace }}"
+      register: result
+      ignore_errors: true
+
+    - name: Print Result
+      debug:
+        var: result

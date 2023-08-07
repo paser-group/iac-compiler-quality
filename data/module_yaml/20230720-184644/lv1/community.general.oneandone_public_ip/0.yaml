@@ -1,0 +1,49 @@
+- name: Test 'community.general.oneandone_public_ip' module
+  hosts: localhost
+  gather_facts: false
+  vars:
+    api_url: "https://api.1and1.com/v1"
+    auth_token: "{{ lookup('env', 'ONEANDONE_API_TOKEN') }}"
+    datacenter: "DataCenter1"  # Mixed case datacenter value
+    public_ip_id: "ip-12345678"
+    reverse_dns: "example.com"
+    state: present
+    type: "ipv4"
+    wait: true
+    wait_interval: 10
+    wait_timeout: 300
+  tasks:
+    - name: Create public IP with mixed case datacenter
+      community.general.oneandone_public_ip:
+        api_url: "{{ api_url }}"
+        auth_token: "{{ auth_token }}"
+        datacenter: "{{ datacenter }}"
+        public_ip_id: "{{ public_ip_id }}"
+        reverse_dns: "{{ reverse_dns }}"
+        state: "{{ state }}"
+        type: "{{ type }}"
+        wait: "{{ wait }}"
+        wait_interval: "{{ wait_interval }}"
+        wait_timeout: "{{ wait_timeout }}"
+      register: result
+      ignore_errors: true
+    
+    - name: Debug output
+      debug:
+        var: result
+
+    - name: Fail the playbook if a type-related bug is not triggered
+      fail:
+        msg: "The module did not trigger the expected type-related bug."
+
+    - name: Test's mixed case datacenter value triggered a type-related bug
+      debug:
+        msg: "A type-related bug was triggered by the mixed case datacenter value."
+
+    - name: Cleanup: Delete the created public IP
+      community.general.oneandone_public_ip:
+        api_url: "{{ api_url }}"
+        auth_token: "{{ auth_token }}"
+        datacenter: "{{ datacenter }}"
+        public_ip_id: "{{ public_ip_id }}"
+        state: absent

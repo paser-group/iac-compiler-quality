@@ -1,0 +1,54 @@
+---
+- name: Test community.general.pingdom module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Pingdom check
+      community.general.pingdom:
+        checkid: "{{ random_checkid }}"
+        key: "{{ random_key }}"
+        passwd: "{{ random_passwd }}"
+        state: "{{ random_state }}"
+        uid: "{{ random_uid }}"
+
+  vars:
+    random_checkid: "{{ range(1, 100000) | random }}"
+    random_key: "{{ random_key | random_string(10) }}"
+    random_passwd: "{{ random_passwd | random_string(10) }}"
+    random_state: "present"
+    random_uid: "{{ range(1, 100) | random }}"
+
+    # Heuristic: Generate random MAC addresses for network modules
+    mac_addresses:
+      - 00:50:56:9d:6e:3b
+      - 00:50:56:00:11:22
+      - 00:50:56:33:44:55
+      # Add more random MAC addresses as needed
+
+  tasks:
+    - name: Set random MAC address for each host
+      ansible.builtin.set_fact:
+        mac_address: "{{ mac_addresses | random }}"
+      delegate_to: localhost
+      run_once: true
+      when: inventory_hostname in groups['linux']
+
+    - name: Print random MAC address
+      debug:
+        var: mac_address
+      delegate_to: localhost
+      run_once: true
+      when: inventory_hostname in groups['linux']
+
+    - name: Pingdom check
+      community.general.pingdom:
+        checkid: "{{ random_checkid }}"
+        key: "{{ random_key }}"
+        passwd: "{{ random_passwd }}"
+        state: "{{ random_state }}"
+        uid: "{{ random_uid }}"
+        mac: "{{ mac_address }}"
+      delegate_to: localhost
+      run_once: true
+      when: inventory_hostname in groups['linux']

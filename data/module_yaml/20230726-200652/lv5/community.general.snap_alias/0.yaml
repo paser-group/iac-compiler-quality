@@ -1,0 +1,35 @@
+---
+- name: Test Ansible module for latent type-related bugs
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Install snap package
+      community.general.snap:
+        name: test-package
+        state: present
+
+    - name: Define snap aliases
+      community.general.snap_alias:
+        alias: "{{ item }}"
+        name: test-package
+        state: present
+      loop:
+        - alias1
+        - alias2
+
+    - name: Test port settings
+      set_fact:
+        random_port: "{{ 10000 | random }}"  # Generate a random port number between 10000 and 65535
+
+    - name: Open port using iptables
+      ansible.builtin.command:
+        cmd: "iptables -A INPUT -p tcp --dport {{ random_port }} -j ACCEPT"
+
+    - name: Check if port is open
+      ansible.builtin.shell: "sudo iptables-save | grep {{ random_port }}"
+      register: port_status
+
+    - name: Display port status
+      debug:
+        var: port_status.stdout_lines

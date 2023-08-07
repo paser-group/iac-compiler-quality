@@ -1,0 +1,82 @@
+---
+
+- name: Test playbook for 'community.general.ldap_entry' module
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Add LDAP entry
+      community.general.ldap_entry:
+        bind_dn: "cn=admin,dc=example,dc=com"
+        bind_pw: "password123"
+        server_uri: "ldap://ldap.example.com"
+        state: present
+        dn: "ou=users,dc=example,dc=com"
+        objectClass:
+          - organizationalUnit
+          - top
+        attributes:
+          ou: "users"
+          description: "Organizational Unit for user entries"
+        validate_certs: false
+      register: result
+
+    - name: Print LDAP entry result
+      debug:
+        var: result
+
+    - name: Add LDAP entry with invalid bind_dn type
+      community.general.ldap_entry:
+        bind_dn: 123  # Invalid type, expected string
+        bind_pw: "password123"
+        server_uri: "ldap://ldap.example.com"
+        state: present
+        dn: "ou=users,dc=example,dc=com"
+        objectClass:
+          - organizationalUnit
+          - top
+        attributes:
+          ou: "users"
+          description: "Organizational Unit for user entries"
+        validate_certs: false
+      register: result_invalid_bind_dn
+
+    - name: Print invalid bind_dn result
+      debug:
+        var: result_invalid_bind_dn
+
+    - name: Add LDAP entry with invalid objectClass type
+      community.general.ldap_entry:
+        bind_dn: "cn=admin,dc=example,dc=com"
+        bind_pw: "password123"
+        server_uri: "ldap://ldap.example.com"
+        state: present
+        dn: "ou=users,dc=example,dc=com"
+        objectClass: "organizationalUnit"  # Invalid type, expected list
+        attributes:
+          ou: "users"
+          description: "Organizational Unit for user entries"
+        validate_certs: false
+      register: result_invalid_objectClass
+
+    - name: Print invalid objectClass result
+      debug:
+        var: result_invalid_objectClass
+
+    - name: Add LDAP entry with missing required attribute
+      community.general.ldap_entry:
+        bind_dn: "cn=admin,dc=example,dc=com"
+        bind_pw: "password123"
+        server_uri: "ldap://ldap.example.com"
+        state: present
+        dn: "ou=users,dc=example,dc=com"
+        objectClass:
+          - organizationalUnit
+          - top
+        attributes:
+          ou: "users"  # Missing 'description' attribute
+        validate_certs: false
+      register: result_missing_attribute
+
+    - name: Print missing attribute result
+      debug:
+        var: result_missing_attribute

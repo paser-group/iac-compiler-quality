@@ -1,0 +1,28 @@
+---
+- name: Test Playbook
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Generate Random MAC Address
+      set_fact:
+        random_mac: "52:54:00:{{ "%02x"|format(ansible_random.randint(0x0, 0xff)) }}:{{ "%02x"|format(ansible_random.randint(0x0, 0xff)) }}:{{ "%02x"|format(ansible_random.randint(0x0, 0xff)) }}"
+
+    - name: Configure Network
+      community.general.network_interface:
+        name: eth0
+        state: up
+        mac: "{{ random_mac }}"
+        ipv4: "{{ '10.10.' ~ ansible_loop.index ~ '.1' }}"
+        netmask: "255.255.255.0"
+        gateway4: "10.10.1.254"
+        dns_search: "example.com"
+        dns_nameservers:
+          - "8.8.8.8"
+          - "8.8.4.4"
+        mode: "static"
+      loop: "{{ query('sequence', 3) }}"
+
+    - name: Debug output
+      debug:
+        var: random_mac

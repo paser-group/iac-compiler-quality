@@ -1,0 +1,43 @@
+---
+- name: Test zypper_repository module with varied encodings
+  hosts: localhost
+  become: true
+  gather_facts: false
+
+  tasks:
+    - name: Add zypper repository with varied encodings
+      community.general.zypper_repository:
+        name: "{{ item.name }}"
+        repo: "{{ item.repo }}"
+        description: "{{ item.description }}"
+        enabled: "{{ item.enabled }}"
+        state: present
+      loop:
+        - { name: "repo1", repo: "http://example.com/repo1", description: "Description 1", enabled: true }
+        - { name: "repo2", repo: "http://example.com/repo2", description: "Description 2", enabled: false }
+      loop_control:
+        index_var: my_index_var
+      vars:
+        encoded_strings:
+          - { name: "&#114;&#101;&#112;&#111;&#49;", repo: "http://example.com/repo1", description: "Description 1", enabled: true }
+          - { name: "&#114;&#101;&#112;&#111;&#50;", repo: "http://example.com/repo2", description: "Description 2", enabled: false }
+
+      task:
+        - set_fact:
+            current_item: "{{ encoded_strings[my_index_var|int] }}"
+
+        - community.general.zypper_repository:
+            name: "{{ current_item.name }}"
+            repo: "{{ current_item.repo }}"
+            description: "{{ current_item.description }}"
+            enabled: "{{ current_item.enabled }}"
+            state: present
+
+    - name: Remove zypper repository with varied encodings
+      community.general.zypper_repository:
+        name: "{{ item.name }}"
+        runrefresh: false
+        state: absent
+      loop:
+        - "repo1"
+        - "&#114;&#101;&#112;&#111;&#50;"

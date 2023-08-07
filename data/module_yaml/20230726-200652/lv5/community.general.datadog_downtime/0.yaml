@@ -1,0 +1,48 @@
+---
+- name: Test datadog_downtime module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Set random port
+      shell: "/bin/sh -c 'echo $((RANDOM % 65535)) > random_port.txt'"
+
+    - name: Set random values for options
+      set_fact:
+        api_key: "{{ lookup('password', '/dev/null length=32 chars=ascii_letters,digits') }}"
+        app_key: "{{ lookup('password', '/dev/null length=32 chars=ascii_letters,digits') }}"
+        downtime_message: "{{ lookup('password', '/dev/null length=32 chars=ascii_letters,digits') }}"
+        end: "{{ lookup('pipe', 'date +%s%N') | int | random(seed=inventory_hostname|int) }}"
+        id: "{{ lookup('pipe', 'date +%s%N') | int | random(seed=inventory_hostname|int) }}"
+        monitor_id: "{{ lookup('pipe', 'date +%s%N') | int | random(seed=inventory_hostname|int) }}"
+        rrule: "{{ lookup('pipe', 'date +%s%N') | random(seed=inventory_hostname|int) | int / 1000000000 |abs }}/2/1 * * *"
+        start: "{{ lookup('pipe', 'date +%s%N') | int | random(seed=inventory_hostname|int) }}"
+        state: "{{ ['present', 'absent'] | random(seed=inventory_hostname|int) }}"
+        timezone: "{{ ['UTC', 'America/New_York', 'Europe/London', 'Asia/Tokyo'] | random(seed=inventory_hostname|int) }}"
+        port: "{{ lookup('file', 'random_port.txt') }}"
+
+    - name: Perform API request with random values
+      community.general.datadog_downtime:
+        api_host: "{{ lookup('pipe', 'ip route show default | awk \\'/default/ {print $3}/\\'') }}"
+        api_key: "{{ api_key }}"
+        app_key: "{{ app_key }}"
+        downtime_message: "{{ downtime_message }}"
+        end: "{{ end }}"
+        id: "{{ id }}"
+        monitor_id: "{{ monitor_id }}"
+        monitor_tags: "{{ ['tag1', 'tag2', 'tag3'] | random(seed=inventory_hostname|int) }}"
+        rrule: "{{ rrule }}"
+        scope: "{{ ['node:localhost', 'node:other'] | random(seed=inventory_hostname|int) }}"
+        start: "{{ start }}"
+        state: "{{ state }}"
+        timezone: "{{ timezone }}"
+        port: "{{ port }}"
+      register: result
+
+    - debug:
+        var: result
+
+    - name: Clean up random_port.txt
+      file:
+        path: random_port.txt
+        state: absent

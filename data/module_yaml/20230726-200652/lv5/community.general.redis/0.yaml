@@ -1,0 +1,87 @@
+---
+- name: Ansible Latent Bug Finder & Heuristic Test
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create Redis database
+      community.general.redis:
+        command: set
+        key: mykey
+        value: "{{ item }}"
+        db: 0
+      loop:
+        - value1
+        - value2
+        - value3
+        - value4
+
+    - name: Get Redis value
+      community.general.redis:
+        command: get
+        key: mykey
+        db: 0
+      register: redis_result
+
+    - name: Debug Redis value
+      debug:
+        var: redis_result
+
+    - name: Flush Redis database
+      community.general.redis:
+        command: flushall
+        db: 0
+
+    - name: Get Redis value after flush
+      community.general.redis:
+        command: get
+        key: mykey
+        db: 0
+      register: redis_result_after_flush
+
+    - name: Debug Redis value after flush
+      debug:
+        var: redis_result_after_flush
+
+    - name: Test Redis port settings
+      community.general.redis:
+        command: ping
+        login_host: localhost
+        login_port: "{{ item }}"
+      with_items:
+        - 6379
+        - 6380
+        - 6381
+
+    - name: Test Redis TLS
+      community.general.redis:
+        command: ping
+        login_host: localhost
+        login_port: 6379
+        tls: true
+
+    - name: Test Redis TLS with custom CA certificates
+      community.general.redis:
+        command: ping
+        login_host: localhost
+        login_port: 6379
+        tls: true
+        ca_certs: /path/to/ca_certs
+
+    - name: Test Redis validation of certificates
+      community.general.redis:
+        command: ping
+        login_host: localhost
+        login_port: 6379
+        tls: true
+        validate_certs: true
+        ca_certs: /path/to/ca_certs
+
+    - name: Test Redis replica mode
+      community.general.redis:
+        command: ping
+        login_host: localhost
+        login_port: 6379
+        replica_mode: slave
+        master_host: redis-master
+        master_port: 6380

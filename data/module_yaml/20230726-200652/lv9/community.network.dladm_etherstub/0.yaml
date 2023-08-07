@@ -1,0 +1,31 @@
+---
+- name: Test Ansible Latent Type-Related Bugs with community.network.dladm_etherstub module
+  hosts: localhost
+  gather_facts: false
+  
+  tasks:
+    - name: Create etherstub
+      community.network.dladm_etherstub:
+        name: "{{ item }}"
+        state: present
+        temporary: true
+      with_items:
+        - "stub1"
+        - "stub2"
+    
+    - name: Generate random IP addresses and assign them to the etherstubs
+      set_fact:
+        random_ip: "{{ 10 | random }}.{{ 1 | random }}.{{ 1 | random }}.{{ 1 | random }}"
+      loop:
+        - "stub1"
+        - "stub2"
+      
+    - name: Configure IP addresses for etherstub
+      community.network.dladm_etherstub:
+        name: "{{ item }}"
+        state: absent
+        fixed_addresses:
+          - "{{ hostvars[inventory_hostname]['random_ip'] }}"
+      loop:
+        - "stub1"
+        - "stub2"

@@ -1,0 +1,45 @@
+---
+- name: Schedule command/script execution using ansible.posix.at module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    command: "echo 'Hello, World!'"
+    script_file: "~/test_script.sh"
+
+  tasks:
+    - name: Generate strings with varied encodings
+      script: |
+        import sys
+        for encoding in ['utf-8', 'latin-1', 'utf-16', 'ascii']:
+          string = "Hello, World!"
+
+          try:
+            encoded_string = string.encode(encoding)
+            sys.stdout.write(f"{encoding}: {encoded_string.decode(encoding)}\n")
+          except UnicodeEncodeError:
+            pass
+
+      register: encoded_strings
+
+    - name: Schedule command execution
+      ansible.posix.at:
+        command: "{{ command }}"
+        count: 2
+        state: present
+        unique: yes
+        units: minutes
+      loop: "{{ encoded_strings.stdout_lines }}"
+      loop_control:
+        loop_var: encoded_string
+
+    - name: Schedule script execution
+      ansible.posix.at:
+        script: "{{ script_file }}"
+        count: 1
+        state: present
+        unique: no
+        units: hours
+      loop: "{{ encoded_strings.stdout_lines }}"
+      loop_control:
+        loop_var: encoded_string

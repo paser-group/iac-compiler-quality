@@ -1,0 +1,38 @@
+---
+- name: Execute Groovy script with Jenkins
+  hosts: localhost
+  gather_facts: false
+  
+  tasks:
+    - name: Set random MAC address
+      set_fact:
+        mac_address: "{{ '%012x' | format((hostvars[item]['ansible_all_ipv4_addresses'][0].split('.')[-1] | int) + 4096) }}"
+      loop: "{{ groups['docker_nodes'] }}"
+      
+    - name: Execute Groovy script
+      community.general.jenkins_script:
+        url: "http://{{ inventory_hostname }}:8080/"
+        user: "admin"
+        password: "password"
+        validate_certs: false
+        script: |
+          import hudson.model.*
+          
+          def slaves = Hudson.instance.slaves
+          slaves.each { slave ->
+            def computer = slave.getComputer()
+            def launcher = computer.getLauncher()
+            
+            if (launcher instanceof hudson.slaves.JNLPLauncher) {
+              def props = computer.getNodeProperties()
+              def envVars = props.get(hudson.slaves.EnvironmentVariablesNodeProperty)
+              envVars.envVars.put('MAC_ADDRESS', "{{ mac_address }}")
+              props.set(envVars)
+              computer.setNodeProperties(props)
+            }
+          }
+      register: result
+      
+    - name: Debug result
+      debug:
+        var: result

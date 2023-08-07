@@ -1,0 +1,60 @@
+---
+- hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Set network attributes
+      set_fact:
+        network_attributes:
+          - name: my_network
+            subnet: 10.1.1.0/24
+            gateway: 10.1.1.254
+            nodes:
+              - name: ubuntu1
+                ip_address: 10.1.1.1
+                distribution: ubuntu
+              - name: alpine1
+                ip_address: 10.1.1.2
+                distribution: alpine
+              - name: centos1
+                ip_address: 10.1.1.3
+                distribution: centos
+              - name: redhat1
+                ip_address: 10.1.1.4
+                distribution: redhat
+
+    - name: Create and delete shared loadbalancers
+      hosts: localhost
+      gather_facts: false
+
+      tasks:
+        - name: Create shared loadbalancer
+          community.general.clc_loadbalancer:
+            name: my_loadbalancer
+            alias: my_alias
+            description: My loadbalancer
+            location: "{{ item.location }}"
+            method: roundrobin
+            nodes:
+              - name: "{{ item.name }}"
+                ip_address: "{{ item.ip_address }}"
+                distribution: "{{ item.distribution }}"
+            persistence: sticky
+            port: 80
+            state: present
+          with_items: "{{ network_attributes }}"
+          register: result
+
+        - name: Print create result
+          debug:
+            var: result
+
+        - name: Delete shared loadbalancer
+          community.general.clc_loadbalancer:
+            name: my_loadbalancer
+            state: absent
+          register: result
+
+        - name: Print delete result
+          debug:
+            var: result

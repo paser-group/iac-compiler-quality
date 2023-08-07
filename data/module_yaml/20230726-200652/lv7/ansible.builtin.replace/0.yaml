@@ -1,0 +1,52 @@
+---
+- name: Test playbook for ansible.builtin.replace
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Replace string in a file
+      ansible.builtin.replace:
+        path: "/path/to/file.txt"
+        regexp: "oldstring"
+        replace: "newstring"
+        backup: true
+      register: result
+
+    - name: Assert file was changed
+      assert:
+        that: result.changed is true
+
+    - name: Assert backup was created
+      assert:
+        that: result.backup_file is defined
+
+    - name: Assert backup file has expected content
+      ansible.builtin.shell: "cat {{ result.backup_file.path }} | grep newstring"
+      register: backup_result
+      changed_when: false
+      failed_when: false
+
+    - name: Assert backup file content contains newstring
+      debug:
+        msg: "Backup file contains newstring"
+      when: backup_result.stdout != ""
+
+    - name: Assert backup file content does not contain oldstring
+      debug:
+        msg: "Backup file does not contain oldstring"
+      failed_when: backup_result.stdout != ""
+
+    - name: Assert original file content has been replaced
+      ansible.builtin.shell: "cat /path/to/file.txt | grep newstring"
+      register: replace_result
+      changed_when: false
+      failed_when: false
+
+    - name: Assert file content contains newstring
+      debug:
+        msg: "File contains newstring"
+      when: replace_result.stdout != ""
+
+    - name: Assert file content does not contain oldstring
+      debug:
+        msg: "File does not contain oldstring"
+      failed_when: replace_result.stdout != ""

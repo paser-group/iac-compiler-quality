@@ -1,0 +1,34 @@
+---
+- name: Test 'community.general.lvg' module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create logical volume group
+      community.general.lvg:
+        vg: "{{ item }}"
+        pvresize: true
+        pvs:
+          - /dev/sdb
+        state: present
+        force: "{{ item == 'test_vg' }}"
+      loop:
+        - test_vg
+        - prod_vg
+
+    - name: Resize logical volume group
+      community.general.lvg:
+        vg: test_vg
+        pesize: 32M
+        pv_options: "--alloc cling"
+        vg_options: "--maxpartitions 32"
+        state: resize
+
+    - name: Delete logical volume group
+      community.general.lvg:
+        vg: "{{ item }}"
+        force: "{{ item == 'test_vg' }}"
+        state: absent
+      loop:
+        - test_vg
+        - prod_vg

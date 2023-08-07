@@ -1,0 +1,48 @@
+---
+- name: Unveiling Type-related Bugs with community.general.pipx
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    executable_path: "/usr/local/bin"
+    packages:
+      - name: ansible
+        state: latest
+        python: "3.8"
+        executable: "{{ executable_path }}/ansible"
+      - name: flask
+        state: present
+        python: "3.8"
+        executable: "{{ executable_path }}/flask"
+
+  tasks:
+    - name: Install pipx
+      community.general.pipx:
+        state: present
+        executable: "{{ executable_path }}/pipx"
+        include_injected: true
+        inject_packages:
+          - name: tox
+            state: present
+            python: "3.8"
+            executable: "{{ executable_path }}/tox"
+        install_apps: true
+        install_deps: true
+        name: pipx
+        python: "3.8"
+        source: pip
+        system_site_packages: false
+
+    - name: Install packages with pipx
+      community.general.pipx:
+        state: present
+        executable: "{{ executable_path }}/pipx"
+        name: "{{ item.name }}"
+        python: "{{ item.python }}"
+      loop: "{{ packages }}"
+
+    - name: Uninstall pipx
+      community.general.pipx:
+        state: absent
+        executable: "{{ executable_path }}/pipx"
+        name: pipx

@@ -1,0 +1,68 @@
+---
+- name: Test playbook for community.general.github_release module
+  hosts: localhost
+  become: false
+  gather_facts: false
+
+  tasks:
+    - name: Release GitHub project
+      community.general.github_release:
+        action: create
+        repo: ansible/ansible
+        tag: "{{ tag }}"
+        token: "{{ token }}"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        target: "{{ target }}"
+        name: "{{ name }}"
+        draft: "{{ draft }}"
+        prerelease: "{{ prerelease }}"
+        body: "{{ body | to_json }}"
+      register: result
+      failed_when: false
+
+    - name: Print task result
+      debug:
+        var: result
+
+- name: Test playbook for heuristic-based type-related bugs
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    tag: v1.0
+    token: "{{ lookup('env', 'GITHUB_TOKEN') }}"
+    user: "{{ lookup('env', 'GITHUB_USER') }}"
+    password: "{{ lookup('env', 'GITHUB_PASSWORD') }}"
+    target: "https://api.github.com"
+    name: "Test Release"
+    draft: "true"
+    prerelease: "false"
+    body: "{{ body_list | to_json }}"
+
+  vars_prompt:
+    - name: body_list
+      prompt: "Enter a list of strings and bytes for the 'body' attribute (e.g., [b'Hello', 'World'])"
+      private: no
+
+  tasks:
+    - name: Release GitHub project with bytes and strings in 'body'
+      community.general.github_release:
+        action: create
+        repo: ansible/ansible
+        tag: "{{ tag }}"
+        token: "{{ token }}"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        target: "{{ target }}"
+        name: "{{ name }}"
+        draft: "{{ draft }}"
+        prerelease: "{{ prerelease }}"
+        body: "{{ item }}"
+      with_items: "{{ body_list }}"
+      register: result
+      failed_when: false
+
+    - name: Print task result
+      debug:
+        var: result

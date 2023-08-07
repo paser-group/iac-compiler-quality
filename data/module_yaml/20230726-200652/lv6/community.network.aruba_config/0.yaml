@@ -1,0 +1,20 @@
+- name: Test playbook for Ansible latent type-related bug exploration
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Install the Aruba Networks ansible collection
+      command: ansible-galaxy collection install arubanetworks.oscp
+
+    - name: Generate strings with varied encodings
+      set_fact:
+        encoded_strings:
+          - '{{ "aruba_configuration" | b64encode }}'
+          - '{{ "aruba_configuration" | base64.b32encode }}'
+          - '{{ "aruba_configuration" | base64.urlsafe_b64encode }}'
+
+    - name: Configure Aruba devices
+      community.network.aruba_config:
+        backup: false
+        encrypt: true
+        intended_config: "{{ encoded_strings }}"

@@ -1,0 +1,69 @@
+---
+- name: Ansible Latent Type-Related Bug Testing
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    auth_keycloak_url: "http://keycloak.example.com"
+    realm: "myrealm"
+    validate_certs: false
+
+  tasks:
+    - name: Test with valid input
+      community.general.keycloak_realm_info:
+        auth_keycloak_url: "{{ auth_keycloak_url }}"
+        realm: "{{ realm }}"
+        validate_certs: "{{ validate_certs }}"
+      register: result_valid
+
+    - name: Debug output - Valid input
+      debug:
+        var: result_valid
+
+    - name: Test with invalid URL type (int)
+      community.general.keycloak_realm_info:
+        auth_keycloak_url: 1234
+        realm: "{{ realm }}"
+        validate_certs: "{{ validate_certs }}"
+      ignore_errors: true
+      register: result_invalid_url
+
+    - name: Debug output - Invalid URL type
+      debug:
+        var: result_invalid_url
+
+    - name: Test with invalid realm type (bool)
+      community.general.keycloak_realm_info:
+        auth_keycloak_url: "{{ auth_keycloak_url }}"
+        realm: true
+        validate_certs: "{{ validate_certs }}"
+      ignore_errors: true
+      register: result_invalid_realm
+
+    - name: Debug output - Invalid realm type
+      debug:
+        var: result_invalid_realm
+
+    - name: Test with invalid validate_certs type (str)
+      community.general.keycloak_realm_info:
+        auth_keycloak_url: "{{ auth_keycloak_url }}"
+        realm: "{{ realm }}"
+        validate_certs: "true"
+      ignore_errors: true
+      register: result_invalid_cert
+
+    - name: Debug output - Invalid validate_certs type
+      debug:
+        var: result_invalid_cert
+
+    - name: Test with random port numbers
+      community.general.keycloak_realm_info:
+        auth_keycloak_url: "{{ auth_keycloak_url }}"
+        realm: "{{ realm }}"
+        validate_certs: "{{ validate_certs }}"
+        port: "{{ 20000 + (ansible_play_hosts.index(inventory_hostname) * 100) }}"
+      register: result_random_port
+
+    - name: Debug output - Random port numbers
+      debug:
+        var: result_random_port

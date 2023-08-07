@@ -1,0 +1,44 @@
+---
+- hosts: localhost
+  gather_facts: false
+
+  vars:
+    account: "your_account"
+    application: "your_application"
+    keyset: "your_keyset"
+    name: "your_block"
+    state: "present"
+    email: "your_email@example.com"
+    password: "your_password"
+    validate_certs: false
+
+  tasks:
+    - name: Create PubNub Block
+      community.general.pubnub_blocks:
+        account: "{{ account }}"
+        application: "{{ application }}"
+        name: "{{ name }}"
+        description: "Test block"
+        password: "{{ password }}"
+        email: "{{ email }}"
+        keyset: "{{ keyset }}"
+        state: "{{ state }}"
+        validate_certs: "{{ validate_certs }}"
+        cache:
+          ttl: "{{ 3600 / 3 }}"  # division operation to assign a limit-related value
+          max_size: "{{ 1024 / 2 }}"  # division operation to assign a limit-related value
+        event_handlers:
+          - name: onBeforePub
+            type: "javascript"
+            options:
+              JavaScriptCode: "console.log('before publish');"
+        changes:
+          - name: blockname
+            type: "javascript"
+            options:
+              JavaScriptCode: "pubnub.publish({});"
+
+      register: result
+
+    - debug:
+        var: result

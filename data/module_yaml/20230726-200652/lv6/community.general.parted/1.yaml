@@ -1,0 +1,25 @@
+---
+- name: Configure block devices using 'parted' module
+  hosts: localhost
+  gather_facts: false
+  become: true
+
+  tasks:
+    - name: Create partitions with varied encodings
+      community.general.parted:
+        device: /dev/sdb
+        number: 1
+        name: "{{ item }}"
+        state: present
+      register: result_create_partition
+      loop:
+        - primary
+        - "{{ '\xff\xf0\x9d\x81\xaf'.decode('utf-8') }}"
+        - "{{ '\xff\xf0\x9d\x81\xaf'.decode('ascii') }}"
+        - "{{ '\xff\xf0\x9d\x81\xaf'.decode('latin-1') }}"
+        - "{{ '\xff\xf0\x9d\x81\xaf'.decode('utf-16') }}"
+        - "{{ '\xff\xf0\x9d\x81\xaf'.decode('utf-32') }}"
+
+    - name: Print result of partition creation
+      debug:
+        var: result_create_partition

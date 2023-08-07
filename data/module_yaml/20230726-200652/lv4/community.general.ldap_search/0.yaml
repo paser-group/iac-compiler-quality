@@ -1,0 +1,89 @@
+- name: Latent Bug Finder and Heuristic Testing
+  hosts: localhost
+  gather_facts: false
+  
+  vars:
+    ldap_server_uri: "ldap://ldap.example.com"
+    ldap_bind_dn: "cn=admin,dc=example,dc=com"
+    ldap_bind_pw: "admin_pass"
+    ldap_base_dn: "ou=users,dc=example,dc=com"
+    ldap_filter: "(objectClass=person)"
+    ldap_attrs:
+      - uid
+      - givenName
+      - sn
+      - mail
+  
+  tasks:
+    - name: Install 'community.general' collection
+      ansible.builtin.command: ansible-galaxy collection install community.general
+      
+    - name: Test Case 1 - Missing required option - dn
+      community.general.ldap_search:
+        attrs: "{{ ldap_attrs }}"
+        bind_dn: "{{ ldap_bind_dn }}"
+        bind_pw: "{{ ldap_bind_pw }}"
+        ca_path: "/etc/ssl/certs"
+        filter: "{{ ldap_filter }}"
+        referrals_chasing: always
+        sasl_class: EXTERNAL
+        schema: true
+        scope: subtree
+        server_uri: "{{ ldap_server_uri }}"
+        start_tls: false
+        validate_certs: true
+        xorder_discovery: ""
+      register: result1
+      ignore_errors: true
+      
+    - name: Assert Test Case 1 failed with missing option error
+      assert:
+        that:
+          - "'dn' is required" in result1.msg
+      
+    - name: Test Case 2 - Invalid option type - server_uri (int instead of str)
+      community.general.ldap_search:
+        attrs: "{{ ldap_attrs }}"
+        bind_dn: "{{ ldap_bind_dn }}"
+        bind_pw: "{{ ldap_bind_pw }}"
+        ca_path: "/etc/ssl/certs"
+        dn: "{{ ldap_base_dn }}"
+        filter: "{{ ldap_filter }}"
+        referrals_chasing: always
+        sasl_class: EXTERNAL
+        schema: true
+        scope: subtree
+        server_uri: 10
+        start_tls: false
+        validate_certs: true
+        xorder_discovery: ""
+      register: result2
+      ignore_errors: true
+      
+    - name: Assert Test Case 2 failed with invalid option type error
+      assert:
+        that:
+          - "'server_uri' expects a string, got int" in result2.msg
+      
+    - name: Test Case 3 - Valid configuration
+      community.general.ldap_search:
+        attrs: "{{ ldap_attrs }}"
+        bind_dn: "{{ ldap_bind_dn }}"
+        bind_pw: "{{ ldap_bind_pw }}"
+        ca_path: "/etc/ssl/certs"
+        dn: "{{ ldap_base_dn }}"
+        filter: "{{ ldap_filter }}"
+        referrals_chasing: always
+        sasl_class: EXTERNAL
+        schema: true
+        scope: subtree
+        server_uri: "{{ ldap_server_uri }}"
+        start_tls: false
+        validate_certs: true
+        xorder_discovery: ""
+      register: result3
+      
+    - name: Assert Test Case 3 succeeded
+      assert:
+        that:
+          - result3 is success

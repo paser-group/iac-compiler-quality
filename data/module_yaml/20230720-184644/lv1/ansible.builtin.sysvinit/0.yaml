@@ -1,0 +1,24 @@
+- name: Test playbook for 'ansible.builtin.sysvinit' module
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Ensure a service is configured with mixed case sensitivity
+      ansible.builtin.sysvinit:
+        name: "{{ item.name }}"
+        state: "{{ item.state }}"
+        enabled: "{{ item.enabled }}"
+        daemonize: "{{ item.daemonize }}"
+        pattern: "{{ item.pattern }}"
+        runlevels: "{{ item.runlevels }}"
+        sleep: "{{ item.sleep }}"
+      with_items:
+        - { name: "Service1", state: "started", enabled: true, daemonize: false, pattern: "pattern1", runlevels: ["2", "3", "5"], sleep: 5 }
+        - { name: "Service2", state: "stopped", enabled: false, daemonize: true, pattern: "PATTERN2", runlevels: ["3", "4"], sleep: 10 }
+
+  handlers:
+    - name: Restart service
+      ansible.builtin.service:
+        name: "{{ item }}"
+        state: restarted
+      loop: "{{ ansible.builtin.sysvinit | map(attribute='name') | list }}"

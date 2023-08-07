@@ -1,0 +1,27 @@
+---
+- name: Test latent type-related bugs in Ansible compiler
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create an entry in /etc/crypttab
+      community.general.crypttab:
+        backing_device: "/dev/sda"
+        name: "{{ item.name }}"
+        opts: "{{ item.opts }}"
+        password: "{{ item.password }}"
+        path: "/dev/mapper/{{ item.name }}"
+        state: "{{ item.state }}"
+      loop:
+        - { name: "encrypted_disk1", opts: "noauto", password: "password", state: "present" }
+        - { name: "encrypted_disk2", opts: "auto", password: "password", state: "absent" }
+        - { name: "encrypted_disk3", opts: "noauto", password: "password", state: "present" }
+        - { name: "encrypted_disk4", opts: "auto", password: "password", state: "absent" }
+
+    - name: Display the contents of /etc/crypttab
+      shell: cat /etc/crypttab
+      register: crypttab_contents
+
+    - name: Show debug information
+      debug:
+        var: crypttab_contents.stdout_lines

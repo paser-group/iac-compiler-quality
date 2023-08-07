@@ -1,0 +1,45 @@
+---
+- name: Manage user accounts on Ruckus ICX switches
+  hosts: switches
+  gather_facts: false
+
+  tasks:
+    - name: Create test user accounts
+      community.network.icx_user:
+        name: "{{ item.name }}"
+        privilege: "{{ item.privilege }}"
+        configured_password: "{{ item.configured_password }}"
+        purge: true
+      loop:
+        - name: testuser1
+          privilege: operator
+          configured_password: test123
+        - name: testuser2
+          privilege: admin
+          configured_password: test456
+      register: result
+      ignore_errors: true
+
+    - name: Verify user accounts creation status
+      debug:
+        msg: "User '{{ item.item.name }}' was {{ item.status }}."
+      loop: "{{ result.results }}"
+
+    - name: Test port settings
+      community.network.icx_user:
+        name: "{{ item.0.name }}"
+        check_running_config: "{{ item.1 }}"
+        aggregate:
+          - "{{ item.2 }}"
+          - "{{ item.3 }}"
+          - "{{ item.4 }}"
+      loop:
+        - [testuser1, false, 80, 443, 8080]
+        - [testuser2, true, 22, 23, 8080]
+      register: port_result
+      ignore_errors: true
+
+    - name: Verify port settings test status
+      debug:
+        msg: "Port settings test for user '{{ item.item.0.name }}' was {{ item.status }}."
+      loop: "{{ port_result.results }}"

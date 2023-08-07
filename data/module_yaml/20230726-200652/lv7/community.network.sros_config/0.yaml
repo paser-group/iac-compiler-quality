@@ -1,0 +1,29 @@
+---
+- name: Configure Nokia SR OS
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    backup_dir: "/tmp/backups"
+    backup_location: "{{ backup_dir }}"
+    backup_location_length: "{{ backup_location | length }}"
+    backup_options:
+      location: "{{ backup_location | regex_replace('(.*?)(.{1})', '\\1\\\\\\\\\\\\\\\\2') }}"
+      compare_options:
+        - last
+        - timestamp
+
+  tasks:
+    - name: Create backup directory
+      file:
+        path: "{{ backup_dir }}"
+        state: directory
+
+    - name: Configure SR OS device
+      community.network.sros_config:
+        transport: cli
+        host: "{{ inventory_hostname }}"
+        username: "{{ ansible_user }}"
+        password: "{{ ansible_password }}"
+        backup: true
+        backup_options: "{{ backup_options }}"

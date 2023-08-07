@@ -1,0 +1,70 @@
+---
+- name: Manage base ACL configuration on HUAWEI devices
+  hosts: localhost
+  gather_facts: false
+  vars:
+    acl_description: !null
+    acl_name: !null
+    acl_num: !null
+    acl_step: !null
+    frag_type: !null
+    log_flag: !null
+    rule_action: !null
+    rule_description: !null
+    rule_id: !null
+    rule_name: !null
+    source_ip: !null
+    src_mask: !null
+    state: !null
+    time_range: !null
+    vrf_name: !null
+
+  tasks:
+    - name: Test Case | Create ACL
+      community.network.ce_acl:
+        description: "{{ acl_description }}"
+        name: "{{ acl_name }}"
+        acl_number: "{{ acl_num }}"
+        step: "{{ acl_step }}"
+        fragment_type: "{{ frag_type }}"
+        log_flag: "{{ log_flag }}"
+        state: "{{ state }}"
+      register: result_create_acl
+
+    - name: Test Case | Create ACL Rule
+      community.network.ce_acl:
+        name: "{{ acl_name }}"
+        rule_id: "{{ rule_id }}"
+        action: "{{ rule_action }}"
+        description: "{{ rule_description }}"
+        source_ip: "{{ source_ip }}"
+        source_wildcard_bits: "{{ src_mask }}"
+        time_range: "{{ time_range }}"
+        log_flag: "{{ log_flag }}"
+        state: "{{ state }}"
+      register: result_create_acl_rule
+
+    - name: Test Case | Delete ACL Rule
+      community.network.ce_acl:
+        name: "{{ acl_name }}"
+        rule_id: "{{ rule_id }}"
+        state: "{{ state }}"
+      register: result_delete_acl_rule
+
+    - name: Print Results
+      debug:
+        var: item
+      loop:
+        - result_create_acl
+        - result_create_acl_rule
+        - result_delete_acl_rule
+
+    - name: Test Case | Delete ACL
+      community.network.ce_acl:
+        name: "{{ acl_name }}"
+        state: "{{ state }}"
+      register: result_delete_acl
+
+    - name: Print Result
+      debug:
+        var: result_delete_acl

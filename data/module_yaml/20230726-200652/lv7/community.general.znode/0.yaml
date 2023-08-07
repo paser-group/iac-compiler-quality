@@ -1,0 +1,68 @@
+---
+- name: Ansible Latent Bug Finder Playbook
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    auth_credential: "my_credential"
+    auth_scheme: "basic"
+    hosts_str: "localhost"
+    name: "/test_node"
+    op: "create"
+    recursive: false
+    state: "present"
+    timeout: 10
+    use_tls: false
+    value: "test value"
+
+  tasks:
+    - name: Create zNode
+      community.general.znode:
+        auth_credential: "{{ auth_credential }}"
+        auth_scheme: "{{ auth_scheme }}"
+        hosts: "{{ hosts_str }}"
+        name: "{{ name }}"
+        op: "{{ op }}"
+        recursive: "{{ recursive }}"
+        state: "{{ state }}"
+        timeout: "{{ timeout }}"
+        use_tls: "{{ use_tls }}"
+        value: "{{ value }}"
+      register: result
+      failed_when: result.failed
+
+    - name: Display result
+      debug:
+        var: result
+
+    - name: Update zNode
+      community.general.znode:
+        auth_credential: "{{ auth_credential }}"
+        auth_scheme: "{{ auth_scheme }}"
+        hosts: "{{ hosts_str }}"
+        name: "{{ name }}"
+        op: "update"
+        value: "updated value"
+
+    - name: Delete zNode
+      community.general.znode:
+        auth_credential: "{{ auth_credential }}"
+        auth_scheme: "{{ auth_scheme }}"
+        hosts: "{{ hosts_str }}"
+        name: "{{ name }}"
+        op: "delete"
+
+    - name: Retrieve zNode
+      community.general.znode:
+        auth_credential: "{{ auth_credential }}"
+        auth_scheme: "{{ auth_scheme }}"
+        hosts: "{{ hosts_str }}"
+        name: "{{ name }}"
+        op: "get"
+      register: result_get
+
+    - name: Verify retrieval of zNode
+      assert:
+        that:
+          - result_get.msg.value == value
+          - result_get.failed == false

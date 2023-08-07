@@ -1,0 +1,46 @@
+- name: Test playbook for community.network.pn_ipv6security_raguard_vlan module
+  hosts: localhost
+  gather_facts: false
+  
+  tasks:
+    - name: Add IPv6 security RA guard VLAN
+      community.network.pn_ipv6security_raguard_vlan:
+        pn_cliswitch: "{{ pn_cliswitch }}"
+        pn_name: "{{ pn_name }}"
+        pn_vlans: "{{ pn_vlans }}"
+        state: "{{ state }}"
+      register: result
+      ignore_errors: yes
+
+    - name: Debug module output
+      debug:
+        var: result
+
+- name: Test playbook for community.network.pn_ipv6security_raguard_vlan module (Test Cases)
+  hosts: localhost
+  gather_facts: false
+  
+  tasks:
+    - name: Add IPv6 security RA guard VLAN with limit-related value (Invalid)
+      vars:
+        pn_cliswitch: "example_switch"
+        pn_name: "example_name"
+        pn_vlans: "vlan_{{ 100/0 }}"  # Triggering the heuristic - using a division operation
+        state: "present"
+      include_tasks: test_module_execution.yml
+
+    - name: Add IPv6 security RA guard VLAN with valid limit-related value (Valid)
+      vars:
+        pn_cliswitch: "example_switch"
+        pn_name: "example_name"
+        pn_vlans: "vlan_{{ 100/10 }}"  # Using a division operation with valid result
+        state: "present"
+      include_tasks: test_module_execution.yml
+
+    - name: Remove IPv6 security RA guard VLAN
+      vars:
+        pn_cliswitch: "example_switch"
+        pn_name: "example_name"
+        pn_vlans: "vlan_10"
+        state: "absent"
+      include_tasks: test_module_execution.yml

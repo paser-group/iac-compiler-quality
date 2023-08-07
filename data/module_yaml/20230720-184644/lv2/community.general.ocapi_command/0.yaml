@@ -1,0 +1,47 @@
+- hosts: localhost
+  become: true
+  gather_facts: false
+
+  vars:
+    # Define the OOB controller parameters
+    oob_controller:
+      baseuri: "http://oob-controller.example.com/api"
+      category: "controllers"
+      command: "get"
+      job_name: "Check_Controller_Status"
+      password: "admin"
+      proxy_slot_number: 1
+      timeout: 60
+      update_image_path: "/path/to/image"
+      username: "admin"
+
+  tasks:
+    - name: Introduce byte string value for baseuri
+      set_fact:
+        oob_controller_byte:
+          baseuri: "{{ oob_controller.baseuri | to_json | b64encode }}"
+          category: "{{ oob_controller.category }}"
+          command: "{{ oob_controller.command }}"
+          job_name: "{{ oob_controller.job_name }}"
+          password: "{{ oob_controller.password }}"
+          proxy_slot_number: "{{ oob_controller.proxy_slot_number }}"
+          timeout: "{{ oob_controller.timeout }}"
+          update_image_path: "{{ oob_controller.update_image_path }}"
+          username: "{{ oob_controller.username }}"
+
+    - name: Invoke OOB controller command with byte string value
+      community.general.ocapi_command:
+        baseuri: "{{ oob_controller_byte.baseuri }}"
+        category: "{{ oob_controller_byte.category }}"
+        command: "{{ oob_controller_byte.command }}"
+        job_name: "{{ oob_controller_byte.job_name }}"
+        password: "{{ oob_controller_byte.password }}"
+        proxy_slot_number: "{{ oob_controller_byte.proxy_slot_number | int }}"
+        timeout: "{{ oob_controller_byte.timeout | int }}"
+        update_image_path: "{{ oob_controller_byte.update_image_path }}"
+        username: "{{ oob_controller_byte.username }}"
+      register: ocapi_result
+
+    - name: Debug OOB controller command result
+      debug:
+        var: ocapi_result

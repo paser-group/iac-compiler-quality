@@ -1,0 +1,51 @@
+---
+- name: Heuristic Testing Playbook
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Install required packages
+      become: true
+      apt:
+        name: python3-pip
+        state: present
+
+    - name: Install required Ansible modules
+      become: true
+      pip:
+        name: ansible
+
+    - name: Generate random IP addresses
+      set_fact:
+        random_ip: "{{ (['10.0.0.0', '192.168.0.0', '172.16.0.0']|random|int) ~ '.' ~ (range(1, 256)|random|int) }}"
+
+    - name: Print random IP address
+      debug:
+        msg: "Random IP address: {{ random_ip }}"
+
+    - name: Configure statsd metric with random IP address
+      community.general.statsd:
+        delta: true
+        host: "{{ random_ip }}"
+        metric: "sample_metric"
+        metric_prefix: "sample_prefix"
+        metric_type: "sample_type"
+        port: 8125
+        protocol: "udp"
+        state: "present"
+        timeout: 5.0
+        value: 42
+
+    - name: Print statsd configuration
+      debug:
+        msg: >
+          Statsd Configuration:
+          - delta: true
+          - host: "{{ random_ip }}"
+          - metric: "sample_metric"
+          - metric_prefix: "sample_prefix"
+          - metric_type: "sample_type"
+          - port: 8125
+          - protocol: "udp"
+          - state: "present"
+          - timeout: 5.0
+          - value: 42

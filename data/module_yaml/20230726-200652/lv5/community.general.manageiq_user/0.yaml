@@ -1,0 +1,55 @@
+---
+- name: Test manageiq_user module
+  hosts: localhost
+  gather_facts: false
+  
+  tasks:
+  - name: Create random port number
+    shell: "shuf -i 1024-65535 -n 1"
+    register: random_port
+    changed_when: false
+
+  - name: Create a new user
+    community.general.manageiq_user:
+      manageiq_connection:
+        url: "https://{{ ansible_host }}:{{ random_port.stdout }}"
+        verify_ssl: false
+      name: "test_user"
+      email: test@example.com
+      group: "test_group"
+      password: "test_password"
+      userid: "test_userid"
+      state: present
+      update_password: on_create
+    register: user_result
+
+  - name: Update an existing user
+    community.general.manageiq_user:
+      manageiq_connection:
+        url: "https://{{ ansible_host }}:{{ random_port.stdout }}"
+        verify_ssl: false
+      name: "test_user"
+      email: test@example.com
+      group: "test_group"
+      password: "test_password"
+      userid: "test_userid"
+      state: present
+      update_password: always
+    register: update_result
+
+  - name: Delete a user
+    community.general.manageiq_user:
+      manageiq_connection:
+        url: "https://{{ ansible_host }}:{{ random_port.stdout }}"
+        verify_ssl: false
+      name: "test_user"
+      state: absent
+    register: delete_result
+
+  - name: Display results
+    debug:
+      var: item
+    with_items:
+      - user_result
+      - update_result
+      - delete_result

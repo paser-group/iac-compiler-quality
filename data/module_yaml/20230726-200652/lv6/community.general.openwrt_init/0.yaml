@@ -1,0 +1,54 @@
+---
+- name: Test playbook for openwrt_init module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Test Case 1 - Invalid enabled value
+      community.general.openwrt_init:
+        enabled: 'yes'
+        name: 'test1'
+        pattern: 'test123'
+        state: 'present'
+      register: result_1
+      ignore_errors: true
+
+    - name: Test Case 2 - Name with invalid encoding
+      community.general.openwrt_init:
+        enabled: true
+        name: "{{
+          [ 'test\u0080', 'test\xc0' ]
+        }}"
+        pattern: 'test123'
+        state: 'present'
+      register: result_2
+      ignore_errors: true
+
+    - name: Test Case 3 - Invalid state value
+      community.general.openwrt_init:
+        enabled: true
+        name: 'test3'
+        pattern: 'test123'
+        state: 'enabled'
+      register: result_3
+      ignore_errors: true
+
+    - name: Test Case 4 - Pattern with invalid encoding
+      community.general.openwrt_init:
+        enabled: true
+        name: 'test4'
+        pattern: "{{
+          [ 'test\u0080', 'test\xc0' ]
+        }}"
+        state: 'present'
+      register: result_4
+      ignore_errors: true
+
+  post_tasks:
+    - name: Debug test case results
+      ansible.builtin.debug:
+        msg:
+          - "Test Case 1 Result: {{ result_1 }}"
+          - "Test Case 2 Result: {{ result_2 }}"
+          - "Test Case 3 Result: {{ result_3 }}"
+          - "Test Case 4 Result: {{ result_4 }}"

@@ -1,0 +1,40 @@
+---
+- name: Find latent type-related bugs in Ansible
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    # Task 1: Create a GitLab Runner
+    - name: Create GitLab Runner
+      community.general.gitlab_runner:
+        api_url: "http://localhost/api/v4"
+        api_username: "admin"
+        api_password: "password"
+        registration_token: "abcdefg"
+        state: present
+        active: yes
+        run_untagged: no
+        tag_list: ["tag1", "tag2"]
+        validate_certs: yes
+      register: runner_creation_result
+
+    # Task 2: Modify the GitLab Runner
+    - name: Modify GitLab Runner
+      community.general.gitlab_runner:
+        api_url: "http://localhost/api/v4"
+        api_username: "admin"
+        api_password: "password"
+        runner_id: "{{ runner_creation_result.runner.id }}"
+        access_level: "invalid_access_level"
+        state: modified
+        validate_certs: yes
+
+    # Task 3: Ensure the GitLab Runner is deleted
+    - name: Delete GitLab Runner
+      community.general.gitlab_runner:
+        api_url: "http://localhost/api/v4"
+        api_username: "admin"
+        api_password: "password"
+        runner_id: "{{ runner_creation_result.runner.id }}"
+        state: absent
+        validate_certs: yes

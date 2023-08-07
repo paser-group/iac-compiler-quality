@@ -1,0 +1,46 @@
+- name: Gather facts for HUAWEI devices
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Include modules
+      include_vars:
+        file: "{{ item }}"
+      with_items:
+        - vars/main.yml
+
+    - name: Gather facts
+      community.network.ce_facts:
+        gather_subset: "{{ gather_subset }}"
+      register: facts_result
+
+    - name: Show gathered facts
+      debug:
+        var: facts_result
+
+- name: Test Cases
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Introduce byte string values
+      set_fact:
+        gather_subset: "b{{ gather_subset }}"
+      vars:
+        gather_subset: "{{ item }}"
+      with_items:
+        - interfaces
+        - routing
+        - ntp
+        - vlans
+        - system
+      run_once: true
+
+    - name: Gather facts with byte string values
+      community.network.ce_facts:
+        gather_subset: "{{ gather_subset }}"
+      register: facts_result_byte_string
+
+    - name: Show gathered facts with byte string values
+      debug:
+        var: facts_result_byte_string

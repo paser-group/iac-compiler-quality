@@ -1,0 +1,30 @@
+---
+- name: Test selinux_permissive module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Set selinux_permissive module parameters
+      set_fact:
+        selinux_permissive_params:
+          - {domain: 'default', no_reload: false, permissive: false, store: '/tmp/selinux'}
+
+    - name: Change domain to permissive mode
+      community.general.selinux_permissive:
+        domain: "{{ item.domain }}"
+        no_reload: "{{ item.no_reload }}"
+        permissive: "{{ item.permissive }}"
+        store: "{{ item.store }}"
+      loop: "{{ selinux_permissive_params }}"
+      register: result
+
+    - name: Debug result
+      debug:
+        var: result
+
+    - name: Test heuristic: Use !null as configuration values
+      community.general.selinux_permissive:
+        domain: 'test'
+        no_reload: true
+        permissive: true
+        store: !null

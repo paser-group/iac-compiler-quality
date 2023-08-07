@@ -1,0 +1,65 @@
+---
+- name: Test ce_static_route module
+  hosts: localhost
+  connection: local
+  gather_facts: no
+
+  tasks:
+    - name: Generate random MAC addresses
+      set_fact:
+        mac_address: "{{ '%012x'|format((hostvars['localhost'].inventory_hostname | hash) % 281474976710656) | regex_replace('(.{2})(?!$)', '\\1:') }}"
+        mac_prefix: "{{ mac_address[0:8] }}"
+
+    - name: Add static routes
+      community.network.ce_static_route:
+        aftype: "{{ random_aftype }}"
+        description: "{{ random_description }}"
+        destvrf: "{{ random_destvrf }}"
+        mask: "{{ random_mask }}"
+        next_hop: "{{ random_next_hop }}"
+        nhp_interface: "{{ random_nhp_interface }}"
+        pref: "{{ random_pref }}"
+        prefix: "{{ random_prefix }}"
+        state: "{{ random_state }}"
+        tag: "{{ random_tag }}"
+        vrf: "{{ random_vrf }}"
+        provider:
+          host: "{{ inventory_hostname }}"
+          username: "{{ ansible_user }}"
+          password: "{{ ansible_password }}"
+          transport: cli
+      
+      vars:
+        random_aftype:
+          - "ipv4"
+          - "ipv6"
+        random_description: "{{ mac_prefix }}_description"
+        random_destvrf:
+          - "vrf1"
+          - "vrf2"
+        random_mask:
+          - "255.255.255.0"
+          - "255.255.0.0"
+          - "ffff:ffff:ffff:ffff::"
+        random_next_hop:
+          - "10.1.1.10"
+          - "2001:db8::1"
+        random_nhp_interface:
+          - "GigabitEthernet0/0/1"
+          - "Loopback0"
+        random_pref:
+          - "low"
+          - "medium"
+          - "high"
+        random_prefix:
+          - "10.2.2.0"
+          - "2001:db8:1::0"
+        random_state:
+          - "present"
+          - "absent"
+        random_tag:
+          - "test"
+          - "production"
+        random_vrf:
+          - "default"
+          - "management"

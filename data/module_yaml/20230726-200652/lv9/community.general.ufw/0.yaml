@@ -1,0 +1,70 @@
+---
+- name: Test playbook for Ansible community.general.ufw module
+  hosts: localhost
+  gather_facts: False
+
+  tasks:
+    - name: Install ufw package
+      apt:
+        name: ufw
+        state: latest
+
+    - name: Set up UFW firewall rules
+      community.general.ufw:
+        rule: 'allow'
+        proto: 'tcp'
+        from_port: '22'
+        to_port: '22'
+        direction: 'in'
+
+    - name: Test Case 1 - Random destination IP address
+      community.general.ufw:
+        rule: 'allow'
+        proto: 'tcp'
+        from_port: '5000'
+        to_port: '5000'
+        direction: 'out'
+        to_ip: "{{ random_ip_address() }}"
+
+    - name: Test Case 2 - Random source and destination IP addresses
+      community.general.ufw:
+        rule: 'allow'
+        proto: 'tcp'
+        from_port: "{{ random_port() }}"
+        to_port: "{{ random_port() }}"
+        direction: 'in'
+        from_ip: "{{ random_ip_address() }}"
+        to_ip: "{{ random_ip_address() }}"
+
+    - name: Test Case 3 - Delete ufw rule
+      community.general.ufw:
+        rule: 'delete'
+        proto: 'tcp'
+        from_port: '22'
+        direction: 'in'
+        delete: True
+
+  vars:
+    random_ip_octets:
+      - 192
+      - 168
+      - "{{ range(1, 10) | random }}"
+      - "{{ range(1, 10) | random }}"
+    random_octet: "{{ 1 | random * 254 + 1 }}"
+  
+  tasks:
+    - name: Generate random IP address
+      set_fact:
+        random_ip_address: "{{ random_ip_octets | random }}"  
+
+    - name: Print random IP address
+      debug:
+        var: random_ip_address
+
+    - name: Generate random port
+      set_fact:
+        random_port: "{{ range(1, 65535) | random }}"
+
+    - name: Print random port
+      debug:
+        var: random_port

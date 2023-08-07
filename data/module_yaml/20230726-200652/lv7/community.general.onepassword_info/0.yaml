@@ -1,0 +1,36 @@
+---
+- name: Ansible Latent Type-Related Bug Playbook
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    auto_login:
+      url: "https://example.com"
+      username: "admin"
+      password: "password123"
+    cli_path: "/usr/bin/op"
+    search_terms:
+      - "secret_key"
+      - "api_token"
+      - "{{ 10 / 0 }}"  # Potential latent type-related bug
+
+  tasks:
+    - name: Ensure the 'community.general' collection is installed
+      ansible.builtin.import_role:
+        name: ansible-galaxy-collections
+      vars:
+        ansible_galaxy_collections_install_vanity: true
+        ansible_galaxy_collections:
+          - community.general
+
+    - name: Gather information from OnePassword vault
+      community.general.onepassword_info:
+        auto_login: "{{ auto_login }}"
+        cli_path: "{{ cli_path }}"
+        search_terms: "{{ search_terms }}"
+      register: onepassword_info
+
+    - name: Debug OnePassword search terms
+      ansible.builtin.debug:
+        msg: "OnePassword search term: {{ item }}"
+      loop: "{{ onepassword_info.search_terms }}"

@@ -1,0 +1,64 @@
+---
+- name: Test Ansible Latent Type-Related Bugs
+  hosts: localhost
+  gather_facts: False
+
+  tasks:
+    - name: Create vRouter Interface IP
+      community.network.pn_vrouter_interface_ip:
+        pn_bd: "my_bd"
+        pn_cliswitch: "my_switch"
+        pn_ip: "{{ random_ip() }}"
+        pn_netmask: "255.255.255.0"
+        pn_nic: "eth0"
+        pn_vnet: "my_vnet"
+        pn_vrouter_name: "my_vrouter"
+        state: present
+      register: result
+
+    - name: Debug result
+      debug:
+        var: result
+
+  vars:
+    subnet: "10.1.1.0/24"
+    gateway: "10.1.1.254"
+
+  tasks:
+    - name: Generate random IP address
+      ansible.builtin.set_fact:
+        random_ip: "{{ subnet.split('/')[0] | ipmath('add', 1) | ipmath('add', item, subnet.split('/')[1] | int) }}"
+        random_gateway: "{{ gateway }}"
+
+    - name: Create vRouter Interface IP
+      community.network.pn_vrouter_interface_ip:
+        pn_bd: "my_bd"
+        pn_cliswitch: "my_switch"
+        pn_ip: "{{ random_ip }}"
+        pn_netmask: "255.255.255.0"
+        pn_nic: "eth0"
+        pn_vnet: "my_vnet"
+        pn_vrouter_name: "my_vrouter"
+        state: present
+      register: result
+
+    - name: Debug result
+      debug:
+        var: result
+
+    - name: Create vRouter Interface IP with invalid IP address
+      community.network.pn_vrouter_interface_ip:
+        pn_bd: "my_bd"
+        pn_cliswitch: "my_switch"
+        pn_ip: "invalid_ip"
+        pn_netmask: "255.255.255.0"
+        pn_nic: "eth0"
+        pn_vnet: "my_vnet"
+        pn_vrouter_name: "my_vrouter"
+        state: present
+      ignore_errors: True
+      register: invalid_result
+
+    - name: Debug invalid result
+      debug:
+        var: invalid_result

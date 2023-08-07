@@ -1,0 +1,73 @@
+---
+- name: Test playbook for oneandone_load_balancer module
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    # Variables for test cases
+    lb_name: my-loadbalancer
+    lb_ip: 10.1.1.5
+
+  tasks:
+    - name: Create load balancer
+      community.general.oneandone_load_balancer:
+        api_url: "{{ api_url }}"
+        auth_token: "{{ auth_token }}"
+        datacenter: "{{ datacenter }}"
+        state: present
+        name: "{{ lb_name }}"
+        load_balancer: "{{ lb_ip }}"
+        health_check_interval: 30
+        health_check_test: "TCP"
+        wait: yes
+        wait_interval: 10
+        wait_timeout: 180
+      register: lb_result
+
+    - name: Debug response
+      debug:
+        var: lb_result
+
+    - name: Update load balancer
+      community.general.oneandone_load_balancer:
+        api_url: "{{ api_url }}"
+        auth_token: "{{ auth_token }}"
+        datacenter: "{{ datacenter }}"
+        state: present
+        name: "{{ lb_name }}"
+        load_balancer: "{{ lb_ip }}"
+        health_check_interval: 60
+        health_check_test: "HTTP"
+      register: update_result
+
+    - name: Debug response
+      debug:
+        var: update_result
+
+    - name: Delete load balancer
+      community.general.oneandone_load_balancer:
+        api_url: "{{ api_url }}"
+        auth_token: "{{ auth_token }}"
+        datacenter: "{{ datacenter }}"
+        state: absent
+        name: "{{ lb_name }}"
+      register: delete_result
+
+    - name: Debug response
+      debug:
+        var: delete_result
+
+    - name: Test with invalid IP
+      community.general.oneandone_load_balancer:
+        api_url: "{{ api_url }}"
+        auth_token: "{{ auth_token }}"
+        datacenter: "{{ datacenter }}"
+        state: present
+        name: "{{ lb_name }}"
+        load_balancer: "invalid_ip"
+      register: invalid_ip_result
+      ignore_errors: yes
+
+    - name: Debug response
+      debug:
+        var: invalid_ip_result

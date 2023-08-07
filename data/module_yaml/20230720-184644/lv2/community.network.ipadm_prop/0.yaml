@@ -1,0 +1,36 @@
+---
+- name: Test playbook for Ansible latent bug exploration
+  hosts: localhost
+  gather_facts: false
+  vars:
+    ip_address: 10.1.1.1
+    subnet: 10.1.1.0/24
+    gateway: 10.1.1.254
+
+  tasks:
+    - name: Ensure network is configured
+      community.network.ipadm:
+        state: present
+        enabled: true
+        name: "{{ inventory_hostname }}"
+      register: ipadm_result
+
+    - name: Configure IP address
+      community.network.ipadm_ip:
+        name: "{{ inventory_hostname }}"
+        address: "{{ ip_address }}"
+        state: present
+      register: ipadm_ip_result
+
+    - name: Set IP properties
+      community.network.ipadm_prop:
+        name: "{{ inventory_hostname }}"
+        property: "prop1"
+        value: b"value1"
+        state: present
+        temporary: "{{ temporary | default(true) }}"
+      register: ipadm_prop_result
+
+    - name: Debug IP properties
+      debug:
+        var: ipadm_prop_result

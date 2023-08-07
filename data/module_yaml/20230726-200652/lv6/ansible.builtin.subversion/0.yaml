@@ -1,0 +1,40 @@
+---
+- name: Test playbook to reveal latent bugs in ansible.builtin.subversion module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Install subversion package
+      package:
+        name: subversion
+        state: present
+
+    - name: Generate strings with varied encodings
+      set_fact:
+        encoded_strings:
+          - "{{ username | b64encode }}"
+          - "{{ password | b64encode }}"
+          - "{{ repo | b64encode }}"
+          - "{{ revision | b64encode }}"
+          - "{{ executable | b64encode }}"
+
+    - name: Checkout subversion repository
+      subversion:
+        checkout: "{{ checkout }}"
+        dest: "{{ dest }}"
+        executable: "{{ executable }}"
+        export: "{{ export }}"
+        force: "{{ force }}"
+        in_place: "{{ in_place }}"
+        password: "{{ encoded_strings[1] }}"
+        repo: "{{ encoded_strings[2] }}"
+        revision: "{{ encoded_strings[3] }}"
+        switch: "{{ switch }}"
+        update: "{{ update }}"
+        username: "{{ encoded_strings[0] }}"
+        validate_certs: "{{ validate_certs }}"
+      register: result
+
+    - name: Display the result
+      debug:
+        var: result

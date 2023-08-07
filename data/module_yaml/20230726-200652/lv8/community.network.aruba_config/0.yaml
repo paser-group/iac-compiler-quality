@@ -1,0 +1,55 @@
+- name: Ansible Latent Bug Finder Playbook
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Install the Aruba module dependencies
+      pip:
+        name: arubanetworks
+
+    - name: Create the inventory file
+      template:
+        src: inventory.j2
+        dest: inventory.ini
+      delegate_to: localhost
+
+    - name: Run the test cases
+      include_tasks: tests.yml
+      vars:
+        target: "{{ item.target }}"
+        config_lines: "{{ item.config_lines }}"
+      loop:
+        - target: ubuntu1
+          config_lines:
+            - interface eth0
+            - description !null
+        - target: alpine1
+          config_lines:
+            - interface eth1
+            - description "Test interface"
+        - target: centos1
+          config_lines:
+            - interface eth2
+            - description !null
+        - target: redhat1
+          config_lines:
+            - interface eth3
+            - description "Test interface"
+
+- name: Ansible Latent Bug Finder Playbook - Tests
+  hosts: all
+  gather_facts: no
+  gather_subset: all
+
+  tasks:
+    - name: Manage Aruba configuration
+      community.network.aruba_config:
+        backup: true
+        src: "{{ inventory_dir }}/inventory.ini"
+        running_config: "{{ inventory_dir }}/running_config/{{ inventory_hostname }}"
+        lines: "{{ config_lines }}"
+      register: result
+
+    - name: Print the result
+      debug:
+        var: result

@@ -1,0 +1,43 @@
+---
+- name: Ansible Latent Bug Finder & Heuristic Test Playbook
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Install required dependencies
+      pip:
+        name: 'ansible>=2.10'
+        state: present
+
+    - name: Set up networking
+      community.general.network_cli:
+        command:
+          - command: ip address add 10.1.1.{{ item }}/24 dev eth0
+          - command: ip route add default via 10.1.1.254 dev eth0
+        check_mode: false
+      delegate_to: localhost
+      run_once: true
+      loop: "{{ range(1, 5) | list }}"
+
+    - name: Deploy application and notify airbrake
+      hosts: localhost
+      gather_facts: false
+
+      tasks:
+        - name: Install airbrake_deployment module
+          pip:
+            name: community.general
+            state: present
+
+        - name: Notify airbrake
+          ignore_errors: true
+          community.general.airbrake_deployment:
+            environment: "{{ environment }}"
+            project_id: "{{ project_id }}"
+            project_key: "{{ project_key }}"
+            repo: "{{ repo }}"
+            revision: "{{ revision }}"
+            url: "{{ url }}"
+            user: "{{ user }}"
+            validate_certs: true
+            version: "{{ version }}"

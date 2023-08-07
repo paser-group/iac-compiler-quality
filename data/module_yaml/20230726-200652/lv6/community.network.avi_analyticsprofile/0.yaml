@@ -1,0 +1,38 @@
+---
+- name: Test Ansible Latent Type-Related Bug
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    api_version: "20.1.5"
+    controller: "avi-controller.example.com"
+    avi_credentials:
+      username: "admin"
+      password: "password"
+    tenant: "Default"
+
+  tasks:
+    - name: Create Analytics Profile
+      community.network.avi_analyticsprofile:
+        controller: "{{ controller }}"
+        avi_credentials: "{{ avi_credentials }}"
+        api_version: "{{ api_version }}"
+        tenant: "{{ tenant }}"
+        name: "{{ item.0 }}"
+        apdex_response_threshold: "{{ item.1 }}"
+        apdex_rtt_threshold: "{{ item.2 }}"
+        apdex_rum_threshold: "{{ item.3 }}"
+        apdex_server_response_threshold: "{{ item.4 }}"
+        apdex_server_rtt_threshold: "{{ item.5 }}"
+        enable_advanced_analytics: true
+      loop:
+        - ["profile1", null, "", "10", "3.14", [1, 2, 3]]
+        - ["profile2", [null, "", "abc"], |-
+          any: object]
+        - ["profile3", "{{ ['test', '123', '()[!]'] }}", "\u0061\u0062\u0063", "\U0001F600", "\x66\x6f\x6f", "\141\142\143"]
+
+      register: result
+
+    - name: Debug result
+      debug:
+        var: result

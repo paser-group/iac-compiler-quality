@@ -1,0 +1,59 @@
+---
+- name: Test playbook to uncover latent type-related bugs
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Configure MicroServiceGroup
+      community.network.avi_microservicegroup:
+        controller: 10.1.1.10
+        username: admin
+        password: password
+        tenant: admin
+        name: "test"
+        service_refs:
+          - pool_ref: /api/pool/pool-1
+        api_context: {}
+        api_version: "20.1.5"
+        avi_api_patch_op: null
+        avi_api_update_method: null
+        avi_credentials: {}
+        avi_disable_session_cache_as_fact: false
+        state: "present"
+      register: result
+
+    - name: Print task result
+      debug:
+        var: result
+
+    - name: Generate random IP addresses
+      community.general.random_ipv4:
+      register: random_ip_address
+
+    - name: Create a new MicroServiceGroup with random IP addresses
+      community.network.avi_microservicegroup:
+        controller: 10.1.1.10
+        username: admin
+        password: password
+        tenant: admin
+        name: "test2"
+        service_refs:
+          - pool_ref: /api/pool/pool-2
+        api_context: {}
+        api_version: "20.1.5"
+        avi_api_patch_op: null
+        avi_api_update_method: null
+        avi_credentials: {}
+        avi_disable_session_cache_as_fact: false
+        state: "present"
+        api_context:
+          application:
+            east_west_placement:
+              subnets:
+                - ip_addr: "{{ random_ip_address.stdout }}/24"
+        tenant_uuid: "tenant-uuid-test"
+      register: result2
+
+    - name: Print task result
+      debug:
+        var: result2

@@ -1,0 +1,51 @@
+---
+- name: Install and Uninstall applications using Homebrew Cask
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Install application
+      community.general.homebrew_cask:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - app1
+        - app2
+        - app3
+      register: install_result
+      
+    - name: Check installation status
+      debug:
+        msg: "Installed: {{ item.item }} | Version: {{ item.version }}"
+      loop: "{{ install_result.results }}"
+      when: item.changed
+
+    - name: Uninstall applications
+      community.general.homebrew_cask:
+        name: "{{ item }}"
+        state: absent
+      loop:
+        - app1
+        - app2
+        - app3
+      register: uninstall_result
+      
+    - name: Check uninstallation status
+      debug:
+        msg: "Uninstalled: {{ item.item }}"
+      loop: "{{ uninstall_result.results }}"
+      when: item.changed
+      
+    - name: Test port settings
+      vars:
+        random_port: "{{ (5000..6000)|random }}"
+      community.general.homebrew_cask:
+        name: test-app
+        state: present
+        port: "{{ random_port }}"
+      register: port_result
+      
+    - name: Check port status
+      debug:
+        msg: "Port: {{ item.port }}"
+      loop: "{{ port_result.results }}"
+      when: item.changed

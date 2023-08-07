@@ -1,0 +1,40 @@
+- name: Test playbook for community.network.avi_httppolicyset module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    ansible_python_interpreter: /usr/bin/python
+
+  vars_prompt:
+    - name: "controller"
+      prompt: "Enter the Avi controller IP address"
+    - name: "username"
+      prompt: "Enter the Avi username"
+    - name: "password"
+      prompt: "Enter the Avi password"
+      private: true
+    - name: "tenant"
+      prompt: "Enter the Avi tenant name"
+  
+  tasks:
+    - name: Create HTTPPolicySet with limit-related values
+      community.network.avi_httppolicyset:
+        controller: "{{ controller }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        tenant: "{{ tenant }}"
+        name: "Test HTTPPolicySet"
+        http_request_policy:
+          index: 1
+          rules:
+            - index: 1
+              name: "Rule 1"
+              redirect_action:
+                redirect_profile:
+                  follow_redirects: "True"
+                  redirect_url: "https://www.example.com"
+                  status_code:
+                    value:
+                      "{{ 10/0 }}"     # Triggering division-based operation
+        state: present
+      register: result

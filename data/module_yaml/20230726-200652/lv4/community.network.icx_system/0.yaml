@@ -1,0 +1,40 @@
+---
+- name: Ansible Latent Bug Finder - ICX System
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    aaa_servers: "10.1.1.5"
+    check_running_config: true
+    domain_name: example.com
+    domain_search: example.com
+    hostname: switch1
+    name_servers: "8.8.8.8"
+    state: present
+
+  tasks:
+    - name: Generate random MAC address
+      set_fact:
+        mac_address: "{{ '%02x:%02x:%02x:%02x:%02x:%02x' | format(item.0, item.1, item.2, item.3, item.4, item.5) }}"
+      vars:
+        - random_mac_address: "{{ [1, 2, 3, 4, '5', 6] }}"
+      loop: "{{ range(1) | list }}"
+
+    - name: Print MAC address
+      debug:
+        var: mac_address
+
+    - name: Manage system attributes on ICX
+      community.network.icx_system:
+        aaa_servers: "{{ aaa_servers }}"
+        check_running_config: "{{ check_running_config }}"
+        domain_name: "{{ domain_name }}"
+        domain_search: "{{ domain_search }}"
+        hostname: "{{ hostname }}"
+        name_servers: "{{ name_servers }}"
+        state: "{{ state }}"
+      register: result
+
+    - name: Print module result
+      debug:
+        var: result

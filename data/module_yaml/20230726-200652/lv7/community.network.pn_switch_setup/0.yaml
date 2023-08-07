@@ -1,0 +1,51 @@
+---
+- name: Test Playbook for pn_switch_setup module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Test Case 1 - Assigning limit-related value
+      community.network.pn_switch_setup:
+        pn_switch_name: "{{ 'a' * 65 }}"
+      register: result
+      ignore_errors: true
+      tags:
+        - test_case_1
+
+    - name: Verify test case 1 failure
+      assert:
+        that: result | failed
+        success_msg: "Test case 1 passed - assigned limit-related value"
+        fail_msg: "Test case 1 failed - unable to assign limit-related value"
+      tags:
+        - test_case_1
+
+    - name: Test Case 2 - Assigning normal value
+      community.network.pn_switch_setup:
+        pn_switch_name: "TestSwitch"
+      register: result
+      ignore_errors: true
+
+    - name: Verify test case 2 success
+      assert:
+        that: result | success
+        success_msg: "Test case 2 passed - assigned normal value"
+        fail_msg: "Test case 2 failed - unable to assign normal value"
+
+    - name: Cleanup
+      community.network.pn_switch_setup:
+        state: absent
+      register: cleanup_result
+      ignore_errors: true
+      when: result is success
+      tags:
+        - cleanup
+    
+    - name: Verify cleanup success
+      assert:
+        that: cleanup_result | success
+        success_msg: "Cleanup successful"
+        fail_msg: "Cleanup failed"
+      when: result is success
+      tags:
+        - cleanup

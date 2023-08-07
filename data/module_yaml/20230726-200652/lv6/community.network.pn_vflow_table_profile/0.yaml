@@ -1,0 +1,27 @@
+- name: Configure vFlow Table Profile
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Set vFlow Table Profile
+      community.network.pn_vflow_table_profile:
+        pn_cliswitch: "{{ inventory_hostname }}"
+        pn_enable: true
+        pn_hw_tbl: "{{ random_hw_table | default('default') }}"
+        pn_profile: "{{ random_profile | default('profile1') }}"
+        state: present
+      register: result
+
+- name: Generate strings with varied encodings
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Generate random string
+      community.general.random_string:
+        length: 10
+        chars: "!@#$%^&*()_+-=[]{}|;:<>,.?/abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+      register: random_string_result
+
+    - name: Encode random string to different encodings
+      ansible.builtin.set_fact:
+        random_hw_table: "{{ random_string_result.stdout | b64encode }}"
+        random_profile: "{{ random_string_result.stdout | urlencode }}"

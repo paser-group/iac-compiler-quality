@@ -1,0 +1,41 @@
+- name: Test playbook for community.network.icx_user module
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    icx_user_options:
+      - name: sample_user
+        state: present
+        privilege: operator
+        aggregate:
+          - admin1
+          - admin2
+        purge: false
+        check_running_config: true
+        update_password: always
+        nopassword: false
+        configured_password: "sample_password"
+        access_time: "2022-12-31 23:59:59"
+
+  tasks:
+    - name: Include icx_user module
+      vars:
+        ansible_python_interpreter: /usr/bin/python3
+        ansible_connection: network_cli
+      include_role:
+        name: community.network.icx_user
+      vars:
+        icx_user_options: "{{ icx_user_options }}"
+
+    - name: Generate random IP address
+      command: "ip -4 addr show eth0 | grep -oP '(?<=inet\\s)\\d+(\\.\\d+){3}'"
+      register: ip_address
+
+    - name: Debug IP address
+      debug:
+        var: ip_address.stdout
+
+    - name: Display test case
+      debug:
+        msg: "Test case: Formulating random IP address - {{ ip_address.stdout }}"

@@ -1,0 +1,40 @@
+---
+- name: Test playbook for community.general.utm_aaa_group_info module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Test UTM AAA group info
+      community.general.utm_aaa_group_info:
+        utm_host: "10.1.1.1"
+        utm_port: 8080
+        utm_protocol: "http"
+        utm_token: "my_token"
+        validate_certs: false
+      register: utm_aaa_group_result
+
+    - name: Introduce byte string values to trigger type-related bugs
+      set_fact:
+        utm_host_byte_string: "{{ utm_host.encode('utf-8') }}"
+        utm_protocol_byte_string: "{{ utm_protocol.encode('utf-8') }}"
+        utm_token_byte_string: "{{ utm_token.encode('utf-8') }}"
+        validate_certs_byte_string: "{{ validate_certs | int }}"
+      when: utm_aaa_group_result is success
+
+    - name: Test UTM AAA group info with byte string values
+      community.general.utm_aaa_group_info:
+        utm_host: "{{ utm_host_byte_string }}"
+        utm_port: 8080
+        utm_protocol: "{{ utm_protocol_byte_string }}"
+        utm_token: "{{ utm_token_byte_string }}"
+        validate_certs: "{{ validate_certs_byte_string }}"
+      register: utm_aaa_group_result_byte_string
+      when: utm_aaa_group_result is success
+
+    - name: Debug UTM AAA group info result
+      debug:
+        var: utm_aaa_group_result
+
+    - name: Debug UTM AAA group info result (byte string)
+      debug:
+        var: utm_aaa_group_result_byte_string

@@ -1,0 +1,24 @@
+---
+- name: Test playbook for community.network.ce_rollback module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Generate random IP addresses
+      set_fact:
+        ip_address: "{{ hostvars[item].ansible_default_ipv4.address }}"
+      with_items: "{{ groups['docker_nodes'] }}"
+
+    - name: Include module-specific playbook
+      include_tasks: rollback_tasks.yml
+      vars:
+        action: "{{ action | default('rollback') }}"
+        commit_id: "{{ commit_id | default(omit) }}"
+        filename: "{{ filename | default(omit) }}"
+        label: "{{ label | default(omit) }}"
+        last: "{{ last | default(omit) }}"
+        oldest: "{{ oldest | default(omit) }}"
+
+    - name: Debug result
+      debug:
+        var: result

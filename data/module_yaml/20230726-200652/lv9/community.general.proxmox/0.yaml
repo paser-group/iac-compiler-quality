@@ -1,0 +1,53 @@
+---
+- name: Test playbook for 'community.general.proxmox' module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    proxmox_api_host: "https://api.example.com"
+    proxmox_api_user: "admin@pve"
+    proxmox_api_password: "password123"
+    proxmox_node: "pve1"
+
+  tasks:
+    - name: Create a random IP address for the network
+      set_fact:
+        random_ip: "{{ ['10.1.1.1', '10.1.1.2', '10.1.1.3', '10.1.1.4'] | random }}"
+
+    - name: Create a random subnet for the network
+      set_fact:
+        random_subnet: "{{ ['10.1.1.0/24', '10.1.2.0/24', '10.1.3.0/24', '10.1.4.0/24'] | random }}"
+
+    - name: Create a random gateway IP address for the network
+      set_fact:
+        random_gateway: "{{ ['10.1.1.254', '10.1.2.254', '10.1.3.254', '10.1.4.254'] | random }}"
+
+    - name: Create a Proxmox VM instance
+      community.general.proxmox:
+        api_host: "{{ proxmox_api_host }}"
+        api_user: "{{ proxmox_api_user }}"
+        api_password: "{{ proxmox_api_password }}"
+        node: "{{ proxmox_node }}"
+        vmid: 100
+        state: present
+        ostemplate: "template:ubuntu-20.04"
+        hostname: "ansible-test"
+        password: "pass123"
+        cores: 2
+        memory: 4096
+        disk: "virtio0:10,Grow"
+        ip_address: "{{ random_ip }}"
+        netif:
+          network: "vmbr0"
+          model: "virtio"
+          vlan: "100"
+          bridge: "vmbr0"
+          gw: "{{ random_gateway }}"
+          addresses:
+            - "{{ random_subnet }}"
+        onboot: true
+      register: proxmox_vm_create
+
+    - name: Debug VM creation result
+      debug:
+        var: proxmox_vm_create

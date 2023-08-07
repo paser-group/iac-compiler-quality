@@ -1,0 +1,49 @@
+---
+- name: Manage Cisco FTD configuration
+  hosts: localhost
+  gather_facts: false
+  
+  tasks:
+    - name: Configure FTD
+      community.network.ftd_configuration:
+        data:
+          - filter:
+              url: "{{ operation }}"
+              path_params:
+                dataType: "config"
+                configType: "ftd"
+                subType: "object"
+                value: "{{ item.path }}"
+              query_params:
+                overwrite: "{{ item.overwrite | default(true) }}"
+                merge: "{{ item.merge | default(false) }}"
+              register_as: "{{ item.register_as }}"
+          - "{{ item.data }}"
+        operation: deviceconfiguration
+        path_params:
+          deviceName: "FTD1"
+        query_params:
+          deduplicate: true
+        register_as: result
+      loop:
+        - path: "system/"
+          overwrite: false
+          merge: true
+          register_as: result1
+          data:
+            something: "value"
+        - path: "network/"
+          register_as: result2
+          data:
+            value: "{{ mixedCaseValue }}"
+        - path: "security/"
+          register_as: result3
+          data:
+            VALUE: "mixedCaseValue"
+             
+
+    - name: Print result
+      debug:
+        var: result
+
+...

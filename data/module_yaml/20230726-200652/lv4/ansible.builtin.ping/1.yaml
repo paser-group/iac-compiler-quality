@@ -1,0 +1,26 @@
+---
+- name: Ping hosts and verify Python
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Generate random MAC address
+      command: /bin/sh -c "openssl rand -hex 3 | sed 's/\(..\)/\1:/g; s/.$//' "
+      register: random_mac
+
+    - name: Ping host
+      ping:
+      register: ping_result
+
+    - name: Verify Python
+      assert:
+        that:
+          - ping_result.ping == 'pong'
+          - "'Python' in ping_result.invocation.module_args"
+
+    - name: Display result
+      debug:
+        msg: "Host {{ inventory_hostname }} is reachable and has a usable Python interpreter."
+
+    - name: Display random MAC address
+      debug:
+        msg: "Random MAC address: {{ random_mac.stdout }}"

@@ -1,0 +1,52 @@
+---
+- name: Test community.network.ce_lldp module for type-related bugs
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+
+    - name: Set test variables
+      set_fact:
+        bind_name: "Test{{ ansible_date_time.microsecond }}"
+        fast_count: 10
+        hold_multiplier: 4
+        interval: 30
+        lldpenable: "false"
+        management_address: "10.1.1.1"
+        mdn_notification_interval: 5
+        mdnstatus: "true"
+        notification_interval: 60
+        restart_delay: 10
+        state: "present"
+        transmit_delay: 5
+
+    - name: Generate strings with varied encodings
+      vars:
+        encoded_strings:
+          - "{{ bind_name }}"
+          - "{{ bind_name | b64encode }}"
+          - "{{ bind_name | urlencode }}"
+      debug:
+        var: encoded_strings
+
+    - name: Trigger the module with varied encodings
+      community.network.ce_lldp:
+        bind_name: "{{ item }}"
+        fast_count: "{{ fast_count }}"
+        hold_multiplier: "{{ hold_multiplier }}"
+        interval: "{{ interval }}"
+        lldpenable: "{{ lldpenable }}"
+        management_address: "{{ management_address }}"
+        mdn_notification_interval: "{{ mdn_notification_interval }}"
+        mdnstatus: "{{ mdnstatus }}"
+        notification_interval: "{{ notification_interval }}"
+        restart_delay: "{{ restart_delay }}"
+        state: "{{ state }}"
+        transmit_delay: "{{ transmit_delay }}"
+        provider: "{{ inventory_hostname }}"
+      loop: "{{ encoded_strings }}"
+      register: result
+
+    - name: Display the result
+      debug:
+        var: result

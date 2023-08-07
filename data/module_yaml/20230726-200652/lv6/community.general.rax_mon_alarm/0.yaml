@@ -1,0 +1,34 @@
+---
+- name: Test latent type-related bugs in Ansible
+  hosts: localhost
+  gather_facts: false
+  
+  tasks:
+    - name: Create or delete Rackspace Cloud Monitoring Alarm
+      community.general.rax_mon_alarm:
+        api_key: "{{ lookup('env', 'RAX_API_KEY') }}"
+        auth_endpoint: "{{ lookup('env', 'RAX_AUTH_ENDPOINT') }}"
+        check_id: "check_id_1"
+        credentials: "/path/to/credentials.txt"
+        criteria: "if status_code == 200 then 'OK' else 'ERROR' end"
+        disabled: false
+        entity_id: "entity_id_1"
+        env: "production"
+        identity_type: "username"
+        label: "{{ item }}"
+        # Potential latent bug: missing quotes around str value
+        metadata:
+          key1: value1
+          key2: value2
+        notification_plan_id: "plan_id_1"
+        region: "DFW"
+        state: "present"
+        tenant_id: "tenant_id_1"
+        tenant_name: "my_tenant"
+        username: "my_username"
+        validate_certs: true
+      loop:
+        # Potential latent bug: Non-string item value
+        - 1
+        - true
+        - ['value1', 'value2']  # Potential latent bug: Invalid data type

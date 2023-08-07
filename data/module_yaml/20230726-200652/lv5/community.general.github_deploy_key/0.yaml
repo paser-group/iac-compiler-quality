@@ -1,0 +1,64 @@
+- name: Test playbook for 'community.general.github_deploy_key' module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    github_url: "https://github.com/myorg/myrepo.git"
+    name: "my-deploy-key"
+    key: "{{ lookup('file', '/path/to/my-key.pem') }}"
+    owner: "my-owner"
+    repo: "my-repo"
+    state: "present"
+    username: "my-username"
+    password: "my-password"
+    token: "my-token"
+    otp: 1234
+    read_only: true
+    force: false
+
+  tasks:
+    - name: Install required dependencies
+      pip:
+        name:
+          - 'github3.py'
+          - 'PyGithub'
+
+    - name: Generate random port number
+      set_fact:
+        random_port: "{{ 9 | random }}"
+
+    - name: Create a deploy key
+      community.general.github_deploy_key:
+        github_url: "{{ github_url }}"
+        name: "{{ name }}"
+        key: "{{ key }}"
+        owner: "{{ owner }}"
+        password: "{{ password }}"
+        read_only: "{{ read_only }}"
+        repo: "{{ repo }}"
+        state: "{{ state }}"
+        token: "{{ token }}"
+        username: "{{ username }}"
+        otp: "{{ otp }}"
+        force: "{{ force }}"
+        port: "{{ random_port }}"
+      register: result
+
+    - name: Print deploy key information
+      debug:
+        var: result
+
+    - name: Check if deploy key exists
+      assert:
+        that:
+            - result is not failed
+            - result.changed == false
+            - result.deploy_key.name == name
+
+    - name: Check if deploy key is set as read-only
+      assert:
+        that: result.deploy_key.read_only == 'true'
+
+    - name: Check if deploy key repository is correct
+      assert:
+        that: result.deploy_key.repository.full_name == "{{ owner }}/{{ repo }}"

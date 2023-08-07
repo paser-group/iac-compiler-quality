@@ -1,0 +1,63 @@
+---
+- name: Test Ansible Latent Type-Related Bug with Netscaler CS Action Module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    nitro_user: admin
+    nitro_pass: secret
+    nitro_protocol: https
+    nitro_timeout: 10
+    nsip: "{{ ansible_default_ipv4.address }}"
+    validate_certs: false
+
+  tasks:
+    - name: Create Netscaler CS Action with random port number
+      community.network.netscaler_cs_action:
+        nsip: "{{ nsip }}"
+        nitro_user: "{{ nitro_user }}"
+        nitro_pass: "{{ nitro_pass }}"
+        nitro_protocol: "{{ nitro_protocol }}"
+        nitro_timeout: "{{ nitro_timeout }}"
+        validate_certs: "{{ validate_certs }}"
+        state: present
+        name: "action_test"
+        comment: "Testing action creation"
+        targetvserver: "test_vserver"
+        port: "{{ 10000 | random }}"
+      register: result
+
+    - debug:
+        var: result
+
+    - name: Create Netscaler CS Action without port number
+      community.network.netscaler_cs_action:
+        nsip: "{{ nsip }}"
+        nitro_user: "{{ nitro_user }}"
+        nitro_pass: "{{ nitro_pass }}"
+        nitro_protocol: "{{ nitro_protocol }}"
+        nitro_timeout: "{{ nitro_timeout }}"
+        validate_certs: "{{ validate_certs }}"
+        state: present
+        name: "action_test"
+        comment: "Testing action creation"
+        targetvserver: "test_vserver"
+      register: result_without_port
+
+    - debug:
+        var: result_without_port
+
+    - name: Delete Netscaler CS Action
+      community.network.netscaler_cs_action:
+        nsip: "{{ nsip }}"
+        nitro_user: "{{ nitro_user }}"
+        nitro_pass: "{{ nitro_pass }}"
+        nitro_protocol: "{{ nitro_protocol }}"
+        nitro_timeout: "{{ nitro_timeout }}"
+        validate_certs: "{{ validate_certs }}"
+        state: absent
+        name: "action_test"
+      register: result_delete
+
+    - debug:
+        var: result_delete

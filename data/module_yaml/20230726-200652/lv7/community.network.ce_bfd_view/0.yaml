@@ -1,0 +1,26 @@
+---
+- name: Test playbook for Ansible latent type-related bugs
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Set up BFD session view configurations
+      community.network.ce_bfd_view:
+        admin_down: 1
+        description: "{{ non_existent_variable }}"
+        detect_multi: [1, 2, 3]
+        local_discr: "test"
+        min_rx_interval: 5s
+        min_tx_interval: 10m
+        remote_discr: true
+        session_name: True
+        state: "enabled"
+        tos_exp: "low"
+        wtr_interval: 123
+        limit: "{{ 1000 / 0 }}" # Trigger a division-by-zero error
+      register: bfd_result
+      ignore_errors: true
+
+    - name: Display result
+      debug:
+        var: bfd_result

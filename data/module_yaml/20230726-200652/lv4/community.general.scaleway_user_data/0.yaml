@@ -1,0 +1,41 @@
+---
+- name: Test playbook for Ansible Latent Type-Related Bug Exploration
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Install required dependencies
+      apt:
+        name: python3-pip
+        state: present
+
+    - name: Install Scaleway module
+      pip:
+        name: scaleway-sdk
+        state: present
+
+    - name: Include scaleway_user_data module
+      include_role:
+        name: community.general.scaleway_user_data
+
+    - name: Generate a random MAC address
+      set_fact:
+        random_mac_address: "{{ '%02x:%02x:%02x:%02x:%02x:%02x' | format(( 0x00 | random(256)) , ( 0x00 | random(256)) , ( 0x00 | random(256)) , ( 0x00 | random(256)) , ( 0x00 | random(256)) , ( 0x00 | random(256)) ) }}"
+
+    - name: Execute scaleway_user_data module
+      community.general.scaleway_user_data:
+        api_token: "YOUR_API_TOKEN"
+        api_url: "https://api.scaleway.com/"
+        api_timeout: 10
+        query_parameters:
+          region: "YOUR_REGION"
+          server_id: "YOUR_SERVER_ID"
+          user_data:
+            attribute1: "value1"
+            attribute2: "{{ random_mac_address }}"
+        validate_certs: false
+      register: output
+
+    - name: Debug output
+      debug:
+        var: output

@@ -1,0 +1,62 @@
+---
+- name: Test sapcar_extract module with byte string values
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Create a temporary directory
+      tempfile:
+        state: directory
+      register: temp_dir
+
+    - name: Extract SAPCAR binary
+      community.general.sapcar_extract:
+        binary_path: '/path/to/sapcar.bin'
+        dest: '{{ temp_dir.path }}'
+      register: extract_result
+      ignore_errors: true
+
+    - name: Debug extract_result
+      debug:
+        var: extract_result
+
+# Test case - Introduce byte string values
+- name: Test sapcar_extract module with byte string values
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Create a temporary directory
+      tempfile:
+        state: directory
+      register: temp_dir
+
+    - name: Convert binary_path to byte string
+      set_fact:
+        binary_path_bytes: '{{ binary_path | to_json | b64encode }}'
+
+    - name: Convert dest to byte string
+      set_fact:
+        dest_bytes: '{{ dest | to_json | b64encode }}'
+
+    - name: Convert manifest to byte string
+      set_fact:
+        manifest_bytes: '{{ manifest | to_json | b64encode }}'
+
+    - name: Convert path to byte string
+      set_fact:
+        path_bytes: '{{ path | to_json | b64encode }}'
+
+    - name: Extract SAPCAR binary
+      community.general.sapcar_extract:
+        binary_path: '{{ binary_path_bytes | from_json | b64decode }}'
+        dest: '{{ dest_bytes | from_json | b64decode }}'
+        manifest: '{{ manifest_bytes | from_json | b64decode }}'
+        path: '{{ path_bytes | from_json | b64decode }}'
+        remove: '{{ remove }}'
+        security_library: '{{ security_library }}'
+        signature: '{{ signature }}'
+      register: extract_result
+      ignore_errors: true
+
+    - name: Debug extract_result
+      debug:
+        var: extract_result

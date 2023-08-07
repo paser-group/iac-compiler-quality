@@ -1,0 +1,32 @@
+---
+- name: Test Playbook
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    package: ['nginx', 'mysql']
+    state: 'latest'
+    jobs: 4
+    loadavg: 4.2
+
+  tasks:
+    - name: Trigger latent type-related bug
+      community.general.portage:
+        package: "{{ package }}"
+        state: "{{ state }}"
+        jobs: "{{ jobs }}"
+        loadavg: "{{ loadavg }}"
+        changed_use: "true"
+        nodeps: "true"
+        withbdeps: "true"
+        backtrack: 10  # latent bug: wrong type (should be an int)
+        quiet: "true"  # latent bug: wrong type (should be a bool)
+        sync: 123  # latent bug: wrong type (should be a str)
+        update: "false"  # latent bug: wrong type (should be a bool)
+        verbose: 1.5  # latent bug: wrong type (should be a bool)
+      register: result
+      ignore_errors: true
+
+    - name: Print result
+      debug:
+        var: result

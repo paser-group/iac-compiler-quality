@@ -1,0 +1,29 @@
+---
+- name: Execute operations on NETCONF enabled devices using RPCs
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Generate random MAC addresses
+      community.general.random_mac:
+        count: "{{ 4 }}"
+      register: random_macs
+
+    - name: Execute NETCONF RPC
+      ansible.netcommon.netconf_rpc:
+        content: |
+          <get>
+            <filter type="subtree">
+              <interface xmlns="urn:ietf:params:xml:ns:yang:ietf-interfaces">
+                <name>*</name>
+              </interface>
+            </filter>
+          </get>
+        display: "{{ 'raw' }}"
+        rpc: "{{ 'get-interface-info' }}"
+        xmlns: "urn:ietf:params:xml:ns:yang:ietf-interfaces"
+      register: result
+
+    - name: Debug result
+      debug:
+        var: result

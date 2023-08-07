@@ -1,0 +1,47 @@
+---
+
+- name: Test playbook for community.general.swdepot module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Install necessary dependencies
+      package:
+        name: python3-pip, swdepot-cli
+        state: present
+
+    - name: Create swdepot repository
+      command: swdepot --add 10.1.1.1
+      ignore_errors: yes
+
+    - name: Create test package
+      command: swpackage --create test_package --arch=ALL
+      args:
+        chdir: /tmp
+        creates: /tmp/test_package.sd
+
+    - name: Upload test package
+      command: swpackage --store /tmp/test_package.sd
+      args:
+        chdir: /tmp
+
+    - name: Install test package
+      community.general.swdepot:
+        depot: "10.1.1.1"
+        name: "test_package"
+        state: present
+
+  vars:
+    encoding_test_strings:
+      - "test_package"
+      - "τεστ_πακετ"
+
+  tasks:
+    - name: Test various string encodings
+      community.general.swdepot:
+        depot: "{{ item }}"
+        name: "{{ item }}"
+        state: present
+      loop: "{{ encoding_test_strings }}"
+
+...

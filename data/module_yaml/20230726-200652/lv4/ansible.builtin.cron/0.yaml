@@ -1,0 +1,30 @@
+---
+- name: Manage cron jobs
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Generate random MAC address
+      command: /usr/bin/openssl rand -hex 6 | sed 's/\(..\)/\1:/g; s/.$//'
+      register: mac_address
+      changed_when: false
+
+    - name: Print random MAC address
+      debug:
+        var: mac_address.stdout
+
+    - name: Manage cron job
+      ansible.builtin.cron:
+        name: "Backup task"
+        job: "echo 'Performing backup' >> /var/log/backup.log"
+        minute: "*/15"
+        hour: "*"
+        day: "*"
+        month: "*"
+        weekday: "*"
+        disabled: false
+        state: present
+        cron_file: "/etc/cron.d/backup"
+        insertafter: "ntp"
+      vars:
+        mac_address: "{{ mac_address.stdout }}"

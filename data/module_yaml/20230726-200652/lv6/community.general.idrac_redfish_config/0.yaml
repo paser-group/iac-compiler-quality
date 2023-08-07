@@ -1,0 +1,69 @@
+---
+- name: Test playbook to find latent type-related bugs in Ansible's iDRAC Redfish Config module
+  hosts: localhost
+  gather_facts: false
+  
+  vars:
+    auth_token: "{{ encrypted_auth_token }}"
+    baseuri: "https://your_idrac_server"
+    category: "your_category"
+    command:
+      - "your_command"
+    manager_attributes:
+      attribute1: "value1"
+      attribute2: "value2"
+    password: "your_password"
+    resource_id: "your_resource_id"
+    timeout: 60
+    username: "your_username"
+
+  tasks:
+    - name: Generate strings with varied encodings
+      script: |
+        import random
+        import string
+
+        encoded_strings = []
+
+        # Generate strings with varied encodings
+        for i in range(10):
+          # Generate random string of lowercase letters
+          random_string = ''.join(random.choice(string.ascii_lowercase) for _ in range(10))
+
+          # Generate string with lower and upper case letters mixed
+          mixed_case_string = ''.join(random.choice(string.ascii_letters) for _ in range(10))
+
+          # Generate string with special characters
+          special_chars_string = ''.join(random.choice(string.punctuation) for _ in range(10))
+
+          # Add encoded strings to the list
+          encoded_strings.append(random_string.encode('utf-8'))
+          encoded_strings.append(mixed_case_string.encode('utf-8'))
+          encoded_strings.append(special_chars_string.encode('utf-8'))
+
+        print(encoded_strings)
+      register: encoded_strings_result
+      changed_when: false
+
+    - name: Debug encoded strings
+      debug:
+        var: encoded_strings_result.stdout_lines
+
+    - name: Test the iDRAC Redfish Config module
+      community.general.idrac_redfish_config:
+        auth_token: "{{ auth_token }}"
+        baseuri: "{{ baseuri }}"
+        category: "{{ category }}"
+        command: "{{ command }}"
+        manager_attributes: "{{ manager_attributes }}"
+        password: "{{ password }}"
+        resource_id: "{{ resource_id }}"
+        timeout: "{{ timeout }}"
+        username: "{{ username }}"
+      vars:
+        encoded_strings: "{{ encoded_strings_result.stdout_lines }}"
+      register: idrac_redfish_config_result
+
+    - name: Print the result
+      debug:
+        var: idrac_redfish_config_result

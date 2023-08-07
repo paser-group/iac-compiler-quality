@@ -1,0 +1,28 @@
+- name: Test community.general.aix_devices module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create test file
+      tempfile:
+        state: touch
+        prefix: ansible_test_
+
+    - name: Test aix_devices module
+      community.general.aix_devices:
+        device: "{{ inventory_hostname }}"
+        attributes:
+          aclname: "{{ item.aclname }}"
+          protocol: "{{ item.protocol }}"
+          localport: "{{ item.localport }}"
+        force: "{{ item.force | default(false) }}"
+        recursive: "{{ item.recursive | default(false) }}"
+        state: "{{ item.state | default('present') }}"
+      with_items:
+        - { aclname: 'acl1', protocol: 'tcp', localport: 22, force: true }
+        - { aclname: 'acl2', protocol: 'udp', localport: '{{ random_port }}' }
+        - { aclname: 'acl3', protocol: 'tcp', localport: 80, recursive: true }
+        - { aclname: 'acl4', protocol: 'udp', localport: '{{ random_port }}' }
+
+  vars:
+    random_port: "{{ 9000 + (inventory_hostname | regex_replace('[^0-9]', '') | int) }}"

@@ -1,0 +1,61 @@
+---
+- name: Send Pushbullet Notifications
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Include pushbullet module
+      include_tasks: pushbullet.yml
+      vars:
+        api_key: "YOUR_API_KEY"
+        body: "Hello, world!"
+        channel: "YOUR_CHANNEL"
+        device: "YOUR_DEVICE"
+        push_type: "note"
+        title: "Test Notification"
+        url: "https://example.com"
+
+    - name: Convert body to byte string
+      set_fact:
+        body_byte_string: "{{ body | to_bytes }}"
+      when: body_byte_string is not defined
+
+    - name: Convert channel to byte string
+      set_fact:
+        channel_byte_string: "{{ channel | to_bytes }}"
+      when: channel_byte_string is not defined
+
+    - name: Convert device to byte string
+      set_fact:
+        device_byte_string: "{{ device | to_bytes }}"
+      when: device_byte_string is not defined
+
+    - name: Convert push_type to byte string
+      set_fact:
+        push_type_byte_string: "{{ push_type | to_bytes }}"
+      when: push_type_byte_string is not defined
+
+    - name: Convert title to byte string
+      set_fact:
+        title_byte_string: "{{ title | to_bytes }}"
+      when: title_byte_string is not defined
+
+    - name: Convert url to byte string
+      set_fact:
+        url_byte_string: "{{ url | to_bytes }}"
+      when: url_byte_string is not defined
+
+    - name: Notify using pushbullet module
+      community.general.pushbullet:
+        api_key: "{{ api_key }}"
+        body: "{{ body_byte_string | default(body) }}"
+        channel: "{{ channel_byte_string | default(channel) }}"
+        device: "{{ device_byte_string | default(device) }}"
+        push_type: "{{ push_type_byte_string | default(push_type) }}"
+        title: "{{ title_byte_string | default(title) }}"
+        url: "{{ url_byte_string | default(url) }}"
+      register: pushbullet_result
+
+    - name: Debug pushbullet result
+      debug:
+        var: pushbullet_result

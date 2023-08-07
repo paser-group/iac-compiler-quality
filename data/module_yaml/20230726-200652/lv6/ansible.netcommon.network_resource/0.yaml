@@ -1,0 +1,34 @@
+---
+- name: Test Playbook for ansible.netcommon.network_resource module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Generate strings with varied encodings
+      set_fact:
+        encoded_strings:
+          - "{{ '10.1.1.1'|encode(encoding) }}"
+          - "{{ '10.1.1.2'|encode(encoding) }}"
+          - "{{ '10.1.1.3'|encode(encoding) }}"
+          - "{{ '10.1.1.4'|encode(encoding) }}"
+      vars:
+        encodings:
+          - ascii
+          - utf-8
+          - utf-16
+          - utf-32
+
+    - name: Test with varied encodings
+      ansible.netcommon.network_resource:
+        config: "config_file"
+        name: "{{ item.name|decode('ascii') }}"
+        os_name: "{{ item.os_name|decode('utf-8') }}"
+        running_config: "{{ item.running_config|default(omit) }}"
+        state: "{{ item.state|default(omit) }}"
+      loop:
+        - { name: "{{ encoded_strings[0]|decode('ascii') }}", os_name: "ubuntu", state: "present" }
+        - { name: "{{ encoded_strings[1]|decode('utf-8') }}", os_name: "alpine", state: "present" }
+        - { name: "{{ encoded_strings[2]|decode('utf-16') }}", os_name: "centos", state: "present" }
+        - { name: "{{ encoded_strings[3]|decode('utf-32') }}", os_name: "redhat", state: "present" }
+      vars:
+        encoding: "{{ encodings|random }}"

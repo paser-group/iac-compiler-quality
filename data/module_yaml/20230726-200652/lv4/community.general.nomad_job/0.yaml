@@ -1,0 +1,49 @@
+---
+- name: Test playbook for 'community.general.nomad_job' module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Generate random MAC addresses for network modules
+      set_fact:
+        random_mac: "{% set loc = ['00', '11', '22', '33', '44', '55', '66', '77', '88', '99', 'aa', 'bb', 'cc', 'dd', 'ee', 'ff'] %}{{ loc | random }}{{ loc | random }}:{{ loc | random }}{{ loc | random }}:{{ loc | random }}{{ loc | random }}"
+
+    - name: Create a nomad job
+      community.general.nomad_job:
+        namespace: default
+        name: my_job
+        content: |
+          job "my_job" {
+            datacenters = ["dc1"]
+          
+            group "redis" {
+              count = 1
+          
+              task "redis" {
+                driver = "docker"
+          
+                config {
+                  image = "redis"
+                  network_mode = "bridge"
+                  port_map {
+                    db = 6379
+                  }
+                }
+              }
+            }
+          }
+        content_format: hcl
+        state: present
+        host: localhost
+        token: my_token
+        use_ssl: true
+        client_cert: /path/to/client_cert.pem
+        client_key: /path/to/client_key.pem
+        validate_certs: true
+        timeout: 30
+
+      register: result
+
+    - name: Debug output
+      debug:
+        var: result

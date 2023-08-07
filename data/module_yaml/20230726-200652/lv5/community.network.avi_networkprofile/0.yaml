@@ -1,0 +1,49 @@
+---
+- name: Test network profiles
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    # Define the network profiles
+    network_profiles:
+      - name: network_profile_1
+        connection_mirror: true
+      - name: network_profile_2
+        connection_mirror: false
+      - name: network_profile_3
+        connection_mirror: true
+
+  tasks:
+    - name: Create network profiles
+      community.network.avi_networkprofile:
+        controller: "{{ controller }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        state: present
+        tenant: "{{ tenant }}"
+        profile: "{{ item }}"
+      loop: "{{ network_profiles }}"
+      register: result
+
+    - name: Display network profile results
+      debug:
+        var: result
+
+    - name: Test port settings
+      community.network.avi_networkprofile:
+        controller: "{{ controller }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        state: present
+        tenant: "{{ tenant }}"
+        profile:
+          name: network_profile_4
+          connection_mirror: true
+          port_configuration:
+            default_server_port: "{{ item }}"
+      loop: "{{ range(65535) | list }}"
+      register: port_result
+
+    - name: Display port settings results
+      debug:
+        var: port_result

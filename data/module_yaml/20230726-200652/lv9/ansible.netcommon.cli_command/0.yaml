@@ -1,0 +1,24 @@
+- name: Run CLI command on nodes
+  hosts: all
+
+  tasks:
+    - name: Generate random IP address
+      set_fact:
+        random_ip: "{{ (hostvars[inventory_hostname]['ansible_default_ipv4']['network'] ~ '.' ~ range(1, 255) | random) }}"
+      when:
+        - "'ansible_default_ipv4' in hostvars[inventory_hostname]"
+        - "hostvars[inventory_hostname]['ansible_default_ipv4']['network'] is defined"
+
+    - name: Debug random IP address
+      debug:
+        var: random_ip
+
+    - name: Run CLI command
+      ansible.netcommon.cli_command:
+        answer: ["yes"]
+        check_all: true
+        command: "your_cli_command_here"
+        newline: true
+        prompt: ["continue connecting?"]
+        sendonly: false
+        host: "{{ random_ip }}"

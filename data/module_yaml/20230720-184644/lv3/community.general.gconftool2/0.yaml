@@ -1,0 +1,30 @@
+---
+- name: Testing gconftool2 module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create gconftool2 configuration value with bytes and strings
+      community.general.gconftool2:
+        config_source: 'xml:readwrite:/etc/gconf/gconf.xml.defaults'
+        key: '/desktop/gnome/interface/gtk_theme'
+        direct: no
+        state: present
+        value: "{{ 'test_value' | b64encode }}"  # Encode 'test_value' using base64
+        value_type: 'string'
+
+    - name: Print the configuration value
+      shell: gconftool-2 --get /desktop/gnome/interface/gtk_theme
+      register: output
+      changed_when: false
+
+    - name: Display output
+      debug:
+        var: output.stdout
+
+    - name: Clean up the configuration value
+      community.general.gconftool2:
+        config_source: 'xml:readwrite:/etc/gconf/gconf.xml.defaults'
+        key: '/desktop/gnome/interface/gtk_theme'
+        direct: no
+        state: absent

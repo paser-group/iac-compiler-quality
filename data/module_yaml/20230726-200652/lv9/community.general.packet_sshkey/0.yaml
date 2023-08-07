@@ -1,0 +1,36 @@
+---
+- name: Test playbook for exposing latent type-related bugs
+  hosts: localhost
+  gather_facts: false
+  vars:
+    auth_token: "your_auth_token"
+    keys:
+      - id: "key1"
+        key: "{{ lookup('file', '/path/to/key1.pub') }}"
+        key_file: "/path/to/key1.pem"
+        label: "Key 1"
+        fingerprint: "00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00"
+      - id: "key2"
+        key: "{{ lookup('file', '/path/to/key2.pub') }}"
+        key_file: "/path/to/key2.pem"
+        label: "Key 2"
+        fingerprint: "11:11:11:11:11:11:11:11:11:11:11:11:11:11:11:11"
+
+  tasks:
+    - name: Create SSH Keys
+      community.general.packet_sshkey:
+        auth_token: "{{ auth_token }}"
+        state: present
+        id: "{{ item.id }}"
+        key: "{{ item.key }}"
+        key_file: "{{ item.key_file }}"
+        label: "{{ item.label }}"
+        fingerprint: "{{ item.fingerprint }}"
+      loop: "{{ keys }}"
+
+    - name: Delete SSH Keys
+      community.general.packet_sshkey:
+        auth_token: "{{ auth_token }}"
+        state: absent
+        id: "{{ item.id }}"
+      loop: "{{ keys }}"

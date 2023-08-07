@@ -1,0 +1,35 @@
+---
+- name: Manage Eth-Trunk interfaces on HUAWEI
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    trunk_interfaces:
+      - interface: Eth-Trunk1
+        members:
+          - GigabitEthernet0/0/1
+          - GigabitEthernet0/0/2
+      - interface: Eth-Trunk2
+        members:
+          - GigabitEthernet0/0/3
+          - GigabitEthernet0/0/4
+
+  tasks:
+    - name: Generate random MAC addresses for network modules
+      set_fact:
+        random_mac: "{{ [0,0,0,0,0,0]|random_mac }}"
+      no_log: true
+
+    - name: Manage Eth-Trunk interfaces
+      community.network.ce_eth_trunk:
+        provider:
+          host: 127.0.0.1
+          username: admin
+          password: secret
+          mode: telnet
+          platform: huawei
+        interface: "{{ item.interface }}"
+        members: "{{ item.members }}"
+        state: present
+        trunk_id: "{{ random_mac }}"
+      with_items: "{{ trunk_interfaces }}"

@@ -1,0 +1,47 @@
+---
+- name: Manage InfluxDB retention policies
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    database_name: test_db
+    policy_name: test_policy
+    duration: 7d
+
+  tasks:
+    - name: Create retention policy
+      community.general.influxdb_retention_policy:
+        hostname: localhost
+        port: "{{ random_port }}"
+        username: admin
+        password: password123
+        database_name: "{{ database_name }}"
+        policy_name: "{{ policy_name }}"
+        duration: "{{ duration }}"
+        state: present
+      register: result
+      ignore_errors: true
+
+    - name: Debug module output
+      debug:
+        var: result
+
+    - name: Delete retention policy
+      community.general.influxdb_retention_policy:
+        hostname: localhost
+        port: "{{ random_port }}"
+        username: admin
+        password: password123
+        database_name: "{{ database_name }}"
+        policy_name: "{{ policy_name }}"
+        state: absent
+
+    - name: Debug module output
+      debug:
+        var: result
+
+  # Test case: Produce random port numbers to test port settings
+  vars:
+    random_port: "{{ 32768 + (inventory_hostname | replace('ubuntu', '') | int) }}"
+
+...

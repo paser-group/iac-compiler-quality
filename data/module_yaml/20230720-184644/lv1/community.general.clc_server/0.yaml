@@ -1,0 +1,37 @@
+---
+- name: Test the CLC Server module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create the CLC Server
+      community.general.clc_server:
+        name: "TestServer"
+        count: 1
+        cpu: 1
+        memory: 1
+        count_group: "countgroup"
+        description: "Test server for mixed case sensitivity bug"
+        network_id: "networkid"
+        additional_disks:
+          - size_gb: 10
+            path: "/dev/sdb"
+        packages:
+          - package1
+          - package2
+        state: present
+      register: clc_server_create
+
+    - name: Debug CLC Server creation result
+      debug:
+        var: clc_server_create
+
+    - name: Stop the CLC Server
+      community.general.clc_server:
+        server_ids: "{{ clc_server_create.instances[0].id }}"
+        state: absent
+      when: clc_server_create.instances|length > 0
+
+    - name: Debug CLC Server deletion result
+      debug:
+        var: clc_server_delete

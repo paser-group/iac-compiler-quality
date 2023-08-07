@@ -1,0 +1,44 @@
+- name: Test latent type-related bugs in Ansible 'npm' module
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Install npm package with varied encodings
+      community.general.npm:
+        name: "{{ item }}"
+        state: present
+        version: "2.6.0"
+        ci: yes
+        executable: "/usr/bin/npm"
+        global: true
+        ignore_scripts: "{{ not ignore_scripts | default(false) }}"
+        no_bin_links: "{{ not no_bin_links | default(false) }}"
+        no_optional: "{{ not no_optional | default(false) }}"
+        path: "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+        production: "{{ not production | default(false) }}"
+        registry: "https://registry.npmjs.org"
+        unsafe_perm: "{{ not unsafe_perm | default(false) }}"
+      loop:
+        - "pÃ¢tÃ©"
+        - "pâté"
+        - "pâte"
+        - "paté"
+        - "pâtê"
+        - "pátê"
+        - "pȁtē"
+        - "patē"
+        - "pātē"
+      register: npm_output
+
+    - name: Display npm package installation output
+      debug:
+        var: npm_output
+
+    - name: Verify npm package installation
+      command: "npm ls {{ item }}"
+      loop: "{{ npm_output.results }}"
+      when: item.failed == false
+      register: verify_output
+
+    - name: Display verification output
+      debug:
+        var: verify_output

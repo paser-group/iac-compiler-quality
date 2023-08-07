@@ -1,0 +1,46 @@
+- name: Test Ansible Latent Type-Related Bugs
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Ping test
+      ansible.builtin.ping:
+      register: ping_result
+
+    - name: Print ping result
+      debug:
+        var: ping_result
+
+- name: Generate strings with varied encodings
+  hosts: localhost
+  gather_facts: false
+  connection: local
+
+  tasks:
+    - name: Generate encoded strings
+      script: |
+        import sys
+
+        # Ensure non-ASCII characters are handled correctly
+        reload(sys)
+        sys.setdefaultencoding('utf-8')
+
+        test_strings = [
+          u'Test String',
+          u'Test String è',
+          u'Test String ß',
+          u'Test String ひらがな',
+          u'Test String 🌍',
+        ]
+
+        encoded_strings = []
+        for test_string in test_strings:
+          encoded_string = test_string.encode('utf-8')
+          encoded_strings.append(encoded_string)
+
+        print(encoded_strings)
+      register: encoded_strings_result
+
+    - name: Print encoded strings
+      debug:
+        var: encoded_strings_result.stdout_lines

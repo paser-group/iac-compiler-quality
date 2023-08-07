@@ -1,0 +1,50 @@
+---
+- name: Test playbook for community.general.one_host module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create a random MAC address
+      block:
+        - command: "openssl rand -hex 6 | sed 's/\(..\)/\1:/g; s/.$//'"
+          register: mac_address
+        - set_fact:
+            mac_address: "{{ mac_address.stdout }}"
+
+    - name: Add a host using community.general.one_host module
+      community.general.one_host:
+        api_url: "http://your-api-url"
+        api_username: "your-username"
+        api_password: "your-password"
+        name: "new-host"
+        cluster_id: "cluster-1"    # Intentionally using a string instead of an integer
+        cluster_name: 1           # Intentionally using an integer instead of a string
+        im_mad_name: 100          # Intentionally using an integer instead of a string
+        vmm_mad_name: true        # Intentionally using a boolean instead of a string
+        wait_timeout: "10"        # Intentionally using a string instead of an integer
+        state: present
+        labels:
+          - "label-1"
+          - "label-2"
+        template:
+          cpu: "2"                # Intentionally using a string instead of an integer
+          memory: "4096"          # Intentionally using a string instead of an integer
+          nics:
+            - network_id: 1
+              network_name: "node-net"
+              ip: "10.1.1.5"
+              mac: "{{ mac_address }}"
+          disks:
+            - datastores:
+                - datastore_id: 1
+                  datastore_name: "datastore-1"
+              image_id: "1"       # Intentionally using a string instead of an integer
+              image_name: true    # Intentionally using a boolean instead of a string
+              size: "10"          # Intentionally using a string instead of an integer
+        validate_certs: true
+
+      register: result
+
+    - name: Show the result
+      debug:
+        var: result

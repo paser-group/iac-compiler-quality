@@ -1,0 +1,47 @@
+---
+- name: Send message to IRC channel
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Set variables for networking
+      set_fact:
+        subnet: 10.1.1.0/24
+        gateway: 10.1.1.254
+
+    - name: Generate random IP addresses for nodes
+      set_fact:
+        ubuntu1_ip: "{{ subnet | ipaddr(subnet_ip=10, host_ip=1) }}"
+        alpine1_ip: "{{ subnet | ipaddr(subnet_ip=10, host_ip=2) }}"
+        centos1_ip: "{{ subnet | ipaddr(subnet_ip=10, host_ip=3) }}"
+        redhat1_ip: "{{ subnet | ipaddr(subnet_ip=10, host_ip=4) }}"
+
+    - name: Configure Docker nodes on Ansible control machine
+      add_host:
+        name: "{{ item }}"
+        ansible_connection: docker
+        ansible_host: "{{ hostvars['localhost'][item+'_ip'] }}"
+      with_items:
+        - ubuntu1
+        - alpine1
+        - centos1
+        - redhat1
+
+    - name: Install required Python packages
+      pip:
+        name:
+          - docker
+          - pyyaml
+
+    - name: Include the 'community.general.irc' role
+      include_role:
+        name: community.general.irc
+
+    - name: Send message to IRC channel
+      irc:
+        server: irc.freenode.net
+        channel: "#ansible"
+        msg: "Hello from Ansible!"
+        nick: "AnsibleBot"
+        timeout: 10
+        use_ssl: true

@@ -1,0 +1,69 @@
+---
+- name: Test Ansible module for managing L2 interfaces on Extreme switches
+  hosts: switches
+  gather_facts: false
+  
+  tasks:
+    - name: Configure L2 interfaces
+      community.network.exos_l2_interfaces:
+        config:
+          - name: ethernet 1
+            state: "{{ item.state }}"
+        state: "{{ item.state }}"
+      loop:
+        - { state: "    " }
+        - { state: "present" }
+        - { state: "absent" }
+        - { state: enabled }
+        - { state: disabled }
+        - { state: enabled_forbidden }
+
+    - name: Pause for a random duration to allow the configuration to take effect
+      pause:
+        seconds: "{{ lookup('community.general.random_number', 'start=2 end=5') | int }}"
+
+    - name: Validate the L2 interface configuration
+      community.network.exos_l2_interfaces_facts:
+      register: facts
+
+    - name: Debug facts
+      debug:
+        var: facts
+        
+
+- name: Check the L2 interface state
+  hosts: switches
+  gather_facts: false
+
+  tasks:
+    - name: Check L2 interface state
+      community.network.exos_l2_interfaces_facts:
+      register: facts
+
+    - name: Debug L2 interface facts
+      debug:
+        var: facts
+        
+
+- name: Finalize L2 interface configuration cleanup
+  hosts: switches
+  gather_facts: false
+  
+  tasks:
+    - name: Remove the L2 interface configuration
+      community.network.exos_l2_interfaces:
+        config:
+          - name: ethernet 1
+            state: "{{ item.state }}"
+        state: absent
+      loop:
+        - { state: "    " }
+        - { state: present }
+        - { state: absent }
+        - { state: enabled }
+        - { state: disabled }
+        - { state: enabled_forbidden }
+
+    - name: Pause for a random duration to allow the cleanup to take effect
+      pause:
+        seconds: "{{ lookup('community.general.random_number', 'start=2 end=5') | int }}"

@@ -1,0 +1,49 @@
+---
+- name: UptimeRobot Module Test
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    api_key: "your_uptimerobot_api_key"
+    monitor_id: "your_monitor_id"
+
+  tasks:
+    - name: Check if community.general collection is installed
+      command: ansible-galaxy collection list | grep community.general
+      register: collection_check
+      changed_when: false
+      failed_when: false
+
+    - name: Install community.general collection
+      ansible.builtin.command:
+        cmd: ansible-galaxy collection install community.general
+      when: "'community.general' not in collection_check.stdout"
+
+    - name: Pause Uptime Monitoring
+      community.general.uptimerobot:
+        apikey: "{{ api_key }}"
+        monitorid: "{{ monitor_id }}"
+        state: "paused"
+      register: pause_result
+
+    - name: Debug Pause Result
+      debug:
+        var: pause_result
+
+    - name: Calculate limit-related value
+      vars:
+        limit_value: "{{ 10/3 }}"
+      debug:
+        var: limit_value
+
+    - name: Start Uptime Monitoring
+      community.general.uptimerobot:
+        apikey: "{{ api_key }}"
+        monitorid: "{{ monitor_id }}"
+        state: "started"
+        limit: "{{ limit_value }}"
+      register: start_result
+
+    - name: Debug Start Result
+      debug:
+        var: start_result

@@ -1,0 +1,45 @@
+- name: Trigger latent type-related bug
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    inventory_file: "{{ inventory_dir }}/inventory.ini"
+    node_net_subnet: "10.1.1.0/24"
+    node_net_gateway: "10.1.1.254"
+    node_names:
+      - ubuntu1
+      - alpine1
+      - centos1
+      - redhat1
+      
+  vars_prompt:
+    - name: "client_id"
+      prompt: "Enter client ID"
+      private: no
+    - name: "client_secret"
+      prompt: "Enter client secret"
+      private: yes
+  
+  tasks:
+    - name: Generate inventory file
+      copy:
+        content: |
+          [nodes]
+          {{ node_names|join('\n') }}
+    
+          [nodes:vars]
+          ansible_user=root
+          ansible_host={{ node_net_subnet|ipaddr(1)|ipaddr('address') }}
+    
+          [node-net:children]
+          nodes
+          
+        dest: "{{ inventory_file }}"
+  
+    - name: Debug inventory file
+      debug:
+        var: inventory_file
+    
+    - name: Ping all nodes
+      ping:
+        inventory_file: "{{ inventory_file }}"

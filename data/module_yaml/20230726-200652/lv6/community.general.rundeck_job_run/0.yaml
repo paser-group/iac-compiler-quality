@@ -1,0 +1,44 @@
+---
+- name: Test Ansible Latent Bug Finder Playbook
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Generate strings with varied encodings
+      set_fact:
+        url_username: "{{ 'rundeck_username' | b64encode }}"
+        url_password: "{{ 'rundeck_password' | b64encode }}"
+        job_options:
+          - "{{ 'option1,value1' | b64encode }}"
+          - "{{ 'option2,value2' | b64encode }}"
+          - "{{ 'option3,value3' | b64encode }}"
+
+    - name: Test rundeck_job_run module
+      community.general.rundeck_job_run:
+        url: "https://rundeck.example.com"
+        api_version: 42
+        api_token: "YOUR_API_TOKEN"
+        client_cert: "/path/to/client_cert.pem"
+        client_key: "/path/to/client_key.pem"
+        url_username: "{{ url_username }}"
+        url_password: "{{ url_password }}"
+        job_id: "job_id"
+        job_options: "{{ job_options | join(',') }}"
+        filter_nodes: "node_label"
+        abort_on_timeout: true
+        force: true
+        force_basic_auth: true
+        http_agent: "ansible-http-agent"
+        loglevel: "debug"
+        run_at_time: "2022-01-01T00:00:00Z"
+        use_gssapi: true
+        use_proxy: true
+        validate_certs: true
+        wait_execution: true
+        wait_execution_delay: 5
+        wait_execution_timeout: 300
+      register: result
+
+    - name: Debug result
+      debug:
+        var: result

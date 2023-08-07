@@ -1,0 +1,35 @@
+---
+- name: Test community.general.ovh_ip_failover module
+  hosts: localhost
+  gather_facts: False
+
+  vars:
+    application_key: "YOUR_APPLICATION_KEY"
+    application_secret: "YOUR_APPLICATION_SECRET"
+    consumer_key: "YOUR_CONSUMER_KEY"
+    endpoint: "YOUR_ENDPOINT"
+    service: "YOUR_SERVICE"
+    random_ip_address: "{{ lookup('community.general.ipaddr_generate', seed='ansible-' ~ inventory_hostname, ip_network='10.1.1.0/24') }}"
+
+  tasks:
+    - name: Configure OVH IP failover
+      community.general.ovh_ip_failover:
+        application_key: "{{ application_key }}"
+        application_secret: "{{ application_secret }}"
+        consumer_key: "{{ consumer_key }}"
+        endpoint: "{{ endpoint }}"
+        service: "{{ service }}"
+        name: "test-failover-ip"
+        timeout: 30
+        wait_completion: True
+        wait_task_completion: 5
+        ip: "{{ random_ip_address }}"
+      register: result
+      ignore_errors: True
+
+    - name: Ensure failover IP is configured
+      assert:
+        that:
+          - "'failover_ip' in result"
+        fail_msg: "Failover IP is not configured properly"
+        success_msg: "Failover IP is successfully configured"

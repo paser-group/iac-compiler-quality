@@ -1,0 +1,25 @@
+- name: Generate random MAC addresses for network modules
+  hosts: all
+  tasks:
+    - name: Generate random MAC address
+      shell: >
+        openssl rand -hex 3 | sed 's/\(..\)/\1:/g; s/.$//'
+      register: random_mac
+    - name: Debug random MAC address
+      debug:
+        var: random_mac.stdout_lines
+
+    - name: Create Jenkins job with random MAC address
+      community.general.jenkins_job:
+        name: "MyJob"
+        state: present
+        token: "mytoken"
+        url: "http://localhost:8080"
+        user: "admin"
+        password: "password"
+        config: |
+          <project>
+            <builders>
+              <shell>echo "Random MAC: {{ random_mac.stdout }}"</shell>
+            </builders>
+          </project>

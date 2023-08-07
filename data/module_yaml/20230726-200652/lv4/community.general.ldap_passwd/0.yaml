@@ -1,0 +1,43 @@
+---
+- name: Test playbook for latent type-related bugs
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Generate random MAC address
+      shell: /usr/bin/random-mac-generator
+      register: random_mac
+
+    - name: Set up inventory variables
+      set_fact:
+        bind_dn: "{{ 'cn=admin,dc=example,dc=com' }}"
+        bind_pw: "{{ 'password' }}"
+        ca_path: "/etc/ssl/certs"
+        dn: "{{ 'cn=user,dc=example,dc=com' }}"
+        passwd: "{{ 'new_password' }}"
+        referrals_chasing: "{{ 'always' }}"
+        sasl_class: "{{ 'sasl_external' }}"
+        server_uri: "{{ 'ldap://localhost' }}"
+        start_tls: "{{ true }}"
+        validate_certs: "{{ false }}"
+        xorder_discovery: "{{ 'referrals_first' }}"
+
+    - name: Configure LDAP password
+      community.general.ldap_passwd:
+        bind_dn: "{{ bind_dn }}"
+        bind_pw: "{{ bind_pw }}"
+        ca_path: "{{ ca_path }}"
+        dn: "{{ dn }}"
+        passwd: "{{ passwd }}"
+        referrals_chasing: "{{ referrals_chasing }}"
+        sasl_class: "{{ sasl_class }}"
+        server_uri: "{{ server_uri }}"
+        start_tls: "{{ start_tls }}"
+        validate_certs: "{{ validate_certs }}"
+        xorder_discovery: "{{ xorder_discovery }}"
+      register: result
+
+    - name: Show debug output
+      debug:
+        var: result
+        verbosity: 2

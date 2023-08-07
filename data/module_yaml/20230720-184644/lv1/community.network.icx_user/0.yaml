@@ -1,0 +1,36 @@
+---
+- name: Manage user accounts on Ruckus ICX switches
+  hosts: icx_switches
+  gather_facts: false
+
+  vars:
+    icx_users:
+      - name: admin
+        privilege: admin
+        state: present
+        aggregate: ['10.1.1.1', '10.1.1.2']
+      - name: guest
+        privilege: guest
+        state: absent
+      - name: operator
+        privilege: operator
+        state: present
+        aggregate: '10.1.1.3'
+      - name: testuser
+        privilege: admin
+        state: present
+        nopassword: true
+
+  tasks:
+    - name: Configure user accounts on Ruckus ICX switches
+      community.network.icx_user:
+        state: "{{ item.state }}"
+        name: "{{ item.name }}"
+        configured_password: "{{ item.name }}"
+        privilege: "{{ item.privilege }}"
+        aggregate: "{{ item.aggregate }}"
+        check_running_config: true
+        update_password: always
+        access_time: "Friday"
+        purge: true
+      with_items: "{{ icx_users }}"

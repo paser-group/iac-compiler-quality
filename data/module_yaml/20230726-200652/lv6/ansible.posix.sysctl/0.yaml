@@ -1,0 +1,32 @@
+---
+- name: Ansible Playbook to Expose Type-Related Bugs
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Set sysctl parameters
+      ansible.posix.sysctl:
+        name: "{{ item.name }}"
+        value: "{{ item.value }}"
+        sysctl_set: "{{ item.sysctl_set }}"
+        state: "{{ item.state }}"
+        reload: "{{ item.reload }}"
+        ignoreerrors: "{{ item.ignoreerrors }}"
+      with_items:
+        - { name: "net.ipv4.ip_forward", value: "1", sysctl_set: true, state: "present", reload: true, ignoreerrors: false }
+        - { name: "net.core.somaxconn", value: "{{ 50000 | random }}" }  # Intentionally using a random value to expose type-related bugs
+        - { name: "net.ipv4.tcp_syncookies", value: "1", sysctl_set: true, state: "present", reload: true, ignoreerrors: false }
+
+    - name: Verify sysctl parameters
+      ansible.posix.sysctl:
+        name: "{{ item.name }}"
+      register: sysctl_values
+      with_items:
+        - { name: "net.ipv4.ip_forward" }
+        - { name: "net.core.somaxconn" }
+        - { name: "net.ipv4.tcp_syncookies" }
+
+    - name: Display sysctl parameter values
+      debug:
+        msg: "Sysctl Parameter: {{ item.item.name }}, Value: {{ item.item.value }}, Set: {{ item.item.sysctl_set }}, State: {{ item.item.state }}, Reload: {{ item.item.reload }}, Ignore Errors: {{ item.item.ignoreerrors }}, Current Value: {{ item.value }}"
+      with_items: "{{ sysctl_values.results }}"

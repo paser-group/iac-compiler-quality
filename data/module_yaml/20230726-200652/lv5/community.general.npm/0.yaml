@@ -1,0 +1,43 @@
+---
+- name: Manage node packages using npm module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Install node packages
+      community.general.npm:
+        name: "{{ item.name }}"
+        state: "{{ item.state }}"
+        version: "{{ item.version }}"
+        global: "{{ item.global }}"
+        executable: "{{ item.executable }}"
+        path: "{{ item.path }}"
+        ci: "{{ item.ci }}"
+        registry: "{{ item.registry }}"
+        no_bin_links: "{{ item.no_bin_links }}"
+        no_optional: "{{ item.no_optional }}"
+        production: "{{ item.production }}"
+        unsafe_perm: "{{ item.unsafe_perm }}"
+        ignore_scripts: "{{ item.ignore_scripts }}"
+      loop:
+        - { name: "package1", state: "present", version: "latest" }
+        - { name: "package2", state: "present", version: "2.0.0", global: true }
+        - { name: "package3", state: "absent" }
+
+    # Test case 1 - Generate random port number
+    - name: Generate random port number
+      set_fact:
+        random_port: "{{ 8000 + (play_hosts.index(inventory_hostname) * 100) }}"
+
+    - name: Print random port number
+      debug:
+        var: random_port
+
+    # Test case 2 - Trigger type-related bug
+    - name: Install node package using random port
+      community.general.npm:
+        name: "package4"
+        state: "present"
+        registry: "https://registry.npmjs.org:{{ random_port }}"
+
+    # Additional tasks...

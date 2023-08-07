@@ -1,0 +1,49 @@
+---
+- name: Test playbook for exposing latent type-related bugs
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Execute rundeck_job_executions_info module
+      community.general.rundeck_job_executions_info:
+        api_token: "my-api-token"
+        api_version: !null
+        client_cert: "/path/to/client_cert"
+        client_key: !null
+        force: "true"
+        force_basic_auth: "true"
+        http_agent: !null
+        job_id: !null
+        max: "10"
+        offset: 0
+        status: !null
+        url: "https://rundeck.example.com"
+        url_password: "my-password"
+        url_username: !null
+        use_gssapi: true
+        use_proxy: false
+        validate_certs: !null
+      register: result
+
+    - name: Debug rundeck_job_executions_info output
+      debug:
+        var: result
+
+    - name: Verify output has key "executions"
+      debug:
+        msg: "'executions' key not found in output."
+      when: "'executions' not in result"
+
+    - name: Verify output contains at least one execution
+      fail:
+        msg: "No executions found!"
+      when:
+        - "result['executions'] is not defined"
+        - "result['executions'] | length == 0"
+
+  vars:
+    ansible_python_interpreter: "/usr/bin/python3"
+    ansible_connection: local
+    ansible_become: false
+    ansible_become_method: sudo
+    ansible_become_user: root

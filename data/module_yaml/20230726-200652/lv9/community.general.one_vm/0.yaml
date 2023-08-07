@@ -1,0 +1,36 @@
+---
+- name: Create or Terminate Virtual Machines
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Generate random IP addresses
+      ansible.builtin.set_fact:
+        random_ips:
+          - "{{ item }}.{{ range(1,254) | random }}"
+      loop:
+        - ubuntu1
+        - alpine1
+        - centos1
+        - redhat1
+
+    - name: Create or terminate VMs
+      community.general.one_vm:
+        api_url: "https://example.com/api"
+        api_username: "admin"
+        api_password: "password"
+        attributes:
+          name: "{{ item }}"
+          network:
+            ip: "{{ random_ips[loop.index0] }}"
+            netmask: "255.255.255.0"
+            gateway: "10.1.1.254"
+        count: 4
+        count_attributes: ~
+        state: present
+        wait: true
+      register: vm_result
+
+    - name: Debug VM creation/termination result
+      ansible.builtin.debug:
+        var: vm_result

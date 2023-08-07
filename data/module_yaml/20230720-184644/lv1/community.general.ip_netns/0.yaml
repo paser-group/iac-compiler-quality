@@ -1,0 +1,61 @@
+---
+- name: Test playbook for Ansible latent type-related bugs
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create network namespace
+      community.general.ip_netns:
+        name: "{{ item | lower }}"
+        state: Present
+      loop:
+        - ubuntu1
+        - alpine1
+        - centos1
+        - redhat1
+      register: ns_result
+
+    - name: Debug namespace creation
+      debug:
+        var: ns_result
+
+    - name: Verify namespace creation
+      assert:
+        that:
+          - "'ubuntu1' in ns_result.results | map(attribute='invocation.module_args.name') | list"
+          - "'alpine1' in ns_result.results | map(attribute='invocation.module_args.name') | list"
+          - "'centos1' in ns_result.results | map(attribute='invocation.module_args.name') | list"
+          - "'redhat1' in ns_result.results | map(attribute='invocation.module_args.name') | list"
+        msg: "Namespace creation failed for one or more nodes."
+
+    - name: Configure interface addresses
+      community.general.ip_netns:
+        name: "{{ item.name | lower }}"
+        state: present
+        type: "dummy"
+        intf: "{{ item.interface }}"
+        addr: "{{ item.address }}"
+      loop:
+        - { name: "ubuntu1", interface: "eth0", address: "10.1.1.1" }
+        - { name: "alpine1", interface: "eth0", address: "10.1.1.2" }
+        - { name: "centos1", interface: "eth0", address: "10.1.1.3" }
+        - { name: "redhat1", interface: "eth0", address: "10.1.1.4" }
+
+    - name: Debug interface configuration
+      debug:
+        msg: "Interface addresses configured"
+
+    - name: Verify interface configuration
+      community.general.ip_netns_facts:
+        name: "{{ item }}"
+        namespace: "{{ item }}"
+      loop:
+        - ubuntu1
+        - alpine1
+        - centos1
+        - redhat1
+      register: ns_facts
+
+    - name: Debug namespace facts
+      debug:
+        var: ns_facts

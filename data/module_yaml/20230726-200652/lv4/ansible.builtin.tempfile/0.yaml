@@ -1,0 +1,28 @@
+---
+- name: Create temporary files with random MAC addresses
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Generate random MAC address
+      set_fact:
+        mac_address: "{{ '%012x' | format((1..6) | map('random_int', 0, 255) | list | join(':')) }}"
+
+    - name: Create temporary file
+      ansible.builtin.tempfile:
+        path: "{{ item.path }}"
+        prefix: "{{ item.prefix }}"
+        state: "{{ item.state }}"
+        suffix: "{{ item.suffix }}"
+      loop:
+        - { path: "/tmp/tmpfile1", prefix: "tmp", state: "file", suffix: ".txt" }
+        - { path: "/tmp/tmpfile2", prefix: "tmp", state: "directory", suffix: "" }
+        - { path: "/tmp/tmpfile3", prefix: "tmp", state: "file", suffix: ".txt" }
+
+    - name: Print temporary files and their attributes
+      debug:
+        msg: "File: {{ item.path }}, State: {{ item.state }}"
+      loop:
+        - { path: "/tmp/tmpfile1", prefix: "tmp", state: "file", suffix: ".txt" }
+        - { path: "/tmp/tmpfile2", prefix: "tmp", state: "directory", suffix: "" }
+        - { path: "/tmp/tmpfile3", prefix: "tmp", state: "file", suffix: ".txt" }

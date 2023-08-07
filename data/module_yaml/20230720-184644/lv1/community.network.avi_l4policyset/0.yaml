@@ -1,0 +1,54 @@
+---
+- name: Test playbook for community.network.avi_l4policyset
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    api_credentials:
+      controller: "{{ controller }}"
+      username: "{{ username }}"
+      password: "{{ password }}"
+
+  tasks:
+    - name: Create L4PolicySet with mixed case sensitivity
+      community.network.avi_l4policyset:
+        avi_credentials: "{{ api_credentials }}"
+        controller: "{{ controller }}"
+        name: "{{ name | lower }}"  # Pass a mixed case value and convert it to lowercase
+        description: "{{ description | upper }}"  # Pass a mixed case value and convert it to uppercase
+        tenant: "{{ tenant }}"
+        state: present
+        l4_connection_policy:
+          - port_range_end: 8080
+            port_range_start: 80
+            enable_ssl: true
+            l4_service_protocol: ssl
+        is_internal_policy: true
+        tenant_ref: "{{ tenant_uuid }}"
+        api_version: "{{ api_version }}"
+        url: "{{ url }}"
+        created_by: "Ansible Playbook"
+
+      register: result
+
+    - name: Print result
+      debug:
+        var: result
+
+    - name: Update L4PolicySet to trigger a type-related bug
+      community.network.avi_l4policyset:
+        avi_credentials: "{{ api_credentials }}"
+        controller: "{{ controller }}"
+        uuid: "{{ result.l4_policyset.uuid }}"
+        state: present
+        l4_connection_policy:
+          - port_range_end: "x"  # Trigger a type-related bug by passing a non-integer value
+            port_range_start: 80
+            enable_ssl: true
+            l4_service_protocol: ssl
+
+      register: update_result
+
+    - name: Print update result
+      debug:
+        var: update_result

@@ -1,0 +1,35 @@
+- name: Trigger latent bugs in ansible.netcommon.netconf_config module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Configure netconf using random IP addresses
+      ansible.netcommon.netconf_config:
+        backup: "{{ lookup('random_boolean', wantlist=true) }}"
+        backup_options: 
+          - dest: "backup/{{ inventory_hostname }}.cfg"
+            src: "running.cfg"
+        commit: "{{ lookup('random_boolean', wantlist=true) }}"
+        confirm: "{{ lookup('random_int', min=1, max=10) }}"
+        confirm_commit: "{{ lookup('random_boolean', wantlist=true) }}"
+        content: "{{ lookup('random_string', length=10, chars='abcdefghijklmnopqrstuvwxyz1234567890') }}"
+        default_operation: "{{ lookup('random_element', wantlist=true, choices=['merge', 'replace', 'none']) }}"
+        delete: "{{ lookup('random_boolean', wantlist=true) }}"
+        error_option: "{{ lookup('random_string', length=10, chars='abcdefghijklmnopqrstuvwxyz1234567890') }}"
+        format: "{{ lookup('random_element', wantlist=true, choices=['xml', 'json', 'text', 'cli', 'set', 'none']) }}"
+        get_filter: "{{ lookup('random_string', length=10, chars='abcdefghijklmnopqrstuvwxyz1234567890') }}"
+        lock: "{{ lookup('random_element', wantlist=true, choices=['executive', 'candidate', 'running', 'none']) }}"
+        save: "{{ lookup('random_boolean', wantlist=true) }}"
+        source_datastore: "{{ lookup('random_element', wantlist=true, choices=['startup', 'running', 'candidate', 'rollback-required', 'rollback-on-error', 'uei-required', 'uei-on-error', 'uei-not-allowed', 'custom', 'none']) }}"
+        target: "{{ lookup('random_string', length=10, chars='abcdefghijklmnopqrstuvwxyz1234567890') }}"
+        validate: "{{ lookup('random_boolean', wantlist=true) }}"
+      register: result
+
+    - name: Display netconf_config result
+      debug:
+        msg: "{{ result }}"
+
+    - name: Assert that the task failed
+      fail:
+        msg: "Type-related bug triggered in ansible.netcommon.netconf_config module"
+      when: not result.failed

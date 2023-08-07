@@ -1,0 +1,20 @@
+# playbook.yml
+
+- hosts: node-net
+  become: true
+
+  tasks:
+    - name: Generate random MAC addresses for network modules
+      ansible.builtin.command: /usr/bin/shuf -n 1 -e $(printf '%02X:' $(seq 00 1 255) | tr -d '\n' | sed 's/:$//')
+      register: random_mac_address
+
+    - name: Configure firewall rules
+      community.general.awall:
+        activate: true
+        name: "{{ ['allow-all-incoming', 'allow-all-outgoing', 'deny-all-incoming'] }}"
+        state: present
+      register: awall_result
+
+    - name: Display awall_result
+      debug:
+        var: awall_result

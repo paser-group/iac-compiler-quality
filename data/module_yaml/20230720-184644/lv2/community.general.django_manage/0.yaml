@@ -1,0 +1,49 @@
+- name: Run Django manage command
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Install required packages
+      package:
+        name:
+          - python3
+          - python3-venv
+          - python3-pip
+        state: present
+
+    - name: Create virtual environment
+      command: "python3 -m venv {{ virtualenv }}"
+      when: ack_venv_creation_deprecation | default(true) | bool
+
+    - name: Activate virtual environment
+      command: "{{ virtualenv }}/bin/activate && source {{ virtualenv }}/bin/activate"
+      when: virtualenv is defined
+
+    - name: Install Django
+      pip:
+        name: Django
+        virtualenv: "{{ virtualenv }}"
+        state: present
+
+    - name: Run Django manage command
+      community.general.django_manage:
+        command: b"{{ command }}"
+        project_path: b"{{ project_path | default('.') }}"
+        pythonpath: b"{{ pythonpath | default('') }}"
+        settings: b"{{ settings | default('') }}"
+        database: b"{{ database | default('') }}"
+        cache_table: b"{{ cache_table | default('') }}"
+        fixtures: b"{{ fixtures | default('') }}"
+        apps: [ b"{{ apps | default('') }}" ]
+        testrunner: b"{{ testrunner | default('') }}"
+        failfast: "{{ failfast | default(false) | bool }}"
+        merge: "{{ merge | default(false) | bool }}"
+        link: "{{ link | default(false) | bool }}"
+        clear: "{{ clear | default(false) | bool }}"
+        skip: "{{ skip | default(false) | bool }}"
+      register: manage_output
+      ignore_errors: true
+
+    - name: Print Django manage command output
+      debug:
+        var: manage_output.stdout

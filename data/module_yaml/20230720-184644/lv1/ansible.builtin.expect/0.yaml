@@ -1,0 +1,40 @@
+---
+- name: Execute command using expect module
+  hosts: all
+  gather_facts: false
+
+  vars:
+    node_net_subnet: "10.1.1.0/24"
+    node_net_gateway: "10.1.1.254"
+    command_to_execute: "echo 'Hello, World!'"
+    expected_response: "hello, world"
+
+  tasks:
+    - name: Create network
+      docker_network:
+        name: node-net
+        subnet: "{{ node_net_subnet }}"
+        gateway: "{{ node_net_gateway }}"
+
+    - name: Create Docker containers
+      docker_container:
+        name: "{{ inventory_hostname }}"
+        image: "{{ inventory_hostname }}"
+        state: started
+        network_mode: node-net
+
+    - name: Execute command with expect module
+      ansible.builtin.expect:
+        chdir: "/root"
+        command: "{{ command_to_execute }}"
+        responses:
+          - "Hello, World": "{{ expected_response }}"
+        timeout: 5
+        echo: true
+        creates: "/tmp/expect_output.txt"
+        removes: "/tmp/Expect_Output.txt"
+      register: expect_result
+
+    - name: Print expect module result
+      debug:
+        var: expect_result

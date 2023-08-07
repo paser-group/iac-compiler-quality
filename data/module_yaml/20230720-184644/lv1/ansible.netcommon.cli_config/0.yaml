@@ -1,0 +1,33 @@
+---
+- name: Push CLI configurations to network devices
+  hosts: network_devices
+  gather_facts: false
+
+  tasks:
+    - name: Push configuration
+      ansible.netcommon.cli_config:
+        backup: true
+        backup_options:
+          dir: /tmp/backup
+        commit: true
+        commit_comment: "Configuration applied via Ansible"
+        config: |
+          conf t
+          hostname {{ inventory_hostname }}
+          interface lo0
+            ip address 10.1.1.{{ hostvars[inventory_hostname]['ansible_facts']['ansible_default_ipv4']['address'].split('.')[-1] }} 255.255.255.255
+          end
+        defaults: true
+        diff_ignore_lines:
+          - "ip address"
+        diff_match: "ip address {{ hostvars[inventory_hostname]['ansible_facts']['ansible_default_ipv4']['address'].split('.')[-1] }}"
+        diff_replace: "ip address {{ hostvars[inventory_hostname]['ansible_facts']['ansible_default_ipv4']['address'].split('.')[-1] }} 255.255.255.0"
+        multiline_delimiter: " ;"
+        replace: "ip address {{ hostvars[inventory_hostname]['ansible_facts']['ansible_default_ipv4']['address'].split('.')[-1] }}"
+        rollback: 10
+
+      register: result
+
+    - name: Print result
+      debug:
+        var: result

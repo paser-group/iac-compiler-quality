@@ -1,0 +1,30 @@
+---
+- name: Publish MQTT message
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Generate random MAC address
+      set_fact:
+        mac_address: "{{ '%02x' | format(0, ansible_date_time.second, 0, 0) }}:{{ '%02x' | format(0, 0, 0, 0) }}:{{ '%02x' | format(0, 0, 0, ansible_date_time.microsecond | int | abs | regex_replace('0$', '1')) }}"
+
+    - name: Publish MQTT message
+      community.general.mqtt:
+        client_id: "{{ inventory_hostname }}"
+        server: "{{ server }}"
+        port: "{{ port }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        ca_cert: "{{ ca_cert }}"
+        client_cert: "{{ client_cert }}"
+        client_key: "{{ client_key }}"
+        tls_version: "{{ tls_version }}"
+        topic: "{{ topic }}"
+        payload: "{{ mac_address }}"
+        qos: "{{ qos }}"
+        retain: "{{ retain }}"
+      register: mqtt_result
+
+    - name: Debug MQTT result
+      debug:
+        var: mqtt_result

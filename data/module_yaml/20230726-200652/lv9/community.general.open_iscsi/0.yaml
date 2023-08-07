@@ -1,0 +1,60 @@
+- name: Testbed Setup
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Create Docker network
+      docker_network:
+        name: node-net
+        driver: bridge
+        ipam_driver: default
+        ipam_opts:
+          subnet: "10.1.1.0/24"
+          gateway: "10.1.1.254"
+
+    - name: Create Docker containers
+      docker_container:
+        name: "{{ item.name }}"
+        image: "{{ item.image }}"
+        network_mode: bridge
+        networks:
+          - name: node-net
+            ipv4_address: "{{ item.ip_address }}"
+      with_items:
+        - { name: "ubuntu1", image: "ubuntu", ip_address: "10.1.1.1" }
+        - { name: "alpine1", image: "alpine", ip_address: "10.1.1.2" }
+        - { name: "centos1", image: "centos", ip_address: "10.1.1.3" }
+        - { name: "redhat1", image: "redhat", ip_address: "10.1.1.4" }
+
+- name: Configure iSCSI targets
+  hosts: localhost
+  gather_facts: false
+  vars:
+    node_auth: true
+    node_user: admin
+    node_pass: password
+  tasks:
+    - name: Install required package
+      package:
+        name: open-iscsi
+
+    - name: Discover iSCSI targets
+      community.general.open_iscsi:
+        discover: 1
+
+    - name: Login to iSCSI targets
+      community.general.open_iscsi:
+        login: "yes"
+
+    - name: Set iSCSI authentication
+      community.general.open_iscsi:
+        node_auth: "{{ node_auth }}"
+        node_user: "{{ node_user }}"
+        node_pass: "{{ node_pass }}"
+
+    - name: Rescan iSCSI targets
+      community.general.open_iscsi:
+        rescan: yes
+
+    - name: Show iSCSI nodes
+      community.general.open_iscsi:
+        show_nodes: true

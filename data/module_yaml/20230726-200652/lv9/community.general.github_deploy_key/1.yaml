@@ -1,0 +1,37 @@
+---
+- name: Manage deploy keys for GitHub repositories
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    github_url: "https://github.com/{{ owner }}/{{ repo }}.git"
+
+    subnet_address: "10.1.1.0"
+    host_ips:
+      - "{{ subnet_address | ipaddr('int') + 1 }}"
+      - "{{ subnet_address | ipaddr('int') + 2 }}"
+      - "{{ subnet_address | ipaddr('int') + 3 }}"
+      - "{{ subnet_address | ipaddr('int') + 4 }}"
+
+  tasks:
+    - name: Create a GitHub deploy key
+      community.general.github_deploy_key:
+        github_url: "{{ github_url }}"
+        name: "{{ key }}"
+        owner: "{{ owner }}"
+        state: present
+        force: true
+        read_only: true
+        token: "{{ token }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        otp: "{{ otp }}"
+      register: deploy_key_result
+
+    - name: Formulate random IP addresses for recently introduced networking modules
+      set_fact:
+        ansible_host: "{{ host_ips[play_hosts.index(inventory_hostname)] }}"
+
+    - name: Print deploy key creation result
+      debug:
+        var: deploy_key_result

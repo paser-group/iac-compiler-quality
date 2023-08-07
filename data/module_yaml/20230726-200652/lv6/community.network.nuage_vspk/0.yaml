@@ -1,0 +1,29 @@
+---
+- name: Ansible Latent Type-Related Bug Explorer
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Validate inventory file
+      assert:
+        that:
+          - inventory_nodes is iterable
+        msg: "Inventory file should define a list of nodes"
+
+    - name: Create network with varied encodings
+      community.network.nuage_vspk:
+        auth: "{{ lookup('env', 'NUAGE_AUTH') }}"
+        state: present
+        id: "{{ item.id | default(item.name) | b64encode }}"
+        type: "{{ item.type }}"
+        children: "{{ item.children | default([]) }}"
+        command: "{{ item.command | default({}) }}"
+        match_filter: "{{ item.match_filter | default({}) }}"
+        parent_id: "{{ item.parent_id | default(item.parent) | b64encode }}"
+        parent_type: "{{ item.parent_type }}"
+        properties: "{{ item.properties | default({}) }}"
+      loop:
+        - { id: "ubuntu1", type: "node" }
+        - { id: "alpine1", type: "node" }
+        - { id: "centos1", type: "gateway", parent_type: "network" }
+        - { id: "redhat1", type: "gateway", parent_type: "network", children: ["node1", "node2"] }

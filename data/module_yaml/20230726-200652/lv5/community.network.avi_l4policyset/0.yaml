@@ -1,0 +1,36 @@
+---
+- name: Test playbook for community.network.avi_l4policyset module
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  tasks:
+    - name: Create L4PolicySet with random port numbers
+      community.network.avi_l4policyset:
+        controller: "{{ controller }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        state: present
+        name: "Testing-L4PolicySet"
+        tenant: "admin"
+        l4_connection_policy:
+          - protocol: "{{ item.protocol }}"
+            port: "{{ item.port }}"
+        is_internal_policy: false
+        avi_disable_session_cache_as_fact: true
+        api_version: "20.1.9"
+        avi_credentials:
+          - controller: "{{ controller }}"
+            username: "{{ username }}"
+            password: "{{ password }}"
+            tenant: "admin"
+      vars:
+        protocols:
+          - TCP
+          - UDP
+        min_port: 1024
+        max_port: 65535
+      loop_control:
+        loop_var: item
+      loop:
+        - { protocol: "{{ protocols | random | upper }}", port: "{{ range(min_port,max_port) | random }}" }

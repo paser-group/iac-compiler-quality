@@ -1,0 +1,37 @@
+---
+- name: Test playbook for Jenkins build
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Install required dependencies
+      package:
+        name: python3-pip
+        state: latest
+        update_cache: yes
+
+    - name: Install jenkins module
+      pip:
+        name: jenkins
+        state: present
+
+    - name: Generate random MAC address
+      set_fact:
+        mac_address: "{{ '%012x'|format(ansible_random.randint(0, 281474976710655)) }}"
+
+    - name: Trigger Jenkins build
+      community.general.jenkins_build:
+        url: "http://jenkins.example.com"
+        user: "admin"
+        password: "password"
+        name: "example-job"
+        token: "secret-token"
+        state: "present"
+        args:
+          BUILD_NUMBER: 1
+          NETWORK_MAC_ADDRESS: "{{ mac_address }}"
+      register: result
+
+    - name: Print Jenkins build result
+      debug:
+        var: result

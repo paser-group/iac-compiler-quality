@@ -1,0 +1,44 @@
+---
+- name: Test playbook for community.network.avi_networksecuritypolicy module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
+
+  tasks:
+    - name: Test Division-Based Operations
+      community.network.avi_networksecuritypolicy:
+        controller: "{{ controller }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        tenant: "{{ tenant }}"
+        name: "{{ name }}"
+        api_context:
+          cloud_name: "{{ cloud_name }}"
+        rules:
+          - index: "{{ index }}"
+            name: Test Rule
+            compound_index: "{{ index }}"
+            type: HTTP_SECURITY_POLICY_RULE_TYPE
+            enable: true
+            index_type: None
+            status: RULE_ENABLED
+            action: REFLECT
+            http_security_policy_l7_params:
+              type: HTTP_SECURITY_POLICY_L7_TYPE
+              rule_index: NULL-FIELD
+              l7_operation: "{{ l7_operation | division(2) }}"
+              limit:
+                rate_limit:
+                  connection_limit: "{{ (connection_limit / 2) | int }}"
+                  concurrent_connections: "{{ (concurrent_connections / 2) | int }}"
+                  request_rate_limit: "{{ (request_rate_limit / 2) | int }}"
+
+        state: present
+
+      register: result
+
+    - name: Debug result
+      debug:
+        var: result

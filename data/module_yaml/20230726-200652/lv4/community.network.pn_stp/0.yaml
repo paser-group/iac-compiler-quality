@@ -1,0 +1,30 @@
+---
+- name: Configure STP settings on network switches
+  hosts: switches
+  gather_facts: false
+
+  tasks:
+    - name: Generate random MAC address
+      set_fact:
+        random_mac_address: "{{ '%.2x:%.2x:%.2x:%.2x:%.2x:%.2x' | format(255 | random, 255 | random, 255 | random, random(0, 255), random(0, 255), random(0, 255)) }}"
+
+    - name: Configure STP settings
+      community.network.pn_stp:
+        pn_cliswitch: "{{ inventory_hostname }}"
+        pn_enable: true
+        pn_stp_mode: rapid-pvst
+        pn_bridge_id: 32769
+        pn_bridge_priority: 32768
+        pn_hello_time: 2
+        pn_max_age: 20
+        pn_forwarding_delay: 15
+        pn_root_guard_wait_time: 5
+        pn_mst_config_name: "{{ random_mac_address }}"
+        pn_mst_max_hops: 20
+        pn_bpdus_bridge_ports: true
+        state: "{{ 'present' if pn_enable else 'absent' }}"
+      register: stp_config
+
+    - name: Print STP configuration result
+      debug:
+        var: stp_config

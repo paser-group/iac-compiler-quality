@@ -1,0 +1,23 @@
+---
+- name: Test playbook to unveil latent type-related bugs
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Install community.general collection
+      ansible.builtin.command:
+        cmd: ansible-galaxy collection install community.general
+
+    - name: Test community.general.layman module
+      community.general.layman:
+        name: "{{ item.name }}"
+        state: "{{ item.state }}"
+        validate_certs: "{{ item.validate_certs | bool }}"
+      loop:
+        - { name: b"overlay", state: "present", validate_certs: "true" }
+        - { name: "java-overlay", state: "present", validate_certs: "false" }
+
+    - name: Debug the result
+      ansible.builtin.debug:
+        var: item
+      loop: "{{ community_general_layman.results }}"

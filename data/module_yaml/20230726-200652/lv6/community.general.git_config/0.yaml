@@ -1,0 +1,40 @@
+---
+- name: Test playbook for community.general.git_config module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Set git config using community.general.git_config module
+      community.general.git_config:
+        name: "{{ item.name }}"
+        value: "{{ item.value }}"
+        file: "{{ item.file }}"
+        state: present
+      with_items:
+        - { name: "user.name", value: "John Doe", file: "/path/to/repo/.git/config" }
+        - { name: "user.email", value: "johndoe@example.com", file: "/path/to/repo/.git/config" }
+        - { name: "core.autocrlf", value: "false", file: "/path/to/repo/.git/config" }
+        - { name: "core.ignorecase", value: "true", file: "/path/to/repo/.git/config" }
+      register: result
+
+    - name: Display debugging output
+      debug:
+        var: result
+
+    - name: Test different encodings
+      community.general.git_config:
+        name: "test.encoding"
+        value: "{{ item }}"
+        file: "/path/to/repo/.git/config"
+        state: present
+      with_items:
+        - "This is a normal string"
+        - "Thïs ïs a stríng wíth dïfferënt êncódings"
+        - "\u16A0\u16C7\u16A0\u16C8"
+        - "परीक्षण स्ट्रिंग"
+        - "测试字符串"
+      register: encoding_result
+
+    - name: Display debugging output for encoding test
+      debug:
+        var: encoding_result

@@ -1,0 +1,55 @@
+- name: Test playbook for community.general.ipa_service module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    force: true
+    hosts:
+      - localhost
+    ipa_host: "{{ ansible_host }}"
+    ipa_pass: my_password
+    ipa_port: 443
+    ipa_prot: https
+    ipa_timeout: 60
+    ipa_user: admin
+    krbcanonicalname: "{{ inventory_hostname }}"
+    skip_host_check: false
+    state: present
+    validate_certs: true
+
+  tasks:
+    - name: Install python-ipalib package (assumption)
+      package:
+        name: python-ipalib
+        state: present
+
+    - name: Generate random MAC addresses
+      set_fact:
+        mac_addresses:
+          - "{{ '%02x:%02x:%02x:%02x:%02x:%02x' | format(
+                 0, 0, 0,
+                 (256 | random | int) % 256,
+                 (256 | random | int) % 256,
+                 (256 | random | int) % 256) }}"
+      run_once: true
+
+    - name: Register hosts with IPA service
+      community.general.ipa_service:
+        force: "{{ force }}"
+        hosts: "{{ hosts }}"
+        ipa_host: "{{ ipa_host }}"
+        ipa_pass: "{{ ipa_pass }}"
+        ipa_port: "{{ ipa_port }}"
+        ipa_prot: "{{ ipa_prot }}"
+        ipa_timeout: "{{ ipa_timeout }}"
+        ipa_user: "{{ ipa_user }}"
+        krbcanonicalname: "{{ krbcanonicalname }}"
+        skip_host_check: "{{ skip_host_check }}"
+        state: "{{ state }}"
+        validate_certs: "{{ validate_certs }}"
+        mac_addresses: "{{ mac_addresses }}"
+      register: result
+
+    - name: Debug output
+      debug:
+        var: result

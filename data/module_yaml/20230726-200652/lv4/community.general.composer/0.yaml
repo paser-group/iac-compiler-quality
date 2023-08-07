@@ -1,0 +1,31 @@
+---
+- name: Run composer
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Generate random MAC address
+      set_fact:
+        mac_address: "{{ '%02x' | format((0xff & item.0) | random) }}:{{ '%02x' | format((0xff & item.1) | random) }}:{{ '%02x' | format((0xff & item.2) | random) }}:{{ '%02x' | format((0xff & item.3) | random) }}:{{ '%02x' | format((0xff & item.4) | random) }}:{{ '%02x' | format((0xff & item.5) | random) }}"
+      vars:
+        octets: "{{ [0x00, 0x16, 0x3e, 0x00, 0x00, 0x00] }}"
+      loop: "{{ octets }}"
+
+    - name: Install Composer dependencies
+      community.general.composer:
+        command: install
+        executable: composer
+        working_dir: /path/to/project
+        apcu_autoloader: True
+        arguments: "--arg1=value1 --arg2=value2"
+        classmap_authoritative: True
+        global_command: False
+        ignore_platform_reqs: False
+        no_dev: False
+        no_plugins: False
+        no_scripts: False
+        optimize_autoloader: True
+        prefer_dist: False
+        prefer_source: True
+      environment:
+        PATH: "{{ ansible_env.PATH }}:/path/to/project"

@@ -1,0 +1,55 @@
+---
+- name: Manage Proxmox instances
+  hosts: localhost
+  gather_facts: false
+  become: true
+
+  tasks:
+    - name: Create Proxmox instance
+      community.general.proxmox:
+        api_user: "admin@pam"
+        api_password: "secret"
+        api_host: "https://proxmox.example.com:8006/api2/json"
+        vmid: 100
+        state: present
+        ostemplate: "ubuntu-20.04-template"
+        clone: 1
+        clone_type: "full"
+        force: true
+        ip_address: "10.1.1.5"
+        netif:
+          net0: "virtio,bridge=vmbr0"
+          net1: "virtio,bridge=vmbr1"
+        cores: 2
+        memory: 2048
+      register: instance_created
+
+    - name: Print Proxmox instance info
+      debug:
+        var: instance_created
+
+    - name: Start Proxmox instance
+      community.general.proxmox:
+        api_user: "admin@pam"
+        api_password: "secret"
+        api_host: "https://proxmox.example.com:8006/api2/json"
+        vmid: 100
+        state: started
+      register: instance_started
+
+    - name: Print Proxmox instance status
+      debug:
+        var: instance_started
+
+    - name: Stop Proxmox instance
+      community.general.proxmox:
+        api_user: "admin@pam"
+        api_password: "secret"
+        api_host: "https://proxmox.example.com:8006/api2/json"
+        vmid: 100
+        state: stopped
+      register: instance_stopped
+
+    - name: Print Proxmox instance status
+      debug:
+        var: instance_stopped

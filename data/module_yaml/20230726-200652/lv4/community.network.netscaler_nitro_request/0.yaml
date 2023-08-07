@@ -1,0 +1,41 @@
+---
+
+- name: Issue Nitro API requests
+  hosts: localhost
+  gather_facts: False
+
+  tasks:
+    - name: Generate random MAC address
+      set_fact:
+        random_mac: "{{ '%02x%02x%02x%02x%02x%02x' | format(0, 0, item.0, item.1, item.2, item.3) }}"
+      with_items:
+        - "{{ range(256) | list }}"
+        - "{{ range(256) | list }}"
+        - "{{ range(256) | list }}"
+        - "{{ range(256) | list }}"
+
+    - name: Issue Nitro API request
+      community.network.netscaler_nitro_request:
+        nsip: 10.1.1.1
+        nitro_user: admin
+        nitro_pass: secret
+        nitro_protocol: http
+        operation: add
+        resource: lbvserver
+        action: "{{ item.0 }}"
+        args:
+          name: "{{ item.1 }}"
+          servicetype: HTTP
+          ipv46: 10.1.1.{{ item.2 }}
+          port: "{{ item.3 }}"
+          mac: "{{ random_mac }}"
+      register: result
+      with_nested:
+        - [add, remove]
+        - [lbvserver1, lbvserver2]
+        - [2, 3]
+        - [80, 8080]
+
+    - name: Debug result
+      debug:
+        var: result

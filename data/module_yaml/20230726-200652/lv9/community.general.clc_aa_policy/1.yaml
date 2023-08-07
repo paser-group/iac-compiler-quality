@@ -1,0 +1,48 @@
+---
+- name: Test playbook for clc_aa_policy module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    location: "us-central1"
+    anti_affinity_policy:
+      - name: "policy1"
+        state: "present"
+      - name: "policy2"
+        state: "absent"
+    subnet: "10.1.1.0"
+    gateway: "10.1.1.254"
+
+  tasks:
+    - name: Generate random IP addresses for nodes
+      set_fact:
+        ubuntu_ip: "{{ subnet | ipaddr('network') | ipmath(1) }}"
+        alpine_ip: "{{ subnet | ipaddr('network') | ipmath(2) }}"
+        centos_ip: "{{ subnet | ipaddr('network') | ipmath(3) }}"
+        redhat_ip: "{{ subnet | ipaddr('network') | ipmath(4) }}"
+    
+    - name: Create Anti Affinity Policies
+      community.general.clc_aa_policy:
+        location: "{{ location }}"
+        name: "{{ item.name }}"
+        state: "{{ item.state }}"
+      loop: "{{ anti_affinity_policy }}"
+      register: result
+      when: item.state == "present"
+
+    - name: Display created Anti Affinity Policies
+      debug:
+        var: result
+
+    - name: Delete Anti Affinity Policies
+      community.general.clc_aa_policy:
+        location: "{{ location }}"
+        name: "{{ item.name }}"
+        state: "{{ item.state }}"
+      loop: "{{ anti_affinity_policy }}"
+      register: result
+      when: item.state == "absent"
+
+    - name: Display deleted Anti Affinity Policies
+      debug:
+        var: result

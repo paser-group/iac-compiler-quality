@@ -1,0 +1,49 @@
+---
+- name: Send message to Campfire chat room
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Include required galaxy role
+      include_role:
+        name: "geerlingguy.docker"
+
+    - name: Create Docker network
+      docker_network:
+        name: node-net
+        state: present
+        subnet: 10.1.1.0/24
+        gateway: 10.1.1.254
+
+    - name: Create Docker containers
+      docker_container:
+        name: "{{ item.name }}"
+        image: "{{ item.image }}"
+        state: started
+        network_mode: bridge
+        networks:
+          - name: node-net
+            ipv4_address: "{{ item.ipv4 }}"
+        vars:
+          ansible_python_interpreter: /usr/bin/python3
+      with_items:
+        - { name: ubuntu1, image: ubuntu:latest, ipv4: "10.1.1.1" }
+        - { name: alpine1, image: alpine:latest, ipv4: "10.1.1.2" }
+        - { name: centos1, image: centos:latest, ipv4: "10.1.1.3" }
+        - { name: redhat1, image: redhat:latest, ipv4: "10.1.1.4" }
+
+    - name: Install Campfire module dependencies
+      pip:
+        name:
+          - py_campfire
+          - python_dotenv
+        state: present
+
+    - name: Send message to Campfire chat room
+      community.general.campfire:
+        msg: "{{ item.msg }}"
+        notify: "{{ item.notify }}"
+        room: "{{ item.room }}"
+        subscription: "{{ item.subscription }}"
+        token: "{{ item.token }}"
+      with_items:
+        - { msg: "This is a test message", notify: "Important", room: "My Chat Room", subscription: "My Subscription", token: "My Token" }

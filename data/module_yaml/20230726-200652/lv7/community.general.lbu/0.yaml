@@ -1,0 +1,31 @@
+---
+- name: Ansible Latent Bug Finder Playbook
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Set up inventory for lbu backup
+      ansible.builtin.add_host:
+        name: "{{ inventory_hostname }}"
+        groups: lbu_backup_group
+        ansible_host: "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}"
+
+    - name: Perform lbu backup with potential type-related bugs
+      community.general.lbu:
+        backupdir: /tmp/backup
+        src: "/etc/{{ inventory_hostname }}.conf"
+        commit: "{{ 10 / (inventory_hostname_index | default(1)) }}"
+        exclude: "{{ (10 / (inventory_hostname_index | default(1))) | float }}"
+        include: "{{ 10 / (inventory_hostname_index | default(1)) }}"
+      loop: "{{ groups['lbu_backup_group'] }}"
+
+    - name: Remove temporary inventory
+      ansible.builtin.add_host:
+        name: "{{ inventory_hostname }}"
+        state: absent
+        groups: lbu_backup_group
+
+    - name: Remove temporary backup directory
+      ansible.builtin.file:
+        state: absent
+        path: /tmp/backup

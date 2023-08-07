@@ -1,0 +1,46 @@
+---
+- name: Test Portage Module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    hosts:
+      - ubuntu1
+      - alpine1
+      - centos1
+      - redhat1
+    
+    subnet: "10.1.1.0/24"
+
+  tasks:
+    - name: Generate random IP addresses
+      set_fact:
+        random_ip: "{{ subnet.split('/')[0] | ipaddr(0,0,0,1 + loop.index) }}/32"
+      loop: "{{ hosts }}"
+      loop_control:
+        index_var: loop_index
+
+    - name: Configure network interfaces
+      community.general.ip_netns_interface:
+        namespace: ns{{ item[1:] }}
+        name: "eth0"
+        state: "up"
+        address: "{{ random_ip }}"
+      loop: "{{ hosts }}"
+      when: "'{{ item }}' in inventory_hostname"
+
+    - name: Install packages
+      community.general.portage:
+        package: "ansible"
+        state: "present"
+        update: "yes"
+        jobs: "4"
+        verbose: False
+        sync: "git://github.com/gentoo-mirror/gentoo.git"
+      register: package_install
+      changed_when: package_install.changed
+
+    - name: Verify package installation
+      debug:
+        msg: "Package installed successfully!"
+      when: package_install.changed

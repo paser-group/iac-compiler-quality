@@ -1,0 +1,42 @@
+- name: Test yum_repository module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Add a yum repository
+      ansible.builtin.yum_repository:
+        name: "{{ item.name }}"
+        enabled: "{{ item.enabled }}"
+        description: "{{ item.description }}"
+        baseurl: "{{ item.baseurl }}"
+        exclude: "{{ item.exclude }}"
+        state: "{{ item.state }}"
+      loop:
+        - { name: 'centos', enabled: true, description: 'CentOS Repository', baseurl: 'http://10.1.1.3/centos', exclude: ['kernel*'], state: 'present' }
+        - { name: 'debian', enabled: true, description: 'Debian Repository', baseurl: 'http://10.1.1.2/debian', exclude: [], state: 'present' }
+        - { name: 'epel', enabled: true, description: 'EPEL Repository', baseurl: 'http://10.1.1.4/epel', exclude: [], state: 'present' }
+ 
+    - name: Update the yum cache
+      ansible.builtin.command: yum updateinfo
+
+    - name: Perform a package installation
+      ansible.builtin.yum:
+        name: httpd
+        state: latest
+      register: result
+       
+    - name: Display the result
+      ansible.builtin.debug: var=result
+   
+    - name: Pause for manual inspection
+      ansible.builtin.pause:
+        prompt: "Please manually inspect the system and ansible facts to identify any type-related bugs."
+
+    - name: Remove the yum repositories
+      ansible.builtin.yum_repository:
+        name: "{{ item.name }}"
+        state: absent
+      loop:
+        - { name: 'centos', state: 'absent' }
+        - { name: 'debian', state: 'absent' }
+        - { name: 'epel', state: 'absent' }

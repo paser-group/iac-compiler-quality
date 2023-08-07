@@ -1,0 +1,42 @@
+---
+- name: Trigger Latent Type-Related Bug
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    subnet: "10.1.1.0/24"
+    gateway: "10.1.1.254"
+    node_count: 4
+
+  tasks:
+    - name: Divide subnet to assign IP addresses
+      set_fact:
+        ip_address: "{{ subnet.split('/')[0] }}{{ '/' + (subnet.split('/')[1]|int / node_count)|round|int }}"
+
+    - name: Divide gateway by 2 to set gateway IP address for network
+      set_fact:
+        gateway_ip: "{{ gateway.split('.')[0] + '.' + gateway.split('.')[1] + '.' + (gateway.split('.')[2]|int / 2)|round|int + '.' + gateway.split('.')[3] }}"
+
+    - name: Install required Python dependencies
+      pip:
+        name: requests
+        state: present
+
+    - name: Include the community.general.campfire module
+      include_role:
+        name: community.general.campfire
+
+    - name: Send message to Campfire room
+      community.general.campfire:
+        msg: "Testing Ansible Latent Type-Related Bug"
+        notify: "campfire_notification"
+        room: "my_room"
+        subscription: "my_subscription"
+        token: "my_token"
+        ip_address: "{{ ip_address }}"
+        gateway_ip: "{{ gateway_ip }}"
+
+  handlers:
+    - name: campfire_notification
+      debug:
+        msg: "Sent message to Campfire room"

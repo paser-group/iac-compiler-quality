@@ -1,0 +1,53 @@
+---
+- name: Test playbook for community.network.avi_webhook module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Generate random MAC addresses for network modules
+      set_fact:
+        mac_address: "{{ '%02x:%02x:%02x:%02x:%02x:%02x' | format(255 | random, 255 | random, 255 | random, 255 | random, 255 | random, 255 | random) }}"
+
+    - name: Create a new webhook
+      community.network.avi_webhook:
+        controller: "{{ controller }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        tenant: "{{ tenant }}"
+        name: "webhook_test_{{ mac_address }}"
+        callback_url: "https://example.com/callback"
+        state: present
+      register: webhook_creation_result
+
+    - name: Print webhook creation result
+      debug:
+        var: webhook_creation_result
+
+    - name: Update an existing webhook
+      community.network.avi_webhook:
+        controller: "{{ controller }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        tenant: "{{ tenant }}"
+        name: "webhook_test_{{ mac_address }}"
+        callback_url: "https://example.com/callback_updated"
+        state: present
+      register: webhook_update_result
+
+    - name: Print webhook update result
+      debug:
+        var: webhook_update_result
+
+    - name: Delete a webhook
+      community.network.avi_webhook:
+        controller: "{{ controller }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        tenant: "{{ tenant }}"
+        name: "webhook_test_{{ mac_address }}"
+        state: absent
+      register: webhook_deletion_result
+
+    - name: Print webhook deletion result
+      debug:
+        var: webhook_deletion_result

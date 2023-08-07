@@ -1,0 +1,40 @@
+---
+- name: Test playbook for iptables_state module
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Save iptables state into a file
+      community.general.iptables_state:
+        path: "/tmp/iptables_state.txt"
+        state: present
+        table: filter
+        counters: true
+      register: iptables_state_result
+
+    - name: Debug iptables state
+      debug:
+        var: iptables_state_result
+
+    - name: Test port settings
+      vars:
+        ports:
+          - "{{ 8000 | random }}"
+          - "{{ 9000 | random }}"
+      community.general.iptables_state:
+        path: "/tmp/iptables_state.txt"
+        state: present
+        table: filter
+        counters: true
+        wait: 10
+        rules:
+          - protocol: tcp
+            dport: "{{ item }}"
+            jump: "ACCEPT"
+            comment: "Allow traffic on port {{ item }}"
+            action: "ACCEPT"
+          - protocol: udp
+            dport: "{{ item }}"
+            jump: "ACCEPT"
+            comment: "Allow traffic on port {{ item }}"
+            action: "ACCEPT"
+      with_items: "{{ ports }}"

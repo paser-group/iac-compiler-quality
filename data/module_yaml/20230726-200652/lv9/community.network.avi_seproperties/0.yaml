@@ -1,0 +1,92 @@
+---
+- name: Configure SE properties
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Configure SE properties
+      community.network.avi_seproperties:
+        controller: "https://{{ controller }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        tenant: "{{ tenant }}"
+        se_agent_properties:
+          - se_name: "se1"
+            se_bootup_properties:
+              cloud_ref: "default-cloud"
+              mgmt_network_ref: "{{ api_context.mgmt_network_ref }}"
+              enable_autoscaling: true
+              se_group_ref: "{{ api_context.se_group_ref }}"
+              tenant_ref: "{{ api_context.tenant_ref }}"
+              vip_networks:
+                - network_ref: "{{ api_context.vip_network_ref }}"
+                  vnic_networks:
+                    - network_ref: "{{ api_context.vnic_network_ref }}"
+                      allocation_type: DHCP
+                      subnet:
+                        - ip_info:
+                            subnet:
+                              ip_addr:
+                                addr: "10.1.1.0"  # Placeholder IP address
+                                type: V4
+                                mask: 24
+                              dynamic_ip:
+                                range:
+                                  - min_ip: "{{ random_subnet_ip('10.1.1.0') }}"  # Generate random subnet IP address
+                                    max_ip: "{{ random_subnet_ip('10.1.1.1') }}"  # Generate random subnet IP address
+          - se_name: "se2"
+            se_bootup_properties:
+              cloud_ref: "default-cloud"
+              mgmt_network_ref: "{{ api_context.mgmt_network_ref }}"
+              enable_autoscaling: true
+              se_group_ref: "{{ api_context.se_group_ref }}"
+              tenant_ref: "{{ api_context.tenant_ref }}"
+              vip_networks:
+                - network_ref: "{{ api_context.vip_network_ref }}"
+                  vnic_networks:
+                    - network_ref: "{{ api_context.vnic_network_ref }}"
+                      allocation_type: DHCP
+                      subnet:
+                        - ip_info:
+                            subnet:
+                              ip_addr:
+                                addr: "10.1.1.1"  # Placeholder IP address
+                                type: V4
+                                mask: 24
+                              dynamic_ip:
+                                range:
+                                  - min_ip: "{{ random_subnet_ip('10.1.1.1') }}"  # Generate random subnet IP address
+                                    max_ip: "{{ random_subnet_ip('10.1.1.2') }}"  # Generate random subnet IP address
+        state: present
+
+  vars:
+    controller: "controller.example.com"
+    username: "admin"
+    password: "password"
+    tenant: "admin"
+    api_context:
+      mgmt_network_ref: "/api/network?name=mgmt-network"
+      se_group_ref: "/api/serviceenginegroup?name=se-group"
+      tenant_ref: "/api/tenant?name=admin"
+      vip_network_ref: "/api/network?name=vip-network"
+      vnic_network_ref: "/api/network?name=vnic-network"
+
+  tasks:
+    - name: Fail to expose potential latent type-related bugs
+      command: echo "Failed to expose latent bugs!"
+      register: result
+      failed_when: result.rc != 0
+
+  functions:
+    - name: random_subnet_ip
+      code: |
+        import random
+        import socket
+        import struct
+
+        def random_subnet_ip(prefix):
+            subnet_octets = prefix.split('.')
+            subnet = (int(subnet_octets[0]), int(subnet_octets[1]), int(subnet_octets[2]), 0)
+            random_ip = struct.unpack('!I', socket.inet_aton(socket.inet_ntoa(subnet)))[0] + random.randint(1, 253)
+            return socket.inet_ntoa(struct.pack('!I', random_ip))
+
+        random_subnet_ip

@@ -1,0 +1,39 @@
+---
+- name: Configure network interfaces
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Generate random IP addresses for network nodes
+      ansible.builtin.set_fact:
+        node_ip_addresses:
+          ubuntu1: "{{ '10.1.1.' ~ ((1,2,3,4)|random) }}"
+          alpine1: "{{ '10.1.1.' ~ ((1,2,3,4)|random) }}"
+          centos1: "{{ '10.1.1.' ~ ((1,2,3,4)|random) }}"
+          redhat1: "{{ '10.1.1.' ~ ((1,2,3,4)|random) }}"
+
+    - name: Set network interfaces configuration
+      community.general.interfaces_file:
+        path: "/etc/network/interfaces"
+        backup: true
+        unsafe_writes: true
+        state: present
+        iface: "{{ inventory_hostname }}"
+        address_family: inet
+        attributes: "{{ node_ip_addresses[inventory_hostname] }}/24"
+        option: "static"
+        with_items:
+          - dest: "gateway"
+            value: "10.1.1.254"
+          - dest: "dns-nameservers"
+            value: "8.8.8.8 8.8.4.4"
+
+      loop_control:
+        loop_var: network_config
+
+      vars:
+        node_ip_addresses: {}
+
+    - name: Debug network configuration
+      debug:
+        msg: "Network configuration for {{ inventory_hostname }}: {{ network_config }}"

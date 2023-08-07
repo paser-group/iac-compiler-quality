@@ -1,0 +1,91 @@
+---
+- name: Test playbook for community.general.archive module
+  hosts: localhost
+  gather_facts: false
+  
+  vars:
+    archive_dest: "/tmp/archive.tar.gz"
+    archive_excluded_paths:
+      - /path/to/exclude1
+      - /path/to/exclude2
+
+  tasks:
+    - name: Create test files
+      file:
+        path: "{{ item }}"
+        state: touch
+        mode: "{{ item_mode }}"
+        owner: "{{ item_owner }}"
+        group: "{{ item_group }}"
+      loop:
+        - /path/to/file1.txt
+        - /path/to/file2.txt
+        - /path/to/file3.txt
+      vars:
+        item_mode: "0644"
+        item_owner: "ansible"
+        item_group: "ansible"
+
+    - name: Compress files using community.general.archive
+      community.general.archive:
+        exclude_path: "{{ archive_excluded_paths }}"
+        force_archive: true
+        format: "tar.gz"
+        group: "ansible"
+        mode: "0755"
+        owner: "ansible"
+        path: "/path/to/files"
+        dest: "{{ archive_dest }}"
+      register: archive_result
+
+    - name: Display archive result
+      debug:
+        var: archive_result
+
+    - name: Test archive file exists
+      stat:
+        path: "{{ archive_dest }}"
+      register: archive_stat
+
+    - name: Extract archive file
+      community.general.archive:
+        format: "tar"
+        path: "{{ archive_dest }}"
+        dest: "/tmp/extracted"
+        force_extract: true
+      register: extract_result
+
+    - name: Display extract result
+      debug:
+        var: extract_result
+
+    - name: Check extracted files
+      stat:
+        path: "{{ item }}"
+      loop:
+        - /tmp/extracted/path/to/file1.txt
+        - /tmp/extracted/path/to/file2.txt
+        - /tmp/extracted/path/to/file3.txt
+      register: extracted_stat
+
+    - name: Remove archive file
+      file:
+        path: "{{ archive_dest }}"
+        state: absent
+      when: archive_stat.stat.exists
+
+    - name: Remove extracted files
+      file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /tmp/extracted/path/to/file1.txt
+        - /tmp/extracted/path/to/file2.txt
+        - /tmp/extracted/path/to/file3.txt
+      when: extracted_stat.results[item.loop_var].stat.exists
+
+    - name: Clean up temporary directory
+      file:
+        path: "/tmp/extracted"
+        state: absent
+      when: extracted_stat.results[item].stat.exists

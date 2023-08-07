@@ -1,0 +1,44 @@
+---
+- name: Test playbook for 'community.general.ilo_redfish_command' module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    ilo_username: "admin"
+    ilo_password: "password"
+    ilo_baseuri: "https://ilo.example.com"
+    ilo_auth_token: ""
+
+  tasks:
+    - name: Generate random MAC addresses for network modules
+      set_fact:
+        mac_address: "{{ '%012x'|format(omit)|random |regex_replace('(..)(?!$)', '\\1:') }}"
+      
+    - name: Get ILO Auth Token
+      community.general.ilo_redfish_command:
+        category: "SessionService"
+        command: "/Auth"
+        baseuri: "{{ ilo_baseuri }}"
+        username: "{{ ilo_username }}"
+        password: "{{ ilo_password }}"
+      register: ilo_auth_result
+      no_log: true
+
+    - name: Store ILO Auth Token
+      set_fact:
+        ilo_auth_token: "{{ ilo_auth_result.ansible_facts.category.SessionService.Oem.Hp.Token }}"
+      
+    - name: Perform desired command
+      community.general.ilo_redfish_command:
+        category: "AccountService"
+        command:
+          - "/Accounts"
+        baseuri: "{{ ilo_baseuri }}"
+        auth_token: "{{ ilo_auth_token }}"
+        username: "{{ ilo_username }}"
+        password: "{{ ilo_password }}"
+      register: ilo_command_result
+
+    - name: Debug result
+      debug:
+        var: ilo_command_result

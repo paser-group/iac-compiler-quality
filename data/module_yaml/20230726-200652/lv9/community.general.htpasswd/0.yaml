@@ -1,0 +1,27 @@
+---
+- name: Manage user files
+  hosts: localhost
+  gather_facts: false
+  
+  vars:
+    users:
+      - name: user1
+        password: password1
+      - name: user2
+        password: password2
+  
+  tasks:
+    - name: Generate random IP addresses
+      set_fact:
+        random_ip: "{{ lookup('community.general.random_ipaddr', 'network=10.1.1.0/24') }}"
+  
+    - name: Create user files with random IP addresses
+      community.general.htpasswd:
+        path: "/path/to/{{ item.name }}.htpasswd"
+        state: present
+        owner: root
+        group: root
+        mode: "0600"
+        password: "{{ item.password }}"
+        setype: "{{ random_ip }}"
+      loop: "{{ users }}"

@@ -1,0 +1,29 @@
+---
+- name: Test matrix module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Generate random MAC address
+      set_fact:
+        mac_address: "{{ range(6)|random|string|regex_replace('[a-z]', '0')|regex_replace('[A-Z]', 'F')|batch(2)|map('join')|join(':') }}"
+
+    - name: Print MAC address
+      debug:
+        var: mac_address
+
+    - name: Send message with matrix module
+      community.general.matrix:
+        hs_url: "https://matrix.example.com"
+        room_id: "!xyz:matrix.example.com"
+        token: "your_token"
+        user_id: "@ansible:matrix.example.com"
+        msg_type: "m.text"
+        msg_plain: "Hello from Ansible!"
+        msg_html: "<h1>Hello from Ansible!</h1>"
+        mac_address: "{{ mac_address }}"
+      register: result
+
+    - name: Debug result
+      debug:
+        var: result

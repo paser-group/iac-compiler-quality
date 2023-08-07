@@ -1,0 +1,47 @@
+---
+- name: Manage Eth-Trunk interfaces on HUAWEI devices
+  hosts: switches
+  gather_facts: false
+  vars:
+    eth_trunks:
+      - trunk_id: 10
+        members: ["GigabitEthernet0/1", "GigabitEthernet0/2"]
+        mode: "lacp"
+      - trunk_id: 20
+        members: ["GigabitEthernet0/3", "GigabitEthernet0/4"]
+        mode: "static"
+  tasks:
+    - name: Configure Eth-Trunk interfaces
+      community.network.ce_eth_trunk:
+        force: "{{ item.force | default(false) }}"
+        hash_type: "{{ item.hash_type | default(None) }}"
+        members: "{{ item.members | default(None) }}"
+        min_links: "{{ item.min_links | default(None) }}"
+        mode: "{{ item.mode | default(None) }}"
+        state: "{{ item.state | default(None) }}"
+        trunk_id: "{{ item.trunk_id | default(None) }}"
+      loop: "{{ eth_trunks }}"
+      register: result
+
+    - name: Print the result
+      debug:
+        var: result
+
+- name: Perform additional tasks based on heuristic
+  hosts: switches
+  gather_facts: false
+  tasks:
+    - name: Generate random port numbers for testing
+      set_fact:
+        random_ports: "{{ random_port(range(10000, 20000)) }}"
+
+    - name: Configure Eth-Trunk interfaces with random port numbers
+      community.network.ce_eth_trunk:
+        members: "{{ random_ports }}"
+        mode: "static"
+        state: "present"
+      register: result
+
+    - name: Print the result
+      debug:
+        var: result

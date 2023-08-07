@@ -1,0 +1,35 @@
+---
+- name: Deploy JBoss Application
+  hosts: all
+  vars:
+    deploy_path: "/opt/jboss/standalone/deployments/"
+    deployment: "sample.war"
+    src: "/tmp/sample.war"
+    state: "present"
+
+  tasks:
+    - name: Define random IP address
+      set_fact:
+        random_ip: "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}"
+
+    - name: Copy JBoss Deployment
+      copy:
+        src: "{{ src }}"
+        dest: "{{ deploy_path }}/{{ deployment }}"
+      when: inventory_hostname in groups['app_servers']
+      register: copy_result
+
+    - name: Ensure JBoss Deployment is present
+      community.general.jboss:
+        state: "{{ state }}"
+        deploy_path: "{{ deploy_path }}"
+        deployment: "{{ deployment }}"
+      when: copy_result.changed
+      vars:
+        jboss_bind: "{{ random_ip }}"
+      register: deploy_result
+
+    - name: Check JBoss Deployment Status
+      debug:
+        msg: "{{ deploy_result.msg }}"
+      when: deploy_result.changed

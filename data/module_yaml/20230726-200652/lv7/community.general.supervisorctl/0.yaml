@@ -1,0 +1,53 @@
+---
+- name: Test supervisorctl module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Install supervisor
+      become: true
+      apt:
+        name: supervisor
+        state: present
+
+    - name: Generate supervisor configuration
+      copy:
+        content: |
+          [supervisord]
+          nodaemon=true
+
+          [program:myprogram1]
+          command=echo "Hello from program 1"
+          autostart=true
+
+          [program:myprogram2]
+          command=echo "Hello from program 2"
+          autostart=true
+        dest: "/etc/supervisor/conf.d/myprogram.conf"
+
+    - name: Start Supervisor
+      supervisorctl:
+        state: present
+
+    - name: Check program status
+      supervisorctl:
+        state: status
+
+    - name: Stop and remove programs
+      supervisorctl:
+        name: "myprogram*"
+        state: stopped
+        signal: "TERM"
+
+    # Test case based on heuristic
+    - name: Assign incorrect value to limit-related variable
+      set_fact:
+        limit_value: "{{ 10 / 0 }}"  # Division by zero
+
+    - name: Test supervisorctl module with limit-related variable
+      supervisorctl:
+        name: "myprogram*"
+        state: started
+        config: "/etc/supervisor/conf.d/myprogram.conf"
+        limit: "{{ limit_value }}"
+      ignore_errors: true

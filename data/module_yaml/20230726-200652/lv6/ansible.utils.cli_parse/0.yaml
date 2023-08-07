@@ -1,0 +1,27 @@
+---
+- name: Test playbook for ansible.utils.cli_parse module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Generate strings with varied encodings
+      set_fact:
+        test_strings:
+          - 'Hello'
+          - 'World'
+          - '\xc3\xa1\xc3\xab\xc3\xa7\xc3\xab'
+          - '\xf0\x9f\x98\x80\xf0\x9f\x91\xf1'
+          - 'Some text with special characters: !@#$%^&*()'
+
+    - name: Run cli_parse module
+      ansible.utils.cli_parse:
+        command: 'echo "{{ item }}"'
+        parser:
+          type: text
+          regex: '^([a-zA-Z]+)'
+        set_fact: result
+      loop: "{{ test_strings }}"
+
+    - name: Display the parsed results
+      debug:
+        var: result

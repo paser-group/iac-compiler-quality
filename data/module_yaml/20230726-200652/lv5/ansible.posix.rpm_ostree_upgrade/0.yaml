@@ -1,0 +1,38 @@
+- name: Test ansible.posix.rpm_ostree_upgrade module
+  hosts: all
+  become: true
+  gather_facts: false
+
+  tasks:
+    - name: Upgrade rpm-ostree on the remote hosts
+      ansible.posix.rpm_ostree_upgrade:
+        allow_downgrade: "{{ allow_downgrade | default(false) | bool }}"
+        cache_only: "{{ cache_only | default(false) | bool }}"
+        os: "{{ os | default('centos') }}"
+        peer: "{{ peer | default(false) | bool }}"
+      register: upgrade_result
+
+    - name: Debug upgrade_result
+      debug:
+        var: upgrade_result
+
+    - name: Test port settings
+      block:
+        - name: Generate random port number
+          set_fact:
+            random_port: "{{ 20000 | random(seed=inventory_hostname) }}"
+          
+        - name: Test open_port is of type int
+          debug:
+            msg: "open_port is not of type int"
+          when: not random_port is defined or not random_port | int
+
+        - name: Test closed_port is of type int
+          debug:
+            msg: "closed_port is not of type int"
+          when: random_port is defined and (random_port | int == 0 or random_port | int == 65535)
+
+        - name: Test any_port is within valid range
+          debug:
+            msg: "any_port is not within valid port range"
+          when: random_port is defined and (random_port | int < 0 or random_port | int > 65535)

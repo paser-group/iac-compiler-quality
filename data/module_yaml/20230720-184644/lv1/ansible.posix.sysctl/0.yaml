@@ -1,0 +1,20 @@
+---
+- name: Test playbook for ansible.posix.sysctl module
+  hosts: all
+  gather_facts: false
+  
+  tasks:
+    - name: Set sysctl value
+      sysctl:
+        name: "{{ item.name }}"
+        value: "{{ item.value }}"
+        ignoreerrors: "{{ item.ignoreerrors | default(false) }}"
+        state: "{{ item.state }}"
+        sysctl_set: "{{ item.sysctl_set | default(true) }}"
+        sysctl_file: "{{ item.sysctl_file | default('/etc/sysctl.conf') }}"
+        restart: "{{ item.restart | default(true) }}"
+      with_items:
+        - { name: "net.ipv4.ip_forward", value: "1", ignoreerrors: "true", state: "true" }
+        - { name: "net.ipv4.tcp_syncookies", value: "0", state: "present" }
+        - { name: "net.ipv4.conf.all.accept_redirects", value: "1", ignoreerrors: "false", state: "true", sysctl_file: "/etc/sysctl.d/20-custom.conf" }
+        - { name: "net.core.netdev_max_backlog", value: "10000", ignoreerrors: "true", state: "present", restart: "no" }

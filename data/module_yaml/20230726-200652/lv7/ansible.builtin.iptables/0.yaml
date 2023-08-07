@@ -1,0 +1,45 @@
+---
+- name: Test playbook for ansible.builtin.iptables module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Flush existing iptables rules
+      ansible.builtin.iptables:
+        chain: "{{ item }}"
+        flush: yes
+      with_items:
+        - INPUT
+        - OUTPUT
+        - FORWARD
+
+    - name: Add iptables rule with limit
+      ansible.builtin.iptables:
+        chain: INPUT
+        jump: DROP
+        protocol: tcp
+        destination_port: 22
+        limit:
+          burst: "{{ 5/2 }}"  # Trigger division-based operation
+          rate: 1/5
+      register: rule_output
+
+    - name: Display iptables rule output
+      debug:
+        var: rule_output
+
+    - name: Add iptables rule with invalid limit
+      ansible.builtin.iptables:
+        chain: INPUT
+        jump: DROP
+        protocol: tcp
+        destination_port: 80
+        limit:
+          burst: "{{ 'invalid' }}"  # Trigger an invalid division-based operation
+          rate: 10/5
+      ignore_errors: true
+      register: invalid_rule_output
+
+    - name: Display invalid iptables rule output
+      debug:
+        var: invalid_rule_output

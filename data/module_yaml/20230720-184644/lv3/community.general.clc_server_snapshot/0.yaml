@@ -1,0 +1,46 @@
+- name: Create, Delete, and Restore Server Snapshots
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    # Create server snapshots
+    - name: Create server snapshots
+      community.general.clc_server_snapshot:
+        expiration_days: "30"
+        server_ids: "ubuntu1"     # Bug: server_ids should be a list, not a string
+        state: present
+        wait: "yes"              # Bug: wait should be a boolean, not a string
+      register: snapshot_creation_result
+      ignore_errors: true
+
+    - name: Display snapshot creation result
+      debug:
+        var: snapshot_creation_result
+
+    # Delete server snapshots
+    - name: Delete server snapshots
+      community.general.clc_server_snapshot:
+        expiration_days: 30
+        server_ids: ["alpine1", "centos1", "redhat1"]
+        state: "absent"           # Bug: state should be "present", "absent", or "restore", not a string
+        wait: true               # Bug: wait should be "yes" or "no", not a boolean
+      register: snapshot_deletion_result
+      ignore_errors: true
+
+    - name: Display snapshot deletion result
+      debug:
+        var: snapshot_deletion_result
+
+    # Restore server snapshots
+    - name: Restore server snapshots
+      community.general.clc_server_snapshot:
+        expiration_days: "30"
+        server_ids:                # Bug: server_ids is missing
+        state: restore
+        wait: yes
+      register: snapshot_restore_result
+      ignore_errors: true
+
+    - name: Display snapshot restore result
+      debug:
+        var: snapshot_restore_result

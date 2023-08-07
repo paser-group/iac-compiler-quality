@@ -1,0 +1,26 @@
+---
+- name: Test playbook for community.general.awall module
+  hosts: localhost
+  become: true
+
+  tasks:
+    - name: Generate random port numbers
+      hosts: localhost
+      gather_facts: false
+      tasks:
+        - name: Set random port variable
+          set_fact:
+            random_port: "{{ 10000 + (item | random | int) }}"
+          loop: "{{ range(4) }}"
+          register: random_port_results
+
+    - name: Configure firewall rules with random ports
+      community.general.awall:
+        activate: "{{ item.stdout }}"
+        name: "{{ item.item }}"
+        state: present
+        ports:
+          - port: "{{ item.item }}"
+            protocol: udp
+        interface: node-net
+      loop: "{{ random_port_results.results }}"

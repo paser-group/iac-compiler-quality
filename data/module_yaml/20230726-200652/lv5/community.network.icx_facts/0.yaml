@@ -1,0 +1,37 @@
+---
+- name: Test playbook for exposing latent type-related bugs
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Include random port number generator
+      include_tasks: random_port_generator.yml
+
+    - name: Set variable with mixed type values
+      set_fact:
+        mixed_value: "{{ mixed_value | default('') }}{{ random_port() | ternary(random_boolean(), random_string()) }}"
+
+    - name: Display mixed value
+      debug:
+        var: mixed_value
+
+- name: Random port number generator
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Generate random boolean
+      set_fact:
+        random_boolean: "{{ (1, 0) | random | bool }}"
+
+    - name: Generate random port number
+      set_fact:
+        random_port: "{{ 10000 + (play_hosts.index(inventory_hostname) | random(seed=seed) | int * 10) }}"
+      vars:
+        seed: "{{ (play_hosts.index(inventory_hostname) * 1234567890) | random(seed=42) }}"
+
+    - name: Generate random string
+      set_fact:
+        random_string: "{{ random_string_chars | random(length=8) }}"
+      vars:
+        random_string_chars: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"

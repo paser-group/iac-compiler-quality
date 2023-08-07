@@ -1,0 +1,35 @@
+---
+- name: Test playbook for community.general.syslogger
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Configure syslog with faulty values
+      community.general.syslogger:
+        facility: !unassigned
+        ident: !unassigned
+        log_pid: !unassigned
+        msg: !unassigned
+        priority: !unassigned
+      register: result
+
+    - name: Debug result
+      debug:
+        var: result
+
+    - name: Fail if result is missing
+      fail:
+        msg: "Result is missing!"
+      when: result is not defined
+
+    - name: Fail if result is not a dictionary
+      fail:
+        msg: "Result is not a dictionary!"
+      when: not result is mapping
+
+    - name: Fail if result.failed is not defined or not false
+      fail:
+        msg: "Task failed!"
+      when: result.failed|default(true)
+          or (result.changed|default(false) and result.failed is not defined)
+          or (result.ansible_failed_task_stderr is defined and result.ansible_failed_task_stderr|length > 0)
+          or (result.ansible_failed_task_stdout is defined and result.ansible_failed_task_stdout|length > 0)

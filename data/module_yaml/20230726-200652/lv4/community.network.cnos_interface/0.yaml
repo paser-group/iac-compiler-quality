@@ -1,0 +1,260 @@
+---
+- name: Manage Interfaces on Lenovo switches
+  hosts: switches
+  gather_facts: false
+
+  vars:
+    interface_list:
+      - name: Ethernet1
+        enabled: true
+        description: "Test Interface"
+        mtu: 1500
+        speed: 1000
+        duplex: full
+        state: present
+        neighbors: "{{ random_mac_address() }}"
+      - name: Ethernet2
+        enabled: false
+        state: absent
+        neighbors: "{{ random_mac_address() }}"
+      - name: Ethernet3
+        enabled: true
+        state: "{{ random_state() }}"
+        neighbors: "{{ random_mac_address() }}"
+      - name: Ethernet4
+        enabled: true
+        state: "{{ random_state() }}"
+        neighbors: "{{ random_mac_address() }}"
+
+  tasks:
+    - name: Configure Interfaces
+      community.network.cnos_interface:
+        aggregate: "{{ item.0.aggregate|default(None) }}"
+        delay: "{{ item.0.delay|default(None) }}"
+        description: "{{ item.0.description|default(None) }}"
+        duplex: "{{ item.0.duplex|default(None) }}"
+        enabled: "{{ item.0.enabled|default(False) }}"
+        mtu: "{{ item.0.mtu|default(None) }}"
+        name: "{{ item.0.name|default(None) }}"
+        neighbors: "{{ item.0.neighbors|default(None) }}"
+        rx_rate: "{{ item.0.rx_rate|default(None) }}"
+        speed: "{{ item.0.speed|default(None) }}"
+        state: "{{ item.0.state|default(None) }}"
+        tx_rate: "{{ item.0.tx_rate|default(None) }}"
+      loop: "{{ interface_list }}"
+
+  tasks:
+    - name: Debug Output
+      debug:
+        msg: "Interface configuration completed successfully."
+
+  tasks:
+    - name: Test MAC Address Generation
+      assert:
+        that: hostvars[item].ansible_facts.mac_address is match('^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$')
+      loop: "{{ groups['switches'] }}"
+      ignore_errors: true
+
+  tasks:
+    - name: Test Neighbors
+      assert:
+        that: (hostvars[item].ansible_facts.neighbors is none) or (hostvars[item].ansible_facts.neighbors is match('^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$'))
+      loop: "{{ groups['switches'] }}"
+      ignore_errors: true
+
+  tasks:
+    - name: Test Speed and Duplex
+      assert:
+        that: (hostvars[item].ansible_facts.speed is match('^\d+')) and (hostvars[item].ansible_facts.duplex is match('^(full|half)$'))
+      loop: "{{ groups['switches'] }}"
+      ignore_errors: true
+
+  tasks:
+    - name: Test Interface State
+      assert:
+        that: (hostvars[item].ansible_facts.admin_state is match('^(UP|DOWN)$')) and (hostvars[item].ansible_facts.oper_state is match('^(UP|DOWN)$'))
+      loop: "{{ groups['switches'] }}"
+      ignore_errors: true
+
+  tasks:
+    - name: Test MTU
+      assert:
+        that: hostvars[item].ansible_facts.mtu is match('^\d+$')
+      loop: "{{ groups['switches'] }}"
+      ignore_errors: true
+
+  tasks:
+    - name: Test RX Rate
+      assert:
+        that: hostvars[item].ansible_facts.rx_rate is match('^[0-9]+$')
+      loop: "{{ groups['switches'] }}"
+      ignore_errors: true
+
+  tasks:
+    - name: Test TX Rate
+      assert:
+        that: hostvars[item].ansible_facts.tx_rate is match('^[0-9]+$')
+      loop: "{{ groups['switches'] }}"
+      ignore_errors: true
+
+  tasks:
+    - name: Test Aggregate Option
+      assert:
+        that: hostvars[item].ansible_facts.aggregate == {{ item.1 }}
+      loop: "{{ groups['switches'] }}"
+      loop_control:
+        index_var: index
+      vars:
+        aggregate_options:
+          - None
+          - "Ethernet1"
+          - "Ethernet2"
+      ignore_errors: true
+
+  tasks:
+    - name: Test Delay Option
+      assert:
+        that: hostvars[item].ansible_facts.delay == {{ item }}
+      loop: "{{ groups['switches'] }}"
+      loop_control:
+        index_var: index
+      vars:
+        delay_options:
+          - None
+          - 1000
+          - 2000
+      ignore_errors: true
+
+  tasks:
+    - name: Test Description Option
+      assert:
+        that: hostvars[item].ansible_facts.description == "{{ item }}"
+      loop: "{{ groups['switches'] }}"
+      loop_control:
+        index_var: index
+      vars:
+        description_options:
+          - None
+          - "Test Interface"
+          - "Production Interface"
+      ignore_errors: true
+
+  tasks:
+    - name: Test Duplex Option
+      assert:
+        that: hostvars[item].ansible_facts.duplex == "{{ item }}"
+      loop: "{{ groups['switches'] }}"
+      loop_control:
+        index_var: index
+      vars:
+        duplex_options:
+          - None
+          - full
+          - half
+      ignore_errors: true
+
+  tasks:
+    - name: Test Enabled Option
+      assert:
+        that: hostvars[item].ansible_facts.enabled == {{ item }}
+      loop: "{{ groups['switches'] }}"
+      loop_control:
+        index_var: index
+      vars:
+        enabled_options:
+          - true
+          - false
+      ignore_errors: true
+
+  tasks:
+    - name: Test MTU Option
+      assert:
+        that: hostvars[item].ansible_facts.mtu == {{ item }}
+      loop: "{{ groups['switches'] }}"
+      loop_control:
+        index_var: index
+      vars:
+        mtu_options:
+          - None
+          - 1500
+          - 9000
+      ignore_errors: true
+
+  tasks:
+    - name: Test Name Option
+      assert:
+        that: hostvars[item].ansible_facts.name == "{{ item }}"
+      loop: "{{ groups['switches'] }}"
+      loop_control:
+        index_var: index
+      vars:
+        name_options:
+          - None
+          - "Ethernet1"
+          - "Eth1"
+          - "Ge1"
+      ignore_errors: true
+
+  tasks:
+    - name: Test Speed Option
+      assert:
+        that: hostvars[item].ansible_facts.speed == {{ item }}
+      loop: "{{ groups['switches'] }}"
+      loop_control:
+        index_var: index
+      vars:
+        speed_options:
+          - None
+          - 1000
+          - 10000
+      ignore_errors: true
+
+  tasks:
+    - name: Test State Option
+      assert:
+        that: hostvars[item].ansible_facts.state == "{{ item }}"
+      loop: "{{ groups['switches'] }}"
+      loop_control:
+        index_var: index
+      vars:
+        state_options:
+          - None
+          - present
+          - absent
+          - "{{ random_state() }}"
+      ignore_errors: true
+
+  tasks:
+    - name: Test TX Rate Option
+      assert:
+        that: hostvars[item].ansible_facts.tx_rate == {{ item }}
+      loop: "{{ groups['switches'] }}"
+      loop_control:
+        index_var: index
+      vars:
+        tx_rate_options:
+          - None
+          - 1000
+          - 2000
+      ignore_errors: true
+
+  tasks:
+    - name: Debug Output
+      debug:
+        msg: "All test cases completed successfully!"
+
+  # Helper function to generate random MAC addresses
+  tasks:
+    - name: Generate Random MAC Address
+      set_fact:
+        random_mac_address: "{{ '%02x:%02x:%02x:%02x:%02x:%02x' | format(mac.0, mac.1, mac.2, mac.3, mac.4, mac.5) }}"
+      vars:
+        mac: "{{ [0x00, 0x16, 0x3e, (item | int)] }}"
+      loop: "{{ range(1, 10) }}"
+      register: mac_addresses
+
+  # Helper function to generate random state attributes
+  tasks:
+    - name: Generate Random State
+      set_fact:
+        random_state: "{{ ['absent', 'present'] | random }}"

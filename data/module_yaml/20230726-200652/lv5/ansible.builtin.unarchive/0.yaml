@@ -1,0 +1,31 @@
+---
+- name: Test unarchive module for type-related bugs
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create test directory
+      file:
+        path: "/tmp/test"
+        state: directory
+
+    - name: Create test archive
+      command: "tar czf /tmp/test/archive.tar.gz -C /tmp/test file1 file2"
+
+    - name: Unpack the archive using unarchive module
+      ansible.builtin.unarchive:
+        src: "/tmp/test/archive.tar.gz"
+        dest: "/tmp/unpacked"
+        copy: yes
+        creates: "/tmp/unpacked"
+        exclude: [file2]
+        validate_certs: no
+      register: result
+
+    - name: Debug result
+      debug:
+        var: result
+
+    - name: Test port settings
+      debug:
+        var: ansible_port

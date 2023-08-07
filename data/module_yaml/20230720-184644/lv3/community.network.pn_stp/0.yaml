@@ -1,0 +1,34 @@
+- name: Playbook to test community.network.pn_stp module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Install pn_stp module
+      pip:
+        name: 'pynetworking'
+        state: present
+
+    - name: Configure STP on network devices
+      community.network.pn_stp:
+        pn_cliswitch: "{{ inventory_hostname }}"
+        pn_stp_mode: "mst"
+
+        pn_bridge_id: "00:11:22:33:44:55:66:{{ inventory_hostname[-1:] }}"
+        pn_bridge_priority: "{{ 32768 + inventory_hostname[-1:] | int }}"
+        pn_mst_config_name: "test_config"
+        pn_mst_max_hops: "10"
+        
+        pn_root_guard_wait_time: "{{ '10' }}"
+        pn_forwarding_delay: 20
+        pn_hello_time: 2
+        pn_max_age: '27'
+
+        pn_bpdus_bridge_ports: true
+        pn_enable: true
+        state: present
+
+      register: result
+
+    - name: Debug output
+      debug:
+        var: result

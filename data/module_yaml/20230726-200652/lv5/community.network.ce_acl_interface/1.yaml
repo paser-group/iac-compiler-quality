@@ -1,0 +1,35 @@
+---
+- name: Manage ACLs on HUAWEI interfaces
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    acl_name: "{{ hostvars[inventory_hostname].acl_name | default(omit) }}"
+    direction: "{{ hostvars[inventory_hostname].direction | default(omit) }}"
+    interface: "{{ hostvars[inventory_hostname].interface | default(omit) }}"
+    state: "{{ hostvars[inventory_hostname].state | default(omit) }}"
+    port_start: 1024
+    port_end: 65535
+
+  tasks:
+    - name: Generate random port number
+      set_fact:
+        random_port: "{{ port_start + (ansible_play_hosts.index(inventory_hostname) | random(seed=inventory_hostname) * (port_end - port_start + 1) // groups['all'].|length) | int }}"
+
+    - name: Apply ACL on interface
+      community.network.ce_acl_interface:
+        acl_name: "{{ acl_name }}"
+        direction: "{{ direction }}"
+        interface: "{{ interface }}"
+        state: "{{ state }}"
+        port: "{{ random_port }}"
+        provider:
+          host: "{{ inventory_hostname }}"
+          username: "{{ ansible_user }}"
+          password: "{{ ansible_password }}"
+          transport: cli
+
+  handlers:
+    - name: Print ACL applied
+      debug:
+        msg: "ACL '{{ acl_name }}' successfully applied to '{{ interface }}' in '{{ direction }}' direction with port '{{ random_port }}'."

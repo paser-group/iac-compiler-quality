@@ -1,0 +1,41 @@
+---
+- name: Ansible Latent Bug Finder Playbook
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    api_context:
+      cloud_uuid: b'12345678-90ab-cdef-1234-567890abcdef'
+
+    avi_credentials:
+      username: 'admin'
+      password: 'supersecretpassword'
+
+    tenant: 'Default'
+    tenant_uuid: b'12345678-abcd-ef12-3456-7890abcdef'
+    controller: 'ansible-lab-controller'
+
+    pool_group:
+      - name: 'my-pool-group'
+        description: 'Example Pool Group'
+        tenant_ref: '/api/tenant/{{ tenant_uuid | to_uuid }}/'
+
+        cloud_ref: '/api/cloud/{{ api_context.cloud_uuid | b64encode().decode() }}/'
+
+        members:
+          - server: '10.1.1.1'
+            ratio: 1
+
+          - server: '10.1.1.2'
+            ratio: 1
+
+  tasks:
+    - name: Configure Pool Group
+      community.network.avi_poolgroup:
+        avi_credentials: "{{ avi_credentials }}"
+        controller: "{{ controller }}"
+        tenant: "{{ tenant }}"
+        api_context: "{{ api_context }}"
+
+        pool_group: "{{ pool_group }}"
+        state: 'present'

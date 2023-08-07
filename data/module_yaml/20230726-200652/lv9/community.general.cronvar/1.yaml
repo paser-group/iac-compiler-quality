@@ -1,0 +1,27 @@
+---
+- name: Manage cron variables
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Generate random IP addresses
+      set_fact:
+        random_ip1: "{{ hostvars.localhost.ansible_default_ipv4.address | regex_replace('(.*)\\.(.*)', '\\1.\\2.{{ (1..253) | random }}') }}"
+        random_ip2: "{{ hostvars.localhost.ansible_default_ipv4.address | regex_replace('(.*)\\.(.*)', '\\1.\\2.{{ (1..253) | random }}') }}"
+
+    - name: Set cron variable with random IP addresses
+      community.general.cronvar:
+        name: "{{ item.name }}"
+        value: "{{ item.value }}"
+        state: present
+      loop:
+        - { name: "my_cron_var1", value: "{{ random_ip1 }}" }
+        - { name: "my_cron_var2", value: "{{ random_ip2 }}" }
+
+    - name: Remove cron variable
+      community.general.cronvar:
+        name: "{{ item.name }}"
+        state: absent
+      loop:
+        - { name: "my_cron_var1" }
+        - { name: "my_cron_var2" }

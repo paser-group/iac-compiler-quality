@@ -1,0 +1,45 @@
+---
+- name: Test playbook for community.general.redis_data_info module
+  hosts: localhost
+  gather_facts: false
+  
+  tasks:
+    - name: Generate random MAC address
+      set_fact:
+        random_mac: "{{ '%02x'%((16**12)*random() | int) | regex_replace('(..)', ':\\1') }}"
+  
+    - name: Retrieve Redis data
+      community.general.redis_data_info:
+        login_host: 10.1.1.1
+        login_user: admin
+        login_password: password
+        login_port: 6379
+        tls: false
+        validate_certs: yes
+        ca_certs: /etc/ssl/certs/ca.pem
+        key: MyRedisKey
+      register: redis_data
+  
+    - name: Debug Redis data
+      debug:
+        var: redis_data
+  
+    - name: Randomly change network settings
+      set_fact:
+        random_network_settings: "{{ {'login_host': '10.1.1.2', 'login_user': 'root', 'login_password': 'newpassword', 'login_port': '8080', 'tls' : true, 'validate_certs' : 'no', 'ca_certs' : '/etc/ssl/certs/newca.pem'} }}"
+  
+    - name: Retrieve Redis data with random network settings
+      community.general.redis_data_info:
+        ca_certs: "{{ random_network_settings.ca_certs }}"
+        key: MyRedisKey
+        login_host: "{{ random_network_settings.login_host }}"
+        login_password: "{{ random_network_settings.login_password }}"
+        login_port: "{{ random_network_settings.login_port }}"
+        login_user: "{{ random_network_settings.login_user }}"
+        tls: "{{ random_network_settings.tls }}"
+        validate_certs: "{{ random_network_settings.validate_certs }}"
+      register: redis_data_random
+  
+    - name: Debug Redis data with random network settings
+      debug:
+        var: redis_data_random

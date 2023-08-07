@@ -1,0 +1,72 @@
+---
+- name: Manage service configuration
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Configure service
+      community.network.netscaler_service:
+        nsip: "{{ nsip }}"
+        nitro_user: "{{ nitro_user }}"
+        nitro_pass: "{{ nitro_pass }}"
+        name: "{{ service_name }}"
+        ip: "{{ target_ip }}"
+        port: "{{ target_port }}"
+        state: "{{ state }}"
+        validate_certs: "{{ validate_certs }}"
+      register: result
+      ignore_errors: true
+
+    - name: Debug result
+      debug:
+        var: result
+
+- name: Test Cases
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Test case 1 - Invalid IP address format
+      community.network.netscaler_service:
+        nsip: "{{ nsip }}"
+        nitro_user: "{{ nitro_user }}"
+        nitro_pass: "{{ nitro_pass }}"
+        name: "test-service-1"
+        ip: "192.168.1.500"    # Invalid IP address (out of range)
+        port: 80
+        state: present
+        validate_certs: false
+
+    - name: Debug result for test case 1
+      debug:
+        var: result
+
+    - name: Test case 2 - Invalid port number format
+      community.network.netscaler_service:
+        nsip: "{{ nsip }}"
+        nitro_user: "{{ nitro_user }}"
+        nitro_pass: "{{ nitro_pass }}"
+        name: "test-service-2"
+        ip: "10.10.10.10"
+        port: "abc"    # Invalid port format (not a number)
+        state: present
+        validate_certs: false
+
+    - name: Debug result for test case 2
+      debug:
+        var: result
+
+    - name: Test case 3 - Invalid state value
+      community.network.netscaler_service:
+        nsip: "{{ nsip }}"
+        nitro_user: "{{ nitro_user }}"
+        nitro_pass: "{{ nitro_pass }}"
+        name: "test-service-3"
+        ip: "10.10.10.10"
+        port: 80
+        state: "enabled"    # Invalid state value (should be 'present' or 'absent')
+        validate_certs: false
+
+    - name: Debug result for test case 3
+      debug:
+        var: result

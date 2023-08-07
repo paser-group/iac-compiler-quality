@@ -1,0 +1,25 @@
+---
+- name: Import Role Heuristic Test
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Generate Encoded Names
+      command: echo -n "my_role" | base64
+      register: encoded_names
+
+    - name: Import Role
+      ansible.builtin.import_role:
+        name: "{{ item }}"
+        allow_duplicates: true
+        defaults_from: defaults/main.yml
+        handlers_from: handlers/main.yml
+        tasks_from: tasks/main.yml
+        vars_from: vars/main.yml
+        rolespec_validate: true
+      register: import_result
+      loop: "{{ encoded_names.stdout_lines }}"
+
+    - name: Debug Import Result
+      debug:
+        var: import_result

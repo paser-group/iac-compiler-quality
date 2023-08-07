@@ -1,0 +1,49 @@
+---
+- name: Test playbook to uncover latent type-related bugs
+  hosts: localhost
+  gather_facts: false
+  vars:
+    api_timeout: "30"
+    api_token: "my_api_token"
+    api_url: "https://api.scaleway.com"
+    query_parameters:
+      organization_id: "my_organization_id"
+    region: "par1"
+    validate_certs: true
+    random_value: !null
+  
+  tasks:
+    - name: Include scaleway_volume_info module
+      include_role:
+        name: community.general.scaleway_volume_info
+      
+    - name: Test case 1 - Pass !null value for api_timeout
+      scaleway_volume_info:
+        api_url: "{{ api_url }}"
+        api_token: "{{ api_token }}"
+        region: "{{ region }}"
+        validate_certs: "{{ validate_certs }}"
+        api_timeout: "{{ random_value }}"
+        query_parameters: "{{ query_parameters }}"
+      register: result1
+      
+    - name: Test case 2 - Change random_value to null
+      set_fact:
+        random_value: null
+      
+    - name: Test case 3 - Pass null value for api_timeout
+      scaleway_volume_info:
+        api_url: "{{ api_url }}"
+        api_token: "{{ api_token }}"
+        region: "{{ region }}"
+        validate_certs: "{{ validate_certs }}"
+        api_timeout: "{{ random_value }}"
+        query_parameters: "{{ query_parameters }}"
+      register: result2
+
+    - name: Debug test case results
+      debug:
+        var: item
+      loop: 
+        - "{{ result1 }}"
+        - "{{ result2 }}"

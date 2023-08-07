@@ -1,0 +1,24 @@
+---
+- name: Change SELinux policy
+  hosts: all
+  gather_facts: false
+  vars:
+    selinux_policy: targeted
+
+  tasks:
+    - name: Set SELinux policy
+      ansible.posix.selinux:
+        policy: "{{ selinux_policy }}"
+        state: enforcing
+        update_kernel_param: yes
+      when: "'ubuntu1' in inventory_hostname" or "'alpine1' in inventory_hostname"  # Potential type-related bug
+
+    - name: Verify SELinux status
+      ansible.posix.command:
+        cmd: "sestatus"
+      register: selinux_status
+      changed_when: false
+
+    - name: Debug SELinux status
+      debug:
+        var: selinux_status.stdout_lines

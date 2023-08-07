@@ -1,0 +1,37 @@
+---
+- name: Collect running configuration
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    devices:
+      - name: switch1
+        deviceType: cnos
+        host: "{{ host }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        enablePassword: "{{ enablePassword }}"
+        outputfile: "{{ outputfile }}"
+
+  tasks:
+    - name: Run cnos_showrun module
+      community.network.cnos_showrun:
+        provider: "{{ item }}"
+      loop: "{{ devices }}"
+      register: config_output
+
+    - name: Debug config output
+      debug:
+        var: config_output
+
+    - name: Generate random IP addresses
+      set_fact:
+        random_ips: "{{ random_ips | default([]) + [item] }}"
+      loop: "{{ devices | map(attribute='host') | map('extract', ip_regex) | shuffle | list }}"
+
+    - name: Print random IP addresses
+      debug:
+        var: random_ips
+
+  vars_files:
+    - vars.yaml

@@ -1,0 +1,55 @@
+---
+- name: Manage Pritunl Users
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create Pritunl User
+      community.general.pritunl_user:
+        organization: "MyOrg"
+        pritunl_api_secret: "my_api_secret"
+        pritunl_api_token: "my_api_token"
+        pritunl_url: "https://pritunl.example.com"
+        state: present
+        user_disabled: false
+        user_email: 12345  # Invalid email format to trigger a type-related bug
+        user_gravatar: true
+        user_groups: ["group1", 12345]  # Mix of valid and invalid group values
+        user_mac_addresses: "{{ generate_mac_addresses(3) }}"
+        user_name: "User1"
+        user_type: True  # Invalid user_type value to trigger a type-related bug
+        validate_certs: false
+
+      register: result
+
+    - name: Print result
+      debug:
+        var: result
+
+  vars:
+    pritunl_api_secret: "my_api_secret"
+    pritunl_api_token: "my_api_token"
+    pritunl_url: "https://pritunl.example.com"
+
+  # Helper function to generate random MAC addresses
+  tasks:
+    - name: Generate MAC addresses
+      set_fact:
+        mac_addresses: "{{ [] }}"
+    - name: Append MAC address
+      set_fact:
+        mac_addresses: "{{ mac_addresses + [generate_mac_address()] }}"
+      loop: "{{ range(3) }}"
+      loop_control:
+        loop_var: _
+
+  functions:
+    - name: generate_mac_address
+      run_once: true
+      vars:
+        hex_characters: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F']
+      tasks:
+        - name: Generate MAC address
+          set_fact:
+            mac_address: "{% for _ in range(6) %}{{ c() | random_item(items=hex_characters) }}{%- if not loop.last %}:{%- endif %}{% endfor %}"
+      return: "{{ mac_address }}"

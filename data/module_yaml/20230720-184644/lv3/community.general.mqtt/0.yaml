@@ -1,0 +1,38 @@
+- name: Publish MQTT message
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Publish message with bytes payload
+      community.general.mqtt:
+        topic: "test/topic"
+        payload: "{{ lookup('file', '/path/to/bytes_payload.txt') | b64decode }}"
+        server: "mqtt.example.com"
+        username: "my_username"
+        password: "my_password"
+        client_id: "my_client"
+      register: result
+      ignore_errors: true
+
+    - assert:
+        that:
+          - "'failed' in result"
+          - "result['payload'] is undefined"
+        fail_msg: "Failed to publish message with bytes payload"
+
+    - name: Publish message with string payload
+      community.general.mqtt:
+        topic: "test/topic"
+        payload: "Hello, Ansible!"
+        server: "mqtt.example.com"
+        username: "my_username"
+        password: "my_password"
+        client_id: "my_client"
+      register: result
+      ignore_errors: true
+
+    - assert:
+        that:
+          - "'failed' not in result"
+          - "result['payload'] is defined"
+        fail_msg: "Failed to publish message with string payload"

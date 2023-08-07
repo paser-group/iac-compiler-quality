@@ -1,0 +1,34 @@
+- name: Test playbook for community.general.proxmox_storage_info module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    api_host: "your_proxmox_host"
+    api_user: "your_proxmox_user"
+    api_password: "your_proxmox_password"
+    validate_certs: false
+
+  tasks:
+    - name: Generate random MAC address
+      set_fact:
+        random_mac: "{{ '%02x' | format(item) }}"
+      loop: "{{ range(6) | map('random') | list }}"
+
+    - name: Combine random MAC address
+      set_fact:
+        mac_address_variable: "{{ mac_address_variable | default('') + (mac_address_variable | default(':') | length > 0 | ternary(':', '')) + item }}"
+      loop: "{{ random_mac }}"
+      
+    - name: Retrieve information about storage
+      community.general.proxmox_storage_info:
+        api_host: "{{ api_host }}"
+        api_user: "{{ api_user }}"
+        api_password: "{{ api_password }}"
+        validate_certs: "{{ validate_certs }}"
+        storage: "{{ mac_address_variable }}"  # Injecting MAC address as storage name
+        type: "your_storage_type"
+      register: storage_info
+      
+    - name: Debug storage info
+      debug:
+        var: storage_info

@@ -1,0 +1,37 @@
+---
+- name: Test Ansible Latent Type-Related Bugs
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Configure Cobbler
+      community.general.cobbler_config:
+        section: authn
+        key: distros_suitable_for_gpxeclasses
+        value:
+          - ubuntu
+          - !binary |-
+            YWxwaW5lCg==
+          - centos
+          - !binary |-
+            cmVkaGF0Cg==
+      register: config_changed
+      changed_when: config_changed is defined and config_changed is not changed
+
+    - name: Display Config Change Result
+      debug:
+        var: config_changed
+
+    - name: Sync Cobbler
+      community.general.cobbler_sync:
+        host: "10.1.1.1"
+        port: 443
+        use_ssl: true
+        username: "ansible"
+        password: "password"
+        validate_certs: true
+      register: sync_result
+
+    - name: Display Cobbler Sync Result
+      debug:
+        var: sync_result

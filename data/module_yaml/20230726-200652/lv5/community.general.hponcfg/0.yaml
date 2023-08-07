@@ -1,0 +1,34 @@
+---
+- name: Configure HP iLO
+  hosts: localhost
+  gather_facts: false
+  vars:
+    executable: "/opt/hp/tools/hponcfg"
+    minfw: "2.50"
+    path: "/path/to/ilo_configuration.xml"
+    verbose: true
+
+  tasks:
+    - name: Check if iLO configuration file exists
+      stat:
+        path: "{{ path }}"
+      register: ilo_config_file
+
+    - name: Generate random port number
+      set_fact:
+        ilo_port: "{{ (ansible_play_hosts_all | random * 50000) + 1024 }}"
+      run_once: true
+
+    - name: Configure iLO
+      community.general.hponcfg:
+        executable: "{{ executable }}"
+        path: "{{ path }}"
+        verbose: "{{ verbose }}"
+        ilo_login: "{{ ilo_ip }}"
+        ilo_port: "{{ ilo_port }}"
+      register: result
+      when: ilo_config_file.stat.exists
+
+    - name: Print the result
+      debug:
+        var: result

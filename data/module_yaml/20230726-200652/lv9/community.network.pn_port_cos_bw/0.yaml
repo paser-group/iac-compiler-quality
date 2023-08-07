@@ -1,0 +1,34 @@
+---
+- hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Generate random IP addresses for Docker nodes
+      ansible.builtin.set_fact:
+        ubuntu1_ip: "{{ '10.1.1.' ~ range(1, 255) | random }}"
+        alpine1_ip: "{{ '10.1.1.' ~ range(1, 255) | random }}"
+        centos1_ip: "{{ '10.1.1.' ~ range(1, 255) | random }}"
+        redhat1_ip: "{{ '10.1.1.' ~ range(1, 255) | random }}"
+
+    - name: Set up inventory for Docker nodes
+      ansible.builtin.template:
+        src: inventory.j2
+        dest: inventory
+
+    - name: Configure Docker nodes
+      ansible.builtin.include_tasks: setup_docker_nodes.yml
+
+    - name: Run pn_port_cos_bw task with random IP addresses
+      community.network.pn_port_cos_bw:
+        pn_cliswitch: "{{ item.pn_cliswitch }}"
+        pn_cos: "{{ item.pn_cos }}"
+        pn_max_bw_limit: "{{ item.pn_max_bw_limit }}"
+        pn_min_bw_guarantee: "{{ item.pn_min_bw_guarantee }}"
+        pn_port: "{{ item.pn_port }}"
+        pn_weight: "{{ item.pn_weight }}"
+        state: "{{ item.state }}"
+      loop:
+        - { pn_cliswitch: "switch01", pn_cos: "1", pn_max_bw_limit: "2", pn_min_bw_guarantee: "1", pn_port: "1/1/1", pn_weight: "100", state: "present" } 
+
+  vars:
+    ansible_connection: local

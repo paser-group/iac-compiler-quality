@@ -1,0 +1,51 @@
+- name: Test ip_netns module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create network namespace
+      community.general.ip_netns:
+        name: "{{ item.name }}"
+        state: present
+      loop:
+        - { name: "ubuntu1" }
+        - { name: "alpine1" }
+        - { name: "centos1" }
+        - { name: "redhat1" }
+
+    - name: Set network in namespace with random port
+      community.general.ip_netns:
+        name: "{{ item.name }}"
+        state: present
+        netns_exec: |
+          ip link set eth0 netns {{ item.name }}
+          ip netns exec {{ item.name }} ip addr add 10.1.1.{{ item.ip }} dev eth0
+          ip netns exec {{ item.name }} ip link set eth0 up
+          ip netns exec {{ item.name }} ip route add default via 10.1.1.254
+      loop:
+        - { name: "ubuntu1", ip: 1 }
+        - { name: "alpine1", ip: 2 }
+        - { name: "centos1", ip: 3 }
+        - { name: "redhat1", ip: 4 }
+
+    - name: Test network connectivity in namespaces
+      community.general.ip_netns:
+        name: "{{ item.name }}"
+        state: present
+        netns_exec: |
+          ping -c 1 10.1.1.{{ item.ip }}
+      loop:
+        - { name: "ubuntu1", ip: 2 }
+        - { name: "alpine1", ip: 3 }
+        - { name: "centos1", ip: 4 }
+        - { name: "redhat1", ip: 1 }
+
+    - name: Remove network namespaces
+      community.general.ip_netns:
+        name: "{{ item.name }}"
+        state: absent
+      loop:
+        - { name: "ubuntu1" }
+        - { name: "alpine1" }
+        - { name: "centos1" }
+        - { name: "redhat1" }

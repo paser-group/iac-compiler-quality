@@ -1,0 +1,29 @@
+---
+- name: Test community.general.nsupdate module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Generate random port number
+      set_fact:
+        random_port: "{{ 1024 + (ansible_play_hosts.index(inventory_hostname) % 60000) }}"
+
+    - name: Run community.general.nsupdate module
+      community.general.nsupdate:
+        key_algorithm: "HMAC-MD5.SIG-ALG.REG.INT"
+        key_name: "mykey"
+        key_secret: "mysecret"
+        port: "{{ random_port }}"
+        protocol: "udp"
+        record: "A"
+        server: "10.1.1.4"
+        state: "present"
+        ttl: 3600
+        type: "www"
+        value: ["10.1.1.1"]
+        zone: "example.com"
+      register: nsupdate_result
+
+    - name: Debug nsupdate result
+      debug:
+        var: nsupdate_result

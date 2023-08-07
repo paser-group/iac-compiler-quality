@@ -1,0 +1,45 @@
+---
+- name: Test playbook for community.general.copr module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Install the community.general.copr module
+      become: true
+      package:
+        name: python3-pip
+        state: latest
+
+    - name: Install the required pip packages
+      become: true
+      pip:
+        name:
+          - copr
+          - ansible
+        state: latest
+
+    - name: Set up the COPR repository
+      community.general.copr:
+        state: present
+        chroot: "{{ item.chroot }}"
+        host: "{{ item.host }}"
+        name: "{{ item.name }}"
+        protocol: "{{ item.protocol | default('https') }}"
+      loop:
+        - { chroot: "ubuntu1", host: "10.1.1.1", name: "myrepo", protocol: "https" }
+        - { chroot: "alpine1", host: "10.1.1.2", name: "myrepo", protocol: "https" }
+        - { chroot: "centos1", host: "10.1.1.3", name: "myrepo", protocol: "https" }
+        - { chroot: "redhat1", host: "10.1.1.4", name: "myrepo", protocol: "https" }
+
+    - name: Remove the COPR repository
+      community.general.copr:
+        state: absent
+        chroot: "{{ item.chroot }}"
+        host: "{{ item.host }}"
+        name: "{{ item.name }}"
+        protocol: "{{ item.protocol | default('https') }}"
+      loop:
+        - { chroot: "ubuntu1", host: "10.1.1.1", name: "myrepo", protocol: "https" }
+        - { chroot: "alpine1", host: "10.1.1.2", name: "myrepo", protocol: "https" }
+        - { chroot: "centos1", host: "10.1.1.3", name: "myrepo", protocol: "https" }
+        - { chroot: "redhat1", host: "10.1.1.4", name: "myrepo", protocol: "https" }

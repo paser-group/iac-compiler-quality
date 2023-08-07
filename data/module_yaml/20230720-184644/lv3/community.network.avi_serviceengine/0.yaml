@@ -1,0 +1,53 @@
+---
+- name: Configure ServiceEngine
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    se_name: "se1"
+    se_tenant: "default"
+    se_username: "admin"
+    se_password: "password"
+    se_controller: "10.0.0.1"
+    se_api_context: {}
+    se_flavor: "medium"
+    se_resources:
+      - type: "SE_RESOURCE_TYPE_CPU"
+        value: 1
+      - type: "SE_RESOURCE_TYPE_MEMORY"
+        value: 1024
+    se_data_vnics:
+      - network: "backend"
+        ip: "10.1.1.5"
+        subnet: "10.1.1.0/24"
+        gateway: "10.1.1.254"
+        segroup: "seg1"
+
+  tasks:
+    - name: Create ServiceEngine configuration
+      community.network.avi_serviceengine:
+        controller: "{{ se_controller }}"
+        username: "{{ se_username }}"
+        password: "{{ se_password }}"
+        tenant: "{{ se_tenant }}"
+        name: "{{ se_name }}"
+        api_context: "{{ se_api_context }}"
+        flavor: "{{ se_flavor }}"
+        resources: "{{ se_resources }}"
+        data_vnics: "{{ se_data_vnics }}"
+        state: present
+
+    - name: Print ServiceEngine configuration
+      debug:
+        var: ansible_facts.network_avi_serviceengine
+
+    - name: Update ServiceEngine configuration
+      community.network.avi_serviceengine:
+        controller: "{{ se_controller }}"
+        username: "{{ se_username }}"
+        password: "{{ se_password }}"
+        tenant: "{{ se_tenant }}"
+        name: "{{ se_name }}"
+        api_context: "{{ se_api_context }}"
+        se_group_ref: "/api/serviceenginegroup/?name=seg1"
+        state: update

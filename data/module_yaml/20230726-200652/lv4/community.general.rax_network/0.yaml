@@ -1,0 +1,87 @@
+- name: Create/Delete Isolated Network in Rackspace
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    api_key: "<your_api_key>"
+    auth_endpoint: "<your_auth_endpoint>"
+    region: "<your_region>"
+    tenant_id: "<your_tenant_id>"
+    tenant_name: "<your_tenant_name>"
+    username: "<your_username>"
+    validate_certs: True
+
+  tasks:
+    - name: Create network
+      community.general.rax_network:
+        state: "{{ 'present' }}"
+        label: TestNetwork
+        cidr: "10.1.1.0/24"
+        credentials: "/path/to/credentials"
+        env: "{{ lookup('env', 'ENV_NAME') }}"
+        identity_type: "rackspace"
+        api_key: "{{ api_key }}"
+        auth_endpoint: "{{ auth_endpoint }}"
+        region: "{{ region }}"
+        tenant_id: "{{ tenant_id }}"
+        tenant_name: "{{ tenant_name }}"
+        username: "{{ username }}"
+        validate_certs: "{{ validate_certs }}"
+
+      # Test Case 1
+      # Test type mismatch by using non-bool value for validate_certs option
+      vars:
+        validate_certs: "true"
+      register: result_1
+      failed_when: result_1.rc != 0
+
+    - name: Delete network
+      community.general.rax_network:
+        state: "{{ 'absent' }}"
+        label: TestNetwork
+        credentials: "/path/to/credentials"
+        identity_type: "rackspace"
+        api_key: "{{ api_key }}"
+        auth_endpoint: "{{ auth_endpoint }}"
+        region: "{{ region }}"
+        tenant_id: "{{ tenant_id }}"
+        tenant_name: "{{ tenant_name }}"
+        username: "{{ username }}"
+        validate_certs: "{{ validate_certs }}"
+
+      # Test Case 2
+      # Test a type mismatch by providing an integer instead of a string for api_key option
+      vars:
+        api_key: 123456789
+      register: result_2
+      failed_when: result_2.rc != 0
+
+    - name: Delete network (cleanup)
+      community.general.rax_network:
+        state: "{{ 'absent' }}"
+        label: TestNetwork
+        credentials: "/path/to/credentials"
+        identity_type: "rackspace"
+        api_key: "{{ api_key }}"
+        auth_endpoint: "{{ auth_endpoint }}"
+        region: "{{ region }}"
+        tenant_id: "{{ tenant_id }}"
+        tenant_name: "{{ tenant_name }}"
+        username: "{{ username }}"
+        validate_certs: "{{ validate_certs }}"
+
+  # Test Case 3
+  # Test type mismatch by providing a non-existent file path for credentials option
+  - name: Delete network (cleanup)
+    community.general.rax_network:
+      state: "{{ 'absent' }}"
+      label: TestNetwork
+      credentials: "/path/to/nonexistent/file"
+      identity_type: "rackspace"
+      api_key: "{{ api_key }}"
+      auth_endpoint: "{{ auth_endpoint }}"
+      region: "{{ region }}"
+      tenant_id: "{{ tenant_id }}"
+      tenant_name: "{{ tenant_name }}"
+      username: "{{ username }}"
+      validate_certs: "{{ validate_certs }}"

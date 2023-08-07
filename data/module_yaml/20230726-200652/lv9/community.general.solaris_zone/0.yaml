@@ -1,0 +1,26 @@
+- name: Test playbook for solaris_zone module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create a solaris zone
+      community.general.solaris_zone:
+        name: test_zone
+        path: /zones/test_zone
+        state: configured
+        config: /zones/test_zone/config
+        root_password: testpassword
+        sparse: false
+        attach_options: -a
+        create_options: -t non-global
+        install_options: -a
+        timeout: 60
+
+    - name: Verify the solaris zone was created
+      command: zoneadm -z test_zone list -p
+      register: zone_status
+      failed_when: zone_status.rc != 0
+
+    - name: Print zone status
+      debug:
+        var: zone_status.stdout_lines

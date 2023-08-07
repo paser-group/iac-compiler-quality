@@ -1,0 +1,41 @@
+---
+- name: Test playbook for community.general.dnf_versionlock module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    package_name: "example_package"
+    package_version: "1.0"
+  
+  tasks:
+    - name: Install the package
+      package:
+        name: "{{ package_name }}"
+        state: present
+      register: package_install
+
+    - name: Lock package version
+      community.general.dnf_versionlock:
+        name: [ '{{ package_name }}' ]
+        state: present
+        raw: true
+      register: package_versionlock
+     
+    - name: Verify package version is locked
+      shell: "dnf versionlock list '{{ package_name }}'"
+      register: package_versioncheck
+      failed_when: package_versioncheck.stdout != '{{ package_name }}-{{ package_version }}'
+
+    - name: Print package versionlock status
+      debug:
+        var: package_versionlock
+
+    - name: Uninstall the package
+      package:
+        name: "{{ package_name }}"
+        state: absent
+      register: package_uninstall
+
+    - name: Print package uninstall status
+      debug:
+        var: package_uninstall

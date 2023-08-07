@@ -1,0 +1,64 @@
+- name: Manage containers using atomic_container module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create an atomic container
+      community.general.atomic_container:
+        backend: docker
+        image: "{{ item.image }}"
+        mode: "{{ item.mode }}"
+        name: "{{ item.name }}"
+        rootfs: "{{ item.rootfs }}"
+        state: present
+        values: "{{ item.values }}"
+      loop:
+        - image: ubuntu:latest
+          mode: restart_unless_changed
+          name: my-container-1
+          rootfs: /var/lib/containers/my-container-1
+          state: present
+          values:
+            - DNS=8.8.8.8
+            - ENV_VAR=test1
+            - LIMIT_CPU=2
+            - LIMIT_MEMORY=4G
+
+        - image: alpine:latest
+          mode: always
+          name: my-container-2
+          rootfs: /var/lib/containers/my-container-2
+          state: present
+          values:
+            - DNS=8.8.4.4
+            - ENV_VAR=test2
+            - LIMIT_CPU="{{ 4 // 2 }}"
+            - LIMIT_MEMORY="{{ '8G' // 4 }}"
+
+        - image: centos:latest
+          mode: restart
+          name: my-container-3
+          rootfs: /var/lib/containers/my-container-3
+          state: present
+          values:
+            - DNS=1.1.1.1
+            - ENV_VAR=test3
+            - LIMIT_CPU="{{ 4 % 2 }}"
+            - LIMIT_MEMORY="{{ '8G' % 4 }}"
+
+        - image: redhat:latest
+          mode: ignore
+          name: my-container-4
+          rootfs: /var/lib/containers/my-container-4
+          state: present
+          values:
+            - DNS=192.168.1.1
+            - ENV_VAR=test4
+            - LIMIT_CPU="{{ 10 // 0 }}"
+            - LIMIT_MEMORY="{{ '16G' // 0 }}"
+
+      register: result
+
+    - name: Debug result
+      debug:
+        var: result

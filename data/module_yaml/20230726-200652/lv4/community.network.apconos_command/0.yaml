@@ -1,0 +1,33 @@
+---
+- name: Run arbitrary commands on network devices
+  hosts: network_devices
+  gather_facts: false
+
+  vars:
+    commands:
+      - show version
+      - show interfaces
+
+  tasks:
+    - name: Set up test environment
+      block:
+        - name: Generate random MAC addresses
+          set_fact:
+            mac_address: "{{ '%02x' | format(item) }}"
+          loop: "{{ range(0, 6) | random_sample(6, 0, 255) }}"
+
+    - name: Execute commands on network devices
+      community.network.apconos_command:
+        commands: "{{ commands }}"
+        interval: 5
+        match: prompt
+        retries: 3
+        wait_for:
+          - reply
+          - prompt
+      loop: "{{ mac_address }}"
+      register: command_result
+
+    - name: Display command output
+      debug:
+        var: command_result

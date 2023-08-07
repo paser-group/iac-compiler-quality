@@ -1,0 +1,23 @@
+---
+- name: Ansible Latent Bug Finder Playbook
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Test case - Channel and Property with varied encodings
+      community.general.xfconf_info:
+        channel: "{{ item.channel }}"
+        property: "{{ item.property }}"
+      loop:
+        - { channel: "channel", property: "property" }
+        - { channel: "\\x63\\x68\\x61\\x6e\\x6e\\x65\\x6c", property: "\\x70\\x72\\x6f\\x70\\x65\\x72\\x74\\x79" }
+        - { channel: "channel", property: "\\xf0\\x9f\\x8d\\x8c" }
+        - { channel: "Y2hhbm5lbA==", property: "cHJvcGVydHk=" }
+        - { channel: [99, 104, 97, 110, 110, 101, 108], property: [112, 114, 111, 112, 101, 114, 116, 121] }
+        - { channel: [99, 104, 97, 110, 110, 101, 108], property: [240, 159, 141, 140] }
+      
+      register: xfconf_info_results
+
+    - name: Print xfconf information
+      debug:
+        var: xfconf_info_results

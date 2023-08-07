@@ -1,0 +1,58 @@
+---
+- name: Create and Delete Load Balancer
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    algorithm: round_robin
+    auth_endpoint: https://identity.api.rackspacecloud.com/v2.0
+    credentials: /path/to/credentials.json
+    env: prod
+    identity_type: rax_apikey
+    meta: {}
+    name: my_load_balancer
+    protocol: HTTP
+    region: ORD
+    state: present
+    timeout: 600
+    type: PUBLIC
+    username: myusername
+    validate_certs: yes
+    wait: yes
+    wait_timeout: 300
+
+  tasks:
+    - name: Create Load Balancer
+      community.general.rax_clb:
+        api_key: "{{ lookup('env', 'RACKSPACE_API_KEY') }}"
+        name: "{{ name }}"
+        algorithm: "{{ algorithm }}"
+        protocol: "{{ protocol }}"
+        port: "{{ item }}"
+        type: "{{ type }}"
+        state: "{{ state }}"
+        region: "{{ region }}"
+      with_items:
+        - 80
+        - 443
+        - 8080
+        - 8000
+      register: lb_created
+
+    - name: Print Load Balancer details
+      debug:
+        var: lb_created
+
+    - name: Delete Load Balancer
+      when: state == 'absent'
+      community.general.rax_clb:
+        api_key: "{{ lookup('env', 'RACKSPACE_API_KEY') }}"
+        name: "{{ name }}"
+        type: "{{ type }}"
+        state: "{{ state }}"
+        region: "{{ region }}"
+      register: lb_deleted
+
+    - name: Print Load Balancer deletion status
+      debug:
+        var: lb_deleted

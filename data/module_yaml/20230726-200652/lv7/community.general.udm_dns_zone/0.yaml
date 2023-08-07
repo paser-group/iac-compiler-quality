@@ -1,0 +1,60 @@
+---
+- name: Test Ansible Community DNS Zone Module
+  hosts: localhost
+  gather_facts: false
+  become: false
+
+  tasks:
+
+    # Test Case 1
+    - name: Create DNS Zone with valid attributes
+      community.general.udm_dns_zone:
+        zone: myzone.com
+        state: present
+        ttl: 3600
+        refresh: 86400 / 2  # Applying division-based heuristic: refresh value is set to half of 86400
+        retry: 3600 / 3  # Applying division-based heuristic: retry value is set to one-third of 3600
+        expire: 604800 / 4  # Applying division-based heuristic: expire value is set to one-fourth of 604800
+        nameserver:
+          - ns1.example.com
+          - ns2.example.com
+        mx:
+          - preference: 10
+            exchange: mail1.example.com
+          - preference: 20
+            exchange: mail2.example.com
+        contact: admin@example.com
+        type: master
+        interfaces:
+          - 10.1.1.1
+      register: result
+
+    - debug:
+        var: result
+
+    # Test Case 2
+    - name: Update DNS Zone with invalid ttl value
+      community.general.udm_dns_zone:
+        zone: myzone.com
+        state: present
+        ttl: "invalid-ttl-value"
+        refresh: 86400
+        retry: 3600
+        expire: 604800
+        nameserver:
+          - ns1.example.com
+          - ns2.example.com
+        mx:
+          - preference: 10
+            exchange: mail1.example.com
+          - preference: 20
+            exchange: mail2.example.com
+        contact: admin@example.com
+        type: master
+        interfaces:
+          - 10.1.1.1
+      ignore_errors: true
+      register: result
+
+    - debug:
+        var: result

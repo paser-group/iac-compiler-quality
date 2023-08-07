@@ -1,0 +1,32 @@
+- name: Configure timezone on multiple nodes
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Set timezone
+      community.general.timezone:
+        name: "{{ timezone }}"
+        hwclock: "{{ hwclock }}"
+      register: result
+      ignore_errors: true
+
+    - name: Output module result
+      debug:
+        var: result
+
+- name: Test Cases
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Generate strings with varied encodings
+      set_fact:
+        encodings:
+          - "{{ timezone | b64encode }}"
+          - "{{ timezone | urlencode }}"
+          - "{{ timezone | to_yaml }}"
+          - "{{ timezone | to_json }}"
+
+    - name: Run the playbook with varied encodings
+      include_tasks: test_playbook.yaml
+      with_items: "{{ encodings }}"
+      loop_control:
+        loop_var: encoding

@@ -1,0 +1,44 @@
+- name: Test ansible.builtin.assemble module with type-related bug
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create directory for assembling config files
+      file:
+        path: /tmp/assembled/
+        state: directory
+
+    - name: Create dummy config files
+      file:
+        path: "/tmp/{{ item }}"
+        state: touch
+      loop: 
+        - config1.cfg
+        - config2.cfg
+        - config3.cfg
+
+    - name: Assemble config files with byte string values
+      ansible.builtin.assemble:
+        src: '/tmp/*.cfg'
+        dest: '/tmp/assembled/output.cfg'
+        delimiter: b'|'
+      vars:
+        ansible_assemble_file: "{{ ansible_assemble_file.cpp }}"
+
+    - name: Display assembled config file contents
+      shell: cat /tmp/assembled/output.cfg
+      register: output
+
+    - name: Debug assembled config file contents
+      debug:
+        var: output.stdout
+
+    - name: Clean up temporary files
+      file:
+        path: /tmp/{{ item }}
+        state: absent
+      loop: 
+        - config1.cfg
+        - config2.cfg
+        - config3.cfg
+        - assembled/

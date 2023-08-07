@@ -1,0 +1,39 @@
+---
+- name: Test Ansible Latent Type-Related Bug
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    # Define the inventory variables
+    ansible_net_inventory_hostname: "{{ inventory_hostname }}"
+    ansible_net_ip_address: "{{ hostvars[inventory_hostname].ansible_facts['ansible_default_ipv4']['address'] }}"
+    ansible_net_os_family: "{% if 'ubuntu' in ansible_distribution %}debian{% else %}{{ ansible_distribution | lower }}{% endif %}"
+
+    # Define the traffic clone profile configuration
+    traffic_clone_profile:
+      name: "Test Profile"
+      preserve_client_ip: true
+      clone_servers:
+        - destination:
+            ip:
+              addr: "10.10.10.10"
+              type: "V4"
+          port: 80
+          protocol: "HTTP"
+
+  tasks:
+    - name: Include the Avi TrafficCloneProfile module
+      include_role:
+        name: community.network.avi_trafficcloneprofile
+      vars:
+        # Pass the inventory variables to the module
+        avi_controller: "{{ controller }}"
+        avi_username: "{{ username }}"
+        avi_password: "{{ password }}"
+        avi_tenant: "{{ tenant }}"
+        avi_trafficcloneprofile: "{{ traffic_clone_profile }}"
+        avi_disabled_session_cache_as_fact: "{{ avi_disable_session_cache_as_fact | default(false) }}"
+  
+    - name: Print the result of the module execution
+      debug:
+        var: ansible_fact_trafficcloneprofile_stdout

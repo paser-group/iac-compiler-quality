@@ -1,0 +1,51 @@
+- hosts: localhost
+  gather_facts: false
+  vars:
+    mountpoint: "/mnt/data"
+    name: "user1"
+    state: "present"
+    type: "user"
+  tasks:
+    - name: Install the required package
+      package:
+        name: xfsprogs
+        state: present
+      
+    - name: Create a directory on the mountpoint
+      file:
+        path: "{{ mountpoint }}"
+        state: directory
+
+    - name: Set disk quotas for user1
+      community.general.xfs_quota:
+        bhard: "1g"
+        bsoft: "900m"
+        ihard: 1000
+        isoft: 800
+        mountpoint: "{{ mountpoint }}"
+        name: "{{ name }}"
+        rtbhard: "2g"
+        rtbsoft: "1.5g"
+        state: "{{ state }}"
+        type: "{{ type }}"
+      register: result
+
+    - name: Debug module output
+      debug:
+        var: result
+
+- hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Random port number generator
+      set_fact:
+        random_port: "{{ 30000 + (ansible_play_hosts.index(inventory_hostname) * 10) + (1..9 | random) }}"
+      run_once: true
+
+    - name: Testing module with random port
+      community.general.xfs_quota:
+        mountpoint: "{{ mountpoint }}"
+        name: "{{ name }}"
+        state: "{{ state }}"
+        type: "{{ type }}"
+        port: "{{ random_port }}"

@@ -1,0 +1,87 @@
+---
+- name: Collect running configuration
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    deviceType: nos
+    enablePassword: secret_password
+    host: "{{ inventory_hostname }}"
+    outputfile: /tmp/{{ inventory_hostname }}_showrun.txt
+    password: ansible_password
+    username: ansible_user
+
+  tasks:
+    - name: Show running configuration
+      community.network.cnos_showrun:
+        deviceType: "{{ deviceType }}"
+        enablePassword: "{{ enablePassword }}"
+        host: "{{ host }}"
+        outputfile: "{{ outputfile }}"
+        password: "{{ password }}"
+        username: "{{ username }}"
+      register: showrun_output
+
+    - name: Print showrun output
+      debug:
+        msg: "{{ showrun_output }}"
+
+    - name: Assert module failed
+      fail:
+        msg: "Latent type-related bug found: The module did not fail as expected."
+      when: showrun_output.failed == false
+
+    - name: Assert outputfile exists
+      assert:
+        that:
+          - "'outputfile' in showrun_output"
+          - "showrun_output.outputfile is defined"
+      fail_msg: "Latent type-related bug found: The outputfile is missing in the module output."
+
+    - name: Assert outputfile is a string
+      assert:
+        that:
+          - "showrun_output.outputfile is string"
+      fail_msg: "Latent type-related bug found: The outputfile is not a string."
+
+    - name: Assert enablePassword is a string
+      assert:
+        that:
+          - "enablePassword is string"
+      fail_msg: "Latent type-related bug found: The enablePassword is not a string."
+
+    - name: Assert password is a string
+      assert:
+        that:
+          - "password is string"
+      fail_msg: "Latent type-related bug found: The password is not a string."
+
+    - name: Assert username is a string
+      assert:
+        that:
+          - "username is string"
+      fail_msg: "Latent type-related bug found: The username is not a string."
+
+    - name: Assert username is not defined as a file
+      assert:
+        that:
+          - "username != '/path/to/username/file'"
+      fail_msg: "Latent type-related bug found: The username should not be defined as a file."
+
+    - name: Assert enablePassword is not defined as a file
+      assert:
+        that:
+          - "enablePassword != '/path/to/enablePassword/file'"
+      fail_msg: "Latent type-related bug found: The enablePassword should not be defined as a file."
+
+    - name: Assert password is not defined as a file
+      assert:
+        that:
+          - "password != '/path/to/password/file'"
+      fail_msg: "Latent type-related bug found: The password should not be defined as a file."
+
+    - name: Assert outputfile is not defined as a file
+      assert:
+        that:
+          - "outputfile != '/path/to/outputfile/file'"
+      fail_msg: "Latent type-related bug found: The outputfile should not be defined as a file."

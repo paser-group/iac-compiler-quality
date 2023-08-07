@@ -1,0 +1,29 @@
+- name: Create LXD containers
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Set random MAC addresses for network devices
+      set_fact:
+        mac_addresses: "{{ range(4)|map('random_mac')|list }}"
+
+    - name: Create LXD containers
+      community.general.lxd_container:
+        name: "{{ item.name }}"
+        state: "{{ item.state }}"
+        source:
+          type: "{{ item.source.type }}"
+          mode: "{{ item.source.mode }}"
+          server: "{{ item.source.server }}"
+          alias: "{{ item.source.alias }}"
+        profiles: "{{ item.profiles }}"
+        devices:
+          eth0:
+            type: nic
+            name: eth0
+            mac: "{{ item.mac }}"
+        wait_for_ipv4_addresses: true
+      loop:
+        - { name: ubuntu1, state: started, source: { type: image, mode: pull, server: https://images.linuxcontainers.org, alias: ubuntu/xenial/amd64 }, profiles: [default, bridge], mac: "{{ mac_addresses[0] }}" }
+        - { name: alpine1, state: started, source: { type: image, mode: pull, server: https://images.linuxcontainers.org, alias: images:alpine/3.10/amd64 }, profiles: [default, bridge], mac: "{{ mac_addresses[1] }}" }
+        - { name: centos1, state: started, source: { type: image, mode: pull, server: https://images.linuxcontainers.org, alias: centos/7/amd64 }, profiles: [default, bridge], mac: "{{ mac_addresses[2] }}" }
+        - { name: redhat1, state: started, source: { type: image, mode: pull, server: https://images.linuxcontainers.org, alias: images:registry.access.redhat.com/rhel7/rhel }, profiles: [default, bridge], mac: "{{ mac_addresses[3] }}" }

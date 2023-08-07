@@ -1,0 +1,55 @@
+- name: Perform network tag management
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    subnet: "10.1.1.0/24"
+    gateway: "10.1.1.254"
+
+  tasks:
+    - name: Create network tags on different nodes
+      community.general.nictagadm:
+        name: "tag-{{ item }}"
+        state: present
+      loop:
+        - "ubuntu1"
+        - "alpine1"
+        - "centos1"
+        - "redhat1"
+
+    - name: Assign IP addresses to network tags
+      community.general.nictagadm:
+        name: "tag-{{ item }}"
+        ip_address: "{{ item_ip }}"
+        state: present
+      loop:
+        - name: "ubuntu1"
+          item_ip: "10.1.1.{{ ip_addr_index }}"
+        - name: "alpine1"
+          item_ip: "10.1.1.{{ ip_addr_index }}"
+        - name: "centos1"
+          item_ip: "10.1.1.{{ ip_addr_index }}"
+        - name: "redhat1"
+          item_ip: "10.1.1.{{ ip_addr_index }}"
+      loop_control:
+        index_var: ip_addr_index
+
+    - name: Verify assigned IP addresses
+      community.general.nictagadm:
+        name: "tag-{{ item }}"
+        state: info
+      loop:
+        - "ubuntu1"
+        - "alpine1"
+        - "centos1"
+        - "redhat1"
+
+    - name: Remove network tags
+      community.general.nictagadm:
+        name: "tag-{{ item }}"
+        state: absent
+      loop:
+        - "ubuntu1"
+        - "alpine1"
+        - "centos1"
+        - "redhat1"

@@ -1,0 +1,89 @@
+---
+- name: Test Ansible Latent Type-Related Bug
+  hosts: nodes
+  become: true
+  gather_facts: false
+  
+  tasks:
+    - name: Generate random MAC address for network modules
+      set_fact:
+        random_mac: "{{ '%012x' | format(ansible_date_time.epoch.int) }}"
+  
+    - name: Test package installation
+      apt:
+        name: vim
+        state: present
+  
+    - name: Test package removal
+      apt:
+        name: vim
+        state: absent
+  
+    - name: Test package upgrade
+      apt:
+        upgrade: safe
+        autoclean: yes
+        autoremove: yes
+        install_recommends: yes
+  
+    - name: Test package downgrade
+      apt:
+        name: vim
+        state: present
+        allow_downgrade: yes
+  
+    - name: Test package cache cleaning
+      apt:
+        name: '*'
+        state: latest
+        clean: yes
+  
+    - name: Test package purging
+      apt:
+        name: vim
+        state: purged
+  
+    - name: Test package locking
+      apt:
+        name: vim
+        state: present
+        update_cache: yes
+        lock_timeout: 600
+        force_apt_get: yes
+  
+    - name: Test package update with cache validation
+      apt:
+        name: '*'
+        state: latest
+        update_cache: yes
+        cache_valid_time: 3600
+  
+    - name: Test package installation from custom deb file
+      apt:
+        deb: /path/to/package.deb
+        state: present
+  
+    - name: Test package upgrade with specified release
+      apt:
+        name: '*'
+        state: latest
+        default_release: "{{ random_mac }}"
+  
+    - name: Test package installation with custom dpkg options
+      apt:
+        name: vim
+        state: present
+        dpkg_options: "--force-confnew"
+  
+    - name: Test package installation with unauthenticated repositories
+      apt:
+        name: vim
+        state: present
+        update_cache: yes
+        allow_unauthenticated: yes
+  
+    - name: Test package removal with fail_on_autoremove
+      apt:
+        name: vim
+        state: absent
+        fail_on_autoremove: yes

@@ -1,0 +1,39 @@
+- name: Apply ACLs to interfaces
+  hosts: localhost
+  gather_facts: false
+  vars:
+    acl_name: "test_acl"
+    direction: "inbound"
+    interface: "GigabitEthernet0/0/0"
+    state: "present"
+
+  tasks:
+    - name: Generate strings with varied encodings
+      block:
+        - name: Create a test ACL file
+          copy:
+            content: |
+              acl {
+                rule 0 permit tcp src_type-group ANY dst_type-group ANY dst_type-group eq "HTTP";
+              }
+            dest: "/tmp/test_acl_file"
+          delegate_to: localhost
+
+        - name: Remove non-ASCII characters from the ACL file
+          shell: sed -i 's/[^[:print:]]//g' "/tmp/test_acl_file"
+          delegate_to: localhost
+
+        - name: Apply ACL
+          community.network.ce_acl_interface:
+            acl_name: "{{ acl_name }}"
+            direction: "{{ direction }}"
+            interface: "{{ interface }}"
+            state: "{{ state }}"
+          delegate_to: localhost
+
+  handlers:
+    - name: Clean up test ACL file
+      file:
+        path: "/tmp/test_acl_file"
+        state: absent
+      delegate_to: localhost

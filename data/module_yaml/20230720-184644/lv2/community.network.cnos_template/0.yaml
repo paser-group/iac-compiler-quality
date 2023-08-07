@@ -1,0 +1,49 @@
+- name: Manage switch configuration using templates
+  hosts: switches
+  gather_facts: false
+
+  vars:
+    device_to_configure:
+      - hostname: !binary |-
+          cm9vdA==
+        commandfile: none
+        deviceType: !binary |-
+          c3dpdGNo
+        enablePassword: none
+        host: !binary |-
+          MTAuMS4xLjE=
+        outputfile: none
+        password: none
+        username: none
+
+  tasks:
+    - name: Ensure config output file does not exist
+      file:
+        path: "{{ device.outputfile }}"
+        state: absent
+      register: output_file_removed
+
+    - name: Manage switch configuration
+      community.network.cnos_template:
+        commandfile: "{{ device.commandfile|default(omit) }}"
+        deviceType: "{{ device.deviceType|default(omit) }}"
+        enablePassword: "{{ device.enablePassword|default(omit) }}"
+        host: "{{ device.host }}"
+        outputfile: "{{ device.outputfile }}"
+        password: "{{ device.password|default(omit) }}"
+        username: "{{ device.username }}"
+      vars:
+        device: "{{ device_to_configure[0] }}"
+      register: switch_config
+
+    - name: Debug switch configuration output
+      debug:
+        var: switch_config
+
+    - name: Check switch configuration output
+      assert:
+        that:
+          - "'ERROR' not in switch_config.stdout_lines"
+          - output_file_removed.stat.exists == false
+      fail_msg: "Switch configuration failed"
+      changed_when: false

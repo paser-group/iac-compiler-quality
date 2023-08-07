@@ -1,0 +1,81 @@
+---
+- name: Create and Delete Rackspace Instances
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    # Rackspace credentials
+    api_key: "YOUR_API_KEY"
+    auth_endpoint: "https://identity.api.rackspacecloud.com/v2.0"
+    username: "YOUR_USERNAME"
+    tenant_name: "YOUR_TENANT"
+
+    # Instance configuration
+    name: "test-instance"
+    image: "Ubuntu 18.04"
+    flavor: "performance1-1"
+    count: 1
+    wait: true
+    wait_timeout: 300
+
+  tasks:
+    - name: Create Rackspace Instance
+      community.general.rax:
+        api_key: "{{ api_key }}"
+        auth_endpoint: "{{ auth_endpoint }}"
+        username: "{{ username }}"
+        tenant_name: "{{ tenant_name }}"
+        name: "{{ name }}"
+        image: "{{ image }}"
+        flavor: "{{ flavor }}"
+        count: "{{ count }}"
+        wait: "{{ wait }}"
+        wait_timeout: "{{ wait_timeout }}"
+      register: instance
+
+    - name: Debug Instance Info
+      debug:
+        var: instance
+
+    # Random port testing
+    - name: Produce random port numbers
+      set_fact:
+        random_port_1: "{{ 10000 | random }}"
+        random_port_2: "{{ 10000 | random }}"
+        random_port_3: "{{ 10000 | random }}"
+
+    # Perform operations using random port numbers
+    - name: Create Rackspace Instance with random port settings
+      community.general.rax:
+        api_key: "{{ api_key }}"
+        auth_endpoint: "{{ auth_endpoint }}"
+        username: "{{ username }}"
+        tenant_name: "{{ tenant_name }}"
+        name: "{{ name }}"
+        image: "{{ image }}"
+        flavor: "{{ flavor }}"
+        count: "{{ count }}"
+        wait: "{{ wait }}"
+        wait_timeout: "{{ wait_timeout }}"
+        networks:
+          - port: "{{ random_port_1 }}"
+          - port: "{{ random_port_2 }}"
+          - port: "{{ random_port_3 }}"
+      register: instance_random_port
+
+    - name: Debug Instance with random port settings
+      debug:
+        var: instance_random_port
+
+    - name: Delete Rackspace Instance
+      community.general.rax:
+        api_key: "{{ api_key }}"
+        auth_endpoint: "{{ auth_endpoint }}"
+        username: "{{ username }}"
+        tenant_name: "{{ tenant_name }}"
+        instance_ids: "{{ instance['rax_instances'][0]['id'] }}"
+        state: absent
+        wait: "{{ wait }}"
+        wait_timeout: "{{ wait_timeout }}"
+      register: instance_deleted

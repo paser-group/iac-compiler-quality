@@ -1,0 +1,28 @@
+---
+- name: Test for Type-Related Bugs in Ansible Compiler
+  hosts: all
+  gather_facts: false
+
+  tasks:
+  - name: Create ZFS dataset
+    community.general.zfs:
+      extra_zfs_properties:
+        compression: gzip
+      name: "{{ item.name }}"
+      origin: "{{ item.origin | default('none') }}"
+      state: "{{ item.state }}"
+    loop:
+      - { name: "test-dataset1", origin: "tank/test-dataset", state: "present" }
+      - { name: 1, origin: "tank/test-dataset", state: "present" }  # Trigger type-related bug
+      - { name: "test-dataset3", origin: 123, state: "present" }  # Trigger type-related bug
+      - { name: "test-dataset4", origin: "tank/test-dataset", state: "unknown" }  # Trigger type-related bug
+
+  - name: Test Port Settings
+    community.general.zfs:
+      name: "test-dataset"
+      state: present
+      port: "{{ item }}"
+    loop:
+      - "{{ range(1000, 1100)|random }}"  # Random port number within the range
+      - "test"  # Trigger type-related bug
+      - 123  # Trigger type-related bug

@@ -1,0 +1,39 @@
+---
+- name: Configure disk of a Qemu(KVM) VM in Proxmox VE
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Generate random IP addresses
+      hosts: localhost
+      gather_facts: false
+      vars:
+        subnet: "10.1.1.0"
+        gateway: "10.1.1.254"
+        nodes:
+          - { name: "ubuntu1", ip_address: "{{ subnet }}/24" }
+          - { name: "alpine1", ip_address: "{{ subnet }}/24" }
+          - { name: "centos1", ip_address: "{{ subnet }}/24" }
+          - { name: "redhat1", ip_address: "{{ subnet }}/24" }
+      tasks:
+        - name: Create network facts
+          set_fact:
+            node_facts: "{{ node_facts | default([]) + [item.name + '_ip_address=' + item.ip_address + ' ' + item.name + '_gateway=' + gateway] }}"
+          loop: "{{ nodes }}"
+        - name: Print node facts
+          debug:
+            var: node_facts
+
+    - name: Configure disk of the Qemu(KVM) VM
+      community.general.proxmox_disk:
+        vmid: 100
+        disk: scsi0
+        size: 50G
+        state: present
+        node: "pve"
+        storage: "local"
+        api_user: "admin"
+        api_password: "password"
+        validate_certs: false
+        backup: true
+  ...

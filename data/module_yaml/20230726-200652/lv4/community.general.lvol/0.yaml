@@ -1,0 +1,50 @@
+- name: Expose Latent Type-Related Bugs
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create Logical Volume
+      community.general.lvol:
+        vg: vg1
+        lv: lv1
+        size: 10G
+        state: present
+        opts:
+          - mountoptions: rw,noatime,nodiratime
+            device: /dev/vg1/lv1
+            opts:
+              - ext4
+          - mountoptions: rw,nosuid
+            device: /dev/vg1/lv1
+            opts:
+              - xfs
+      register: lv_creation
+
+    - name: Resize Logical Volume
+      community.general.lvol:
+        vg: vg1
+        lv: lv1
+        size: 20G
+        state: resize
+      register: lv_resize
+
+    - name: Shrink Logical Volume
+      community.general.lvol:
+        vg: vg1
+        lv: lv1
+        size: 5G
+        state: resize
+        shrink: true
+      register: lv_shrink
+
+    - name: Create Snapshot
+      community.general.lvol:
+        vg: vg1
+        lv: lv1
+        snapshot: snap1
+        state: snapshot
+      register: lv_snapshot
+
+    - name: Fail Task to Highlight Bug
+      fail:
+        msg: "The task failed to reveal a latent bug."

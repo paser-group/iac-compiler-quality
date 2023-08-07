@@ -1,0 +1,41 @@
+---
+- name: Configure Network Devices
+  hosts: network_devices
+  gather_facts: false
+
+  tasks:
+    - name: Push CLI configuration to network devices
+      ansible.netcommon.cli_config:
+        backup: False
+        commit: False
+        config: |
+          interface GigabitEthernet0/1
+            description Test Port
+            switchport mode access
+            switchport access vlan 10
+        defaults: False
+        diff_ignore_lines:
+          - ^\!
+          - ^Building configuration
+        diff_match: line
+        diff_replace: <config> (.*) </config>
+        multiline_delimiter: '|'
+        replace: line
+        rollback: 10
+      vars:
+        backup_options:
+          dir_path: /backup
+
+- name: Verify Network Device Configuration
+  hosts: network_devices
+  gather_facts: false
+
+  tasks:
+    - name: Display Network Device Configuration
+      ansible.netcommon.cli_command:
+        command_string: show interface GigabitEthernet0/1
+      register: cli_output
+
+    - name: Debug CLI Output
+      debug:
+        var: cli_output.stdout_lines

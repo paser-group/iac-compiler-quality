@@ -1,0 +1,42 @@
+- name: Upgrade Nodes
+  hosts: all
+  gather_facts: false
+
+  vars:
+    inventory_network: "{{ groups['node-net'][0].split('.')[0:3] }}"
+    inventory_gateway: "{{ groups['node-net'][0].split('.')[0:3] + ['254'] }}"
+
+  tasks:
+    - name: Fetch Only Packages
+      community.general.sysupgrade:
+        fetch_only: "{{ item.value.fetch_only|default(false) }}"
+        force: "{{ item.value.force|default(false) }}"
+        installurl: "{{ item.value.installurl|default('') }}"
+        keep_files: "{{ item.value.keep_files|default(false) }}"
+        snapshot: "{{ item.value.snapshot|default(false) }}"
+      loop: "{{ hostvars[inventory_hostname].pkg_updates|default([]) }}"
+      when: hostvars[inventory_hostname].pkg_updates is defined
+
+    - name: Upgrade Packages
+      community.general.sysupgrade:
+        fetch_only: "{{ item.value.fetch_only|default(false) }}"
+        force: "{{ item.value.force|default(false) }}"
+        installurl: "{{ item.value.installurl|default('') }}"
+        keep_files: "{{ item.value.keep_files|default(false) }}"
+        snapshot: "{{ item.value.snapshot|default(false) }}"
+      loop: "{{ hostvars[inventory_hostname].pkg_updates|default([]) }}"
+      when: hostvars[inventory_hostname].pkg_updates is defined and fetch_only is undefined or fetch_only == false
+
+- name: Generate random MAC addresses for network modules
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Generate MAC address
+      shell: echo "01:$((RANDOM%256)):$((RANDOM%256)):$(printf '%02X' $((RANDOM%256))):$((RANDOM%256)):0$((RANDOM%100))" | tr '[:lower:]' '[:upper:]'
+      register: random_mac
+      changed_when: false
+
+    - name: Print MAC address
+      debug:
+        msg: "Random MAC Address: {{ random_mac.stdout }}"

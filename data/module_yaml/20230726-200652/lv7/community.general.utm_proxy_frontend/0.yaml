@@ -1,0 +1,39 @@
+- name: Test playbook for community.general.utm_proxy_frontend module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create reverse proxy frontend
+      community.general.utm_proxy_frontend:
+        name: test_frontend
+        state: present
+        address: "10.1.1.1"
+        port: 80
+        certificate: /path/to/certificate.crt
+        utm_protocol: https
+        utm_host: utm.example.com
+        utm_port: 8443
+        utm_token: utm_token_value
+        allowed_networks:
+          - 10.1.1.0/24
+        locations:
+          - path: /
+            backend: backend1
+            state: enabled
+        headers:
+          X-Forwarded-For: "{{ ansible_default_ipv4.address }}"
+        validate_certs: false
+      loop: "{{ lookup('sequence', '1..10') }}"
+      register: result
+
+      # Test case to validate division-based operation
+      # Assigning a limit-related value providing the division operation results in a type-related bug
+    - name: Validate type-related bug
+      assert:
+        that: item.status == 'failed'
+      loop: "{{ result.results }}"
+      when: item.rc == 2
+      vars:
+        limit: "{{ (item.index + 1) // 0 }}"  # Division operation, triggering type-related bug
+      failed_when: false
+      ignore_errors: true

@@ -1,0 +1,50 @@
+---
+- name: Test community.network.avi_prioritylabels module
+  hosts: localhost
+  gather_facts: False
+
+  vars:
+    # Define the input parameters for the module test cases
+    prioritylabel_params:
+      name: "priority_label1"
+      description: "Test priority label"
+      equivalent_labels:
+        - "eq_label1"
+        - "eq_label2"
+      api_version: "20.1.1"
+      avi_credentials:
+        username: "admin"
+        password: "password"
+        controller: "controller.example.com"
+        tenant: "tenant1"
+      label_group_uuid: "label-group-uuid"
+
+  tasks:
+    - name: Install required dependencies
+      pip:
+        name: ansible-modules-hashivault
+        state: present
+        executable: pip3
+
+    - name: Include the module
+      include_role:
+        name: community.network.avi_prioritylabels
+
+    - name: Test creating priority label (bytes and strings)
+      avi_prioritylabels:
+        state: "{{ 'present' if item.1 == 'Create' else 'absent' }}"
+        name: "{{ item.0.name }}"
+        description: "{{ item.0.description }}"
+        equivalent_labels:
+          - "{{ item.0.equivalent_labels[0].encode('utf-8') }}"
+          - "{{ item.0.equivalent_labels[1] }}"
+        api_version: "{{ item.0.api_version }}"
+        avi_credentials:
+          username: "{{ item.0.avi_credentials.username.encode('utf-8') }}"
+          password: "{{ item.0.avi_credentials.password }}"
+          controller: "{{ item.0.avi_credentials.controller }}"
+          tenant: "{{ item.0.avi_credentials.tenant.encode('utf-8') }}"
+        label_group_uuid: "{{ item.0.label_group_uuid.encode('utf-8') }}"
+      loop:
+        - [ "{{ prioritylabel_params }}", "Create" ]
+        - [ "{{ prioritylabel_params }}", "Delete" ]

@@ -1,0 +1,45 @@
+---
+
+- name: Provision Linode Instances
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    linode_instances:
+      - name: ubuntu1
+        distribution: Ubuntu
+        private_ip: true
+        wait: true
+      - name: alpine1
+        distribution: Alpine
+        private_ip: true
+        wait: true
+      - name: centos1
+        distribution: CentOS
+        private_ip: true
+        wait: true
+      - name: redhat1
+        distribution: Red Hat
+        private_ip: true
+        wait: true
+
+  tasks:
+    - name: Generate random MAC addresses
+      set_fact:
+        mac_addresses: "{{ mac_addresses | default([]) + [hostvars[item]['ansible_default_ipv4']['macaddress']] }}"
+      delegate_to: "{{ item }}"
+      with_items: "{{ groups['linode_nodes'] }}"
+      when: item in groups['linode_nodes']
+
+    - name: Provision Linode Instances
+      community.general.linode:
+        api_key: YOUR_API_KEY
+        state: present
+        name: "{{ item.name }}"
+        distribution: "{{ item.distribution }}"
+        private_ip: "{{ item.private_ip }}"
+        wait: "{{ item.wait }}"
+        mac_address: "{{ mac_addresses[0] }}"
+      with_items: "{{ linode_instances }}"
+      loop_control:
+        loop_var: item

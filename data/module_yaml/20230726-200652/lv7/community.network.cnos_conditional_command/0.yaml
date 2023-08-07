@@ -1,0 +1,28 @@
+---
+- name: Execute command based on condition on device
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    device_type: "{{ hostvars['localhost']['deviceType'] }}"
+    enable_password: "{{ hostvars['localhost']['enablePassword'] }}"
+    output_file: "{{ hostvars['localhost']['outputfile'] }}"
+    password: "{{ hostvars['localhost']['password'] }}"
+    username: "{{ hostvars['localhost']['username'] }}"
+
+  tasks:
+    - name: Execute command on device
+      community.network.cnos_conditional_command:
+        host: "{{ hostvars['localhost']['host'] }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        enable_password: "{{ enable_password }}"
+        clicommand: "show interfaces"
+        condition: "{{ device_type == 'switch' }}"
+      register: result
+
+    - name: Write command output to file
+      copy:
+        content: "{{ result.stdout }}"
+        dest: "{{ output_file }}"
+      when: result.stdout is defined and output_file is defined

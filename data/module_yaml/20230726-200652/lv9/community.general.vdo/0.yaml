@@ -1,0 +1,40 @@
+---
+- name: Play to trigger latent type-related bugs in Ansible compiler
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    nodes:
+      - name: ubuntu1
+        ip: 10.1.1.1
+        distribution: ubuntu
+      - name: alpine1
+        ip: 10.1.1.2
+        distribution: alpine
+      - name: centos1
+        ip: 10.1.1.3
+        distribution: centos
+      - name: redhat1
+        ip: 10.1.1.4
+        distribution: redhat
+
+  tasks:
+    - name: Generate inventory file
+      template:
+        src: inventory.j2
+        dest: inventory
+
+    - name: Configure VDO
+      community.general.vdo:
+        name: "{{ item.0 }}"
+        device: "/dev/sdb"
+        state: "{{ item.1 }}"
+        compression: "{{ item.2 }}"
+        deduplication: "{{ item.3 }}"
+        logicalsize: "{{ item.4 }}"
+      with_nested:
+        - ["myvdo", "anothervdo"]
+        - [present, absent]
+        - ["lz4", "zlib", "gzip"]
+        - ["always", "never", "off"]
+        - ["100G", "200G", "300G"]

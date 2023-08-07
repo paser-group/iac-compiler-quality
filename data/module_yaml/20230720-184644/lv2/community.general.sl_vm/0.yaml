@@ -1,0 +1,32 @@
+---
+- name: Test 'community.general.sl_vm' module
+  hosts: localhost
+  gather_facts: false
+  vars:
+    image_id: "1234567"
+    flavor: "xlarge"
+    tags: "webserver"
+
+  tasks:
+    - name: Create a virtual machine
+      community.general.sl_vm:
+        hostname: "{{ item }}"
+        state: present
+        flavor: "{{ flavor }}"
+        cpus: 4
+        memory: 8192
+        disks:
+          - size: 100
+            bus: virtio
+            path: /dev/vdb
+        public_vlan: 1234
+        private_vlan: 5678
+        ssh_keys:
+          - key_name: my_key
+            label: sshkey
+        os_code: "centos_7"
+        wait: true
+        wait_time: 600
+        post_uri: "/install/bootstrap.sh"
+      loop: "{{ groups['vm_nodes'] }}"
+      when: inventory_hostname in groups['vm_nodes']

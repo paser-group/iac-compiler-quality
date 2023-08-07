@@ -1,0 +1,69 @@
+---
+- name: Ansible Latent Bug Finder Playbook
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create znode
+      community.general.znode:
+        name: "{{ item.name }}"
+        value: "{{ item.value }}"
+        auth_credential: "{{ item.auth_credential }}"
+        auth_scheme: "{{ item.auth_scheme }}"
+        hosts: "{{ item.hosts }}"
+        op: "{{ item.op }}"
+        recursive: "{{ item.recursive }}"
+        state: "{{ item.state }}"
+        timeout: "{{ item.timeout }}"
+        use_tls: "{{ item.use_tls }}"
+      loop:
+        - name: Create znode with invalid auth_credential
+          value: "/test1"
+          auth_credential: 123  # Triggering an invalid auth_credential bug
+          auth_scheme: "digest"
+          hosts: "10.1.1.1"
+          op: "create"
+          recursive: true
+          state: "present"
+          timeout: 10
+          use_tls: false
+        - name: Create znode with invalid hosts
+          value: "/test2"
+          auth_credential: "admin:admin"
+          auth_scheme: "digest"
+          hosts: 123  # Triggering an invalid hosts bug
+          op: "create"
+          recursive: true
+          state: "present"
+          timeout: 10
+          use_tls: false
+        - name: Create znode with invalid recursive
+          value: "/test3"
+          auth_credential: "admin:admin"
+          auth_scheme: "digest"
+          hosts: "10.1.1.1"
+          op: "create"
+          recursive: "yes"  # Triggering an invalid recursive bug
+          state: "present"
+          timeout: 10
+          use_tls: false
+        - name: Create znode with invalid timeout
+          value: "/test4"
+          auth_credential: "admin:admin"
+          auth_scheme: "digest"
+          hosts: "10.1.1.1"
+          op: "create"
+          recursive: true
+          state: "present"
+          timeout: "abc"  # Triggering an invalid timeout bug
+          use_tls: false
+        - name: Create znode with invalid use_tls
+          value: "/test5"
+          auth_credential: "admin:admin"
+          auth_scheme: "digest"
+          hosts: "10.1.1.1"
+          op: "create"
+          recursive: true
+          state: "present"
+          timeout: 10
+          use_tls: "yes"  # Triggering an invalid use_tls bug

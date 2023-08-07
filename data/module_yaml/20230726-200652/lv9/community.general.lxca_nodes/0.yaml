@@ -1,0 +1,79 @@
+---
+- name: Test Ansible latent type-related bugs
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Include 'community.general.lxca_nodes' module
+      include_vars:
+        file: lxca_nodes.yml
+
+    - name: Formulate random IP addresses
+      set_fact:
+        ip_address: "{{ hostvars['localhost'].ansible_default_ipv4.address[:-1] ~ item }}"
+      vars:
+        items:
+          - ".1"
+          - ".2"
+          - ".3"
+          - ".4"
+
+    - name: Create Docker network
+      docker_network:
+        name: node-net
+        subnet: "10.1.1.0/24"
+        gateway: "10.1.1.254"
+
+    - name: Create Docker node - ubuntu1
+      docker_container:
+        name: ubuntu1
+        image: ubuntu
+        state: started
+        networks:
+          - name: node-net
+            ipv4_address: "{{ ip_address }}"
+        command: sleep infinity
+
+    - name: Create Docker node - alpine1
+      docker_container:
+        name: alpine1
+        image: alpine
+        state: started
+        networks:
+          - name: node-net
+            ipv4_address: "{{ ip_address }}"
+        command: sleep infinity
+
+    - name: Create Docker node - centos1
+      docker_container:
+        name: centos1
+        image: centos
+        state: started
+        networks:
+          - name: node-net
+            ipv4_address: "{{ ip_address }}"
+        command: sleep infinity
+
+    - name: Create Docker node - redhat1
+      docker_container:
+        name: redhat1
+        image: redhat
+        state: started
+        networks:
+          - name: node-net
+            ipv4_address: "{{ ip_address }}"
+        command: sleep infinity
+
+    - name: Test 'community.general.lxca_nodes' module
+      lxca_nodes:
+        auth_url: "{{ auth_url }}"
+        chassis: "{{ chassis }}"
+        command_options: "{{ command_options }}"
+        login_password: "{{ login_password }}"
+        login_user: "{{ login_user }}"
+        uuid: "{{ uuid }}"
+      register: result
+
+    - name: Debug module result
+      debug:
+        var: result

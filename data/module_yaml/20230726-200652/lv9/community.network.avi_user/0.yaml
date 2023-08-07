@@ -1,0 +1,41 @@
+---
+- name: Test playbook for community.network.avi_user module
+  hosts: localhost
+  gather_facts: False
+
+  vars:
+    network_nodes:
+      - name: ubuntu1
+        ip: 10.1.1.1
+        distribution: ubuntu
+      - name: alpine1
+        ip: 10.1.1.2
+        distribution: alpine
+      - name: centos1
+        ip: 10.1.1.3
+        distribution: centos
+      - name: redhat1
+        ip: 10.1.1.4
+        distribution: redhat
+
+  tasks:
+    - name: Generate random IP addresses
+      set_fact:
+        random_ip: "{{ hostvars[item].ip }}"
+      loop: "{{ network_nodes }}"
+  
+    - name: Test case - Create AVI user with random IP address
+      community.network.avi_user:
+        controller: "https://{{ hostvars['localhost'].random_ip }}"
+        username: "admin"
+        password: "password"
+        name: "test_user"
+        email: "test_user@example.com"
+        tenant: "admin"
+        state: present
+      register: result
+      ignore_errors: true
+
+    - name: Debug result
+      debug:
+        var: result

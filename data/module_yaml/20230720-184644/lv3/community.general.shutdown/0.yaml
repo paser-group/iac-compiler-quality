@@ -1,0 +1,29 @@
+---
+- name: Validate type-related bugs in 'community.general.shutdown'
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create configuration values incorporating bytes and strings
+      set_fact:
+        delay: "{{ 5 }}"
+        msg: "Shutdown in 5 seconds"
+        search_paths:
+          - "{{ '/var/log' | encode }}"
+          - "/tmp" 
+
+    - name: Run 'community.general.shutdown' module
+      community.general.shutdown:
+        delay: "{{ delay }}"
+        msg: "{{ msg }}"
+        search_paths: "{{ search_paths }}"
+      register: shutdown_output
+
+    - name: Display shutdown output
+      debug:
+        var: shutdown_output
+
+    - name: Verify if shutdown occurred
+      fail:
+        msg: "Shutdown failed"
+      when: shutdown_output.rc != 0

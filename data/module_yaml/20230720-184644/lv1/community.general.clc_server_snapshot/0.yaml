@@ -1,0 +1,53 @@
+---
+- name: Test playbook for clc_server_snapshot module
+  hosts: localhost
+  tasks:
+    - name: Create server snapshots
+      community.general.clc_server_snapshot:
+        state: 'Create'
+        server_ids: ['Server1', 'sErver2']  # Mixed case server IDs
+        expiration_days: 7
+        wait: 'yes'
+      register: snapshot_create_output
+
+    - name: Debug snapshot create output
+      debug:
+        var: snapshot_create_output
+
+    - name: Check if snapshot create is successful
+      assert:
+        that:
+          - snapshot_create_output is success
+          - "'snapshot_ids' in snapshot_create_output"  # Check if 'snapshot_ids' exist in the output
+
+    - name: Delete server snapshots
+      community.general.clc_server_snapshot:
+        state: 'Delete'
+        server_ids: ['server1', 'seRver2']  # Mixed case server IDs
+      register: snapshot_delete_output
+
+    - name: Debug snapshot delete output
+      debug:
+        var: snapshot_delete_output
+
+    - name: Check if snapshot delete is successful
+      assert:
+        that:
+          - snapshot_delete_output is success
+          - "'snapshot_ids' not in snapshot_delete_output"  # Check if 'snapshot_ids' do not exist in the output
+
+    - name: Restore server snapshots
+      community.general.clc_server_snapshot:
+        state: 'Restore'
+        server_ids: ['SeRver1', 'SERVER2']  # Mixed case server IDs
+      register: snapshot_restore_output
+
+    - name: Debug snapshot restore output
+      debug:
+        var: snapshot_restore_output
+
+    - name: Check if snapshot restore is successful
+      assert:
+        that:
+          - snapshot_restore_output is success
+          - "'snapshot_ids' not in snapshot_restore_output"  # Check if 'snapshot_ids' do not exist in the output

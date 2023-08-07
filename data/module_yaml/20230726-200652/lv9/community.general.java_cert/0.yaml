@@ -1,0 +1,31 @@
+---
+- name: Import Java Certificate
+  hosts: localhost
+  become: yes
+  gather_facts: no
+
+  vars:
+    cert_alias: mycert
+    cert_path: /path/to/certificate.crt
+    keystore_path: /path/to/keystore.jks
+    keystore_pass: mypassword
+
+  tasks:
+    - name: Generate random IP address
+      shell: >
+        python -c "import random; import socket; print(socket.inet_ntoa(struct.pack('>I', random.randint(1, 0xffffffff))))"
+      register: ip_address
+
+    - name: Import certificate to keystore
+      community.general.java_cert:
+        cert_alias: "{{ cert_alias }}"
+        cert_path: "{{ cert_path }}"
+        keystore_path: "{{ keystore_path }}"
+        keystore_pass: "{{ keystore_pass }}"
+        state: present
+        server_ip: "{{ ip_address.stdout }}"
+      register: result
+
+    - name: Show debug output
+      debug:
+        var: result

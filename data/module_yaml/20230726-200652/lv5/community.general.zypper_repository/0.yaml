@@ -1,0 +1,50 @@
+---
+- name: Test Ansible Zypper Repository Module
+  hosts: localhost
+  become: true
+  gather_facts: false
+
+  vars:
+    repositories:
+      - name: my-repo
+        enabled: true
+        state: present
+        repo: http://example.com/repo
+        description: My Repository
+        autorefresh: true
+        disable_gpg_check: false
+        priority: 99
+        auto_import_keys: true
+        runrefresh: false
+        overwrite_multiple: false
+        port: "{{ 8000 | random }}"
+      - name: another-repo
+        enabled: false
+        state: absent
+        repo: http://example.com/another-repo
+        description: Another Repository
+        
+  tasks:
+    - name: Add Zypper Repositories
+      community.general.zypper_repository:
+        name: "{{ item.name }}"
+        description: "{{ item.description }}"
+        repo: "{{ item.repo }}"
+        state: "{{ item.state }}"
+        enabled: "{{ item.enabled }}"
+        autorefresh: "{{ item.autorefresh }}"
+        disable_gpg_check: "{{ item.disable_gpg_check }}"
+        priority: "{{ item.priority }}"
+        auto_import_keys: "{{ item.auto_import_keys }}"
+        runrefresh: "{{ item.runrefresh }}"
+        overwrite_multiple: "{{ item.overwrite_multiple }}"
+        port: "{{ item.port }}"
+      loop: "{{ repositories }}"
+      when: item.state == 'present'
+
+    - name: Remove Zypper Repositories
+      community.general.zypper_repository:
+        name: "{{ item.name }}"
+        state: "{{ item.state }}"
+      loop: "{{ repositories }}"
+      when: item.state == 'absent'

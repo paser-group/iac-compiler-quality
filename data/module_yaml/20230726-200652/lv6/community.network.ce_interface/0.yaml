@@ -1,0 +1,37 @@
+---
+- name: Test ansible latent type-related bug
+  hosts: localhost
+  gather_facts: false
+  vars:
+    admin_state: null
+    description: null
+    interface: null
+    interface_type: null
+    l2sub: bool
+    mode: null
+    state: null
+
+  tasks:
+    - name: Generate string with varied encodings
+      delegate_to: localhost
+      set_fact:
+        strings:
+          - "ütf8"
+          - "utf-8"
+          - "\u00fctf8"
+
+    - name: Create interface
+      community.network.ce_interface:
+        admin_state: "{{ admin_state }}"
+        description: "{{ description }}"
+        interface: "{{ interface }}"
+        interface_type: "{{ interface_type }}"
+        l2sub: "{{ l2sub }}"
+        mode: "{{ mode }}"
+        state: "{{ state }}"
+      register: result
+      with_items: "{{ strings }}"
+
+    - name: Debug result
+      debug:
+        var: result

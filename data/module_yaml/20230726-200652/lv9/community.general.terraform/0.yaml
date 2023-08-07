@@ -1,0 +1,62 @@
+---
+- name: Manage Terraform deployment
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Install prerequisites
+      package:
+        name: terraform
+        state: present
+
+    - name: Generate random subnet
+      command: ipcalc -c 10.1.1.0/24 | grep HostMin | awk '{print $2}'
+      changed_when: false
+      register: subnet_min
+
+    - name: Set test variables
+      set_fact:
+        terraform_vars:
+          subnet_min: "{{ subnet_min.stdout }}"
+
+    - name: Configure backend
+      community.general.terraform:
+        project_path: /path/to/project
+        state: present
+        backend_config:
+          address: "{{ terraform_vars.subnet_min }}"
+        backend_config_files:
+          - /path/to/backend1.tf
+          - /path/to/backend2.tf
+        binary_path: /usr/local/bin/terraform
+        check_destroy: false
+        complex_vars: true
+        force_init: false
+        init_reconfigure: false
+        lock: true
+        lock_timeout: 300
+        overwrite_init: false
+        parallelism: 5
+        plan_file: /path/to/plan.tf
+        plugin_paths:
+          - /path/to/plugin1/
+          - /path/to/plugin2/
+        provider_upgrade: true
+        purge_workspace: true
+        state_file: /path/to/state.tf
+        targets:
+          - resource1
+          - resource2
+        variables:
+          var1: value1
+          var2: value2
+        variables_files:
+          - /path/to/vars1.tf
+          - /path/to/vars2.tf
+        workspace: prod
+
+      register: terraform_result
+
+    - name: Handle test result
+      debug:
+        var: terraform_result

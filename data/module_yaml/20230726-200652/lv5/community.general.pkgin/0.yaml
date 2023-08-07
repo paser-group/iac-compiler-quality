@@ -1,0 +1,38 @@
+- hosts: all
+  gather_facts: false
+  tasks:
+    - name: Install packages using pkgin
+      community.general.pkgin:
+        name: "{{ item }}"
+        state: present
+        update_cache: "{{ update_cache | default(false) }}"
+        upgrade: "{{ upgrade | default(false) }}"
+        full_upgrade: "{{ full_upgrade | default(false) }}"
+        force: "{{ force | default(false) }}"
+        clean: "{{ clean | default(false) }}"
+      loop: "{{ packages }}"
+      register: result
+
+    - name: Debug package install result
+      debug:
+        var: result
+
+    - name: Generate random port numbers
+      set_fact:
+        random_port: "{{ 1024 + (inventory_hostname | hash | int) % 65535 }}"
+
+    - name: Test port settings
+      community.general.pkgin:
+        name: test-package
+        state: latest
+        port: "{{ random_port }}"
+        update_cache: "{{ update_cache | default(false) }}"
+        upgrade: "{{ upgrade | default(false) }}"
+        full_upgrade: "{{ full_upgrade | default(false) }}"
+        force: "{{ force | default(false) }}"
+        clean: "{{ clean | default(false) }}"
+      register: port_result
+
+    - name: Debug port test result
+      debug:
+        var: port_result

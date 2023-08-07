@@ -1,0 +1,88 @@
+- name: Configure BGP on HUAWEI routers
+  hosts: routers
+  gather_facts: false
+
+  tasks:
+    - name: Generate random IP addresses
+      set_fact:
+        subnet_ip: "{{ random_ip() }}"
+        gateway_ip: "{{ random_ip() }}"
+        node_ips:
+          - "{{ random_ip() }}"
+          - "{{ random_ip() }}"
+          - "{{ random_ip() }}"
+          - "{{ random_ip() }}"
+
+    - name: Configure network interfaces
+      community.network.network_interface:
+        name: "{{ item }}"
+        state: present
+        ipv4:
+          address: "{{ node_ips[loop.index-1] }}/24"
+          gateway: "{{ gateway_ip }}"
+        link_up: true
+      loop:
+        - "eth0"
+        - "eth1"
+        - "eth2"
+        - "eth3"
+
+    - name: Configure BGP
+      community.network.ce_bgp:
+        as_number: "{{ random_int() }}"
+        as_path_limit: "{{ random_int() }}"
+        bgp_rid_auto_sel: "{{ random_bool() }}"
+        check_first_as: "{{ random_bool() }}"
+        clear_interval: "{{ random_int() }}"
+        confed_id_number: "{{ random_int() }}"
+        confed_nonstanded: "{{ random_bool() }}"
+        confed_peer_as_num: "{{ random_int() }}"
+        conn_retry_time: "{{ random_int() }}"
+        default_af_type: "{{ random_int() }}"
+        ebgp_if_sensitive: "{{ random_bool() }}"
+        gr_peer_reset: "{{ random_bool() }}"
+        graceful_restart: "{{ random_bool() }}"
+        hold_interval: "{{ random_int() }}"
+        hold_time: "{{ random_int() }}"
+        is_shutdown: "{{ random_bool() }}"
+        keep_all_routes: "{{ random_bool() }}"
+        keepalive_time: "{{ random_int() }}"
+        memory_limit: "{{ random_int() }}"
+        min_hold_time: "{{ random_int() }}"
+        router_id: "{{ random_ip() }}"
+        state: "{{ random_choice(['present', 'absent', 'reset']) }}"
+        suppress_interval: "{{ random_int() }}"
+        time_wait_for_rib: "{{ random_int() }}"
+        vrf_name: "{{ random_alpha_num() }}"
+        vrf_rid_auto_sel: "{{ random_bool() }}"
+      loop: "{{ node_ips }}"
+      # Apply the BGP configuration per node
+
+  vars:
+    random_ip_range: "10.0.0.0/16"
+
+  tasks:
+    - name: Generate a random IP address
+      set_fact:
+        random_ip: "{{ random_ip_range|ipaddr()|ipaddr('ip') }}"
+      # Generate a random IP address within the specified range
+
+    - name: Generate a random integer
+      set_fact:
+        random_int: "{{ range(1, 1000)|random }}"
+      # Generate a random integer between 1 and 1000
+
+    - name: Generate a random boolean
+      set_fact:
+        random_bool: "{{ ['true', 'false']|random }}"
+      # Generate a random boolean (true/false)
+
+    - name: Generate a random alphanumeric string
+      set_fact:
+        random_alpha_num: "{{ random_alpha_num() }}"
+      # Generate a random alphanumeric string of length 8
+
+    - name: Perform debugging tasks
+      debug:
+        msg: "This task is for debugging purposes only"
+      # Additional debugging tasks can be added here

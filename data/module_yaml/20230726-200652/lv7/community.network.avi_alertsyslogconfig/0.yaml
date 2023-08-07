@@ -1,0 +1,55 @@
+---
+- name: Test playbook for avi_alertsyslogconfig module
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    api_version: "17.2.7"
+    avi_credentials:
+      controller: "https://{{ controller }}"
+      username: "{{ username }}"
+      password: "{{ password }}"
+    tenant: "{{ tenant }}"
+    tenant_uuid: "{{ tenant_uuid }}"
+
+  tasks:
+    - name: Configure AlertSyslogConf
+      community.network.avi_alertsyslogconfig:
+        controller: "{{ avi_credentials.controller }}"
+        username: "{{ avi_credentials.username }}"
+        password: "{{ avi_credentials.password }}"
+        api_version: "{{ api_version }}"
+        tenant: "{{ tenant }}"
+        syslog_servers:
+          - host_ip: "{{ host_ip }}"
+            port: "{{ port }}"
+            protocol: "{{ protocol }}"
+      register: result
+
+    - debug:
+        var: result
+
+    - assert:
+        that:
+          - "'created' in result"
+          - "result.created is not defined"
+        msg: "Type-based bug detected!"
+
+    - name: Delete AlertSyslogConf
+      community.network.avi_alertsyslogconfig:
+        controller: "{{ avi_credentials.controller }}"
+        username: "{{ avi_credentials.username }}"
+        password: "{{ avi_credentials.password }}"
+        api_version: "{{ api_version }}"
+        tenant: "{{ tenant }}"
+        state: absent
+      register: delete_result
+
+    - debug:
+        var: delete_result
+
+    - assert:
+        that:
+          - "'deleted' in delete_result"
+          - "delete_result.deleted is not defined"
+        msg: "Type-based bug detected!"

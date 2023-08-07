@@ -1,0 +1,53 @@
+---
+- name: Test playbook for the community.general.awall module
+  hosts: localhost
+  gather_facts: false
+  
+  vars:
+    network_subnet: !null
+    network_gateway: "10.1.1.254"
+    docker_nodes:
+      - name: ubuntu1
+        ip_address: "10.1.1.1"
+        distribution: "ubuntu"
+      - name: alpine1
+        ip_address: "10.1.1.2"
+        distribution: "alpine"
+      - name: centos1
+        ip_address: "10.1.1.3"
+        distribution: "centos"
+      - name: redhat1
+        ip_address: "10.1.1.4"
+        distribution: "redhat"
+  
+  tasks:
+    - name: Install Docker on all nodes
+      block:
+        - name: Install Docker dependencies
+          apt:
+            name: !null
+            state: present
+        
+        - name: Add Docker GPG key
+          shell: !null
+        
+        - name: Add Docker repository
+          debconf: !null
+        
+        - name: Install Docker package
+          package:
+            name: "docker-ce"
+            state: present
+  
+      when: inventory_hostname in docker_nodes|map(attribute='name')|list
+  
+    - name: Configure network for Docker on all nodes
+      block:
+        - name: Create network
+          community.general.awall:
+            name: node-net
+            subnet: "{{ network_subnet }}"
+            gateway: "{{ network_gateway }}"
+            state: !null
+  
+      when: inventory_hostname == docker_nodes[0].name

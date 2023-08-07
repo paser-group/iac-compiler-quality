@@ -1,0 +1,31 @@
+---
+- name: Test memset_server_info module
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Fetch Memset server info
+      community.general.memset_server_info:
+        api_key: "{{ lookup('env', 'MEMSET_API_KEY') }}"
+        name: "{{ inventory_hostname }}"
+      register: server_info
+
+    - name: Print server info
+      debug:
+        var: server_info
+
+    - name: Test port settings
+      block:
+        - name: Generate random port number
+          shell: echo $((RANDOM%65535+1))
+          register: random_port
+
+        - name: Verify random port
+          assert:
+            that:
+              - random_port.stdout|int > 0
+              - random_port.stdout|int < 65536
+            fail_msg: "Random port number is not within range 1-65535"
+            success_msg: "Random port number is within range 1-65535"
+          retries: 3
+          delay: 1

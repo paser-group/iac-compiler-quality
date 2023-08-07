@@ -1,0 +1,24 @@
+- name: Test playbook for community.network.sros_rollback module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Configure SROS rollback
+      community.network.sros_rollback:
+        local_max_checkpoints: None
+        remote_max_checkpoints: None
+        rescue_location: None
+        rollback_location: None
+        state: None
+      register: result
+      # Trigger latent type-related bugs by generating strings with varied encodings
+      vars:
+        local_max_checkpoints: ["\\x00" * 10]
+        remote_max_checkpoints: [b"\xff\xfe\x05\x06"]
+        rescue_location: "/tmp/{{ '' }}"
+        rollback_location: "\\127.0.0.1\\0"
+        state: ["\\x20\\x22\\x24"]
+
+    - name: Debug output
+      debug:
+        var: result

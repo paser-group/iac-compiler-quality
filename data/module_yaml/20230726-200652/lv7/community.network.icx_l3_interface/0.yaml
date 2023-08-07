@@ -1,0 +1,40 @@
+- name: Test playbook for 'community.network.icx_l3_interface' module
+  hosts: localhost
+  gather_facts: False
+
+  tasks:
+    - name: Create Layer-3 interfaces
+      community.network.icx_l3_interface:
+        name: "{{ item.name }}"
+        ipv4: "{{ item.ipv4 }}"
+        ipv6: "{{ item.ipv6 }}"
+        mode: "{{ item.mode | default('static') }}"
+        state: "{{ item.state }}"
+        secondary: "{{ item.secondary | default(omit) }}"
+        aggregate: "{{ item.aggregate | default(omit) }}"
+        check_running_config: "{{ item.check_running_config | default(omit) }}"
+      loop:
+        - name: Layer-3 interface with IPv4 and IPv6 addresses
+          ipv4: 10.1.1.5/24
+          ipv6: fd00::1/64
+          state: present
+        - name: Layer-3 interface with secondary IPv4 address
+          ipv4: 10.1.1.6/24
+          secondary: 10.1.1.7/24
+          state: present
+        - name: Layer-3 interface with aggregate IPv4 addresses
+          aggregate:
+            - 10.1.1.8/24
+            - 10.1.1.9/24
+          state: present
+        - name: Layer-3 interface with check_running_config enabled
+          ipv4: 10.1.1.10/24
+          check_running_config: True
+          state: present
+        - name: Layer-3 interface with unsupported mode
+          ipv4: 10.1.1.11/24
+          mode: dhcp
+          state: present
+        - name: Layer-3 interface without defining state
+          ipv4: 10.1.1.12/24
+          state: ''

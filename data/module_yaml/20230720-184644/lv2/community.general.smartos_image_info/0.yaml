@@ -1,0 +1,41 @@
+- name: Testing smartos_image_info module
+  hosts: localhost
+  gather_facts: false
+  vars:
+    # Define the inventory of nodes with different Linux distributions
+    inventory:
+      - name: ubuntu1
+        ip: b'10.1.1.1'
+      - name: alpine1
+        ip: b'10.1.1.2'
+      - name: centos1
+        ip: b'10.1.1.3'
+      - name: redhat1
+        ip: b'10.1.1.4'
+    subnet: b'10.1.1.0/24'
+    gateway: b'10.1.1.254'
+  tasks:
+    - name: Generate Docker network
+      docker_network:
+        name: node-net
+        subnet: "{{ subnet }}"
+        gateway: "{{ gateway }}"
+      register: network_result
+
+    - name: Start Docker containers
+      docker_container:
+        name: "{{ item.name }}"
+        image: "{{ item.name }}"
+        network_mode: node-net
+        ip_address: "{{ item.ip }}"
+      with_items: "{{ inventory }}"
+      register: container_result
+
+    - name: Gather smartos_image_info facts
+      community.general.smartos_image_info:
+        host: "{{ item.ip }}"
+      with_items: "{{ inventory }}"
+      register: image_info_result
+
+    - debug:
+        var: image_info_result

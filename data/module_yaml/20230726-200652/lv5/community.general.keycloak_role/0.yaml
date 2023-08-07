@@ -1,0 +1,106 @@
+---
+- name: Test Keycloak Role Module
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    auth_keycloak_url: "http://localhost:8080/auth"
+    auth_username: "admin"
+    auth_password: "admin"
+    auth_realm: "master"
+    client_id: "my-client"
+    realm: "my-realm"
+    name: "my-user"
+    state: present
+    validate_certs: false
+
+  tasks:
+    - name: Install required Python libraries
+      pip:
+        name: keycloak
+
+    - name: Create random port numbers
+      set_fact:
+        http_port: "{{ 10000 + (100 | random) }}"
+        https_port: "{{ 20000 + (100 | random) }}"
+
+    - name: Create Keycloak realm
+      community.general.keycloak_realm:
+        auth_client_id: "{{ auth_client_id }}"
+        auth_client_secret: "{{ auth_client_secret }}"
+        auth_keycloak_url: "{{ auth_keycloak_url }}"
+        auth_password: "{{ auth_password }}"
+        auth_realm: "{{ auth_realm }}"
+        auth_username: "{{ auth_username }}"
+        realm: "{{ realm }}"
+        state: "{{ state }}"
+        validate_certs: "{{ validate_certs }}"
+
+    - name: Add Keycloak client
+      community.general.keycloak_client:
+        auth_client_id: "{{ auth_client_id }}"
+        auth_client_secret: "{{ auth_client_secret }}"
+        auth_keycloak_url: "{{ auth_keycloak_url }}"
+        auth_password: "{{ auth_password }}"
+        auth_realm: "{{ auth_realm }}"
+        auth_username: "{{ auth_username }}"
+        client_id: "{{ client_id }}"
+        realm: "{{ realm }}"
+        state: present
+        validate_certs: "{{ validate_certs }}"
+
+    - name: Add Keycloak user
+      community.general.keycloak_user:
+        auth_client_id: "{{ auth_client_id }}"
+        auth_client_secret: "{{ auth_client_secret }}"
+        auth_keycloak_url: "{{ auth_keycloak_url }}"
+        auth_password: "{{ auth_password }}"
+        auth_realm: "{{ auth_realm }}"
+        auth_username: "{{ auth_username }}"
+        email: "test@example.com"
+        enabled: true
+        first_name: "John"
+        last_name: "Doe"
+        realm: "{{ realm }}"
+        state: "{{ state }}"
+        username: "{{ name }}"
+        validate_certs: "{{ validate_certs }}"
+
+    - name: Test HTTP port
+      community.general.keycloak_role:
+        auth_client_id: "{{ auth_client_id }}"
+        auth_client_secret: "{{ auth_client_secret }}"
+        auth_keycloak_url: "{{ auth_keycloak_url }}"
+        auth_password: "{{ auth_password }}"
+        auth_realm: "{{ auth_realm }}"
+        auth_username: "{{ auth_username }}"
+        client_id: "{{ client_id }}"
+        connection_timeout: 10
+        description: "Test HTTP port"
+        http_agent: "Mozilla/5.0"
+        name: "{{ name }}"
+        realm: "{{ realm }}"
+        state: present
+        token: "{{ token }}"
+        validate_certs: "{{ validate_certs }}"
+        http_port: "{{ http_port }}"
+
+    - name: Test HTTPS port
+      community.general.keycloak_role:
+        auth_client_id: "{{ auth_client_id }}"
+        auth_client_secret: "{{ auth_client_secret }}"
+        auth_keycloak_url: "{{ auth_keycloak_url }}"
+        auth_password: "{{ auth_password }}"
+        auth_realm: "{{ auth_realm }}"
+        auth_username: "{{ auth_username }}"
+        client_id: "{{ client_id }}"
+        connection_timeout: 10
+        description: "Test HTTPS port"
+        http_agent: "Mozilla/5.0"
+        name: "{{ name }}"
+        realm: "{{ realm }}"
+        state: present
+        token: "{{ token }}"
+        validate_certs: "{{ validate_certs }}"
+        https_port: "{{ https_port }}"

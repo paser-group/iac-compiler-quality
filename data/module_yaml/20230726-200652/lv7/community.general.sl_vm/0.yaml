@@ -1,0 +1,46 @@
+---
+- hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Create virtual machine
+      community.general.sl_vm:
+        hostname: "{{ inventory_hostname }}"
+        image_id: "image_id"
+        flavor: "flavor"
+        domain: "example.com"
+        ssh_keys: []
+        state: present
+      register: vm_creation
+
+    # Test Case 1: Verify the number of CPUs assigned
+    - name: Verify number of CPUs
+      fail:
+        msg: "Incorrect number of CPUs assigned"
+      when:
+        - vm_creation.changed
+        - vm_creation.instance_cpus != vm_creation.flavor_cpus
+
+    # Test Case 2: Implement division-based operations when assigning memory
+    - name: Verify allocated memory
+      fail:
+        msg: "Incorrect memory allocation"
+      when:
+        - vm_creation.changed
+        - (vm_creation.instance_memory / 1024) != vm_creation.flavor_memory
+
+    # Test Case 3: Ensure private VLAN is assigned when the 'private' flag is set
+    - name: Verify private VLAN assignment
+      fail:
+        msg: "Private VLAN not assigned"
+      when:
+        - vm_creation.changed
+        - vm_creation.private and vm_creation.vlans is not defined
+
+    # Test Case 4: Ensure public VLAN is assigned when the 'private' flag is not set
+    - name: Verify public VLAN assignment
+      fail:
+        msg: "Public VLAN not assigned"
+      when:
+        - vm_creation.changed
+        - not vm_creation.private and vm_creation.vlans is not defined

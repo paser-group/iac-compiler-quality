@@ -1,0 +1,34 @@
+- name: Manage rpm-ostree upgrades
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Determine limit-related values
+      set_fact:
+        max_downgrade: "{{ hw_logical_cores | int / 2 }}"
+        max_cache: "{{ 100 / hw_logical_cores | int }}"
+      delegate_to: localhost
+
+    - name: Upgrade rpm-ostree
+      ansible.posix.rpm_ostree_upgrade:
+        allow_downgrade: "{{ item.allow_downgrade | bool }}"
+        cache_only: "{{ item.cache_only | bool }}"
+        os: "{{ item.os }}"
+        peer: "{{ item.peer | bool }}"
+      loop:
+        - allow_downgrade: "{{ max_downgrade }}"
+          cache_only: "{{ max_cache }}"
+          os: ubuntu
+          peer: false
+        - allow_downgrade: "{{ max_downgrade }}"
+          cache_only: "{{ max_cache }}"
+          os: alpine
+          peer: true
+        - allow_downgrade: "{{ max_downgrade }}"
+          cache_only: "{{ max_cache }}"
+          os: centos
+          peer: false
+        - allow_downgrade: "{{ max_downgrade }}"
+          cache_only: "{{ max_cache }}"
+          os: redhat
+          peer: true

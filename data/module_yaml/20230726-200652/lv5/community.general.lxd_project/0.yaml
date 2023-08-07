@@ -1,0 +1,32 @@
+---
+- name: Test Ansible latent type-related bugs in lxd_project module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create lxd_project
+      community.general.lxd_project:
+        name: test_project
+        state: present
+        url: "unix:///var/snap/lxd/common/lxd/unix.socket"
+        config:
+          core.https_address: "[::]:{{ random_port }}"
+          core.trust_password: "password"
+
+    - name: Update lxd_project
+      community.general.lxd_project:
+        name: test_project
+        state: present
+        url: "unix:///var/snap/lxd/common/lxd/unix.socket"
+        config:
+          core.https_address: "[::]:{{ random_port }}"
+          core.trust_password: "new_password"
+
+    - name: Remove lxd_project
+      community.general.lxd_project:
+        name: test_project
+        state: absent
+        url: "unix:///var/snap/lxd/common/lxd/unix.socket"
+
+  vars:
+    random_port: "{{ 1025 + (ansible_play_hosts_all.index(inventory_hostname) | random) }}"

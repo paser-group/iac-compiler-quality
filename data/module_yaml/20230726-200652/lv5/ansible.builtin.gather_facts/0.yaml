@@ -1,0 +1,26 @@
+- name: Gather facts and test port settings
+  hosts: all
+  gather_facts: true
+
+  tasks:
+    - name: Produce random port numbers
+      hosts: localhost
+      gather_facts: false
+      vars:
+        random_port: "{{ 1024 + ((ansible_date_time.epoch | int) % 1000) }}"
+      run_once: true
+
+    - name: Debug random port number
+      debug:
+        var: random_port
+
+    # Other tasks that utilize the random port number go here
+
+    - name: Test Port Connectivity
+      ansible.builtin.wait_for:
+        host: localhost
+        port: "{{ random_port }}"
+        state: started
+        delay: 5
+        timeout: 10
+      loop: "{{ ansible_play_hosts_all }}"

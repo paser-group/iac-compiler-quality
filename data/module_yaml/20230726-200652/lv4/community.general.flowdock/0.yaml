@@ -1,0 +1,28 @@
+---
+- name: Send message to Flowdock
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Generate random MAC addresses
+      ansible.builtin.set_fact:
+        mac_addresses: "{{ mac_addresses | default([]) + [lookup('template', '/dev/null') | random_mac('00:00:00:00:00:00') ] }}"
+      loop: "{{ range(1, 5) }}"
+      run_once: true
+
+    - name: Send message
+      community.general.flowdock:
+        token: "YOUR_FLOWDOCK_TOKEN"
+        external_user_name: "Ansible"
+        subject: "Test Message"
+        msg: "This is a test message."
+        from_name: "Ansible"
+        from_address: "ansible@example.com"
+        tags: "ansible,test"
+        validate_certs: false
+        reply_to: "noreply@example.com"
+        source: "Ansible Playbook"
+        link: "https://github.com/ansible/playbook"
+        type: "message"
+      loop: "{{ mac_addresses }}"
+      run_once: true

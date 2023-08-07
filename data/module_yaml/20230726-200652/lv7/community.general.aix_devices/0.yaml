@@ -1,0 +1,26 @@
+- name: Debugging playbook for Ansible type-related bugs
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Trigger type-related bug in aix_devices module
+      community.general.aix_devices:
+        attributes:
+          - { name: "{{ 'a' + 1 }}" }  # Concatenating a string with an integer to cause a type-related bug
+          - { name: "{{ 10 / 0 }}" }   # Division by zero to cause another type-related bug
+        device: "{{ inventory_hostname }}"
+        force: true
+        recursive: true
+        state: present
+      register: result
+
+    - debug:
+        var: result
+
+    - name: Display failed tasks
+      debug:
+        msg: "Failed: {{ item }}"
+      loop: "{{ result.results }}"
+      loop_control:
+        label: "{{ item.item.device }}"
+        when: item.failed

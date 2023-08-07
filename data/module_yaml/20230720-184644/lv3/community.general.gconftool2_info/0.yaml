@@ -1,0 +1,47 @@
+---
+- name: Test playbook for gconftool2_info module
+  hosts: localhost
+  gather_facts: false
+  vars:
+    test_key: "/org/gnome/desktop/session/idle-delay"
+    test_value_bytes: "{{ lookup('pipe', 'echo -n \"\\x00\\x00\\x00\\x00\"') }}"
+    test_value_string: "30"
+
+  tasks:
+    - name: Set gconftool2 configuration value with bytes
+      command: >
+        gconftool-2
+        --set {{ test_key }}
+        --type string
+        "{{ test_value_bytes }}"
+      register: result_bytes
+      failed_when: result_bytes.rc != 0
+
+    - name: Set gconftool2 configuration value with string
+      command: >
+        gconftool-2
+        --set {{ test_key }}
+        --type string
+        "{{ test_value_string }}"
+      register: result_string
+      failed_when: result_string.rc != 0
+
+    - name: Retrieve gconftool2 configuration value and check bytes
+      community.general.gconftool2_info:
+        key: "{{ test_key }}"
+      register: result_info_bytes
+
+    - name: Retrieve gconftool2 configuration value and check string
+      community.general.gconftool2_info:
+        key: "{{ test_key }}"
+      register: result_info_string
+
+    - name: Debug bytes value
+      debug:
+        msg: "Bytes value: {{ result_info_bytes.stdout_line }}"
+      when: result_info_bytes.stdout_line == test_value_bytes
+
+    - name: Debug string value
+      debug:
+        msg: "String value: {{ result_info_string.stdout_line }}"
+      when: result_info_string.stdout_line == test_value_string

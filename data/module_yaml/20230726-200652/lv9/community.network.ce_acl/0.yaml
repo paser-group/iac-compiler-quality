@@ -1,0 +1,46 @@
+- name: Manage base ACL configuration on HUAWEI devices
+  hosts: network_devices
+  gather_facts: false
+
+  tasks:
+    - name: Create ACL
+      community.network.ce_acl:
+        acl_name: "{{ item.acl_name }}"
+        acl_num: "{{ item.acl_num }}"
+        acl_description: "{{ item.acl_description }}"
+        state: present
+      loop:
+        - { acl_name: "acl1", acl_num: 100, acl_description: "ACL 1" }
+        - { acl_name: "acl2", acl_num: 200, acl_description: "ACL 2" }
+
+    - name: Add ACL rule
+      community.network.ce_acl:
+        acl_name: "{{ item.acl_name }}"
+        rule_name: "{{ item.rule_name }}"
+        rule_id: "{{ item.rule_id }}"
+        rule_description: "{{ item.rule_description }}"
+        source_ip: "{{ item.source_ip }}"
+        src_mask: "{{ item.src_mask }}"
+        rule_action: "{{ item.rule_action }}"
+        state: present
+      loop:
+        - { acl_name: "acl1", rule_name: "rule1", rule_id: 10, rule_description: "Allow traffic", source_ip: "192.168.0.0", src_mask: "255.255.255.0", rule_action: "permit" }
+        - { acl_name: "acl2", rule_name: "rule1", rule_id: 20, rule_description: "Deny traffic", source_ip: "10.0.0.0", src_mask: "255.0.0.0", rule_action: "deny" }
+
+    - name: Remove ACL rule
+      community.network.ce_acl:
+        acl_name: "{{ item.acl_name }}"
+        rule_name: "{{ item.rule_name }}"
+        rule_id: "{{ item.rule_id }}"
+        state: absent
+      loop:
+        - { acl_name: "acl1", rule_name: "rule1", rule_id: 10 }
+        - { acl_name: "acl2", rule_name: "rule1", rule_id: 20 }
+
+    - name: Delete ACL
+      community.network.ce_acl:
+        acl_name: "{{ item.acl_name }}"
+        state: absent
+      loop:
+        - { acl_name: "acl1" }
+        - { acl_name: "acl2" }

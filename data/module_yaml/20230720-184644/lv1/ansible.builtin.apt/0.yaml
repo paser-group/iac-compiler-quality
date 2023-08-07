@@ -1,0 +1,64 @@
+---
+- name: Test apt module with mixed case sensitivity
+  hosts: all
+  become: yes
+  gather_facts: no
+
+  tasks:
+    - name: Update apt cache
+      apt:
+        name: update
+        update_cache: yes
+      register: apt_update
+
+    - name: Install package with mixed case sensitivity
+      apt:
+        name: "{{ item }}"
+        state: present
+        update_cache: yes
+      loop:
+        - apache2
+        - OpenSSH-server
+        - PostgreSQL
+      when: "'OpenSSH-server' in inventory_hostname"
+
+    - name: Upgrade all packages
+      apt:
+        upgrade: "full"
+        update_cache: yes
+
+    - name: Remove package with mixed case sensitivity
+      apt:
+        name: "{{ item }}"
+        state: absent
+      loop:
+        - Apache2
+        - ngInx
+      when: "'ubuntu' in inventory_hostname"
+
+    - name: Clean apt cache
+      apt:
+        autoclean: yes
+
+    - name: Check package cache validity
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Install a specific version of the package
+      apt:
+        name: python
+        state: "{{ install_state }}"
+      vars:
+        install_state: "absent"
+
+    - name: Install package with unauthenticated source
+      apt:
+        name: mongodb
+        state: present
+        allow_unauthenticated: yes
+
+  post_tasks:
+    - name: Print Apt module debug output
+      debug:
+        var: apt_update

@@ -1,0 +1,72 @@
+- name: Update facts and test for type-related bugs
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    nodes:
+      - name: ubuntu1
+        ip: 10.1.1.1
+        distribution: ubuntu
+      - name: alpine1
+        ip: 10.1.1.2
+        distribution: alpine
+      - name: centos1
+        ip: 10.1.1.3
+        distribution: centos
+      - name: redhat1
+        ip: 10.1.1.4
+        distribution: redhat
+
+    ansible_fact_updates:
+      - name: Update fact for node {{ node.name }}
+        fact_name: node_info
+        value: "{{ node }}"
+        cascade: true
+        attribute: type
+
+  tasks:
+    - name: Create/update facts for each node
+      ansible.utils.update_fact:
+        key: "{{ item.name }}"
+        value: "{{ item }}"
+      loop: "{{ nodes }}"
+
+    - name: Display updated facts
+      debug:
+        var: ansible_facts.node_info
+
+    # Test Cases
+    - name: Test for correct fact type - string
+      assert:
+        that:
+          - ansible_facts.node_info.centos1.type is string
+        fail_msg: "Fact 'type' for 'centos1' should be a string"
+
+    - name: Test for correct fact type - dictionary
+      assert:
+        that:
+          - ansible_facts.node_info.centos1 is mapping
+        fail_msg: "Fact for 'centos1' should be a dictionary"
+
+    # Random IP address generation
+    - name: Generate random IP address
+      set_fact:
+        random_ip: "{{ (1..254)|random }}"
+
+    - name: Test for IP address type
+      assert:
+        that:
+          - random_ip is match('^(\d{1,3}\.){3}\d{1,3}$')
+        fail_msg: "Random IP address should be a valid format"
+
+    - name: Test for unique IP address
+      assert:
+        that:
+          - random_ip is not in nodes|map(attribute='ip')|list
+        fail_msg: "Random IP address should be unique"
+
+    - name: Test for recently introduced networking modules
+      assert:
+        that:
+          - ansible_facts.node_info|dictextract('distribution') is subset(['ubuntu', 'alpine', 'centos', 'redhat'])
+        fail_msg: "Recently introduced networking modules are not found"

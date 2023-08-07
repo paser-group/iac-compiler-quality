@@ -1,0 +1,45 @@
+---
+- name: Test blockinfile module for type-related bugs
+  hosts: localhost
+  become: true
+
+  tasks:
+    - name: Create a file with a block marker
+      ansible.builtin.blockinfile:
+        path: /tmp/test_file.txt
+        marker: "TEXT BLOCK START"
+        state: present
+      delegate_to: localhost
+
+    - name: Insert a block before a specific marker using mixed case sensitivity
+      ansible.builtin.blockinfile:
+        path: /tmp/test_file.txt
+        marker_begin: "text block start"
+        block: |
+          This is a new block.
+      delegate_to: localhost
+
+    - name: Verify if the block was inserted successfully
+      ansible.builtin.shell: "cat /tmp/test_file.txt"
+      register: file_content
+      delegate_to: localhost
+
+    - name: Print file content
+      ansible.builtin.debug:
+        var: file_content.stdout_lines
+
+    - name: Remove the block using mixed case sensitivity
+      ansible.builtin.blockinfile:
+        path: /tmp/test_file.txt
+        marker_begin: "Text Block Start"
+        state: absent
+      delegate_to: localhost
+
+    - name: Verify if the block was removed successfully
+      ansible.builtin.shell: "cat /tmp/test_file.txt"
+      register: file_content_removed
+      delegate_to: localhost
+
+    - name: Print file content after removal
+      ansible.builtin.debug:
+        var: file_content_removed.stdout_lines

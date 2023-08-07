@@ -1,0 +1,97 @@
+---
+- name: Ansible Latent Bug Finder & Heuristic Test
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Test URI module using bytes and strings
+      uri:
+        url: "{{ url }}"
+        method: "{{ method }}"
+        headers:
+          Content-Type: "{{ content_type }}"
+        body_format: "{{ body_format }}"
+        body: "{{ body }}"
+        return_content: "{{ return_content }}"
+        creates: "{{ creates }}"
+        dest: "{{ dest }}"
+        validate_certs: "{{ validate_certs }}"
+      register: result
+
+    - name: Print result
+      debug:
+        var: result
+
+  vars:
+    url: "http://example.com"
+    method: "GET"
+    content_type: "text/plain"
+    body_format: "raw"
+    body: "{{ body_content }}"
+    return_content: yes
+    creates: "/tmp/test.txt"
+    dest: "/tmp/response.txt"
+    validate_certs: no
+    body_content: |
+      This is the request body in bytes format.
+
+      And here are some special characters: üöä!@#$%^&*()
+      And here is a string: hello world
+      And here are more special characters: ~`{}[]:";',<.>/
+
+    # Generate type-related bug by incorrectly specifying a string value for body_format
+    - name: Generate type-related bug by incorrectly specifying a string value for body_format
+      uri:
+        url: "{{ url }}"
+        method: "{{ method }}"
+        headers:
+          Content-Type: "{{ content_type }}"
+        body_format: "invalid_format"
+        body: "{{ body }}"
+        return_content: "{{ return_content }}"
+        creates: "{{ creates }}"
+        dest: "{{ dest }}"
+        validate_certs: "{{ validate_certs }}"
+      register: result2
+
+    - name: Print result2
+      debug:
+        var: result2
+
+    # Generate type-related bug by incorrectly specifying an invalid value for return_content
+    - name: Generate type-related bug by incorrectly specifying an invalid value for return_content
+      uri:
+        url: "{{ url }}"
+        method: "{{ method }}"
+        headers:
+          Content-Type: "{{ content_type }}"
+        body_format: "{{ body_format }}"
+        body: "{{ body }}"
+        return_content: "invalid_value"
+        creates: "{{ creates }}"
+        dest: "{{ dest }}"
+        validate_certs: "{{ validate_certs }}"
+      register: result3
+
+    - name: Print result3
+      debug:
+        var: result3
+
+    # Generate type-related bug by incorrectly specifying a string value for validate_certs
+    - name: Generate type-related bug by incorrectly specifying a string value for validate_certs
+      uri:
+        url: "{{ url }}"
+        method: "{{ method }}"
+        headers:
+          Content-Type: "{{ content_type }}"
+        body_format: "{{ body_format }}"
+        body: "{{ body }}"
+        return_content: "{{ return_content }}"
+        creates: "{{ creates }}"
+        dest: "{{ dest }}"
+        validate_certs: "invalid_value"
+      register: result4
+
+    - name: Print result4
+      debug:
+        var: result4

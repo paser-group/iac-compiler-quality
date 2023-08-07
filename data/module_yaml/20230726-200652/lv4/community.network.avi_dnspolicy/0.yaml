@@ -1,0 +1,144 @@
+---
+- name: Test Avi DNS Policy Module
+  hosts: localhost
+  gather_facts: False
+
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
+    controller: 10.1.1.1
+    username: admin
+    password: password
+    tenant: admin
+    name: test_dns_policy
+    description: "Test DNS Policy"
+    avi_credentials:
+      controller: "{{ controller }}"
+      username: "{{ username }}"
+      password: "{{ password }}"
+      tenant: "{{ tenant }}"
+
+  tasks:
+    - name: Create DNS Policy
+      community.network.avi_dnspolicy:
+        controller: "{{ controller }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        tenant: "{{ tenant }}"
+        name: "{{ name }}"
+        description: "{{ description }}"
+        avi_credentials: "{{ avi_credentials }}"
+        state: present
+      register: result
+      ignore_errors: True
+
+    - name: Debug DNS Policy Creation
+      debug:
+        var: result
+
+    - name: Generate random MAC addresses
+      set_fact:
+        random_mac_address: "{{ '%02x:%02x:%02x:%02x:%02x:%02x' | format(
+            0|random, 0|random, 0|random,
+            0|random, 0|random, 0|random) }}"
+
+    - name: Update DNS Policy Rule with random MAC address
+      community.network.avi_dnspolicy:
+        controller: "{{ controller }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        tenant: "{{ tenant }}"
+        name: "{{ name }}"
+        description: "{{ description }}"
+        avi_credentials: "{{ avi_credentials }}"
+        state: present
+        rule:
+          - index: 0
+            dns_service_profile:
+              fallback_profile:
+                - profile: dns-ap-fallback-profile
+                  fallback_configuration:
+                    - active_standby: true
+                      pool:
+                        - lb_algorithm:
+                            type: LbAlgorithmLeastStates
+                          health_monitor_refs:
+                            - - key: admin-system-global
+                      enabled: true
+              dns_records:
+                - name: test.example.com
+                  record_type: DNS_RECORD_A
+                  rdata:
+                    - ip:
+                        type: V4
+                        addr: 192.0.2.1
+                    - ip:
+                        type: V4
+                        addr: 192.0.2.2
+            index: 5
+            dns_port:
+              port: 53
+              type: PORT_RANGE
+            fallback_udp_port: false
+            order: DNS_RULE_ORDER_GEOLOCATION
+            enable_health_monitor: true
+            enable_cache: true
+            index: 0
+            enable_compress: true
+            enable_disable: true
+            enable_lower_ttl_on_authoritative: true
+            dns_policy_signature_key:
+              name: dns_policy_signature_key1
+            script: |
+              $ts = &rarr;
+              timestamp
+              $ip = ip
+              $url = "http://example.com"
+              $record.ttl += 3600
+              if ($url -rarr; &rarr;
+              "http://example.com") { $record = ![c0]
+              }
+              $dns_request.send()
+            edge_group_ref:
+              name: edge-group-name1
+            ttl:
+              add_seconds: 5
+              enabled: true
+              perf_profile_ref:
+                name: perf-profile-name
+            dns_query_type:
+              - qtype:
+                  type: QUERY_TYPE_REF_DNS_QUERY_TYPE_A
+                flag:
+                  type: DOMAIN_NAME
+              - qtype:
+                  type: QUERY_TYPE_REF_DNS_QUERY_TYPE_CNAME
+                flag:
+                  type: IPV6_ADDRESS
+            actions:
+              - action:
+                  type: DNS_POLICY_RULE_ACTION_REF_DNS_POLICY_OS_DATAREWRITE
+                pool_ref:
+                  name: pool-1
+                action:
+                  type: DNS_POLICY_RULE_ACTION_REF_DNS_POLICY_OS_DATAREWRITE
+                pool_ref:
+                  name: pool-2
+            metrics_monitor_collection_temp_ref:
+              name: metrics-monitor-temp-ref
+            enable_logging: true
+            disable: true
+            drop: true
+            log_failures: true
+            rule_index: 5
+            enable_rate_limit: true
+            rate_limit:
+              max_rate: 1000
+              period: 60
+        uuid: "{{ result.dnspolicy.uuid }}"
+        state: present
+      register: update_result
+      ignore_errors: True
+
+    - name: Debug DNS Policy Update
+      debug:
+        var: update_result

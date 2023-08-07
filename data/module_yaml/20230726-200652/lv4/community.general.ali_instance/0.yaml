@@ -1,0 +1,73 @@
+---
+- name: Test playbook for community.general.ali_instance module
+  hosts: localhost
+  gather_facts: false
+  
+  vars:
+    alicloud_access_key: "<insert_access_key>"
+    alicloud_secret_key: "<insert_secret_key>"
+    alicloud_region: "<insert_region>"
+  
+  tasks:
+    - name: Create an ECS instance
+      community.general.ali_instance:
+        instance_name: "test-instance"
+        security_group_id: "<insert_security_group_id>"
+        instance_type: "<insert_instance_type>"
+        image_id: "<insert_image_id>"
+        key_name: "<insert_key_pair_name>"
+        alicloud_access_key: "{{ alicloud_access_key }}"
+        alicloud_secret_key: "{{ alicloud_secret_key }}"
+        alicloud_region: "{{ alicloud_region }}"
+        allocate_public_ip: true
+        auto_renew: true
+        auto_renew_period: 1
+        availability_zone: "<insert_availability_zone>"
+      register: result_create_instance
+
+    - debug:
+        var: result_create_instance
+        
+    - name: Start the ECS instance
+      community.general.ali_instance:
+        instance_id: "{{ result_create_instance | json_query('instances[].id') }}"
+        state: started
+        alicloud_access_key: "{{ alicloud_access_key }}"
+        alicloud_secret_key: "{{ alicloud_secret_key }}"
+      register: result_start_instance
+      
+    - debug:
+        var: result_start_instance
+        
+    - name: Stop the ECS instance
+      community.general.ali_instance:
+        instance_id: "{{ result_create_instance | json_query('instances[].id') }}"
+        state: stopped
+        alicloud_access_key: "{{ alicloud_access_key }}"
+        alicloud_secret_key: "{{ alicloud_secret_key }}"
+      register: result_stop_instance
+      
+    - debug:
+        var: result_stop_instance
+        
+    - name: Restart the ECS instance
+      community.general.ali_instance:
+        instance_id: "{{ result_create_instance | json_query('instances[].id') }}"
+        state: restarted
+        alicloud_access_key: "{{ alicloud_access_key }}"
+        alicloud_secret_key: "{{ alicloud_secret_key }}"
+      register: result_restart_instance
+      
+    - debug:
+        var: result_restart_instance
+        
+    - name: Terminate the ECS instance
+      community.general.ali_instance:
+        instance_id: "{{ result_create_instance | json_query('instances[].id') }}"
+        state: absent
+        alicloud_access_key: "{{ alicloud_access_key }}"
+        alicloud_secret_key: "{{ alicloud_secret_key }}"
+      register: result_terminate_instance
+      
+    - debug:
+        var: result_terminate_instance

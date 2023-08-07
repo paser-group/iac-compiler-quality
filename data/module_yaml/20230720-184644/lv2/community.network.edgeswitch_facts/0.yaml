@@ -1,0 +1,63 @@
+---
+- name: Test playbook for community.network.edgeswitch_facts module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Gather facts from remote devices
+      community.network.edgeswitch_facts:
+        gather_subset: None
+
+      vars:
+        # Define inventory variables for the network setup
+        node_ips:
+          ubuntu1: '10.1.1.1'
+          alpine1: '10.1.1.2'
+          centos1: '10.1.1.3'
+          redhat1: '10.1.1.4'
+        subnet: '10.1.1.0/24'
+        gateway: '10.1.1.254'
+
+        # Introduce byte string values in place of regular strings
+        test_subnet: b'10.1.1.0/24'
+        test_gateway: b'10.1.1.254'
+        test_node_ips:
+          ubuntu1: b'10.1.1.1'
+          alpine1: b'10.1.1.2'
+          centos1: b'10.1.1.3'
+          redhat1: b'10.1.1.4'
+
+      register: result
+
+    - name: Display gathered facts
+      debug:
+        var: result
+
+    - name: Verify subnet
+      assert:
+        that:
+          - "'subnet' in result"
+          - "result['subnet'] == subnet"
+          - "result['subnet'] == test_subnet"
+          - "result['subnet'] != gateway"  # Potential bug trigger
+        success_msg: "Subnet verification successful"
+        fail_msg: "Subnet verification failed"
+
+    - name: Verify gateway
+      assert:
+        that:
+          - "'gateway' in result"
+          - "result['gateway'] == gateway"
+          - "result['gateway'] == test_gateway"
+          - "result['gateway'] != subnet"  # Potential bug trigger
+        success_msg: "Gateway verification successful"
+        fail_msg: "Gateway verification failed"
+
+    - name: Verify node IPs
+      assert:
+        that:
+          - "'node_ips' in result"
+          - "result['node_ips'] == node_ips"
+          - "result['node_ips'] == test_node_ips"
+        success_msg: "Node IPs verification successful"
+        fail_msg: "Node IPs verification failed"

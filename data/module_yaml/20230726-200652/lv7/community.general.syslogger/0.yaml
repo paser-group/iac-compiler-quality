@@ -1,0 +1,47 @@
+---
+- name: Test Ansible Latent Type-Related Bugs in Syslogger Module
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Install required packages
+      package:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - syslog-ng
+        - rsyslog
+
+    - name: Generate test log message
+      set_fact:
+        log_message: "This is a test log message"
+
+    - name: Create syslogger config
+      template:
+        src: syslogger.conf.j2
+        dest: /etc/syslog-ng/conf.d/mylog.conf
+      notify:
+        - Restart Syslog
+
+    - name: Restart Syslog
+      command: systemctl restart syslog-ng
+      async: 0
+      poll: 0
+      become: true
+
+    - name: Send test log message
+      community.general.syslogger:
+        facility: "{{ item.facility }}"
+        ident: "{{ item.ident }}"
+        log_pid: "{{ item.log_pid }}"
+        msg: "{{ log_message }}"
+        priority: "{{ item.priority }}"
+      loop:
+        - { facility: "local0", ident: "test1", log_pid: true, priority: "info" }
+        - { facility: "local1", ident: "test2", log_pid: false, priority: "debug" }
+        - { facility: "local2", ident: "test3", log_pid: true, priority: "notice" }
+
+    - name: Verify log in syslog
+      assert:
+        that:
+          - "'{{ log_message }}' in hostvars['localhost']['ansible_syslog_msg']"
+      loop: [1, 2, 3]

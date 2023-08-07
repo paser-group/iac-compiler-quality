@@ -1,0 +1,58 @@
+---
+- name: Creating or terminating One VM
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    api_url: "http://sample.api.url"
+    api_username: "sample_user"
+    api_password: "sample_password"
+
+  tasks:
+    # Task 1: Creating a One VM
+    - name: Create One VM
+      community.general.one_vm:
+        api_url: "{{ api_url }}"
+        api_username: "{{ api_username }}"
+        api_password: "{{ api_password }}"
+        attributes:
+          name: "test_vm"
+          count: 1
+        wait_timeout: 300
+        wait_poll_interval: 10
+      register: created_vm
+
+    - name: Debug output - Created VM
+      debug:
+        var: created_vm
+
+    # Task 2: Terminating a One VM
+    - name: Terminate One VM
+      community.general.one_vm:
+        api_url: "{{ api_url }}"
+        api_username: "{{ api_username }}"
+        api_password: "{{ api_password }}"
+        attributes:
+          name: "{{ created_vm.meta.name }}"
+          count: 0
+        wait_timeout: 300
+        wait_poll_interval: 10
+      register: terminated_vm
+
+    - name: Debug output - Terminated VM
+      debug:
+        var: terminated_vm
+
+    # Task 3: Generate random MAC addresses
+    - name: Generate random MAC addresses
+      hosts: localhost
+      gather_facts: false
+      connection: local
+      tasks:
+        - name: Generate MAC address for network module
+          shell: python -c "import random; import sys; sys.stdout.write(':'.join(['{:02x}'.format(random.randint(0, 255)) for i in range(6)]))"
+          register: mac_address_output
+
+        - name: Debug MAC address
+          debug:
+            var: mac_address_output.stdout

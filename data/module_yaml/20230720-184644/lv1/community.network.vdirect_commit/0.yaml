@@ -1,0 +1,55 @@
+---
+- name: Test Playbook for community.network.vdirect_commit
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    # Define the network and devices
+    network_name: node-net
+    subnet: 10.1.1.0/24
+    gateway: 10.1.1.254
+    devices:
+      - name: ubuntu1
+        ip: 10.1.1.1
+        os: ubuntu
+      - name: alpine1
+        ip: 10.1.1.2
+        os: alpine
+      - name: centos1
+        ip: 10.1.1.3
+        os: centos
+      - name: redhat1
+        ip: 10.1.1.4
+        os: redhat
+
+    # Define the vDirect configuration
+    vdirect_ip: '10.1.1.100'
+    vdirect_user: 'admin'
+    vdirect_password: 'password'
+    vdirect_use_ssl: true
+    vdirect_validate_certs: false
+    vdirect_timeout: 60
+    vdirect_http_port: 80
+    vdirect_https_port: 443
+
+  tasks:
+    - name: Configure network
+      community.network.vdirect_commit:
+        apply: true
+        devices: "{{ devices }}"
+        save: true
+        sync: true
+        validate_certs: "{{ vdirect_validate_certs | bool }}"
+        vdirect_http_port: "{{ vdirect_http_port | default(80) | int }}"
+        vdirect_https_port: "{{ vdirect_https_port | default(443) | int }}"
+        vdirect_ip: "{{ vdirect_ip }}"
+        vdirect_user: "{{ vdirect_user }}"
+        vdirect_password: "{{ vdirect_password }}"
+        vdirect_timeout: "{{ vdirect_timeout | default(60) | int }}"
+        vdirect_use_ssl: "{{ vdirect_use_ssl | bool }}"
+        vdirect_wait: true
+      register: result
+
+    - name: Print result
+      debug:
+        var: result

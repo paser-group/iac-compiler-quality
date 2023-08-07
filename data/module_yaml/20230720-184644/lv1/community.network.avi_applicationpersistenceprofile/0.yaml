@@ -1,0 +1,39 @@
+- name: Test playbook for Ansible latent type-related bugs
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    avi_credentials:
+      controller: "{{ controller }}"
+      username: "{{ username }}"
+      password: "{{ password }}"
+
+    mixed_case_profile:
+      name: "{{ name|lower }}"
+      persistence_type: "{{ persistence_type }}"
+      description: "{{ description|lower if description is defined else '' }}"
+      api_version: "{{ api_version }}"
+      api_context: "{{ api_context }}"
+      tenant_uuid: "{{ tenant_uuid }}"
+      state: "{{ state|lower }}"
+
+  tasks:
+    - name: Check for type-related bugs
+      debug:
+        msg: "New type-related bug found!"
+      when: mixed_case_profile is not string
+
+    - name: Create Application Persistence Profile with mixed case sensitivity
+      community.network.avi_applicationpersistenceprofile:
+        controller: "{{ controller }}"
+        avi_credentials: "{{ avi_credentials }}"
+        tenant: "{{ tenant }}"
+        name: "{{ mixed_case_profile.name }}"
+        persistence_type: "{{ mixed_case_profile.persistence_type }}"
+        description: "{{ mixed_case_profile.description }}"
+        api_version: "{{ mixed_case_profile.api_version }}"
+        api_context: "{{ mixed_case_profile.api_context }}"
+        tenant_uuid: "{{ mixed_case_profile.tenant_uuid }}"
+        state: "{{ mixed_case_profile.state }}"
+      register: result
+      ignore_errors: true

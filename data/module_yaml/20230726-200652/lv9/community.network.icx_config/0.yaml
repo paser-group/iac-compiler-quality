@@ -1,0 +1,47 @@
+---
+- name: Test playbook for 'community.network.icx_config' module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Generate random IP addresses
+      set_fact:
+        subnet_ip: "{{ subnet_ip | default('10.1.1.0') }}"
+        subnet_mask: "{{ subnet_mask | default('24') }}"
+        gateway: "{{ subnet_ip.split('.')[0:3] | join('.') + '.' + subnet_mask.split('.')[-1] }}"
+        ubuntu1_ip: "{{ subnet_ip.split('.')[0:3] | join('.') + '.1' }}"
+        alpine1_ip: "{{ subnet_ip.split('.')[0:3] | join('.') + '.2' }}"
+        centos1_ip: "{{ subnet_ip.split('.')[0:3] | join('.') + '.3' }}"
+        redhat1_ip: "{{ subnet_ip.split('.')[0:3] | join('.') + '.4' }}"
+
+    - name: Configure ICX devices
+      community.network.icx_config:
+        backup: yes
+        src: running_config.txt
+        save_when: modified
+        intended_config: "{{ playbook_dir }}/intended_config.txt"
+        before:
+          - show configuration
+
+        after:
+          - show configuration
+
+      register: result
+
+    - name: Debug result
+      debug:
+        var: result
+
+    - name: Debug failed tasks
+      debug:
+        var: result | failed_tasks
+
+    - name: Debug failed results
+      debug:
+        var: item
+      loop: "{{ result | failed_tasks }}"
+
+    - name: Debug failed output
+      debug:
+        var: item.msg
+      loop: "{{ result | failed_tasks }}"

@@ -1,0 +1,32 @@
+---
+- name: Test Ansible Latent Type-Related Bugs
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    axapi_client_cert_path: "/path/to/client/cert.pem"
+    axapi_client_key_path: "/path/to/client/key.pem"
+    axapi_host: "10.1.1.1"
+    axapi_username: "admin"
+    axapi_password: "password"
+
+  tasks:
+    - name: Create random MAC address
+      set_fact:
+        random_mac: "{{ '%02x:%02x:%02x:%02x:%02x:%02x' | format(255 | random, 255 | random, 255 | random, 255 | random, 255 | random, 255 | random) }}"
+
+    - name: Configure A10 server
+      community.network.a10_server_axapi3:
+        host: "{{ axapi_host }}"
+        username: "{{ axapi_username }}"
+        password: "{{ axapi_password }}"
+        server_name: "test-server"
+        server_ip: "10.1.1.100"
+        server_ports: "1,2,3"
+        server_status: "enable"
+        mac_address: "{{ random_mac }}"
+      register: server_config
+
+    - name: Debug server configuration
+      debug:
+        var: server_config

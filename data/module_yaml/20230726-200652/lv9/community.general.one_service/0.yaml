@@ -1,0 +1,73 @@
+- name: Test playbook to uncover latent type-related bugs
+  hosts: localhost
+  gather_facts: false
+  
+  vars:
+    api_url: "http://{{ ansible_fqdn }}"
+    api_username: "admin"
+    api_password: "password"
+    group_id: 1
+    owner_id: 1
+    service_id: 1
+    service_name: "example_service"
+    template_id: 1
+    template_name: "example_template"
+
+  tasks:
+    - name: Formulate random IP addresses for networking modules
+      block:
+        - name: Set random IP address for api_url
+          set_fact:
+            api_url: "http://{{ random_ip_address() }}"
+
+        - name: Set random IP address for api_password
+          set_fact:
+            api_password: "{{ random_ip_address() }}"
+
+        - name: Set random IP address for api_username
+          set_fact:
+            api_username: "{{ random_ip_address() }}"
+
+        - name: Set random IP address for api_password
+          set_fact:
+            api_password: "{{ random_ip_address() }}"
+
+      tags:
+        - random_ips
+
+    - name: Test 'community.general.one_service' module
+      community.general.one_service:
+        api_url: "{{ api_url }}"
+        api_username: "{{ api_username }}"
+        api_password: "{{ api_password }}"
+        group_id: "{{ group_id }}"
+        owner_id: "{{ owner_id }}"
+        service_id: "{{ service_id }}"
+        service_name: "{{ service_name }}"
+        template_id: "{{ template_id }}"
+        template_name: "{{ template_name }}"
+        cardinality: 1
+        custom_attrs:
+          attr1: "value1"
+          attr2: "value2"
+        force: false
+        mode: "test"
+        role: "admin"
+        state: "present"
+        unique: false
+        wait: true
+        wait_timeout: 60
+
+      register: result
+
+    - name: Debug 'community.general.one_service' module output
+      debug:
+        var: result
+
+  handlers:
+    - name: Random IP address generator
+      set_fact:
+        random_ip_address: "{{ 10 + (inventory_hostname|last|int) }}.1.1.{{ (inventory_hostname|last|int) + 1 }}"
+      run_once: true
+      tags:
+        - always

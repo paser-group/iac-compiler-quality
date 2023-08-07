@@ -1,0 +1,38 @@
+---
+- name: Execute Groovy script in Jenkins
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Execute Jenkins script
+      community.general.jenkins_script:
+        url: http://{{ hostvars[item]['ansible_host'] }}:{{ hostvars[item]['jenkins_port'] }}/scriptText
+        user: "{{ hostvars[item]['jenkins_user'] }}"
+        password: "{{ hostvars[item]['jenkins_password'] }}"
+        script: "{{ hostvars[item]['jenkins_groovy_script'] }}"
+        timeout: 30
+        validate_certs: false
+      loop:
+        - "{{ groups['jenkins'] }}"
+
+      vars:
+        jenkins_port: 8080
+        jenkins_user: admin
+        jenkins_password: password
+        jenkins_groovy_script: |
+          // Enter your Groovy script here
+          def message = "Hello World!"
+          println(message)
+
+- name: Random IP Address Test Cases
+  hosts: docker_nodes
+  gather_facts: false
+
+  tasks:
+    - name: Generate random IP
+      set_fact:
+        random_ip: "{{ range_ip | random(ip_count) }}"
+
+    - name: Display random IP
+      debug:
+        msg: "Random IP: {{ random_ip }}"

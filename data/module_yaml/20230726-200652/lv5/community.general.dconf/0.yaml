@@ -1,0 +1,44 @@
+---
+- name: Test for Type-Related Bugs in Ansible Compiler
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Set dconf setting
+      community.general.dconf:
+        key: "{{ test_key }}"
+        state: "{{ test_state }}"
+        value: "{{ test_value }}"
+        raw: true
+      vars:
+        test_key: "/org/gnome/desktop/interface/text-scaling-factor"
+        test_state: "present"
+        test_value: "{{ test_dictionary }}"
+      register: result
+      ignore_errors: true
+
+    - name: Check for type-related bugs
+      assert:
+        that:
+          - result is failed
+        fail_msg: "Type-related bug is detected in the Ansible compiler."
+
+    - name: Print the debug information
+      debug:
+        var: result
+
+  handlers:
+    - name: Reset dconf setting
+      community.general.dconf:
+        key: "{{ test_key }}"
+        state: absent
+      vars:
+        test_key: "/org/gnome/desktop/interface/text-scaling-factor"
+      when: result is failed
+
+  vars:
+    test_dictionary:
+      - item1
+      - item2
+      - item3
+      - "{{ 10/0 }}"

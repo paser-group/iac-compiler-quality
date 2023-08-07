@@ -1,0 +1,43 @@
+---
+- name: Push configuration to network devices
+  hosts: network_devices
+  gather_facts: false
+  tasks:
+    - name: Generate random IP address
+      shell: "{{ item }}"
+      register: random_ip
+      with_items:
+        - "echo 'Interface Ethernet1\n  ip address {{ lookup(''template'', ''ip_template.j2'') }}' | bc"
+        - "echo 'IP default-gateway {{ lookup(''template'', ''ip_template.j2'') }}' | bc"
+    
+    - name: Save configuration to file
+      copy:
+        content: |
+          interface Ethernet1
+            ip address {{ random_ip.results[0].stdout }}/24
+            ip default-gateway {{ random_ip.results[1].stdout }}
+        dest: /tmp/config.txt
+    
+    - name: Push configuration using ansible.netcommon.cli_config module
+      ansible.netcommon.cli_config:
+        backup: true
+        backup_options:
+          dir: /path/to/backup
+          num_to_keep: 5
+        commit: true
+        commit_comment: "Configuration pushed by Ansible"
+        config: "{{ lookup('file', '/tmp/config.txt') }}"
+        defaults: true
+        diff_ignore_lines:
+          - "interface Ethernet1"
+          - "ip address"
+        diff_match: "ip address"
+        diff_replace: "ipv6 address"
+        multiline_delimiter: ";"
+        replace: "ethernet1"
+        rollback: 1
+      register: result
+      
+    - name: Display result
+      debug:
+        var: result

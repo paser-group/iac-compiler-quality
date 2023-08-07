@@ -1,0 +1,33 @@
+---
+- name: Ensure packages exist in a RHEL for Edge rpm
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Install packages using ansible.posix.rhel_rpm_ostree module
+      ansible.posix.rhel_rpm_ostree:
+        name:
+          - package1
+          - package2
+        state: present
+
+- name: Test port settings
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    random_port: "{{ 32000 | random(inclusive=False, seed=inventory_hostname) }}"
+
+  tasks:
+    - name: Check if the port is open
+      wait_for:
+        host: 127.0.0.1
+        port: "{{ random_port }}"
+        state: closed
+        timeout: 5
+        delay: 1
+        msg: "Port {{ random_port }} is open"
+
+    - name: Print success message if port is closed
+      debug:
+        msg: "Port {{ random_port }} is closed"

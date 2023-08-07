@@ -1,0 +1,68 @@
+- name: Fetch Configuration/State Data from RESTCONF
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Fetch RESTCONF Data
+      ansible.netcommon.restconf_get:
+        content: "{{ path_to_input_file }}"
+        output: "{{ path_to_output_file }}"
+        path: "/api/restconf/data"
+
+      register: restconf_result
+
+    - name: Print RESTCONF Response
+      debug:
+        var: restconf_result
+
+    - name: Verify RESTCONF Response
+      assert:
+        that:
+          - restconf_result is succeeded
+          - restconf_result.output is defined
+          - restconf_result.content | type_debug !~ 'str'
+
+- name: Test Cases
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Generate Strings with Varied Encodings
+      set_fact:
+        string_var:
+          - string: "ansible.netcommon.restconf_get"
+            encoding: "utf-8"
+          - string: "ansible.netcommon.restconf_get"
+            encoding: "utf-16"
+          - string: "ansible.netcommon.restconf_get"
+            encoding: "utf-32"
+          - string: "ansible.netcommon.restconf_get"
+            encoding: "ascii"
+          - string: "ansible.netcommon.restconf_get"
+            encoding: "latin-1"
+          - string: "ansible.netcommon.restconf_get"
+            encoding: "utf-8"
+          - string: "ansible.netcommon.restconf_get"
+            encoding: "utf-16"
+          - string: "ansible.netcommon.restconf_get"
+            encoding: "utf-32"
+
+    - name: Fetch RESTCONF Data
+      ansible.netcommon.restconf_get:
+        content: "{{ item.string|b64encode|decode(item.encoding) }}"
+        output: "{{ path_to_output_file }}"
+        path: "/api/restconf/data"
+      loop: "{{ string_var }}"
+
+      register: restconf_result
+
+    - name: Print RESTCONF Response
+      debug:
+        var: restconf_result
+
+    - name: Verify RESTCONF Response
+      assert:
+        that:
+          - restconf_result is succeeded
+          - restconf_result.output is defined
+          - restconf_result.content | type_debug !~ 'str'
