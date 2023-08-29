@@ -127,12 +127,13 @@ def generate_playbooks(level_list, output_ds, config, base_output_path):
 
 def get_response(token, url): 
     headers = {
-            "Authorization": f"Token {token}"
-        }
+        "Authorization": f"Token {token}"
+    }
     response = requests.get(url, headers=headers)
     if response.status_code == 200:
         data = response.json()
     else:
+        display.warning(f'got status code {response.status_code}')
         data = None 
     return data
 
@@ -173,16 +174,22 @@ def create_ansible(args, config):
     this function is used to create ansible files by making API calls to ChatGPT
     """
     # read in excel data as huggingface dataset
-    ds = Dataset.from_pandas(
-        pd.read_excel(config['data_path'])
-    )
+
+    trgt_file = config['data_path']
+
+    if trgt_file.endswith('.xlsx'):
+        ds = Dataset.from_pandas(
+            pd.read_excel(trgt_file)
+        )
+    else:
+        ds = Dataset.from_csv(trgt_file)
 
     display.title('Pre-Processing Dataset: Get issue body and comments')
     
     if args.limit > 0:
         ds = ds.select(range(args.limit))
+
     ds = preprocess_dataset(ds, config, args.limit)
-    
     display.title('Generating Ansible Playbooks With ChatGPT')
     # get number of levels for prompt engineering.
     level_list = [int(x) for x in config["levels"].split(",")]

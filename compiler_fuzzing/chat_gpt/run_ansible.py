@@ -251,7 +251,13 @@ def run_ansible(args, config):
     
     trgt_path = file_path
     display.green(f'\nsaving data to {trgt_path} ...')
-    output_ds.to_csv(trgt_path)
+
+    try:
+        output_ds.to_csv(trgt_path)
+    except:
+        display.error('csv could not be saved. switching to debug mode')
+        breakpoint()
+
     
 
 

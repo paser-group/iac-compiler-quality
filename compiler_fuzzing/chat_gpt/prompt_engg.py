@@ -24,8 +24,13 @@ class PromptEngg:
     def update_columns(self, ds):
         ds["level"] = self.level
         ds["sys_role"] = self.system_msg
-        if 'title' in ds.columns:
-            title = ds["title"]
+        #if 'title' in ds.columns:
+        try:
+            if 'title' in ds.columns:
+                title = ds["title"]
+        except:
+            if 'title' in dict(ds).keys():
+                title = ds["title"]
         ds["prompt"] = replace_slot(
             self.prompt_config['prompt']['current'], 
             {

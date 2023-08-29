@@ -163,7 +163,6 @@ def generate_manifest_ds(args, cfg, ds, heuristic_list=['base']):
     output_ds = ds.select(range(len(response)))
     assert len(response) == len(second_query)
     assert len(response) == len(first_response)
-    breakpoint()
     
     # append columns to dataset
     output_ds = output_ds.add_column('response', response)
