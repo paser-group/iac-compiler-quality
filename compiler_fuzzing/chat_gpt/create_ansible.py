@@ -78,7 +78,7 @@ def generate_manifest_ds(args, config, ds, level_list):
     # truncate dataset to accomodate amount of responses generated
     output_ds = ds.select(range(len(response)))
     assert len(response) == len(second_query)
-    breakpoint()
+    
     # append columns to dataset
     output_ds = output_ds.add_column('response', response)
     output_ds = output_ds.add_column('second_query', second_query)
