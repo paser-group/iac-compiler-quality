@@ -1,0 +1,30 @@
+---
+- name: Fetch VPC endpoint facts
+  hosts: localhost
+  gather_facts: false
+  vars:
+    endpoints_query: endpoints
+    vpc_service_name: "com.amazonaws.{{ net_data.network_region }}.s3"
+  
+  tasks:
+    - name: EC2 VPC | Gather VPC s3 endpoint facts
+      ec2_vpc_endpoint_facts:
+        query: "{{ endpoints_query }}"
+        region: "{{ ansible_default_ipv4.network }}"
+        filters:
+          vpc-id: "{{ ansible_default_ipv4.address }}"
+          vpc-endpoint-state: available
+          service-name: "{{ vpc_service_name }}"
+      register: existing_s3_endpoints
+
+    - debug:
+        var: existing_s3_endpoints
+
+    - name: EC2 VPC | Create a VPC s3 endpoint, only if doesn't exist
+      ec2_vpc_endpoint:
+        state: present
+        region: "{{ ansible_default_ipv4.network }}"
+        vpc_id: "{{ ansible_default_ipv4.address }}"
+        service: "{{ vpc_service_name }}"
+      register: vpc_s3_endpoint
+      when: existing_s3_endpoints.vpc_endpoints == []

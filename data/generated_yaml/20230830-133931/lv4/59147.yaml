@@ -1,0 +1,39 @@
+
+- name: Test Inventory Bug
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Symlink with space in path
+      file:
+        src: "/var/tmp/symlink with space"
+        dest: "/tmp/symlink_with_space"
+        state: link
+      register: symlink_result
+      ignore_errors: yes
+
+    - name: Generate malformed unicode string
+      command: echo -e '\xe2\x80\x98malformed string\xe2\x80\x99'
+      register: unicode_result
+      ignore_errors: yes
+      
+    - name: Set negative cache timeout
+      set_fact:
+        ansible_cache_valid_time: -1
+
+    - name: Show inventory
+      command: ansible-inventory -i inventory.yml --list
+      register: inventory_result
+      ignore_errors: yes
+
+    - name: Debugging information
+      debug:
+        msg: "{{ inventory_result.stderr }}"
+      when: inventory_result.failed
+
+    - name: Cleanup
+      file:
+        path: "/tmp/symlink_with_space"
+        state: absent
+      ignore_errors: yes
+

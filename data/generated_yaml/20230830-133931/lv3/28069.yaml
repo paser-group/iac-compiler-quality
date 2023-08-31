@@ -1,0 +1,34 @@
+---
+- name: Ansible Latent Bug Playbook
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create symlink paths with space
+      command: ln -s "{{ item.src }}" "/tmp/{{ item.dest }}"
+      vars:
+        item:
+          src: "file1.txt"
+          dest: "symlink path with space 1.txt"
+      loop: []
+
+    - name: Generate malformed unicode strings for inventory
+      copy:
+        content: "{{ item }}"
+        dest: "inventory/hosts.ini"
+      vars:
+        item:
+          - u'\u01A3=malformed_unicode'
+          - u'malformed_unicode=\u01A3'
+          - u'\xFF=malformed_unicode'
+          - u'malformed_unicode=\xFF'
+      loop: []
+
+    - name: Negative Cache timeout values
+      copy:
+        content: "fact_caching_timeout=-1"
+        dest: "ansible.cfg"
+      delegate_to: localhost
+
+    # Rest of the playbook
+    ...

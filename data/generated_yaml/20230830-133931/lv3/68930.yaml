@@ -1,0 +1,35 @@
+---
+- name: Trigger Ansible Type-related Bug
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    # Generate symlink paths with space
+    symlink_path: "/tmp/symlink with space"
+
+  tasks:
+    # Task 1: Create the symlink
+    - name: Create symlink
+      ansible.builtin.file:
+        src: /tmp/original_file
+        dest: "{{ symlink_path }}"
+        state: link
+
+    # Task 2: Generate malformed unicode strings for inventory
+    - name: Generate malformed unicode strings
+      ansible.builtin.command:
+        cmd: "echo -e '\ud83d\ude03\ud83d\ude04' > /tmp/unicode.txt"
+
+    # Task 3: Set negative cache timeout value (potential bug)
+    - name: Set negative cache timeout
+      ansible.builtin.set_fact:
+        ansible_cache_plugin_timeout: -1
+
+    # Task 4: Debug the generated values
+    - name: Debug generated values
+      ansible.builtin.debug:
+        msg: "Generated symlink path: {{ symlink_path }}"
+
+    - name: Debug malformed unicode strings
+      ansible.builtin.command:
+        cmd: "cat /tmp/unicode.txt"

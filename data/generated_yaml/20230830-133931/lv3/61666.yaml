@@ -1,0 +1,40 @@
+
+---
+- name: Latent Bug Finder Playbook
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Create ~/.netrc file
+      copy:
+        content: |
+          machine github.com
+          login your-github-username
+          password your-github-password
+        dest: ~/.netrc
+        mode: '0600'
+
+    - name: Install role from GitHub
+      block:
+        - name: Download role
+          get_url:
+            url: "https://github.com/any/role/archive/master.tar.gz"
+            dest: "/tmp/role.tar.gz"
+            
+        - name: Extract role
+          unarchive:
+            src: "/tmp/role.tar.gz"
+            dest: "/home/user/.ansible/roles/"
+            remote_src: true
+            creates: "/home/user/.ansible/roles/role"    
+
+      rescue:
+        - name: Debugging information
+          debug:
+            msg: "Failed to download the role"
+
+      always:
+        - name: Delete ~/.netrc file
+          file:
+            path: ~/.netrc
+            state: absent

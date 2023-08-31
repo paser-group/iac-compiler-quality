@@ -1,0 +1,33 @@
+---
+- name: Ansible Latent Bug Finder
+  hosts: all
+  gather_facts: False
+
+  tasks:
+    - name: Generate symlink path with space
+      file:
+        path: "/tmp/{{ item.file_name }}"
+        state: link
+        src: "/tmp/{{ item.source_file }}"
+      loop:
+        - { file_name: "symlink file 1", source_file: "source_file_1" }
+        - { file_name: "symlink file 2", source_file: "source_file_2" }
+
+    - name: Generate malformed unicode string
+      copy:
+        dest: "/tmp/{{ item.dest_file }}"
+        content: "{{ item.content | from_yaml }}"
+      loop:
+        - { dest_file: "malformed_unicode_1.txt", content: "\uD83D" }
+        - { dest_file: "malformed_unicode_2.txt", content: "\uD83D\uD83D" }
+
+    - name: Set negative cache timeout
+      ansible_bender_playbook:
+        playbook: /path/to/playbook.yml
+      vars:
+        ansible_cache_plugin_enabled: true
+        ansible_cache_plugin_timeout: -1
+        ansible_cache_plugin_data:
+          cache_enabled: true
+
+      tags: always

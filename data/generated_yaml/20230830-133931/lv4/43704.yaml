@@ -1,0 +1,37 @@
+
+---
+- name: Test playbook to expose latent type-related bugs
+  hosts: all
+  gather_facts: false
+
+  vars:
+    subnet_mask: "10.1.1.256"
+    network_name: "node-net"
+    router_name: "node-router"
+
+  tasks:
+    - name: Set invalid subnet mask
+      set_fact:
+        invalid_subnet_mask: "{{ subnet_mask | ipaddr('prefix') }}"
+
+    - name: Create network with invalid subnet mask
+      network:
+        state: present
+        name: "{{ network_name }}"
+        prefix: "{{ invalid_subnet_mask }}"
+      register: network_result
+
+    - name: Create router with mismatching names
+      network:
+        state: present
+        name: "{{ router_name }}"
+        network: "{{ network_name }}_old"
+      register: router_result
+
+    - name: Debug network result
+      debug:
+        var: network_result
+
+    - name: Debug router result
+      debug:
+        var: router_result

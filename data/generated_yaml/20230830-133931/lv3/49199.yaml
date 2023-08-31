@@ -1,0 +1,35 @@
+
+---
+- name: Test playbook for Ansible latent bug exploration
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Create traefik LB on manager node
+      docker_swarm_service:
+        debug: yes
+        name: traefik-lb
+        image: 'traefik:1.7'
+        user: ""
+        constraints:
+          - "'node.role==manager'"
+        networks:
+          - traefik-net
+        publish:
+          - published_port: 8080
+            target_port: 8080
+            protocol: tcp
+        args:
+          - "--defaultEntryPoints=http"
+          - "--entryPoints=Name:http Address::8080"
+          - "--docker"
+          - "--docker.swarmMode"
+          - "--docker.domain=traefik"
+          - "--docker.watch"
+          - "--api"
+          - "--api.entrypoint=mgt"
+          - "--api.statistics.recentErrors=100"
+        mounts:
+          - source: "/var/run/docker.sock"
+            target: "/var/run/docker.sock"
+            type: bind

@@ -1,0 +1,39 @@
+
+--- 
+- hosts: localhost
+  gather_facts: no
+
+  vars:
+    test_file_path: '/tmp/test file'
+    malformed_unicode: '\ud801\udc1c'
+    negative_cache_timeout: '-1'
+
+  tasks:
+  - name: Create symlink path with space
+    file:
+      path: "{{ test_file_path }}"
+      state: link
+      src: "{{ inventory_hostname }}"
+
+  - name: Generate malformed unicode string for inventory
+    debug:
+      msg: "{{ malformed_unicode }}"
+
+  - name: Set negative cache timeout
+    lineinfile:
+      path: /etc/ansible/ansible.cfg
+      state: present
+      regexp: '^#?(cache_timeout=)'
+      line: 'cache_timeout={{ negative_cache_timeout }}'
+
+  - name: Basic provisioning of two t2.micro EC2 instances
+    debug:
+      msg: "Provisioning EC2 instances on {{ inventory_hostname }}"
+
+  - name: Install IIS Web-Server with sub features and management tools
+    win_feature:
+      name: Web-Server
+      state: present
+      restart: True
+      include_sub_features: True
+      include_management_tools: True

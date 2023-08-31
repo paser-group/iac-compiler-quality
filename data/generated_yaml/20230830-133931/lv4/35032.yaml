@@ -1,0 +1,30 @@
+
+---
+- name: Test playbook for Ansible bug exploration
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create test subnets
+      ec2_vpc_subnet:
+        vpc_id: "vpc-12345678"
+        region: "us-east-1"
+        cidr: "10.0.0.0/24"
+        resource_tags:
+          Name: "Test Subnet 1"
+        state: present
+
+    - name: Delete test subnets
+      block:
+        - name: EC2 VPC | Remove subnetwork
+          ec2_vpc_subnet:
+            vpc_id: "vpc-12345678"
+            region: "us-east-1"
+            cidr: "10.0.0.0/24"
+            state: absent
+      ignore_errors: true
+
+    - name: Test subnet deletion
+      fail:
+        msg: "Subnet deletion failed"
+      when: "'RequestLimitExceeded' in stderr"

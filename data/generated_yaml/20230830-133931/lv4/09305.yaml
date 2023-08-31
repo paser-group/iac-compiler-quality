@@ -1,0 +1,25 @@
+---
+- name: Test playbook to reveal latent type-related bugs
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Fetch subnet mask
+      shell: ifconfig eth0 | awk '/inet /{print $2}' | cut -d ':' -f 2
+      register: subnet_mask
+
+    - name: Set gateway IP
+      set_fact:
+        gateway_ip: "10.1.1.{{ 254 // subnet_mask.stdout|int }}"
+
+    - name: Set network subnet
+      set_fact:
+        network_subnet: "{{ gateway_ip.split('.')[0:3] | join('.') }}.127"
+
+    - name: Display network and gateway information
+      debug:
+        msg: "Network Subnet: {{ network_subnet }}, Gateway IP: {{ gateway_ip }}"
+
+    - name: Mismatch network and router names
+      debug:
+        msg: "Network Subnet: {{ network_subnet }}, Router IP: {{ gateway_ip }}"

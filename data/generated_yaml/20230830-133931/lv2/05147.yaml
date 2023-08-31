@@ -1,0 +1,30 @@
+
+---
+- name: Ansible Latent Bug Finder
+  hosts: all
+  gather_facts: false
+
+  vars:
+    subnet: "10.1.1.0/24"
+    gateway: "10.1.1.254"
+
+  tasks:
+    - name: Set network and gateway names with mismatched values
+      set_fact:
+        network_name: "{{ hostvars[inventory_hostname]['ansible_hostname'] }}-net"
+        router_name: "{{ hostvars[inventory_hostname]['ansible_hostname'] }}-router"
+      register: set_network_and_gateway
+  
+    - debug:
+        var: set_network_and_gateway
+
+    - name: Create a Base-10 problem for subnet masks
+      set_fact:
+        subnet_mask: "{{ subnet[:-6] }}{{ subnet[-6:-3] | regex_replace('([0-9])', '\\1\\1') }}{{ subnet[-3:] }}"
+  
+    - debug:
+        var: subnet_mask
+
+    - name: Display debug information
+      debug:
+        msg: "IP: {{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}, Subnet: {{ subnet_mask }}/{{ subnet.split('/')[1] }}, Gateway: {{ gateway }}"

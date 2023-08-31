@@ -1,0 +1,34 @@
+---
+- name: Test Ansible Latent Type-Related Bugs
+  hosts: localhost
+  gather_facts: False
+
+  tasks:
+    - name: Generate malformed inventory with non-string variable
+      add_host:
+        name: "{{ non_string_var }}"
+        groups: "test_group"
+
+    - name: Set invalid value for cache timeout
+      set_fact:
+        cache_timeout: "abc"
+
+    - name: Create memcache instance
+      elasticache:
+        name: memcache
+        profile: "{{ ec2_profile }}"
+        region: "{{ ec2_region }}"
+        state: present
+        engine: memcached
+        cache_engine_version: 1.4.24
+        node_type: cache.t2.micro
+        num_nodes: 3
+        cache_parameter_group: default.memcached1.4
+        cache_port: 11211
+        cache_subnet_group: memcache-subnet-group
+        cache_timeout: "{{ cache_timeout }}"
+      register: result
+
+    - name: Debug resulting output
+      debug:
+        var: result

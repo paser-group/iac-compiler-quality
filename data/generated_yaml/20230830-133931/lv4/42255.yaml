@@ -1,0 +1,22 @@
+- name: Test Ansible Compiler Vulnerability
+  hosts: all
+  gather_facts: false
+
+  vars:
+    target_ip: "{{ inventory_hostname }}"
+    target_port: "{{ hostvars[inventory_hostname].ansible_ssh_port }}"
+    vault_secret: "secret"
+
+  tasks:
+    - name: Set invalid target port
+      set_fact:
+        target_port: "invalid"
+
+    - name: Generate a request to hashi_vault
+      command: "/usr/bin/hashivault --target {{ target_ip }}:{{ target_port }} --secret {{ vault_secret }}"
+      register: hashi_vault_response
+      changed_when: false
+
+    - name: Debug hashi_vault response
+      debug:
+        var: hashi_vault_response.stdout_lines

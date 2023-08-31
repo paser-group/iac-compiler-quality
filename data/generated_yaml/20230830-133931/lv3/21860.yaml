@@ -1,0 +1,75 @@
+---
+- name: Test Ansible Latent Bug
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Set up Docker network
+      command: docker network create --subnet 10.1.1.0/24 --gateway 10.1.1.254 node-net
+
+    - name: Start Ubuntu container
+      docker_container:
+        name: ubuntu1
+        image: ubuntu
+        state: started
+        network_mode: node-net
+        ip_addr: 10.1.1.1
+
+    - name: Start Alpine container
+      docker_container:
+        name: alpine1
+        image: alpine
+        state: started
+        network_mode: node-net
+        ip_addr: 10.1.1.2
+
+    - name: Start CentOS container
+      docker_container:
+        name: centos1
+        image: centos
+        state: started
+        network_mode: node-net
+        ip_addr: 10.1.1.3
+
+    - name: Start RedHat container
+      docker_container:
+        name: redhat1
+        image: redhat
+        state: started
+        network_mode: node-net
+        ip_addr: 10.1.1.4
+
+    - name: Display inventory
+      shell: python ec2.py --list
+      args:
+        chdir: /path/to/ec2/inventory
+
+    # Additional test cases
+
+    - name: Test case 1 - Create symlink with space in the path
+      file:
+        path: "/path with space/link"
+        dest: "/etc/ansible/hosts"
+        state: link
+
+    - name: Test case 2 - Generate malformed unicode strings for inventory
+      set_fact:
+        inventory: "{{ '\uD83D\uDC4D\uD83D\uDC4D\uD83D\uDC4D' }}"
+
+    - name: Test case 3 - Negative cache timeout
+      shell: python ec2.py --list --retry-cache-timeout=-1
+      args:
+        chdir: /path/to/ec2/inventory
+
+    - name: Cleanup Docker containers
+      docker_container:
+        name: "{{ item }}"
+        state: absent
+      loop:
+        - ubuntu1
+        - alpine1
+        - centos1
+        - redhat1
+
+    - name: Cleanup Docker network
+      command: docker network rm node-net

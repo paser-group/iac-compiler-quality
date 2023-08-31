@@ -1,0 +1,44 @@
+---
+- name: Expose Latent Type-Related Bugs
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Define inventory
+      add_host:
+        name: "{{ item }}"
+        groups: "docker_hosts"
+      with_items:
+        - ubuntu1
+        - alpine1
+        - centos1
+        - redhat1
+
+    - name: Create Network
+      docker_network:
+        name: node-net
+        driver: bridge
+        subnet: 10.1.1.0/24
+        ipam_config:
+          - subnet: 10.1.1.0/24
+            gateway: 10.1.1.254
+
+    - name: Test Case - Incorrect IPAM Config
+      docker_network:
+        name: node-net
+        driver: bridge
+        subnet: 10.1.1.0/24
+        ipam_config:
+          - subnet: 10.1.1.0/24
+            gateway: "{{ hostvars[item]['ansible_default_ipv4']['address'] }}"  # Incorrect IP address type
+      loop: "{{ groups['docker_hosts'] }}"
+
+    - name: Test Case - Mismatching Network Driver
+      docker_network:
+        name: node-net
+        driver: host  # Mismatching network driver type
+        subnet: 10.1.1.0/24
+        ipam_config:
+          - subnet: 10.1.1.0/24
+            gateway: 10.1.1.254
+      loop: "{{ groups['docker_hosts'] }}"

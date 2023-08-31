@@ -1,0 +1,30 @@
+
+---
+- name: Bug Finding Playbook
+  hosts: all
+  gather_facts: false
+  vars:
+    vault_password: "testpassword"
+
+  tasks:
+    - name: Create a vault file
+      command: echo "My secret data" > /tmp/secret.txt
+      changed_when: false
+
+    - name: Encrypt the vault file
+      shell: ansible-vault encrypt /tmp/secret.txt --vault-password-file /tmp/vault_pass.txt
+      changed_when: false
+
+    - name: View the vault file without providing the vault password
+      shell: ansible-vault view /tmp/secret.txt --vault-password-file /tmp/vault_pass.txt
+      register: view_output
+      ignore_errors: true
+
+    - name: Display vault file output
+      debug:
+        var: view_output.stdout_lines
+      failed_when: "'ERROR: Odd-length string' in view_output.stderr"
+
+    # Additional tasks can be added to explore more vulnerabilities
+
+...

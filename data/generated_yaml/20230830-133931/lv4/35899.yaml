@@ -1,0 +1,65 @@
+
+---
+- name: State Inquiry Playbook
+  hosts: all
+  gather_facts: no
+
+  vars:
+    network_subnet: "10.1.1.0/24"
+    network_gateway: "10.1.1.254"
+
+  tasks:
+    - name: Ensure correct network configuration
+      block:
+        - name: Set network interface config
+          template:
+            src: network_interface.j2
+            dest: /etc/network/interfaces.d/{{ ansible_hostname }}
+
+        - name: Restart network service
+          service:
+            name: network
+            state: restarted
+      rescue:
+        - name: Rollback network configuration
+          file:
+            path: /etc/network/interfaces.d/{{ ansible_hostname }}
+            state: absent
+
+    - name: Validate network configuration
+      block:
+        - name: Ping network gateway
+          command: ping -c 4 {{ network_gateway }}
+          changed_when: false
+          register: ping_result
+
+        - name: Check network connectivity
+          assert:
+            that:
+              - ping_result.stdout_lines is search("4 packets transmitted, 4 received")
+
+      rescue:
+        - name: Fail playbook execution
+          fail:
+            msg: "Failed to validate network configuration"
+
+    - name: Finalize network configuration
+      block:
+        - name: Add default route
+          template:
+            src: network_route.j2
+            dest: /etc/network/interfaces.d/default
+
+        - name: Configure DNS
+          template:
+            src: network_dns.j2
+            dest: /etc/resolv.conf
+      rescue:
+        - name: Rollback default route
+          file:
+            path: /etc/network/interfaces.d/default
+            state: absent
+        - name: Rollback DNS
+          file:
+            path: /etc/resolv.conf
+            state: absent

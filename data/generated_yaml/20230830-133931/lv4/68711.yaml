@@ -1,0 +1,38 @@
+
+---
+- name: Test route53 module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create test subnet
+      docker_network:
+        name: node-net
+        subnet: 10.1.1.0/24
+        gateway: 10.1.1.254
+
+    - name: Create test nodes
+      docker_container:
+        name: "{{ item.name }}"
+        image: "{{ item.image }}"
+        networks:
+          - name: node-net
+        state: started
+      with_items:
+        - { name: "ubuntu1", image: "ubuntu" }
+        - { name: "alpine1", image: "alpine" }
+        - { name: "centos1", image: "centos" }
+        - { name: "redhat1", image: "redhat" }
+
+    - name: Test route53 module with different profiles
+      route53:
+        state: present
+        profile: "{{ item.profile }}"
+        hosted_zone_id: 'my.zone.ai'
+        record: '*.my.zone.ai'
+        type: CNAME
+        value: '0.0.0.0'
+      with_items:
+        - { profile: "route53-role-profile" }
+        - { profile: "route53-source-profile" }
+        -

@@ -1,0 +1,49 @@
+---
+- name: Uncover Latent Type-Related Bugs in Ansible Compiler
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Create symlink paths with space
+      file:
+        path: "/tmp/my dir with space"
+        state: link
+        src: "/tmp/my_file"
+    
+    - name: Generate malformed unicode strings for inventory
+      set_fact:
+        malformed_unicode_string: "\ud880\udc0c\ud880\udc0c"  # Replace with desired malformed unicode string
+
+    - name: Negative cache timeout value
+      set_fact:
+        ansible_gather_timeout_seconds: -1
+        
+    - name: Start traefik LB service
+      docker_swarm_service:
+        debug: yes
+        name: traefik-lb
+        image: 'traefik:1.7'
+        user: null
+        constraints:
+          - 'node.role==manager'
+        networks:
+          - traefik-net
+        publish:
+          - published_port: 8080
+            target_port: 8080
+          - published_port: 8081
+            target_port: 8081
+        args:
+          - '--defaultEntryPoints=http'
+          - '--entryPoints=Name:http Address::8080'
+          - '--entryPoints=Name:mgt Address::8081'
+          - '--docker'
+          - '--docker.swarmMode'
+          - '--docker.domain=traefik'
+          - '--docker.watch'
+          - '--api'
+          - '--api.entrypoint=mgt'
+          - '--api.statistics.recentErrors=100'
+        mounts:
+          - source: '/var/run/docker.sock'
+            target: '/var/run/docker.sock'
+            type: bind

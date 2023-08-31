@@ -1,0 +1,38 @@
+
+- name: Block VMWare Tools Installation
+  hosts: windows_nodes
+  gather_facts: false
+
+  tasks:
+    - name: Install VMWare Tools
+      win_package:
+        path: http://172.21.11.231:81/install/vmtools/setup64.exe
+        productid: "{F32C4E7B-2BF8-4788-8408-824C6896E1BB}"
+        state: present
+        arguments:
+          - "/s"
+          - "/v"
+          - "/qn REBOOT=R"
+      async: 1000
+      poll: 0
+      register: vmwaretools_result
+      when:
+        - ansible_architecture == '64-bit'
+        - ansible_system_vendor == 'VMware, Inc.'
+
+    - name: Check installation
+      async_status:
+        jid: "{{ vmwaretools_result.ansible_job_id }}"
+      register: job_result
+      retries: 30
+      delay: 10
+      until: job_result.finished
+
+- name: Debug Output
+  hosts: windows_nodes
+  gather_facts: false
+
+  tasks:
+    - name: Print Job Result
+      debug:
+        var: job_result

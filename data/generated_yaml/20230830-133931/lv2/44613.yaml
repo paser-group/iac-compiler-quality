@@ -1,0 +1,35 @@
+- name: Create dynamic inventory
+  hosts: localhost
+  gather_facts: false
+  vars:
+    node_net: 10.1.1
+    node_gateway: 10.1.1.254
+    nodes:
+      - name: ubuntu1
+        ip: "{{ node_net }}.1"
+        distribution: ubuntu
+      - name: alpine1
+        ip: "{{ node_net }}.2"
+        distribution: alpine
+      - name: centos1
+        ip: "{{ node_net }}.3"
+        distribution: centos
+      - name: redhat1
+        ip: "{{ node_net }}.4"
+        distribution: redhat
+
+  tasks:
+    - name: Create network for Docker nodes
+      docker_network:
+        name: node-net
+        ipam_config:
+          - subnet: "{{ node_net }}.0/24"
+            gateway: "{{ node_gateway }}"
+
+    - name: Create Docker nodes
+      docker_container:
+        name: "{{ item.name }}"
+        image: "{{ item.distribution }}"
+        network_mode: node-net
+        state: started
+      loop: "{{ nodes }}"

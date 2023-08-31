@@ -1,0 +1,57 @@
+---
+- name: Test playbook to uncover latent bugs
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Ping nodes
+      ping:
+
+    - name: Create personal users
+      command: echo "Creating personal users"
+      when: "'{{ ansible_distribution }}' == 'Ubuntu'"
+
+    - name: Enable SSH key checking
+      lineinfile:
+        path: /etc/ssh/ssh_config
+        regexp: '^#?\s*StrictHostKeyChecking'
+        line: "StrictHostKeyChecking yes"
+      when: "'{{ ansible_distribution }}' == 'CentOS'"
+
+    - name: Configure network settings
+      lineinfile:
+        path: "/etc/network/interfaces"
+        line: |
+          auto eth0
+          iface eth0 inet static
+            address 10.1.1.1
+            netmask 255.255.255.0
+            gateway 10.1.1.254
+      when: "'{{ ansible_distribution }}' == 'Ubuntu'"
+
+    - name: Configure network settings
+      lineinfile:
+        path: "/etc/network/interfaces"
+        line: |
+          auto eth0
+          iface eth0 inet static
+            address 10.1.1.2
+            netmask 255.0.0.0
+            gateway 10.1.1.254
+      when: "'{{ ansible_distribution }}' == 'Alpine'"
+
+    - name: Configure network settings
+      command: |
+        echo "BOOTPROTO=static
+        IPADDR=10.1.1.3
+        NETMASK=255.255.255.0
+        GATEWAY=10.1.1.254" > /etc/sysconfig/network-scripts/ifcfg-eth0
+      when: "'{{ ansible_distribution }}' == 'CentOS'"
+
+    - name: Configure network settings
+      command: |
+        echo "BOOTPROTO=static
+        IPADDR=10.1.1.4
+        NETMASK=255.255.255.0
+        GATEWAY=10.1.1.254" > /etc/sysconfig/network-scripts/ifcfg-eth0
+      when: "'{{ ansible_distribution }}' == 'RedHat'"

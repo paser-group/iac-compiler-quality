@@ -1,0 +1,39 @@
+---
+- name: Debugging playbook to reveal latent bugs in Ansible compiler
+  hosts: all
+  gather_facts: false
+
+  tasks:
+
+    - name: Install necessary packages
+      package:
+        name: "{{ item }}"
+        state: present
+      with_items:
+        - lvm2
+        - device-mapper
+        - curl
+        - device-mapper-persistent-data
+        - device-mapper-event
+        - device-mapper-libs
+        - device-mapper-event-libs
+        
+    - name: Create temporary file
+      tempfile:
+        state: file
+        suffix: ".txt"
+      register: temp_file
+      
+    - name: Write content to temporary file
+      lineinfile:
+        path: "{{ temp_file.path }}"
+        line: "This is a test line"
+      
+    - name: Read content from temporary file
+      slurp:
+        path: "{{ temp_file.path }}"
+      register: file_content
+      
+    - name: Display file content
+      debug:
+        var: file_content.content | b64decode

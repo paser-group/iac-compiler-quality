@@ -1,0 +1,32 @@
+- name: Bug Finder
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Set temporary directory path
+      set_fact:
+        temp_dir: "{{ ansible_env.HOME }}/.ansible/tmp/ansible-tmp-{{ ansible_date_time.epoch }}"
+
+    - name: Create temporary directory
+      ansible.builtin.file:
+        path: "{{ temp_dir }}"
+        state: directory
+        mode: '0755'
+
+    - name: Generate echo command
+      set_fact:
+        echo_command: "echo '{{ temp_dir }}'"
+
+    - name: Execute echo command
+      ansible.builtin.shell: "{{ echo_command }}"
+      register: echo_output
+      changed_when: false
+
+    - name: Debug echo output
+      debug:
+        var: echo_output.stdout
+
+    - name: Remove temporary directory
+      ansible.builtin.file:
+        path: "{{ temp_dir }}"
+        state: absent

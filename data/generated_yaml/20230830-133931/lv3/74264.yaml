@@ -1,0 +1,29 @@
+---
+- name: Trigger Ansible Compiler Bug
+  hosts: all
+
+  tasks:
+    - name: Create symlink with space in the path
+      file:
+        src: "/tmp/my symlink/path"
+        dest: "/tmp/ansible_test_symlink"
+        state: link
+        force: yes
+
+    - name: Generate malformed unicode strings for inventory
+      shell: |
+        echo -e "ubuntu1 ansible_host=10.1.1.1" > /tmp/ansible_inventory
+        echo -e "alpine1 ansible_host=10.1.1.2" >> /tmp/ansible_inventory
+        echo -e "centos1 ansible_host=10.1.1.3" >> /tmp/ansible_inventory
+        echo -e "redhat1 ansible_host=10.1.1.4\uFFFF\uFFFF\uFFFF" >> /tmp/ansible_inventory
+
+    - name: Set negative cache timeout value
+      lineinfile:
+        path: "/tmp/ansible.cfg"
+        line: "cache_timeout=-1"
+
+    - name: Trigger Ansible Compiler Bug
+      command: ansible-vault create --vault-id prodpass@prompt
+      args:
+        chdir: "/tmp"
+      ignore_errors: true

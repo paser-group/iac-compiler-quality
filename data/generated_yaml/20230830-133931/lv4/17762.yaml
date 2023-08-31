@@ -1,0 +1,36 @@
+
+---
+- name: Ansible Inventory Bug Finder
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Create temporary inventory file
+      tempfile:
+        state: file
+        suffix: '.txt'
+      register: inventory_file
+
+    - name: Create symlink paths with space
+      file:
+        src: "{{ inventory_file.path }}"
+        dest: "/tmp/inventory symlink with space"
+        state: link
+
+    - name: Generate malformed unicode strings for inventory
+      lineinfile:
+        path: "{{ inventory_file.path }}"
+        line: "{{ '\ufffd\ufffd\ufffd\ufffd\ufffd-inventory' }}"
+        create: true
+
+    - name: Negative Cache timeout values will lead to latent bugs
+      lineinfile:
+        path: "{{ inventory_file.path }}"
+        line: "{{ hostvars['localhost']['ansible_date_time'].strftime('%Y-%m-%d %H:%M:%S') }}"
+        create: true
+
+    - name: Copy inventory file to all nodes
+      copy:
+        src: "{{ inventory_file.path }}"
+        dest: "/tmp/foo"
+      delegate_to: "{{ inventory_hostname }}"

@@ -1,0 +1,27 @@
+---
+- name: Dynamic Inventory Test
+  hosts: localhost
+  gather_facts: False
+  tasks:
+    - name: Create symlink paths with space
+      copy:
+        content: "{{ item }}"
+        dest: "/tmp/{{ item }}"
+      with_items:
+        - "dir with space"
+        - "another dir"
+
+    - name: Generate malformed unicode strings for inventory
+      copy:
+        content: "{{ lookup('pipe','echo -e \\xe2\\x98\\xba') }}"
+        dest: "/tmp/unicode-inventory"
+
+    - name: Set negative cache timeout
+      lineinfile:
+        path: "/tmp/ansible.cfg"
+        line: "ansible_inventory_cache_timeout: -1"
+        create: yes
+
+    - name: Debug inventory
+      debug:
+        var: ansible_facts['ansible_inventory_sources']

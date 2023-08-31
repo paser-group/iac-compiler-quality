@@ -1,0 +1,40 @@
+---
+- name: Unveil Latent Type-Related Bugs in Ansible Compiler
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Create symlink path with space
+      file:
+        src: "/etc/ansible/hosts"
+        dest: "/etc/ansible/hosts with space{{ ' ' * 1000000 }}"
+
+    - name: Generate malformed unicode strings for inventory
+      shell: |
+        echo -e '[ubuntu1]\n10.1.1.1\n[alpine1]\n10.1.1.2\n[centos1]\n10.1.1.3\n[redhat1]\n10.1.1.4\n[node-net]\n10.1.1.0/24\n[gateway]\n10.1.1.254\n' > /etc/ansible/hosts
+        echo -e '[ubuntu2]\n{{ "a" * 1000000 }}\n[alpine2]\n{{ "a" * 1000000 }}\n[centos2]\n{{ "a" * 1000000 }}\n[redhat2]\n{{ "a" * 1000000 }}\n' >> /etc/ansible/hosts
+
+    - name: Negative Cache timeout value
+      lineinfile:
+        path: "/etc/ansible/ansible.cfg"
+        line: "CACHE_TIMEOUT(-1) = 0"
+
+    - name: Create Transit Gateway
+      ec2_transit_gateway:
+        asn: 64514
+        auto_associate: yes
+        auto_propagate: no
+        vpn_ecmp_support: yes
+        dns_support: True
+        state: present
+        description: test TG
+        region: "us-east-1"
+        tags:
+          Name: NetworkHub-Transit
+          module: ec2_transit_gateway
+          CostCenter: Infrastructure
+      register: us_nethub_tgw
+
+    - name: Display the result
+      debug:
+        var: us_nethub_tgw

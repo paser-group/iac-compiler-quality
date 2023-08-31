@@ -1,0 +1,27 @@
+
+---
+- name: Latent Bug Finder Playbook
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Ping all hosts
+      ping:
+        timeout: "{{ ping_timeout | default(2) }}"
+        
+    - name: Wait for connection with connection timeout
+      wait_for_connection:
+        delay: 10
+        timeout: "{{ connection_timeout | default(30) }}"
+
+    - name: Test subnet mask calculation
+      debug:
+        msg: "{{ item }}"
+      with_sequence: start=0 end=10
+      when: (item|int % 2 == 0)
+
+    - name: Test mismatching network and router names
+      debug:
+        msg: "Network and router names match."
+      when: inventory_hostname.startswith("ubuntu") and ansible_default_ipv4.network == "10.1.1.0/24"
+      failed_when: inventory_hostname.startswith("centos") and ansible_default_ipv4.network != "10.1.1.0/24"

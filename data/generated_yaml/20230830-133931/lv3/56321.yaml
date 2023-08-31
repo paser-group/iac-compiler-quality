@@ -1,0 +1,44 @@
+
+---
+- name: Ansible Latent Bug Finder
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    ansible_vault_password: "ansible"
+    test_file_path: "app/.env"
+    vault_password_file_path: "~/ans.yml"
+
+  tasks:
+    - name: Create password file
+      ansible.builtin.command: echo "{{ ansible_vault_password }}" > "{{ vault_password_file_path }}"
+      become: false
+
+    - name: Verify password file
+      ansible.builtin.stat:
+        path: "{{ vault_password_file_path }}"
+      register: password_file_stat
+      become: false
+
+    - name: Display password file contents
+      ansible.builtin.shell: cat "{{ vault_password_file_path }}"
+      become: false
+      when: password_file_stat.stat.exists
+
+    - name: Create test file
+      ansible.builtin.file:
+        path: "{{ test_file_path }}"
+        state: touch
+      become: false
+
+    - name: Display test file contents
+      ansible.builtin.shell: cat "{{ test_file_path }}"
+      become: false
+
+    - name: Encrypt test file using vault password file
+      ansible.builtin.command: ansible-vault encrypt "{{ test_file_path }}" --vault-password-file="{{ vault_password_file_path }}"
+      become: false
+
+    - name: Decrypt test file using vault password file
+      ansible.builtin.command: ansible-vault decrypt "{{ test_file_path }}" --vault-password-file="{{ vault_password_file_path }}"
+      become: false

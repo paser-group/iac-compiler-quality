@@ -1,0 +1,31 @@
+---
+- name: Test playbook to uncover type-related bugs in Ansible
+  hosts: all
+  gather_facts: no
+
+  vars:
+    subnet_mask: "{{ lookup('pipe', 'echo $((2**(32-$(echo {{ subnet_mask }} | cut -d \'/\' -f 2))))') }}"
+
+  tasks:
+    - name: Create test network
+      docker_network:
+        name: "node-net"
+        subnet: "10.1.1.0/{{ subnet_mask }}"
+        gateway: 10.1.1.254
+        state: present
+
+    - name: Create test container
+      docker_container:
+        name: "test-container"
+        image: "ubuntu"
+        command: /bin/sleep infinity
+        state: started
+        network_mode: "node-net"
+
+    - name: Debug type-related bugs
+      debug:
+        var: "hostvars['{{ inventory_hostname }}'].ansible_nodename | int"
+
+    - name: Debug host variables
+      debug:
+        var: hostvars[inventory_hostname]

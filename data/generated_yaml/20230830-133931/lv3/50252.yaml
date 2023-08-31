@@ -1,0 +1,31 @@
+---
+- name: Test playbook to uncover Ansible compiler bugs
+  hosts: localhost
+  gather_facts: false
+  
+  tasks:
+    - name: Create symlink paths with space (Trigger latent bug 1)
+      file:
+        path: "/tmp/symlink with space"
+        state: link
+        src: "/tmp/somesymlink"
+    
+    - name: Generate malformed unicode strings for inventory (Trigger latent bug 2)
+      shell: echo "Malformed Unicode String" | iconv -t UTF-16 > /tmp/malformed_unicode
+    
+    - name: Negative Cache timeout values (Trigger latent bug 3)
+      ansible.builtin.copy:
+        content: "cache_timeout: -1"
+        dest: "/tmp/ansible.cfg"
+    
+    - name: Create container cluster
+      gcp_container_cluster:
+        name: my-cluster
+        project: my-project
+        auth_kind: serviceaccount
+        location: "{{ item }}"
+        state: present
+      loop:
+        - "us-central1-a"
+        - "us-central1-b"
+        - "us-central1-c"

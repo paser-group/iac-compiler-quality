@@ -1,0 +1,44 @@
+
+- name: Test Ansible Compiler Security Bugs
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Retrieve all gather_facts variables
+      setup:
+        gather_subset:
+          - all
+
+    - name: Print all gather_facts variables
+      debug:
+        var: hostvars[inventory_hostname]
+
+    - name: Copy a file with sensitive data to a temporary location
+      copy:
+        content: |
+          This is sensitive information that should not be exposed.
+        dest: "/tmp/sensitive_data.txt"
+        mode: 0600
+
+    - name: Check if sensitive file is accessible by others
+      shell: "ls -l /tmp/sensitive_data.txt"
+      register: ls_output
+      changed_when: false
+
+    - name: Print the output of the ls command
+      debug:
+        var: ls_output.stdout_lines
+
+    - name: Remove the sensitive file
+      file:
+        path: "/tmp/sensitive_data.txt"
+        state: absent
+
+    - name: Attempt to access the removed sensitive file
+      shell: "cat /tmp/sensitive_data.txt"
+      register: cat_output
+      changed_when: false
+
+    - name: Print the output of the cat command
+      debug:
+        var: cat_output.stderr_lines

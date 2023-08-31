@@ -1,0 +1,43 @@
+- name: Create load balancer and target group
+  hosts: localhost
+  gather_facts: false
+  vars:
+    vpc_id: "valid-vpc-id"
+    target_group_name: "my-target-group"
+    region: "us-west-2"
+
+  tasks:
+    - name: Create a target group
+      local_action:
+        module: elb_target_group
+        name: "{{ target_group_name }}"
+        vpc_id: "{{ vpc_id }}"
+        state: present
+        region: "{{ region }}"
+        protocol: http
+        port: "81"
+        health_check_path: "/"
+        health_check_interval: 15
+        health_check_port: "81"
+        health_check_protocol: http
+        health_check_timeout: 5
+        successful_response_codes: "200"
+        unhealthy_threshold_count: 2
+        healthy_threshold_count: 5
+
+    - name: Create a load balancer
+      local_action:
+        module: elb_application_lb
+        name: "my-load-balancer"
+        vpc_id: "{{ vpc_id }}"
+        region: "{{ region }}"
+        state: present
+        subnets:
+          - "subnet-12345"
+          - "subnet-67890"
+        security_groups:
+          - "sg-abcde"
+          - "sg-fghij"
+          - "sg-klmno"
+        target_groups:
+          - "{{ target_group_name }}"

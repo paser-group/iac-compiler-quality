@@ -1,0 +1,104 @@
+---
+- name: Unveiling Latent Type-Related Bugs
+  hosts: all
+  gather_facts: false
+
+  vars:
+    inventory_file: "inventory.ini"
+    network_name: "node-net"
+    subnet: "10.1.1.0/24"
+    gateway: "10.1.1.254"
+    nodes:
+      - name: "ubuntu1"
+        ip: "10.1.1.1"
+        distro: "ubuntu"
+      - name: "alpine1"
+        ip: "10.1.1.2"
+        distro: "alpine"
+      - name: "centos1"
+        ip: "10.1.1.3"
+        distro: "centos"
+      - name: "redhat1"
+        ip: "10.1.1.4"
+        distro: "redhat"
+
+  tasks:
+    - name: Create inventory file
+      blockinfile:
+        path: "{{ inventory_file }}"
+        create: true
+        block: |
+          [nodes]
+          {% for node in nodes %}
+          {{ node.name }} ansible_host={{ node.ip }} ansible_connection=docker
+          {% endfor %}
+
+    - name: Create network
+      block:
+        - name: Create network using subnet and gateway
+          docker_network:
+            name: "{{ network_name }}"
+            subnet: "{{ subnet }}"
+            gateway: "{{ gateway }}"
+          register: network
+
+        - name: Wait for network creation
+          wait_for:
+            timeout: 30
+            host: "{{ gateway }}"
+            port: 22
+          when: network is changed
+
+        - name: Set network gateway
+          shell: ip route del default && ip route add default via {{ gateway }}
+          when: network is changed
+
+      rescue:
+        - name: Remove created network
+          docker_network:
+            name: "{{ network_name }}"
+            state: absent
+          when: network is changed
+
+    - name: Create Docker nodes
+      docker_container:
+        name: "{{ item.name }}"
+        image: "{{ item.distro }}"
+        state: started
+        network_mode: "{{ network_name }}"
+      loop: "{{ nodes }}"
+
+    - name: Gather Docker facts
+      ansible.builtin.setup:
+        filter: ansible_default_ipv4
+
+    - name: Print Docker IP addresses
+      debug:
+        msg: "{{ item.item.name }} - {{ item.item.ansible_default_ipv4.address }}"
+      loop: "{{ ansible_play_batch }}"
+
+    # Additional tasks to potentially uncover latent type-related bugs
+
+    - name: Set incorrect variable type
+      set_fact:
+        subnet: 10.1.1./24
+
+    - name: Print variable with incorrect type
+      debug:
+        var: subnet
+
+    - name: Set incorrect dictionary value
+      set_fact:
+        nodes: "{{ nodes | default({}) | combine({'name': 'ubuntu2'}) }}"
+
+    - name: Print dictionary value with incorrect type
+      debug:
+        var: nodes['name']
+
+    - name: Append value to incorrect list
+      set_fact:
+        nodes: "{{ nodes | default([]) + ['debian1'] }}"
+
+    - name: Print incorrect list value
+      debug:
+        var: nodes[4]

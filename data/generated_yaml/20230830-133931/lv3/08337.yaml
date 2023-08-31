@@ -1,0 +1,57 @@
+---
+
+- name: Discover Latent Bug
+  hosts: all
+  gather_facts: false
+
+  vars:
+    node_subnet: 10.1.1.0/24
+    node_gateway: 10.1.1.254
+    docker_nodes:
+      - name: ubuntu1
+        ip: 10.1.1.1
+        distribution: ubuntu
+      - name: alpine1
+        ip: 10.1.1.2
+        distribution: alpine
+      - name: centos1
+        ip: 10.1.1.3
+        distribution: centos
+      - name: redhat1
+        ip: 10.1.1.4
+        distribution: redhat
+
+  tasks:
+    - name: Create Docker Network
+      docker_network:
+        name: node-net
+        subnet: "{{ node_subnet }}"
+        gateway: "{{ node_gateway }}"
+
+    - name: Create Docker Nodes
+      docker_container:
+        name: "{{ item.name }}"
+        image: "{{ item.distribution }}"
+        state: started
+        privileged: true
+        networks:
+          - name: node-net
+            ipv4_address: "{{ item.ip }}"
+      loop: "{{ docker_nodes }}"
+
+    - name: Discover Latent Type-Related Bug
+      command: |
+        echo "{{ inventory_hostname }}" > /tmp/{{ item.name }}.txt
+      loop: "{{ docker_nodes }}"
+      changed_when: false
+
+    - name: Print File Contents
+      command: cat /tmp/{{ item.name }}.txt
+      loop: "{{ docker_nodes }}"
+      changed_when: false
+
+    - name: Cleanup Docker Nodes
+      docker_container:
+        name: "{{ item.name }}"
+        state: absent
+      loop: "{{ docker_nodes }}"

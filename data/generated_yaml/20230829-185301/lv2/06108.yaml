@@ -1,0 +1,25 @@
+---
+- name: Test playbook
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    port_check_command: "netstat -tln | awk 'NR>2 {print $4}'"
+
+  tasks:
+    - name: Check open ports
+      shell: "{{ port_check_command }}"
+      register: open_ports
+      changed_when: false
+
+    - name: Print open ports
+      debug:
+        var: open_ports.stdout_lines
+
+    - name: Enable a port if not already open
+      command: "sudo ufw allow {{ item }}"
+      when: "item|int not in open_ports.stdout_lines"
+      with_items:
+        - 8080
+        - 9090
+        - 1234

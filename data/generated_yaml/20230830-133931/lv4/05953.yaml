@@ -1,0 +1,24 @@
+
+---
+- name: Ansible Latent Bug Finder Playbook
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Check if service is enabled but not started
+      shell: |
+        systemctl is-enabled {{ ansible_service }}.service --quiet
+        systemctl is-active {{ ansible_service }}.service --quiet
+        if [ $? -eq 0 ]; then
+          echo "Service is enabled and started"
+        else
+          echo "Service is enabled but not started"
+        fi
+      register: service_status
+      changed_when: false
+      check_mode: true
+
+    - name: Display service status
+      debug:
+        msg: "Service status: {{ service_status.stdout }}"
+

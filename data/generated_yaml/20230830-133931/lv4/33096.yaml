@@ -1,0 +1,16 @@
+
+---
+- name: Remove Default Security Group Rules
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Get Security Group ID
+      command: neutron security-group-list --format=csv --quote minimal --column id --column name | awk -F',' '/foo/ { print $1 }'
+      register: security_group_id
+      
+    - name: Remove Default Security Group Rules
+      os_security_group_rule:
+        state: absent
+        security_group: "{{ security_group_id.stdout }}"
+        direction: egress
+        remote_ip_prefix: 0.0.0.0/0

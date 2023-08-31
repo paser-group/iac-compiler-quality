@@ -1,0 +1,50 @@
+---
+- name: Ansible Latent Bug Finder
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create symlink path with space
+      file:
+        src: "/tmp/my symlink path"
+        dest: "/tmp/my_symlink_path"
+        state: link
+
+    - name: Generate malformed unicode strings for inventory
+      file:
+        src: "/tmp/unicode\xe2"
+        dest: "/tmp/unicode"
+        state: touch
+
+    - name: Set negative Cache timeout value
+      lineinfile:
+        path: /etc/ansible/ansible.cfg
+        line: "cache_timeout = -1"
+        state: present
+
+    - name: Launching Instance
+      ec2:
+        aws_access_key: "dummy"
+        aws_secret_key: "dummy"
+        key_name: "key"
+        group: "group"
+        instance_type: "t2.micro"
+        image: "ami-12345678"
+        vpc_subnet_id: "subnet-12345678"
+        region: "us-west-2"
+        instance_tags:
+          Name: "Node"
+          Type: "vpc-12345678"
+        wait: true
+        count: 1
+        volumes:
+          - device_name: /dev/sda1
+            volume_size: 100
+            delete_on_termination: true
+      register: ec2_info
+
+    - name: Debug instance details
+      debug:
+        var: item
+      with_items:
+        - ec2_info.instances

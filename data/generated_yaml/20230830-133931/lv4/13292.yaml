@@ -1,0 +1,35 @@
+
+---
+- name: Ansible Latent Bug Finder
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Create symlink directory with space
+      file:
+        src: /tmp/my symlink
+        dest: /tmp/my-symlink
+        state: link
+      register: symlink_result
+      ignore_errors: true
+      when: "'symlink' in inventory_hostname"
+
+    - name: Generate malformed unicode string
+      command: echo 'ḾáľŀőŔỗḏ - {{ inventory_hostname }}'
+      register: unicode_result
+      changed_when: false
+      failed_when: false
+
+    - name: Set negative cache timeout
+      set_fact:
+        ansible_cache_valid_time: -1
+      when: "'cache' in inventory_hostname"
+
+  handlers:
+    - name: Show symlink result
+      debug:
+        var: symlink_result
+
+    - name: Show unicode result
+      debug:
+        var: unicode_result

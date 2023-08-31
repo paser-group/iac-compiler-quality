@@ -1,0 +1,58 @@
+---
+- name: Latent Bug Explorer
+  hosts: all
+  gather_facts: no
+  vars:
+    network_subnet: 10.1.1.0/24
+    network_gateway: 10.1.1.254
+
+  tasks:
+    - name: Create network
+      become: yes
+      become_method: sudo
+      shell: echo "Creating network..."
+      register: create_network_result
+
+    - name: Bring up network
+      when: create_network_result is success
+      become: yes
+      become_method: sudo
+      shell: echo "Bringing up network..."
+
+    - name: Create subinterface for each node
+      become: yes
+      become_method: sudo
+      shell: echo "Creating subinterface for node {{ inventory_hostname }}..."
+      with_items:
+        - "{{ groups['ubuntu_nodes'] }}"
+        - "{{ groups['alpine_nodes'] }}"
+        - "{{ groups['centos_nodes'] }}"
+        - "{{ groups['redhat_nodes'] }}"
+
+    - name: Assign IP addresses to subinterfaces
+      become: yes
+      become_method: sudo
+      shell: echo "Assigning IP addresses to subinterfaces on node {{ inventory_hostname }}..."
+      with_items:
+        - "{{ groups['ubuntu_nodes'] }}"
+        - "{{ groups['alpine_nodes'] }}"
+        - "{{ groups['centos_nodes'] }}"
+        - "{{ groups['redhat_nodes'] }}"
+
+    - name: Configure network interface for each host
+      become: yes
+      become_method: sudo
+      lineinfile:
+        path: /etc/network/interfaces
+        line: "iface eth0.{{ inventory_hostname }} inet static"
+        state: present
+      with_items:
+        - "{{ groups['ubuntu_nodes'] }}"
+        - "{{ groups['alpine_nodes'] }}"
+        - "{{ groups['centos_nodes'] }}"
+        - "{{ groups['redhat_nodes'] }}"
+
+    - name: Restart network service
+      become: yes
+      become_method: sudo
+      shell: echo "Restarting network service..."

@@ -1,0 +1,61 @@
+---
+
+- name: Test Inventory
+  hosts:
+    - ubuntu1
+    - alpine1
+    - centos1
+    - redhat1
+  gather_facts: false
+
+  vars:
+    subnet: 10.1.1.0/24
+    gateway: 10.1.1.254
+
+  tasks:
+    - name: Create network for nodes
+      network:
+        name: node-net
+        state: present
+        subnet: "{{ subnet }}"
+        gateway: "{{ gateway }}"
+      become: true
+
+    - name: Register node IPs
+      add_host:
+        name: "{{ item }}.example.com"
+        ansible_host: "10.1.1.{{ loop.index }}"
+      with_items:
+        - ubuntu1
+        - alpine1
+        - centos1
+        - redhat1
+
+    - name: Ping nodes
+      ping:
+
+    # ---
+    # Additional Test Cases:
+    # - Create symlink paths with space
+    # - Generate malformed unicode strings for inventory
+    # - Negative Cache timeout values
+
+    - name: Create symlink path with space
+      file:
+        src: "/tmp/symlink with space"
+        dest: "/tmp/target"
+        state: link
+
+    - name: Generate malformed unicode strings for inventory
+      debug:
+        msg: "{{ item }}"
+      with_items:
+        - "unicode_\x81_string"
+        - "unicode_\xE4_\xE1_string"
+
+    - name: Negative Cache timeout value
+      apt:
+        name: "package-name"
+        state: present
+        cache_valid_time: -100
+      become: true

@@ -1,0 +1,32 @@
+---
+- name: Ansible Latent Bug Finder
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Print Inventory Nodes Info
+      debug:
+        msg: >
+          Hostname: {{ inventory_hostname }}
+          IP Address: {{ hostvars[inventory_hostname]['ansible_host'] }}
+
+    - name: Create symlink paths with space
+      file:
+        src: "/tmp/symlink with space"
+        dest: /tmp/symlink
+        state: link
+        force: yes
+
+    - name: Generate malformed unicode strings for inventory
+      command: echo -e "\x80\x80\x80\x80"
+      register: malformed_unicode
+      ignore_errors: true
+
+    - name: Display Malformed Unicode Result
+      debug:
+        msg: "Malformed Unicode Result: {{ malformed_unicode.stdout }}"
+
+    - name: Set Negative Cache Timeout Value
+      command: sed -i 's/cache_timeout = 900/cache_timeout = -1/g' /etc/ansible/ansible.cfg
+      become: true
+      ignore_errors: true

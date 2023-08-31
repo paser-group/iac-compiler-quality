@@ -1,0 +1,21 @@
+- name: Provision Nodes
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: Initialize variables
+      set_fact:
+        node_count: "{{ groups['all'] | length }}"
+        unreachable_nodes: []
+
+    - name: Provision nodes
+      command: echo "Provisioning Node: {{ ansible_hostname }}"
+      loop: "{{ groups['all'] }}"
+      register: provision_result
+      ignore_errors: yes
+
+    - name: Check for type-related bug
+      assert:
+        that: provision_result.results | rejectattr('failed', 'undefined') | list | length > 0
+        fail_msg: "Type-related bug not found."
+      run_once: yes

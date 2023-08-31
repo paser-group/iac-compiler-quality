@@ -1,0 +1,33 @@
+---
+- name: Discover Ansible Type-Related Bugs
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Set subnet variable
+      set_fact:
+        subnet: "10.1.1.0/24"
+
+    - name: Set gateway variable
+      set_fact:
+        gateway: "10.1.1.254"
+  
+    - name: Convert subnet to integer
+      set_fact:
+        subnet_int: "{{ subnet | ipaddr('network') | ipaddr('int') }}"
+
+    - name: Convert gateway to integer
+      set_fact:
+        gateway_int: "{{ gateway | ipaddr('int') }}"
+
+    - name: Calculate network address
+      set_fact:
+        network_address: "{{ subnet_int | bitwise_and(gateway_int) | ipaddr }}"
+
+    - name: Ensure interface configuration
+      shell: |
+        sed -i '/^{{ item.key }}$/d' /etc/network/interfaces
+        echo -e "auto {{ item.key }}\niface {{ item.key }} inet static\n\taddress {{ item.value.ip }}\n\tnetmask {{ subnet.split('/')[1] }}\n\tgateway {{ gateway }}" >> /etc/network/interfaces
+      delegate_to: "{{ inventory_hostname }}"
+      when: item.key not in (ansible_facts.interfaces | default({}))
+      loop: "{{ nodes | dict2items }}"

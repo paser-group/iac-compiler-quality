@@ -1,0 +1,26 @@
+
+---
+- name: Test playbook
+  hosts: all
+  become: yes
+  gather_facts: no
+
+  tasks:
+    - name: Execute shell command
+      shell: echo vulnerable && sleep 5
+      async: 600
+      poll: 0
+
+    - name: Wait for shell command to finish
+      async_status:
+        jid: "{{ item.ansible_job_id }}"
+      loop: "{{ ansible_play_hosts_all }}"
+      register: async_results
+      until: async_results.results | map(attribute='finished') | list | count('False') | int == 0
+      retries: 60
+      delay: 10
+
+    - name: Verify vulnerability
+      command: echo "Test successful. Vulnerability exposed!"
+      changed_when: false
+      when: async_results.results | map(attribute='ansible_job_result') | list | count(1) | int > 0

@@ -1,0 +1,23 @@
+- name: Ansible Latent Bug Finder
+  hosts: all
+  gather_facts: false
+  connection: local
+
+  tasks:
+    - name: Set custom variable
+      set_fact:
+        custom_var: "10.1.1.{{ item }}"
+      with_sequence: start=1 end=4
+
+    - name: Debug custom variable
+      debug:
+        var: custom_var
+
+    - name: Create mismatching network and router names
+      set_fact:
+        networks_and_routers: "{{ networks_and_routers | default([]) + [ { 'network': '10.1.1.' ~ item, 'router': '10.1.1.' ~ ((item % 4) + 1) ~ '253' } ] }}"
+      loop: "{{ range(1, 5) | list }}"
+
+    - name: Debug networks and routers
+      debug:
+        var: networks_and_routers

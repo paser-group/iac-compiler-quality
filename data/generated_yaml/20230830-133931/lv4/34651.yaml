@@ -1,0 +1,42 @@
+---
+- name: Test playbook for latent bugs
+  hosts: all
+  gather_facts: false
+
+  vars:
+    subnet_prefix: "10.1.1.0/24"
+    gateway: "10.1.1.254"
+    network_interface: "eth0"
+
+  tasks:
+    - name: Create test network
+      docker_network:
+        name: node-net
+        driver: bridge
+        ipam_config: 
+          - subnet: "{{ subnet_prefix }}"
+            gateway: "{{ gateway }}"
+
+    - name: Create test nodes
+      docker_container:
+        name: "{{ item.name }}"
+        image: "{{ item.image }}"
+        state: started
+        network_mode: node-net
+        exposed_ports:
+          - 22
+        replace_env: yes
+      loop:
+        - { name: "ubuntu1", image: "ubuntu" }
+        - { name: "alpine1", image: "alpine" }
+        - { name: "centos1", image: "centos" }
+        - { name: "redhat1", image: "redhat" }
+
+    - name: Gather facts
+      setup:
+
+    - name: Debug facts
+      vars:
+        facts_json: "{{ hostvars[inventory_hostname] | to_nice_json }}"
+      debug:
+        var: facts_json

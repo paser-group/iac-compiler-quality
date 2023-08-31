@@ -1,0 +1,35 @@
+
+---
+- name: Bug Finder Playbook
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Debug SSLHandshakeError
+      uri:
+        url: "https://{{ inventory_hostname }}:8443/the/rest/here"
+        method: PUT
+        body: some_body
+      register: result
+      ignore_errors: true
+
+    - name: Print Error Message
+      debug:
+        var: result.failed_when|default('') + result.msg
+
+    - name: Report Bug
+      file:
+        path: "/tmp/bug_report.txt"
+        state: touch
+        mode: 0644
+        content: |
+          SSLHandshakeError discovered in Ansible compiler during SSL connection to {{ inventory_hostname }}
+
+    - name: Exit with Failure
+      fail:
+        msg: "SSLHandshakeError detected. Please report this as a bug to Ansible."
+
+    - name: Cleanup
+      file:
+        path: "/tmp/bug_report.txt"
+        state: absent

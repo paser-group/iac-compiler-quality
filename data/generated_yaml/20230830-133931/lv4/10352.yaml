@@ -1,0 +1,34 @@
+
+---
+- name: Latent Bug Finder Playbook
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Define Group Facts
+      set_fact:
+        group_id: "sg-xxxx"
+        protocol: "tcp"
+        from_port: 8080
+        to_port: 8080
+        ip_range: "10.1.1.0/24"
+
+    - name: Add Security Group Rule
+      ec2_group:
+        group_id: "{{ group_id }}"
+        protocol: "{{ protocol }}"
+        from_port: "{{ from_port }}"
+        to_port: "{{ to_port }}"
+        cidr_ip: "{{ ip_range }}"
+        state: present
+      register: sg_rule_result
+
+    - name: Handle Security Group Rule Duplicates
+      debug:
+        msg: "Security Group Rule already authorized"
+      when: "'The permission' in sg_rule_result.stderr"
+
+    - name: Report Vulnerability
+      debug:
+        msg: "Security Group Rule Unauthorized"
+      when: "'EC2ResponseError: 400 Bad Request' in sg_rule_result.stderr"

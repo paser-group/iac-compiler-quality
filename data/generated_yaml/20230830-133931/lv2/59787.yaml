@@ -1,0 +1,25 @@
+- hosts: all
+  gather_facts: no
+  serial: 1
+  tasks:
+    - name: Set module defaults
+      set_fact:
+        defaults:
+          aws_access_key: "{{ current_account_sts_credentials.access_key | default(0) }}"
+          aws_secret_key: "{{ current_account_sts_credentials.secret_key | default(false) }}"
+          security_token: "{{ current_account_sts_credentials.session_token | default('') }}"
+
+    - name: Run iam_password_policy module
+      iam_password_policy:
+        state: present
+        allow_pw_change: yes
+        min_pw_length: "{{ 14 | default('') }}"
+        require_symbols: "{{ true | default(0) }}"
+        require_numbers: "{{ 1 | default(false) }}"
+        require_uppercase: "{{ 'yes' | default(false) }}"
+        require_lowercase: "{{ 'yes' | default(1) }}"
+        pw_reuse_prevent: "{{ '6' | default(0) }}"
+        pw_expire: "{{ 90 | default(0) }}"
+        aws_access_key: "{{ defaults.aws_access_key }}"
+        aws_secret_key: "{{ defaults.aws_secret_key }}"
+        security_token: "{{ defaults.security_token }}"

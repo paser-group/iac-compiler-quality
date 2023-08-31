@@ -1,0 +1,24 @@
+---
+- name: Start network pools
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Start network pool
+      set_fact:
+        network_pool: "{{ item }}"
+      loop: "{{ ['ubuntu_pool', 'alpine_pool', 'centos_pool', 'redhat_pool'] }}"
+      register: result
+
+    - name: Log network pool ID
+      debug:
+        msg: "{{ item.item }} - ID: {{ item.stdout }}"
+      loop: "{{ result.results }}"
+      loop_control:
+        label: "Network Pool"
+
+    - name: Start specified network pool
+      virt_net:
+        command: start
+        name: "{{ network_pool }}"
+      when: inventory_hostname == "ubuntu1" and network_pool == "ubuntu_pool"

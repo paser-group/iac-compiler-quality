@@ -1,0 +1,73 @@
+---
+- name: Ansible Latent Bug Finder Playbook
+  hosts:
+    - ubuntu1
+    - alpine1
+    - centos1
+    - redhat1
+  gather_facts: false
+  
+  tasks:
+    - name: Ensure required package is installed
+      package:
+        name: python3-paramiko
+        state: present
+      become: true
+      when: ansible_distribution == 'Ubuntu'
+
+    - name: Access undefined variable
+      debug:
+        msg: "This is an undefined variable: {{ undefined_variable }}"
+  
+    - name: Call undefined module
+      undefined_module:
+        arg1: value1
+
+    - name: Access undefined fact
+      debug:
+        msg: "This is an undefined fact: {{ ansible_undefined_fact }}"
+  
+    - name: Set invalid subnet mask
+      set_fact:
+        subnet_prefix: "10.1.1.0/99"
+
+    - name: Set wrong network name
+      set_fact:
+        network_name: "unmatched-name"
+      when: inventory_hostname == 'ubuntu1'
+      
+    - name: Debug complete playbook
+      debug:
+        var: hostvars
+
+  pre_tasks:
+    - name: Raise an unhandled exception
+      command: /path/to/undefined/command
+  
+    - name: Set invalid object attribute
+      set_fact:
+        object:
+          attribute: "{{ undefined_variable }}"
+  
+    - name: Generate inventory
+      template:
+        src: inventory.j2
+        dest: /etc/ansible/hosts
+      become: true
+
+    - name: Show inventory
+      debug:
+        msg: "The generated inventory file (/etc/ansible/hosts) is as follows:"
+      run_once: true
+
+- hosts: all
+  tasks:
+    - name: Trigger handler with undefined name
+      meta: flush_handlers
+      notify: undefined_handler
+
+handlers:
+  - name: Restart service
+    service:
+      name: myservice
+      state: restarted

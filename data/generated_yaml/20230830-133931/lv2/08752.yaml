@@ -1,0 +1,25 @@
+---
+- name: Test playbook to uncover latent Ansible bugs
+  hosts: all
+  gather_facts: false
+
+  vars:
+    vault_password_file: "~/.password_file"
+    filename: "example.txt"
+
+  tasks:
+    - name: Generate secret file
+      ansible.builtin.shell: echo "This is a secret file" > "{{ filename }}"
+      changed_when: false
+
+    - name: Encrypt file
+      ansible.builtin.command: "ansible-vault encrypt {{ filename }}"
+      changed_when: false
+
+    - name: Decrypt file
+      ansible.builtin.command: "ansible-vault decrypt --vault-password-file={{ vault_password_file }} {{ filename }}"
+      register: result
+
+    - name: Print decrypted file contents
+      ansible.builtin.debug:
+        msg: "{{ result.stdout }}"

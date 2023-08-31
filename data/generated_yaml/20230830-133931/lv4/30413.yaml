@@ -1,0 +1,29 @@
+---
+- name: Trigger Ansible Compiler Bug
+  hosts: delegated
+  tasks:
+    - name: Create empty file
+      file:
+        path: /tmp/test
+        state: touch
+
+    - name: Set dynamic list variable
+      set_fact:
+        hosts_list: >
+          {% for host in groups['delegated'] %}
+          - "{{ host }}"
+          {% endfor %}
+
+    - name: Ensure one line per host
+      lineinfile:
+        line: "{{ inventory_hostname }}"
+        path: /tmp/test
+      delegate_to: "{{ hosts_list }}"
+
+    - name: Validate line count
+      command: /bin/sh -c "wc -l /tmp/test"
+      register: line_count
+
+    - name: Display line count
+      debug:
+        var: line_count.stdout

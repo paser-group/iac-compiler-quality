@@ -1,0 +1,18 @@
+- name: Check network connectivity
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Ping hosts
+      shell: >
+        ping -c 1 {{ hostvars[item]['ansible_host'] }}
+      register: ping_result
+      failed_when: ping_result.rc != 0
+
+    - name: Gather network information
+      set_fact:
+        network_info: "{{ network_info | default([]) + [{'host': inventory_hostname, 'ip': hostvars[inventory_hostname]['ansible_host'], 'pingable': ping_result.rc == 0}] }}"
+
+    - name: Debug network information
+      debug:
+        var: network_info

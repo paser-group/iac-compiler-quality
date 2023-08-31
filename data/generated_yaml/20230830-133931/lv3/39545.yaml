@@ -1,0 +1,26 @@
+---
+- name: Inventory-based Type Bugs
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Generate malformed unicode strings for inventory
+      set_fact:
+        malformed_unicode: "{{ 'u\x{00E9}' }}"
+
+    - name: Print malformed unicode
+      debug:
+        var: malformed_unicode
+
+    - name: Create symlink paths with space
+      file:
+        path: "{{inventory_dir}} /var/lib/ansible ansible"
+        state: link
+        src: /var/lib/ansible
+
+    - name: Negative Cache timeout values will lead to latent bugs
+      ini_file:
+        path: "{{inventory_dir}}/inventory.ini"
+        section: plugins
+        option: cache_timeout
+        value: "-1"

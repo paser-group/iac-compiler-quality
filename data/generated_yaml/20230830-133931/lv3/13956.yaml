@@ -1,0 +1,40 @@
+---
+- name: Latent Bug Finder Playbook
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Generate dynamic inventory
+      shell: echo '{ \
+               "host.os=Debian_6.0": { \
+                 "hosts": ["127.0.xxx.xxx", "127.0.xxx.xxx"] \
+               }, \
+               "host.os=FreeBSD": { \
+                 "hosts": ["127.0.xxx.xxx", "127.0.xxx.xxx", "[ ... lots more ...]", "127.0.xxx.xxx", "127.0.xxx.xxx"] \
+               }, \
+               "host.os=FreeBSD_10.1": { \
+                 "hosts": ["127.0.xxx.xxx", "127.0.xxx.xxx"] \
+               }, \
+               "host.os=FreeBSD_7.3": { \
+                 "hosts": ["127.0.xxx.xxx"] \
+               }, \
+               [... and so on ...] \
+             }' > inventory.json
+ 
+    - name: Create inventory directory
+      file:
+        path: "~/inventory"
+        state: directory
+ 
+    - name: Copy inventory file
+      copy:
+        src: inventory.json
+        dest: "~/inventory/inventory.json"
+ 
+    - name: Set inventory file
+      set_fact:
+        inventory_file: "~/inventory/inventory.json"
+ 
+    - name: Provision
+      include_tasks: provision.yml
+      when: inventory_file is defined

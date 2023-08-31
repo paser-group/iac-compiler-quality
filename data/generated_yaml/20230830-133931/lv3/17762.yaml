@@ -1,0 +1,27 @@
+
+---
+- name: Test Latent INVENTORY Bugs
+  hosts: localhost
+  gather_facts: False
+
+  tasks:
+    - name: Create symlink paths with space
+      file:
+        src: "{{ ansible_var }}"
+        dest: "/tmp/symlink with space"
+        state: link
+
+    - name: Generate malformed unicode strings for inventory
+      copy:
+        content: "{{ ansible_var }}"
+        dest: "/tmp/inventory"
+        force: yes
+
+    - name: Negative Cache Timeout
+      command: >
+        ansible subnodes -f 5 -i '/tmp/inventory' -m copy -a 'src='/tmp/inventory' dest='/tmp/foo''
+      environment:
+        ANSIBLE_CACHE_PLUGIN_TIMEOUT: -1
+
+  vars:
+    ansible_var: "{{ vars['ansible_var'] | default('') }}"

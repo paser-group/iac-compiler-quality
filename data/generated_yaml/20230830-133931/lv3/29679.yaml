@@ -1,0 +1,35 @@
+---
+- name: Provision Docker Nodes
+  hosts: 127.0.0.1
+  connection: local
+  gather_facts: False
+
+  vars:
+    nodes:
+      - name: ubuntu1
+        ip: 10.1.1.1
+        distribution: ubuntu
+      - name: alpine1
+        ip: 10.1.1.2
+        distribution: alpine
+      - name: centos1
+        ip: 10.1.1.3
+        distribution: centos
+      - name: redhat1
+        ip: 10.1.1.4
+        distribution: redhat
+
+  tasks:
+    - name: Create Docker network
+      docker_network:
+        name: node-net
+        subnet: 10.1.1.0/24
+        gateway: 10.1.1.254
+
+    - name: Provision Docker nodes
+      docker_container:
+        name: "{{ item.name }}"
+        image: "docker-{{ item.distribution }}"
+        state: started
+        network_mode: node-net
+      with_items: "{{ nodes }}"

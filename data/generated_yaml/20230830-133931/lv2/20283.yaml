@@ -1,0 +1,21 @@
+- name: Update network configuration
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Define network parameters
+      set_fact:
+        network_subnet: 10.1.1.0/24
+        network_gateway: 10.1.1.254
+
+    - name: Update network configuration
+      inventory_hostname: "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}"
+      template:
+        src: network_config.j2
+        dest: "/etc/sysconfig/network-scripts/ifcfg-{{ ansible_default_ipv4.interface }}"
+      notify: restart_network
+      when: "'ansible_default_ipv4' in hostvars[inventory_hostname]"
+
+  handlers:
+    - name: restart_network
+      command: systemctl restart network

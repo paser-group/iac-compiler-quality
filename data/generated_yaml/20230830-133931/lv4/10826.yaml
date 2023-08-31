@@ -1,0 +1,25 @@
+---
+- name: Ansible Latent Bug Finder Playbook
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Check Network and Router Names
+      debug:
+        msg: "Mismatched Network and Router Names Found"
+      when: '{{ ansible_network_name }}' != '{{ ansible_default_ipv4.network | ipaddr }}'
+             or '{{ ansible_network_gateway }}' != '{{ ansible_default_ipv4.network | ipaddr | network_address(24) }}'
+
+    - name: Check Subnet Mask
+      debug:
+        msg: "Invalid Subnet Mask Found"
+      when: '{{ ansible_default_ipv4.netmask }}' != '/24'
+
+    - name: Establish SSH Connection
+      expect:
+        command: ssh -o ControlPath=/tmp/control-{{ inventory_hostname }}-%r@%h:%p -o ControlMaster=auto -o ControlPersist=10m -o HashKnownHosts=no -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o IdentitiesOnly=yes {{ ansible_host }}
+        responses:
+          (?i)password: "{{ ansible_password }}"
+
+      vars:
+        ansible_ssh_user: "{{ ansible_user }}"

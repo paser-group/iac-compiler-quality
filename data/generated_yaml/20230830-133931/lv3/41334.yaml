@@ -1,0 +1,27 @@
+---
+- hosts: all
+  gather_facts: false
+  tasks:
+    - name: Set facts for current node IP address
+      set_fact:
+        node_ip: "{{ ansible_default_ipv4.address }}"
+
+    - name: Debug current node IP address
+      debug:
+        var: node_ip
+
+    - name: Install bcrypt module
+      shell: >
+        yarn install --cache-folder /opt/app/yarncache --ignore-engines
+      register: install_output
+      ignore_errors: true
+
+    - name: Check if error occurred
+      fail:
+        msg: "Error occurred"
+      when: "'error' in install_output.stderr"
+
+    - name: Check if exit code error occurred
+      fail:
+        msg: "Exit code error occurred"
+      when: "install_output.rc != 0"

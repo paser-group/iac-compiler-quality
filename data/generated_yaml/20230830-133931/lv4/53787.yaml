@@ -1,0 +1,31 @@
+
+---
+- name: Ansible Latent Bug Explorer Playbook
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create symlink paths with space
+      file:
+        src: "/tmp/inventory symlink"
+        state: link
+        path: "/tmp/ansible/hosts"
+
+    - name: Generate malformed unicode strings for inventory
+      shell: "echo -e '[ubuntu]\nubuntu1 ansible_host=\\ud83d\\ude04' > /tmp/ansible/hosts"
+      args:
+        executable: /bin/bash
+
+    - name: Set negative cache timeout value
+      lineinfile:
+        path: /etc/ansible/ansible.cfg
+        line: "inventory_cache_timeout = -1"
+
+    - name: Include inventory
+      include_vars:
+        dir: /tmp/ansible/hosts
+        name: inventory_vars
+
+    - name: Print inventory variables
+      debug:
+        var: inventory_vars

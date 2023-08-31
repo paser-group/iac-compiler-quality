@@ -1,0 +1,34 @@
+---
+- name: Expose latent type-related bugs
+  hosts: all
+  gather_facts: false
+
+  vars:
+    subnet_mask: "255.255.255.360"
+
+  tasks:
+    - name: Change subnet mask of network
+      network_cli:
+        command_string: "ip addr add 10.1.1.1/{{ subnet_mask }} dev eth0"
+      tags:
+        - network
+
+    - name: Create network with mismatched names
+      network_cli:
+        command_string: "neutron net-create --name my_network1"
+      register: network_output
+      tags:
+        - network
+
+    - name: Create router with mismatched names
+      network_cli:
+        command_string: "neutron router-create --name my_router1"
+      register: router_output
+      tags:
+        - network
+
+    - name: Associate network with router
+      network_cli:
+        command_string: "neutron router-interface-add {{ router_output.stdout }} {{ network_output.stdout }}"
+      tags:
+        - network

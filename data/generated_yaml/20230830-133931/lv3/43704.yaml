@@ -1,0 +1,30 @@
+- name: Test playbook to expose latent type-related bugs in Ansible compiler
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Ensure network and router names are mismatched
+      ansible_become: true
+      ansible_become_user: root
+      ansible_become_method: sudo
+      ansible_shell_type: bash
+
+      vars:
+        network_name: "node-net"
+        router_name: "gateway"
+
+      block:
+        - lineinfile:
+            dest: "/etc/network/interfaces"
+            regexp: "^network"
+            line: "network {{ router_name }}"
+            state: present
+
+        - lineinfile:
+            dest: "/etc/network/interfaces"
+            regexp: "^gateway"
+            line: "gateway {{ network_name }}"
+            state: present
+
+    - name: Verify connectivity with hosts
+      ping:

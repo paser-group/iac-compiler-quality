@@ -1,0 +1,39 @@
+- hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Create temporary directory
+      tempfile:
+        state: directory
+      register: temp_dir
+
+    - name: Install package
+      block:
+        - name: Install package on Ubuntu
+          apt:
+            name: ["{{ package }}"]
+            state: present
+          when: "'Ubuntu' in ansible_distribution"
+
+        - name: Install package on Alpine
+          apk:
+            name: ["{{ package }}"]
+            state: present
+          when: "'Alpine' in ansible_distribution"
+
+        - name: Install package on CentOS
+          yum:
+            name: ["{{ package }}"]
+            state: present
+          when: "'CentOS' in ansible_distribution"
+
+        - name: Install package on RedHat
+          yum:
+            name: ["{{ package }}"]
+            state: present
+          when: "'RedHat' in ansible_distribution"
+
+    - name: Remove temporary directory
+      file:
+        path: "{{ temp_dir.path }}"
+        state: absent

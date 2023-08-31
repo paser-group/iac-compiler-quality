@@ -1,0 +1,33 @@
+- hosts: all
+  gather_facts: false
+
+  vars:
+    snapshot_name: "my_snapshot"
+
+  tasks:
+    - name: Check if the snapshot already exists
+      vmware_guest_snapshot_facts:
+        hostname: "{{ inventory_hostname }}"
+        username: "my_username"
+        password: "my_password"
+      register: snapshot_info
+      delegate_to: localhost
+
+    - name: Delete the existing snapshot if present
+      vmware_guest_snapshot:
+        hostname: "{{ inventory_hostname }}"
+        username: "my_username"
+        password: "my_password"
+        snapshot_name: "{{ snapshot_name }}"
+        state: absent
+      when: snapshot_info.snapshot_info is defined  # <-- Bug: Mistakenly accessing 'snapshot_info' attribute
+      delegate_to: localhost
+
+    - name: Create a new snapshot
+      vmware_guest_snapshot:
+        hostname: "{{ inventory_hostname }}"
+        username: "my_username"
+        password: "my_password"
+        snapshot_name: "{{ snapshot_name }}"
+        state: present
+      delegate_to: localhost

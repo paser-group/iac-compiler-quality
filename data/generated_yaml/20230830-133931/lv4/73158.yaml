@@ -1,0 +1,25 @@
+
+---
+- name: Detect Latent Bugs in Ansible Compiler
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Check if geolite2 package is absent
+      command: yum list installed geolite2
+      register: geolite2_check
+      ignore_errors: true
+
+    - name: Remove geolite2 package if present
+      yum:
+        name: "{{ item }}"
+        state: absent
+      when: geolite2_check.rc == 0
+      with_items:
+        - geolite2
+        - geolite2-*
+
+    - name: Print success message if no packages were removed
+      debug:
+        msg: "No geolite2 packages to remove"
+      when: geolite2_check.rc == 1

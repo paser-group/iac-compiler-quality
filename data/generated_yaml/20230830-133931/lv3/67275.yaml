@@ -1,0 +1,31 @@
+
+---
+- name: Ansible Latent Bug Finder
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Create symlink paths with space
+      file:
+        src: "/tmp/foo"
+        dest: "/tmp/inventory symlink/{{ inventory_hostname }}"
+        state: link
+      delegate_to: localhost
+
+    - name: Generate malformed unicode strings for inventory
+      command: echo "{{ item }} " > "/tmp/malformed_inventory.txt"
+      delegate_to: localhost
+      loop:
+        - "test1 \u0111"
+        - "test2 \xe5"
+        - "test3 \u697c"
+
+    - name: Set negative cache timeout value
+      lineinfile:
+        path: "/etc/ansible/ansible.cfg"
+        line: "cache_timeout = -1"
+
+    - name: Debug inventory variables
+      debug:
+        var: inventory_hostname
+      delegate_to: localhost

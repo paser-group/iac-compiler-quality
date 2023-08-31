@@ -1,0 +1,32 @@
+---
+- name: Test playbook for Ansible latent type-related bug exploration
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    inventory_variable: 0
+
+  tasks:
+    - name: Create symlink paths with space
+      file:
+        src: "/tmp/symlink{{ inventory_index }}"
+        dest: "/tmp/{{ inventory_hostname }} symlink path with space{{ inventory_index }}"
+        state: link
+      loop: "{{ range(3) | list }}"
+      loop_control:
+        index_var: inventory_index
+
+    - name: Generate malformed unicode strings for inventory
+      set_fact:
+        inventory_variable: "\ud55c\uad6d\uc5b4{{ inventory_index }}"
+      loop: "{{ range(2) | list }}"
+      loop_control:
+        index_var: inventory_index
+
+    - name: Negative Cache timeout
+      set_fact:
+        cache_timeout: -1
+
+    - name: Print inventory variable
+      debug:
+        var: inventory_variable

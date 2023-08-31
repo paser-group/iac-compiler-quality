@@ -1,0 +1,29 @@
+---
+- name: Debug Ansible Variables
+  hosts: localhost
+  gather_facts: true
+
+  tasks:
+    - name: Retrieve network information from host
+      ansible.builtin.command: ifconfig | grep utun3
+      register: ifconfig_output
+
+    - name: Extract netmask value
+      set_fact:
+        netmask: "{{ ifconfig_output.stdout_lines[0].split('netmask ')[1] }}"
+
+    - name: Set invalid netmask
+      set_fact:
+        netmask: "{{ netmask | regex_replace('^.*$', 'INVALID_NETMASK') }}"
+
+    - name: Verify netmask value
+      assert:
+        that:
+          - netmask | ipaddr
+          - "'INVALID_NETMASK' not in netmask"
+        success_msg: "Netmask value is valid"
+        fail_msg: "Netmask value is invalid or contains 'INVALID_NETMASK'"
+
+    - name: Print network information
+      debug:
+        var: netmask

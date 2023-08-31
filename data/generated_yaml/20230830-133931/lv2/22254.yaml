@@ -1,0 +1,32 @@
+- hosts: localhost
+  gather_facts: false
+
+  vars:
+    files:
+      - src: /tmp/test-777.zip
+        dest: /
+        mode: '+x'
+      - src: /tmp/test-default.zip
+        dest: /
+
+  tasks:
+    - name: Create test-777.zip
+      file:
+        path: "{{ item.src }}"
+        state: touch
+      loop: "{{ files }}"
+      run_once: true
+
+    - name: Unarchive files with different permissions
+      unarchive:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+        mode: "{{ item.mode }}"
+      loop: "{{ files }}"
+      run_once: true
+
+    - name: Verify file permission changes
+      stat:
+        path: "{{ item.dest }}"
+      loop: "{{ files }}"
+      run_once: true

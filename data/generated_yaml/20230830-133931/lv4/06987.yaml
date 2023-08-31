@@ -1,0 +1,34 @@
+
+---
+- name: Deploy EC2 Instance with Private IP and Public IP
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Provision EC2 instances
+      ec2_instance:
+        region: "{{ aws_region }}"
+        key_name: "{{ aws_keypair }}"
+        instance_type: "{{ aws_InstanceType }}"
+        image: "{{ aws_image }}"
+        vpc_subnet_id: subnet-b27c62c6
+        wait: yes
+        private_ip_address: 10.1.10.10
+        network_interfaces:
+          - subnet_id: subnet-b27c62c6
+            device_index: 0
+            ip_addresses: 
+              - primary: true
+                address: 10.1.10.10
+            assign_public_ip: yes
+        instance_tags:
+          type: "frontend"
+          Name: "{{ aws_zone1 }}.{{ aws_InstanceType }}.frontend.01"
+        volumes:
+          - device_name: /dev/sda1
+            volume_size: 150
+        retries: 5
+      register: ec2_instances_zone1
+
+    - name: Debug results
+      debug:
+        var: ec2_instances_zone1

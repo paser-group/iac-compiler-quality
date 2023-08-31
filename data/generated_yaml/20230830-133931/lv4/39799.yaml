@@ -1,0 +1,42 @@
+---
+- name: Test for Type-Related Bug
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    subnet_mask: "{{ hostvars[inventory_hostname].subnet_mask | default('24') }}"
+    network_name: myVnet
+
+  tasks:
+    - name: Create Virtual Network
+      azure_rm_virtualnetwork:
+        resource_group: myRG
+        name: "{{ network_name }}"
+        address_prefixes: "10.0.0.0/{{ subnet_mask }}"
+      register: virtual_network
+
+    - name: Create Subnet
+      azure_rm_subnet:
+        resource_group: myRG
+        name: mySubnet
+        address_prefix: "10.0.1.0/{{ subnet_mask }}"
+        virtual_network: "{{ network_name }}"
+
+    - name: Configure Router
+      debug:
+        msg: "Configuring router {{ router_name }} for network {{ network_name }}"
+      vars:
+        router_name: 123456
+
+    - name: Create Network Interface Card
+      azure_rm_networkinterface:
+        resource_group: myRG
+        name: myNIC
+        virtual_network: "{{ network_name }}"
+        subnet: mySubnet
+
+    - name: Create Public IP Address
+      azure_rm_publicipaddress:
+        resource_group: myRG
+        allocation_method: Static
+        name: myPublicIP

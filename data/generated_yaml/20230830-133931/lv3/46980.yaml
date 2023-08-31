@@ -1,0 +1,38 @@
+---
+- name: Test Ansible Compiler for Type-Related Bugs
+  hosts: all
+  gather_facts: false
+
+  vars:
+    subnet_mask: "10.1.1.0/24"
+    gateway: "10.1.1.254"
+
+  tasks:
+    - name: Check if Python is installed
+      command: python3 --version
+      register: python_installed
+      ignore_errors: true
+
+    - name: Fail if Python is not installed
+      fail:
+        msg: "Python is not installed on the target machine."
+
+    - name: Print subnet mask and gateway
+      debug:
+        msg: "Subnet Mask: {{ subnet_mask }}, Gateway: {{ gateway }}"
+
+    - name: Fail if subnet mask is not a base-10 problem
+      block:
+        - name: Calculate range for subnet mask
+          set_fact:
+            subnet_range: "{{ subnet_mask.split('/')[0] | ipmath(range, subnet_mask.split('/')[1], type='mask') }}"
+
+        - name: Validate base-10 problem for subnet mask
+          fail:
+            msg: "Subnet mask is not a base-10 problem."
+          when: "(subnet_range.split('.')[3] | int) > 127"
+
+      rescue:
+        - name: Handle failure due to base-10 problem
+          debug:
+            msg: "Subnet mask is valid."

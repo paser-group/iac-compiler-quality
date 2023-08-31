@@ -1,0 +1,30 @@
+---
+- name: Remove Default Egress Rules in OpenStack
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Create custom security group
+      os_security_group:
+        state: "present"
+        name: "foo"
+
+    - name: Delete default egress rules
+      os_security_group_rule:
+        state: "absent"
+        security_group: "foo"
+        direction: "egress"
+        remote_ip_prefix: "0.0.0.0/0"
+      register: rule_deletion_result
+
+    - name: Debug rule deletion result
+      debug:
+        var: rule_deletion_result
+
+    - name: Check security group rules
+      command: "neutron security-group-show foo -c security_group_rules -f value"
+      register: rule_check_result
+
+    - name: Debug rule check result
+      debug:
+        var: rule_check_result
+...

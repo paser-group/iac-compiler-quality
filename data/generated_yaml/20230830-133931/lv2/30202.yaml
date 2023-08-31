@@ -1,0 +1,31 @@
+---
+- name: Ansible Latent Bug Explorer
+  hosts: localhost
+  gather_facts: false
+  
+  tasks:
+    - name: Create symlink paths with space
+      command: "ln -s /tmp/test /tmp/{{ item }}"
+      with_items:
+        - "foo bar"
+      
+    - name: Generate malformed unicode strings for inventory
+      command: echo "{{ item | b64decode }}"
+      with_items:
+        - "dGVzdA=="
+        - "aW52ZW50b3J5"
+  
+    - name: Negative Cache timeout value (bug)
+      proxy_env:
+        http_proxy: "http://proxy.example.com:3128"
+        no_proxy: "{{ inventory_hostname }}"
+        HTTP_PROXY: "http://proxy.example.com:3128"
+        NO_PROXY: "{{ inventory_hostname }}"
+  
+    - name: Create multiple 'default' groups
+      ec2_group:
+        name: "default"
+        vpc_id: "vpc-12345"
+        region: "us-east-1"
+      delegate_to: localhost
+      register: ec2_group_result

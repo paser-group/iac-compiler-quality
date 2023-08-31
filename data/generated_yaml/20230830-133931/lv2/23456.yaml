@@ -1,0 +1,31 @@
+---
+- name: Expose latent type-related bugs
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    subnet_mask: "255.255.255.256"
+    network_name: "node-net"
+    timeout: 60
+
+  tasks:
+    - name: Set invalid subnet mask
+      set_fact:
+        valid_subnet_mask: "{{ subnet_mask | ipaddr('netmask') }}"
+
+    - name: Create mismatched network and router names
+      lineinfile:
+        dest: "{{ playbook_dir }}/inventory.ini"
+        line: "localhost ansible_host=127.0.0.1 network_name=wrong-net"
+        insertbefore: EOF
+
+    - name: Wait for network convergence
+      wait_for:
+        host: localhost
+        port: 22
+        timeout: "{{ timeout }}"
+        state: started
+
+    - name: Print network information
+      debug:
+        msg: "Network: {{ ansible_default_ipv4.network }} - Netmask: {{ valid_subnet_mask }} - Router: {{ network_name }}"

@@ -1,0 +1,37 @@
+---
+- name: Discover latent type-related bugs in Ansible compiler
+  hosts:
+    - ubuntu1
+    - alpine1
+    - centos1
+    - redhat1
+  gather_facts: false
+
+  tasks:
+    - name: Generate invalid inventory
+      shell: echo "{{ ansible_facts['ansible_distribution'] }}" >> /tmp/inventory.txt
+      delegate_to: localhost
+
+    - name: Read inventory file
+      slurp:
+        src: /tmp/inventory.txt
+      register: inventory_content
+
+    - name: Debug inventory content
+      debug:
+        var: inventory_content
+
+    - name: Create symlink paths with space
+      file:
+        state: link
+        src: "{{ inventory_hostname }}"
+        dest: "/tmp/{{ inventory_hostname }} symlink"
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Launch Docker container
+      docker_container:
+        name: "{{ inventory_hostname }}"
+        image: "alpine"
+        state: started

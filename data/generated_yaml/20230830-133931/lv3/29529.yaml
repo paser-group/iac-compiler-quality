@@ -1,0 +1,32 @@
+
+---
+- name: Reload switch
+  hosts: baseagg
+  gather_facts: false
+
+  vars:
+    node: agg
+    cli:
+      host: '{{ ansible_host }}'
+      transport: cli
+      username: admin
+      ssh_keyfile: /srv/tftpboot/my-rsa.pub
+
+  tasks:
+    - name: Reload switch
+      shell: echo "reload no-confirm" > /tmp/reload_command.txt
+      register: reload_output
+      changed_when: false
+
+    - name: Get reload command response
+      dellos9_command:
+        provider: '{{ cli }}'
+        commands: 'show reload-status'
+      register: reload_status
+      changed_when: false
+      failed_when: reload_output.stdout not in reload_status.stdout_lines
+
+    - name: Check if switch is still reloading
+      debug:
+        msg: "Switch is still reloading!"
+      failed_when: "'In Progress' in reload_status.stdout_lines[0]"

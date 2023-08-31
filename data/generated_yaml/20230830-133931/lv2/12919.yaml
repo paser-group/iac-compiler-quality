@@ -1,0 +1,50 @@
+---
+- name: Latent Bug Finder Playbook
+  hosts: all
+  gather_facts: false
+  vars:
+    ansible_connection: local
+    ansible_python_interpreter: auto_silent
+    subnet: 10.1.1.0/24
+    gateway: 10.1.1.254
+
+  tasks:
+    - name: Create network
+      network:
+        hostname: localhost
+        username: ansible
+        password: ansible
+        network_os: generic
+        state: present
+        provider: "{{ item.provider }}"
+        gather_facts: false
+      ignore_errors: true
+      loop:
+        - provider: network_cli
+
+    - name: Ensure network subnet is correct
+      assert:
+        that:
+          - subnet == "10.1.1.0/24"
+        success_msg: "Network subnet is correct"
+        fail_msg: "Network subnet is incorrect. Expected: 10.1.1.0/24"
+
+    - name: Ensure network gateway is correct
+      assert:
+        that:
+          - gateway == "10.1.1.254"
+        success_msg: "Network gateway is correct"
+        fail_msg: "Network gateway is incorrect. Expected: 10.1.1.254"
+
+    # Include the code snippet from the GitHub issue
+    - name: Run the problematic command
+      command: echo 1
+      register: result
+      changed_when: false
+      retries: "{{ retries | default(5) }}"
+      delay: "{{ delay | default(5) }}"
+      until: result.stdout == "1"
+
+    - name: Debug output
+      debug:
+        var: result.stdout

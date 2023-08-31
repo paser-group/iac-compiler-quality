@@ -1,0 +1,74 @@
+
+---
+- name: Network Configuration
+  hosts: all
+  gather_facts: false
+  
+  vars:
+    subnet: "10.1.1.0/24"
+    gateway: "10.1.1.254"
+    nodes:
+      - name: ubuntu1
+        ip: "10.1.1.1"
+        os: "Ubuntu"
+      - name: alpine1
+        ip: "10.1.1.2"
+        os: "Alpine"
+      - name: centos1
+        ip: "10.1.1.3"
+        os: "CentOS"
+      - name: redhat1
+        ip: "10.1.1.4"
+        os: "RedHat"
+
+  tasks:
+    - name: Create Network
+      local_action:
+        module: command
+        cmd: ip link add node-net type bridge
+      delegate_to: localhost
+
+    - name: Add Subnet
+      local_action:
+        module: command
+        cmd: ip addr add {{ subnet }} dev node-net
+      delegate_to: localhost
+
+    - name: Set Gateway
+      local_action:
+        module: command
+        cmd: ip route add default via {{ gateway }}
+      delegate_to: localhost
+
+    - name: Configure Nodes
+      block:
+        - name: Set IP Address
+          local_action:
+            module: command
+            cmd: ip addr add {{ item.ip }} dev node-net
+          delegate_to: localhost
+          loop: "{{ nodes }}"
+
+        - name: Set OS
+          local_action:
+            module: command
+            cmd: echo "{{ item.os }}" > /root/{{ item.name }}.txt
+          delegate_to: localhost
+          loop: "{{ nodes }}"
+
+        - name: Restart Network
+          local_action:
+            module: command
+            cmd: ip link set node-net up
+          delegate_to: localhost
+
+    - name: Ping Nodes
+      command: ping -c 4 {{ item.ip }}
+      register: ping_result
+      loop: "{{ nodes }}"
+      ignore_errors: true
+
+    - name: Print Ping Results
+      debug:
+        msg: "{{ item.item.name }} - {{ item.failed }}"
+      loop: "{{ ping_result.results }}"

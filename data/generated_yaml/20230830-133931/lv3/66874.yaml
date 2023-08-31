@@ -1,0 +1,48 @@
+---
+- name: Ansible Latent Bug Finder
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    - symlink_path: "/tmp/my folder"
+    - symlink_dest: "/tmp/symlink path"
+    - malformed_unicode: "\ufffe\xff"
+
+  tasks:
+    - name: Create symlink path with space
+      file:
+        src: "{{ symlink_path }}"
+        dest: "{{ symlink_dest }}"
+        state: link
+
+    - name: Generate malformed unicode strings for inventory
+      set_fact:
+        inventory_config: |
+          plugin: linode
+          access_token: "{{ malformed_unicode }}"
+
+    - name: Debug malformed unicode strings
+      debug:
+        var: inventory_config
+      failed_when: inventory_config.split('\n') | select('match', '^[\x00-\x7F]+$') | list | length == 0
+
+    - name: Negative cache timeout value
+      shell: echo "{{ inventory_config }}" > /tmp/inventory.yaml
+      environment:
+        CACHE_TTL: "-1"
+      changed_when: false
+
+    - name: Test inventory with negative cache timeout value
+      command: ansible-inventory -i /tmp/inventory.yaml --list
+      register: inventory_list_output
+      changed_when: false
+
+    - name: Debug negative cache timeout value
+      debug:
+        var: inventory_list_output.stdout
+      failed_when: inventory_list_output.stdout is match('\\$\\$cache_results\\$$check_file') or inventory_list_output.stdout is match('^Error:')
+
+    - name: Clean up
+      file:
+        path: "/tmp/inventory.yaml"
+        state: absent

@@ -1,0 +1,54 @@
+---
+- name: Test playbook for exposing type-related bugs
+  hosts: all
+  gather_facts: False
+  
+  vars:
+    subnet: "10.1.1.0/24"
+    gateway: "10.1.1.254"
+    node_names:
+      - "ubuntu1"
+      - "alpine1"
+      - "centos1"
+      - "redhat1"
+  
+  tasks:
+    - name: Set hostname on Windows nodes
+      win_shell: hostnamectl set-hostname {{ inventory_hostname }}
+      delegate_to: localhost
+      when: inventory_hostname in node_names
+  
+    - name: Reboot windows after hostname change
+      win_reboot:
+        msg: Reboot after hostname change
+        pre_reboot_delay_sec: 5
+        reboot_timeout: 600
+      when: "'ubuntu1' in inventory_hostname"
+  
+    - name: Reboot Alpine node
+      shell: reboot
+      register: reboot_result
+      when: "'alpine1' in inventory_hostname"
+  
+    - name: Check if hosts are reachable
+      ping:
+      register: ping_result
+  
+    - name: Print ping results
+      debug:
+        var: ping_result
+  
+    - name: Check if subnet mask is valid
+      shell: ipcalc -c {{ subnet }}
+      register: subnet_result
+  
+    - name: Print subnet mask check result
+      debug:
+        var: subnet_result
+  
+    - name: Create mismatching network and router names
+      lineinfile:
+        path: /etc/network/interfaces
+        line: "network 10.1.2.0"
+        state: present
+      when: "'centos1' in inventory_hostname"

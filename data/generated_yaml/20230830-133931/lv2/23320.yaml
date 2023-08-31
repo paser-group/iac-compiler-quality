@@ -1,0 +1,28 @@
+- name: Perform network configuration
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Configure network 
+      ansible.builtin.shell: "ip addr add {{ ansible_default_ipv4.address }}/24 dev eth0"
+      register: config_result
+
+    - name: Verify network configuration
+      ansible.builtin.debug:
+        msg: "Network configuration successful"
+      when: "'Network configuration successful' in config_result.stdout"
+      failed_when: "'Network configuration failed' in config_result.stdout"
+
+    - name: Trigger latent type-related bug
+      ansible.builtin.shell: "command_that_triggers_bug"
+      register: bug_result
+
+    - name: Handle bug result
+      ansible.builtin.debug:
+        var: bug_result.stdout_lines
+      when: bug_result.failed
+
+    - name: Handle successful execution
+      ansible.builtin.debug:
+        var: bug_result.stdout_lines
+      when: not bug_result.failed

@@ -1,0 +1,32 @@
+
+---
+
+- name: Test INVENTORY-based Bugs
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create symlink path with space
+      file:
+        path: "/tmp/inventory link with space"
+        state: link
+        src: "/path/to/inventory"
+        force: yes
+
+    - name: Generate malformed unicode strings for inventory
+      command: "echo -e '[\x80]' > /tmp/malformed_inventory.ini"
+
+    - name: Set negative cache timeout value
+      lineinfile:
+        path: "/path/to/inventory/ec2.ini"
+        line: "cache_max_age = -1"
+
+    - name: Test bug related to boto profile for RDS instances
+      command: "./ec2.py --refresh-cache --boto-profile prod"
+      args:
+        chdir: "/path/to/inventory"
+      register: ec2_output
+
+    - name: Display ec2.py output
+      debug:
+        var: ec2_output.stdout_lines

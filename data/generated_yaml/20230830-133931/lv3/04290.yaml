@@ -1,0 +1,23 @@
+
+---
+- name: MySQL Privilege Bug Finder
+  hosts: all
+  gather_facts: false
+
+  tasks:
+
+  - name: Setting MySQL Privileges
+    mysql_user: # Bug 1: In the original issue, the mysql_user module failed to apply privileges on Debian Unstable client
+      login_unix_socket: /var/run/mysqld/mysqld.sock # Bug 2: Using login_unix_socket instead of login_host could expose a latent bug related to Unix socket connection
+      login_user: "{{ mysql_user }}"
+      login_password: "{{ mysql_password }}"
+      host: "{{ inventory_hostname }}"
+      name: "{{ galera_user }}"
+      password: "{{ galera_password }}"
+      state: present # Bug 3: Identifying if the privilege exists before adding could expose potential bugs
+
+    register: result
+    ignore_errors: true
+
+  - debug:
+      var: result

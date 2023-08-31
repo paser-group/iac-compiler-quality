@@ -1,0 +1,32 @@
+
+---
+- name: Ansible Latent Bug Finder
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  tasks:
+    - name: Create symlink paths with space
+      file:
+        src: /tmp/symlink
+        state: link
+        path: /tmp/sym link
+
+    - name: Generate malformed unicode strings for inventory
+      template:
+        src: "inventory.j2"
+        dest: "/etc/ansible/inventory"
+      vars:
+        inventory_items:
+          - "ubuntu1  - 10.1.1.1 {{ '\N{NULL}' }}"
+          - "alpine1  - 10.1.1.2 {{ '\N{SPACE}' }}"
+          - "centos1  - 10.1.1.3 {{ '\N{REPLACEMENT CHARACTER}' }}"
+          - "redhat1  - 10.1.1.4 {{ '\N{SURROGATE'} }}"
+        
+    - name: Negative Cache timeout value bug
+      command: "/usr/bin/ansible-inventory --list"
+      environment:
+        ANSIBLE_CACHE_PLUGIN_CONNECTION_TIMEOUT: "-5"
+
+    # Additional tasks can be added here to trigger more bugs
+

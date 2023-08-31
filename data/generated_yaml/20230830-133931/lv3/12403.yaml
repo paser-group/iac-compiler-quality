@@ -1,0 +1,54 @@
+---
+- name: Ansible Latent Bug Finder
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    inventory_file: "{{ playbook_dir }}/inventory.ini"
+    symlink_with_space: "/tmp/symlink with space"
+    symlink_path: "/tmp/symlink_with_space"
+
+  tasks:
+    - name: Create inventory file
+      copy:
+        dest: "{{ inventory_file }}"
+        content: |
+          [all]
+          ubuntu1 ansible_host=10.1.1.1
+
+          [alpine]
+          alpine1 ansible_host=10.1.1.2
+
+          [centos]
+          centos1 ansible_host=10.1.1.3
+
+          [redhat]
+          redhat1 ansible_host=10.1.1.4
+
+          [group_with_space]
+          ubuntu1 ansible_host=10.1.1.1
+
+    - name: Symlink paths with space
+      file:
+        src: "{{ symlink_with_space }}"
+        dest: "{{ symlink_path }}"
+        state: link
+
+    - name: Generate malformed unicode strings
+      copy:
+        dest: "{{ inventory_file }}"
+        content: |
+          [{{ '\u0000' }}]
+          host1
+
+    - name: Negative cache timeout value
+      set_fact:
+        ansible_cache_valid_time: -1
+
+    - name: Include inventory file
+      include_vars:
+        file: "{{ inventory_file }}"
+
+    - name: Debug inventory group
+      debug:
+        var: groups['all']

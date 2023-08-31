@@ -1,0 +1,34 @@
+---
+- name: Ansible Latent Bug Explorer Playbook
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Set inventory variables
+      set_fact:
+        ansible_user: "admin"
+        ansible_ssh_pass: "admin123"
+        ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
+
+    - name: Create symlink paths with space (Test Case 1)
+      copy:
+        src: "{{ item }}"
+        dest: "{{ item.replace(' ', '_') }}"
+        force: true
+      delegate_to: "{{ inventory_hostname }}"
+      with_items:
+        - "/path with/space/file.txt"
+        - "/path with/space/directory"
+
+    - name: Generate malformed unicode strings for inventory (Test Case 2)
+      copy:
+        dest: "/tmp/unicode.txt"
+        content: |
+          [hosts]
+          invalid_host-âńśíblé-hōśt ansible_host=10.1.1.5
+
+    - name: Set negative cache timeout (Test Case 3)
+      copy:
+        dest: "/etc/ansible/nocache.txt"
+        content: "-30"
+        force: true

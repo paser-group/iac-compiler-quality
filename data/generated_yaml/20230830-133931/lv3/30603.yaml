@@ -1,0 +1,18 @@
+
+- name: Ansible Latent Bug Finder
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+   - name: Check network facts
+     command: ip -4 route get 8.8.8.8
+     register: route_result
+     changed_when: false
+
+   - name: Set ansible_default_ipv4 fact
+     set_fact:
+       ansible_default_ipv4: "{{ route_result.stdout | regex_replace('^none ([0-9.]+) via ([0-9.]+) dev', {'address': '\\1', 'gateway': '\\2'}) }}"
+
+   - name: Show ansible_default_ipv4 fact
+     debug:
+       var: ansible_default_ipv4

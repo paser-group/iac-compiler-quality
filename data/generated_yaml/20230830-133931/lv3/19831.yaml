@@ -1,0 +1,32 @@
+---
+- name: Ansible Latent Bug Finder
+  hosts: all
+  gather_facts: false
+
+  vars:
+    symlink_path: "/tmp/{{ 'symlink with space' | regex_replace(' ', '') }}"
+    invalid_unicode_string: "\ud801\udc37"
+
+  tasks:
+    - name: Check inventory variables
+      debug:
+        msg: "Ansible inventory variable: {{ hostvars[inventory_hostname].inventory_variable }}"
+
+    - name: Create symlink paths with space
+      file:
+        src: "{{ symlink_path }}"
+        dest: "/tmp/destination"
+
+    - name: Generate malformed unicode strings for inventory
+      set_fact:
+        unicode_string: "{{ invalid_unicode_string }}"
+
+    - name: Access inventory variable in unicode string
+      debug:
+        msg: "Inventory variable value: {{ hostvars[inventory_hostname].unicode_string }}"
+
+    - name: Execute command with negative cache timeout
+      command: "some_command"
+      ansible_become: true
+      ansible_cache_plugin: memory
+      ansible_cache_timeout: -10

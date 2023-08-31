@@ -1,0 +1,45 @@
+
+---
+- name: Ansible Latent Bug Finder
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Setup Inventory
+      command: echo 'localhost ansible_connection=local' > inventory
+
+    - name: Create symlink path with space
+      file:
+        src: "/usr/ansible/{{ item.key }}"
+        dest: "/tmp/{{ item.value }}"
+        state: link
+      with_dict:
+        space_files:
+          - with space.ext
+          - symlink with space
+
+    - name: Generate malformed unicode strings for inventory
+      ini_file:
+        path: inventory
+        section: "{{ item.section }}"
+        option: "{{ item.option }}"
+        value: "{{ item.value }}"
+      with_items:
+        - { section: "hosts", option: "host1", value: "ubuntu1" }
+        - { section: "hosts", option: "host2", value: "\xfd" }
+        - { section: "hosts", option: "\xe1", value: "redhat1" }
+        - { section: "group", option: "name", value: "group1" }
+        - { section: "group", option: "\xe1\x84\x8b", value: "ubuntu1" }
+
+    - name: Negative Cache timeout value
+      ini_file:
+        path: inventory
+        section: "defaults"
+        option: "fact_caching_timeout"
+        value: "-1"
+
+    - name: Validate inventory
+      command: ansible-inventory -i inventory --list
+
+    - name: Run Ansible playbook
+      command: ansible-playbook -i inventory playbook.yml

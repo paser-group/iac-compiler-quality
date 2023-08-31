@@ -1,0 +1,48 @@
+---
+- hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create VPC network
+      gcp_compute_network:
+        name: my-network
+        auto_create_subnetworks: false
+        project: my-project
+        auth_kind: serviceaccount
+        service_account_file: /path/to/service_account_file.json
+      register: network
+
+    - name: Create subnetwork
+      gcp_compute_subnetwork:
+        name: my-subnetwork
+        network: "{{ network }}"
+        region: us-central1
+        ip_cidr_range: "10.1.1.0/24"
+        project: my-project
+        auth_kind: serviceaccount
+        service_account_file: /path/to/service_account_file.json
+      register: subnetwork
+
+    - name: Debug failed subnetwork creation
+      debug:
+        msg: "Failed to create subnetwork: {{ subnetwork.result }}"
+
+    - name: Create instances
+      gcp_compute_instance:
+        name: instance-{{ item }}
+        machine_type: n1-standard-1
+        disks:
+          - auto_delete: true
+            boot: true
+            initialize_params:
+              source_image: projects/ubuntu-os-cloud/global/images/ubuntu-2004-focal-v20210611
+        network_interfaces:
+          - subnetwork: "{{ subnetwork.name }}"
+            access_configs:
+              - name: External NAT
+                nat_ip: ephemeral
+                type: ONE_TO_ONE_NAT
+        project: my-project
+        auth_kind: serviceaccount
+        service_account_file: /path/to/service_account_file.json
+      loop: "{{ range(1, 4) | list }}"

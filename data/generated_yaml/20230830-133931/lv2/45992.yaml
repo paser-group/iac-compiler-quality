@@ -1,0 +1,29 @@
+---
+- name: Ansible Latent Bug Explorer
+  hosts: all
+  gather_facts: false
+  
+  tasks:
+  
+    - name: Generate symlink paths with space
+      command: ln -s "{{ item.src }}" "{{ item.dest }}"
+      with_items:
+        - { src: "/etc/ansible/inventory/hosts", dest: "/etc/ansible/inventory/hosts with space" }
+        - { src: "/etc/ansible/inventory/hosts with space", dest: "/etc/ansible/inventory/hosts" }
+
+    - name: Generate malformed unicode strings for inventory
+      lineinfile:
+        path: "/etc/ansible/inventory/hosts"
+        line: |
+          [hosts]
+          ubuntu1 ansible_host=\u202e
+          alpine1 ansible_host=\u202d
+          centos1 ansible_host=\u202c
+          redhat1 ansible_host=\u202b
+
+    - name: Set negative cache timeout value
+      copy:
+        content: |
+          [defaults]
+          ansible_cache_plugin_timeout=-10
+        dest: "/etc/ansible/ansible.cfg"

@@ -1,0 +1,40 @@
+
+---
+- name: Test Provisioning
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Print Hostname
+      ansible.builtin.debug:
+        msg: "Hostname: {{ inventory_hostname }}"
+
+    - name: Generate Provisioning Script
+      ansible.builtin.copy:
+        dest: /tmp/provision.sh
+        mode: '0755'
+        content: |
+          #!/bin/bash
+          
+          echo "This is a provision script"
+          echo "It should execute successfully"
+
+    - name: Execute Provisioning Script
+      ansible.builtin.script:
+        script: /tmp/provision.sh
+        register: provision_output
+        ignore_errors: true
+
+    - name: Handle Provisioning Errors
+      fail:
+        msg: "Provisioning failed on {{ inventory_hostname }}"
+
+    - name: Display Provisioning Output
+      ansible.builtin.debug:
+        var: provision_output.stdout_lines
+
+  post_tasks:
+    - name: Cleanup Provisioning Script
+      ansible.builtin.file:
+        path: /tmp/provision.sh
+        state: absent

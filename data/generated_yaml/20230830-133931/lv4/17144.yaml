@@ -1,0 +1,36 @@
+
+---
+- name: Provision Docker Nodes
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create Docker Network
+      docker_network:
+        name: node-net
+        ipam_driver: default
+        ipam_options:
+          subnet: 10.1.1.0/24
+          gateway: 10.1.1.254
+
+    - name: Create Docker Containers
+      docker_container:
+        name: "{{ item.name }}"
+        image: "{{ item.image }}"
+        state: started
+        network_mode: node-net
+        ip_address: "{{ item.ip }}"
+      loop:
+        - { name: "ubuntu1", image: "ubuntu", ip: "10.1.1.1" }
+        - { name: "alpine1", image: "alpine", ip: "10.1.1.2" }
+        - { name: "centos1", image: "centos", ip: "10.1.1.3" }
+        - { name: "redhat1", image: "redhat", ip: "10.1.1.4" }
+
+    - name: Debug Docker Nodes
+      debug:
+        msg: "Node {{ item.name }} with IP {{ item.ip }} is provisioned"
+      loop:
+        - { name: "ubuntu1", ip: "10.1.1.1" }
+        - { name: "alpine1", ip: "10.1.1.2" }
+        - { name: "centos1", ip: "10.1.1.3" }
+        - { name: "redhat1", ip: "10.1.1.4" }

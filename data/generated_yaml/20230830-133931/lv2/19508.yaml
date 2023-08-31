@@ -1,0 +1,32 @@
+---
+- name: Unveiling Latent Bugs in Ansible Compiler
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+    - name: Create network
+      docker_network:
+        name: node-net
+        subnet: 10.1.1.0/24
+        gateway: 10.1.1.254
+
+    - name: Create Docker nodes
+      docker_container:
+        name: "{{ item.name }}"
+        state: started
+        detach: yes
+        image: "{{ item.image }}"
+        networks:
+          - name: node-net
+            aliases:
+              - "{{ item.name }}"
+        privileged: yes
+      with_items:
+        - { name: ubuntu1, image: "ubuntu:latest" }
+        - { name: alpine1, image: "alpine:latest" }
+        - { name: centos1, image: "centos:latest" }
+        - { name: redhat1, image: "redhat:latest" }
+
+    - name: Debug information
+      debug:
+        var: ansible_net_hostname

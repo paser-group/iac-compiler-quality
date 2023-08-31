@@ -1,0 +1,30 @@
+- name: Create Docker Network with Subnet
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Create Docker Network
+      community.docker.docker_network:
+        name: node-net
+        state: present
+        ipam_driver: default
+        ipam_options:
+          subnet: "{{ subnet_mask }}/24"
+        driver_options: {}
+      register: network_result
+      delegate_to: localhost
+
+- name: Create Docker Nodes
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Create Docker Containers
+      community.docker.docker_container:
+        name: "{{ inventory_hostname }}"
+        image: "{{ docker_image }}"
+        state: started
+        networks_cli_compatible: true
+        detach: true
+        network_mode: bridge
+        command: sleep infinity
+      with_items:
+        - "{{ groups['all'] }}"

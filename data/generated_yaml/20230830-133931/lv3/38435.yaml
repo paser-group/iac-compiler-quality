@@ -1,0 +1,43 @@
+---
+- name: Expose Latent Type-Related Bugs
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create inventory directory
+      file:
+        path: "/tmp/inventory"
+        state: directory
+
+    - name: Create inventory script
+      copy:
+        content: |
+          #!/usr/bin/env python3
+          import sys
+
+          # Test case - Generate malformed unicode string
+          unicode_string = b'\xc3\x28'.decode('utf-8')
+
+          # Test case - Assign a string value to an integer variable
+          int_variable = "123"
+
+          # Test case - Perform an invalid type operation
+          invalid_operation = 10 + "5"
+
+          sys.exit(0)
+        dest: "/tmp/inventory/script.py"
+        mode: '0755'
+
+    - name: Execute playbook with dynamic inventory
+      hosts: all
+      tasks:
+        - name: Debug task
+          debug:
+            var: inventory_hostname
+
+      ansible_inventory_sources:
+        all:
+          script:
+            script: "/tmp/inventory/script.py"
+            cache: true
+            cache_timeout: 60

@@ -1,0 +1,49 @@
+---
+- name: Ansible Latent Bug Finder Playbook
+  hosts: all
+  gather_facts: false
+
+  vars:
+    subnet: "10.1.1.0/24"
+    gateway: "10.1.1.254"
+    nodes:
+      - name: ubuntu1
+        ip: "10.1.1.1"
+      - name: alpine1
+        ip: "10.1.1.2"
+      - name: centos1
+        ip: "10.1.1.3"
+      - name: redhat1
+        ip: "10.1.1.4"
+
+  tasks:
+    - name: Debug message
+      debug:
+        var: nodes
+
+    - name: Generate inventory file
+      copy:
+        content: |
+          [nodes]
+          {% for node in nodes %}
+          {{ node }} ansible_host={{ node.ip }} ansible_ssh_user=root ansible_connection=docker ansible_python_interpreter=/usr/bin/python3.8
+
+          [nodes:vars]
+          subnet={{ subnet }}
+          gateway={{ gateway }}
+          {% endfor %}
+        dest: /etc/ansible/hosts
+
+    - name: Base-10 problem for subnet masks
+      debug:
+        msg: "Invalid subnet mask."
+
+      # Assuming a variable 'subnet_mask' is already defined in the system architecture
+      when: subnet|ipaddr(subnet_mask) is undefined
+
+    - name: Mismatched network and router names
+      debug:
+        msg: "Mismatched network and router names."
+
+      # Assuming the inventory file already exists
+      when: hostvars[inventory_hostname].ansible_hostname != hostvars[inventory_hostname].ansible_default_ipv4.network

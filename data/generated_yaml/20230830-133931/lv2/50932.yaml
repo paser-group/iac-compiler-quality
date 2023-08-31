@@ -1,0 +1,37 @@
+- name: Test Playbook
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Ensure inventory file exists
+      file:
+        path: /etc/ansible/hosts
+        state: touch
+
+    - name: Create symlink paths with spaces
+      file:
+        path: '{{ "/etc/ansible/symlink path1" }}'
+        state: link
+        src: '{{ "/etc/ansible/hosts" }}'
+
+    - name: Generate malformed Unicode strings for inventory
+      lineinfile:
+        path: /etc/ansible/hosts
+        line: "{{ 'unicode_string_\u200B' }}"
+
+    - name: Set negative cache timeout value
+      lineinfile:
+        path: /etc/ansible/ansible.cfg
+        line: "timeout = -1"
+        insertafter: "[ssh_connection]"
+
+    - name: Collect facts
+      na_ontap_gather_facts:
+        state: '{{ "info" }}'
+        hostname: "{{ inventory_hostname }}"
+        username: 'account'
+        password: 'password'
+
+    - name: Debug Ontap facts
+      debug:
+        var: ontap_facts

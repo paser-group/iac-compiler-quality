@@ -1,0 +1,43 @@
+---
+- name: Ansible Latent Bug Finder
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create symlink paths with space
+      command: ln -s /tmp "/path with space"
+
+    - name: Generate malformed unicode strings for inventory
+      copy:
+        content: "{{ 'Some \xC2unicode' }}"
+        dest: /etc/ansible/hosts
+        mode: '0644'
+
+    - name: Negative Cache timeout value
+      block:
+        - name: Set negative cache timeout in inventory
+          copy:
+            content: |
+              [all]
+              host ansible_host=10.1.1.1 ansible_cache_plugin_timeout=-1
+            dest: /etc/ansible/hosts
+            mode: '0644'
+
+        - name: Test negative cache timeout
+          ping:
+          delegate_to: host
+
+      rescue:
+        - name: Bug found - negative cache timeout caused an error
+          debug:
+            msg: "Negative cache timeout caused an error"
+
+    - name: Normal playbook tasks
+      block:
+        - name: Include your original tasks here
+          # Insert the original tasks below this line
+
+      rescue:
+        - name: No bug found - normal playbook tasks completed successfully
+          debug:
+            msg: "No bug found - normal playbook tasks completed successfully"

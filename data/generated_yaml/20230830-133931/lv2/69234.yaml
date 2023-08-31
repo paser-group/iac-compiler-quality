@@ -1,0 +1,28 @@
+---
+- name: Test playbook for Ansible Latent Bug Explorer
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Set variables
+      set_fact:
+        pulp_import_repo_name: "test_repo"
+        pulp_export_distributor_name: "export_distributor"
+
+    - name: Create repository
+      pulp_repository:
+        name: "{{ pulp_import_repo_name }}"
+        state: present
+        repo_type: rpm
+        pulp_user_cert: /root/.pulp/user-cert.pem
+        validate_certs: false
+        import_distributor:
+          id: "{{ pulp_import_repo_name }}_import_distributor"
+        export_distributor:
+          id: "{{ pulp_export_distributor_name }}"
+          repo_id: "{{ pulp_import_repo_name }}"
+        import_distributor_parameters:
+          import_type: "{{ hostvars['localhost'].ansible_distribution }}"
+        export_distributor_parameters:
+          export_type: "{{ hostvars['localhost'].ansible_distribution }}"
+      delegate_to: localhost

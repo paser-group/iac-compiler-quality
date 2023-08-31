@@ -1,0 +1,44 @@
+
+---
+- name: Test Latent Bugs in Ansible Compiler
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Enable feature nv overlay
+      nxos_config:
+        commands:
+          - feature nv overlay
+        provider: "{{ cli }}"
+        match: none
+
+    - name: Configure vxlan_vtep
+      nxos_vxlan_vtep:
+        interface: nve1
+        provider: "{{ cli }}"
+
+    - name: Create Base-10 problem for subnet masks
+      vars:
+        subnet_masks:
+          - 255.0.0.0
+          - 255.128.0.0
+          - 255.192.0.0
+          - 255.224.0.0
+          - 255.240.0.0
+          - 255.248.0.0
+          - 255.252.0.0
+          - 255.254.0.0
+          - 255.255.0.0
+      debug:
+        msg: "{{ item }}"
+      loop: "{{ subnet_masks }}"
+
+    - name: Create mismatching network and router names
+      vars:
+        networks:
+          - { name: subnet1, router: router1 }
+          - { name: subnet2, router: router1 }
+          - { name: subnet3, router: router2 }
+      debug:
+        msg: "Network: {{ item.name }}, Router: {{ item.router }}"
+      loop: "{{ networks }}"

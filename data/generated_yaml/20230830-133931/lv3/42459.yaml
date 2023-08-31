@@ -1,0 +1,27 @@
+---
+- name: Test Ansible Latent Bug
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Create symlink path with space
+      file:
+        src: "/tmp/symlink with space"
+        dest: "/tmp/symlink"
+        state: link
+
+    - name: Generate malformed unicode strings for inventory
+      lineinfile:
+        path: "/etc/ansible/inventory"
+        line: "{{ 'Inventory with unicode string follows: ç' | to_nice_json }}"
+        create: yes
+
+    - name: Set negative Cache timeout value
+      lineinfile:
+        path: "/etc/ansible/ansible.cfg"
+        line: "cache_timeout: -1"
+        create: yes
+
+    - name: Print variable type
+      debug:
+        var: ansible_hostnames[0] | type_debug

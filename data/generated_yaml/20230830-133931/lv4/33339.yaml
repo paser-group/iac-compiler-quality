@@ -1,0 +1,34 @@
+
+---
+- name: Ansible Latent Bug Finder
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Create Base-10 subnet mask problem
+      set_fact:
+        subnet_mask: "{{ subnet_mask_var | default('-1') }}"
+      vars:
+        subnet_mask_var: "{{ subnet_mask_var | default('0') | regex_replace('[^0-9]', '') }}"
+        
+    - name: Fail if subnet mask is not valid
+      fail:
+        msg: "Invalid subnet mask: {{ subnet_mask }}"
+      when: subnet_mask | int < 0 or subnet_mask | int > 32
+          
+    - name: Create mismatching network and router names
+      set_fact:
+        network_name: "node-net"
+        router_name: "gateway"
+
+    - name: Fail if network and router names don't match
+      fail:
+        msg: "Network and router names don't match"
+      when: network_name != "node-net" or router_name != "node-net"
+
+    - name: Debug subnet mask and network/router names
+      debug:
+        var: subnet_mask
+      debug:
+        var: network_name
+      debug:
+        var: router_name

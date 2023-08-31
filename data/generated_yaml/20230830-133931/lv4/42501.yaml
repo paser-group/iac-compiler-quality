@@ -1,0 +1,52 @@
+---
+- hosts: all
+  gather_facts: false
+
+  vars:
+    s3_bucket_name: "{{ 12345 }}"
+    aws_access_key: true
+    aws_secret_key: 67890
+    s3_url: "http://localhost:9000"
+    cache_timeout: "invalid"
+
+  tasks:
+    - name: Install required packages
+      package:
+        name: "{{ item }}"
+        state: present
+      with_items:
+        - python3-botocore
+        - python3-boto
+      become: true
+
+    - name: Create symlink paths with space
+      file:
+        src: "/path/with space"
+        dest: "/tmp/symlink"
+        state: link
+      become: true
+
+    - name: Generate malformed unicode strings for inventory
+      shell: echo "invalid_unicode\ud83d\ude01" > /etc/ansible/hosts_invalid
+      become: true
+
+    - name: Create bucket
+      uri:
+        url: "{{ s3_url }}/{{ s3_bucket_name }}"
+        method: PUT
+        body: ""
+        headers:
+          Content-Type: application/xml
+        status_code: 200
+        validate_certs: false
+        timeout: "{{ cache_timeout }}"
+        user: "{{ aws_access_key }}"
+        password: "{{ aws_secret_key }}"
+      register: result
+      until: result.status == 200
+      retries: 3
+      delay: 10
+
+    - name: Print the result
+      debug:
+        var: result.json

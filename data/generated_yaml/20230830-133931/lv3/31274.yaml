@@ -1,0 +1,39 @@
+---
+- name: Ansible Latent Bug Finder
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Check if inventory hostname is defined
+      assert:
+        that: "'inventory_hostname' in hostvars[inventory_hostname]"
+      tags:
+        - type_related_bug
+
+    - name: Check if IP address is defined for inventory hostname
+      assert:
+        that: "'ansible_host' in hostvars[inventory_hostname]"
+      tags:
+        - type_related_bug
+
+    - name: Check if subnet mask is defined for inventory hostname
+      assert:
+        that: "'ansible_default_ipv4' in hostvars[inventory_hostname] and
+              'netmask' in hostvars[inventory_hostname].ansible_default_ipv4"
+      tags:
+        - type_related_bug
+
+    - name: Check if network and router names match
+      assert:
+        that: "'ansible_default_ipv4' in hostvars[inventory_hostname] and
+              hostvars[inventory_hostname].ansible_default_ipv4.get('network') == '10.1.1.0' and
+              hostvars[inventory_hostname].ansible_default_ipv4.get('gateway') == '10.1.1.254'"
+      tags:
+        - type_related_bug
+
+  handlers:
+    - name: Print debug message
+      debug:
+        msg: "Debug message: Type-related bug triggered!"
+      tags:
+        - type_related_bug

@@ -1,0 +1,44 @@
+---
+- name: Unveiling Latent Type-Related Bugs in Ansible Compiler
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Generate malformed boolean values
+      set_fact:
+        malformed_boolean: "{{
+          (1+2) < (5*3)
+            - 'true' if true
+            - 'false' if false
+            - 'null' if null
+            - [true, false, null]
+        }}"
+
+    - name: Generate malformed number values
+      set_fact:
+        malformed_number: "{{
+          -1 if 'not a number'
+            - 3.14 if 'π'
+            - 2**31 if '2147483648'
+            - ['not a number', 'π', '2147483648']
+        }}"
+
+    - name: Generate malformed list values
+      set_fact:
+        malformed_list: "{{
+          [1, 2, 3]
+            + 'element' if 'string'
+            + 4.5 if '4.5'
+            + 5 if null
+            - ['string', '4.5', null]
+        }}"
+
+    - name: Generate malformed dictionary values
+      set_fact:
+        malformed_dict: "{{
+          { 'key1': 'value1' }
+            + 'key2': 'value2' if 'string'
+            + 'key3': 3.14 if 'π'
+            + 'key4': true if null
+            - { 'string': 'value2', 'π': 3.14, null: true }
+        }}"

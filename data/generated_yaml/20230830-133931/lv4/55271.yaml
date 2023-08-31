@@ -1,0 +1,55 @@
+---
+- name: Deploy a web application
+  hosts: target1
+  gather_facts: false
+  tasks:
+    - name: Install dependencies
+      package:
+        name: "{{ item }}"
+        state: present
+      with_items:
+        - python
+        - python-setuptools
+        - python-dev
+        - build-essential
+        - python-pip
+        - python-mysqldb
+        - mysql-server
+        - mysql-client
+      vars:
+        ansible_python_interpreter: "{{ ansible_playbook_python }}"
+        ansible_become_method: tty
+
+    - name: Start MySQL Service
+      service:
+        name: mysql
+        state: started
+        enabled: true
+
+    - name: Create Application Database
+      mysql_db:
+        name: "employee_db"
+        state: present
+
+    - name: Create Application DB User
+      mysql_user:
+        name: "db_user"
+        password: "Passw0rd"
+        priv: "*.*:ALL"
+        host: "%"
+        state: present
+
+    - name: Install Python Flask dependencies
+      pip:
+        name: flask
+        state: present
+      vars:
+        ansible_python_interpreter: "{{ ansible_playbook_python }}"
+        ansible_become_method: tty
+      
+    - name: Start web-application
+      command: "{{ item }}"
+      args:
+        chdir: /opt
+      with_items:
+        - "FLASK_APP=app.py flask run --host=0.0.0.0"

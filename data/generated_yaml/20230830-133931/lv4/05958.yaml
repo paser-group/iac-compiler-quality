@@ -1,0 +1,40 @@
+
+---
+- name: Test playbook for Ansible latent type-related bug exploration
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Ensure /mnt/s3/quantumcloud exists
+      file:
+        path: /mnt/s3/quantumcloud
+        owner: root
+        group: root
+        mode: '0755'
+        state: directory
+      register: result
+      become: true
+      vars:
+        ansible_python_interpreter: /usr/bin/python3
+
+    - name: Copy files using incorrect file modes
+      copy:
+        src: /path/to/source/file
+        dest: /tmp/testfile
+        mode: 'not_valid_mode'
+      vars:
+        ansible_python_interpreter: /usr/bin/python2
+
+    - name: Execute a command with undefined variable
+      command: "{{ undefined_variable }}"
+      register: result
+      failed_when: result.stdout == ''
+      changed_when: false
+
+    - name: Install package with invalid parameter type
+      package:
+        name: httpd
+        state: '{{ "latest" }}'
+      become: true
+      vars:
+        ansible_python_interpreter: /usr/bin/python2

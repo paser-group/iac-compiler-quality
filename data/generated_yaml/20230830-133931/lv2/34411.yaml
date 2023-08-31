@@ -1,0 +1,23 @@
+---
+- name: Configure network and disable firewall
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Set network settings
+      ansible.builtin.network:
+        hostname: "{{ inventory_hostname }}"
+        gather_subset: "!all"
+        os_family: "{{ ansible_facts['ansible_os_family'] }}"
+        state: present
+        interfaces:
+          eth0:
+            ipv4: "{{ hostvars[inventory_hostname].ansible_default_ipv4.address }}"
+            netmask: "255.255.255.0"
+            gateway4: "10.1.1.254"
+            dns_nameservers: [ "8.8.8.8" ]
+
+    - name: Disable firewall
+      ansible.builtin.command:
+        cmd: "Set-NetFirewallProfile -State Disabled"
+      become: false
+      when: ansible_os_family == "Windows"

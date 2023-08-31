@@ -1,0 +1,40 @@
+---
+- name: Ansible Latent Type Bug Finder
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Set inventory file
+      set_fact:
+        inventory_file: "/tmp/hosts"
+
+    - name: Create symlink paths with space
+      file:
+        src: "/tmp/foo"
+        dest: "{{ inventory_file }}/with space"
+        state: link
+
+    - name: Generate malformed unicode strings for inventory
+      command: echo -e "{{ '\uFFFF' }}" >> "{{ inventory_file }}/unicode_inv"
+
+    - name: Set negative cache timeout
+      set_fact:
+        cache_timeout: -1
+
+    - name: Define a variable with the incorrect type
+      set_fact:
+        incorrect_var: "{{ 'string' | int }}"
+
+    - name: Configure the inventory file
+      lineinfile:
+        path: "{{ inventory_file }}"
+        line: "{% for host in groups['all'] %}{{ hostvars[host]['ansible_host'] }}\n{% endfor %}"
+        create: yes
+
+    - name: Test inventory file
+      command: ansible-inventory -i "{{ inventory_file }}" --list
+
+    - name: Remove inventory file
+      file:
+        path: "{{ inventory_file }}"
+        state: absent

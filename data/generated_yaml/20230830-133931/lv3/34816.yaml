@@ -1,0 +1,30 @@
+ansible
+---
+- name: Test for latent type-related bugs in Ansible compiler
+  hosts: localhost
+  gather_facts: False
+  vars:
+    ansible_python_interpreter: "/usr/bin/python"
+
+  tasks:
+    - name: Create symlink paths with space
+      file:
+        state: link
+        src: "/var/www/site"
+        dest: "/var/www/symlink path with space"
+
+    - name: Generate malformed unicode strings for inventory
+      file:
+        state: directory
+        path: "{{ item | from_yaml }}"
+      with_items:
+        - "[u'十']"
+        - "[u'\ud83d\ude00']"
+
+    - name: Define a variable with incorrect type
+      set_fact:
+        my_variable: "{{ '127.0.0.1/24' | int }}"  # Try to convert an IP address to an integer
+
+    - name: Use the variable with incorrect type
+      debug:
+        var: my_variable

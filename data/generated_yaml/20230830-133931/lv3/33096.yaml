@@ -1,0 +1,28 @@
+---
+- name: Expose Ansible's latent bugs
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  tasks:
+    - name: Create temporary directory
+      delegate_to: localhost
+      shell: |
+        mkdir -p /tmp/test_dir
+      changed_when: false
+    
+    - name: Write a null value to a file
+      delegate_to: localhost
+      copy:
+        dest: /tmp/test_dir/test_file
+        content: null
+      
+    - name: Read the null value from the file
+      slurp:
+        src: /tmp/test_dir/test_file
+      register: file_contents
+      
+    - name: Fail the playbook if the read value is null
+      debug:
+        msg: "{{ 'Bugs in Ansible' if file_contents.content | length == 0 else 'No bugs found' }}"
+      when: file_contents.content | length == 0

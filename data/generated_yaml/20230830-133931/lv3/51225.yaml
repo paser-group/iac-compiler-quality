@@ -1,0 +1,32 @@
+---
+- name: Ansible Latent Bug Explorer
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    inventory_file: "inventory.ini"
+
+  tasks:
+    - name: Generate malformed Unicode strings for inventory
+      set_fact:
+        inventory_content: "{{
+          '[ubuntu1]': {'ansible_host': '\\ud83d\\ude00'},
+          '[alpine1]': {'ansible_host': '\\ud83d\\ude34'},
+          '[centos1]': {'ansible_host': '\\ud83d\\udc4d'},
+          '[redhat1]': {'ansible_host': '\\ud83d\\ude1c'}
+        }}"
+
+    - name: Write inventory file
+      copy:
+        content: "{{ inventory_content }}"
+        dest: "{{ inventory_file }}"
+
+    - name: Test playbook with malformed Unicode strings in inventory
+      ansible.builtin.command: echo "Testing with {{ inventory_file }}"
+      register: result
+      changed_when: false
+      delegate_to: localhost
+
+    - name: Display test result
+      debug:
+        var: result.stdout

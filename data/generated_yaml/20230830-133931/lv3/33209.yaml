@@ -1,0 +1,21 @@
+---
+- name: Check user password type
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Gather user facts
+      command: cat /etc/passwd
+      register: passwd_output
+
+    - name: Extract user password type
+      set_fact:
+        password_type: "{{ item.split(':')[1] | regex_search('^\\$[0-9a-zA-Z]+$', multiline=True) | bool }}"
+      loop: "{{ passwd_output.stdout_lines }}"
+      loop_control:
+        label: "{{ item.split(':')[0] }}"
+
+    - name: Log user password type
+      debug:
+        msg: "User {{ item.item }} has {{ 'encrypted' if item.value else 'plaintext' }} password"
+      loop: "{{ password_type.results }}"

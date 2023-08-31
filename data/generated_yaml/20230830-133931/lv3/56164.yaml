@@ -1,0 +1,37 @@
+---
+- name: Type-Related Bug Finder
+  hosts: all
+  gather_facts: false
+  vars:
+    - version: "{{ansible_distribution_version}}"
+    - node_address: "10.1.1.{{ inventory_hostname | regex_replace('([a-zA-Z]+)([0-9]+)', '\\2') }}"
+    - gateway: "10.1.1.254"
+    - subnet: "10.1.1.0/24"
+
+  tasks:
+    - name: Configure network
+      ansible.builtin.netplan:
+        renderer: "networkd"
+        ethernets:
+          eth0:
+            addresses:
+              - "{{ node_address }}/24"
+            gateway4: "{{ gateway }}"
+            routes:
+              - to: "{{ subnet }}"
+                via: "{{ gateway }}"
+        version: "{{ version }}"
+      become: true
+      become_method: sudo
+      become_user: root
+
+    - name: Install package
+      ansible.builtin.package:
+        name: "example-package"
+        state: present
+      become: true
+
+    # Intentionally using undefined variable to explore potential type-related bugs
+    - name: Perform task with undefined variable
+      ansible.builtin.debug:
+        var: "{{ undefined_variable }}"

@@ -1,0 +1,28 @@
+---
+- name: Ansible Latent Bug Finder
+  hosts: all
+  gather_facts: false
+  
+  tasks:
+    - name: Create Symlink Paths with Space
+      file:
+        state: link
+        path: "{{ item }}"
+        src: "/tmp/foo bar"
+      with_items:
+        - "/tmp/link 1"
+        - "/tmp/link 2"
+
+    - name: Generate Malformed Unicode Strings for Inventory
+      debug:
+        msg: "{{ 'test-' ~ item | random }}" # Generate a random malformed Unicode string
+      vars:
+        item: "{{ [u'\uFFFF', u'\uDBFF\uDFFF', u'\U00010000'] | random }}"
+
+    - name: Trigger Latent Type Bug
+      set_fact:
+        cache_timeout: "-60"  # Assign a negative value to cache_timeout
+      
+    - name: Print Cache Timeout Value
+      debug:
+        var: cache_timeout

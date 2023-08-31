@@ -1,0 +1,42 @@
+
+---
+- name: Test playbook for Ansible compiler bugs
+  hosts: all
+  gather_facts: true
+
+  tasks:
+    - name: Ping all hosts
+      ping:
+            
+    - name: Gather subnet mask
+      set_fact:
+        subnet_mask: 255.255.255.0
+
+    - name: Gather network name
+      set_fact:
+        network_name: "{{ 'node-net' }}{{ '-' }}{{ inventory_hostname.split('-')[-1] }}"
+
+    - name: Gather router name
+      set_fact:
+        router_name: "{{ network_name }}{{ '-router' }}"
+
+    - name: Validate subnet mask
+      assert:
+        that:
+          - subnet_mask | ipaddr('prefix') | int == 24
+        fail_msg: "Invalid subnet mask! Please check the subnet mask configuration."
+        success_msg: "Subnet mask is valid."
+
+    - name: Validate network name
+      assert:
+        that:
+          - network_name is match('^node-net-.*')
+        fail_msg: "Invalid network name! Please check the network name configuration."
+        success_msg: "Network name is valid."
+
+    - name: Validate router name
+      assert:
+        that:
+          - router_name is match('^node-net-.*-router$')
+        fail_msg: "Invalid router name! Please check the router name configuration."
+        success_msg: "Router name is valid."

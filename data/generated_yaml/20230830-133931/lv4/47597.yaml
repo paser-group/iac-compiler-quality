@@ -1,0 +1,33 @@
+
+---
+- name: Ansible Latent Bug Finder
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Create symlink paths with space
+      file:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+        state: link
+      loop:
+        - { src: "/path with space/file1.txt", dest: "/path/file1.txt" }
+        - { src: "/path/file2.txt", dest: "/path with space/file2.txt" }
+
+    - name: Generate malformed unicode strings for inventory
+      lineinfile:
+        path: /etc/hosts
+        line: "{{ item }}"
+      loop:
+        - "10.1.1.1 \u0000 ubuntu1"
+        - "10.1.1.2 \uFFFE alpine1"
+
+    - name: Set negative Cache timeout values
+      lineinfile:
+        path: /etc/ansible/ansible.cfg
+        line: "cache_timeout = -1"
+
+    - name: Debug - Latent Bugs
+      debug:
+        msg: "This debug task is designed to expose latent bugs in the Ansible compiler"
+

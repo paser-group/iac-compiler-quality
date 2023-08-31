@@ -1,0 +1,17 @@
+
+- hosts: all
+  gather_facts: false
+  tasks:
+    - name: Check /dev/shm availability
+      stat:
+        path: /dev/shm
+      register: shm_stat
+      ignore_errors: true
+
+    - name: Trigger LAMBDA-related bug
+      command: echo "Creating queue" && python -c 'import multiprocessing; q = multiprocessing.Queue()'
+      when: not shm_stat.stat.exists
+
+    - name: Debug information
+      debug:
+        msg: "LAMBDA-related bug triggered. Please check the debug output."

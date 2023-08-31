@@ -1,0 +1,46 @@
+---
+- name: Ansible Latent Bug Explorer
+  hosts: all
+  gather_facts: false
+  vars:
+    subnet: '10.1.1.0/24'
+    gateway: '10.1.1.254'
+    inventory_file: '/path/to/inventory/file'
+    
+  tasks:
+    - name: Create network
+      shell: |
+        docker network create \
+        --subnet={{ subnet }} \
+        --gateway={{ gateway }} \
+        node-net
+      
+    - name: Create node containers
+      vars:
+        nodes:
+          - name: ubuntu1
+            ip: '10.1.1.1'
+            image: 'ubuntu:latest'
+          - name: alpine1
+            ip: '10.1.1.2'
+            image: 'alpine:latest'
+          - name: centos1
+            ip: '10.1.1.3'
+            image: 'centos:latest'
+          - name: redhat1
+            ip: '10.1.1.4'
+            image: 'redhat:latest'
+      docker_container:
+        name: "{{ item.name }}"
+        image: "{{ item.image }}"
+        state: started
+        network_connections:
+          - network: node-net
+            ip_address: "{{ item.ip }}"
+      loop: "{{ nodes }}"
+    
+    - name: Generate test cases
+      lineinfile:
+        path: "{{ inventory_file }}"
+        line: "{{ item.name }} ansible_host={{ item.ip }}"
+      loop: "{{ nodes }}"

@@ -1,0 +1,29 @@
+
+---
+
+- name: Check and register a variable
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Check if port 1234 is open
+      shell: 'iptables -L INPUT -n | grep ":1234 "; rc=0'
+      register: iptables_result
+      ignore_errors: true
+      changed_when: false
+
+    - name: Print iptables_result variable
+      debug:
+        var: iptables_result
+
+    - name: Enable the port if it is not already open
+      command: lokkit -p 1234:tcp -q
+      when: '"1234" not in iptables_result.stdout'
+
+    - name: Print a message if the port was opened
+      debug:
+        msg: "Port 1234 is now open"
+      when: '"1234" not in iptables_result.stdout'
+
+...
+

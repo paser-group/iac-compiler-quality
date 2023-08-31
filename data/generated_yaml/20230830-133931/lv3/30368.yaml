@@ -1,0 +1,25 @@
+
+---
+- name: Ansible Latent Bug Finder Playbook
+  hosts: all
+  gather_facts: false
+  
+  tasks:
+    - name: Create symlink paths with space
+      shell: 'ln -s /var/log/messages "/tmp/my symlink path"'
+  
+    - name: Generate malformed unicode strings for inventory
+      script: |
+        import os
+        inventory_path = os.path.join(os.getcwd(), "ᅠinventory.txt")
+        with open(inventory_path, "w") as file:
+          file.write("test")
+  
+    - name: Negative Cache timeout values lead to latent bugs
+      hosts: all
+      gather_facts: false
+      tasks:
+        - name: Set negative cache timeout
+          lineinfile:
+            path: /etc/ansible/ansible.cfg
+            line: "cache_timeout = -1"

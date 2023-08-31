@@ -1,0 +1,34 @@
+---
+- name: Test Playbook
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Create VLAN interface
+      command: "ip link add link eth0 name vlan100 type vlan id 100"
+      when:
+        - ansible_os_family == "Debian"
+        - inventory_hostname == "ubuntu1"  # Change to specific Ubuntu host
+
+    - name: Configure VLAN interface
+      lineinfile:
+        path: "/etc/network/interfaces"
+        line: "{{ line }}"
+        insertafter: "^iface eth0"
+      with_items:
+        - "address 10.1.1.1"  # Change to specific IP based on inventory_hostname
+        - "netmask 255.255.255.0"
+        - "gateway 10.1.1.254"
+      notify: restart networking
+      when:
+        - ansible_os_family == "Debian"
+        - inventory_hostname == "ubuntu1"  # Change to specific Ubuntu host
+
+  handlers:
+    - name: restart networking service
+      service:
+        name: networking
+        state: restarted
+      when:
+        - ansible_os_family == "Debian"
+        - inventory_hostname == "ubuntu1"  # Change to specific Ubuntu host

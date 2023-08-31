@@ -1,0 +1,37 @@
+
+---
+- name: Trigger Security Bug in Ansible
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Install apt-transport-https package
+      apt:
+        name: apt-transport-https
+        state: present
+
+    - name: Create temporary proxy script
+      copy:
+        content: |
+          #!/bin/bash
+          exec socat TCP4-LISTEN:8080,bind=10.1.1.254,reuseaddr,fork PROXY:proxy.example.com:proxy_port
+        dest: /tmp/proxy.sh
+        mode: 0755
+
+    - name: Set proxy environment variables
+      command: |
+        export http_proxy=http://10.1.1.254:8080
+        export https_proxy=http://10.1.1.254:8080
+        export no_proxy=localhost,127.0.0.1
+      args:
+        executable: bash
+
+    - name: Add the repository via apt_repository module
+      apt_repository:
+        repo: ppa:rquillo/ansible
+        state: present
+      register: repository_result
+
+    - name: Debug repository_result
+      debug:
+        var: repository_result

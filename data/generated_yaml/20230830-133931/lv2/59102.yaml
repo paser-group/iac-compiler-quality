@@ -1,0 +1,42 @@
+- name: Ensure no password expiration policy is set for IAM users
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Get all IAM users
+      iam_user_info:
+        aws_access_key: null
+        aws_secret_key: null
+        debug_botocore_endpoint_logs: false
+      register: users
+
+    - name: Set password policy for each user
+      loop: "{{ users.users }}"
+      set_fact:
+        no_password_expiration: true
+        min_password_length: 8
+        allow_password_change: true
+        max_password_age: 90072000
+        password_reuse_prevention: 5
+        require_lowercase_characters: true
+        require_uppercase_characters: true
+        require_numbers: true
+        require_symbols: true
+
+    - name: Update password policy for each user
+      iam_password_policy:
+        state: present
+        username: "{{ item.iam_user.username }}"
+        password_policy:
+          expire_passwords: "{{ item.no_password_expiration }}"
+          minimum_password_length: "{{ item.min_password_length }}"
+          allow_users_change_password: "{{ item.allow_password_change }}"
+          maximum_password_age: "{{ item.max_password_age }}"
+          password_reuse_prevention: "{{ item.password_reuse_prevention }}"
+          require_lowercase_characters: "{{ item.require_lowercase_characters }}"
+          require_uppercase_characters: "{{ item.require_uppercase_characters }}"
+          require_numbers: "{{ item.require_numbers }}"
+          require_symbols: "{{ item.require_symbols }}"
+        debug_botocore_endpoint_logs: false
+        validate_certs: true
+      loop: "{{ users.users }}"

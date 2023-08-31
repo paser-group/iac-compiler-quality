@@ -1,0 +1,23 @@
+
+- name: Configure igmp interface with default value
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: Set interface facts
+      set_fact:
+        interface_facts:
+          interface: "{{ item.key }}"
+          body:
+            TABLE_interface:
+              ROW_interface: dummy
+      with_dict: "{{ ansible_interfaces }}"
+      when: "'ansible_eth0' not in item.key"
+
+    - name: Retrieve interface details
+      nxos_igmp_interface:
+        provider: '{{ connection }}'
+        interface: '{{ item.interface }}'
+        state: default
+        body: '{{ item.body }}'
+      with_items: '{{ interface_facts | default([]) }}'

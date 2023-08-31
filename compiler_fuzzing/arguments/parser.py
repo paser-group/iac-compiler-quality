@@ -45,6 +45,13 @@ def parse():
         type=int,
         default=-1,
     )
+    
+    parser_gen.add_argument(
+        '--prompt_method',
+        help='used to determine the nature of prompt. options: [taxonomy, taxonomy-heu]',
+        type=str,
+        default="taxonomy",
+    )
 
     # subparser for validation
     parser_gen = subparser.add_parser('validate')

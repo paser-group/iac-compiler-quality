@@ -1,0 +1,50 @@
+---
+- name: Latent Bug Finder Playbook
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create symlink paths with space
+      file:
+        dest: "/tmp/ansible_{{ item }}"
+        state: link
+        src: "/etc/ansible"
+      loop:
+        - "ubuntu1"
+        - "alpine1"
+        - "centos1"
+        - "redhat1"
+
+    - name: Generate malformed unicode strings for inventory
+      script:
+        script: |
+          #!/usr/bin/env python3
+          import os
+
+          with open('/etc/ansible/hosts', 'w') as f:
+            f.write('\u200C\n')
+
+          for host in ['ubuntu1', 'alpine1', 'centos1', 'redhat1']:
+            os.system(f'echo "[{host}] [unicode]" >> /etc/ansible/hosts')
+
+      register: inventory_generation_result
+
+    - name: Negative Cache timeout values
+      copy:
+        dest: "/etc/ansible/ansible.cfg"
+        content: |
+          [defaults]
+          cache_timeout: -1
+          inventory_ignore_caching: True
+
+      notify: stop_ansible
+
+  handlers:
+    - name: stop_ansible
+      command: echo
+
+- name: Test Playbook
+  hosts: all
+  tasks:
+    - name: Check connectivity
+      ping:

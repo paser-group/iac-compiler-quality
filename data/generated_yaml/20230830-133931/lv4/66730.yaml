@@ -1,0 +1,31 @@
+ansible
+---
+- name: Test playbook for Ansible Latent Bug Finder
+  hosts: localhost
+  gather_facts: false
+  
+  vars:
+    interfaces:
+      - name: GigabitEthernet1
+        description: Description1
+      - name: GigabitEthernet2
+        description: Description2
+      - name: GigabitEthernet3
+        description: Description3
+      - name: GigabitEthernet4
+        description: Description4
+
+  tasks:
+    - name: Create interface configuration data structures
+      set_fact:
+        int_general: "{{ int_general | default([]) + [{'enabled': item.enabled | default(omit), 'speed': item.speed | default(omit), 'mtu': item.mtu | default(omit), 'description': item.description | default(omit), 'duplex': item.duplex | default(omit), 'name': item.name}] }}"
+      loop: "{{ interfaces }}"
+
+    - name: Configure interface
+      dummy_module:
+        some_param: "{{ int_general }}"
+      register: dummy_result
+
+    - name: Debug module output
+      debug:
+        var: dummy_result

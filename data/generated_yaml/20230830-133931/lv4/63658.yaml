@@ -1,0 +1,32 @@
+---
+- name: Expose type-related bugs
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+    - name: Set up inventory
+      file:
+        path: "{{ item }}"
+        state: touch
+        mode: "u=rw,g=,o="
+      with_items:
+        - "/tmp/inventory{{ ['path-with-spaces', 'path;rm -rf /'] | random }}"
+
+    - name: Configure inventory
+      lineinfile:
+        path: "{{ item }}"
+        line: "{{ inventory_line }}"
+      vars:
+        inventory_line: "{{ 'ubuntu' | random }}1 ansible_host=10.1.1.{{ loop.index }}"
+      with_sequence: start=1 end=4
+
+    - name: Gather facts on different machines
+      setup:
+      delegate_to: "{{ host }}"
+      loop: "{{ groups['localhost'] }}"
+      register: machine_facts
+
+    - name: Print machine facts
+      debug:
+        var: item.ansible_facts['ansible_distribution']
+      with_items: "{{ machine_facts.results }}"

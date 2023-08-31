@@ -1,0 +1,28 @@
+
+---
+- name: Ansible Latent Bug Finder Playbook
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Create symlink paths with spaces
+      file:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+        state: link
+        force: yes
+      with_items:
+        - { src: "/path/to/inventory", dest: "/path with spaces/inventory" }
+    
+    - name: Generate malformed unicode strings for inventory
+      script:
+        script: |
+          #!/usr/bin/env python
+          import sys
+          inventory = u"\u0627\u0644\u062A\u0648\u0644\u064A\u062F, \u0648\u0627\u0644\u0644\u0635\u0642, \u0648unicode \u0641\u062D\u0635 \u0627\u0644\u0633\u0646\u0629"
+          sys.stdout.write(inventory.encode('utf-8'))
+        executable: /usr/bin/python
+
+    - name: Set negative cache timeout value
+      set_fact:
+        ansible_cache_valid_time: -1

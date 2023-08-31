@@ -1,0 +1,26 @@
+---
+- name: Ansible Latent Bug Finder
+  hosts: all
+  gather_facts: false
+
+  vars:
+    subnet_mask: "10.1.1.0/24"
+    gateway_ip: "10.1.1.254"
+
+  tasks:
+    - name: Ping all hosts
+      ping:
+
+    - name: Check subnet mask and gateway IP
+      assert:
+        that: inventory_hostname in subnet_mask
+        fail_msg: "Hostname is not included in the subnet mask"
+        
+    - name: Retrieve gateway IP using subnet mask
+      set_fact:
+        gateway_ip: "{{ hostvars[groups['all'][0]]['ansible_default_ipv4']['gateway'] }}"
+      when: inventory_hostname == groups['all'][0]
+        
+    - name: Display gateway IP
+      debug:
+        var: gateway_ip

@@ -1,0 +1,30 @@
+
+---
+- name: Test inventory-related bugs in Ansible compiler
+  hosts: localhost
+  gather_facts: false
+  
+  tasks:
+    - name: Create symlink with space in inventory path
+      file:
+        path: "/tmp/inventory symlink space"
+        state: link
+        src: "/etc/ansible/hosts"
+      delegate_to: localhost
+
+    - name: Generate malformed unicode strings for inventory
+      copy:
+        dest: /tmp/inventory_unicode
+        content: "{{ item }}"
+      with_items:
+        - "{{ 'inventory_unicode_\\u4e2d\\u6587' }}"
+        - "{{ 'inventory_unicode_\\u3000' }}"
+      delegate_to: localhost
+
+    - name: Set negative cache timeout in inventory
+      ini_file:
+        path: /etc/ansible/ansible.cfg
+        section: inventory
+        option: cache_timeout
+        value: "-3600"
+      delegate_to: localhost

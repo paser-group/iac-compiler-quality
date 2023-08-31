@@ -1,0 +1,35 @@
+---
+- name: Discover Latent Ansible Type Bugs
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    - my_inventory: "{{ my_inventory | default({}) | combine({ 'hosts': my_hosts }) }}"
+    - my_hosts:
+        - "{{ my_localhost }}"
+    - my_localhost: "{{ my_connection | default('local') }}"
+
+  tasks:
+    - name: Generate type-related bugs in inventory
+      copy:
+        dest: "/root/ansible/{{ my_inventory_file }}"
+        content: |
+          all:
+            hosts:
+              "{{ my_localhost }}":
+                ansible_connection: "{{ my_connection }}"
+      vars:
+        my_connection:
+          - "ssh"
+          - "local"
+      loop: "{{ my_inventory['hosts'] }}"
+      loop_control:
+        loop_var: my_localhost
+
+    - name: Ping hosts
+      ping:
+
+  handlers:
+    - name: Handle errors
+      debug:
+        msg: "Error encountered while executing playbook"

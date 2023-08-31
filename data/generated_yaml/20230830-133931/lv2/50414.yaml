@@ -1,0 +1,25 @@
+- name: Configure Docker containers
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Generate inventory with malformed boolean value
+      copy:
+        content: |
+          [all]
+          host1 ansible_python_interpreter='/usr/bin/python' boolean_value=NotABoolean
+        dest: /etc/ansible/hosts_malformed
+
+    - name: Include inventory file for testing
+      include_vars: /etc/ansible/hosts_malformed
+
+    - name: Create container
+      docker_container:
+        name: container_name
+        image: "{{ docker_image }}"
+        state: started
+        pull: yes
+      register: result
+      retries: 5
+      delay: 3
+      until: result is succeeded

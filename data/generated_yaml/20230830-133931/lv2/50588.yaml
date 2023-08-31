@@ -1,0 +1,33 @@
+- name: Reboot Windows after hostname change
+  hosts: all
+  gather_facts: false
+  
+  tasks:
+    - name: Check if rename variable is defined and changed
+      debug:
+        msg: "Rename variable is defined and changed"
+      when: rename is defined and rename is changed
+  
+    - name: Set subnet mask to an incorrect value
+      set_fact:
+        subnet_mask: "256.0.0.0"
+  
+    - name: Set router name to a mismatching value
+      set_fact:
+        router_name: "wrong_router"
+  
+    - name: Test subnet mask value
+      debug:
+        msg: "Subnet mask is invalid: {{ subnet_mask }}"
+      when: not subnet_mask is match('^((0|128)\.0\.0\.0)|(192\.[1-2][0-9]{0,2}\.0\.0)$')
+  
+    - name: Test router name value
+      debug:
+        msg: "Router name is invalid: {{ router_name }}"
+      when: router_name != ansible_default_ipv4.gateway
+  
+    - name: Reboot Windows
+      win_reboot:
+        msg: "Reboot after hostname change"
+        pre_reboot_delay_sec: 5
+        reboot_timeout: 600

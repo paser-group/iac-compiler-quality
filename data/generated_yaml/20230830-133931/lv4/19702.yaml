@@ -1,0 +1,47 @@
+
+---
+- name: Create Dynamic Inventory
+  hosts: localhost
+  become: false
+  gather_facts: false
+  
+  tasks:
+    - name: Create symbolic link path with space
+      file:
+        path: "/tmp/inventory with space"
+        state: link
+        src: /etc/ansible/hosts
+
+    - name: Generate malformed unicode strings
+      command: "echo -ne '\xd8\x00' > /tmp/malformed_unicode"
+      changed_when: false
+
+    - name: Create negative cache timeout value
+      copy:
+        content: "-1m"
+        dest: "/tmp/negative_cache_timeout"
+
+- name: Test Dynamic Inventory
+  hosts: all
+  become: false
+  gather_facts: false
+  
+  tasks:
+    - name: Verify symlink path with space
+      shell: "cat /tmp/inventory_with_space"
+      register: symlink_output
+      changed_when: false
+
+    - name: Verify malformed unicode strings
+      shell: "cat /tmp/malformed_unicode"
+      register: unicode_output
+      changed_when: false
+
+    - name: Verify negative cache timeout value
+      shell: "cat /tmp/negative_cache_timeout"
+      register: cache_output
+      changed_when: false
+
+    - name: Debug output
+      debug:
+        msg: "Symlink Output: {{ symlink_output.stdout }}, Unicode Output: {{ unicode_output.stdout }}, Cache Output: {{ cache_output.stdout }}"

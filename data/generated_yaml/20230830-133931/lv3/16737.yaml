@@ -1,0 +1,34 @@
+
+---
+- name: Verify Ansible Connection to Gentoo Container
+  hosts: gentootest
+  gather_facts: false
+
+  tasks:
+    - name: Set default Python version to 2.7
+      shell: lxc exec gentootest -- eselect python set 1
+
+    - name: Reboot Gentoo Container
+      shell: lxc restart gentootest
+
+    - name: Wait for SSH to become available
+      wait_for:
+        host: "{{ inventory_hostname }}"
+        port: 22
+        state: started
+        timeout: 60
+
+    - name: Verify Python version on Gentoo Container
+      shell: lxc exec gentootest -- eselect python list
+      register: python_versions
+
+    - name: Display Python versions
+      debug:
+        var: python_versions.stdout_lines
+
+    - name: Perform State Inquiry
+      setup:
+
+    - name: Display Ansible facts
+      debug:
+        var: ansible_facts

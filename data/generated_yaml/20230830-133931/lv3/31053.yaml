@@ -1,0 +1,34 @@
+- name: Ansible Latent Bug Finder
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+    - name: Set ansible_python_interpreter
+      set_fact:
+        ansible_python_interpreter: "/usr/bin/python3"
+
+    - name: Test Case 1 - Symlink paths with space
+      hosts: ubuntu1
+      tasks:
+        - file:
+            path: "/tmp/my directory"
+            state: directory
+            mode: "0777"
+          delegate_to: localhost
+
+    - name: Test Case 2 - Malformed unicode strings for inventory
+      hosts: alpine1
+      tasks:
+        - debug:
+            msg: "{{ 'payload: \xd8\x00\x00' }}"
+
+    - name: Test Case 3 - Negative Cache timeout values
+      hosts: centos1
+      tasks:
+        - set_fact:
+            ansible_cache_plugin_timeout: -1
+
+    - name: Test Case 4 - Unreachable host
+      hosts: redhat1
+      tasks:
+        - ping:

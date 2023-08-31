@@ -1,0 +1,42 @@
+
+---
+- name: Discover Ansible Latent Bugs
+  hosts: all
+  gather_facts: false
+
+  vars:
+    ansible_user: root
+    ansible_password: password123
+
+  tasks:
+    - name: Create ssh directory
+      file:
+        path: ~/.ssh/
+        state: directory
+        mode: 0700
+
+    - name: Generate known_hosts file
+      shell: echo "{{ hostvars[item]['ansible_host'] }} {{ hostvars[inventory_hostname]['ansible_ssh_host_key_public'] }}" >> ~/.ssh/known_hosts
+      loop: "{{ groups['all'] }}"
+
+    - name: Run known_hosts module without path argument
+      known_hosts:
+        name: "{{ inventory_hostname }}"
+        key: "{{ hostvars[inventory_hostname]['ansible_ssh_host_key_public'] }}"
+
+    - name: Test Case 1 - Create symlink path with space
+      file:
+        src: "~/link with space"
+        dest: "~/symlink with space"
+        state: link
+
+    - name: Test Case 2 - Generate malformed unicode strings
+      debug:
+        msg: "{{ hostvars[inventory_hostname]['ansible_os_family'] | b64decode }}"
+
+    - name: Test Case 3 - Negative Cache timeout value
+      apt:
+        name: nginx
+        state: present
+        cache_valid_time: -10
+

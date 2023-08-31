@@ -1,0 +1,20 @@
+- name: Configure network interfaces
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Get host IP addresses
+      shell: "ip addr show {{ ansible_host }}"
+      register: ip_address_output
+
+    - name: Extract IP address from output
+      set_fact:
+        ip_address: "{{ ip_address_output.stdout_lines | regex_find('inet ([0-9.]+)') | first }}"
+
+    - name: Create network interface configuration file
+      template:
+        src: network_interface.j2
+        dest: "/etc/network/interfaces.d/{{ inventory_hostname }}"
+
+      vars:
+        ip_address: "{{ ip_address }}"

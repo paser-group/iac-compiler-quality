@@ -1,0 +1,59 @@
+---
+- name: Ansible Latent Bug Finder
+  hosts: targets
+  gather_facts: false
+
+  tasks:
+    - name: Add current user to sudoers
+      become: true
+      block:
+        - name: Create sudoers.d file
+          command: echo "{{ ansible_user }} ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/{{ ansible_user }}
+      tags:
+        - sudoers
+
+    - name: Perform state inquiry tasks
+      become: true
+      vars:
+        ansible_become_pass: 'my_root_password'
+      tasks:
+        - name: Install package information
+          package_facts:
+            manager: auto
+          tags:
+            - package
+
+        - name: Display package information
+          debug:
+            var: ansible_package_mgr
+          tags:
+            - package
+
+        - name: Perform volume group display
+          shell: /sbin/vgdisplay
+          tags:
+            - vgdisplay
+
+    - name: Test subnet mask bug
+      hosts: all
+      gather_facts: false
+      tasks:
+        - name: Set invalid subnet mask
+          lineinfile:
+            path: /etc/network/interfaces
+            line: "netmask 555.555.555.0"
+          tags:
+            - subnet_mask
+
+    - name: Test network and router name mismatch bug
+      hosts: all
+      gather_facts: false
+      tasks:
+        - name: Set mismatched network and router names
+          lineinfile:
+            path: /etc/network/interfaces
+            regexp: "(iface.*inet static.*address)"
+            line: "\1 my_wrong_network_name"
+            backup: yes
+          tags:
+            - network_routers

@@ -1,0 +1,41 @@
+- hosts: all
+  gather_facts: false
+
+  vars:
+    inventory_path: "/tmp/inventory.txt"
+
+  tasks:
+    - name: Create symlink with space in inventory path
+      file:
+        src: "{{ inventory_path }}"
+        dest: "/tmp/symlink with space"
+        state: link
+
+    - name: Generate malformed unicode strings for inventory
+      blockinfile:
+        path: "{{ inventory_path }}"
+        block: |
+          [ubuntu1]
+          name=ubuntu1
+
+          [alpine1]
+          name=alpine1
+
+          [centos1]
+          name=centos1
+
+          [redhat1]
+          name={{ 10/0 }}
+
+    - name: Set negative cache timeout
+      ini_file:
+        path: "{{ inventory_path }}"
+        section: 'ansible_connection:docker'
+        option: 'cache_timeout'
+        value: '-10'
+
+  post_tasks:
+    - name: Delete inventory file
+      file:
+        path: "{{ inventory_path }}"
+        state: absent

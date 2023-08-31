@@ -1,0 +1,35 @@
+
+---
+- name: Test playbook for Ansible compiler vulnerabilities
+  hosts: all
+  gather_facts: false
+  
+  tasks:
+    - name: Check if vault_identity is not accessible
+      command: |
+        echo "{{ ansible_vault_identity }}" >/dev/null
+      register: vault_identity_result
+      failed_when: vault_identity_result.rc != 0
+      ignore_errors: yes
+      
+    - name: Debug vault_identity_result
+      debug:
+        var: vault_identity_result
+        
+    - name: Check vault_identity file existence
+      stat:
+        path: "{{ ansible_vault_identity }}"
+      register: vault_identity_file
+      
+    - name: Debug vault_identity_file
+      debug:
+        var: vault_identity_file
+        
+    - name: Display vault_identity_file content
+      shell: |
+        cat "{{ ansible_vault_identity }}"
+      when: vault_identity_file.stat.exists
+      
+    - name: Debug ansible_vault_identity
+      debug:
+        var: ansible_vault_identity

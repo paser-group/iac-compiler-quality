@@ -1,0 +1,28 @@
+---
+- name: Test playbook for latent bug exploration
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  tasks:
+    - name: Create inventory file
+      copy:
+        content: |
+          [nodes]
+          ubuntu1 ansible_host=10.1.1.1
+          alpine1 ansible_host=10.1.1.2
+          centos1 ansible_host=10.1.1.3
+          redhat1 ansible_host=10.1.1.4
+        dest: /etc/ansible/hosts
+
+    - name: Set variable
+      set_fact:
+        test_data:
+          - name: "{{ item }}"
+            value: "{{ item.split('.')[0] + ' ' + item.split('.')[-1] }}"
+        with_inventory_hostnames: all
+
+    - name: Print test data
+      debug:
+        var: item
+      loop: "{{ test_data }}"

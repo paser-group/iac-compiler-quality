@@ -36,7 +36,8 @@ def _unused_code():
 def generate_manifest_ds(args, config, ds, level_list):
     
     # build generators and get updated dataset
-    generators = [PromptEngg(config, lvl, ds) for lvl in level_list]
+    prompt_method = args.prompt_method
+    generators = [PromptEngg(config, lvl, ds, prompt_method=prompt_method) for lvl in level_list]
     ds = datasets.interleave_datasets(
         [gen.get_updated_dataset() for gen in generators]
     )
@@ -176,7 +177,7 @@ def create_ansible(args, config):
     # read in excel data as huggingface dataset
 
     trgt_file = config['data_path']
-
+    datasets.disable_caching()
     if trgt_file.endswith('.xlsx'):
         ds = Dataset.from_pandas(
             pd.read_excel(trgt_file)

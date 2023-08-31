@@ -1,0 +1,52 @@
+---
+- name: Create OpenStack router
+  hosts: localhost
+  gather_facts: false
+  vars:
+    network_name: "public-net"
+    router_name: "router0"
+    subnet_name: "subnet0"
+    subnet_cidr: "10.100.100.0/24"
+  
+  tasks:
+    - name: Create network
+      os_network:
+        cloud: default
+        auth: {credentials: "./creds.yml"}
+        state: present
+        name: "{{ network_name }}"
+      register: net_result
+      ignore_errors: true
+
+    - name: Create subnet
+      os_subnet:
+        cloud: default
+        auth: {credentials: "./creds.yml"}
+        state: present
+        name: "{{ subnet_name }}"
+        network_name: "{{ network_name }}"
+        cidr: "{{ subnet_cidr }}"
+      register: subnet_result
+      ignore_errors: true
+
+    - name: Create router
+      os_router:
+        cloud: default
+        auth: {credentials: "./creds.yml"}
+        state: present
+        name: "{{ router_name }}"
+        network: "{{ network_name }}"
+        interfaces: ["{{ subnet_name }}"]
+      register: router_result
+      ignore_errors: true
+
+    - debug:
+        msg: "Router '{{ router_name }}' created successfully"
+      when: router_result is succeeded
+
+    - fail:
+        msg: "Failed to create router '{{ router_name }}'"
+      when: router_result is failed
+
+    - debug:
+        var: router_result

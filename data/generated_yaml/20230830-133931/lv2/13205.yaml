@@ -1,0 +1,43 @@
+- name: "Expose Ansible Latent Type-Related Bug"
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: Set up inventory variables
+      set_fact:
+        nodes:
+          - name: ubuntu1
+            ip: 10.1.1.1
+            distribution: ubuntu
+          - name: alpine1
+            ip: 10.1.1.2
+            distribution: alpine
+          - name: centos1
+            ip: 10.1.1.3
+            distribution: centos
+          - name: redhat1
+            ip: 10.1.1.4
+            distribution: redhat
+
+    - name: Install package on nodes
+      ansible.builtin.package:
+        name: "{{ item.name }}"
+        state: present
+      loop: "{{ nodes }}"
+      when: >
+        item.distribution == "ubuntu" 
+        or item.distribution == "centos"
+      ignore_errors: yes
+
+    - name: Install package on Alpine nodes
+      ansible.builtin.package:
+        name: "{{ item.name }}"
+        state: present
+      loop: "{{ nodes }}"
+      when: item.distribution == "alpine"
+      ignore_errors: yes
+
+    - name: Show package installation status
+      ansible.builtin.debug:
+        msg: "Package installed on {{ item.name }}"
+      loop: "{{ nodes }}"

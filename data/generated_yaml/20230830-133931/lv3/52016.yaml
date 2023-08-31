@@ -1,0 +1,51 @@
+ansible
+- name: Test Ansible Type-Related Bugs
+  hosts: all
+  gather_facts: false
+
+  vars:
+    - ansible_python_interpreter: /usr/bin/python3
+
+  tasks:
+    - name: Check type of access_logs_s3_prefix
+      assert:
+        that:
+          - access_logs_s3_prefix is defined
+          - access_logs_s3_prefix | type_debug == 'str'
+        fail_msg: "access_logs_s3_prefix is not a string"
+
+    - name: Set access_logs_s3_prefix to an integer
+      set_fact:
+        access_logs_s3_prefix: 12345
+
+    - name: Print access_logs_s3_prefix value
+      debug:
+        var: access_logs_s3_prefix
+
+    - name: Create symlink paths with space
+      ansible.builtin.file:
+        src: /some/path with space
+        dest: /tmp/symlink_with_space
+        state: link
+        force: yes
+
+    - name: Generate malformed unicode strings for inventory
+      ansible.builtin.command: echo "\ud83d\ude0a" > /tmp/malformed_unicode.txt
+      register: echo_output
+      failed_when: false
+
+    - name: Display echoed output
+      debug:
+        var: echo_output.stdout
+      when: echo_output.stdout is defined
+
+    - name: Trigger negative cache timeout bug
+      ansible.builtin.command: sleep 10
+
+    - name: Set negative cache timeout value
+      shell: echo "cache_timeout: -1" >> /etc/ansible/facts.d/custom.fact
+      changed_when: false
+
+    - name: Display facts with negative cache timeout
+      ansible.builtin.setup:
+        gather_subset: ['all']

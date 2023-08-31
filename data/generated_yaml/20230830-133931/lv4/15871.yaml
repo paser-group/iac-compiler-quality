@@ -1,0 +1,34 @@
+
+---
+- name: Ansible Latent Bug Finder
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create symlink paths with spaces
+      file:
+        src: "{{ item.src }}"
+        path: "{{ item.path }}"
+        state: link
+      loop:
+        - { src: "/etc/hosts", path: "/tmp/hosts symlink" }
+        - { src: "/usr/bin/ansible-playbook", path: "/tmp/ansible-playbook symlink" }
+      when: inventory_hostname == 'ubuntu1'
+
+    - name: Generate malformed Unicode strings for inventory
+      copy:
+        content: "{{ item.content }}"
+        dest: "/etc/ansible/inventory/{{ item.filename }}"
+        mode: 0644
+      loop:
+        - { content: "ubuntu1 ansible_user=root", filename: "inventory.txt" }
+        - { content: "\x99\x82\xf0\xc0\xc1\xc3\xc4\xc5\xd0 python3 -m http.server", filename: "start.sh" }
+        - { content: "alpine1 ansible_user=root", filename: "inventory.txt" }
+        - { content: "\x99\x82\xf0\xc0\xc1\xc3\xc4\xc5\xd0 python3 -m http.server", filename: "start.sh" }
+      when: inventory_hostname == 'centos1'
+
+    - name: Set negative cache timeout values
+      lineinfile:
+        path: "/etc/ansible/ansible.cfg"
+        line: "{{ 'ansible_cache_valid_time=-1' }}"
+      when: inventory_hostname == 'redhat1'

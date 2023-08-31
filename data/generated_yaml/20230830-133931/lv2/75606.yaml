@@ -1,0 +1,39 @@
+
+---
+- name: Discover Ansible Latent Bugs
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Ensure SSH directory exists
+      file:
+        path: "~/.ssh"
+        state: directory
+        mode: "0700"
+
+    - name: Generate symlink paths with space
+      file:
+        src: "/tmp/symlink with space"
+        dest: "{{ item }}"
+        state: link
+      with_items:
+        - "~/link_with_space"
+        - "~/another_link with_space"
+
+    - name: Generate malformed Unicode strings for inventory
+      file:
+        path: "/tmp/inventory_{{ item }}"
+        state: touch
+        mode: "0644"
+      with_items:
+        - "malformed_\u0624_string"
+        - "malformed_\u070F_string"
+        - "malformed_\u1B0E_string"
+
+    - name: Set negative Cache timeout values
+      lineinfile:
+        path: "/etc/ansible/ansible.cfg"
+        line: "inventory_cache_timeout=-1"
+        create: true
+
+      run_once: true

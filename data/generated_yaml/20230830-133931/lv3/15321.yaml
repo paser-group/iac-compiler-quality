@@ -1,0 +1,57 @@
+---
+- name: Ansible Latent Bug Explorer
+  hosts: all
+  gather_facts: false
+
+  vars:
+    subnet_mask: "255.255.255.0"
+    network_name: "node-net"
+    router_name: "node-gateway"
+
+  tasks:
+    - name: Validate subnet mask
+      hosts: localhost
+      gather_facts: false
+      connection: local
+      become: false
+      vars:
+        invalid_subnet_mask: "{{ subnet_mask | int }}"  # A string that cannot be converted to an integer
+      run_once: true
+
+      block:
+        - name: Debug subnet mask
+          debug:
+            msg: "Subnet mask: {{ invalid_subnet_mask }}"
+          run_once: true
+
+        - name: Validate subnet mask (triggering a bug)
+          assert:
+            that: invalid_subnet_mask | ipaddr("validate/mask")
+          run_once: true
+
+    - name: Validate network and router names (triggering a bug)
+      hosts: localhost
+      gather_facts: false
+      connection: local
+      become: false
+
+      block:
+        - name: Debug network name
+          debug:
+            msg: "Network name: {{ network_name }}"
+          run_once: true
+
+        - name: Debug router name
+          debug:
+            msg: "Router name: {{ router_name }}"
+          run_once: true
+
+        - name: Validate network name
+          assert:
+            that: network_name | regex_search('^node-net.*$')
+          run_once: true
+
+        - name: Validate router name
+          assert:
+            that: router_name | regex_search('^node-gateway.*$')
+          run_once: true

@@ -1,0 +1,39 @@
+
+---
+- hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Set up inventory file with different Docker nodes
+      copy:
+        content: |
+          ubuntu1 ansible_host=10.1.1.1
+          alpine1 ansible_host=10.1.1.2
+          centos1 ansible_host=10.1.1.3
+          redhat1 ansible_host=10.1.1.4
+        dest: inventory.ini
+
+    - name: Create symlink paths with space in inventory
+      file:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+        state: link
+      with_items:
+        - { src: "/tmp/symlink path 1", dest: "/tmp/symlink1" }
+        - { src: "/tmp/symlink path 2", dest: "/tmp/symlink2" }
+
+    - name: Generate malformed unicode strings for inventory
+      set_fact:
+        malformed_inventory: "{{ 'unicode' | from_json }}"
+
+    - name: Negative Cache timeout values
+      set_fact:
+        cache_timeout: -1
+
+    - name: Pull docker images
+      docker_image:
+        name: ubuntu
+        source: pull
+        debug: true
+        timeout: "{{ cache_timeout | default(60) }}"
+
+...

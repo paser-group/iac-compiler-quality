@@ -1,0 +1,38 @@
+---
+- name: Test Playbook for Ansible Compiler Bugs
+  hosts: all
+  gather_facts: true
+  
+  tasks:
+    - name: Set DNS server on the Ansible control node
+      lineinfile:
+        dest: /etc/resolv.conf
+        line: "nameserver 8.8.8.8"
+        state: present
+      become: true
+
+    - name: Add iptables rule
+      iptables:
+        chain: INPUT
+        source: "{{ ansible_default_ipv4.address }}"
+        jump: ACCEPT
+        state: present
+      become: true
+
+    - name: Get iptables rules on remote host
+      shell: iptables -S INPUT
+      register: iptables_output
+      changed_when: false
+
+    - name: Print iptables rules on remote host
+      debug:
+        var: iptables_output.stdout_lines
+
+    - name: Check DNS resolution on remote host
+      command: nslookup "{{ ansible_default_ipv4.address }}"
+      register: dns_output
+      changed_when: false
+
+    - name: Print DNS resolution on remote host
+      debug:
+        var: dns_output.stdout_lines

@@ -1,0 +1,32 @@
+---
+- name: Provision iOS devices
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Configure network settings
+      ios_command:
+        commands:
+          - configure terminal
+          - interface GigabitEthernet1
+          - ip address 10.0.0.1 255.255.255.0
+          - no shutdown
+          - exit
+        provider:
+          host: "{{ inventory_hostname }}"
+          username: "admin"
+          password: "password"
+      register: network_config
+      delegate_to: localhost
+
+    - name: Capture sh version
+      ios_command:
+        commands:
+          - show version
+        register: sh_version_reg
+        delegate_to: localhost
+
+    - name: Print sh version
+      debug:
+        msg: "{{ sh_version_reg.stdout_lines[0] }}"
+      delegate_to: localhost

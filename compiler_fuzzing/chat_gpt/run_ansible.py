@@ -188,10 +188,8 @@ def run_ansible(args, config):
     task = args.task
     if task == 'module':
         base_dir = config['module_output_dir']
-        num_digits = 5
     elif task == 'github_issue':
         base_dir = config['output_dir']
-        num_digits = len(str(max(ds['id'])))
         
     if args.timestamp is not None:
         base_path = f"{base_dir}/{args.timestamp}"
@@ -208,6 +206,8 @@ def run_ansible(args, config):
     file_path = f"{base_path}/manifest_ds.csv"
     datasets.disable_caching()
     ds = Dataset.from_csv(file_path)
+    
+    num_digits = 5 if task == 'module' else len(str(max(ds['id'])))
     inventory = config["inventory_file"]
     docker_path = config["docker_dir"]
     private_key = config["private_key"]

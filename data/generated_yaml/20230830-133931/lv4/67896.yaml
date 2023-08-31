@@ -1,0 +1,32 @@
+---
+- name: Discover Network Information
+  hosts: all
+  gather_facts: False
+  tasks:
+    - name: Retrieve Network Information
+      command:
+        cmd: "show vlan"
+      register: raw_output
+
+    - name: Parse Network Information
+      set_fact:
+        vlan_information: "{{ raw_output.stdout_lines[20:-1] }}"
+      when: raw_output is defined and raw_output.stdout_lines | length >= 20
+
+- name: Configure VLANs
+  hosts: all
+  gather_facts: False
+  tasks:
+    - name: Setup VLAN database
+      ios_vlans:
+        config:
+          - name: client-iot-devices
+            vlan_id: 40
+            state: active
+          - name: client-nontrusted-devices
+            vlan_id: 41
+            state: active
+          - name: client-trusted-devices
+            vlan_id: 42
+            state: active
+        state: replaced

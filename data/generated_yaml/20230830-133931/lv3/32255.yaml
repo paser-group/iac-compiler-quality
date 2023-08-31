@@ -1,0 +1,29 @@
+- name: Type Bug Finder Playbook
+  hosts: nodes
+  gather_facts: no
+
+  tasks:
+    - name: Set Variable
+      set_fact:
+        num_hosts: "{{ groups['nodes'] | length }}"
+        max_fail_percentage: "{{ num_hosts | int + 1 }}"  # Intentional type mismatch
+
+    - name: Print Variables
+      debug:
+        var: num_hosts
+      run_once: true
+
+    - name: Fail Task
+      fail:
+        msg: "This task fails intentionally"
+
+    - name: Next Task
+      debug:
+        msg: "This task should be executed even after a failure"
+
+    - name: Last Task
+      debug:
+        msg: "This task should also be executed even after a failure"
+
+  serial: '{{ nodes_serial | default(1) }}'
+  max_fail_percentage: '{{ max_fail_percentage | default(0) }}'

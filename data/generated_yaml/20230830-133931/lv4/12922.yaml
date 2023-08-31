@@ -1,0 +1,27 @@
+
+---
+- name: Test playbook for Ansible compiler bug exploration
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: Check SSH host key mismatch
+      shell: "ssh-keyscan -H {{ inventory_hostname }}"
+      register: ssh_keyscan_output
+
+    - name: Check known hosts file
+      lineinfile:
+        path: "{{ lookup('env','HOME') }}/.ssh/known_hosts"
+        line: "{{ ssh_keyscan_output.stdout }}"
+        state: present
+
+    - name: Ensure known hosts file contains correct SSH key
+      command: ssh-keygen -F {{ inventory_hostname }}
+      register: known_hosts_check
+
+    - name: Display error message if SSH key doesn't match
+      debug:
+        msg: "SSH key for {{ inventory_hostname }} does not match pre-existing key. Please remove the old signature from ~/.ssh/known_hosts or disable host-key-checking."
+
+  vars:
+    ansible_ssh_common_args: '-o StrictHostKeyChecking=yes'

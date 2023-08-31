@@ -1,0 +1,29 @@
+---
+- name: Test Ansible Latent Bugs
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: Create symlink path with space
+      file:
+        src: "/tmp/symlink with space"
+        dest: "/tmp/symlink"
+        state: link
+
+    - name: Generate malformed unicode strings for inventory
+      set_fact:
+        malformed_unicode_string: '{{ "\xc3\x28" }}'
+
+    - name: Generate latent bugs with negative cache timeout values
+      shell: |
+        rm -rf /tmp/inventory_cache
+        ln -s /tmp /tmp/inventory_cache
+        export ANSIBLE_CACHE_PLUGIN=yaml
+        export ANSIBLE_CACHE_PLUGIN_CONNECTION=/tmp/inventory_cache
+        export ANSIBLE_CACHE_PLUGIN_PREFIX=ansible_cache
+        export ANSIBLE_CACHE_PLUGIN_TIMEOUT=-1
+        ansible-inventory -i inventory/hosts --graph
+
+    - name: Trigger latent type-related bug
+      debug:
+        msg: "{{ my_variable }}"

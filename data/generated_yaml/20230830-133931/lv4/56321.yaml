@@ -1,0 +1,33 @@
+
+---
+- name: Test Ansible Vault Password File
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create temporary vault password file
+      copy:
+        content: "ansible"
+        dest: "{{ ansible_user_dir }}/ans.yml"
+        mode: 0600
+
+    - name: Display vault password file
+      shell: "cat {{ ansible_user_dir }}/ans.yml"
+
+    - name: Encrypt file using vault password file
+      shell: "ansible-vault encrypt app/.env --vault-password-file {{ ansible_user_dir }}/ans.yml"
+      register: encrypt_output
+      failed_when: false
+
+    - name: Debug encrypt output
+      debug:
+        var: encrypt_output
+
+    - name: Decrypt file using vault password file
+      shell: "ansible-vault decrypt app/.env --vault-password-file {{ ansible_user_dir }}/ans.yml"
+      register: decrypt_output
+      failed_when: false
+
+    - name: Debug decrypt output
+      debug:
+        var: decrypt_output

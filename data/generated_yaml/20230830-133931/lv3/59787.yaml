@@ -1,0 +1,40 @@
+---
+- name: Test for latent type-related bugs in Ansible compiler
+  hosts: all
+  gather_facts: no
+  
+  vars:
+    iam_password_policy_defaults:
+      allow_pw_change: yes
+      min_pw_length: 14
+      require_symbols: yes
+      require_numbers: yes
+      require_uppercase: yes
+      require_lowercase: yes
+      pw_reuse_prevent: 6
+      pw_expire: 90
+
+  tasks:
+    - name: Set host-specific variables and template
+      set_fact:
+        aws_access_key: "{{ current_account_sts_credentials.access_key }}"
+        aws_secret_key: "{{ current_account_sts_credentials.secret_key }}"
+        security_token: "{{ current_account_sts_credentials.session_token }}"
+        iam_password_policy_template: "{{ iam_password_policy_defaults | to_yaml }}"
+
+    - name: Print host-specific variables
+      debug:
+        var: item
+      with_items:
+        - aws_access_key
+        - aws_secret_key
+        - security_token
+        - iam_password_policy_template
+
+    - name: Test if Ansible compiler handles incorrect variable type
+      set_fact:
+        iam_password_policy_template: "{{ iam_password_policy_template | from_yaml }}"
+
+    - name: Debug type-related bug
+      debug:
+        var: iam_password_policy_template

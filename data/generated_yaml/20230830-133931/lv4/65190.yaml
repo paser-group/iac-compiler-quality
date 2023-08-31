@@ -1,0 +1,29 @@
+- hosts: all
+  gather_facts: false
+
+  vars:
+    subnet: "10.1.1.0/24"
+    gateway: "10.1.1.254"
+
+  tasks:
+    - name: Create network
+      docker_network:
+        name: "{{ item.name }}"
+        ipam_config:
+          - subnet: "{{ subnet }}"
+            gateway: "{{ gateway }}"
+        state: present
+      with_items:
+        - { name: "node-net" }
+
+    - name: Create Docker nodes
+      docker_container:
+        name: "{{ item.name }}"
+        image: "{{ item.image }}"
+        state: started
+        network_mode: "node-net"
+      with_items:
+        - { name: "ubuntu1", image: "ubuntu:latest" }
+        - { name: "alpine1", image: "alpine:latest" }
+        - { name: "centos1", image: "centos:latest" }
+        - { name: "redhat1", image: "redhat:latest" }

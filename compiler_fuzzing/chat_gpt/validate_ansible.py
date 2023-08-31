@@ -123,10 +123,9 @@ def validate_ansible(args, config):
     task = args.task
     if task == 'module':
         base_dir = config['module_output_dir']
-        num_digits = 5
     elif task == 'github_issue':
         base_dir = config['output_dir']
-        num_digits = len(str(max(ds['id'])))
+        
     if args.timestamp is not None:
         base_path = f"{base_dir}/{args.timestamp}"
     else:
@@ -143,6 +142,7 @@ def validate_ansible(args, config):
     datasets.disable_caching()
     ds = Dataset.from_csv(file_path)
     inventory_path = config["inventory_file"]
+    num_digits = 5 if task == 'module' else len(str(max(ds['id'])))
     
     def mapper_fn(sample):
         if task == 'module':

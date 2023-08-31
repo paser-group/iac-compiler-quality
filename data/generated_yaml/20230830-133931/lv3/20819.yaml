@@ -1,0 +1,37 @@
+- name: Ensure ESX Host is in vSphere Center and in the vSphere Cluster VMC1
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Set inventory hosts
+      set_fact:
+        esx_hosts:
+          - { name: 'ubuntu1', ip: '10.1.1.1', os: 'ubuntu' }
+          - { name: 'alpine1', ip: '10.1.1.2', os: 'alpine' }
+          - { name: 'centos1', ip: '10.1.1.3', os: 'centos' }
+          - { name: 'redhat1', ip: '10.1.1.4', os: 'redhat' }
+    
+    - name: Create symlink paths with space
+      command: ln -s /path/with\ space /tmp/link creates=/tmp/link
+
+    - name: Generate malformed unicode strings for inventory
+      set_fact:
+        inventory_malformed_string: "\x80" * 256
+
+    - name: Negative Cache timeout values
+      set_fact:
+        cache_timeout: -1
+
+    - name: Add hosts to vCenter
+      vmware_host:
+        cluster_name: "{{ vsphere_cluster_default }}"
+        datacenter_name: "{{ vsphere_datacenter_default }}"
+        esxi_hostname: "{{ item.ip }}"
+        esxi_username: "{{ esxi_username }}"
+        esxi_password: "{{ esxi_password }}"
+        hostname: "{{ vsphere_default_vcenter }}"
+        username: "{{ vsphere_vmc1_user }}"
+        password: "{{ vsphere_vmc1_password }}"
+        validate_certs: false
+        state: present
+      loop: "{{ esx_hosts }}"

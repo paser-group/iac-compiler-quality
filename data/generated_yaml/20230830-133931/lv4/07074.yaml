@@ -1,0 +1,40 @@
+
+---
+- name: Ansible Latent Bug Finder
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Install invalid keys
+      copy:
+        content: "Invalid Key Contents"
+        dest: /path/to/invalid_key
+        mode: "0400"
+
+    - name: Create ~/.ssh directory
+      file:
+        path: "{{ item }}"
+        state: directory
+        mode: "0700"
+      with_items:
+        - /root/.ssh
+        - /home/{{ ansible_user }}/.ssh
+
+    - name: Set invalid key permissions
+      file:
+        path: "{{ item }}"
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: "0400"
+      with_items:
+        - /root/.ssh/invalid_key
+        - /home/{{ ansible_user }}/.ssh/invalid_key
+
+    - name: Add invalid key to authorized_keys
+      authorized_key:
+        user: "{{ ansible_user }}"
+        key: "{{ lookup('file', item) }}"
+        state: present
+      with_items:
+        - /root/.ssh/invalid_key
+        - /home/{{ ansible_user }}/.ssh/invalid_key

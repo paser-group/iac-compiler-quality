@@ -1,0 +1,25 @@
+
+---
+- name: Azure Storage Account Creation
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Create Azure Storage Account
+      azure_rm_storageaccount:
+        resource_group: my_resource_group
+        name: my_storage_account
+        location: eastus
+        kind: StorageV2
+        sku_name: Standard_LRS
+        state: present
+      register: storage_result
+
+    - name: Fail if Authorization Failed
+      fail:
+        msg: "Authorization failed with code: {{ storage_result.failed }}"
+      when: storage_result.failed and "AuthorizationFailed" in storage_result.msg
+
+    - name: Print Storage Account Result
+      debug:
+        var: storage_result

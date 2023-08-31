@@ -1,0 +1,43 @@
+---
+- name: Ansible Latent Bug Explorer Playbook
+  hosts: all
+  gather_facts: false
+
+  vars:
+    ssl_root: "/etc/letsencrypt"
+    admin_email: "admin@example.com"
+
+  tasks:
+    - name: Create ssl file directories
+      file:
+        path: "{{ ssl_root }}/{{ item }}"
+        state: directory
+      loop:
+        - csr
+        - keys
+        - certs
+
+    - name: Generate account key
+      command: "openssl genrsa -out {{ ssl_root }}/account.key"
+
+    - name: Generate certificate private key
+      command: "openssl genrsa -out {{ ssl_root }}/keys/{{ inventory_hostname }}.pem"
+
+    - name: Generate certificate signing request
+      command: "openssl req -new -sha256 -key {{ ssl_root }}/keys/{{ inventory_hostname }}.pem -out {{ ssl_root }}/csr/{{ inventory_hostname }}.pem -subj /CN={{ inventory_hostname }}"
+
+    - name: Initiate letsencrypt challenge
+      command: "touch {{ ssl_root }}/certs/{{ inventory_hostname }}.crt"
+
+    - name: Integer conversion bug - Triggering latent compiler bug
+      debug:
+        msg: "{{ (admin_email|int) + 10 }}"
+
+    - name: Write signed letsencrypt certificate
+      letsencrypt:
+        account_key: "{{ ssl_root }}/account.key"
+        csr: "{{ ssl_root }}/csr/{{ inventory_hostname }}.pem"
+        dest: "{{ ssl_root }}/certs/{{ inventory_hostname }}.crt"
+        acme_directory: "https://acme-v01.api.letsencrypt.org/directory"
+        account_email: "{{ admin_email }}"
+        challenge: "http-01"

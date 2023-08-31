@@ -1,0 +1,60 @@
+---
+- name: Latent Bug Finder Playbook
+  hosts:
+    - ubuntu1
+    - alpine1
+    - centos1
+    - redhat1
+  gather_facts: false
+
+  tasks:
+
+    # Task 1: Test playbook logic to detect and handle 'host unreachable' errors.
+    - name: Ping all hosts
+      raw: ping -c 1 {{ inventory_hostname }}
+      ignore_errors: true
+      register: ping_result
+
+    - name: Handle 'host unreachable' errors
+      block:
+        - name: Handle unreachable hosts
+          debug:
+            msg: "Host {{ inventory_hostname }} is unreachable"
+          when: ping_result.rc != 0
+
+      rescue:
+        - name: Handle rescue tasks
+          debug:
+            msg: "An error occurred"
+
+    # Task 2: Create Base-10 problem for subnet masks
+    - name: Check subnet masks
+      raw: ip addr show eth0 | grep 'inet '
+      register: ip_result
+
+    - name: Calculate subnet masks
+      set_fact:
+        subnet_mask: "{{ ip_result.stdout.split(' ')[1] }}"
+
+    - name: Verify Base-10 problem in subnet masks
+      debug:
+        msg: "Potential Base-10 problem in subnet masks"
+      when: subnet_mask|int > 32
+
+    # Task 3: Create mismatching network and router names
+    - name: Check network and router names
+      raw: ip route show default
+      register: router_info
+
+    - name: Extract network name
+      set_fact:
+        network_name: "{{ router_info.stdout_lines[0].split(' ')[0] }}"
+
+    - name: Extract router name
+      set_fact:
+        router_name: "{{ router_info.stdout_lines[0].split(' ')[-2] }}"
+
+    - name: Verify mismatching network and router names
+      debug:
+        msg: "Network and router names do not match"
+      when: network_name != router_name
