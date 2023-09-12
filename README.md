@@ -1,4 +1,4 @@
-## Quality Assurance for Infrastructure Orchestrators 
+# Quality Assurance for Infrastructure Orchestrators 
 
 > Placeholder for contents related to the infrastructure orchestrator project. Contents will soon be updated. 
 
@@ -6,13 +6,17 @@
 
 - Branches: `master (active)`, `smith (inactive)`, `lamia (inactive)`
 
-### Code Installation
+### Usage
+* output YAML files by default are to be saved to `{{ PROJECT_ROOT }}/data/generated_yaml/<timestamp>/lv{{ LEVEL }}`
+  * corresponding dataset is saved to `{{ PROJECT_ROOT }}/data/generated_yaml/<timestamp>`
+
+# Code Installation
 * create a virtual environment for python version **3.10** and activate it
 * in `<project root>` run `pip install -e .` 
 
 Now you can run the program by calling `cftools` in your terminal
 
-### Docker Infrastructure Setup
+# Docker Infrastructure Setup
 1. install docker
 2. change directory to `{{ PROJECT_ROOT }}/files/docker_scripts`
 3. build the images by running `./build all`
@@ -29,7 +33,3 @@ Now you can run the program by calling `cftools` in your terminal
   * `ssh centos1`
   * `ssh redhat1`
 8. if you can connect to your docker hosts then you are done.
-
-### Usage
-* output YAML files by default are to be saved to `{{ PROJECT_ROOT }}/data/generated_yaml/<timestamp>/lv{{ LEVEL }}`
-  * corresponding dataset is saved to `{{ PROJECT_ROOT }}/data/generated_yaml/<timestamp>`
